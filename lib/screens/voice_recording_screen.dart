@@ -142,6 +142,27 @@ Hole one is a 700 ft par-4 I threw my Destroyer on a big backhand line and it la
       await _voiceService.stopListening();
       _animationController.stop();
     } else {
+      // Try to initialize first if not initialized
+      if (!_voiceService.isInitialized) {
+        final initialized = await _voiceService.initialize();
+        if (!initialized) {
+          // If still not initialized, show error
+          if (mounted) {
+            setState(() {});
+            // Check if it's a permission issue
+            if (_voiceService.lastError.contains('Settings')) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please enable microphone access in Settings, then try again'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            }
+          }
+          return;
+        }
+      }
+
       await _voiceService.startListening();
       _animationController.repeat();
     }
@@ -292,6 +313,55 @@ Hole one is a 700 ft par-4 I threw my Destroyer on a big backhand line and it la
             ],
 
             const SizedBox(height: 24),
+
+            // Error display
+            if (_voiceService.lastError.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade300),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _voiceService.lastError,
+                            style: TextStyle(color: Colors.red.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_voiceService.lastError.contains('permission'))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            // Force re-initialization
+                            await _voiceService.initialize();
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.settings, size: 18),
+                          label: const Text('Re-request Permission'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
 
             // Recording button
             Center(

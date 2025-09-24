@@ -33,6 +33,13 @@ class RoundParser extends ChangeNotifier {
       return false;
     }
 
+    print('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
+    print('Transcript length: ${transcript.length} characters');
+    print('Course name: ${courseName ?? "Not specified"}');
+    print('Raw transcript:');
+    print(transcript);
+    print('==========================================');
+
     _isProcessing = true;
     _lastError = '';
     notifyListeners();
