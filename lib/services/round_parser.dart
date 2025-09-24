@@ -16,14 +16,17 @@ class RoundParser extends ChangeNotifier {
   RoundParser({
     required GeminiService geminiService,
     required BagService bagService,
-  })  : _geminiService = geminiService,
-        _bagService = bagService;
+  }) : _geminiService = geminiService,
+       _bagService = bagService;
 
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
   String get lastError => _lastError;
 
-  Future<bool> parseVoiceTranscript(String transcript, {String? courseName}) async {
+  Future<bool> parseVoiceTranscript(
+    String transcript, {
+    String? courseName,
+  }) async {
     if (transcript.trim().isEmpty) {
       _lastError = 'Transcript is empty';
       notifyListeners();
@@ -78,19 +81,30 @@ class RoundParser extends ChangeNotifier {
     final enhancedHoles = round.holes.map((hole) {
       final enhancedThrows = hole.throws.map((discThrow) {
         // If disc name is provided but not found in bag, try to match
-        if (discThrow.discName != null && discThrow.discId == null) {
-          final matchedDisc = _bagService.findDiscByName(discThrow.discName!);
-          if (matchedDisc != null) {
-            return DiscThrow(
-              distance: discThrow.distance,
-              discName: matchedDisc.name,
-              discId: matchedDisc.id,
-              throwType: discThrow.throwType,
-              description: discThrow.description,
-              result: discThrow.result,
-            );
-          }
-        }
+        // if (discThrow.discName != null && discThrow.discId == null) {
+        //   final matchedDisc = _bagService.findDiscByName(discThrow.discName!);
+        //   if (matchedDisc != null) {
+        //     return DiscThrow(
+        //       distanceFeet: discThrow.distanceFeet,
+        //       index: discThrow.index,
+        //       purpose: discThrow.purpose,
+        //       technique: discThrow.technique,
+        //       puttStyle: discThrow.puttStyle,
+        //       shotShape: discThrow.shotShape,
+        //       stance: discThrow.stance,
+        //       power: discThrow.power,
+        //       elevationChangeFeet: discThrow.elevationChangeFeet,
+        //       windDirection: discThrow.windDirection,
+        //       windStrength: discThrow.windStrength,
+        //       resultRating: discThrow.resultRating,
+        //       landingSpot: discThrow.landingSpot,
+        //       fairwayWidth: discThrow.fairwayWidth,
+        //       notes: discThrow.notes,
+        //       rawText: discThrow.rawText,
+        //       parseConfidence: discThrow.parseConfidence,
+        //     );
+        //   }
+        // }
         return discThrow;
       }).toList();
 
@@ -102,10 +116,7 @@ class RoundParser extends ChangeNotifier {
       );
     }).toList();
 
-    return DGRound(
-      course: round.course,
-      holes: enhancedHoles,
-    );
+    return DGRound(course: round.course, holes: enhancedHoles);
   }
 
   void updateHole(int holeIndex, DGHole updatedHole) {
@@ -113,10 +124,7 @@ class RoundParser extends ChangeNotifier {
       final updatedHoles = List<DGHole>.from(_parsedRound!.holes);
       updatedHoles[holeIndex] = updatedHole;
 
-      _parsedRound = DGRound(
-        course: _parsedRound!.course,
-        holes: updatedHoles,
-      );
+      _parsedRound = DGRound(course: _parsedRound!.course, holes: updatedHoles);
 
       notifyListeners();
     }
@@ -126,7 +134,6 @@ class RoundParser extends ChangeNotifier {
     if (_parsedRound != null &&
         holeIndex < _parsedRound!.holes.length &&
         throwIndex < _parsedRound!.holes[holeIndex].throws.length) {
-
       final hole = _parsedRound!.holes[holeIndex];
       final updatedThrows = List<DiscThrow>.from(hole.throws);
       updatedThrows[throwIndex] = updatedThrow;
@@ -146,11 +153,6 @@ class RoundParser extends ChangeNotifier {
     _parsedRound = null;
     _lastError = '';
     notifyListeners();
-  }
-
-  // Calculate score for display
-  int calculateScore(DGHole hole) {
-    return hole.throws.length - hole.par;
   }
 
   String getScoreName(int score) {
@@ -179,7 +181,7 @@ class RoundParser extends ChangeNotifier {
     if (_parsedRound == null) return 0;
 
     return _parsedRound!.holes.fold(0, (total, hole) {
-      return total + hole.throws.length;
+      return total + hole.holeScore;
     });
   }
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/utils/naming_constants.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   final DGRound round;
@@ -35,17 +37,22 @@ class _RoundReviewScreenState extends State<RoundReviewScreen> {
     return Colors.black87;
   }
 
-  IconData _getThrowTypeIcon(DiscThrowType? type) {
+  IconData _getThrowTypeIcon(ThrowPurpose? type) {
     switch (type) {
-      case DiscThrowType.drive:
+      case ThrowPurpose.teeDrive:
         return Icons.sports_golf;
-      case DiscThrowType.fairway:
+      case ThrowPurpose.fairwayDrive:
         return Icons.trending_flat;
-      case DiscThrowType.approach:
-      case DiscThrowType.upshot:
+      case ThrowPurpose.approach:
         return Icons.call_made;
-      case DiscThrowType.putt:
+      case ThrowPurpose.putt:
         return Icons.flag;
+      case ThrowPurpose.scramble:
+        return Icons.refresh;
+      case ThrowPurpose.penalty:
+        return Icons.warning;
+      case ThrowPurpose.other:
+        return Icons.sports;
       default:
         return Icons.sports;
     }
@@ -119,9 +126,10 @@ class _RoundReviewScreenState extends State<RoundReviewScreen> {
             child: ListView.builder(
               itemCount: _round.holes.length,
               itemBuilder: (context, index) {
-                final hole = _round.holes[index];
-                final score = widget.roundParser.calculateScore(hole);
-                final scoreName = widget.roundParser.getScoreName(score);
+                final DGHole hole = _round.holes[index];
+                final String scoreName = widget.roundParser.getScoreName(
+                  hole.relativeHoleScore,
+                );
 
                 return Card(
                   margin: const EdgeInsets.symmetric(
@@ -155,13 +163,13 @@ class _RoundReviewScreenState extends State<RoundReviewScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${hole.throws.length}',
+                              '${hole.holeScore}',
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             Text(
                               scoreName,
                               style: TextStyle(
-                                color: _getScoreColor(score),
+                                color: _getScoreColor(hole.relativeHoleScore),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -181,28 +189,22 @@ class _RoundReviewScreenState extends State<RoundReviewScreen> {
 
                               return ListTile(
                                 leading: Icon(
-                                  _getThrowTypeIcon(discThrow.throwType),
+                                  _getThrowTypeIcon(discThrow.purpose),
                                 ),
                                 title: Text(
-                                  'Throw ${throwIndex + 1}: ${discThrow.discName ?? "Unknown disc"}',
+                                  'Throw ${throwIndex + 1}${discThrow.technique != null ? ': ${throwTechniqueToName[discThrow.technique]}' : ''}',
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('${discThrow.distance} ft'),
-                                    if (discThrow.description != null)
-                                      Text(
-                                        discThrow.description!,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                    if (discThrow.result != null)
-                                      Chip(
-                                        label: Text(discThrow.result!),
-                                        materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
+                                    Text('${discThrow.distanceFeet} ft'),
+                                    // if (discThrow.description != null)
+                                    //   Text(
+                                    //     discThrow.description!,
+                                    //     style: Theme.of(
+                                    //       context,
+                                    //     ).textTheme.bodySmall,
+                                    //   ),
                                   ],
                                 ),
                                 trailing: IconButton(

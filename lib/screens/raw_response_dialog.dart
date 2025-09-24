@@ -12,7 +12,7 @@ class RawResponseDialog extends StatelessWidget {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Raw Gemini Response'),
+          Expanded(child: const Text('Raw Gemini Response')),
           IconButton(
             icon: const Icon(Icons.copy),
             onPressed: () {
