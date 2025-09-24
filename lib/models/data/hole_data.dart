@@ -17,6 +17,16 @@ class DGHole {
   final int feet;
   final List<DiscThrow> throws;
 
+  int get holeScore =>
+      (throws.length +
+              throws.fold(
+                0,
+                (prev, current) => prev + (current.penaltyStrokes ?? 0),
+              ))
+          .toInt();
+
+  int get relativeHoleScore => holeScore - par;
+
   factory DGHole.fromJson(Map<String, dynamic> json) => _$DGHoleFromJson(json);
 
   Map<String, dynamic> toJson() => _$DGHoleToJson(this);

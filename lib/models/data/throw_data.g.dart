@@ -7,83 +7,67 @@ part of 'throw_data.dart';
 // **************************************************************************
 
 DiscThrow _$DiscThrowFromJson(Map json) => DiscThrow(
-  distance: (json['distance'] as num).toInt(),
-  discName: json['discName'] as String?,
-  discId: json['discId'] as String?,
-  throwType: $enumDecodeNullable(
-    _$DiscThrowTypeEnumMap,
-    json['throwType'],
-    unknownValue: DiscThrowType.other,
+  index: (json['index'] as num).toInt(),
+  purpose: $enumDecodeNullable(_$ThrowPurposeEnumMap, json['purpose']),
+  technique: $enumDecodeNullable(_$ThrowTechniqueEnumMap, json['technique']),
+  puttStyle: $enumDecodeNullable(_$PuttStyleEnumMap, json['puttStyle']),
+  shotShape: $enumDecodeNullable(_$ShotShapeEnumMap, json['shotShape']),
+  stance: $enumDecodeNullable(_$StanceTypeEnumMap, json['stance']),
+  power: $enumDecodeNullable(_$ThrowPowerEnumMap, json['power']),
+  distanceFeet: (json['distanceFeet'] as num?)?.toInt(),
+  elevationChangeFeet: (json['elevationChangeFeet'] as num?)?.toDouble(),
+  windDirection: $enumDecodeNullable(
+    _$WindDirectionEnumMap,
+    json['windDirection'],
   ),
-  technique: $enumDecodeNullable(
-    _$ThrowTechniqueEnumMap,
-    json['technique'],
-    unknownValue: ThrowTechnique.other,
-  ),
-  shotType: $enumDecodeNullable(
-    _$ShotTypeEnumMap,
-    json['shotType'],
-    unknownValue: ShotType.other,
-  ),
-  stance: $enumDecodeNullable(
-    _$StanceTypeEnumMap,
-    json['stance'],
-    unknownValue: StanceType.other,
-  ),
-  conditions: const ShotConditionListConverter().fromJson(
-    json['conditions'] as List?,
-  ),
-  windCondition: $enumDecodeNullable(
-    _$WindConditionEnumMap,
-    json['windCondition'],
-    unknownValue: WindCondition.other,
+  windStrength: $enumDecodeNullable(
+    _$WindStrengthEnumMap,
+    json['windStrength'],
   ),
   resultRating: $enumDecodeNullable(
     _$ThrowResultRatingEnumMap,
     json['resultRating'],
   ),
-  landingZone: $enumDecodeNullable(
-    _$LandingZoneEnumMap,
-    json['landingZone'],
-    unknownValue: LandingZone.other,
+  landingSpot: $enumDecodeNullable(_$LandingSpotEnumMap, json['landingSpot']),
+  fairwayWidth: $enumDecodeNullable(
+    _$FairwayWidthEnumMap,
+    json['fairwayWidth'],
   ),
-  distanceFromBasketBefore: (json['distanceFromBasketBefore'] as num?)?.toInt(),
-  distanceFromBasketAfter: (json['distanceFromBasketAfter'] as num?)?.toInt(),
-  description: json['description'] as String?,
-  result: json['result'] as String?,
-  madeShot: json['madeShot'] as bool?,
-  obPenalty: json['obPenalty'] as bool?,
+  penaltyStrokes: (json['penaltyStrokes'] as num?)?.toInt(),
   notes: json['notes'] as String?,
+  rawText: json['rawText'] as String?,
+  parseConfidence: (json['parseConfidence'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$DiscThrowToJson(DiscThrow instance) => <String, dynamic>{
-  'distance': instance.distance,
-  'discName': instance.discName,
-  'discId': instance.discId,
-  'throwType': _$DiscThrowTypeEnumMap[instance.throwType],
+  'index': instance.index,
+  'purpose': _$ThrowPurposeEnumMap[instance.purpose],
   'technique': _$ThrowTechniqueEnumMap[instance.technique],
-  'shotType': _$ShotTypeEnumMap[instance.shotType],
+  'puttStyle': _$PuttStyleEnumMap[instance.puttStyle],
+  'shotShape': _$ShotShapeEnumMap[instance.shotShape],
   'stance': _$StanceTypeEnumMap[instance.stance],
-  'conditions': const ShotConditionListConverter().toJson(instance.conditions),
-  'windCondition': _$WindConditionEnumMap[instance.windCondition],
+  'power': _$ThrowPowerEnumMap[instance.power],
+  'distanceFeet': instance.distanceFeet,
+  'elevationChangeFeet': instance.elevationChangeFeet,
+  'windDirection': _$WindDirectionEnumMap[instance.windDirection],
+  'windStrength': _$WindStrengthEnumMap[instance.windStrength],
   'resultRating': _$ThrowResultRatingEnumMap[instance.resultRating],
-  'landingZone': _$LandingZoneEnumMap[instance.landingZone],
-  'distanceFromBasketBefore': instance.distanceFromBasketBefore,
-  'distanceFromBasketAfter': instance.distanceFromBasketAfter,
-  'madeShot': instance.madeShot,
-  'obPenalty': instance.obPenalty,
-  'description': instance.description,
-  'result': instance.result,
+  'landingSpot': _$LandingSpotEnumMap[instance.landingSpot],
+  'fairwayWidth': _$FairwayWidthEnumMap[instance.fairwayWidth],
+  'penaltyStrokes': instance.penaltyStrokes,
   'notes': instance.notes,
+  'rawText': instance.rawText,
+  'parseConfidence': instance.parseConfidence,
 };
 
-const _$DiscThrowTypeEnumMap = {
-  DiscThrowType.drive: 'drive',
-  DiscThrowType.approach: 'approach',
-  DiscThrowType.putt: 'putt',
-  DiscThrowType.fairway: 'fairway',
-  DiscThrowType.upshot: 'upshot',
-  DiscThrowType.other: 'other',
+const _$ThrowPurposeEnumMap = {
+  ThrowPurpose.teeDrive: 'tee_drive',
+  ThrowPurpose.fairwayDrive: 'fairway_drive',
+  ThrowPurpose.approach: 'approach',
+  ThrowPurpose.putt: 'putt',
+  ThrowPurpose.scramble: 'scramble',
+  ThrowPurpose.penalty: 'penalty',
+  ThrowPurpose.other: 'other',
 };
 
 const _$ThrowTechniqueEnumMap = {
@@ -91,67 +75,92 @@ const _$ThrowTechniqueEnumMap = {
   ThrowTechnique.forehand: 'forehand',
   ThrowTechnique.tomahawk: 'tomahawk',
   ThrowTechnique.thumber: 'thumber',
+  ThrowTechnique.overhand: 'overhand',
   ThrowTechnique.backhandRoller: 'backhand_roller',
   ThrowTechnique.forehandRoller: 'forehand_roller',
-  ThrowTechnique.putt: 'putt',
-  ThrowTechnique.jumpPutt: 'jump_putt',
-  ThrowTechnique.stepPutt: 'step_putt',
-  ThrowTechnique.turboPutt: 'turbo_putt',
-  ThrowTechnique.straddlePutt: 'straddle_putt',
+  ThrowTechnique.grenade: 'grenade',
   ThrowTechnique.other: 'other',
 };
 
-const _$ShotTypeEnumMap = {
-  ShotType.hyzer: 'hyzer',
-  ShotType.anhyzer: 'anhyzer',
-  ShotType.hyzerFlip: 'hyzer_flip',
-  ShotType.flexShot: 'flex_shot',
-  ShotType.flat: 'flat',
-  ShotType.spikeHyzer: 'spike_hyzer',
-  ShotType.grenade: 'grenade',
-  ShotType.skyAnhyzer: 'sky_anhyzer',
-  ShotType.other: 'other',
+const _$PuttStyleEnumMap = {
+  PuttStyle.staggered: 'staggered',
+  PuttStyle.straddle: 'straddle',
+  PuttStyle.jumpPutt: 'jump_putt',
+  PuttStyle.stepPutt: 'step_putt',
+  PuttStyle.other: 'other',
+};
+
+const _$ShotShapeEnumMap = {
+  ShotShape.hyzer: 'hyzer',
+  ShotShape.anhyzer: 'anhyzer',
+  ShotShape.hyzerFlip: 'hyzer_flip',
+  ShotShape.turnover: 'turnover',
+  ShotShape.flat: 'flat',
+  ShotShape.flexShot: 'flex_shot',
+  ShotShape.spikeHyzer: 'spike_hyzer',
+  ShotShape.skyAnhyzer: 'sky_anhyzer',
+  ShotShape.roller: 'roller',
+  ShotShape.pitch: 'pitch',
+  ShotShape.skip: 'skip',
+  ShotShape.other: 'other',
 };
 
 const _$StanceTypeEnumMap = {
   StanceType.standstill: 'standstill',
   StanceType.xStep: 'x_step',
-  StanceType.runUp: 'run_up',
-  StanceType.straddle: 'straddle',
-  StanceType.jump: 'jump',
-  StanceType.stepThrough: 'step_through',
+  StanceType.patentPending: 'patent_pending',
   StanceType.other: 'other',
 };
 
-const _$WindConditionEnumMap = {
-  WindCondition.headwind: 'headwind',
-  WindCondition.tailwind: 'tailwind',
-  WindCondition.leftToRightCrosswind: 'left_to_right_crosswind',
-  WindCondition.rightToLeftCrosswind: 'right_to_left_crosswind',
-  WindCondition.other: 'other',
+const _$ThrowPowerEnumMap = {
+  ThrowPower.putt: 'putt',
+  ThrowPower.soft: 'soft',
+  ThrowPower.controlled: 'controlled',
+  ThrowPower.full: 'full',
+  ThrowPower.max: 'max',
+  ThrowPower.other: 'other',
+};
+
+const _$WindDirectionEnumMap = {
+  WindDirection.none: 'none',
+  WindDirection.headwind: 'headwind',
+  WindDirection.tailwind: 'tailwind',
+  WindDirection.leftToRight: 'left_to_right',
+  WindDirection.rightToLeft: 'right_to_left',
+  WindDirection.swirling: 'swirling',
+  WindDirection.other: 'other',
+};
+
+const _$WindStrengthEnumMap = {
+  WindStrength.calm: 'calm',
+  WindStrength.light: 'light',
+  WindStrength.moderate: 'moderate',
+  WindStrength.strong: 'strong',
+  WindStrength.extreme: 'extreme',
 };
 
 const _$ThrowResultRatingEnumMap = {
-  ThrowResultRating.terrible: 1,
-  ThrowResultRating.poor: 2,
-  ThrowResultRating.average: 3,
-  ThrowResultRating.good: 4,
-  ThrowResultRating.excellent: 5,
+  ThrowResultRating.terrible: 'terrible',
+  ThrowResultRating.poor: 'poor',
+  ThrowResultRating.average: 'average',
+  ThrowResultRating.good: 'good',
+  ThrowResultRating.excellent: 'excellent',
 };
 
-const _$LandingZoneEnumMap = {
-  LandingZone.circle1: 'circle_1',
-  LandingZone.circle2: 'circle_2',
-  LandingZone.fairway: 'fairway',
-  LandingZone.rough: 'rough',
-  LandingZone.ob: 'ob',
-  LandingZone.water: 'water',
-  LandingZone.sand: 'sand',
-  LandingZone.basket: 'basket',
-  LandingZone.pinHigh: 'pin_high',
-  LandingZone.short: 'short',
-  LandingZone.long: 'long',
-  LandingZone.left: 'left',
-  LandingZone.right: 'right',
-  LandingZone.other: 'other',
+const _$LandingSpotEnumMap = {
+  LandingSpot.inBasket: 'in_basket',
+  LandingSpot.parked: 'parked',
+  LandingSpot.circle1: 'circle_1',
+  LandingSpot.circle2: 'circle_2',
+  LandingSpot.fairway: 'fairway',
+  LandingSpot.offFairway: 'off_fairway',
+  LandingSpot.outOfBounds: 'out_of_bounds',
+  LandingSpot.other: 'other',
+};
+
+const _$FairwayWidthEnumMap = {
+  FairwayWidth.open: 'open',
+  FairwayWidth.moderate: 'moderate',
+  FairwayWidth.tight: 'tight',
+  FairwayWidth.veryTight: 'very_tight',
 };
