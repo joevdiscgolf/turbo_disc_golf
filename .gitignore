@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase
+# Note: GoogleService-Info.plist and google-services.json are safe to commit
+# They contain public API keys, not secrets
+# Only exclude if you have environment-specific configs
+# firebase_options.dart
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

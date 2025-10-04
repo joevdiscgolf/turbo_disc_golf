@@ -27,7 +27,7 @@ class RoundReviewScreen extends StatefulWidget {
 
 class _RoundReviewScreenState extends State<RoundReviewScreen>
     with SingleTickerProviderStateMixin {
-  static const bool showGptScreen = true;
+  static const bool showGptScreen = false;
   late DGRound _round;
   late TabController _tabController;
 

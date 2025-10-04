@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:yaml/yaml.dart';
+import 'package:uuid/uuid.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -121,6 +122,10 @@ class GeminiService {
 
       // Convert YamlMap to regular Map<String, dynamic>
       final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
+
+      // Generate UUID v4 for the round
+      const uuid = Uuid();
+      jsonMap['id'] = uuid.v4();
 
       print('YAML parsed successfully, converting to DGRound...');
       return DGRound.fromJson(jsonMap);
