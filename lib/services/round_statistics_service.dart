@@ -1,7 +1,9 @@
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
+import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
 
 /// Service for calculating round statistics based on outcomes (not AI ratings)
 class RoundStatisticsService {
@@ -437,6 +439,379 @@ class RoundStatisticsService {
     }
 
     return problems;
+  }
+
+  /// Get birdie rates for each throw type used off the tee
+  Map<String, double> getTeeShotBirdieRates() {
+    final Map<String, List<DGHole>> teeThrowsByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      // Get the tee shot (first throw, index 0)
+      final teeShot = hole.throws.first;
+
+      if (teeShot.technique != null) {
+        final throwType = teeShot.technique!.name;
+        teeThrowsByType.putIfAbsent(throwType, () => []);
+        teeThrowsByType[throwType]!.add(hole);
+      }
+    }
+
+    // Calculate birdie percentage for each throw type
+    return teeThrowsByType.map((throwType, holes) {
+      final birdieCount = holes.where((hole) => hole.relativeHoleScore < 0).length;
+      final birdieRate = holes.isNotEmpty ? (birdieCount / holes.length) * 100 : 0.0;
+      return MapEntry(throwType, birdieRate);
+    });
+  }
+
+  /// Get comprehensive putting summary with C1/C2 breakdown and distance buckets
+  PuttStats getPuttingSummary() {
+    int c1Makes = 0;
+    int c1Misses = 0;
+    int c2Makes = 0;
+    int c2Misses = 0;
+
+    final List<double> makeDistances = [];
+    final List<double> missDistances = [];
+    final List<double> allDistances = [];
+
+    // Bucket definitions: 0-10ft, 11-20ft, 21-33ft (C1), 34-45ft, 46-66ft (C2)
+    final Map<String, List<DiscThrow>> buckets = {
+      '0-10 ft': [],
+      '11-20 ft': [],
+      '21-33 ft': [],
+      '34-45 ft': [],
+      '46-66 ft': [],
+    };
+
+    // Collect all putts and classify them
+    for (var hole in round.holes) {
+      for (var discThrow in hole.throws) {
+        if (discThrow.purpose == ThrowPurpose.putt && discThrow.distanceFeet != null) {
+          final distance = discThrow.distanceFeet!;
+          final made = discThrow.landingSpot == LandingSpot.inBasket;
+          allDistances.add(distance.toDouble());
+
+          // Classify into C1/C2
+          if (distance <= 33) {
+            if (made) {
+              c1Makes++;
+              makeDistances.add(distance.toDouble());
+            } else {
+              c1Misses++;
+              missDistances.add(distance.toDouble());
+            }
+          } else if (distance <= 66) {
+            if (made) {
+              c2Makes++;
+              makeDistances.add(distance.toDouble());
+            } else {
+              c2Misses++;
+              missDistances.add(distance.toDouble());
+            }
+          }
+
+          // Classify into buckets
+          if (distance <= 10) {
+            buckets['0-10 ft']!.add(discThrow);
+          } else if (distance <= 20) {
+            buckets['11-20 ft']!.add(discThrow);
+          } else if (distance <= 33) {
+            buckets['21-33 ft']!.add(discThrow);
+          } else if (distance <= 45) {
+            buckets['34-45 ft']!.add(discThrow);
+          } else if (distance <= 66) {
+            buckets['46-66 ft']!.add(discThrow);
+          }
+        }
+      }
+    }
+
+    // Calculate bucket stats
+    final bucketStatsMap = <String, PuttBucketStats>{};
+    buckets.forEach((label, putts) {
+      if (putts.isEmpty) return;
+
+      final makes = putts.where((p) => p.landingSpot == LandingSpot.inBasket).length;
+      final misses = putts.length - makes;
+      final avgDistance = putts.fold<double>(
+            0.0,
+            (sum, p) => sum + (p.distanceFeet?.toDouble() ?? 0.0),
+          ) /
+          putts.length;
+
+      bucketStatsMap[label] = PuttBucketStats(
+        label: label,
+        makes: makes,
+        misses: misses,
+        avgDistance: avgDistance,
+      );
+    });
+
+    final avgMakeDistance = makeDistances.isNotEmpty
+        ? makeDistances.reduce((a, b) => a + b) / makeDistances.length
+        : 0.0;
+
+    final avgMissDistance = missDistances.isNotEmpty
+        ? missDistances.reduce((a, b) => a + b) / missDistances.length
+        : 0.0;
+
+    final avgAttemptDistance = allDistances.isNotEmpty
+        ? allDistances.reduce((a, b) => a + b) / allDistances.length
+        : 0.0;
+
+    return PuttStats(
+      c1Makes: c1Makes,
+      c1Misses: c1Misses,
+      c2Makes: c2Makes,
+      c2Misses: c2Misses,
+      avgMakeDistance: avgMakeDistance,
+      avgMissDistance: avgMissDistance,
+      avgAttemptDistance: avgAttemptDistance,
+      bucketStats: bucketStatsMap,
+    );
+  }
+
+  /// Get average distance of made putts on birdie holes
+  double getAverageBirdiePuttDistance() {
+    final List<double> birdiePuttDistances = [];
+
+    for (var hole in round.holes) {
+      // Only consider birdie holes
+      if (hole.relativeHoleScore >= 0) continue;
+
+      // Find the made putt on this hole
+      for (var discThrow in hole.throws) {
+        if (discThrow.purpose == ThrowPurpose.putt &&
+            discThrow.landingSpot == LandingSpot.inBasket &&
+            discThrow.distanceFeet != null) {
+          birdiePuttDistances.add(discThrow.distanceFeet!.toDouble());
+          break; // Only count the made putt
+        }
+      }
+    }
+
+    if (birdiePuttDistances.isEmpty) return 0.0;
+
+    return birdiePuttDistances.reduce((a, b) => a + b) /
+        birdiePuttDistances.length;
+  }
+
+  /// Get UDisc-style core performance metrics
+  /// Optionally filter by disc
+  CoreStats getCoreStats({DGDisc? filterDisc}) {
+    int fairwayHits = 0;
+    int parked = 0;
+    int c1InReg = 0;
+    int c2InReg = 0;
+    int validHoles = 0;
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      // Check if we should consider this hole based on disc filter
+      bool holeHasFilteredDisc = false;
+      if (filterDisc != null) {
+        for (var discThrow in hole.throws) {
+          final discName = _extractDiscName(discThrow);
+          if (discName != null &&
+              (discName.toLowerCase() == filterDisc.name.toLowerCase() ||
+                  discName.toLowerCase() ==
+                      filterDisc.moldName?.toLowerCase())) {
+            holeHasFilteredDisc = true;
+            break;
+          }
+        }
+        if (!holeHasFilteredDisc) continue;
+      }
+
+      validHoles++;
+
+      // Get tee shot (first throw)
+      final teeShot = hole.throws.first;
+
+      // Fairway hit: tee shot landed on fairway or was parked
+      if (teeShot.landingSpot == LandingSpot.fairway ||
+          teeShot.landingSpot == LandingSpot.parked) {
+        fairwayHits++;
+      }
+
+      // Parked: tee shot landed ≤10ft from basket
+      if (teeShot.landingSpot == LandingSpot.parked) {
+        parked++;
+      }
+
+      // C1 in Regulation: reached Circle 1 in ≤(par-1) strokes
+      // C2 in Regulation: reached Circle 2 in ≤(par-1) strokes
+      final regulationStrokes = hole.par - 1;
+      for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+        final discThrow = hole.throws[i];
+        if (discThrow.landingSpot == LandingSpot.circle1 ||
+            discThrow.landingSpot == LandingSpot.parked) {
+          c1InReg++;
+          c2InReg++; // C1 also counts as C2
+          break;
+        } else if (discThrow.landingSpot == LandingSpot.circle2) {
+          c2InReg++;
+          break;
+        }
+      }
+    }
+
+    final totalHoles = filterDisc != null ? validHoles : round.holes.length;
+
+    return CoreStats(
+      fairwayHitPct: totalHoles > 0 ? (fairwayHits / totalHoles) * 100 : 0.0,
+      parkedPct: totalHoles > 0 ? (parked / totalHoles) * 100 : 0.0,
+      c1InRegPct: totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0,
+      c2InRegPct: totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0,
+      totalHoles: totalHoles,
+    );
+  }
+
+  /// Get summary of miss reasons across the round
+  Map<LossReason, int> getMissReasonSummary() {
+    final Map<LossReason, int> reasonCounts = {};
+
+    for (var hole in round.holes) {
+      for (var discThrow in hole.throws) {
+        // Use GPT analysis service to determine loss reason
+        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+
+        // Only count non-none loss reasons
+        if (analysis.lossReason != LossReason.none) {
+          reasonCounts[analysis.lossReason] =
+              (reasonCounts[analysis.lossReason] ?? 0) + 1;
+        }
+      }
+    }
+
+    return reasonCounts;
+  }
+
+  /// Get major mistakes grouped by disc
+  List<DiscMistake> getMajorMistakesByDisc() {
+    final Map<String, List<LossReason>> mistakesByDisc = {};
+
+    for (var hole in round.holes) {
+      for (var discThrow in hole.throws) {
+        // Use GPT analysis service to determine execution category
+        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+
+        // Only count bad or severe mistakes
+        if (analysis.execCategory == ExecCategory.bad ||
+            analysis.execCategory == ExecCategory.severe) {
+          final discName = _extractDiscName(discThrow);
+          if (discName != null) {
+            mistakesByDisc.putIfAbsent(discName, () => []);
+            mistakesByDisc[discName]!.add(analysis.lossReason);
+          }
+        }
+      }
+    }
+
+    // Convert to list of DiscMistake objects
+    final List<DiscMistake> mistakes = [];
+    mistakesByDisc.forEach((discName, reasons) {
+      mistakes.add(DiscMistake(
+        discName: discName,
+        mistakeCount: reasons.length,
+        reasons: reasons.map((r) => r.name).toList(),
+      ));
+    });
+
+    // Sort by mistake count (descending)
+    mistakes.sort((a, b) => b.mistakeCount.compareTo(a.mistakeCount));
+
+    return mistakes;
+  }
+
+  /// Get categorized mistake types with counts and percentages
+  List<MistakeTypeSummary> getMistakeTypes() {
+    final Map<String, int> mistakeTypeCounts = {};
+    int totalMistakes = 0;
+
+    for (var hole in round.holes) {
+      for (var discThrow in hole.throws) {
+        // Use GPT analysis service to determine execution category
+        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+
+        // Only count bad or severe mistakes
+        if (analysis.execCategory == ExecCategory.bad ||
+            analysis.execCategory == ExecCategory.severe) {
+          totalMistakes++;
+
+          // Create descriptive label
+          String label = _createMistakeLabel(discThrow, analysis);
+
+          mistakeTypeCounts[label] = (mistakeTypeCounts[label] ?? 0) + 1;
+        }
+      }
+    }
+
+    // Convert to list of MistakeTypeSummary objects
+    final List<MistakeTypeSummary> summaries = [];
+    mistakeTypeCounts.forEach((label, count) {
+      final percentage =
+          totalMistakes > 0 ? (count / totalMistakes) * 100 : 0.0;
+      summaries.add(MistakeTypeSummary(
+        label: label,
+        count: count,
+        percentage: percentage,
+      ));
+    });
+
+    // Sort by count (descending)
+    summaries.sort((a, b) => b.count.compareTo(a.count));
+
+    return summaries;
+  }
+
+  /// Helper method to create descriptive mistake labels
+  String _createMistakeLabel(DiscThrow discThrow, ThrowAnalysis analysis) {
+    // Start with the loss reason
+    String label = GPTAnalysisService.describeLossReason(analysis.lossReason);
+
+    // Add throw technique if available
+    if (discThrow.technique != null) {
+      final technique = discThrow.technique!.name.capitalize();
+      label = '$technique - $label';
+    }
+
+    // Add throw purpose for context
+    if (discThrow.purpose != null) {
+      switch (discThrow.purpose) {
+        case ThrowPurpose.putt:
+          if (discThrow.distanceFeet != null) {
+            if (discThrow.distanceFeet! <= 10) {
+              label = 'Missed C1 putt';
+            } else if (discThrow.distanceFeet! <= 33) {
+              label = 'Missed C2 putt (inside C1)';
+            } else {
+              label = 'Missed long putt';
+            }
+          }
+          break;
+        case ThrowPurpose.teeDrive:
+          if (analysis.lossReason == LossReason.outOfBounds) {
+            label = 'OB tee shot';
+          } else if (analysis.lossReason == LossReason.poorDrive) {
+            label = 'Poor tee shot';
+          }
+          break;
+        case ThrowPurpose.approach:
+          if (analysis.lossReason == LossReason.missedApproach) {
+            label = 'Missed approach';
+          }
+          break;
+        default:
+          break;
+      }
+    }
+
+    return label;
   }
 }
 

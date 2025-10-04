@@ -123,7 +123,7 @@ class RoundParser extends ChangeNotifier {
       );
     }).toList();
 
-    return DGRound(course: round.course, holes: enhancedHoles);
+    return DGRound(id: round.id, course: round.course, holes: enhancedHoles);
   }
 
   void updateHole(int holeIndex, DGHole updatedHole) {
@@ -131,7 +131,11 @@ class RoundParser extends ChangeNotifier {
       final updatedHoles = List<DGHole>.from(_parsedRound!.holes);
       updatedHoles[holeIndex] = updatedHole;
 
-      _parsedRound = DGRound(course: _parsedRound!.course, holes: updatedHoles);
+      _parsedRound = DGRound(
+        id: _parsedRound!.id,
+        course: _parsedRound!.course,
+        holes: updatedHoles,
+      );
 
       notifyListeners();
     }

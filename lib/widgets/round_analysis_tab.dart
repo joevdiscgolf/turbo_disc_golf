@@ -19,6 +19,15 @@ class RoundAnalysisTab extends StatelessWidget {
     final approachStats = statsService.getTechniqueStats(ThrowPurpose.approach);
     final problemAreas = statsService.getProblemAreas();
 
+    // New analysis methods
+    final teeShotRates = statsService.getTeeShotBirdieRates();
+    final putting = statsService.getPuttingSummary();
+    final avgBirdiePuttDist = statsService.getAverageBirdiePuttDistance();
+    final coreStats = statsService.getCoreStats();
+    final missSummary = statsService.getMissReasonSummary();
+    final discMistakes = statsService.getMajorMistakesByDisc();
+    final mistakeTypes = statsService.getMistakeTypes();
+
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [

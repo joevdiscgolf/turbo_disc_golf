@@ -5,8 +5,9 @@ part 'round_data.g.dart';
 
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class DGRound {
-  const DGRound({required this.course, required this.holes});
+  const DGRound({required this.id, required this.course, required this.holes});
 
+  final String id;
   final String? course;
   final List<DGHole> holes;
 

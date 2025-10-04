@@ -7,6 +7,7 @@ part of 'round_data.dart';
 // **************************************************************************
 
 DGRound _$DGRoundFromJson(Map json) => DGRound(
+  id: json['id'] as String,
   course: json['course'] as String?,
   holes: (json['holes'] as List<dynamic>)
       .map((e) => DGHole.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -14,6 +15,7 @@ DGRound _$DGRoundFromJson(Map json) => DGRound(
 );
 
 Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{
+  'id': instance.id,
   'course': instance.course,
   'holes': instance.holes.map((e) => e.toJson()).toList(),
 };
