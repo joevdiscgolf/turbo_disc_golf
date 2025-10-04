@@ -23,7 +23,9 @@ class GeminiService {
           // Special handling for names with numbers like circle1 -> circle_1
           String snakeCase = str
               .replaceAllMapped(
-                RegExp(r'([a-z])([0-9])'), // lowercase letter followed by number
+                RegExp(
+                  r'([a-z])([0-9])',
+                ), // lowercase letter followed by number
                 (Match m) => '${m[1]}_${m[2]}',
               )
               .replaceAllMapped(
@@ -38,7 +40,7 @@ class GeminiService {
 
   GeminiService({String? apiKey}) {
     _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash-lite',
       apiKey: apiKey ?? _defaultApiKey,
       generationConfig: GenerationConfig(
         temperature: 0.3, // Lower temperature for more consistent parsing
@@ -122,8 +124,9 @@ class GeminiService {
 
       print('YAML parsed successfully, converting to DGRound...');
       return DGRound.fromJson(jsonMap);
-    } catch (e) {
+    } catch (e, trace) {
       print('Error parsing round with Gemini: $e');
+      print(trace);
       if (e.toString().contains('API key')) {
         throw Exception('API Key Error: $e');
       }
@@ -242,36 +245,55 @@ CRITICAL DISTANCE RULES:
 - Exception: "Gimme" or "drop in" ALWAYS = distanceFeet: 3
 
 CRITICAL THROW COUNTING - REASON THROUGH EACH HOLE:
+SCORE-FIRST VALIDATION: When the player states their score (birdie, par, bogey, eagle, etc.), that is the GROUND TRUTH.
+- Calculate the expected throw count from the stated score FIRST
+- Then ensure you parse EXACTLY that many throws
+- If you can't find enough throws, you MISSED one - re-analyze the description
+- Examples: "for par" on par 3 = 3 throws, "for birdie" on par 3 = 2 throws, "for birdie" on par 4 = 3 throws
+
 For EVERY hole, count throws carefully by analyzing the narrative:
 1. Start with the tee shot (index 0)
 2. Track each subsequent throw mentioned - NEVER combine multiple throws into one
 3. NEVER put information about a second throw in the notes of the first throw
+   - WRONG: "ended up 25 ft long and I missed the putt" in one throw's notes
+   - CORRECT: First throw notes "ended up 25 ft long", SEPARATE throw for "missed the putt"
 4. EVERY HOLE MUST END WITH landingSpot: in_basket - holes must be completed!
-5. "Took a bogey/par/birdie" = they FINISHED the hole, add final made putt if missing
+5. "Took a bogey/par/birdie" or "for par/birdie/bogey" = they FINISHED the hole, add final made putt if missing
 6. Pay special attention to phrases that indicate multiple throws:
    - "Two putts" or "two-putted" = ALWAYS 2 separate putt throws (NEVER combine!)
    - "Three putts" = ALWAYS 3 separate putt throws
+   - "Missed the putt" or "I missed the putt" = ALWAYS a separate throw (don't put this in notes of previous throw!)
    - "Missed the putt, tapped in" = 2 separate throws (missed putt + tap-in)
    - "Missed the par putt, took bogey" = 2 throws (missed + made final putt)
    - "Made the comeback putt" = 2 putts (first missed + comeback made)
+   - "so I got to par/birdie/bogey" = they finished the hole, verify throw count matches stated score
    - "Two putts for par/birdie/bogey" = ALWAYS create 2 separate putt entries
-   - "so I laid up" = a separate layup/approach throw AFTER the previous throw
-   - "Tap in" or "tapped in" = always a separate throw (ALWAYS use 8 feet for tap-in distance)
+   - "so I laid up" or "had to lay up" = a separate layup/approach throw AFTER the previous throw
+   - "laid up and tapped in" = 2 SEPARATE throws (layup + tap-in, NEVER combine these!)
+   - "which left me a [distance] putt" = the previous action was a SEPARATE throw
+   - "and tap that in" or "and tapped that in" = ALWAYS a separate throw from the previous
+   - "Tap in" or "tapped in" or "tap that in" = ALWAYS a separate throw (ALWAYS use 8 feet for tap-in distance)
    - "Pitch out" = a separate approach/scramble throw
    - "Scrambled" = a recovery throw
+   CRITICAL: When you see "laid up" followed by "tap in", you MUST create two separate throw entries!
+   CRITICAL: When you see "which left me" or "left me a putt", the previous action was a separate throw!
    CRITICAL: When you see "two putts", you MUST create two separate throw entries!
+   CRITICAL: "and tap that in for [score]" almost NEVER means hole-in-one - it's a separate tap-in after previous throw(s)!
 7. Handle penalties correctly:
    - "OB" or "out of bounds" = Add penaltyStrokes: 1 to that throw
    - "Water hazard" or "lost disc" = Add penaltyStrokes: 1 to that throw
    - Re-tee after OB = The re-tee is a separate throw (don't add penalty there)
-8. Verify throw count matches the score (counting penalties):
+8. ALWAYS VERIFY throw count matches the score (counting penalties):
    - Eagle on par 5 = exactly 3 throws
    - Birdie on par 5 = exactly 4 throws
-   - Birdie on par 4 = exactly 3 throws
-   - Birdie on par 3 = exactly 2 throws
-   - Par on par 3 = exactly 3 throws (or 2 throws + 1 penalty)
+   - Birdie on par 4 = exactly 3 throws (NOT 2!)
+   - Birdie on par 3 = exactly 2 throws (NOT 1!)
+   - Par on par 4 = exactly 4 throws (NOT 3!)
+   - Par on par 3 = exactly 3 throws (NOT 2!) (or 2 throws + 1 penalty)
    - Bogey on par 3 = exactly 4 throws (or 3 throws + 1 penalty)
    - LAST THROW MUST HAVE landingSpot: in_basket
+   - If your throw count doesn't match the score, you MISSED A THROW - go back and find it!
+   - BEFORE returning results, count your throws and verify they match the stated score!
 
 
 EXAMPLES FROM YOUR ACTUAL MISTAKES:
@@ -334,6 +356,33 @@ CORRECT (4 throws for birdie on par 5):
 - index 1: Second shot (caught tree, landed short)
 - index 2: Layup shot (the "so I laid up" is a SEPARATE throw)
 - index 3: Tap-in for birdie, distanceFeet: 8, landingSpot: in_basket
+
+Hole 13: "400 ft par 4. Threw instinct backhand but headwind flipped it into tree so I laid up and tap that in for birdie"
+YOUR MISTAKE: Combined layup and tap-in into one throw (only 2 throws = eagle, not birdie!)
+CORRECT (3 throws for birdie on par 4):
+- index 0: Tee drive, notes: "flipped it into the tree", landingSpot: off_fairway
+- index 1: Layup (the "so I laid up" is throw #2)
+- index 2: Tap-in for birdie (the "tap that in" is throw #3), distanceFeet: 8, landingSpot: in_basket
+
+Hole 14: "230 ft Par 3. Pulled my forehand to the left off the tee and hit a tree so I had to lay up which left me a 32 ft putt for par which I made"
+YOUR MISTAKE: Missing layup - only counted 2 throws (tee + putt) instead of 3
+CORRECT (3 throws for par on par 3):
+- index 0: Tee shot, technique: forehand, notes: "pulled left, hit tree", landingSpot: off_fairway
+- index 1: Layup (the "had to lay up" is a separate throw #2)
+- index 2: Made putt, distanceFeet: 32, notes: "putt for par", landingSpot: in_basket
+
+Hole 15: "250 ft tunnel shot. Threw a perfect backhand shot with my tactic and tap that in for birdie"
+YOUR MISTAKE: Put "tap that in for birdie" in the notes of tee shot, making it look like ace (1 throw)
+CORRECT (2 throws for birdie on par 3):
+- index 0: Tee shot, technique: backhand, notes: "perfect shot down the tunnel", landingSpot: parked
+- index 1: Tap-in for birdie (the "tap that in" is throw #2), distanceFeet: 8, landingSpot: in_basket
+
+Hole 16: "340 ft downhill Par 3. Threw a forehand with a destroyer and ended up 25 ft long and I missed the putt because it went straight through the basket so I got to par on that hole"
+YOUR MISTAKE: Put "missed the putt" info in tee shot notes, only counted 2 throws instead of 3
+CORRECT (3 throws for par on par 3):
+- index 0: Tee shot, technique: forehand, notes: "ended up 25 ft long", landingSpot: circle_1
+- index 1: Missed putt (the "I missed the putt" is throw #2), distanceFeet: 25, notes: "went straight through the basket"
+- index 2: Made par putt (the "got to par" is throw #3), distanceFeet: 8, landingSpot: in_basket
 
 ENUM CATEGORY EXAMPLES - CORRECT USAGE:
 Example: "Threw a backhand flex shot"

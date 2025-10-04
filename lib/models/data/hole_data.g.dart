@@ -9,7 +9,7 @@ part of 'hole_data.dart';
 DGHole _$DGHoleFromJson(Map json) => DGHole(
   number: (json['number'] as num).toInt(),
   par: (json['par'] as num).toInt(),
-  feet: (json['feet'] as num).toInt(),
+  feet: (json['feet'] as num?)?.toInt(),
   throws: (json['throws'] as List<dynamic>)
       .map((e) => DiscThrow.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
