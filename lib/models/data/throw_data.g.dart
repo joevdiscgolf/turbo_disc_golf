@@ -37,6 +37,9 @@ DiscThrow _$DiscThrowFromJson(Map json) => DiscThrow(
   notes: json['notes'] as String?,
   rawText: json['rawText'] as String?,
   parseConfidence: (json['parseConfidence'] as num?)?.toDouble(),
+  disc: json['disc'] == null
+      ? null
+      : DGDisc.fromJson(Map<String, dynamic>.from(json['disc'] as Map)),
 );
 
 Map<String, dynamic> _$DiscThrowToJson(DiscThrow instance) => <String, dynamic>{
@@ -58,6 +61,7 @@ Map<String, dynamic> _$DiscThrowToJson(DiscThrow instance) => <String, dynamic>{
   'notes': instance.notes,
   'rawText': instance.rawText,
   'parseConfidence': instance.parseConfidence,
+  'disc': instance.disc?.toJson(),
 };
 
 const _$ThrowPurposeEnumMap = {

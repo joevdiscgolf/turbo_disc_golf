@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/data/disc_data.dart';
 
 part 'throw_data.g.dart';
 
@@ -23,6 +24,7 @@ class DiscThrow {
     this.notes,
     this.rawText,
     this.parseConfidence,
+    this.disc,
   });
 
   /// 0-based throw index within the hole (0 = tee throw, 1 = second throw, ...)
@@ -51,6 +53,7 @@ class DiscThrow {
   final String? notes; // short human-friendly note
   final String? rawText; // original sentence/snippet parsed
   final double? parseConfidence;
+  final DGDisc? disc;
 
   factory DiscThrow.fromJson(Map<String, dynamic> json) =>
       _$DiscThrowFromJson(json);

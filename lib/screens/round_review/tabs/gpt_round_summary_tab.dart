@@ -5,16 +5,16 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
 
-class GPTRoundSummaryScreen extends StatefulWidget {
+class GPTRoundSummaryTab extends StatefulWidget {
   final DGRound round;
 
-  const GPTRoundSummaryScreen({super.key, required this.round});
+  const GPTRoundSummaryTab({super.key, required this.round});
 
   @override
-  GPTRoundSummaryScreenState createState() => GPTRoundSummaryScreenState();
+  GPTRoundSummaryTabState createState() => GPTRoundSummaryTabState();
 }
 
-class GPTRoundSummaryScreenState extends State<GPTRoundSummaryScreen> {
+class GPTRoundSummaryTabState extends State<GPTRoundSummaryTab> {
   late RoundAnalysis analysis;
 
   @override

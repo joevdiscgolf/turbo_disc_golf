@@ -4,10 +4,12 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/round_storage_service.dart';
 
 class RoundParser extends ChangeNotifier {
   final GeminiService _geminiService;
   final BagService _bagService;
+  final RoundStorageService _storageService;
 
   DGRound? _parsedRound;
   bool _isProcessing = false;
@@ -16,8 +18,10 @@ class RoundParser extends ChangeNotifier {
   RoundParser({
     required GeminiService geminiService,
     required BagService bagService,
-  }) : _geminiService = geminiService,
-       _bagService = bagService;
+    RoundStorageService? storageService,
+  })  : _geminiService = geminiService,
+        _bagService = bagService,
+        _storageService = storageService ?? RoundStorageService();
 
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
@@ -26,6 +30,7 @@ class RoundParser extends ChangeNotifier {
   Future<bool> parseVoiceTranscript(
     String transcript, {
     String? courseName,
+    bool useSharedPreferences = false,
   }) async {
     if (transcript.trim().isEmpty) {
       _lastError = 'Transcript is empty';
@@ -34,6 +39,7 @@ class RoundParser extends ChangeNotifier {
     }
 
     print('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
+    print('Use shared preferences: $useSharedPreferences');
     print('Transcript length: ${transcript.length} characters');
     print('Course name: ${courseName ?? "Not specified"}');
     print('Raw transcript:');
@@ -45,6 +51,26 @@ class RoundParser extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // If using shared preferences, try to load cached round first
+      if (useSharedPreferences) {
+        print('Attempting to load round from shared preferences...');
+        final cachedRound = await _storageService.loadRound();
+
+        if (cachedRound != null) {
+          print('Successfully loaded cached round from shared preferences');
+          _parsedRound = cachedRound;
+          _isProcessing = false;
+          notifyListeners();
+          return true;
+        } else {
+          print('No cached round found in shared preferences');
+          _lastError = 'No cached round found. Parse a round first.';
+          _isProcessing = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
       // Load user's bag if not already loaded
       if (_bagService.userBag.isEmpty) {
         await _bagService.loadBag();
@@ -71,6 +97,15 @@ class RoundParser extends ChangeNotifier {
 
       // Validate and enhance the parsed data
       _parsedRound = _validateAndEnhanceRound(_parsedRound!);
+
+      // Save to shared preferences for future use
+      print('Saving parsed round to shared preferences...');
+      final saved = await _storageService.saveRound(_parsedRound!);
+      if (saved) {
+        print('Successfully saved round to shared preferences');
+      } else {
+        print('Failed to save round to shared preferences');
+      }
 
       _isProcessing = false;
       notifyListeners();
