@@ -438,7 +438,7 @@ class GPTAnalysisService {
               reason: reason,
               title: 'Short putting (≤10 ft) misses',
               summary:
-                  'You missed ${n} short putts — these are high-impact mistakes that are usually fixable with short practice.',
+                  'You missed $n short putts — these are high-impact mistakes that are usually fixable with short practice.',
               drills: [
                 'Tap & Step: 5 sets × 10 reps from 8–10 ft (goal: 80% makes)',
                 'Pressure Ladder: 2-in-a-row to advance distance; repeat 10 times',

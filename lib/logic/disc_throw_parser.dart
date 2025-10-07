@@ -348,14 +348,17 @@ class DiscThrowParser {
   }
 
   static WindDirection? _matchWindDirection(String t) {
-    if (t.contains('headwind') || t.contains('head breeze'))
+    if (t.contains('headwind') || t.contains('head breeze')) {
       return WindDirection.headwind;
-    if (t.contains('tailwind') || t.contains('tail breeze'))
+    }
+    if (t.contains('tailwind') || t.contains('tail breeze')) {
       return WindDirection.tailwind;
+    }
     if (t.contains('left to right')) return WindDirection.leftToRight;
     if (t.contains('right to left')) return WindDirection.rightToLeft;
-    if (t.contains('swirl') || t.contains('gust'))
+    if (t.contains('swirl') || t.contains('gust')) {
       return WindDirection.swirling;
+    }
     return null;
   }
 

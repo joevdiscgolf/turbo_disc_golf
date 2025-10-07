@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/round_review_stat_card.dart';
+import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 
 /// Tab 3: Detailed analysis with disc performance and technique breakdowns
 class RoundAnalysisTab extends StatelessWidget {
@@ -29,18 +28,18 @@ class RoundAnalysisTab extends StatelessWidget {
     final List<String> problemAreas = statsService.getProblemAreas();
 
     // new analysis
-    final Map<String, double> teeShotBirdieRates = statsService
-        .getTeeShotBirdieRates();
-    final PuttStats puttingSummary = statsService.getPuttingSummary();
-    final double avgBirdiePuttDist = statsService
-        .getAverageBirdiePuttDistance();
-    final CoreStats coreStats = statsService.getCoreStats();
-    final Map<LossReason, int> missSummary = statsService
-        .getMissReasonSummary();
-    final List<DiscMistake> discMistakes = statsService
-        .getMajorMistakesByDisc();
-    final List<MistakeTypeSummary> mistakeTypes = statsService
-        .getMistakeTypes();
+    // final Map<String, double> teeShotBirdieRates = statsService
+    //     .getTeeShotBirdieRates();
+    // final PuttStats puttingSummary = statsService.getPuttingSummary();
+    // final double avgBirdiePuttDist = statsService
+    //     .getAverageBirdiePuttDistance();
+    // final CoreStats coreStats = statsService.getCoreStats();
+    // final Map<LossReason, int> missSummary = statsService
+    //     .getMissReasonSummary();
+    // final List<DiscMistake> discMistakes = statsService
+    //     .getMajorMistakesByDisc();
+    // final List<MistakeTypeSummary> mistakeTypes = statsService
+    //     .getMistakeTypes();
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),

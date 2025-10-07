@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 
@@ -12,7 +13,7 @@ class RoundStorageService {
       final jsonString = json.encode(round.toJson());
       return await prefs.setString(_cachedRoundKey, jsonString);
     } catch (e) {
-      print('Error saving round to shared preferences: $e');
+      debugPrint('Error saving round to shared preferences: $e');
       return false;
     }
   }
@@ -31,7 +32,7 @@ class RoundStorageService {
       final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
       return DGRound.fromJson(jsonMap);
     } catch (e) {
-      print('Error loading round from shared preferences: $e');
+      debugPrint('Error loading round from shared preferences: $e');
       return null;
     }
   }
@@ -42,7 +43,7 @@ class RoundStorageService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey(_cachedRoundKey);
     } catch (e) {
-      print('Error checking for cached round: $e');
+      debugPrint('Error checking for cached round: $e');
       return false;
     }
   }
@@ -53,7 +54,7 @@ class RoundStorageService {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.remove(_cachedRoundKey);
     } catch (e) {
-      print('Error clearing cached round: $e');
+      debugPrint('Error clearing cached round: $e');
       return false;
     }
   }

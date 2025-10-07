@@ -345,7 +345,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
                               trailing: IconButton(
                                 icon: const Icon(Icons.edit),
                                 onPressed: () {
-                                  // TODO: Implement throw editing
+                                  // todo: Implement throw editing
                                 },
                               ),
                             );
@@ -395,7 +395,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: () {
-              // TODO: Implement save functionality
+              // todo: Implement save functionality
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('Round saved!')));

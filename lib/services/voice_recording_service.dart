@@ -16,49 +16,50 @@ class VoiceRecordingService extends ChangeNotifier {
 
   Future<bool> initialize() async {
     try {
-      print('=== Initializing Voice Recording Service ===');
+      debugPrint('=== Initializing Voice Recording Service ===');
 
       // Check current microphone permission status
-      print('Checking microphone permission...');
+      debugPrint('Checking microphone permission...');
       var status = await Permission.microphone.status;
-      print('Current microphone permission status: $status');
+      debugPrint('Current microphone permission status: $status');
 
       // For debug mode - try requesting even if "permanently denied"
       // This can happen if the permission was never actually shown
       if (status == PermissionStatus.permanentlyDenied ||
           status == PermissionStatus.denied ||
           status == PermissionStatus.restricted) {
-        print('Permission not granted, requesting...');
+        debugPrint('Permission not granted, requesting...');
         status = await Permission.microphone.request();
-        print('New microphone permission status after request: $status');
+        debugPrint('New microphone permission status after request: $status');
 
         // Check if we actually got a proper response
         if (status == PermissionStatus.permanentlyDenied) {
           // Try speech recognition permission as well
-          print('Also checking speech recognition permission...');
+          debugPrint('Also checking speech recognition permission...');
           final speechStatus = await Permission.speech.request();
-          print('Speech recognition permission: $speechStatus');
+          debugPrint('Speech recognition permission: $speechStatus');
         }
       }
 
       if (status != PermissionStatus.granted) {
-        _lastError = 'Microphone permission: $status. Try deleting and reinstalling the app.';
-        print('ERROR: $_lastError');
+        _lastError =
+            'Microphone permission: $status. Try deleting and reinstalling the app.';
+        debugPrint('ERROR: $_lastError');
         notifyListeners();
         return false;
       }
 
       // Initialize speech to text
-      print('Initializing speech recognition...');
+      debugPrint('Initializing speech recognition...');
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
           _lastError = error.errorMsg;
           _isListening = false;
-          print('Speech recognition error: $_lastError');
+          debugPrint('Speech recognition error: $_lastError');
           notifyListeners();
         },
         onStatus: (status) {
-          print('Speech recognition status: $status');
+          debugPrint('Speech recognition status: $status');
           if (status == 'done' || status == 'notListening') {
             _isListening = false;
             notifyListeners();
@@ -68,70 +69,74 @@ class VoiceRecordingService extends ChangeNotifier {
 
       if (!_isInitialized) {
         _lastError = 'Speech recognition not available';
-        print('ERROR: $_lastError');
+        debugPrint('ERROR: $_lastError');
       } else {
-        print('Speech recognition initialized successfully');
+        debugPrint('Speech recognition initialized successfully');
       }
 
       notifyListeners();
       return _isInitialized;
     } catch (e) {
       _lastError = e.toString();
-      print('ERROR during initialization: $_lastError');
+      debugPrint('ERROR during initialization: $_lastError');
       notifyListeners();
       return false;
     }
   }
 
   Future<void> startListening() async {
-    print('=== Starting voice recording ===');
+    debugPrint('=== Starting voice recording ===');
 
     if (!_isInitialized) {
-      print('Not initialized, initializing now...');
+      debugPrint('Not initialized, initializing now...');
       await initialize();
     }
 
     if (_isInitialized && !_isListening) {
       _transcribedText = ''; // Clear previous text
       _lastError = '';
-      print('Starting speech recognition...');
+      debugPrint('Starting speech recognition...');
 
       try {
         await _speechToText.listen(
           onResult: (result) {
             _transcribedText = result.recognizedWords;
-            print('=== VOICE TRANSCRIPT UPDATE ===');
-            print('Raw text: ${result.recognizedWords}');
-            print('Is final: ${result.finalResult}');
-            print('===============================');
+            debugPrint('=== VOICE TRANSCRIPT UPDATE ===');
+            debugPrint('Raw text: ${result.recognizedWords}');
+            debugPrint('Is final: ${result.finalResult}');
+            debugPrint('===============================');
             notifyListeners();
           },
-          listenFor: const Duration(minutes: 10), // Extended duration for full round description
+          listenFor: const Duration(minutes: 10),
           pauseFor: const Duration(seconds: 3),
-          partialResults: true,
-          listenMode: ListenMode.dictation, // Better for longer form speech
+          listenOptions: SpeechListenOptions(
+            listenMode: ListenMode.dictation,
+            partialResults: true,
+          ),
         );
 
         _isListening = true;
-        print('Speech recognition started successfully');
+        debugPrint('Speech recognition started successfully');
         notifyListeners();
       } catch (e) {
         _lastError = 'Failed to start listening: $e';
-        print('ERROR: $_lastError');
+        debugPrint('ERROR: $_lastError');
         notifyListeners();
       }
     } else {
-      print('Cannot start listening - Initialized: $_isInitialized, Already listening: $_isListening');
+      debugPrint(
+        'Cannot start listening - Initialized: $_isInitialized, Already listening: $_isListening',
+      );
     }
   }
 
   Future<void> stopListening() async {
-    print('=== Stopping voice recording ===');
+    debugPrint('=== Stopping voice recording ===');
     if (_isListening) {
       await _speechToText.stop();
       _isListening = false;
-      print('Speech recognition stopped');
-      print('Final transcript: $_transcribedText');
+      debugPrint('Speech recognition stopped');
+      debugPrint('Final transcript: $_transcribedText');
       notifyListeners();
     }
   }
