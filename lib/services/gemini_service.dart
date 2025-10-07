@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:yaml/yaml.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
@@ -66,7 +67,7 @@ class GeminiService {
       }
 
       final prompt = _buildPrompt(voiceTranscript, userBag, courseName);
-      print('Sending request to Gemini...');
+      debugPrint('Sending request to Gemini...');
       final response = await _model.generateContent([Content.text(prompt)]);
 
       if (response.text == null) {
@@ -76,9 +77,11 @@ class GeminiService {
       // Store the raw response
       _lastRawResponse = response.text;
 
-      print('Gemini response received, parsing YAML...');
-      print('==================== RAW GEMINI RESPONSE ====================');
-      // Print in chunks to avoid truncation
+      debugPrint('Gemini response received, parsing YAML...');
+      debugPrint(
+        '==================== RAW GEMINI RESPONSE ====================',
+      );
+      // debugPrint in chunks to avoid truncation
       String responseText = response.text!;
       const chunkSize =
           800; // Flutter's console typically truncates around 1024 chars
@@ -86,10 +89,12 @@ class GeminiService {
         final end = (i + chunkSize < responseText.length)
             ? i + chunkSize
             : responseText.length;
-        print(responseText.substring(i, end));
+        debugPrint(responseText.substring(i, end));
       }
-      print('==============================================================');
-      print('Response length: ${responseText.length} characters');
+      debugPrint(
+        '==============================================================',
+      );
+      debugPrint('Response length: ${responseText.length} characters');
 
       // Clean up the response - remove markdown code blocks if present
       responseText = responseText.trim();
@@ -113,20 +118,20 @@ class GeminiService {
             .trim();
       }
 
-      print('Cleaned response for parsing...');
+      debugPrint('Cleaned response for parsing...');
 
       // Parse the YAML response
-      print('Parsing YAML response...');
+      debugPrint('Parsing YAML response...');
       final yamlDoc = loadYaml(responseText);
 
       // Convert YamlMap to regular Map<String, dynamic>
       final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
 
-      print('YAML parsed successfully, converting to DGRound...');
+      debugPrint('YAML parsed successfully, converting to DGRound...');
       return DGRound.fromJson(jsonMap);
     } catch (e, trace) {
-      print('Error parsing round with Gemini: $e');
-      print(trace);
+      debugPrint('Error parsing round with Gemini: $e');
+      debugPrint(trace.toString());
       if (e.toString().contains('API key')) {
         throw Exception('API Key Error: $e');
       }
@@ -479,7 +484,7 @@ $schemaExample
       ]);
       return response.text?.contains('OK') ?? false;
     } catch (e) {
-      print('Gemini connection test failed: $e');
+      debugPrint('Gemini connection test failed: $e');
       return false;
     }
   }

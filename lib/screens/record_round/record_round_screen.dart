@@ -185,30 +185,30 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
     setState(() {});
   }
 
-  void _parseRound() async {
-    if (_transcriptController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please record or enter a round description'),
-        ),
-      );
-      return;
-    }
+  // void _parseRound() async {
+  //   if (_transcriptController.text.isEmpty) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //         content: Text('Please record or enter a round description'),
+  //       ),
+  //     );
+  //     return;
+  //   }
 
-    await _roundParser.parseVoiceTranscript(
-      _transcriptController.text,
-      courseName: _courseNameController.text.isNotEmpty
-          ? _courseNameController.text
-          : null,
-      useSharedPreferences: _useSharedPreferences,
-    );
+  //   await _roundParser.parseVoiceTranscript(
+  //     _transcriptController.text,
+  //     courseName: _courseNameController.text.isNotEmpty
+  //         ? _courseNameController.text
+  //         : null,
+  //     useSharedPreferences: _useSharedPreferences,
+  //   );
 
-    if (_roundParser.lastError.isNotEmpty && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
-    }
-  }
+  //   if (_roundParser.lastError.isNotEmpty && mounted) {
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

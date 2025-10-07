@@ -224,9 +224,9 @@ class RoundStatsTab extends StatelessWidget {
     if (diff < 5) {
       return 'Both techniques are performing similarly.';
     } else if (diff < 15) {
-      return '${winner} is performing slightly better for birdie opportunities.';
+      return '$winner is performing slightly better for birdie opportunities.';
     } else {
-      return '${winner} is significantly more effective for birdie opportunities!';
+      return '$winner is significantly more effective for birdie opportunities!';
     }
   }
 }

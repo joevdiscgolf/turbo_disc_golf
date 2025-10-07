@@ -30,7 +30,7 @@ class GPTRoundSummaryTabState extends State<GPTRoundSummaryTab> {
       (p, h) => p + h.holeScore,
     );
     final totalPar = widget.round.holes.fold<int>(0, (p, h) => p + h.par);
-    final scoreText = '${totalScore} (par ${totalPar})';
+    final scoreText = '$totalScore (par $totalPar)';
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(12),
@@ -118,7 +118,7 @@ class GPTRoundSummaryTabState extends State<GPTRoundSummaryTab> {
               SizedBox(width: 8),
               _kpiCard(
                 'Drive Fairway %',
-                _calcDriveFairwayPct(analysis).toStringAsFixed(0) + '%',
+                '${_calcDriveFairwayPct(analysis).toStringAsFixed(0)}%',
               ),
             ],
           ),
@@ -149,11 +149,7 @@ class GPTRoundSummaryTabState extends State<GPTRoundSummaryTab> {
             'Top coaching suggestions',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          ...analysis.coachingCards
-              .take(3)
-              .map((c) => _coachingCard(c))
-              .toList(),
-
+          ...analysis.coachingCards.take(3).map((c) => _coachingCard(c)),
           SizedBox(height: 24),
         ],
       ),
@@ -330,17 +326,15 @@ class GPTRoundSummaryTabState extends State<GPTRoundSummaryTab> {
             SizedBox(height: 8),
             Text(c.summary),
             SizedBox(height: 8),
-            ...c.drills
-                .map(
-                  (d) => Row(
-                    children: [
-                      Icon(Icons.fitness_center, size: 14),
-                      SizedBox(width: 6),
-                      Expanded(child: Text(d)),
-                    ],
-                  ),
-                )
-                .toList(),
+            ...c.drills.map(
+              (d) => Row(
+                children: [
+                  Icon(Icons.fitness_center, size: 14),
+                  SizedBox(width: 6),
+                  Expanded(child: Text(d)),
+                ],
+              ),
+            ),
             SizedBox(height: 8),
             Row(
               children: [

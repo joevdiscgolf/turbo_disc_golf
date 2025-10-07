@@ -25,8 +25,9 @@ class RoundStatisticsService {
     // Bad outcomes = failure
     if (discThrow.landingSpot == LandingSpot.outOfBounds) return false;
     if (discThrow.landingSpot == LandingSpot.offFairway) return false;
-    if (discThrow.penaltyStrokes != null && discThrow.penaltyStrokes! > 0)
+    if (discThrow.penaltyStrokes != null && discThrow.penaltyStrokes! > 0) {
       return false;
+    }
 
     // Hole resulted in birdie and this was tee shot or approach = success
     if (hole.relativeHoleScore < 0 &&
@@ -510,9 +511,7 @@ class RoundStatisticsService {
         final throwType = teeShot.technique!.name;
         birdieDetailsByType.putIfAbsent(throwType, () => []);
 
-        birdieDetailsByType[throwType]!.add(
-          MapEntry(hole, teeShot),
-        );
+        birdieDetailsByType[throwType]!.add(MapEntry(hole, teeShot));
       }
     }
 
