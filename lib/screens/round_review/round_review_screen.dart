@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/gpt_round_summary_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/gpt_round_summary_tab.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/naming_constants.dart';
-import 'package:turbo_disc_golf/widgets/round_stats_tab.dart';
-import 'package:turbo_disc_golf/widgets/round_analysis_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_analysis_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/deep_analysis_tab.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   final DGRound round;
@@ -27,7 +28,7 @@ class RoundReviewScreen extends StatefulWidget {
 
 class _RoundReviewScreenState extends State<RoundReviewScreen>
     with SingleTickerProviderStateMixin {
-  static const bool showGptScreen = true;
+  static const bool showGptScreen = false;
   late DGRound _round;
   late TabController _tabController;
 
@@ -35,7 +36,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
   void initState() {
     super.initState();
     _round = widget.round;
-    _tabController = TabController(length: showGptScreen ? 2 : 3, vsync: this);
+    _tabController = TabController(length: showGptScreen ? 2 : 4, vsync: this);
   }
 
   @override
@@ -270,6 +271,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
         // Holes list
         Expanded(
           child: ListView.builder(
+            padding: const EdgeInsets.only(top: 8),
             itemCount: _round.holes.length,
             itemBuilder: (context, index) {
               final DGHole hole = _round.holes[index];
@@ -411,6 +413,8 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             Tab(icon: Icon(Icons.list), text: 'Throws'),
             if (!showGptScreen) Tab(icon: Icon(Icons.bar_chart), text: 'Stats'),
             Tab(icon: Icon(Icons.insights), text: 'Analysis'),
+            if (!showGptScreen)
+              Tab(icon: Icon(Icons.science), text: 'Deep Analysis'),
           ],
         ),
       ),
@@ -420,7 +424,8 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
           _buildThrowsTab(),
           if (!showGptScreen) RoundStatsTab(round: _round),
           if (!showGptScreen) RoundAnalysisTab(round: _round),
-          if (showGptScreen) GPTRoundSummaryScreen(round: _round),
+          if (!showGptScreen) DeepAnalysisTab(round: _round),
+          if (showGptScreen) GPTRoundSummaryTab(round: _round),
         ],
       ),
     );

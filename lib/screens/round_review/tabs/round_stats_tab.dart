@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
-import 'package:turbo_disc_golf/widgets/stat_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/components/round_review_stat_card.dart';
 
 /// Tab 2: Performance Overview with key statistics
 class RoundStatsTab extends StatelessWidget {
@@ -21,7 +21,7 @@ class RoundStatsTab extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
         // Scoring Summary Card
-        StatCard(
+        RoundReviewStatCard(
           title: 'Scoring Summary',
           icon: Icons.emoji_events,
           accentColor: Theme.of(context).colorScheme.primary,
@@ -30,32 +30,36 @@ class RoundStatsTab extends StatelessWidget {
               label: 'Birdies',
               percentage: scoringStats.birdieRate,
               color: const Color(0xFF00F5D4),
-              subtitle: '${scoringStats.birdies} of ${scoringStats.totalHoles} holes',
+              subtitle:
+                  '${scoringStats.birdies} of ${scoringStats.totalHoles} holes',
             ),
             PercentageBar(
               label: 'Pars',
               percentage: scoringStats.parRate,
               color: const Color(0xFFF5F5F5),
-              subtitle: '${scoringStats.pars} of ${scoringStats.totalHoles} holes',
+              subtitle:
+                  '${scoringStats.pars} of ${scoringStats.totalHoles} holes',
             ),
             PercentageBar(
               label: 'Bogeys',
               percentage: scoringStats.bogeyRate,
               color: const Color(0xFFFF7A7A),
-              subtitle: '${scoringStats.bogeys} of ${scoringStats.totalHoles} holes',
+              subtitle:
+                  '${scoringStats.bogeys} of ${scoringStats.totalHoles} holes',
             ),
             if (scoringStats.doubleBogeyPlus > 0)
               PercentageBar(
                 label: 'Double Bogey+',
                 percentage: scoringStats.doubleBogeyPlusRate,
                 color: const Color(0xFFFF4444),
-                subtitle: '${scoringStats.doubleBogeyPlus} of ${scoringStats.totalHoles} holes',
+                subtitle:
+                    '${scoringStats.doubleBogeyPlus} of ${scoringStats.totalHoles} holes',
               ),
           ],
         ),
 
         // Tee Shot Performance
-        StatCard(
+        RoundReviewStatCard(
           title: 'Tee Shot Performance',
           icon: Icons.sports_golf,
           accentColor: Theme.of(context).colorScheme.secondary,
@@ -74,9 +78,9 @@ class RoundStatsTab extends StatelessWidget {
               Text(
                 _getTeeShotInsight(teeComparison),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ] else ...[
               Center(
@@ -93,7 +97,7 @@ class RoundStatsTab extends StatelessWidget {
         ),
 
         // Putting Performance
-        StatCard(
+        RoundReviewStatCard(
           title: 'Putting Performance',
           icon: Icons.flag,
           accentColor: const Color(0xFF9D7FFF),
@@ -140,7 +144,7 @@ class RoundStatsTab extends StatelessWidget {
         ),
 
         // Fairway & Scramble Performance
-        StatCard(
+        RoundReviewStatCard(
           title: 'Course Management',
           icon: Icons.terrain,
           accentColor: const Color(0xFF10E5FF),
@@ -149,8 +153,7 @@ class RoundStatsTab extends StatelessWidget {
               MetricTile(
                 icon: Icons.refresh,
                 label: 'Scramble Success',
-                value:
-                    '${scrambleStats.scrambleRate.toStringAsFixed(0)}%',
+                value: '${scrambleStats.scrambleRate.toStringAsFixed(0)}%',
                 iconColor: scrambleStats.scrambleRate >= 50
                     ? const Color(0xFF00F5D4)
                     : const Color(0xFFFF7A7A),
@@ -184,9 +187,9 @@ class RoundStatsTab extends StatelessWidget {
                       Text(
                         'Clean round - no scrambles needed!',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: const Color(0xFF00F5D4),
-                              fontWeight: FontWeight.bold,
-                            ),
+                          color: const Color(0xFF00F5D4),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),

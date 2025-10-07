@@ -3,7 +3,7 @@ import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
-import 'package:turbo_disc_golf/screens/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 
 const String testRoundDescription = '''
 Hole 1 was a 350 foot par 3. I threw my Star Destroyer with a backhand hyzer about 300 feet, ended up in circle 1. Made the putt with my Judge for birdie.
@@ -64,14 +64,14 @@ const testRoundDescriptions = [
   testRoundDescription4,
 ];
 
-class VoiceRecordingScreen extends StatefulWidget {
-  const VoiceRecordingScreen({super.key});
+class RecordRoundScreen extends StatefulWidget {
+  const RecordRoundScreen({super.key});
 
   @override
-  State<VoiceRecordingScreen> createState() => _VoiceRecordingScreenState();
+  State<RecordRoundScreen> createState() => _RecordRoundScreenState();
 }
 
-class _VoiceRecordingScreenState extends State<VoiceRecordingScreen>
+class _RecordRoundScreenState extends State<RecordRoundScreen>
     with SingleTickerProviderStateMixin {
   static const descriptionIndex = 1;
   String get getCorrectTestDescription =>
@@ -84,6 +84,7 @@ class _VoiceRecordingScreenState extends State<VoiceRecordingScreen>
   final TextEditingController _transcriptController = TextEditingController();
   final TextEditingController _courseNameController = TextEditingController();
   bool _testMode = false;
+  bool _useSharedPreferences = false;
 
   @override
   void initState() {
@@ -199,6 +200,7 @@ class _VoiceRecordingScreenState extends State<VoiceRecordingScreen>
       courseName: _courseNameController.text.isNotEmpty
           ? _courseNameController.text
           : null,
+      useSharedPreferences: _useSharedPreferences,
     );
 
     if (_roundParser.lastError.isNotEmpty && mounted) {
@@ -257,6 +259,33 @@ class _VoiceRecordingScreenState extends State<VoiceRecordingScreen>
               ],
             ),
 
+            const SizedBox(height: 8),
+
+            // Use Shared Preferences toggle
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Use Shared Preferences',
+                  style: TextStyle(fontSize: 16),
+                ),
+                Switch(
+                  value: _useSharedPreferences,
+                  onChanged: (value) {
+                    setState(() {
+                      _useSharedPreferences = value;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                const Tooltip(
+                  message:
+                      'Load cached round from storage instead of calling Gemini',
+                  child: Icon(Icons.info_outline, size: 16),
+                ),
+              ],
+            ),
+
             // Test Parse button - only visible in test mode
             if (_testMode) ...[
               ElevatedButton.icon(
@@ -266,9 +295,11 @@ class _VoiceRecordingScreenState extends State<VoiceRecordingScreen>
                         // Parse the test constant directly
                         await _roundParser.parseVoiceTranscript(
                           getCorrectTestDescription,
-                          courseName: _courseNameController.text.isNotEmpty
-                              ? _courseNameController.text
-                              : null,
+                          courseName: 'Test course',
+                          // _courseNameController.text.isNotEmpty
+                          //     ? _courseNameController.text
+                          //     : null,
+                          useSharedPreferences: _useSharedPreferences,
                         );
 
                         if (_roundParser.lastError.isNotEmpty &&

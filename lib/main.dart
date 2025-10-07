@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/screens/voice_recording_screen.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,9 +17,13 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
         useMaterial3: true,
         colorScheme: ColorScheme.dark(
-          primary: const Color(0xFF9D7FFF), // Brighter purple (30% more vibrant)
+          primary: const Color(
+            0xFF9D7FFF,
+          ), // Brighter purple (30% more vibrant)
           secondary: const Color(0xFF10E5FF), // Brighter electric blue
-          surface: const Color(0xFF242938), // Lighter surface for better separation
+          surface: const Color(
+            0xFF242938,
+          ), // Lighter surface for better separation
           error: const Color(0xFFFF7A7A), // Brighter warm red
           onPrimary: const Color(0xFFF5F5F5), // 96% white (WCAG AAA)
           onSecondary: const Color(0xFFF5F5F5), // 96% white
@@ -81,13 +85,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF10E5FF),
-          ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF10E5FF)),
         ),
-        iconTheme: const IconThemeData(
-          color: Color(0xFFF5F5F5),
-        ),
+        iconTheme: const IconThemeData(color: Color(0xFFF5F5F5)),
       ),
       home: const MyHomePage(title: 'Turbo Disc Golf'),
     );
@@ -116,9 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
+      appBar: AppBar(title: Text(widget.title)),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -144,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const VoiceRecordingScreen(),
+                    builder: (context) => const RecordRoundScreen(),
                   ),
                 );
               },
