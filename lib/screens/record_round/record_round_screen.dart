@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
 const String testRoundDescription = '''
 Hole 1 was a 350 foot par 3. I threw my Star Destroyer with a backhand hyzer about 300 feet, ended up in circle 1. Made the putt with my Judge for birdie.
@@ -107,6 +109,11 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
     // Listen to voice service changes
     _voiceService.addListener(_onVoiceServiceChange);
     _roundParser.addListener(_onParserChange);
+
+    print('loading firestore rounds');
+    locator.get<FirestoreRoundService>().getRounds().then((rounds) {
+      debugPrint('Firestore rounds: ${rounds.length}');
+    });
   }
 
   Future<void> _initializeServices() async {

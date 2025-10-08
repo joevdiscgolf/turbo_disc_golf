@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
@@ -102,11 +104,20 @@ class RoundParser extends ChangeNotifier {
 
       // Save to shared preferences for future use
       debugPrint('Saving parsed round to shared preferences...');
-      final saved = await _storageService.saveRound(_parsedRound!);
-      if (saved) {
+      final savedLocally = await _storageService.saveRound(_parsedRound!);
+      if (savedLocally) {
         debugPrint('Successfully saved round to shared preferences');
       } else {
         debugPrint('Failed to save round to shared preferences');
+      }
+
+      // Save to Firestore
+      debugPrint('Saving parsed round to Firestore...');
+      final firestoreSuccess = await locator.get<FirestoreRoundService>().addRound(_parsedRound!);
+      if (firestoreSuccess) {
+        debugPrint('Successfully saved round to Firestore');
+      } else {
+        debugPrint('Failed to save round to Firestore');
       }
 
       _isProcessing = false;
@@ -160,7 +171,7 @@ class RoundParser extends ChangeNotifier {
       );
     }).toList();
 
-    return DGRound(course: round.course, holes: enhancedHoles);
+    return DGRound(course: round.course, holes: enhancedHoles, id: round.id);
   }
 
   void updateHole(int holeIndex, DGHole updatedHole) {
@@ -168,7 +179,11 @@ class RoundParser extends ChangeNotifier {
       final updatedHoles = List<DGHole>.from(_parsedRound!.holes);
       updatedHoles[holeIndex] = updatedHole;
 
-      _parsedRound = DGRound(course: _parsedRound!.course, holes: updatedHoles);
+      _parsedRound = DGRound(
+        course: _parsedRound!.course,
+        holes: updatedHoles,
+        id: _parsedRound!.id,
+      );
 
       notifyListeners();
     }

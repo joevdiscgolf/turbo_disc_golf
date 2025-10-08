@@ -1,11 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/firebase_options.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  setUpLocator();
+
   runApp(const MyApp());
 }
 
