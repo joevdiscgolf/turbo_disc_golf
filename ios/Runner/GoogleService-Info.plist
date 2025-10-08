@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyCrXOjDnt8fUnXCqD5DAH3CVEPa-6zc_dU</string>
+	<string>AIzaSyCRnqZxcFHpUylanlyst3c6vd2u3E9UYcw</string>
 	<key>GCM_SENDER_ID</key>
-	<string>205488838925</string>
+	<string>866559849247</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.example.turboDiscGolf</string>
 	<key>PROJECT_ID</key>
-	<string>turbo-disc-golf</string>
+	<string>turbo-disc-golf-v2</string>
 	<key>STORAGE_BUCKET</key>
-	<string>turbo-disc-golf.firebasestorage.app</string>
+	<string>turbo-disc-golf-v2.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:205488838925:ios:d2efe314c20395a44fb844</string>
+	<string>1:866559849247:ios:9ba0688e626c87e6a9362a</string>
 </dict>
 </plist>

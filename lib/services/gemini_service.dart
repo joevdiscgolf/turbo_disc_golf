@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:yaml/yaml.dart';
+import 'package:uuid/uuid.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -11,6 +12,7 @@ class GeminiService {
   late final GenerativeModel _model;
   static const String _defaultApiKey =
       'AIzaSyDGTZoOaO_U76ysJ5dG8Ohdc7B-soUn3rE'; // Replace with actual key
+  static const _uuid = Uuid();
 
   String? _lastRawResponse; // Store the last raw response
   String? get lastRawResponse => _lastRawResponse;
@@ -126,6 +128,8 @@ class GeminiService {
 
       // Convert YamlMap to regular Map<String, dynamic>
       final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
+
+      jsonMap['id'] = _uuid.v4();
 
       debugPrint('YAML parsed successfully, converting to DGRound...');
       return DGRound.fromJson(jsonMap);

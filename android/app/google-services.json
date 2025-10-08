@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "205488838925",
-    "project_id": "turbo-disc-golf",
-    "storage_bucket": "turbo-disc-golf.firebasestorage.app"
+    "project_number": "866559849247",
+    "project_id": "turbo-disc-golf-v2",
+    "storage_bucket": "turbo-disc-golf-v2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:205488838925:android:8d9764104334f4b64fb844",
+        "mobilesdk_app_id": "1:866559849247:android:7dcd86aa44873e7ba9362a",
         "android_client_info": {
           "package_name": "com.example.turbo_disc_golf"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDi5vzqbo48pYLZrUCJtKTnq8GZdv5E874"
+          "current_key": "AIzaSyCrgOXLEzTiXYOqGAOuyv1oNtlEXo34mKQ"
         }
       ],
       "services": {

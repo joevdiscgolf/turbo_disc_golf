@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDi5vzqbo48pYLZrUCJtKTnq8GZdv5E874',
-    appId: '1:205488838925:android:8d9764104334f4b64fb844',
-    messagingSenderId: '205488838925',
-    projectId: 'turbo-disc-golf',
-    storageBucket: 'turbo-disc-golf.firebasestorage.app',
+    apiKey: 'AIzaSyCrgOXLEzTiXYOqGAOuyv1oNtlEXo34mKQ',
+    appId: '1:866559849247:android:7dcd86aa44873e7ba9362a',
+    messagingSenderId: '866559849247',
+    projectId: 'turbo-disc-golf-v2',
+    storageBucket: 'turbo-disc-golf-v2.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCrXOjDnt8fUnXCqD5DAH3CVEPa-6zc_dU',
-    appId: '1:205488838925:ios:d2efe314c20395a44fb844',
-    messagingSenderId: '205488838925',
-    projectId: 'turbo-disc-golf',
-    storageBucket: 'turbo-disc-golf.firebasestorage.app',
+    apiKey: 'AIzaSyCRnqZxcFHpUylanlyst3c6vd2u3E9UYcw',
+    appId: '1:866559849247:ios:9ba0688e626c87e6a9362a',
+    messagingSenderId: '866559849247',
+    projectId: 'turbo-disc-golf-v2',
+    storageBucket: 'turbo-disc-golf-v2.firebasestorage.app',
     iosBundleId: 'com.example.turboDiscGolf',
   );
 }
