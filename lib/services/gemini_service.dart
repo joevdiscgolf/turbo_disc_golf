@@ -493,4 +493,127 @@ $schemaExample
       return false;
     }
   }
+
+  /// Generates AI summary and coaching based on round data and analysis
+  Future<Map<String, String>> generateRoundInsights({
+    required DGRound round,
+    required dynamic analysis, // RoundAnalysis
+  }) async {
+    try {
+      final prompt = _buildInsightsPrompt(round, analysis);
+
+      final content = [Content.text(prompt)];
+      final response = await _model.generateContent(content);
+
+      // Parse response which should be JSON with 'summary' and 'coaching' keys
+      final responseText = response.text ?? '{}';
+      debugPrint('Gemini insights response: $responseText');
+
+      try {
+        final jsonResponse = jsonDecode(responseText);
+        return {
+          'summary': jsonResponse['summary']?.toString() ?? '',
+          'coaching': jsonResponse['coaching']?.toString() ?? '',
+        };
+      } catch (jsonError) {
+        debugPrint('Failed to parse JSON response: $jsonError');
+        // Fallback: try to extract summary and coaching from markdown-style response
+        return _extractFromMarkdownResponse(responseText);
+      }
+    } catch (e) {
+      debugPrint('Error generating insights: $e');
+      return {'summary': '', 'coaching': ''};
+    }
+  }
+
+  Map<String, String> _extractFromMarkdownResponse(String text) {
+    // Try to extract from markdown headers
+    final summaryMatch = RegExp(
+      r'(?:^|\n)(?:##?\s*)?Summary[\s:]*\n([\s\S]*?)(?=\n(?:##?\s*)?(?:Coaching|Coach|$))',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    final coachingMatch = RegExp(
+      r'(?:^|\n)(?:##?\s*)?(?:Coaching|Coach)[\s:]*\n([\s\S]*?)$',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    return {
+      'summary': summaryMatch?.group(1)?.trim() ?? text,
+      'coaching': coachingMatch?.group(1)?.trim() ?? '',
+    };
+  }
+
+  String _buildInsightsPrompt(DGRound round, dynamic analysis) {
+    // Format disc performance data
+    final discPerf = (analysis.discPerformances as List)
+        .take(5)
+        .map((disc) =>
+            '- ${disc.discName}: ${disc.totalShots} throws, ${disc.goodPercentage.toStringAsFixed(0)}% good')
+        .join('\n');
+
+    // Format top mistakes
+    final topMistakes = (analysis.mistakeTypes as List)
+        .take(3)
+        .map((m) => '- ${m.label}: ${m.count} (${m.percentage.toStringAsFixed(0)}%)')
+        .join('\n');
+
+    return '''
+You are a professional disc golf coach analyzing a completed round. Based on the round data and statistics below, provide a comprehensive analysis in JSON format.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "summary": "2-3 paragraph summary here",
+  "coaching": "2-3 paragraph coaching recommendations here"
+}
+
+**Summary** should cover:
+- Overall performance (score relative to par: ${analysis.totalScoreRelativeToPar >= 0 ? '+' : ''}${analysis.totalScoreRelativeToPar})
+- What went well (successful shots, discs, techniques)
+- What didn't go well (mistakes, problem areas)
+- Strokes gained/lost by category
+- Disc performance highlights
+
+**Coaching** should cover:
+- Specific strategic changes for next round
+- Practice priorities based on weaknesses
+- Technique adjustments needed
+- Disc selection recommendations
+
+ROUND DATA:
+- Course: ${round.courseName}
+- Total Holes: ${round.holes.length}
+- Score: ${analysis.totalScoreRelativeToPar >= 0 ? '+' : ''}${analysis.totalScoreRelativeToPar}
+
+SCORING BREAKDOWN:
+- Birdies: ${analysis.scoringStats.birdies}
+- Pars: ${analysis.scoringStats.pars}
+- Bogeys: ${analysis.scoringStats.bogeys}
+- Double Bogey+: ${analysis.scoringStats.doubleBogeyPlus}
+
+PUTTING STATS:
+- C1 Make %: ${analysis.puttingStats.c1Percentage.toStringAsFixed(1)}%
+- C2 Make %: ${analysis.puttingStats.c2Percentage.toStringAsFixed(1)}%
+- Average Birdie Putt: ${analysis.avgBirdiePuttDistance.toStringAsFixed(0)} ft
+
+DRIVING STATS:
+- Fairway Hit %: ${analysis.coreStats.fairwayHitPct.toStringAsFixed(1)}%
+- C1 in Regulation %: ${analysis.coreStats.c1InRegPct.toStringAsFixed(1)}%
+- OB %: ${analysis.coreStats.obPct.toStringAsFixed(1)}%
+
+DISC PERFORMANCE (Top 5):
+$discPerf
+
+MISTAKES:
+- Total: ${analysis.totalMistakes}
+- Driving: ${analysis.mistakesByCategory['driving']}
+- Approach: ${analysis.mistakesByCategory['approach']}
+- Putting: ${analysis.mistakesByCategory['putting']}
+
+TOP MISTAKE TYPES:
+$topMistakes
+
+IMPORTANT: Return ONLY the JSON object, no other text.
+''';
+  }
 }

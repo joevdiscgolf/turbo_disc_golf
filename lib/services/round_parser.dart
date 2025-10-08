@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart'
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 
 class RoundParser extends ChangeNotifier {
   final GeminiService _geminiService;
@@ -107,6 +108,28 @@ class RoundParser extends ChangeNotifier {
 
       // Validate and enhance the parsed data
       _parsedRound = _validateAndEnhanceRound(_parsedRound!);
+
+      // Generate analysis from round data
+      debugPrint('Generating round analysis...');
+      final analysis = RoundAnalysisGenerator.generateAnalysis(_parsedRound!);
+
+      // Generate AI insights (summary and coaching)
+      debugPrint('Generating AI summary and coaching...');
+      final insights = await _geminiService.generateRoundInsights(
+        round: _parsedRound!,
+        analysis: analysis,
+      );
+
+      // Update round with analysis and insights
+      _parsedRound = DGRound(
+        id: _parsedRound!.id,
+        courseName: _parsedRound!.courseName,
+        courseId: _parsedRound!.courseId,
+        holes: _parsedRound!.holes,
+        analysis: analysis,
+        aiSummary: insights['summary'],
+        aiCoachSuggestion: insights['coaching'],
+      );
 
       // Save to shared preferences for future use
       debugPrint('Saving parsed round to shared preferences...');
