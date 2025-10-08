@@ -5,6 +5,7 @@ class PuttingDistanceCard extends StatelessWidget {
   final double avgAttemptDistance;
   final double avgBirdiePuttDistance;
   final double totalMadeDistance;
+  final double horizontalPadding;
 
   const PuttingDistanceCard({
     super.key,
@@ -12,12 +13,13 @@ class PuttingDistanceCard extends StatelessWidget {
     required this.avgAttemptDistance,
     required this.avgBirdiePuttDistance,
     required this.totalMadeDistance,
+    this.horizontalPadding = 16,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -28,9 +30,9 @@ class PuttingDistanceCard extends StatelessWidget {
         children: [
           Text(
             'Putting Distance Stats',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
@@ -92,9 +94,7 @@ class PuttingDistanceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,19 +102,18 @@ class PuttingDistanceCard extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: accentColor,
-                ),
+              fontWeight: FontWeight.bold,
+              color: accentColor,
+            ),
           ),
         ],
       ),

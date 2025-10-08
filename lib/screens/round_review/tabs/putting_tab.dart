@@ -1,0 +1,409 @@
+import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
+import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+
+class PuttingTab extends StatelessWidget {
+  final DGRound round;
+
+  const PuttingTab({super.key, required this.round});
+
+  @override
+  Widget build(BuildContext context) {
+    final RoundStatisticsService statsService = RoundStatisticsService(round);
+
+    final puttingSummary = statsService.getPuttingSummary();
+    final avgBirdiePuttDist = statsService.getAverageBirdiePuttDistance();
+    final comebackStats = statsService.getComebackPuttStats();
+
+    if (puttingSummary.totalAttempts == 0) {
+      return const Center(child: Text('No putting data available'));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
+      children: addRunSpacing(
+        [
+          // New cards from deep analysis
+          PuttingSummaryCards(
+            puttingSummary: puttingSummary,
+            horizontalPadding: 0,
+          ),
+          PuttingDistanceCard(
+            avgMakeDistance: puttingSummary.avgMakeDistance,
+            avgAttemptDistance: puttingSummary.avgAttemptDistance,
+            avgBirdiePuttDistance: avgBirdiePuttDist,
+            totalMadeDistance: puttingSummary.totalMadeDistance,
+            horizontalPadding: 0,
+          ),
+
+          // Old cards (commented out but kept for reference)
+          // _buildKPICards(context, puttingSummary),
+          // _buildDistanceBuckets(context, puttingSummary),
+
+          // _buildBirdiePuttDistance(context, avgBirdiePuttDist),
+          _buildComebackPutts(context, comebackStats),
+          _buildSummaryInsight(context, puttingSummary),
+        ],
+        runSpacing: 16,
+        axis: Axis.vertical,
+      ),
+    );
+  }
+
+  /* OLD WIDGETS - Kept for reference but not used
+
+  Widget _buildKPICards(BuildContext context, puttingSummary) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Putting Overview',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _buildKPICard(
+                  context,
+                  'C1 Make %',
+                  '${puttingSummary.c1Percentage.toStringAsFixed(0)}%',
+                  const Color(0xFF00F5D4),
+                ),
+                _buildKPICard(
+                  context,
+                  'C2 Make %',
+                  '${puttingSummary.c2Percentage.toStringAsFixed(0)}%',
+                  const Color(0xFF2196F3),
+                ),
+                _buildKPICard(
+                  context,
+                  'Avg Make Dist',
+                  '${puttingSummary.avgMakeDistance.toStringAsFixed(0)} ft',
+                  const Color(0xFF4CAF50),
+                ),
+                _buildKPICard(
+                  context,
+                  'Total Made Dist',
+                  '${puttingSummary.totalMadeDistance.toStringAsFixed(0)} ft',
+                  const Color(0xFFFFA726),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKPICard(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDistanceBuckets(BuildContext context, puttingSummary) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Performance by Distance',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            ...puttingSummary.bucketStats.entries.map((entry) {
+              final bucket = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          entry.key,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          '${bucket.makePercentage.toStringAsFixed(0)}% (${bucket.makes}/${bucket.attempts})',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: bucket.makePercentage / 100,
+                        minHeight: 12,
+                        backgroundColor: const Color(0xFF00F5D4).withValues(
+                          alpha: 0.2,
+                        ),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00F5D4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  */
+
+  // ACTIVE WIDGETS BELOW
+
+  Widget _buildComebackPutts(
+    BuildContext context,
+    Map<String, dynamic> comebackStats,
+  ) {
+    final attempts = comebackStats['attempts'] ?? 0;
+    final makes = comebackStats['makes'] ?? 0;
+    final details =
+        comebackStats['details'] as List<Map<String, dynamic>>? ?? [];
+    final percentage = attempts > 0 ? (makes / attempts) * 100 : 0.0;
+
+    if (attempts == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Comeback Putts',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: makes > 0 ? makes : 1,
+                  child: Container(
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4CAF50),
+                      borderRadius: BorderRadius.horizontal(
+                        left: Radius.circular(4),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Made: $makes',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (makes > 0 && attempts - makes > 0) const SizedBox(width: 2),
+                Expanded(
+                  flex: (attempts - makes) > 0 ? (attempts - makes) : 1,
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF7A7A),
+                      borderRadius: BorderRadius.horizontal(
+                        left: makes == 0
+                            ? const Radius.circular(4)
+                            : Radius.zero,
+                        right: const Radius.circular(4),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Missed: ${attempts - makes}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Comeback Rate: ${percentage.toStringAsFixed(0)}%',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (details.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Comeback Putt Details',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...details.map((putt) {
+                final holeNumber = putt['holeNumber'];
+                final distance = putt['distance'];
+                final made = putt['made'] as bool;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: made
+                              ? const Color(0xFF4CAF50)
+                              : const Color(0xFFFF7A7A),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$holeNumber',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Hole $holeNumber${distance != null ? ' - $distance ft' : ''}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: made
+                              ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                              : const Color(0xFFFF7A7A).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          made ? 'Made' : 'Missed',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: made
+                                    ? const Color(0xFF4CAF50)
+                                    : const Color(0xFFFF7A7A),
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryInsight(BuildContext context, puttingSummary) {
+    final c1Pct = puttingSummary.c1Percentage;
+    final c2Pct = puttingSummary.c2Percentage;
+
+    String worstRange = 'N/A';
+    double worstPercentage = 100;
+
+    puttingSummary.bucketStats.forEach((key, bucket) {
+      if (bucket.attempts > 0 && bucket.makePercentage < worstPercentage) {
+        worstPercentage = bucket.makePercentage;
+        worstRange = key;
+      }
+    });
+
+    return Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              Icons.insights,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'You made ${c1Pct.toStringAsFixed(0)}% of C1 putts and ${c2Pct.toStringAsFixed(0)}% of C2 putts. ${worstRange != 'N/A' ? 'Misses were most common in the $worstRange range.' : ''}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

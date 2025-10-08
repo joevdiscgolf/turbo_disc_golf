@@ -4,12 +4,18 @@ import 'package:turbo_disc_golf/models/statistics_models.dart';
 class PuttingSummaryCards extends StatelessWidget {
   final PuttStats puttingSummary;
 
-  const PuttingSummaryCards({super.key, required this.puttingSummary});
+  final double horizontalPadding;
+
+  const PuttingSummaryCards({
+    super.key,
+    required this.puttingSummary,
+    this.horizontalPadding = 16,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: SizedBox(
         height: 200,
         child: PageView(
@@ -64,7 +70,7 @@ class PuttingSummaryCards extends StatelessWidget {
         children: [
           // Left side - Overall stats
           Expanded(
-            flex: 1,
+            flex: 2,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,8 +86,8 @@ class PuttingSummaryCards extends StatelessWidget {
                 Text(
                   '${overallPercentage.toStringAsFixed(1)}%',
                   maxLines: 1,
-                  overflow: TextOverflow.visible,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: accentColor,
                   ),
@@ -100,7 +106,7 @@ class PuttingSummaryCards extends StatelessWidget {
           const SizedBox(width: 12),
           // Right side - Distance buckets
           Expanded(
-            flex: 3,
+            flex: 5,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,

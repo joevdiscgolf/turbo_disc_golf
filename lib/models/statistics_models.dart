@@ -240,6 +240,26 @@ class DiscMistake {
   });
 }
 
+class DiscPerformanceSummary {
+  final String discName;
+  final int goodShots;
+  final int okayShots;
+  final int badShots;
+  final int totalShots;
+
+  DiscPerformanceSummary({
+    required this.discName,
+    required this.goodShots,
+    required this.okayShots,
+    required this.badShots,
+    required this.totalShots,
+  });
+
+  double get goodPercentage => totalShots > 0 ? (goodShots / totalShots) * 100 : 0.0;
+  double get okayPercentage => totalShots > 0 ? (okayShots / totalShots) * 100 : 0.0;
+  double get badPercentage => totalShots > 0 ? (badShots / totalShots) * 100 : 0.0;
+}
+
 /// Categorized mistake analysis
 class MistakeTypeSummary {
   final String label;
