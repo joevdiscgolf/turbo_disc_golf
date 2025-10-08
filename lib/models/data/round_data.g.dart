@@ -7,15 +7,17 @@ part of 'round_data.dart';
 // **************************************************************************
 
 DGRound _$DGRoundFromJson(Map json) => DGRound(
-  course: json['course'] as String?,
+  id: json['id'] as String,
+  courseName: json['courseName'] as String,
+  courseId: json['courseId'] as String?,
   holes: (json['holes'] as List<dynamic>)
       .map((e) => DGHole.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
-  id: json['id'] as String,
 );
 
 Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{
-  'course': instance.course,
-  'holes': instance.holes.map((e) => e.toJson()).toList(),
   'id': instance.id,
+  'courseId': instance.courseId,
+  'courseName': instance.courseName,
+  'holes': instance.holes.map((e) => e.toJson()).toList(),
 };

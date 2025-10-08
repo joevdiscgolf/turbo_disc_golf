@@ -47,8 +47,9 @@ class FirestoreRoundService {
     try {
       final snapshot = await _firestore.collection(kRoundsCollection).get();
       return snapshot.docs.map((doc) => DGRound.fromJson(doc.data())).toList();
-    } catch (e) {
+    } catch (e, trace) {
       debugPrint('Error getting rounds: $e');
+      debugPrint(trace.toString());
       return [];
     }
   }

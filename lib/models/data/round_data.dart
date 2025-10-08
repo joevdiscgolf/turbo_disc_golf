@@ -5,11 +5,17 @@ part 'round_data.g.dart';
 
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class DGRound {
-  const DGRound({required this.course, required this.holes, required this.id});
+  const DGRound({
+    required this.id,
+    required this.courseName,
+    this.courseId,
+    required this.holes,
+  });
 
-  final String? course;
-  final List<DGHole> holes;
   final String id;
+  final String? courseId;
+  final String courseName;
+  final List<DGHole> holes;
 
   factory DGRound.fromJson(Map<String, dynamic> json) =>
       _$DGRoundFromJson(json);
