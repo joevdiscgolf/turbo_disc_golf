@@ -3,14 +3,12 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/shot_type_birdie_rates_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/core_stats_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/miss_summary_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/disc_mistakes_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/mistake_types_card.dart';
-import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/disc_performance_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/mistake_reason_breakdown_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/shot_type_birdie_rates_card.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
@@ -32,15 +30,13 @@ class DeepAnalysisTab extends StatelessWidget {
     final double avgBirdiePuttDist = statsService
         .getAverageBirdiePuttDistance();
     final CoreStats coreStats = statsService.getCoreStats();
-    final Map<LossReason, int> missSummary = statsService
-        .getMissReasonSummary();
-    final List<DiscMistake> discMistakes = statsService
-        .getMajorMistakesByDisc();
+    final List<DiscPerformanceSummary> discPerformances = statsService
+        .getDiscPerformanceSummaries();
     final List<MistakeTypeSummary> mistakeTypes = statsService
         .getMistakeTypes();
 
     return ListView(
-      padding: const EdgeInsets.only(top: 24, bottom: 64),
+      padding: const EdgeInsets.only(top: 24, bottom: 80),
       children: addRunSpacing(
         [
           // Tee Shot Birdie Rates
@@ -66,17 +62,13 @@ class DeepAnalysisTab extends StatelessWidget {
           // Core Stats
           CoreStatsCard(coreStats: coreStats),
 
-          // Miss Summary
-          if (missSummary.isNotEmpty)
-            MissSummaryCard(missSummary: missSummary),
-
-          // Disc Mistakes
-          if (discMistakes.isNotEmpty)
-            DiscMistakesCard(discMistakes: discMistakes),
-
-          // Mistake Types
+          // Mistakes Breakdown
           if (mistakeTypes.isNotEmpty)
-            MistakeTypesCard(mistakeTypes: mistakeTypes),
+            MistakeReasonBreakdownCard(mistakeTypes: mistakeTypes),
+
+          // Disc Performance
+          if (discPerformances.isNotEmpty)
+            DiscPerformanceCard(discPerformances: discPerformances),
         ],
         runSpacing: 12,
         axis: Axis.vertical,

@@ -12,6 +12,7 @@ enum LossReason {
   none,
   outOfBounds,
   missedC1,
+  missedC1X,
   missedC2,
   missedApproach,
   poorDrive,
@@ -173,10 +174,11 @@ class CoachingCard {
 /// The analysis service with deterministic rules & weights
 class GPTAnalysisService {
   // Tunable thresholds
-  static const double circle1Feet = 10.0;
-  static const double circle2Feet = 30.0;
+  static const double shortC1Feet = 12.0; // 0-12ft: short C1 putts
+  static const double circle1Feet = 33.0; // 0-33ft: C1 range
+  static const double circle2Feet = 66.0; // 33-66ft: C2 range
   static const double puttThresholdFeet =
-      33.0; // <= 33 ft considered "putt-range"
+      66.0; // <= 66 ft considered "putt-range"
   static const double severeWeight = 2.0;
   static const double majorWeight = 1.0;
   static const double moderateWeight = 0.5;
@@ -261,8 +263,8 @@ class GPTAnalysisService {
     if (isPutt) {
       // made?
       final made = t.landingSpot == LandingSpot.inBasket;
-      if (dist != null && dist <= circle1Feet) {
-        // C1 (<= 10 ft)
+      if (dist != null && dist <= shortC1Feet) {
+        // Short C1 (0-12 ft)
         if (made) {
           return ThrowAnalysis(
             discThrow: t,
@@ -270,21 +272,42 @@ class GPTAnalysisService {
             lossReason: LossReason.none,
             weight: goodWeight,
             confidence: parseConf,
-            note: 'Made C1 putt',
+            note: 'Made short C1 putt',
           );
         } else {
-          // Missed C1 — major / severe depending on context (use major here)
+          // Missed short C1 — major mistake
           return ThrowAnalysis(
             discThrow: t,
             execCategory: ExecCategory.bad,
             lossReason: LossReason.missedC1,
             weight: majorWeight,
             confidence: parseConf,
-            note: 'Missed C1 putt',
+            note: 'Missed short C1 putt',
+          );
+        }
+      } else if (dist != null && dist <= circle1Feet) {
+        // C1X (12-33 ft)
+        if (made) {
+          return ThrowAnalysis(
+            discThrow: t,
+            execCategory: ExecCategory.good,
+            lossReason: LossReason.none,
+            weight: goodWeight,
+            confidence: parseConf,
+            note: 'Made C1X putt',
+          );
+        } else {
+          return ThrowAnalysis(
+            discThrow: t,
+            execCategory: ExecCategory.bad,
+            lossReason: LossReason.missedC1X,
+            weight: moderateWeight,
+            confidence: parseConf,
+            note: 'Missed C1X putt',
           );
         }
       } else if (dist != null && dist <= circle2Feet) {
-        // C2 10-30 ft
+        // C2 (33-66 ft)
         if (made) {
           return ThrowAnalysis(
             discThrow: t,
@@ -305,7 +328,7 @@ class GPTAnalysisService {
           );
         }
       } else {
-        // long putt > 30ft
+        // long putt > 66ft
         if (made) {
           // high-value make
           return ThrowAnalysis(
@@ -436,12 +459,27 @@ class GPTAnalysisService {
           cards.add(
             CoachingCard(
               reason: reason,
-              title: 'Short putting (≤10 ft) misses',
+              title: 'Short putting (≤12 ft) misses',
               summary:
                   'You missed $n short putts — these are high-impact mistakes that are usually fixable with short practice.',
               drills: [
-                'Tap & Step: 5 sets × 10 reps from 8–10 ft (goal: 80% makes)',
+                'Tap & Step: 5 sets × 10 reps from 8–12 ft (goal: 80% makes)',
                 'Pressure Ladder: 2-in-a-row to advance distance; repeat 10 times',
+              ],
+              priorityScore: priority,
+            ),
+          );
+          break;
+        case LossReason.missedC1X:
+          cards.add(
+            CoachingCard(
+              reason: reason,
+              title: 'C1X putting (12-33 ft) misses',
+              summary:
+                  'You missed $n putts in the 12-33 ft range — work on distance control and form consistency.',
+              drills: [
+                'Circle drill: 10 putts from each station (15, 20, 25, 30 ft)',
+                'Run it: Practice aggressive putts from 20-25 ft for 15 minutes',
               ],
               priorityScore: priority,
             ),
@@ -516,9 +554,11 @@ class GPTAnalysisService {
       case LossReason.outOfBounds:
         return 'Out-of-bounds';
       case LossReason.missedC1:
-        return 'Missed short putt (C1)';
+        return 'Missed short putt (≤12 ft)';
+      case LossReason.missedC1X:
+        return 'Missed C1X putt (12-33 ft)';
       case LossReason.missedC2:
-        return 'Missed mid putt (C2)';
+        return 'Missed C2 putt (33-66 ft)';
       case LossReason.missedApproach:
         return 'Missed approach';
       case LossReason.poorDrive:

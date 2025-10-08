@@ -280,8 +280,14 @@ class RoundStatisticsService {
     );
   }
 
-  /// Extract disc name from notes or rawText (best effort)
+  /// Extract disc name from disc property, notes, or rawText (best effort)
   String? _extractDiscName(DiscThrow discThrow) {
+    // First check if there's a disc object
+    if (discThrow.disc != null) {
+      return discThrow.disc!.name;
+    }
+
+    // Fall back to parsing notes/rawText
     final text = discThrow.notes ?? discThrow.rawText ?? '';
     if (text.isEmpty) return null;
 
@@ -516,6 +522,25 @@ class RoundStatisticsService {
     }
 
     return birdieDetailsByType;
+  }
+
+  /// Get ALL tee shots grouped by throw type (not just birdies)
+  Map<String, List<MapEntry<DGHole, DiscThrow>>> getAllTeeShotsByType() {
+    final Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+
+      if (teeShot.technique != null) {
+        final throwType = teeShot.technique!.name;
+        allTeeShotsByType.putIfAbsent(throwType, () => []);
+        allTeeShotsByType[throwType]!.add(MapEntry(hole, teeShot));
+      }
+    }
+
+    return allTeeShotsByType;
   }
 
   /// Get comprehensive putting summary with C1/C2 breakdown and distance buckets
@@ -767,18 +792,17 @@ class RoundStatisticsService {
     return reasonCounts;
   }
 
-  /// Get major mistakes grouped by disc
   List<DiscMistake> getMajorMistakesByDisc() {
     final Map<String, List<LossReason>> mistakesByDisc = {};
 
     for (var hole in round.holes) {
       for (var discThrow in hole.throws) {
-        // Use GPT analysis service to determine execution category
         final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+        final isMajorMistake =
+            analysis.execCategory == ExecCategory.bad ||
+            analysis.execCategory == ExecCategory.severe;
 
-        // Only count bad or severe mistakes
-        if (analysis.execCategory == ExecCategory.bad ||
-            analysis.execCategory == ExecCategory.severe) {
+        if (isMajorMistake) {
           final discName = _extractDiscName(discThrow);
           if (discName != null) {
             mistakesByDisc.putIfAbsent(discName, () => []);
@@ -788,107 +812,682 @@ class RoundStatisticsService {
       }
     }
 
-    // Convert to list of DiscMistake objects
-    final List<DiscMistake> mistakes = [];
-    mistakesByDisc.forEach((discName, reasons) {
-      mistakes.add(
-        DiscMistake(
-          discName: discName,
-          mistakeCount: reasons.length,
-          reasons: reasons.map((r) => r.name).toList(),
-        ),
+    final mistakes = mistakesByDisc.entries.map((entry) {
+      return DiscMistake(
+        discName: entry.key,
+        mistakeCount: entry.value.length,
+        reasons: entry.value.map((reason) => reason.name).toList(),
       );
-    });
+    }).toList();
 
-    // Sort by mistake count (descending)
     mistakes.sort((a, b) => b.mistakeCount.compareTo(a.mistakeCount));
 
     return mistakes;
   }
 
-  /// Get categorized mistake types with counts and percentages
-  List<MistakeTypeSummary> getMistakeTypes() {
-    final Map<String, int> mistakeTypeCounts = {};
-    int totalMistakes = 0;
+  List<DiscPerformanceSummary> getDiscPerformanceSummaries() {
+    final Map<String, Map<String, int>> performanceByDisc = {};
 
     for (var hole in round.holes) {
       for (var discThrow in hole.throws) {
-        // Use GPT analysis service to determine execution category
+        final discName = _extractDiscName(discThrow);
+        if (discName == null) continue;
+
+        performanceByDisc.putIfAbsent(
+          discName,
+          () => {'good': 0, 'okay': 0, 'bad': 0},
+        );
+
         final analysis = GPTAnalysisService.analyzeThrow(discThrow);
 
-        // Only count bad or severe mistakes
-        if (analysis.execCategory == ExecCategory.bad ||
-            analysis.execCategory == ExecCategory.severe) {
-          totalMistakes++;
-
-          // Create descriptive label
-          String label = _createMistakeLabel(discThrow, analysis);
-
-          mistakeTypeCounts[label] = (mistakeTypeCounts[label] ?? 0) + 1;
+        switch (analysis.execCategory) {
+          case ExecCategory.good:
+            performanceByDisc[discName]!['good'] =
+                performanceByDisc[discName]!['good']! + 1;
+            break;
+          case ExecCategory.neutral:
+            performanceByDisc[discName]!['okay'] =
+                performanceByDisc[discName]!['okay']! + 1;
+            break;
+          case ExecCategory.bad:
+          case ExecCategory.severe:
+            performanceByDisc[discName]!['bad'] =
+                performanceByDisc[discName]!['bad']! + 1;
+            break;
         }
       }
     }
 
-    // Convert to list of MistakeTypeSummary objects
-    final List<MistakeTypeSummary> summaries = [];
-    mistakeTypeCounts.forEach((label, count) {
-      final percentage = totalMistakes > 0
-          ? (count / totalMistakes) * 100
-          : 0.0;
-      summaries.add(
-        MistakeTypeSummary(label: label, count: count, percentage: percentage),
+    final summaries = performanceByDisc.entries.map((entry) {
+      final stats = entry.value;
+      final totalShots = stats['good']! + stats['okay']! + stats['bad']!;
+
+      return DiscPerformanceSummary(
+        discName: entry.key,
+        goodShots: stats['good']!,
+        okayShots: stats['okay']!,
+        badShots: stats['bad']!,
+        totalShots: totalShots,
       );
+    }).toList();
+
+    summaries.sort((a, b) {
+      final percentageComparison = b.goodPercentage.compareTo(a.goodPercentage);
+      if (percentageComparison != 0) return percentageComparison;
+      return b.totalShots.compareTo(a.totalShots);
     });
 
-    // Sort by count (descending)
+    return summaries;
+  }
+
+  List<MistakeTypeSummary> getMistakeTypes() {
+    final Map<String, int> mistakeTypeCounts = {};
+
+    final mistakes = getMistakeThrowDetails();
+    final totalMistakes = mistakes.length;
+
+    for (var mistake in mistakes) {
+      final label = mistake['label'] as String;
+      mistakeTypeCounts[label] = (mistakeTypeCounts[label] ?? 0) + 1;
+    }
+
+    final summaries = mistakeTypeCounts.entries.map((entry) {
+      final percentage = totalMistakes > 0
+          ? (entry.value / totalMistakes) * 100
+          : 0.0;
+      return MistakeTypeSummary(
+        label: entry.key,
+        count: entry.value,
+        percentage: percentage,
+      );
+    }).toList();
+
     summaries.sort((a, b) => b.count.compareTo(a.count));
 
     return summaries;
   }
 
-  /// Helper method to create descriptive mistake labels
   String _createMistakeLabel(DiscThrow discThrow, ThrowAnalysis analysis) {
-    // Start with the loss reason
-    String label = GPTAnalysisService.describeLossReason(analysis.lossReason);
+    final purpose = discThrow.purpose;
+    final lossReason = analysis.lossReason;
 
-    // Add throw technique if available
-    if (discThrow.technique != null) {
-      final technique = discThrow.technique!.name.capitalize();
-      label = '$technique - $label';
+    if (purpose == ThrowPurpose.putt && discThrow.distanceFeet != null) {
+      final distance = discThrow.distanceFeet!;
+      if (distance <= 12) return 'Missed short putt';
+      if (distance <= 33) return 'Missed C1X putt';
+      if (distance <= 66) return 'Missed C2 putt';
+      return 'Missed long putt';
     }
 
-    // Add throw purpose for context
-    if (discThrow.purpose != null) {
-      switch (discThrow.purpose) {
-        case ThrowPurpose.putt:
-          if (discThrow.distanceFeet != null) {
-            if (discThrow.distanceFeet! <= 10) {
-              label = 'Missed C1 putt';
-            } else if (discThrow.distanceFeet! <= 33) {
-              label = 'Missed C2 putt (inside C1)';
-            } else {
-              label = 'Missed long putt';
+    if (purpose == ThrowPurpose.teeDrive) {
+      if (lossReason == LossReason.outOfBounds) return 'OB tee shot';
+      if (lossReason == LossReason.poorDrive) return 'Poor tee shot';
+    }
+
+    if (purpose == ThrowPurpose.approach &&
+        lossReason == LossReason.missedApproach) {
+      return 'Missed approach';
+    }
+
+    final baseLabel = GPTAnalysisService.describeLossReason(lossReason);
+    if (discThrow.technique != null) {
+      final technique = discThrow.technique!.name.capitalize();
+      return '$technique - $baseLabel';
+    }
+
+    return baseLabel;
+  }
+
+  double getBounceBackPercentage() {
+    int bounceBackOpportunities = 0;
+    int bounceBackSuccesses = 0;
+
+    for (int i = 0; i < round.holes.length - 1; i++) {
+      final currentHole = round.holes[i];
+      final nextHole = round.holes[i + 1];
+
+      if (currentHole.relativeHoleScore > 0) {
+        bounceBackOpportunities++;
+        if (nextHole.relativeHoleScore < 0) {
+          bounceBackSuccesses++;
+        }
+      }
+    }
+
+    return bounceBackOpportunities > 0
+        ? (bounceBackSuccesses / bounceBackOpportunities) * 100
+        : 0.0;
+  }
+
+  Map<int, double> getBirdieRateByPar() {
+    final Map<int, int> birdiesByPar = {};
+    final Map<int, int> holesByPar = {};
+
+    for (var hole in round.holes) {
+      holesByPar[hole.par] = (holesByPar[hole.par] ?? 0) + 1;
+      if (hole.relativeHoleScore < 0) {
+        birdiesByPar[hole.par] = (birdiesByPar[hole.par] ?? 0) + 1;
+      }
+    }
+
+    return holesByPar.map((par, count) {
+      final birdies = birdiesByPar[par] ?? 0;
+      return MapEntry(par, count > 0 ? (birdies / count) * 100 : 0.0);
+    });
+  }
+
+  Map<String, double> getBirdieRateByHoleLength() {
+    final Map<String, int> birdiesByLength = {
+      'Short (<250 ft)': 0,
+      'Medium (250-400 ft)': 0,
+      'Long (400-550 ft)': 0,
+      'Very Long (550+ ft)': 0,
+    };
+    final Map<String, int> holesByLength = {
+      'Short (<250 ft)': 0,
+      'Medium (250-400 ft)': 0,
+      'Long (400-550 ft)': 0,
+      'Very Long (550+ ft)': 0,
+    };
+
+    for (var hole in round.holes) {
+      final distance = hole.feet ?? 0;
+      String category;
+      if (distance < 250) {
+        category = 'Short (<250 ft)';
+      } else if (distance < 400) {
+        category = 'Medium (250-400 ft)';
+      } else if (distance < 550) {
+        category = 'Long (400-550 ft)';
+      } else {
+        category = 'Very Long (550+ ft)';
+      }
+
+      holesByLength[category] = holesByLength[category]! + 1;
+      if (hole.relativeHoleScore < 0) {
+        birdiesByLength[category] = birdiesByLength[category]! + 1;
+      }
+    }
+
+    return holesByLength.map((length, count) {
+      final birdies = birdiesByLength[length]!;
+      return MapEntry(length, count > 0 ? (birdies / count) * 100 : 0.0);
+    });
+  }
+
+  double getAverageBirdieHoleDistance() {
+    final birdieHoles = round.holes.where((h) => h.relativeHoleScore < 0);
+    if (birdieHoles.isEmpty) return 0.0;
+
+    final totalDistance = birdieHoles.fold<int>(
+      0,
+      (sum, hole) => sum + (hole.feet ?? 0),
+    );
+
+    return totalDistance / birdieHoles.length;
+  }
+
+  int getTotalScoreRelativeToPar() {
+    return round.holes.fold<int>(
+      0,
+      (sum, hole) => sum + hole.relativeHoleScore,
+    );
+  }
+
+  Map<String, dynamic> getComebackPuttStats() {
+    int comebackAttempts = 0;
+    int comebackMakes = 0;
+    final List<Map<String, dynamic>> comebackDetails = [];
+
+    for (var hole in round.holes) {
+      bool previousPuttMissed = false;
+
+      for (var discThrow in hole.throws) {
+        if (discThrow.purpose == ThrowPurpose.putt) {
+          final made = discThrow.landingSpot == LandingSpot.inBasket;
+
+          if (previousPuttMissed) {
+            comebackAttempts++;
+            if (made) comebackMakes++;
+
+            comebackDetails.add({
+              'holeNumber': hole.number,
+              'distance': discThrow.distanceFeet,
+              'made': made,
+            });
+          }
+
+          previousPuttMissed = !made;
+        }
+      }
+    }
+
+    return {
+      'attempts': comebackAttempts,
+      'makes': comebackMakes,
+      'details': comebackDetails,
+    };
+  }
+
+  Map<String, double> getDiscBirdieRates() {
+    final Map<String, int> birdiesByDisc = {};
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+        if (hole.relativeHoleScore < 0) {
+          birdiesByDisc[discName] = (birdiesByDisc[discName] ?? 0) + 1;
+        }
+      }
+    }
+
+    return throwsByDisc.map((disc, count) {
+      final birdies = birdiesByDisc[disc] ?? 0;
+      return MapEntry(disc, count > 0 ? (birdies / count) * 100 : 0.0);
+    });
+  }
+
+  Map<String, double> getDiscParRates() {
+    final Map<String, int> parsByDisc = {};
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+        if (hole.relativeHoleScore == 0) {
+          parsByDisc[discName] = (parsByDisc[discName] ?? 0) + 1;
+        }
+      }
+    }
+
+    return throwsByDisc.map((disc, count) {
+      final pars = parsByDisc[disc] ?? 0;
+      return MapEntry(disc, count > 0 ? (pars / count) * 100 : 0.0);
+    });
+  }
+
+  Map<String, double> getDiscBogeyRates() {
+    final Map<String, int> bogeysByDisc = {};
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+        if (hole.relativeHoleScore > 0) {
+          bogeysByDisc[discName] = (bogeysByDisc[discName] ?? 0) + 1;
+        }
+      }
+    }
+
+    return throwsByDisc.map((disc, count) {
+      final bogeys = bogeysByDisc[disc] ?? 0;
+      return MapEntry(disc, count > 0 ? (bogeys / count) * 100 : 0.0);
+    });
+  }
+
+  Map<String, double> getDiscAverageScores() {
+    final Map<String, List<int>> scoresByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        scoresByDisc.putIfAbsent(discName, () => []);
+        scoresByDisc[discName]!.add(hole.relativeHoleScore);
+      }
+    }
+
+    return scoresByDisc.map((disc, scores) {
+      final avg = scores.fold<int>(0, (sum, score) => sum + score) / scores.length;
+      return MapEntry(disc, avg);
+    });
+  }
+
+  Map<String, int> getDiscThrowCounts() {
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+      }
+    }
+
+    return throwsByDisc;
+  }
+
+  Map<String, double> getDiscC1InRegPercentages() {
+    final Map<String, int> c1InRegByDisc = {};
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+
+        // Check if reached C1 in regulation (par - 2 strokes or less)
+        final regulationStrokes = hole.par - 2;
+        if (regulationStrokes > 0) {
+          for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+            final discThrow = hole.throws[i];
+            if (discThrow.landingSpot == LandingSpot.circle1 ||
+                discThrow.landingSpot == LandingSpot.parked) {
+              c1InRegByDisc[discName] = (c1InRegByDisc[discName] ?? 0) + 1;
+              break;
             }
           }
-          break;
-        case ThrowPurpose.teeDrive:
-          if (analysis.lossReason == LossReason.outOfBounds) {
-            label = 'OB tee shot';
-          } else if (analysis.lossReason == LossReason.poorDrive) {
-            label = 'Poor tee shot';
+        }
+      }
+    }
+
+    return throwsByDisc.map((disc, count) {
+      final c1InReg = c1InRegByDisc[disc] ?? 0;
+      return MapEntry(disc, count > 0 ? (c1InReg / count) * 100 : 0.0);
+    });
+  }
+
+  Map<String, double> getDiscC2InRegPercentages() {
+    final Map<String, int> c2InRegByDisc = {};
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+
+        // Check if reached C2 in regulation (par - 2 strokes or less)
+        final regulationStrokes = hole.par - 2;
+        if (regulationStrokes > 0) {
+          for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+            final discThrow = hole.throws[i];
+            if (discThrow.landingSpot == LandingSpot.circle1 ||
+                discThrow.landingSpot == LandingSpot.parked ||
+                discThrow.landingSpot == LandingSpot.circle2) {
+              c2InRegByDisc[discName] = (c2InRegByDisc[discName] ?? 0) + 1;
+              break;
+            }
           }
+        }
+      }
+    }
+
+    return throwsByDisc.map((disc, count) {
+      final c2InReg = c2InRegByDisc[disc] ?? 0;
+      return MapEntry(disc, count > 0 ? (c2InReg / count) * 100 : 0.0);
+    });
+  }
+
+  int getTotalMistakesCount() {
+    return getMistakeThrowDetails().length;
+  }
+
+  Map<String, int> getMistakesByCategory() {
+    int drivingMistakes = 0;
+    int approachMistakes = 0;
+    int puttingMistakes = 0;
+
+    final mistakes = getMistakeThrowDetails();
+
+    for (var mistake in mistakes) {
+      final discThrow = mistake['throw'] as DiscThrow;
+      switch (discThrow.purpose) {
+        case ThrowPurpose.teeDrive:
+        case ThrowPurpose.fairwayDrive:
+          drivingMistakes++;
           break;
         case ThrowPurpose.approach:
-          if (analysis.lossReason == LossReason.missedApproach) {
-            label = 'Missed approach';
-          }
+          approachMistakes++;
+          break;
+        case ThrowPurpose.putt:
+          puttingMistakes++;
           break;
         default:
           break;
       }
     }
 
-    return label;
+    return {
+      'driving': drivingMistakes,
+      'approach': approachMistakes,
+      'putting': puttingMistakes,
+    };
+  }
+
+  List<Map<String, dynamic>> getMistakeThrowDetails() {
+    final List<Map<String, dynamic>> mistakes = [];
+
+    for (var hole in round.holes) {
+      // Calculate cumulative penalties to determine actual stroke numbers
+      int cumulativePenalties = 0;
+      final List<int> strokeNumbers = [];
+
+      for (var i = 0; i < hole.throws.length; i++) {
+        final discThrow = hole.throws[i];
+        final actualStrokeNumber = i + 1 + cumulativePenalties;
+        strokeNumbers.add(actualStrokeNumber);
+
+        // Add penalties from this throw to the cumulative count
+        if (discThrow.penaltyStrokes != null && discThrow.penaltyStrokes! > 0) {
+          cumulativePenalties += discThrow.penaltyStrokes!;
+        }
+      }
+
+      for (var i = 0; i < hole.throws.length; i++) {
+        final discThrow = hole.throws[i];
+        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+        final actualStrokeNumber = strokeNumbers[i];
+
+        // Check for indicators of a good throw
+        final isGoodLanding = discThrow.landingSpot == LandingSpot.circle1 ||
+            discThrow.landingSpot == LandingSpot.circle2 ||
+            discThrow.landingSpot == LandingSpot.parked ||
+            discThrow.landingSpot == LandingSpot.fairway;
+
+        final hasGoodRating = discThrow.resultRating == ThrowResultRating.excellent ||
+            discThrow.resultRating == ThrowResultRating.good;
+
+        // Check if next throw is a short putt (indicates this approach was good)
+        final bool nextThrowIsShortPutt = i < hole.throws.length - 1 &&
+            hole.throws[i + 1].purpose == ThrowPurpose.putt &&
+            (hole.throws[i + 1].distanceFeet ?? 999) <= 33;
+
+        // Check if this was likely a good throw based on multiple signals
+        final isLikelyGoodThrow = isGoodLanding || hasGoodRating || nextThrowIsShortPutt;
+
+        // Recovery after penalty logic
+        final isRecoveryAfterPenalty = i > 0 &&
+            (hole.throws[i - 1].penaltyStrokes ?? 0) > 0 &&
+            isLikelyGoodThrow;
+
+        // Override the analysis for approaches that seem good but weren't marked as such
+        final isApproachWithGoodSignals = discThrow.purpose == ThrowPurpose.approach &&
+            isLikelyGoodThrow &&
+            analysis.execCategory == ExecCategory.bad;
+
+        final isMistake = (analysis.execCategory == ExecCategory.bad ||
+            analysis.execCategory == ExecCategory.severe) &&
+            !isRecoveryAfterPenalty &&
+            !isApproachWithGoodSignals;
+
+        if (isMistake) {
+          mistakes.add({
+            'holeNumber': hole.number,
+            'throwIndex': i,
+            'actualStrokeNumber': actualStrokeNumber,
+            'throw': discThrow,
+            'analysis': analysis,
+            'label': _createMistakeLabel(discThrow, analysis),
+          });
+        }
+      }
+    }
+
+    return mistakes;
+  }
+
+  List<Map<String, dynamic>> getThrowsForDisc(String discName) {
+    final List<Map<String, dynamic>> throws = [];
+
+    for (var hole in round.holes) {
+      for (var i = 0; i < hole.throws.length; i++) {
+        final discThrow = hole.throws[i];
+        final throwDiscName = _extractDiscName(discThrow);
+
+        if (throwDiscName == discName) {
+          throws.add({
+            'holeNumber': hole.number,
+            'throwIndex': i,
+            'throw': discThrow,
+          });
+        }
+      }
+    }
+
+    return throws;
+  }
+
+  /// Get C1 and C2 in regulation percentages by tee shot throw type
+  Map<String, Map<String, double>> getCircleInRegByThrowType() {
+    final Map<String, int> c1InRegByType = {};
+    final Map<String, int> c2InRegByType = {};
+    final Map<String, int> totalByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.technique == null) continue;
+
+      final throwType = teeShot.technique!.name;
+      totalByType[throwType] = (totalByType[throwType] ?? 0) + 1;
+
+      // Check if reached C1/C2 in regulation (par - 2 strokes or less)
+      final regulationStrokes = hole.par - 2;
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1InRegByType[throwType] = (c1InRegByType[throwType] ?? 0) + 1;
+            c2InRegByType[throwType] = (c2InRegByType[throwType] ?? 0) + 1;
+            break;
+          } else if (discThrow.landingSpot == LandingSpot.circle2) {
+            c2InRegByType[throwType] = (c2InRegByType[throwType] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByType.map((throwType, total) {
+      final c1Count = c1InRegByType[throwType] ?? 0;
+      final c2Count = c2InRegByType[throwType] ?? 0;
+      return MapEntry(throwType, {
+        'c1Percentage': total > 0 ? (c1Count / total) * 100 : 0.0,
+        'c2Percentage': total > 0 ? (c2Count / total) * 100 : 0.0,
+        'c1Count': c1Count.toDouble(),
+        'c2Count': c2Count.toDouble(),
+        'totalAttempts': total.toDouble(),
+      });
+    });
+  }
+
+  /// Get C1 in regulation details by throw type (with hole and the throw that reached C1)
+  Map<String, List<Map<String, dynamic>>> getC1InRegDetails() {
+    final Map<String, List<Map<String, dynamic>>> c1DetailsByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.technique == null) continue;
+
+      final throwType = teeShot.technique!.name;
+      final regulationStrokes = hole.par - 2;
+
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1DetailsByType.putIfAbsent(throwType, () => []);
+            c1DetailsByType[throwType]!.add({
+              'hole': hole,
+              'throw': discThrow,
+              'throwIndex': i,
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    return c1DetailsByType;
+  }
+
+  /// Get C2 in regulation details by throw type (with hole and the throw that reached C2)
+  Map<String, List<Map<String, dynamic>>> getC2InRegDetails() {
+    final Map<String, List<Map<String, dynamic>>> c2DetailsByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.technique == null) continue;
+
+      final throwType = teeShot.technique!.name;
+      final regulationStrokes = hole.par - 2;
+
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked ||
+              discThrow.landingSpot == LandingSpot.circle2) {
+            c2DetailsByType.putIfAbsent(throwType, () => []);
+            c2DetailsByType[throwType]!.add({
+              'hole': hole,
+              'throw': discThrow,
+              'throwIndex': i,
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    return c2DetailsByType;
   }
 }
 
