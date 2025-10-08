@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/throw_list_item.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -9,9 +10,7 @@ import 'package:turbo_disc_golf/utils/naming_constants.dart';
 class ThrowsTab extends StatefulWidget {
   final DGRound round;
 
-  const ThrowsTab({super.key, required this.round, required this.roundParser});
-
-  final RoundParser roundParser;
+  const ThrowsTab({super.key, required this.round});
 
   @override
   State<ThrowsTab> createState() => _ThrowsTabState();
@@ -19,11 +18,13 @@ class ThrowsTab extends StatefulWidget {
 
 class _ThrowsTabState extends State<ThrowsTab> {
   late DGRound _round;
+  late RoundParser _roundParser;
 
   @override
   void initState() {
     super.initState();
     _round = widget.round;
+    _roundParser = locator.get<RoundParser>();
   }
 
   @override
@@ -60,7 +61,7 @@ class _ThrowsTabState extends State<ThrowsTab> {
                             child: _buildScoreKPICard(
                               context,
                               'Total Score',
-                              '${widget.roundParser.getTotalScore()}',
+                              '${_roundParser.getTotalScore()}',
                               const Color(0xFF2196F3),
                             ),
                           ),
@@ -69,7 +70,7 @@ class _ThrowsTabState extends State<ThrowsTab> {
                             child: _buildScoreKPICard(
                               context,
                               'Par',
-                              '${widget.roundParser.getTotalPar()}',
+                              '${_roundParser.getTotalPar()}',
                               const Color(0xFFFFA726),
                             ),
                           ),
@@ -78,11 +79,11 @@ class _ThrowsTabState extends State<ThrowsTab> {
                             child: _buildScoreKPICard(
                               context,
                               'Score',
-                              widget.roundParser.getRelativeToPar() >= 0
-                                  ? '+${widget.roundParser.getRelativeToPar()}'
-                                  : '${widget.roundParser.getRelativeToPar()}',
+                              _roundParser.getRelativeToPar() >= 0
+                                  ? '+${_roundParser.getRelativeToPar()}'
+                                  : '${_roundParser.getRelativeToPar()}',
                               _getScoreColor(
-                                widget.roundParser.getRelativeToPar(),
+                                _roundParser.getRelativeToPar(),
                               ),
                             ),
                           ),
@@ -99,7 +100,7 @@ class _ThrowsTabState extends State<ThrowsTab> {
         // Remaining items are hole cards
         final holeIndex = index - 1;
         final DGHole hole = _round.holes[holeIndex];
-        final String scoreName = widget.roundParser.getScoreName(
+        final String scoreName = _roundParser.getScoreName(
           hole.relativeHoleScore,
         );
 

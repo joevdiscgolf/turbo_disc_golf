@@ -3,7 +3,6 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
@@ -66,6 +65,8 @@ const testRoundDescriptions = [
   testRoundDescription4,
 ];
 
+const String testCourseName = 'Foxwood';
+
 class RecordRoundScreen extends StatefulWidget {
   const RecordRoundScreen({super.key});
 
@@ -80,24 +81,20 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
       testRoundDescriptions[descriptionIndex];
   late final VoiceRecordingService _voiceService;
   late final BagService _bagService;
-  late final GeminiService _geminiService;
   late final RoundParser _roundParser;
   late AnimationController _animationController;
   final TextEditingController _transcriptController = TextEditingController();
   final TextEditingController _courseNameController = TextEditingController();
   bool _testMode = false;
   bool _useSharedPreferences = false;
+  String? _lastNavigatedRoundId;
 
   @override
   void initState() {
     super.initState();
     _voiceService = VoiceRecordingService();
-    _bagService = BagService();
-    _geminiService = GeminiService(); // You'll need to add API key management
-    _roundParser = RoundParser(
-      geminiService: _geminiService,
-      bagService: _bagService,
-    );
+    _bagService = locator.get<BagService>();
+    _roundParser = locator.get<RoundParser>();
 
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -134,16 +131,20 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
 
   void _onParserChange() {
     if (_roundParser.parsedRound != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RoundReviewScreen(
-            round: _roundParser.parsedRound!,
-            roundParser: _roundParser,
-            bagService: _bagService,
+      final roundId = _roundParser.parsedRound!.id;
+
+      // Only navigate if this is a new round (not already navigated to)
+      if (roundId != _lastNavigatedRoundId) {
+        _lastNavigatedRoundId = roundId;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RoundReviewScreen(
+              round: _roundParser.parsedRound!,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -220,7 +221,6 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Record Your Round')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -302,10 +302,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                         // Parse the test constant directly
                         await _roundParser.parseVoiceTranscript(
                           getCorrectTestDescription,
-                          courseName: 'Test course',
-                          // _courseNameController.text.isNotEmpty
-                          //     ? _courseNameController.text
-                          //     : null,
+                          courseName: testCourseName,
                           useSharedPreferences: _useSharedPreferences,
                         );
 

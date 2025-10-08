@@ -9,19 +9,13 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab.dart';
-import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   final DGRound round;
-  final RoundParser roundParser;
-  final BagService bagService;
 
   const RoundReviewScreen({
     super.key,
     required this.round,
-    required this.roundParser,
-    required this.bagService,
   });
 
   @override
@@ -56,7 +50,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_round.course ?? 'Unknown course'),
+        title: Text(_round.courseName),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -92,7 +86,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          ThrowsTab(round: _round, roundParser: widget.roundParser),
+          ThrowsTab(round: _round),
           CourseTab(round: _round),
           DrivesTab(round: _round),
           PuttingTab(round: _round),

@@ -29,6 +29,12 @@ class RoundParser extends ChangeNotifier {
   bool get isProcessing => _isProcessing;
   String get lastError => _lastError;
 
+  /// Set an existing round (e.g., when loading from history)
+  void setRound(DGRound round) {
+    _parsedRound = round;
+    notifyListeners();
+  }
+
   Future<bool> parseVoiceTranscript(
     String transcript, {
     String? courseName,
@@ -113,7 +119,9 @@ class RoundParser extends ChangeNotifier {
 
       // Save to Firestore
       debugPrint('Saving parsed round to Firestore...');
-      final firestoreSuccess = await locator.get<FirestoreRoundService>().addRound(_parsedRound!);
+      final firestoreSuccess = await locator
+          .get<FirestoreRoundService>()
+          .addRound(_parsedRound!);
       if (firestoreSuccess) {
         debugPrint('Successfully saved round to Firestore');
       } else {
@@ -171,7 +179,11 @@ class RoundParser extends ChangeNotifier {
       );
     }).toList();
 
-    return DGRound(course: round.course, holes: enhancedHoles, id: round.id);
+    return DGRound(
+      courseName: round.courseName,
+      holes: enhancedHoles,
+      id: round.id,
+    );
   }
 
   void updateHole(int holeIndex, DGHole updatedHole) {
@@ -180,7 +192,7 @@ class RoundParser extends ChangeNotifier {
       updatedHoles[holeIndex] = updatedHole;
 
       _parsedRound = DGRound(
-        course: _parsedRound!.course,
+        courseName: _parsedRound!.courseName,
         holes: updatedHoles,
         id: _parsedRound!.id,
       );

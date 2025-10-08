@@ -130,6 +130,7 @@ class GeminiService {
       final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
 
       jsonMap['id'] = _uuid.v4();
+      jsonMap['courseName'] = courseName;
 
       debugPrint('YAML parsed successfully, converting to DGRound...');
       return DGRound.fromJson(jsonMap);
