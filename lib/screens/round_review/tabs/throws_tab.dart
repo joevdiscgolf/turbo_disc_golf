@@ -28,182 +28,172 @@ class _ThrowsTabState extends State<ThrowsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Score summary card
-        Container(
-          margin: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Round Summary',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildScoreKPICard(
-                            context,
-                            'Total Score',
-                            '${widget.roundParser.getTotalScore()}',
-                            const Color(0xFF2196F3),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildScoreKPICard(
-                            context,
-                            'Par',
-                            '${widget.roundParser.getTotalPar()}',
-                            const Color(0xFFFFA726),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildScoreKPICard(
-                            context,
-                            'Score',
-                            widget.roundParser.getRelativeToPar() >= 0
-                                ? '+${widget.roundParser.getRelativeToPar()}'
-                                : '${widget.roundParser.getRelativeToPar()}',
-                            _getScoreColor(
-                              widget.roundParser.getRelativeToPar(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 80),
+      itemCount: _round.holes.length + 1, // +1 for the summary card
+      itemBuilder: (context, index) {
+        // First item is the summary card
+        if (index == 0) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        // Holes list
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 80),
-            itemCount: _round.holes.length,
-            itemBuilder: (context, index) {
-              final DGHole hole = _round.holes[index];
-              final String scoreName = widget.roundParser.getScoreName(
-                hole.relativeHoleScore,
-              );
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: ExpansionTile(
-                  title: Row(
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        child: Text(
-                          '${hole.number}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Hole ${hole.number}'),
-                            Text(
-                              'Par ${hole.par} • ${hole.feet} ft',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      Row(
                         children: [
-                          Text(
-                            '${hole.holeScore}',
-                            style: Theme.of(context).textTheme.titleLarge,
+                          Expanded(
+                            child: _buildScoreKPICard(
+                              context,
+                              'Total Score',
+                              '${widget.roundParser.getTotalScore()}',
+                              const Color(0xFF2196F3),
+                            ),
                           ),
-                          Text(
-                            scoreName,
-                            style: TextStyle(
-                              color: _getScoreColor(hole.relativeHoleScore),
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildScoreKPICard(
+                              context,
+                              'Par',
+                              '${widget.roundParser.getTotalPar()}',
+                              const Color(0xFFFFA726),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildScoreKPICard(
+                              context,
+                              'Score',
+                              widget.roundParser.getRelativeToPar() >= 0
+                                  ? '+${widget.roundParser.getRelativeToPar()}'
+                                  : '${widget.roundParser.getRelativeToPar()}',
+                              _getScoreColor(
+                                widget.roundParser.getRelativeToPar(),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...hole.throws.asMap().entries.map((entry) {
-                            final throwIndex = entry.key;
-                            final discThrow = entry.value;
+                ),
+              ],
+            ),
+          );
+        }
 
-                            return ThrowListItem(
-                              discThrow: discThrow,
-                              throwIndex: throwIndex,
-                              onEdit: () {
-                                // todo: Implement throw editing
-                              },
-                            );
-                          }),
-                          // Add throw button
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: OutlinedButton.icon(
-                                onPressed: () {
-                                  _showAddThrowDialog(context, hole);
-                                },
-                                icon: const Icon(Icons.add, size: 20),
-                                label: const Text('Add Throw'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
-                                  side: BorderSide(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.secondary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+        // Remaining items are hole cards
+        final holeIndex = index - 1;
+        final DGHole hole = _round.holes[holeIndex];
+        final String scoreName = widget.roundParser.getScoreName(
+          hole.relativeHoleScore,
+        );
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ExpansionTile(
+            title: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  child: Text(
+                    '${hole.number}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Hole ${hole.number}'),
+                      Text(
+                        'Par ${hole.par} • ${hole.feet} ft',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${hole.holeScore}',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    Text(
+                      scoreName,
+                      style: TextStyle(
+                        color: _getScoreColor(hole.relativeHoleScore),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-              );
-            },
+              ],
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...hole.throws.asMap().entries.map((entry) {
+                      final throwIndex = entry.key;
+                      final discThrow = entry.value;
+
+                      return ThrowListItem(
+                        discThrow: discThrow,
+                        throwIndex: throwIndex,
+                        onEdit: () {
+                          // todo: Implement throw editing
+                        },
+                      );
+                    }),
+                    // Add throw button
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            _showAddThrowDialog(context, hole);
+                          },
+                          icon: const Icon(Icons.add, size: 20),
+                          label: const Text('Add Throw'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.secondary,
+                            side: BorderSide(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.secondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

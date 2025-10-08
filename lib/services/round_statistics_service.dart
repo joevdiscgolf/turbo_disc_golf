@@ -1093,6 +1093,54 @@ class RoundStatisticsService {
     });
   }
 
+  Map<String, double> getDiscParRates() {
+    final Map<String, int> parsByDisc = {};
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+        if (hole.relativeHoleScore == 0) {
+          parsByDisc[discName] = (parsByDisc[discName] ?? 0) + 1;
+        }
+      }
+    }
+
+    return throwsByDisc.map((disc, count) {
+      final pars = parsByDisc[disc] ?? 0;
+      return MapEntry(disc, count > 0 ? (pars / count) * 100 : 0.0);
+    });
+  }
+
+  Map<String, double> getDiscBogeyRates() {
+    final Map<String, int> bogeysByDisc = {};
+    final Map<String, int> throwsByDisc = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      final discName = _extractDiscName(teeShot);
+
+      if (discName != null) {
+        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+        if (hole.relativeHoleScore > 0) {
+          bogeysByDisc[discName] = (bogeysByDisc[discName] ?? 0) + 1;
+        }
+      }
+    }
+
+    return throwsByDisc.map((disc, count) {
+      final bogeys = bogeysByDisc[disc] ?? 0;
+      return MapEntry(disc, count > 0 ? (bogeys / count) * 100 : 0.0);
+    });
+  }
+
   Map<String, double> getDiscAverageScores() {
     final Map<String, List<int>> scoresByDisc = {};
 

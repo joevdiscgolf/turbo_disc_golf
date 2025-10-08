@@ -16,6 +16,8 @@ class DiscsTab extends StatelessWidget {
     final RoundStatisticsService statsService = RoundStatisticsService(round);
 
     final discBirdieRates = statsService.getDiscBirdieRates();
+    final discParRates = statsService.getDiscParRates();
+    final discBogeyRates = statsService.getDiscBogeyRates();
     final discAverageScores = statsService.getDiscAverageScores();
     final discPerformances = statsService.getDiscPerformanceSummaries();
     final discThrowCounts = statsService.getDiscThrowCounts();
@@ -28,22 +30,54 @@ class DiscsTab extends StatelessWidget {
       );
     }
 
-    // Sort all discs by birdie rate (discs without birdie data will have 0%)
+    // Sort all discs by birdie rate (primary), then by throw count (secondary)
     final sortedDiscs = discPerformances.map((perf) {
       final birdieRate = discBirdieRates[perf.discName] ?? 0.0;
       return MapEntry(perf.discName, birdieRate);
     }).toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        // First compare by birdie rate (descending)
+        final birdieRateComparison = b.value.compareTo(a.value);
+        if (birdieRateComparison != 0) return birdieRateComparison;
+
+        // If birdie rates are equal, compare by throw count (descending)
+        final aPerf = discPerformances.firstWhere((p) => p.discName == a.key);
+        final bPerf = discPerformances.firstWhere((p) => p.discName == b.key);
+        return bPerf.totalShots.compareTo(aPerf.totalShots);
+      });
+
+    // Get all discs with the top birdie rate(s) - could be more than 3
+    final topBirdieRate = sortedDiscs.isNotEmpty ? sortedDiscs.first.value : 0.0;
+    final topPerformingDiscs = sortedDiscs
+        .where((disc) => disc.value == topBirdieRate && disc.value > 0)
+        .toList();
+
+    // Get all discs with tee shots (birdie rate > 0 means used off tee)
+    final discsWithTeeSshots = sortedDiscs
+        .where((disc) => discBirdieRates.containsKey(disc.key))
+        .toList();
+
+    // Get worst performing discs (lowest birdie rate among discs with tee shots)
+    final worstBirdieRate = discsWithTeeSshots.isNotEmpty
+        ? discsWithTeeSshots.last.value
+        : 0.0;
+    final worstPerformingDiscs = discsWithTeeSshots
+        .where((disc) => disc.value == worstBirdieRate && disc.value < topBirdieRate)
+        .toList();
 
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
       children: addRunSpacing(
         [
-          if (discBirdieRates.isNotEmpty)
-            _buildTopPerformingDiscs(context, sortedDiscs.take(3).toList()),
+          if (topPerformingDiscs.isNotEmpty)
+            _buildTopPerformingDiscs(context, topPerformingDiscs),
+          if (worstPerformingDiscs.isNotEmpty)
+            _buildWorstPerformingDiscs(context, worstPerformingDiscs),
           ...sortedDiscs.map((entry) {
             final discName = entry.key;
             final birdieRate = entry.value;
+            final parRate = discParRates[discName] ?? 0.0;
+            final bogeyRate = discBogeyRates[discName] ?? 0.0;
             final avgScore = discAverageScores[discName] ?? 0.0;
             final throwCount = discThrowCounts[discName] ?? 0;
             final c1InRegPct = discC1InRegPercentages[discName] ?? 0.0;
@@ -56,6 +90,8 @@ class DiscsTab extends StatelessWidget {
               context,
               discName,
               birdieRate,
+              parRate,
+              bogeyRate,
               avgScore,
               throwCount,
               c1InRegPct,
@@ -103,6 +139,49 @@ class DiscsTab extends StatelessWidget {
                   context,
                   entry.key,
                   entry.value,
+                  const Color(0xFF00F5D4),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorstPerformingDiscs(
+    BuildContext context,
+    List<MapEntry<String, double>> worstDiscs,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Worst Performing Discs',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Birdie Rate by Disc',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: worstDiscs.map((entry) {
+                return _buildTopDiscCard(
+                  context,
+                  entry.key,
+                  entry.value,
+                  const Color(0xFFFF7A7A),
                 );
               }).toList(),
             ),
@@ -116,14 +195,15 @@ class DiscsTab extends StatelessWidget {
     BuildContext context,
     String discName,
     double birdieRate,
+    Color color,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF00F5D4).withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFF00F5D4).withValues(alpha: 0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -132,7 +212,7 @@ class DiscsTab extends StatelessWidget {
             '${birdieRate.toStringAsFixed(0)}%',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF00F5D4),
+                  color: color,
                 ),
           ),
           const SizedBox(height: 4),
@@ -151,6 +231,8 @@ class DiscsTab extends StatelessWidget {
     BuildContext context,
     String discName,
     double birdieRate,
+    double parRate,
+    double bogeyRate,
     double avgScore,
     int throwCount,
     double c1InRegPct,
@@ -187,6 +269,16 @@ class DiscsTab extends StatelessWidget {
                   context,
                   'Birdie: ${birdieRate.toStringAsFixed(0)}%',
                   const Color(0xFF00F5D4),
+                ),
+                _buildStatChip(
+                  context,
+                  'Par: ${parRate.toStringAsFixed(0)}%',
+                  Colors.grey,
+                ),
+                _buildStatChip(
+                  context,
+                  'Bogey: ${bogeyRate.toStringAsFixed(0)}%',
+                  const Color(0xFFFF7A7A),
                 ),
                 _buildStatChip(
                   context,
