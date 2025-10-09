@@ -722,9 +722,10 @@ class RoundStatisticsService {
       // Get tee shot (first throw)
       final teeShot = hole.throws.first;
 
-      // Fairway hit: tee shot landed on fairway or was parked
-      if (teeShot.landingSpot == LandingSpot.fairway ||
-          teeShot.landingSpot == LandingSpot.parked) {
+      // Fairway hit: tee shot that didn't go off_fairway, OB, or other
+      if (teeShot.landingSpot != LandingSpot.offFairway &&
+          teeShot.landingSpot != LandingSpot.outOfBounds &&
+          teeShot.landingSpot != LandingSpot.other) {
         fairwayHits++;
       }
 
@@ -743,9 +744,9 @@ class RoundStatisticsService {
       }
       if (hadOB) obHoles++;
 
-      // C1 in Regulation: reached Circle 1 in ≤(par-1) strokes
-      // C2 in Regulation: reached Circle 2 in ≤(par-1) strokes
-      final regulationStrokes = hole.par - 1;
+      // C1 in Regulation: reached Circle 1 in ≤(par-2) strokes (chance for birdie)
+      // C2 in Regulation: reached Circle 2 in ≤(par-2) strokes (chance for birdie)
+      final regulationStrokes = hole.par - 2;
       for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
         final discThrow = hole.throws[i];
         if (discThrow.landingSpot == LandingSpot.circle1 ||

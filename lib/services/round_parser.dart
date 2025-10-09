@@ -17,6 +17,7 @@ class RoundParser extends ChangeNotifier {
   DGRound? _parsedRound;
   bool _isProcessing = false;
   String _lastError = '';
+  bool _shouldNavigateToReview = false;
 
   RoundParser({
     required GeminiService geminiService,
@@ -29,11 +30,19 @@ class RoundParser extends ChangeNotifier {
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
   String get lastError => _lastError;
+  bool get shouldNavigateToReview => _shouldNavigateToReview;
 
   /// Set an existing round (e.g., when loading from history)
+  /// This does NOT trigger navigation to review screen
   void setRound(DGRound round) {
     _parsedRound = round;
+    _shouldNavigateToReview = false;
     notifyListeners();
+  }
+
+  /// Resets the navigation flag after navigation has occurred
+  void clearNavigationFlag() {
+    _shouldNavigateToReview = false;
   }
 
   Future<bool> parseVoiceTranscript(
@@ -71,6 +80,7 @@ class RoundParser extends ChangeNotifier {
           );
           _parsedRound = cachedRound;
           _isProcessing = false;
+          _shouldNavigateToReview = true; // Signal that navigation should happen
           notifyListeners();
           return true;
         } else {
@@ -152,6 +162,7 @@ class RoundParser extends ChangeNotifier {
       }
 
       _isProcessing = false;
+      _shouldNavigateToReview = true; // Signal that navigation should happen
       notifyListeners();
       return true;
     } catch (e) {

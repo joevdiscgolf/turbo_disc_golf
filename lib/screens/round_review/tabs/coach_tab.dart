@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 
 class CoachTab extends StatelessWidget {
   final DGRound round;
@@ -36,12 +37,7 @@ class CoachTab extends StatelessWidget {
               color: Theme.of(context).colorScheme.primaryContainer,
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  round.aiCoachSuggestion!,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                ),
+                child: CustomMarkdownContent(data: round.aiCoachSuggestion!),
               ),
             )
           else

@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
@@ -26,13 +27,32 @@ class _MainWrapperState extends State<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    String appBarTitle;
+    switch (_selectedIndex) {
+      case 0:
+        appBarTitle = 'Add Round';
+        break;
+      case 1:
+        appBarTitle = 'Round History';
+        break;
+      case 2:
+        appBarTitle = 'Test AI Summary';
+        break;
+      default:
+        appBarTitle = 'Add Round';
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_selectedIndex == 0 ? 'Round History' : 'Add Round'),
+        title: Text(appBarTitle),
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: [const RecordRoundScreen(), _buildRoundsTab()],
+        children: [
+          const RecordRoundScreen(),
+          _buildRoundsTab(),
+          const TestAiSummaryScreen(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
@@ -40,7 +60,14 @@ class _MainWrapperState extends State<MainWrapper> {
             icon: Icon(Icons.add_circle),
             label: 'Add Round',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Rounds'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'Rounds',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.psychology),
+            label: 'Test AI',
+          ),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -134,17 +161,13 @@ class _MainWrapperState extends State<MainWrapper> {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          final roundParser = locator.get<RoundParser>();
-
           // Set the existing round so the parser can calculate stats
-          roundParser.setRound(round);
+          locator.get<RoundParser>().setRound(round);
 
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => RoundReviewScreen(
-                round: round,
-              ),
+              builder: (context) => RoundReviewScreen(round: round),
             ),
           );
         },

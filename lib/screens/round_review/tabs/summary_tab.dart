@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 
 class SummaryTab extends StatelessWidget {
   final DGRound round;
@@ -24,10 +25,7 @@ class SummaryTab extends StatelessWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  round.aiSummary!,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+                child: CustomMarkdownContent(data: round.aiSummary!),
               ),
             )
           else
