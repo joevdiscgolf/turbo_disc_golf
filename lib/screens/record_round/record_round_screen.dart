@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -139,11 +140,17 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
       if (roundId != _lastNavigatedRoundId) {
         _lastNavigatedRoundId = roundId;
         _roundParser.clearNavigationFlag(); // Clear the flag before navigating
+
+        final round = _roundParser.parsedRound!;
+
+        // Navigate to review screen with story shown on load
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                RoundReviewScreen(round: _roundParser.parsedRound!),
+            builder: (context) => RoundReviewScreen(
+              round: round,
+              showStoryOnLoad: true,
+            ),
           ),
         );
       }

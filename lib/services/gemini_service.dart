@@ -528,24 +528,11 @@ $schemaExample
       var responseText = response.text ?? '';
       debugPrint('Gemini insights raw response: $responseText');
 
-      // Extract summary and coaching sections using markdown headings
-      final summaryMatch = RegExp(
-        r'#\s*Summary\s*\n([\s\S]*?)(?=\n#\s*Coaching|$)',
-        caseSensitive: false,
-      ).firstMatch(responseText);
+      // Split on the separator
+      final parts = responseText.split('---SPLIT---');
 
-      final coachingMatch = RegExp(
-        r'#\s*Coaching\s*\n([\s\S]*?)$',
-        caseSensitive: false,
-      ).firstMatch(responseText);
-
-      // Include the headings in the extracted content
-      final summary = summaryMatch != null
-          ? '# Summary\n${summaryMatch.group(1)?.trim() ?? ''}'
-          : '';
-      final coaching = coachingMatch != null
-          ? '# Coaching\n${coachingMatch.group(1)?.trim() ?? ''}'
-          : '';
+      final summary = parts.isNotEmpty ? parts[0].trim() : '';
+      final coaching = parts.length > 1 ? parts[1].trim() : '';
 
       debugPrint('Parsed summary length: ${summary.length} chars');
       debugPrint('Parsed coaching length: ${coaching.length} chars');
@@ -628,8 +615,6 @@ $topMistakes
 
 FORMAT YOUR RESPONSE IN MARKDOWN EXACTLY LIKE THIS:
 
-# Summary
-
 ## What Went Well
 [Write 1-2 paragraphs with SPECIFIC NUMBERS for every claim. Example: "You made 8/10 C1 putts" or "The Destroyer was solid with 12/15 good throws (80%)"]
 
@@ -639,7 +624,7 @@ FORMAT YOUR RESPONSE IN MARKDOWN EXACTLY LIKE THIS:
 ## Overall Performance
 [Write 1 paragraph summarizing the round with specific stats about score, birdies, bogeys, etc.]
 
-# Coaching
+---SPLIT---
 
 ## Priority Areas for Practice
 [Write 1-2 paragraphs identifying the biggest weaknesses based on the stats, with specific recommendations]
@@ -648,12 +633,14 @@ FORMAT YOUR RESPONSE IN MARKDOWN EXACTLY LIKE THIS:
 [Write 1-2 paragraphs about course management, disc selection based on the data]
 
 CRITICAL FORMATTING RULES:
-- Return raw markdown (use # for main headings, ## for subheadings)
+- Return raw markdown (use ## for section headings)
 - Do NOT use JSON format
 - Do NOT wrap in markdown code blocks (no ``` or ```markdown)
 - Be specific with numbers for EVERY claim
 - Avoid overly enthusiastic language - be direct and honest
-- Start directly with "# Summary" as the first line
+- Start directly with "## What Went Well" as the first line
+- Use "---SPLIT---" to separate the summary section from the coaching section
+- Do NOT include "# Summary" or "# Coaching" headings - only use ## subheadings
 ''';
   }
 }
