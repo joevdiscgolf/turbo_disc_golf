@@ -10,14 +10,21 @@ class CourseTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    // Use cached analysis if available, otherwise compute live
+    final analysis = round.analysis;
 
-    final scoringStats = statsService.getScoringStats();
-    final totalScore = statsService.getTotalScoreRelativeToPar();
-    final bounceBackPct = statsService.getBounceBackPercentage();
-    final birdieRateByPar = statsService.getBirdieRateByPar();
-    final birdieRateByLength = statsService.getBirdieRateByHoleLength();
-    final avgBirdieDistance = statsService.getAverageBirdieHoleDistance();
+    final scoringStats = analysis?.scoringStats ??
+        RoundStatisticsService(round).getScoringStats();
+    final totalScore = analysis?.totalScoreRelativeToPar ??
+        RoundStatisticsService(round).getTotalScoreRelativeToPar();
+    final bounceBackPct = analysis?.bounceBackPercentage ??
+        RoundStatisticsService(round).getBounceBackPercentage();
+    final birdieRateByPar = analysis?.birdieRateByPar ??
+        RoundStatisticsService(round).getBirdieRateByPar();
+    final birdieRateByLength = analysis?.birdieRateByLength ??
+        RoundStatisticsService(round).getBirdieRateByHoleLength();
+    final avgBirdieDistance = analysis?.avgBirdieHoleDistance ??
+        RoundStatisticsService(round).getAverageBirdieHoleDistance();
 
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),

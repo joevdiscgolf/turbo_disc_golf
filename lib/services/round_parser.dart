@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart'
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 
 class RoundParser extends ChangeNotifier {
   final GeminiService _geminiService;
@@ -16,6 +17,7 @@ class RoundParser extends ChangeNotifier {
   DGRound? _parsedRound;
   bool _isProcessing = false;
   String _lastError = '';
+  bool _shouldNavigateToReview = false;
 
   RoundParser({
     required GeminiService geminiService,
@@ -28,11 +30,19 @@ class RoundParser extends ChangeNotifier {
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
   String get lastError => _lastError;
+  bool get shouldNavigateToReview => _shouldNavigateToReview;
 
   /// Set an existing round (e.g., when loading from history)
+  /// This does NOT trigger navigation to review screen
   void setRound(DGRound round) {
     _parsedRound = round;
+    _shouldNavigateToReview = false;
     notifyListeners();
+  }
+
+  /// Resets the navigation flag after navigation has occurred
+  void clearNavigationFlag() {
+    _shouldNavigateToReview = false;
   }
 
   Future<bool> parseVoiceTranscript(
@@ -70,6 +80,7 @@ class RoundParser extends ChangeNotifier {
           );
           _parsedRound = cachedRound;
           _isProcessing = false;
+          _shouldNavigateToReview = true; // Signal that navigation should happen
           notifyListeners();
           return true;
         } else {
@@ -108,6 +119,28 @@ class RoundParser extends ChangeNotifier {
       // Validate and enhance the parsed data
       _parsedRound = _validateAndEnhanceRound(_parsedRound!);
 
+      // Generate analysis from round data
+      debugPrint('Generating round analysis...');
+      final analysis = RoundAnalysisGenerator.generateAnalysis(_parsedRound!);
+
+      // Generate AI insights (summary and coaching)
+      debugPrint('Generating AI summary and coaching...');
+      final insights = await _geminiService.generateRoundInsights(
+        round: _parsedRound!,
+        analysis: analysis,
+      );
+
+      // Update round with analysis and insights
+      _parsedRound = DGRound(
+        id: _parsedRound!.id,
+        courseName: _parsedRound!.courseName,
+        courseId: _parsedRound!.courseId,
+        holes: _parsedRound!.holes,
+        analysis: analysis,
+        aiSummary: insights['summary'],
+        aiCoachSuggestion: insights['coaching'],
+      );
+
       // Save to shared preferences for future use
       debugPrint('Saving parsed round to shared preferences...');
       final savedLocally = await _storageService.saveRound(_parsedRound!);
@@ -129,6 +162,7 @@ class RoundParser extends ChangeNotifier {
       }
 
       _isProcessing = false;
+      _shouldNavigateToReview = true; // Signal that navigation should happen
       notifyListeners();
       return true;
     } catch (e) {

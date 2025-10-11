@@ -107,7 +107,6 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
     _voiceService.addListener(_onVoiceServiceChange);
     _roundParser.addListener(_onParserChange);
 
-    print('loading firestore rounds');
     locator.get<FirestoreRoundService>().getRounds().then((rounds) {
       debugPrint('Firestore rounds: ${rounds.length}');
     });
@@ -130,18 +129,25 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
   }
 
   void _onParserChange() {
-    if (_roundParser.parsedRound != null && mounted) {
+    // Only navigate if this is a newly parsed round (not loaded from history)
+    if (_roundParser.parsedRound != null &&
+        _roundParser.shouldNavigateToReview &&
+        mounted) {
       final roundId = _roundParser.parsedRound!.id;
 
       // Only navigate if this is a new round (not already navigated to)
       if (roundId != _lastNavigatedRoundId) {
         _lastNavigatedRoundId = roundId;
+        _roundParser.clearNavigationFlag(); // Clear the flag before navigating
+
+        final round = _roundParser.parsedRound!;
+
+        // Navigate to review screen with story shown on load
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RoundReviewScreen(
-              round: _roundParser.parsedRound!,
-            ),
+            builder: (context) =>
+                RoundReviewScreen(round: round, showStoryOnLoad: true),
           ),
         );
       }

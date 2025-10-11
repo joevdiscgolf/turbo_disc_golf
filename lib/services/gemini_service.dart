@@ -256,10 +256,17 @@ CRITICAL DISTANCE RULES:
 
 CRITICAL THROW COUNTING - REASON THROUGH EACH HOLE:
 SCORE-FIRST VALIDATION: When the player states their score (birdie, par, bogey, eagle, etc.), that is the GROUND TRUTH.
+- The stated score ALWAYS takes priority over your throw count
 - Calculate the expected throw count from the stated score FIRST
 - Then ensure you parse EXACTLY that many throws
 - If you can't find enough throws, you MISSED one - re-analyze the description
-- Examples: "for par" on par 3 = 3 throws, "for birdie" on par 3 = 2 throws, "for birdie" on par 4 = 3 throws
+- Common score phrases: "I took a bogey", "I made par", "for birdie", "so I got to par", "tapped in for bogey"
+- Examples:
+  - "I took a bogey" on par 3 = 4 throws total
+  - "for par" on par 3 = 3 throws
+  - "for birdie" on par 3 = 2 throws
+  - "for birdie" on par 4 = 3 throws
+  - "I took a double bogey" on par 3 = 5 throws
 
 For EVERY hole, count throws carefully by analyzing the narrative:
 1. Start with the tee shot (index 0)
@@ -271,11 +278,14 @@ For EVERY hole, count throws carefully by analyzing the narrative:
 5. "Took a bogey/par/birdie" or "for par/birdie/bogey" = they FINISHED the hole, add final made putt if missing
 6. Pay special attention to phrases that indicate multiple throws:
    - "Two putts" or "two-putted" = ALWAYS 2 separate putt throws (NEVER combine!)
-   - "Three putts" = ALWAYS 3 separate putt throws
+   - "Three putts" or "3-putted" = ALWAYS 3 separate putt throws
    - "Missed the putt" or "I missed the putt" = ALWAYS a separate throw (don't put this in notes of previous throw!)
    - "Missed the putt, tapped in" = 2 separate throws (missed putt + tap-in)
-   - "Missed the par putt, took bogey" = 2 throws (missed + made final putt)
+   - "Missed the par putt" = they MISSED the putt for par, need another putt for bogey (2 throws: missed par putt + made bogey putt)
+   - "Missed the birdie putt" = they MISSED the putt for birdie, need another putt for par (2 throws: missed birdie putt + made par putt)
+   - "Missed the par putt, took bogey" = 2 throws (missed par putt + made bogey putt)
    - "Made the comeback putt" = 2 putts (first missed + comeback made)
+   - "3-putted" or "three-putted" = ALWAYS exactly 3 putt throws (2 missed + 1 made)
    - "so I got to par/birdie/bogey" = they finished the hole, verify throw count matches stated score
    - "Two putts for par/birdie/bogey" = ALWAYS create 2 separate putt entries
    - "so I laid up" or "had to lay up" = a separate layup/approach throw AFTER the previous throw
@@ -301,20 +311,29 @@ For EVERY hole, count throws carefully by analyzing the narrative:
    - Par on par 4 = exactly 4 throws (NOT 3!)
    - Par on par 3 = exactly 3 throws (NOT 2!) (or 2 throws + 1 penalty)
    - Bogey on par 3 = exactly 4 throws (or 3 throws + 1 penalty)
+   - Double Bogey on par 3 = exactly 5 throws (or 4 throws + 1 penalty)
    - LAST THROW MUST HAVE landingSpot: in_basket
    - If your throw count doesn't match the score, you MISSED A THROW - go back and find it!
+   - VALIDATION PROCESS: For each hole, ask yourself:
+     1. What score did they say? (birdie/par/bogey/etc.)
+     2. What's the par?
+     3. Calculate: par + score difference = expected throw count
+     4. Count your parsed throws
+     5. If counts don't match, you MISSED a throw - re-read the description!
    - BEFORE returning results, count your throws and verify they match the stated score!
 
 
 EXAMPLES FROM YOUR ACTUAL MISTAKES:
 
-Hole 2: "250 ft par 3. Threw fd3 to circle one about 25 ft away, missed the putt off cage, missed the par putt, took a bogey"
-YOUR MISTAKES: 1) Didn't complete hole, 2) Used off_fairway for missed putt
+Hole 2: "250 ft par 3. I threw my fd3 to Circle one about 25 ft away missed the putt off the cage and then miss the par putt because it's bad back at me so I took a bogey there"
+SCORE VALIDATION: "I took a bogey" on par 3 = 4 throws total (par 3 + 1 = 4)
+YOUR MISTAKES: 1) Only counted 3 throws instead of 4, 2) Didn't detect 3-putt, 3) Ignored explicit "took a bogey"
+CRITICAL: "missed the par putt" means they MISSED the putt that would have been for par, so they need ANOTHER putt for bogey!
 CORRECT (4 throws for bogey on par 3):
-- index 0: Tee shot, landingSpot: circle_1
-- index 1: First putt (missed off cage), distanceFeet: 25 (NO landingSpot or use parked)
-- index 2: Par putt (missed), distanceFeet: 8 (NO landingSpot, NOT off_fairway!)
-- index 3: Made bogey putt, distanceFeet: 8, landingSpot: in_basket (MUST end in basket!)
+- index 0: Tee shot, notes: "threw fd3 to circle one", landingSpot: circle_1
+- index 1: First putt (missed off cage), distanceFeet: 25, notes: "missed the putt off the cage", landingSpot: circle_1
+- index 2: Second putt (missed the par putt), distanceFeet: 8, notes: "miss the par putt because it bounced back"
+- index 3: Third putt (made for bogey), distanceFeet: 8, notes: "made for bogey", landingSpot: in_basket (MUST end in basket!)
 
 Hole 3: "380 ft par 3. Threw forehand 70 ft short. Tried putt from 70 ft, rolled to 15 ft, missed that 15 ft putt, took bogey"
 YOUR MISTAKE: Didn't complete the hole - stopped after missed putt
@@ -492,5 +511,136 @@ $schemaExample
       debugPrint('Gemini connection test failed: $e');
       return false;
     }
+  }
+
+  /// Generates AI summary and coaching based on round data and analysis
+  Future<Map<String, String>> generateRoundInsights({
+    required DGRound round,
+    required dynamic analysis, // RoundAnalysis
+  }) async {
+    try {
+      final prompt = _buildInsightsPrompt(round, analysis);
+
+      final content = [Content.text(prompt)];
+      final response = await _model.generateContent(content);
+
+      // Parse response in markdown format
+      var responseText = response.text ?? '';
+      debugPrint('Gemini insights raw response: $responseText');
+
+      // Split on the separator
+      final parts = responseText.split('---SPLIT---');
+
+      final summary = parts.isNotEmpty ? parts[0].trim() : '';
+      final coaching = parts.length > 1 ? parts[1].trim() : '';
+
+      debugPrint('Parsed summary length: ${summary.length} chars');
+      debugPrint('Parsed coaching length: ${coaching.length} chars');
+
+      return {
+        'summary': summary,
+        'coaching': coaching,
+      };
+    } catch (e) {
+      debugPrint('Error generating insights: $e');
+      return {'summary': '', 'coaching': ''};
+    }
+  }
+
+
+  String _buildInsightsPrompt(DGRound round, dynamic analysis) {
+    // Format disc performance data
+    final discPerf = (analysis.discPerformances as List)
+        .take(5)
+        .map((disc) =>
+            '- ${disc.discName}: ${disc.totalShots} throws, ${disc.goodPercentage.toStringAsFixed(0)}% good')
+        .join('\n');
+
+    // Format top mistakes
+    final topMistakes = (analysis.mistakeTypes as List)
+        .take(3)
+        .map((m) => '- ${m.label}: ${m.count} (${m.percentage.toStringAsFixed(0)}%)')
+        .join('\n');
+
+    return '''
+You are a professional disc golf coach analyzing a completed round. Based on the round data and statistics below, provide a comprehensive, honest analysis with specific numbers to back up every claim.
+
+TONE AND STYLE:
+- Be direct, factual, and constructive
+- Avoid overly enthusiastic language (no "remarkable", "outstanding", "exceptional")
+- Avoid judgmental or snarky language (no "never ideal", "unfortunately", "sadly")
+- Use specific numbers for EVERY claim (e.g., "you made 3/5 C2 putts" not "good putting")
+- Present facts neutrally - let the numbers speak for themselves
+- Focus on constructive feedback - what to work on and why
+- When mentioning disc performance, cite specific stats (percentage of good throws, total throws)
+
+ROUND DATA:
+- Course: ${round.courseName}
+- Total Holes: ${round.holes.length}
+- Score: ${analysis.totalScoreRelativeToPar >= 0 ? '+' : ''}${analysis.totalScoreRelativeToPar}
+
+SCORING BREAKDOWN:
+- Birdies: ${analysis.scoringStats.birdies}
+- Pars: ${analysis.scoringStats.pars}
+- Bogeys: ${analysis.scoringStats.bogeys}
+- Double Bogey+: ${analysis.scoringStats.doubleBogeyPlus}
+
+PUTTING STATS:
+- C1 Make %: ${analysis.puttingStats.c1Percentage.toStringAsFixed(1)}%
+- C1 attempts: ${analysis.puttingStats.c1Attempts}
+- C1 makes: ${analysis.puttingStats.c1Makes}
+- C1 misses: ${analysis.puttingStats.c1Misses}
+- C2 Make %: ${analysis.puttingStats.c2Percentage.toStringAsFixed(1)}%
+- C2 attempts: ${analysis.puttingStats.c2Attempts}
+- C2 makes: ${analysis.puttingStats.c2Makes}
+- C2 misses: ${analysis.puttingStats.c2Misses}
+- Average Birdie Putt: ${analysis.avgBirdiePuttDistance.toStringAsFixed(0)} ft
+
+DRIVING STATS:
+- Fairway Hit %: ${analysis.coreStats.fairwayHitPct.toStringAsFixed(1)}%
+- C1 in Regulation %: ${analysis.coreStats.c1InRegPct.toStringAsFixed(1)}%
+- OB %: ${analysis.coreStats.obPct.toStringAsFixed(1)}%
+
+DISC PERFORMANCE (Top 5):
+$discPerf
+
+MISTAKES:
+- Total: ${analysis.totalMistakes}
+- Driving: ${analysis.mistakesByCategory['driving']}
+- Approach: ${analysis.mistakesByCategory['approach']}
+- Putting: ${analysis.mistakesByCategory['putting']}
+
+TOP MISTAKE TYPES:
+$topMistakes
+
+FORMAT YOUR RESPONSE IN MARKDOWN EXACTLY LIKE THIS:
+
+## What Went Well
+[Write 1-2 paragraphs with SPECIFIC NUMBERS for every claim. Example: "You made 8/10 C1 putts" or "The Destroyer was solid with 12/15 good throws (80%)"]
+
+## What Didn't Go Well
+[Write 1-2 paragraphs with SPECIFIC NUMBERS, being direct but constructive. Example: "You missed 2/5 C2 putts (40%)" or "You went OB 3 times out of 18 drives (16.7%)". State the facts without judgmental commentary]
+
+## Overall Performance
+[Write 1 paragraph summarizing the round with specific stats about score, birdies, bogeys, etc.]
+
+---SPLIT---
+
+## Priority Areas for Practice
+[Write 1-2 paragraphs identifying the biggest weaknesses based on the stats, with specific recommendations]
+
+## Strategic Adjustments
+[Write 1-2 paragraphs about course management, disc selection based on the data]
+
+CRITICAL FORMATTING RULES:
+- Return raw markdown (use ## for section headings)
+- Do NOT use JSON format
+- Do NOT wrap in markdown code blocks (no ``` or ```markdown)
+- Be specific with numbers for EVERY claim
+- Avoid overly enthusiastic language - be direct and honest
+- Start directly with "## What Went Well" as the first line
+- Use "---SPLIT---" to separate the summary section from the coaching section
+- Do NOT include "# Summary" or "# Coaching" headings - only use ## subheadings
+''';
   }
 }

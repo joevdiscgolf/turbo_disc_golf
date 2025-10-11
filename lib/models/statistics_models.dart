@@ -1,5 +1,10 @@
 // Models for round statistics and analysis
 
+import 'package:json_annotation/json_annotation.dart';
+
+part 'statistics_models.g.dart';
+
+@JsonSerializable()
 class DiscStats {
   final String discName;
   final int timesThrown;
@@ -32,8 +37,13 @@ class DiscStats {
     // Simplified: birdie = -1, par = 0, bogey = +1
     return (birdies * -1 + bogeys * 1) / timesThrown;
   }
+
+  factory DiscStats.fromJson(Map<String, dynamic> json) =>
+      _$DiscStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$DiscStatsToJson(this);
 }
 
+@JsonSerializable()
 class PuttingStats {
   final String distanceRange; // e.g., "0-15 ft", "15-33 ft", "33-66 ft"
   final int attempted;
@@ -46,8 +56,13 @@ class PuttingStats {
   });
 
   double get makePercentage => attempted > 0 ? (made / attempted) * 100 : 0.0;
+
+  factory PuttingStats.fromJson(Map<String, dynamic> json) =>
+      _$PuttingStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$PuttingStatsToJson(this);
 }
 
+@JsonSerializable()
 class TechniqueStats {
   final String techniqueName; // "Backhand", "Forehand", etc.
   final int attempts;
@@ -70,8 +85,13 @@ class TechniqueStats {
   double get successRate => attempts > 0 ? (successful / attempts) * 100 : 0.0;
 
   double get birdieRate => attempts > 0 ? (birdies / attempts) * 100 : 0.0;
+
+  factory TechniqueStats.fromJson(Map<String, dynamic> json) =>
+      _$TechniqueStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$TechniqueStatsToJson(this);
 }
 
+@JsonSerializable()
 class ScoringStats {
   final int totalHoles;
   final int birdies;
@@ -92,8 +112,13 @@ class ScoringStats {
   double get bogeyRate => totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0;
   double get doubleBogeyPlusRate =>
       totalHoles > 0 ? (doubleBogeyPlus / totalHoles) * 100 : 0.0;
+
+  factory ScoringStats.fromJson(Map<String, dynamic> json) =>
+      _$ScoringStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$ScoringStatsToJson(this);
 }
 
+@JsonSerializable()
 class ScrambleStats {
   final int scrambleOpportunities; // Times went OB or off fairway
   final int scrambleSaves; // Times still made par or better
@@ -106,8 +131,13 @@ class ScrambleStats {
   double get scrambleRate => scrambleOpportunities > 0
       ? (scrambleSaves / scrambleOpportunities) * 100
       : 0.0;
+
+  factory ScrambleStats.fromJson(Map<String, dynamic> json) =>
+      _$ScrambleStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$ScrambleStatsToJson(this);
 }
 
+@JsonSerializable()
 class ComparisonResult {
   final String technique1;
   final String technique2;
@@ -136,8 +166,13 @@ class ComparisonResult {
   }
 
   double get difference => (technique1BirdieRate - technique2BirdieRate).abs();
+
+  factory ComparisonResult.fromJson(Map<String, dynamic> json) =>
+      _$ComparisonResultFromJson(json);
+  Map<String, dynamic> toJson() => _$ComparisonResultToJson(this);
 }
 
+@JsonSerializable()
 class DiscInsight {
   final String discName;
   final double birdieRate;
@@ -150,9 +185,14 @@ class DiscInsight {
     required this.timesUsed,
     required this.category,
   });
+
+  factory DiscInsight.fromJson(Map<String, dynamic> json) =>
+      _$DiscInsightFromJson(json);
+  Map<String, dynamic> toJson() => _$DiscInsightToJson(this);
 }
 
 /// Per-distance-bucket putting statistics
+@JsonSerializable()
 class PuttBucketStats {
   final String label;
   final int makes;
@@ -168,9 +208,14 @@ class PuttBucketStats {
 
   int get attempts => makes + misses;
   double get makePercentage => attempts > 0 ? (makes / attempts) * 100 : 0.0;
+
+  factory PuttBucketStats.fromJson(Map<String, dynamic> json) =>
+      _$PuttBucketStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$PuttBucketStatsToJson(this);
 }
 
 /// Comprehensive putting summary with C1/C2 breakdown and distance buckets
+@JsonSerializable(explicitToJson: true)
 class PuttStats {
   final int c1Makes;
   final int c1Misses;
@@ -206,9 +251,14 @@ class PuttStats {
       c2Attempts > 0 ? (c2Makes / c2Attempts) * 100 : 0.0;
   double get overallPercentage =>
       totalAttempts > 0 ? (totalMakes / totalAttempts) * 100 : 0.0;
+
+  factory PuttStats.fromJson(Map<String, dynamic> json) =>
+      _$PuttStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$PuttStatsToJson(this);
 }
 
 /// UDisc-style core performance metrics
+@JsonSerializable()
 class CoreStats {
   final double fairwayHitPct;
   final double parkedPct;
@@ -225,9 +275,14 @@ class CoreStats {
     required this.obPct,
     required this.totalHoles,
   });
+
+  factory CoreStats.fromJson(Map<String, dynamic> json) =>
+      _$CoreStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$CoreStatsToJson(this);
 }
 
 /// Disc-specific mistake tracking
+@JsonSerializable()
 class DiscMistake {
   final String discName;
   final int mistakeCount;
@@ -238,8 +293,13 @@ class DiscMistake {
     required this.mistakeCount,
     required this.reasons,
   });
+
+  factory DiscMistake.fromJson(Map<String, dynamic> json) =>
+      _$DiscMistakeFromJson(json);
+  Map<String, dynamic> toJson() => _$DiscMistakeToJson(this);
 }
 
+@JsonSerializable()
 class DiscPerformanceSummary {
   final String discName;
   final int goodShots;
@@ -258,9 +318,14 @@ class DiscPerformanceSummary {
   double get goodPercentage => totalShots > 0 ? (goodShots / totalShots) * 100 : 0.0;
   double get okayPercentage => totalShots > 0 ? (okayShots / totalShots) * 100 : 0.0;
   double get badPercentage => totalShots > 0 ? (badShots / totalShots) * 100 : 0.0;
+
+  factory DiscPerformanceSummary.fromJson(Map<String, dynamic> json) =>
+      _$DiscPerformanceSummaryFromJson(json);
+  Map<String, dynamic> toJson() => _$DiscPerformanceSummaryToJson(this);
 }
 
 /// Categorized mistake analysis
+@JsonSerializable()
 class MistakeTypeSummary {
   final String label;
   final int count;
@@ -271,9 +336,14 @@ class MistakeTypeSummary {
     required this.count,
     required this.percentage,
   });
+
+  factory MistakeTypeSummary.fromJson(Map<String, dynamic> json) =>
+      _$MistakeTypeSummaryFromJson(json);
+  Map<String, dynamic> toJson() => _$MistakeTypeSummaryToJson(this);
 }
 
 /// Birdie rate statistics with counts
+@JsonSerializable()
 class BirdieRateStats {
   final double percentage;
   final int birdieCount;
@@ -284,4 +354,8 @@ class BirdieRateStats {
     required this.birdieCount,
     required this.totalAttempts,
   });
+
+  factory BirdieRateStats.fromJson(Map<String, dynamic> json) =>
+      _$BirdieRateStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$BirdieRateStatsToJson(this);
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/coach_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/deep_analysis_tab.dart';
@@ -12,10 +13,12 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   final DGRound round;
+  final bool showStoryOnLoad;
 
   const RoundReviewScreen({
     super.key,
     required this.round,
+    this.showStoryOnLoad = false,
   });
 
   @override
@@ -32,6 +35,20 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
     super.initState();
     _round = widget.round;
     _tabController = TabController(length: 9, vsync: this);
+
+    // Show story view if requested
+    if (widget.showStoryOnLoad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => RoundStoryView(round: _round),
+              fullscreenDialog: true,
+            ),
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -52,6 +69,18 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
       appBar: AppBar(
         title: Text(_round.courseName),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_stories),
+            tooltip: 'View as Story',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => RoundStoryView(round: _round),
+                  fullscreenDialog: true,
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: () {
