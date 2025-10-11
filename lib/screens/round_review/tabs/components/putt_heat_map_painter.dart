@@ -1,22 +1,36 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 
 class PuttHeatMapPainter extends CustomPainter {
   final List<Map<String, dynamic>> puttAttempts;
   final double rangeStart; // Starting distance in feet
-  final double rangeEnd;   // Ending distance in feet
+  final double rangeEnd; // Ending distance in feet
+  final PuttingCircle circle;
 
   PuttHeatMapPainter({
     required this.puttAttempts,
     required this.rangeStart,
     required this.rangeEnd,
+    required this.circle,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     // Define constants
-    final center = Offset(size.width / 2, size.height - 5);
-    final maxRadius = math.min(size.width * 0.75, size.height - 10) - 5;
+    final maxRadius =
+        math.min(
+          size.width * (circle == PuttingCircle.circle2 ? 1 : 0.75),
+          size.height - 10,
+        ) -
+        5;
+
+    // Vertically center the heat map based on circle type
+    final centerY = circle == PuttingCircle.circle2
+        ? size.height / 2 + maxRadius * 0.65  // Circle 2: Move down to center the ring
+        : (size.height + maxRadius - 20) / 2;  // Circle 1: Move up to center with basket
+
+    final center = Offset(size.width / 2, centerY);
 
     // Paint objects
     final gridPaint = Paint()
@@ -33,26 +47,106 @@ class PuttHeatMapPainter extends CustomPainter {
     final distanceRange = rangeEnd - rangeStart;
     if (rangeStart == 10 && rangeEnd == 33) {
       // Circle 1: 10-33 ft
-      _drawDistanceRing(canvas, center, _scaleRadius(15, maxRadius), '15 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(20, maxRadius), '20 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(25, maxRadius), '25 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(30, maxRadius), '30 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(33, maxRadius), '33 ft', gridPaint, labelPaint);
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(15, maxRadius),
+        '15 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(20, maxRadius),
+        '20 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(25, maxRadius),
+        '25 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(30, maxRadius),
+        '30 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(33, maxRadius),
+        '33 ft',
+        gridPaint,
+        labelPaint,
+      );
     } else if (rangeStart == 33 && rangeEnd == 66) {
       // Circle 2: 33-66 ft
-      _drawDistanceRing(canvas, center, _scaleRadius(40, maxRadius), '40 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(45, maxRadius), '45 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(50, maxRadius), '50 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(55, maxRadius), '55 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(60, maxRadius), '60 ft', gridPaint, labelPaint);
-      _drawDistanceRing(canvas, center, _scaleRadius(66, maxRadius), '66 ft', gridPaint, labelPaint);
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(33, maxRadius),
+        '33 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(40, maxRadius),
+        '40 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(50, maxRadius),
+        '50 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(60, maxRadius),
+        '60 ft',
+        gridPaint,
+        labelPaint,
+      );
+      _drawDistanceRing(
+        canvas,
+        center,
+        _scaleRadius(66, maxRadius),
+        '66 ft',
+        gridPaint,
+        labelPaint,
+      );
     }
 
-    // Draw radial grid lines (every 30 degrees, rotated 45 degrees right)
+    // Draw radial grid lines (every 30 degrees)
     // For Circle 2, start lines from inner radius to create ring effect
-    final startRadius = (rangeStart == 33 && rangeEnd == 66) ? maxRadius * 0.5 : 0.0;
-    for (int angle = -45; angle <= 45; angle += 30) {
-      _drawRadialLine(canvas, center, maxRadius, angle.toDouble(), gridPaint, startRadius: startRadius);
+    final isCircle2 = rangeStart == 33 && rangeEnd == 66;
+    final startRadius = isCircle2 ? maxRadius * 0.5 : 0.0;
+    final angleStart = isCircle2 ? -30 : -45;
+    final angleEnd = isCircle2 ? 30 : 45;
+
+    for (int angle = angleStart; angle <= angleEnd; angle += 30) {
+      _drawRadialLine(
+        canvas,
+        center,
+        maxRadius,
+        angle.toDouble(),
+        gridPaint,
+        startRadius: startRadius,
+      );
     }
 
     // For Circle 2, draw inner boundary arc to show ring shape
@@ -61,11 +155,14 @@ class PuttHeatMapPainter extends CustomPainter {
         ..color = Colors.grey.withValues(alpha: 0.4)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2;
-      final innerRect = Rect.fromCircle(center: center, radius: maxRadius * 0.5);
+      final innerRect = Rect.fromCircle(
+        center: center,
+        radius: maxRadius * 0.5,
+      );
       canvas.drawArc(
         innerRect,
-        math.pi + math.pi / 4, // Start at 225 degrees
-        math.pi / 2, // Sweep 90 degrees to 315 degrees
+        math.pi + math.pi / 3, // Start at 240 degrees
+        math.pi / 3, // Sweep 60 degrees to 300 degrees
         false,
         innerBoundaryPaint,
       );
@@ -92,13 +189,18 @@ class PuttHeatMapPainter extends CustomPainter {
       final seed =
           (holeNumber * 1000 + throwIndex * 100 + distance.toInt()).hashCode;
       final random = math.Random(seed);
-      final angleDegrees =
-          random.nextDouble() * 90 -
-          45; // -45 to 45 degrees for rotated quarter-circle
+
+      // Circle 2 uses 60 degrees (-30 to +30), Circle 1 uses 90 degrees (-45 to +45)
+      final isCircle2 = rangeStart == 33 && rangeEnd == 66;
+      final angleRange = isCircle2 ? 60.0 : 90.0;
+      final angleOffset = isCircle2 ? 30.0 : 45.0;
+      final angleDegrees = random.nextDouble() * angleRange - angleOffset;
 
       // Find non-overlapping position
       // For Circle 2, enforce minimum radius to create ring shape
-      final minRadiusForRange = (rangeStart == 33 && rangeEnd == 66) ? maxRadius * 0.5 : maxRadius * 0.1;
+      final minRadiusForRange = (rangeStart == 33 && rangeEnd == 66)
+          ? maxRadius * 0.5
+          : maxRadius * 0.1;
       final position = _findNonOverlappingPosition(
         center,
         puttRadius,
@@ -117,7 +219,8 @@ class PuttHeatMapPainter extends CustomPainter {
   // Scale a distance value to a radius based on the range
   double _scaleRadius(double distance, double maxRadius) {
     // Normalize distance to 0-1 range within rangeStart to rangeEnd
-    final normalizedDistance = (distance - rangeStart) / (rangeEnd - rangeStart);
+    final normalizedDistance =
+        (distance - rangeStart) / (rangeEnd - rangeStart);
     // Clamp to 0-1 range
     final clampedDistance = math.max(0.0, math.min(1.0, normalizedDistance));
 
@@ -139,15 +242,29 @@ class PuttHeatMapPainter extends CustomPainter {
     Paint paint,
     TextPainter textPainter,
   ) {
-    // Draw arc (quarter-circle, symmetric above basket: 225° to 315°)
+    // Circle 2 uses 1/6 of circle (60°), Circle 1 uses 1/4 (90°)
+    final isCircle2 = rangeStart == 33 && rangeEnd == 66;
     final rect = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawArc(
-      rect,
-      math.pi + math.pi / 4, // Start at 225 degrees (bottom-left)
-      math.pi / 2, // Sweep 90 degrees to 315 degrees (bottom-right)
-      false,
-      paint,
-    );
+
+    if (isCircle2) {
+      // Circle 2: Sixth of circle (240° to 300°, 60 degree span)
+      canvas.drawArc(
+        rect,
+        math.pi + math.pi / 3, // Start at 240 degrees
+        math.pi / 3, // Sweep 60 degrees to 300 degrees
+        false,
+        paint,
+      );
+    } else {
+      // Circle 1: Quarter circle (225° to 315°, 90 degree span)
+      canvas.drawArc(
+        rect,
+        math.pi + math.pi / 4, // Start at 225 degrees
+        math.pi / 2, // Sweep 90 degrees to 315 degrees
+        false,
+        paint,
+      );
+    }
 
     // Draw label at top center of arc
     textPainter.text = TextSpan(
@@ -172,9 +289,9 @@ class PuttHeatMapPainter extends CustomPainter {
     Offset center,
     double maxRadius,
     double angleDegrees,
-    Paint paint,
-    {double startRadius = 0.0}
-  ) {
+    Paint paint, {
+    double startRadius = 0.0,
+  }) {
     // Add 270 degrees to align with quarter circle (225° to 315°)
     final angleRadians = (angleDegrees + 270) * math.pi / 180;
     final startPoint = Offset(
@@ -220,11 +337,15 @@ class PuttHeatMapPainter extends CustomPainter {
     math.Random random,
     double minAllowedRadius,
   ) {
-    const minDistance = 13.0; // Minimum distance between dot centers (dot radius is 5, so 13 gives good spacing)
+    const minDistance =
+        13.0; // Minimum distance between dot centers (dot radius is 5, so 13 gives good spacing)
     const maxAttempts = 100; // Increased attempts for better coverage
 
     // Clamp radius to max and ensure it's above minimum for ring shapes
-    final clampedRadius = math.max(minAllowedRadius, math.min(radius, maxRadius * 0.95));
+    final clampedRadius = math.max(
+      minAllowedRadius,
+      math.min(radius, maxRadius * 0.95),
+    );
 
     // Convert angle to radians (add 270 to align with quarter circle 225° to 315°)
     final angleRadians = (angleDegrees + 270) * math.pi / 180;
@@ -254,15 +375,24 @@ class PuttHeatMapPainter extends CustomPainter {
     // Try to find a nearby non-overlapping position with increasing search radius
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
       // Gradually increase search radius with each attempt
-      final searchRadius = (attempt / maxAttempts) * 30; // Up to 30 degree adjustment
+      final searchRadius =
+          (attempt / maxAttempts) * 30; // Up to 30 degree adjustment
 
       // Try systematic positions around the ideal spot
       final angleAdjust = (random.nextDouble() - 0.5) * searchRadius * 2;
-      final radiusAdjust = (random.nextDouble() - 0.5) * (0.05 + (attempt / maxAttempts * 0.15)) * maxRadius;
+      final radiusAdjust =
+          (random.nextDouble() - 0.5) *
+          (0.05 + (attempt / maxAttempts * 0.15)) *
+          maxRadius;
 
       final newAngleDegrees = angleDegrees + angleAdjust;
-      // Keep angle within quarter circle bounds
-      final boundedAngle = math.max(-45.0, math.min(45.0, newAngleDegrees));
+      // Keep angle within bounds (Circle 2: -30 to +30, Circle 1: -45 to +45)
+      final minAngle = minAllowedRadius > maxRadius * 0.4 ? -30.0 : -45.0;
+      final maxAngle = minAllowedRadius > maxRadius * 0.4 ? 30.0 : 45.0;
+      final boundedAngle = math.max(
+        minAngle,
+        math.min(maxAngle, newAngleDegrees),
+      );
 
       final newRadius = math.max(
         minAllowedRadius, // Respect minimum radius (important for ring shape)
@@ -282,10 +412,14 @@ class PuttHeatMapPainter extends CustomPainter {
 
     // If we still couldn't find a spot, try random positions across the entire area
     for (int attempt = 0; attempt < 50; attempt++) {
-      final randomAngle = (random.nextDouble() * 90 - 45);
+      // Use appropriate angle range based on circle type
+      final angleRange = minAllowedRadius > maxRadius * 0.4 ? 60.0 : 90.0;
+      final angleOffset = minAllowedRadius > maxRadius * 0.4 ? 30.0 : 45.0;
+      final randomAngle = (random.nextDouble() * angleRange - angleOffset);
       // Calculate available range respecting minimum radius
       final availableRange = maxRadius * 0.95 - minAllowedRadius;
-      final randomRadius = minAllowedRadius + (random.nextDouble() * availableRange);
+      final randomRadius =
+          minAllowedRadius + (random.nextDouble() * availableRange);
       final randomAngleRadians = (randomAngle + 270) * math.pi / 180;
 
       position = Offset(

@@ -289,3 +289,10 @@ enum HoleType {
   @JsonValue('wooded')
   wooded,
 }
+
+enum PuttingCircle {
+  @JsonValue('circle_1')
+  circle1,
+  @JsonValue('circle_2')
+  circle2,
+}

@@ -24,20 +24,26 @@ class PuttingTab extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
+      padding: const EdgeInsets.only(top: 24, bottom: 80),
       children: addRunSpacing(
         [
           // New cards from deep analysis
-          PuttingSummaryCards(
-            puttingSummary: puttingSummary,
-            horizontalPadding: 0,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PuttingSummaryCards(
+              puttingSummary: puttingSummary,
+              horizontalPadding: 0,
+            ),
           ),
-          PuttingDistanceCard(
-            avgMakeDistance: puttingSummary.avgMakeDistance,
-            avgAttemptDistance: puttingSummary.avgAttemptDistance,
-            avgBirdiePuttDistance: avgBirdiePuttDist,
-            totalMadeDistance: puttingSummary.totalMadeDistance,
-            horizontalPadding: 0,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PuttingDistanceCard(
+              avgMakeDistance: puttingSummary.avgMakeDistance,
+              avgAttemptDistance: puttingSummary.avgAttemptDistance,
+              avgBirdiePuttDistance: avgBirdiePuttDist,
+              totalMadeDistance: puttingSummary.totalMadeDistance,
+              horizontalPadding: 0,
+            ),
           ),
 
           // Old cards (commented out but kept for reference)
@@ -45,169 +51,24 @@ class PuttingTab extends StatelessWidget {
           // _buildDistanceBuckets(context, puttingSummary),
 
           // _buildBirdiePuttDistance(context, avgBirdiePuttDist),
-          _buildComebackPutts(context, comebackStats),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildComebackPutts(context, comebackStats),
+          ),
 
           // Heat map visualization
           PuttHeatMapCard(round: round),
 
-          _buildSummaryInsight(context, puttingSummary),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildSummaryInsight(context, puttingSummary),
+          ),
         ],
         runSpacing: 16,
         axis: Axis.vertical,
       ),
     );
   }
-
-  /* OLD WIDGETS - Kept for reference but not used
-
-  Widget _buildKPICards(BuildContext context, puttingSummary) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Putting Overview',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildKPICard(
-                  context,
-                  'C1 Make %',
-                  '${puttingSummary.c1Percentage.toStringAsFixed(0)}%',
-                  const Color(0xFF00F5D4),
-                ),
-                _buildKPICard(
-                  context,
-                  'C2 Make %',
-                  '${puttingSummary.c2Percentage.toStringAsFixed(0)}%',
-                  const Color(0xFF2196F3),
-                ),
-                _buildKPICard(
-                  context,
-                  'Avg Make Dist',
-                  '${puttingSummary.avgMakeDistance.toStringAsFixed(0)} ft',
-                  const Color(0xFF4CAF50),
-                ),
-                _buildKPICard(
-                  context,
-                  'Total Made Dist',
-                  '${puttingSummary.totalMadeDistance.toStringAsFixed(0)} ft',
-                  const Color(0xFFFFA726),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildKPICard(
-    BuildContext context,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDistanceBuckets(BuildContext context, puttingSummary) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Performance by Distance',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            ...puttingSummary.bucketStats.entries.map((entry) {
-              final bucket = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          entry.key,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        Text(
-                          '${bucket.makePercentage.toStringAsFixed(0)}% (${bucket.makes}/${bucket.attempts})',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: bucket.makePercentage / 100,
-                        minHeight: 12,
-                        backgroundColor: const Color(0xFF00F5D4).withValues(
-                          alpha: 0.2,
-                        ),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF00F5D4),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  */
-
-  // ACTIVE WIDGETS BELOW
 
   Widget _buildComebackPutts(
     BuildContext context,
