@@ -360,6 +360,42 @@ class BirdieRateStats {
   Map<String, dynamic> toJson() => _$BirdieRateStatsToJson(this);
 }
 
+/// Individual segment data for score trend analysis
+@JsonSerializable()
+class ScoreSegment {
+  final String label; // e.g., "1-3", "4-6", "7-9"
+  final double avgScore; // Average relative to par for this segment
+  final int holesPlayed;
+
+  ScoreSegment({
+    required this.label,
+    required this.avgScore,
+    required this.holesPlayed,
+  });
+
+  factory ScoreSegment.fromJson(Map<String, dynamic> json) =>
+      _$ScoreSegmentFromJson(json);
+  Map<String, dynamic> toJson() => _$ScoreSegmentToJson(this);
+}
+
+/// Progressive score trend analysis throughout the round
+@JsonSerializable(explicitToJson: true)
+class ScoreTrend {
+  final List<ScoreSegment> segments;
+  final String trendDirection; // "improving", "worsening", "stable"
+  final double trendStrength; // Numeric measure of change (positive = improving)
+
+  ScoreTrend({
+    required this.segments,
+    required this.trendDirection,
+    required this.trendStrength,
+  });
+
+  factory ScoreTrend.fromJson(Map<String, dynamic> json) =>
+      _$ScoreTrendFromJson(json);
+  Map<String, dynamic> toJson() => _$ScoreTrendToJson(this);
+}
+
 /// Performance statistics for a section of the round
 @JsonSerializable()
 class SectionPerformance {
@@ -463,6 +499,9 @@ class MomentumStats {
   /// Conditioning score (0-100) - measures performance drop over the round
   final double conditioningScore;
 
+  /// Progressive score trend analysis throughout the round
+  final ScoreTrend? scoreTrend;
+
   MomentumStats({
     required this.transitionMatrix,
     required this.momentumMultiplier,
@@ -476,6 +515,7 @@ class MomentumStats {
     this.back9Performance,
     this.last6Performance,
     required this.conditioningScore,
+    this.scoreTrend,
   });
 
   factory MomentumStats.fromJson(Map<String, dynamic> json) =>

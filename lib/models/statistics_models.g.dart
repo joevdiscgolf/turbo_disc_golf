@@ -252,6 +252,34 @@ Map<String, dynamic> _$BirdieRateStatsToJson(BirdieRateStats instance) =>
       'totalAttempts': instance.totalAttempts,
     };
 
+ScoreSegment _$ScoreSegmentFromJson(Map<String, dynamic> json) => ScoreSegment(
+  label: json['label'] as String,
+  avgScore: (json['avgScore'] as num).toDouble(),
+  holesPlayed: (json['holesPlayed'] as num).toInt(),
+);
+
+Map<String, dynamic> _$ScoreSegmentToJson(ScoreSegment instance) =>
+    <String, dynamic>{
+      'label': instance.label,
+      'avgScore': instance.avgScore,
+      'holesPlayed': instance.holesPlayed,
+    };
+
+ScoreTrend _$ScoreTrendFromJson(Map<String, dynamic> json) => ScoreTrend(
+  segments: (json['segments'] as List<dynamic>)
+      .map((e) => ScoreSegment.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  trendDirection: json['trendDirection'] as String,
+  trendStrength: (json['trendStrength'] as num).toDouble(),
+);
+
+Map<String, dynamic> _$ScoreTrendToJson(ScoreTrend instance) =>
+    <String, dynamic>{
+      'segments': instance.segments.map((e) => e.toJson()).toList(),
+      'trendDirection': instance.trendDirection,
+      'trendStrength': instance.trendStrength,
+    };
+
 SectionPerformance _$SectionPerformanceFromJson(Map<String, dynamic> json) =>
     SectionPerformance(
       sectionName: json['sectionName'] as String,
@@ -333,6 +361,9 @@ MomentumStats _$MomentumStatsFromJson(Map<String, dynamic> json) =>
               json['last6Performance'] as Map<String, dynamic>,
             ),
       conditioningScore: (json['conditioningScore'] as num).toDouble(),
+      scoreTrend: json['scoreTrend'] == null
+          ? null
+          : ScoreTrend.fromJson(json['scoreTrend'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$MomentumStatsToJson(MomentumStats instance) =>
@@ -351,4 +382,5 @@ Map<String, dynamic> _$MomentumStatsToJson(MomentumStats instance) =>
       'back9Performance': instance.back9Performance?.toJson(),
       'last6Performance': instance.last6Performance?.toJson(),
       'conditioningScore': instance.conditioningScore,
+      'scoreTrend': instance.scoreTrend?.toJson(),
     };

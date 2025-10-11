@@ -18,12 +18,21 @@ class DrivesTab extends StatelessWidget {
     final teeShotBirdieRates = statsService.getTeeShotBirdieRateStats();
     final allTeeShotsByType = statsService.getAllTeeShotsByType();
     final circleInRegByType = statsService.getCircleInRegByThrowType();
+    final techniqueComparison = statsService.getTechniqueComparison();
+    final shotShapeBirdieRates = statsService.getShotShapeBirdieRateStats();
+    final circleInRegByShape = statsService.getCircleInRegByShotShape();
 
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
       children: addRunSpacing(
         [
           _buildCoreStatsKPIs(context, coreStats),
+          _buildShotShapeAndTechniqueCard(
+            context,
+            techniqueComparison,
+            shotShapeBirdieRates,
+            circleInRegByShape,
+          ),
           _buildBirdieRateByThrowType(
             context,
             teeShotBirdieRates,
@@ -963,6 +972,339 @@ class DrivesTab extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildShotShapeAndTechniqueCard(
+    BuildContext context,
+    Map<String, Map<String, double>> techniqueComparison,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    // If no data available, don't show the card
+    if (techniqueComparison.isEmpty && shotShapeBirdieRates.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Shot Shape & Technique Success',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            // Technique Comparison Section
+            if (techniqueComparison.isNotEmpty) ...[
+              Text(
+                'Technique Comparison',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              _buildTechniqueComparisonRows(context, techniqueComparison),
+            ],
+            // Shot Shape Analysis Section
+            if (shotShapeBirdieRates.isNotEmpty) ...[
+              if (techniqueComparison.isNotEmpty) const SizedBox(height: 24),
+              Text(
+                'Shot Shape Performance',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              _buildShotShapeRows(
+                context,
+                shotShapeBirdieRates,
+                circleInRegByShape,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTechniqueComparisonRows(
+    BuildContext context,
+    Map<String, Map<String, double>> techniqueComparison,
+  ) {
+    final backhand = techniqueComparison['backhand'];
+    final forehand = techniqueComparison['forehand'];
+
+    if (backhand == null && forehand == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        _buildComparisonRow(
+          context,
+          'Birdie %',
+          'Backhand',
+          backhand?['birdiePercentage'] ?? 0,
+          backhand?['totalAttempts']?.toInt() ?? 0,
+          'Forehand',
+          forehand?['birdiePercentage'] ?? 0,
+          forehand?['totalAttempts']?.toInt() ?? 0,
+          const Color(0xFF00F5D4),
+        ),
+        const SizedBox(height: 12),
+        _buildComparisonRow(
+          context,
+          'C1 in Reg',
+          'Backhand',
+          backhand?['c1InRegPercentage'] ?? 0,
+          backhand?['totalAttempts']?.toInt() ?? 0,
+          'Forehand',
+          forehand?['c1InRegPercentage'] ?? 0,
+          forehand?['totalAttempts']?.toInt() ?? 0,
+          const Color(0xFF4CAF50),
+        ),
+        const SizedBox(height: 12),
+        _buildComparisonRow(
+          context,
+          'C2 in Reg',
+          'Backhand',
+          backhand?['c2InRegPercentage'] ?? 0,
+          backhand?['totalAttempts']?.toInt() ?? 0,
+          'Forehand',
+          forehand?['c2InRegPercentage'] ?? 0,
+          forehand?['totalAttempts']?.toInt() ?? 0,
+          const Color(0xFF2196F3),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildComparisonRow(
+    BuildContext context,
+    String label,
+    String technique1,
+    double percentage1,
+    int count1,
+    String technique2,
+    double percentage2,
+    int count2,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        technique1,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        count1 > 0
+                            ? '${percentage1.toStringAsFixed(0)}% ($count1)'
+                            : 'No data',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (count1 > 0)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: percentage1 / 100,
+                        minHeight: 8,
+                        backgroundColor: color.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        technique2,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        count2 > 0
+                            ? '${percentage2.toStringAsFixed(0)}% ($count2)'
+                            : 'No data',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (count2 > 0)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: percentage2 / 100,
+                        minHeight: 8,
+                        backgroundColor: color.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShotShapeRows(
+    BuildContext context,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    // Filter and sort relevant shot shapes
+    final relevantShapes = ['hyzer', 'flat', 'anhyzer'];
+    final filteredShapes = shotShapeBirdieRates.entries
+        .where((entry) => relevantShapes.contains(entry.key))
+        .toList();
+
+    if (filteredShapes.isEmpty) {
+      return Text(
+        'No shot shape data available',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+      );
+    }
+
+    // Sort by overall success (combination of birdie rate and C1 in reg)
+    filteredShapes.sort((a, b) {
+      final aStats = circleInRegByShape[a.key];
+      final bStats = circleInRegByShape[b.key];
+      final aScore = a.value.percentage + (aStats?['c1Percentage'] ?? 0);
+      final bScore = b.value.percentage + (bStats?['c1Percentage'] ?? 0);
+      return bScore.compareTo(aScore);
+    });
+
+    return Column(
+      children: filteredShapes.map((entry) {
+        final shapeName = entry.key;
+        final shapeStats = entry.value;
+        final circleStats = circleInRegByShape[shapeName];
+
+        final displayName =
+            shapeName.substring(0, 1).toUpperCase() + shapeName.substring(1);
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                displayName,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              _buildShapeMetricRow(
+                context,
+                'Birdie',
+                shapeStats.percentage,
+                shapeStats.totalAttempts,
+                const Color(0xFF00F5D4),
+              ),
+              const SizedBox(height: 6),
+              _buildShapeMetricRow(
+                context,
+                'C1 in Reg',
+                circleStats?['c1Percentage'] ?? 0,
+                circleStats?['totalAttempts']?.toInt() ?? 0,
+                const Color(0xFF4CAF50),
+              ),
+              const SizedBox(height: 6),
+              _buildShapeMetricRow(
+                context,
+                'C2 in Reg',
+                circleStats?['c2Percentage'] ?? 0,
+                circleStats?['totalAttempts']?.toInt() ?? 0,
+                const Color(0xFF2196F3),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildShapeMetricRow(
+    BuildContext context,
+    String label,
+    double percentage,
+    int count,
+    Color color,
+  ) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 70,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 12,
+              backgroundColor: color.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 80,
+          child: Text(
+            count > 0 ? '${percentage.toStringAsFixed(0)}% ($count)' : 'No data',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
     );
   }
 }

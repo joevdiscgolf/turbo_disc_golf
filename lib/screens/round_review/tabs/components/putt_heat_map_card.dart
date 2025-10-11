@@ -17,6 +17,10 @@ class PuttHeatMapCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Filter putts by distance
+    final c1Putts = puttAttempts.where((p) => (p['distance'] as double) <= 33).toList();
+    final c2Putts = puttAttempts.where((p) => (p['distance'] as double) > 33).toList();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -24,10 +28,10 @@ class PuttHeatMapCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Putt Location Heat Map',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              'Putt Location Heat Maps',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 
@@ -35,39 +39,86 @@ class PuttHeatMapCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(
-                  context,
-                  'Made',
-                  const Color(0xFF4CAF50),
-                ),
+                _buildLegendItem(context, 'Made', const Color(0xFF4CAF50)),
                 const SizedBox(width: 24),
-                _buildLegendItem(
-                  context,
-                  'Missed',
-                  const Color(0xFFFF7A7A),
-                ),
+                _buildLegendItem(context, 'Missed', const Color(0xFFFF7A7A)),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            // Heat map visualization
-            SizedBox(
-              height: 350,
-              child: CustomPaint(
-                painter: PuttHeatMapPainter(puttAttempts: puttAttempts),
-                child: Container(),
+            // Circle 1 Heat Map
+            if (c1Putts.isNotEmpty) ...[
+              Text(
+                'Circle 1 (10-33 ft)',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 350,
+                child: CustomPaint(
+                  painter: PuttHeatMapPainter(
+                    puttAttempts: c1Putts,
+                    rangeStart: 10,
+                    rangeEnd: 33,
+                  ),
+                  child: Container(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${c1Putts.length} putt${c1Putts.length == 1 ? '' : 's'} in Circle 1',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+
+            if (c1Putts.isNotEmpty && c2Putts.isNotEmpty) const SizedBox(height: 16),
+
+            // Circle 2 Heat Map
+            if (c2Putts.isNotEmpty) ...[
+              Text(
+                'Circle 2 (33-66 ft)',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 350,
+                child: CustomPaint(
+                  painter: PuttHeatMapPainter(
+                    puttAttempts: c2Putts,
+                    rangeStart: 33,
+                    rangeEnd: 66,
+                  ),
+                  child: Container(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${c2Putts.length} putt${c2Putts.length == 1 ? '' : 's'} in Circle 2',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
 
             const SizedBox(height: 8),
-
-            // Info text
             Text(
-              'Showing ${puttAttempts.length} putt${puttAttempts.length == 1 ? '' : 's'} from this round. Positions are approximate.',
+              'Positions are approximate.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontStyle: FontStyle.italic,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -90,10 +141,7 @@ class PuttHeatMapCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

@@ -25,13 +25,17 @@ class ConditioningCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fitness_center, color: Color(0xFF4CAF50), size: 24),
+              const Icon(
+                Icons.fitness_center,
+                color: Color(0xFF4CAF50),
+                size: 24,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Conditioning & Focus',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -40,8 +44,15 @@ class ConditioningCard extends StatelessWidget {
           // Conditioning score gauge
           _buildConditioningScore(context),
 
+          // Score progression throughout round
+          if (stats.scoreTrend != null) ...[
+            const SizedBox(height: 20),
+            _buildScoreProgression(context, stats.scoreTrend!),
+          ],
+
           // Front 9 vs Back 9 comparison
-          if (stats.front9Performance != null && stats.back9Performance != null) ...[
+          if (stats.front9Performance != null &&
+              stats.back9Performance != null) ...[
             const SizedBox(height: 20),
             _buildSectionComparison(
               context,
@@ -94,17 +105,17 @@ class ConditioningCard extends StatelessWidget {
               children: [
                 Text(
                   'Conditioning Score',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scoreColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: scoreColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -118,14 +129,169 @@ class ConditioningCard extends StatelessWidget {
             child: Text(
               '${score.toStringAsFixed(0)}/100',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: scoreColor,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: scoreColor,
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildScoreProgression(BuildContext context, ScoreTrend trend) {
+    // Determine trend color and icon
+    final Color trendColor;
+    final IconData trendIcon;
+    final String trendText;
+
+    switch (trend.trendDirection) {
+      case 'improving':
+        trendColor = const Color(0xFF4CAF50);
+        trendIcon = Icons.trending_up;
+        trendText = 'Improving';
+        break;
+      case 'worsening':
+        trendColor = const Color(0xFFFF7A7A);
+        trendIcon = Icons.trending_down;
+        trendText = 'Worsening';
+        break;
+      default:
+        trendColor = const Color(0xFF2196F3);
+        trendIcon = Icons.trending_flat;
+        trendText = 'Stable';
+    }
+
+    // Find the max absolute score for scaling bars
+    final maxAbsScore = trend.segments
+        .map((s) => s.avgScore.abs())
+        .reduce((a, b) => a > b ? a : b);
+    final scaleFactor = maxAbsScore > 0 ? 1.0 / maxAbsScore : 1.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(trendIcon, color: trendColor, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Score Throughout',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Bar chart
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              // Bars
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: trend.segments.map((segment) {
+                  final isPositive = segment.avgScore >= 0;
+                  final barColor = isPositive
+                      ? const Color(0xFFFF7A7A)
+                      : const Color(0xFF4CAF50);
+
+                  // Height: minimum 20px, max 60px, scaled by score
+                  final normalizedHeight =
+                      (segment.avgScore.abs() * scaleFactor * 40).clamp(
+                        4.0,
+                        60.0,
+                      );
+
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Score label above bar
+                          Text(
+                            segment.avgScore >= 0
+                                ? '+${segment.avgScore.toStringAsFixed(1)}'
+                                : segment.avgScore.toStringAsFixed(1),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          // Bar
+                          Container(
+                            height: normalizedHeight,
+                            decoration: BoxDecoration(
+                              color: barColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          // Segment label below bar
+                          Text(
+                            segment.label,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontSize: 10,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              // Trend summary
+              Row(
+                children: [
+                  Icon(trendIcon, color: trendColor, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _getTrendSummaryText(trend, trendText),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getTrendSummaryText(ScoreTrend trend, String trendText) {
+    final strengthAbs = trend.trendStrength.abs();
+
+    if (trend.trendDirection == 'stable') {
+      return '$trendText - Your scores stayed consistent throughout the round';
+    } else if (trend.trendDirection == 'improving') {
+      return '$trendText - Your scores improved by ${strengthAbs.toStringAsFixed(1)} strokes from start to finish';
+    } else {
+      return '$trendText - Your scores dropped by ${strengthAbs.toStringAsFixed(1)} strokes from start to finish';
+    }
   }
 
   Widget _buildSectionComparison(
@@ -138,15 +304,19 @@ class ConditioningCard extends StatelessWidget {
       children: [
         Text(
           'Front 9 vs Back 9',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _buildSectionCard(context, front9, const Color(0xFF2196F3)),
+              child: _buildSectionCard(
+                context,
+                front9,
+                const Color(0xFF2196F3),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -176,9 +346,9 @@ class ConditioningCard extends StatelessWidget {
           Text(
             section.sectionName,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
           const SizedBox(height: 8),
           _buildStatRow(
@@ -198,11 +368,7 @@ class ConditioningCard extends StatelessWidget {
             'Birdie Rate',
             '${section.birdieRate.toStringAsFixed(0)}%',
           ),
-          _buildStatRow(
-            context,
-            'Mistakes',
-            section.mistakeCount.toString(),
-          ),
+          _buildStatRow(context, 'Mistakes', section.mistakeCount.toString()),
         ],
       ),
     );
@@ -217,14 +383,14 @@ class ConditioningCard extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -246,18 +412,14 @@ class ConditioningCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.access_time,
-                color: Color(0xFFFFB800),
-                size: 18,
-              ),
+              const Icon(Icons.access_time, color: Color(0xFFFFB800), size: 18),
               const SizedBox(width: 8),
               Text(
                 'Final 6 Holes',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFFFFB800),
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFFFB800),
+                ),
               ),
             ],
           ),
@@ -295,15 +457,15 @@ class ConditioningCard extends StatelessWidget {
       children: [
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

@@ -3,18 +3,20 @@ import 'package:flutter/material.dart';
 
 class PuttHeatMapPainter extends CustomPainter {
   final List<Map<String, dynamic>> puttAttempts;
+  final double rangeStart; // Starting distance in feet
+  final double rangeEnd;   // Ending distance in feet
 
-  PuttHeatMapPainter({required this.puttAttempts});
+  PuttHeatMapPainter({
+    required this.puttAttempts,
+    required this.rangeStart,
+    required this.rangeEnd,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     // Define constants
-    final center = Offset(size.width / 2, size.height - 20);
-    final maxRadius = math.min(size.width / 2, size.height - 40) - 20;
-
-    // Scale factors for different distances
-    final c1Radius = maxRadius * 0.5; // 33 feet
-    final c2Radius = maxRadius; // 66 feet
+    final center = Offset(size.width / 2, size.height - 5);
+    final maxRadius = math.min(size.width * 0.75, size.height - 10) - 5;
 
     // Paint objects
     final gridPaint = Paint()
@@ -27,39 +29,76 @@ class PuttHeatMapPainter extends CustomPainter {
       textAlign: TextAlign.center,
     );
 
-    // Draw distance arcs
-    _drawDistanceRing(canvas, center, maxRadius * 0.15, '10 ft', gridPaint, labelPaint);
-    _drawDistanceRing(canvas, center, maxRadius * 0.30, '20 ft', gridPaint, labelPaint);
-    _drawDistanceRing(canvas, center, c1Radius, 'C1 (33 ft)', gridPaint, labelPaint);
-    _drawDistanceRing(canvas, center, maxRadius * 0.75, '50 ft', gridPaint, labelPaint);
-    _drawDistanceRing(canvas, center, c2Radius, 'C2 (66 ft)', gridPaint, labelPaint);
+    // Generate distance rings based on range
+    final distanceRange = rangeEnd - rangeStart;
+    if (rangeStart == 10 && rangeEnd == 33) {
+      // Circle 1: 10-33 ft
+      _drawDistanceRing(canvas, center, _scaleRadius(15, maxRadius), '15 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(20, maxRadius), '20 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(25, maxRadius), '25 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(30, maxRadius), '30 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(33, maxRadius), '33 ft', gridPaint, labelPaint);
+    } else if (rangeStart == 33 && rangeEnd == 66) {
+      // Circle 2: 33-66 ft
+      _drawDistanceRing(canvas, center, _scaleRadius(40, maxRadius), '40 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(45, maxRadius), '45 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(50, maxRadius), '50 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(55, maxRadius), '55 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(60, maxRadius), '60 ft', gridPaint, labelPaint);
+      _drawDistanceRing(canvas, center, _scaleRadius(66, maxRadius), '66 ft', gridPaint, labelPaint);
+    }
 
-    // Draw radial grid lines (every 30 degrees)
-    for (int angle = 0; angle <= 180; angle += 30) {
+    // Draw radial grid lines (every 30 degrees, rotated 45 degrees right)
+    for (int angle = -45; angle <= 45; angle += 30) {
       _drawRadialLine(canvas, center, maxRadius, angle.toDouble(), gridPaint);
     }
 
     // Draw basket at center
     _drawBasket(canvas, center);
 
-    // Draw putts
+    // Draw putts with collision detection
+    final List<Offset> occupiedPositions = [];
     for (var putt in puttAttempts) {
       final distance = putt['distance'] as double;
       final made = putt['made'] as bool;
       final holeNumber = putt['holeNumber'] as int;
       final throwIndex = putt['throwIndex'] as int;
 
-      // Calculate radius based on distance (max 66 feet = c2Radius)
-      final puttRadius = (distance / 66) * c2Radius;
+      // Calculate radius based on distance scaled to the range
+      final puttRadius = _scaleRadius(distance, maxRadius);
 
       // Use deterministic pseudo-random angle based on hole number and throw index
       // This ensures consistency - same putt always appears in same spot
-      final seed = (holeNumber * 1000 + throwIndex * 100 + distance.toInt()).hashCode;
+      final seed =
+          (holeNumber * 1000 + throwIndex * 100 + distance.toInt()).hashCode;
       final random = math.Random(seed);
-      final angleDegrees = random.nextDouble() * 180; // 0 to 180 degrees for semi-circle
+      final angleDegrees =
+          random.nextDouble() * 90 -
+          45; // -45 to 45 degrees for rotated quarter-circle
 
-      _drawPutt(canvas, center, puttRadius, angleDegrees, made);
+      // Find non-overlapping position
+      final position = _findNonOverlappingPosition(
+        center,
+        puttRadius,
+        angleDegrees,
+        occupiedPositions,
+        maxRadius,
+        random,
+      );
+
+      occupiedPositions.add(position);
+      _drawPuttAtPosition(canvas, position, made);
     }
+  }
+
+  // Scale a distance value to a radius based on the range
+  double _scaleRadius(double distance, double maxRadius) {
+    // Normalize distance to 0-1 range within rangeStart to rangeEnd
+    final normalizedDistance = (distance - rangeStart) / (rangeEnd - rangeStart);
+    // Clamp to 0-1 range
+    final clampedDistance = math.max(0.0, math.min(1.0, normalizedDistance));
+    // Scale to radius (start at 15% of max radius for visibility)
+    return maxRadius * (0.15 + (clampedDistance * 0.85));
   }
 
   void _drawDistanceRing(
@@ -70,12 +109,12 @@ class PuttHeatMapPainter extends CustomPainter {
     Paint paint,
     TextPainter textPainter,
   ) {
-    // Draw arc (semi-circle)
+    // Draw arc (quarter-circle, rotated 45 degrees right for symmetry)
     final rect = Rect.fromCircle(center: center, radius: radius);
     canvas.drawArc(
       rect,
-      math.pi, // Start at 180 degrees (left side)
-      math.pi, // Sweep 180 degrees to right side
+      math.pi + math.pi / 4, // Start at 225 degrees (bottom-left)
+      math.pi / 2, // Sweep 90 degrees to top-right (315 degrees)
       false,
       paint,
     );
@@ -105,7 +144,8 @@ class PuttHeatMapPainter extends CustomPainter {
     double angleDegrees,
     Paint paint,
   ) {
-    final angleRadians = (angleDegrees + 180) * math.pi / 180;
+    // Add 270 degrees to align with rotated quarter circle (225° to 315°)
+    final angleRadians = (angleDegrees + 270) * math.pi / 180;
     final endPoint = Offset(
       center.dx + maxRadius * math.cos(angleRadians),
       center.dy + maxRadius * math.sin(angleRadians),
@@ -136,25 +176,95 @@ class PuttHeatMapPainter extends CustomPainter {
     canvas.drawCircle(center, 3, polePaint);
   }
 
-  void _drawPutt(
-    Canvas canvas,
+  Offset _findNonOverlappingPosition(
     Offset center,
     double radius,
     double angleDegrees,
-    bool made,
+    List<Offset> occupiedPositions,
+    double maxRadius,
+    math.Random random,
   ) {
-    // Clamp radius to max (don't draw putts outside C2)
-    final clampedRadius = math.min(radius, center.dy - 20);
+    const minDistance = 13.0; // Minimum distance between dot centers (dot radius is 5, so 13 gives good spacing)
+    const maxAttempts = 100; // Increased attempts for better coverage
 
-    // Convert angle to radians (add 180 to flip to correct orientation)
-    final angleRadians = (angleDegrees + 180) * math.pi / 180;
+    // Clamp radius to max
+    final clampedRadius = math.min(radius, maxRadius * 0.95);
 
-    // Calculate position
-    final position = Offset(
+    // Convert angle to radians (add 270 to align with rotated quarter circle)
+    final angleRadians = (angleDegrees + 270) * math.pi / 180;
+
+    // Calculate initial position
+    Offset position = Offset(
       center.dx + clampedRadius * math.cos(angleRadians),
       center.dy + clampedRadius * math.sin(angleRadians),
     );
 
+    // Check if position overlaps with existing positions
+    bool hasOverlap() {
+      for (final occupied in occupiedPositions) {
+        final distance = (position - occupied).distance;
+        if (distance < minDistance) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // If no overlap, return the position
+    if (!hasOverlap()) {
+      return position;
+    }
+
+    // Try to find a nearby non-overlapping position with increasing search radius
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      // Gradually increase search radius with each attempt
+      final searchRadius = (attempt / maxAttempts) * 30; // Up to 30 degree adjustment
+
+      // Try systematic positions around the ideal spot
+      final angleAdjust = (random.nextDouble() - 0.5) * searchRadius * 2;
+      final radiusAdjust = (random.nextDouble() - 0.5) * (0.05 + (attempt / maxAttempts * 0.15)) * maxRadius;
+
+      final newAngleDegrees = angleDegrees + angleAdjust;
+      // Keep angle within quarter circle bounds
+      final boundedAngle = math.max(-45.0, math.min(45.0, newAngleDegrees));
+
+      final newRadius = math.max(
+        maxRadius * 0.15, // Don't place too close to center
+        math.min(clampedRadius + radiusAdjust, maxRadius * 0.95),
+      );
+      final newAngleRadians = (boundedAngle + 270) * math.pi / 180;
+
+      position = Offset(
+        center.dx + newRadius * math.cos(newAngleRadians),
+        center.dy + newRadius * math.sin(newAngleRadians),
+      );
+
+      if (!hasOverlap()) {
+        return position;
+      }
+    }
+
+    // If we still couldn't find a spot, try random positions across the entire area
+    for (int attempt = 0; attempt < 50; attempt++) {
+      final randomAngle = (random.nextDouble() * 90 - 45);
+      final randomRadius = maxRadius * (0.15 + random.nextDouble() * 0.8);
+      final randomAngleRadians = (randomAngle + 270) * math.pi / 180;
+
+      position = Offset(
+        center.dx + randomRadius * math.cos(randomAngleRadians),
+        center.dy + randomRadius * math.sin(randomAngleRadians),
+      );
+
+      if (!hasOverlap()) {
+        return position;
+      }
+    }
+
+    // Last resort: return the original position
+    return position;
+  }
+
+  void _drawPuttAtPosition(Canvas canvas, Offset position, bool made) {
     // Draw putt dot
     final puttPaint = Paint()
       ..color = made ? const Color(0xFF4CAF50) : const Color(0xFFFF7A7A)
@@ -172,6 +282,8 @@ class PuttHeatMapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant PuttHeatMapPainter oldDelegate) {
-    return oldDelegate.puttAttempts != puttAttempts;
+    return oldDelegate.puttAttempts != puttAttempts ||
+        oldDelegate.rangeStart != rangeStart ||
+        oldDelegate.rangeEnd != rangeEnd;
   }
 }

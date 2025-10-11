@@ -1609,6 +1609,82 @@ class RoundStatisticsService {
     );
   }
 
+  /// Get progressive score trend analysis throughout the round
+  ScoreTrend? getScoreTrend() {
+    // Need at least 6 holes for meaningful trend analysis
+    if (round.holes.length < 6) {
+      return null;
+    }
+
+    // Divide round into segments of 3 holes each
+    final List<ScoreSegment> segments = [];
+    int segmentSize = 3;
+
+    for (int i = 0; i < round.holes.length; i += segmentSize) {
+      final endIndex = (i + segmentSize).clamp(0, round.holes.length);
+      final segmentHoles = round.holes.sublist(i, endIndex);
+
+      if (segmentHoles.isEmpty) continue;
+
+      // Calculate average score for this segment
+      final totalScore = segmentHoles.fold<int>(
+        0,
+        (sum, hole) => sum + hole.relativeHoleScore,
+      );
+      final avgScore = totalScore / segmentHoles.length;
+
+      // Create label (e.g., "1-3", "4-6", "7-9")
+      final startHole = i + 1;
+      final endHole = endIndex;
+      final label = endHole - startHole == 0
+          ? '$startHole'
+          : '$startHole-$endHole';
+
+      segments.add(ScoreSegment(
+        label: label,
+        avgScore: avgScore,
+        holesPlayed: segmentHoles.length,
+      ));
+    }
+
+    if (segments.length < 2) {
+      return null;
+    }
+
+    // Calculate trend direction by comparing first third to last third
+    final firstThirdCount = (segments.length / 3).ceil();
+    final lastThirdCount = (segments.length / 3).ceil();
+
+    final firstThirdSegments = segments.sublist(0, firstThirdCount);
+    final lastThirdSegments = segments.sublist(segments.length - lastThirdCount);
+
+    final firstThirdAvg = firstThirdSegments
+        .fold<double>(0.0, (sum, seg) => sum + seg.avgScore) /
+        firstThirdSegments.length;
+    final lastThirdAvg = lastThirdSegments
+        .fold<double>(0.0, (sum, seg) => sum + seg.avgScore) /
+        lastThirdSegments.length;
+
+    // Trend strength: negative means scores got better (improving)
+    // positive means scores got worse (worsening)
+    final trendStrength = lastThirdAvg - firstThirdAvg;
+
+    String trendDirection;
+    if (trendStrength < -0.3) {
+      trendDirection = 'improving';
+    } else if (trendStrength > 0.3) {
+      trendDirection = 'worsening';
+    } else {
+      trendDirection = 'stable';
+    }
+
+    return ScoreTrend(
+      segments: segments,
+      trendDirection: trendDirection,
+      trendStrength: -trendStrength, // Negate so positive = improving
+    );
+  }
+
   /// Get comprehensive momentum and psychological analysis
   MomentumStats getMomentumStats() {
     // Need at least 3 holes for meaningful momentum analysis
@@ -1949,6 +2025,9 @@ class RoundStatisticsService {
       }
     }
 
+    // Calculate score trend
+    final scoreTrend = getScoreTrend();
+
     return MomentumStats(
       transitionMatrix: transitionMatrix,
       momentumMultiplier: momentumMultiplier,
@@ -1962,6 +2041,7 @@ class RoundStatisticsService {
       back9Performance: back9Performance,
       last6Performance: last6Performance,
       conditioningScore: conditioningScore,
+      scoreTrend: scoreTrend,
     );
   }
 
@@ -2273,6 +2353,167 @@ class RoundStatisticsService {
     }
 
     return puttAttempts;
+  }
+
+  /// Get birdie rate statistics by shot shape (hyzer, flat, anhyzer, etc.)
+  Map<String, BirdieRateStats> getShotShapeBirdieRateStats() {
+    final Map<String, List<DGHole>> teeThrowsByShape = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      // Get the tee shot (first throw, index 0)
+      final teeShot = hole.throws.first;
+
+      if (teeShot.shotShape != null) {
+        final shapeName = teeShot.shotShape!.name;
+        teeThrowsByShape.putIfAbsent(shapeName, () => []);
+        teeThrowsByShape[shapeName]!.add(hole);
+      }
+    }
+
+    // Calculate birdie percentage and counts for each shot shape
+    return teeThrowsByShape.map((shapeName, holes) {
+      final birdieCount = holes
+          .where((hole) => hole.relativeHoleScore < 0)
+          .length;
+      final totalAttempts = holes.length;
+      final birdieRate = totalAttempts > 0
+          ? (birdieCount / totalAttempts) * 100
+          : 0.0;
+      return MapEntry(
+        shapeName,
+        BirdieRateStats(
+          percentage: birdieRate,
+          birdieCount: birdieCount,
+          totalAttempts: totalAttempts,
+        ),
+      );
+    });
+  }
+
+  /// Get C1 and C2 in regulation percentages by shot shape
+  Map<String, Map<String, double>> getCircleInRegByShotShape() {
+    final Map<String, int> c1InRegByShape = {};
+    final Map<String, int> c2InRegByShape = {};
+    final Map<String, int> totalByShape = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.shotShape == null) continue;
+
+      final shapeName = teeShot.shotShape!.name;
+      totalByShape[shapeName] = (totalByShape[shapeName] ?? 0) + 1;
+
+      // Check if reached C1/C2 in regulation (par - 2 strokes or less)
+      final regulationStrokes = hole.par - 2;
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1InRegByShape[shapeName] = (c1InRegByShape[shapeName] ?? 0) + 1;
+            c2InRegByShape[shapeName] = (c2InRegByShape[shapeName] ?? 0) + 1;
+            break;
+          } else if (discThrow.landingSpot == LandingSpot.circle2) {
+            c2InRegByShape[shapeName] = (c2InRegByShape[shapeName] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByShape.map((shapeName, total) {
+      final c1Count = c1InRegByShape[shapeName] ?? 0;
+      final c2Count = c2InRegByShape[shapeName] ?? 0;
+      return MapEntry(shapeName, {
+        'c1Percentage': total > 0 ? (c1Count / total) * 100 : 0.0,
+        'c2Percentage': total > 0 ? (c2Count / total) * 100 : 0.0,
+        'c1Count': c1Count.toDouble(),
+        'c2Count': c2Count.toDouble(),
+        'totalAttempts': total.toDouble(),
+      });
+    });
+  }
+
+  /// Get ALL tee shots grouped by shot shape
+  Map<String, List<MapEntry<DGHole, DiscThrow>>> getAllTeeShotsByShotShape() {
+    final Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByShape = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+
+      if (teeShot.shotShape != null) {
+        final shapeName = teeShot.shotShape!.name;
+        allTeeShotsByShape.putIfAbsent(shapeName, () => []);
+        allTeeShotsByShape[shapeName]!.add(MapEntry(hole, teeShot));
+      }
+    }
+
+    return allTeeShotsByShape;
+  }
+
+  /// Get technique comparison for backhand vs forehand across multiple metrics
+  Map<String, Map<String, double>> getTechniqueComparison() {
+    final Map<String, int> birdiesByTechnique = {};
+    final Map<String, int> c1InRegByTechnique = {};
+    final Map<String, int> c2InRegByTechnique = {};
+    final Map<String, int> totalByTechnique = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.technique == null) continue;
+
+      final techniqueName = teeShot.technique!.name;
+
+      // Only track backhand and forehand
+      if (techniqueName != 'backhand' && techniqueName != 'forehand') continue;
+
+      totalByTechnique[techniqueName] = (totalByTechnique[techniqueName] ?? 0) + 1;
+
+      // Count birdies
+      if (hole.relativeHoleScore < 0) {
+        birdiesByTechnique[techniqueName] = (birdiesByTechnique[techniqueName] ?? 0) + 1;
+      }
+
+      // Check C1/C2 in regulation
+      final regulationStrokes = hole.par - 2;
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1InRegByTechnique[techniqueName] = (c1InRegByTechnique[techniqueName] ?? 0) + 1;
+            c2InRegByTechnique[techniqueName] = (c2InRegByTechnique[techniqueName] ?? 0) + 1;
+            break;
+          } else if (discThrow.landingSpot == LandingSpot.circle2) {
+            c2InRegByTechnique[techniqueName] = (c2InRegByTechnique[techniqueName] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByTechnique.map((techniqueName, total) {
+      final birdies = birdiesByTechnique[techniqueName] ?? 0;
+      final c1Count = c1InRegByTechnique[techniqueName] ?? 0;
+      final c2Count = c2InRegByTechnique[techniqueName] ?? 0;
+      return MapEntry(techniqueName, {
+        'birdiePercentage': total > 0 ? (birdies / total) * 100 : 0.0,
+        'c1InRegPercentage': total > 0 ? (c1Count / total) * 100 : 0.0,
+        'c2InRegPercentage': total > 0 ? (c2Count / total) * 100 : 0.0,
+        'birdieCount': birdies.toDouble(),
+        'c1Count': c1Count.toDouble(),
+        'c2Count': c2Count.toDouble(),
+        'totalAttempts': total.toDouble(),
+      });
+    });
   }
 }
 
