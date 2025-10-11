@@ -49,12 +49,32 @@ class PuttHeatMapPainter extends CustomPainter {
     }
 
     // Draw radial grid lines (every 30 degrees, rotated 45 degrees right)
+    // For Circle 2, start lines from inner radius to create ring effect
+    final startRadius = (rangeStart == 33 && rangeEnd == 66) ? maxRadius * 0.5 : 0.0;
     for (int angle = -45; angle <= 45; angle += 30) {
-      _drawRadialLine(canvas, center, maxRadius, angle.toDouble(), gridPaint);
+      _drawRadialLine(canvas, center, maxRadius, angle.toDouble(), gridPaint, startRadius: startRadius);
     }
 
-    // Draw basket at center
-    _drawBasket(canvas, center);
+    // For Circle 2, draw inner boundary arc to show ring shape
+    if (rangeStart == 33 && rangeEnd == 66) {
+      final innerBoundaryPaint = Paint()
+        ..color = Colors.grey.withValues(alpha: 0.4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+      final innerRect = Rect.fromCircle(center: center, radius: maxRadius * 0.5);
+      canvas.drawArc(
+        innerRect,
+        math.pi + math.pi / 4, // Start at 225 degrees
+        math.pi / 2, // Sweep 90 degrees to 315 degrees
+        false,
+        innerBoundaryPaint,
+      );
+    }
+
+    // Draw basket at center (only for Circle 1)
+    if (rangeStart == 10 && rangeEnd == 33) {
+      _drawBasket(canvas, center);
+    }
 
     // Draw putts with collision detection
     final List<Offset> occupiedPositions = [];
@@ -77,6 +97,8 @@ class PuttHeatMapPainter extends CustomPainter {
           45; // -45 to 45 degrees for rotated quarter-circle
 
       // Find non-overlapping position
+      // For Circle 2, enforce minimum radius to create ring shape
+      final minRadiusForRange = (rangeStart == 33 && rangeEnd == 66) ? maxRadius * 0.5 : maxRadius * 0.1;
       final position = _findNonOverlappingPosition(
         center,
         puttRadius,
@@ -84,6 +106,7 @@ class PuttHeatMapPainter extends CustomPainter {
         occupiedPositions,
         maxRadius,
         random,
+        minRadiusForRange,
       );
 
       occupiedPositions.add(position);
@@ -97,8 +120,15 @@ class PuttHeatMapPainter extends CustomPainter {
     final normalizedDistance = (distance - rangeStart) / (rangeEnd - rangeStart);
     // Clamp to 0-1 range
     final clampedDistance = math.max(0.0, math.min(1.0, normalizedDistance));
-    // Scale to radius (start at 15% of max radius for visibility)
-    return maxRadius * (0.15 + (clampedDistance * 0.85));
+
+    if (rangeStart == 33 && rangeEnd == 66) {
+      // Circle 2 (33-66 ft): Ring from 50% to 100% of maxRadius
+      // This creates the donut effect by excluding the inner circle
+      return maxRadius * (0.5 + (clampedDistance * 0.5));
+    } else {
+      // Circle 1 (10-33 ft): Full wedge from 10% to 100% of maxRadius
+      return maxRadius * (0.1 + (clampedDistance * 0.9));
+    }
   }
 
   void _drawDistanceRing(
@@ -109,12 +139,12 @@ class PuttHeatMapPainter extends CustomPainter {
     Paint paint,
     TextPainter textPainter,
   ) {
-    // Draw arc (quarter-circle, rotated 45 degrees right for symmetry)
+    // Draw arc (quarter-circle, symmetric above basket: 225° to 315°)
     final rect = Rect.fromCircle(center: center, radius: radius);
     canvas.drawArc(
       rect,
       math.pi + math.pi / 4, // Start at 225 degrees (bottom-left)
-      math.pi / 2, // Sweep 90 degrees to top-right (315 degrees)
+      math.pi / 2, // Sweep 90 degrees to 315 degrees (bottom-right)
       false,
       paint,
     );
@@ -143,14 +173,19 @@ class PuttHeatMapPainter extends CustomPainter {
     double maxRadius,
     double angleDegrees,
     Paint paint,
+    {double startRadius = 0.0}
   ) {
-    // Add 270 degrees to align with rotated quarter circle (225° to 315°)
+    // Add 270 degrees to align with quarter circle (225° to 315°)
     final angleRadians = (angleDegrees + 270) * math.pi / 180;
+    final startPoint = Offset(
+      center.dx + startRadius * math.cos(angleRadians),
+      center.dy + startRadius * math.sin(angleRadians),
+    );
     final endPoint = Offset(
       center.dx + maxRadius * math.cos(angleRadians),
       center.dy + maxRadius * math.sin(angleRadians),
     );
-    canvas.drawLine(center, endPoint, paint);
+    canvas.drawLine(startPoint, endPoint, paint);
   }
 
   void _drawBasket(Canvas canvas, Offset center) {
@@ -183,14 +218,15 @@ class PuttHeatMapPainter extends CustomPainter {
     List<Offset> occupiedPositions,
     double maxRadius,
     math.Random random,
+    double minAllowedRadius,
   ) {
     const minDistance = 13.0; // Minimum distance between dot centers (dot radius is 5, so 13 gives good spacing)
     const maxAttempts = 100; // Increased attempts for better coverage
 
-    // Clamp radius to max
-    final clampedRadius = math.min(radius, maxRadius * 0.95);
+    // Clamp radius to max and ensure it's above minimum for ring shapes
+    final clampedRadius = math.max(minAllowedRadius, math.min(radius, maxRadius * 0.95));
 
-    // Convert angle to radians (add 270 to align with rotated quarter circle)
+    // Convert angle to radians (add 270 to align with quarter circle 225° to 315°)
     final angleRadians = (angleDegrees + 270) * math.pi / 180;
 
     // Calculate initial position
@@ -229,7 +265,7 @@ class PuttHeatMapPainter extends CustomPainter {
       final boundedAngle = math.max(-45.0, math.min(45.0, newAngleDegrees));
 
       final newRadius = math.max(
-        maxRadius * 0.15, // Don't place too close to center
+        minAllowedRadius, // Respect minimum radius (important for ring shape)
         math.min(clampedRadius + radiusAdjust, maxRadius * 0.95),
       );
       final newAngleRadians = (boundedAngle + 270) * math.pi / 180;
@@ -247,7 +283,9 @@ class PuttHeatMapPainter extends CustomPainter {
     // If we still couldn't find a spot, try random positions across the entire area
     for (int attempt = 0; attempt < 50; attempt++) {
       final randomAngle = (random.nextDouble() * 90 - 45);
-      final randomRadius = maxRadius * (0.15 + random.nextDouble() * 0.8);
+      // Calculate available range respecting minimum radius
+      final availableRange = maxRadius * 0.95 - minAllowedRadius;
+      final randomRadius = minAllowedRadius + (random.nextDouble() * availableRange);
       final randomAngleRadians = (randomAngle + 270) * math.pi / 180;
 
       position = Offset(
