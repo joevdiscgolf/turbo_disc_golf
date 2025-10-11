@@ -15,14 +15,34 @@ class CoachTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (round.aiCoachSuggestion != null &&
-              round.aiCoachSuggestion!.isNotEmpty)
+              round.aiCoachSuggestion!.isNotEmpty) ...[
+            Row(
+              children: [
+                Image.asset(
+                  'assets/mascots/turbo_mascot.png',
+                  width: 60,
+                  height: 60,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Let me help you improve!',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Card(
               color: Theme.of(context).colorScheme.primaryContainer,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomMarkdownContent(data: round.aiCoachSuggestion!),
               ),
-            )
+            ),
+          ]
           else
             Card(
               child: Padding(

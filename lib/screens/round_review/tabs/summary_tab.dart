@@ -14,14 +14,33 @@ class SummaryTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (round.aiSummary != null && round.aiSummary!.isNotEmpty)
+          if (round.aiSummary != null && round.aiSummary!.isNotEmpty) ...[
+            Row(
+              children: [
+                Image.asset(
+                  'assets/mascots/turbo_mascot.png',
+                  width: 60,
+                  height: 60,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Here\'s what I noticed about your round!',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: CustomMarkdownContent(data: round.aiSummary!),
               ),
-            )
-          else
+            ),
+          ] else
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),

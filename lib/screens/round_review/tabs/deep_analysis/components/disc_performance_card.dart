@@ -26,6 +26,8 @@ class DiscPerformanceCard extends StatelessWidget {
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 12),
+          _buildLegend(context),
           const SizedBox(height: 16),
           ...discPerformances.map((disc) {
             return Padding(
@@ -70,92 +72,105 @@ class DiscPerformanceCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            if (disc.goodShots > 0)
-              Expanded(
-                flex: disc.goodShots,
-                child: Container(
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: goodColor,
-                    borderRadius: BorderRadius.horizontal(
-                      left: const Radius.circular(4),
-                      right: disc.okayShots == 0 && disc.badShots == 0
-                          ? const Radius.circular(4)
-                          : Radius.zero,
-                    ),
-                  ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Row(
+            children: [
+              if (disc.goodShots > 0)
+                _buildProgressSegment(
+                  context,
+                  disc.goodShots,
+                  disc.totalShots,
+                  disc.goodPercentage,
+                  goodColor,
                 ),
-              ),
-            if (disc.okayShots > 0)
-              Expanded(
-                flex: disc.okayShots,
-                child: Container(
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: okayColor,
-                    borderRadius: BorderRadius.horizontal(
-                      left: disc.goodShots == 0
-                          ? const Radius.circular(4)
-                          : Radius.zero,
-                      right: disc.badShots == 0
-                          ? const Radius.circular(4)
-                          : Radius.zero,
-                    ),
-                  ),
+              if (disc.okayShots > 0)
+                _buildProgressSegment(
+                  context,
+                  disc.okayShots,
+                  disc.totalShots,
+                  disc.okayPercentage,
+                  okayColor,
                 ),
-              ),
-            if (disc.badShots > 0)
-              Expanded(
-                flex: disc.badShots,
-                child: Container(
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: badColor,
-                    borderRadius: BorderRadius.horizontal(
-                      left: disc.goodShots == 0 && disc.okayShots == 0
-                          ? const Radius.circular(4)
-                          : Radius.zero,
-                      right: const Radius.circular(4),
-                    ),
-                  ),
+              if (disc.badShots > 0)
+                _buildProgressSegment(
+                  context,
+                  disc.badShots,
+                  disc.totalShots,
+                  disc.badPercentage,
+                  badColor,
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildStatLabel(context, 'Good', disc.goodPercentage, goodColor),
-            _buildStatLabel(context, 'Okay', disc.okayPercentage, okayColor),
-            _buildStatLabel(context, 'Bad', disc.badPercentage, badColor),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildStatLabel(
+  Widget _buildProgressSegment(
     BuildContext context,
-    String label,
+    int shots,
+    int totalShots,
     double percentage,
     Color color,
   ) {
+    // Calculate the flex value, but ensure minimum width for visibility
+    final flex = shots;
+
+    return Expanded(
+      flex: flex,
+      child: Container(
+        height: 32,
+        constraints: percentage > 0 ? const BoxConstraints(minWidth: 50) : null,
+        decoration: BoxDecoration(color: color),
+        child: Center(
+          child: Text(
+            '${percentage.toStringAsFixed(0)}%',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegend(BuildContext context) {
+    const goodColor = Color(0xFF4CAF50);
+    const okayColor = Color(0xFFFFA726);
+    const badColor = Color(0xFFFF7A7A);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        _buildLegendItem(context, 'Good', goodColor),
+        const SizedBox(width: 16),
+        _buildLegendItem(context, 'Okay', okayColor),
+        const SizedBox(width: 16),
+        _buildLegendItem(context, 'Bad', badColor),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(BuildContext context, String label, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         Text(
-          '$label: ${percentage.toStringAsFixed(0)}%',
+          label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
