@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/deep_ana
 import 'package:turbo_disc_golf/screens/round_review/tabs/discs_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab.dart';
@@ -34,7 +35,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
   void initState() {
     super.initState();
     _round = widget.round;
-    _tabController = TabController(length: 9, vsync: this);
+    _tabController = TabController(length: 10, vsync: this);
 
     // Show story view if requested
     if (widget.showStoryOnLoad) {
@@ -106,6 +107,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             Tab(text: 'Putting'),
             Tab(text: 'Discs'),
             Tab(text: 'Mistakes'),
+            Tab(text: 'Momentum'),
             Tab(text: 'Summary'),
             Tab(text: 'Coach'),
             Tab(text: 'Deep Analysis'),
@@ -121,6 +123,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
           PuttingTab(round: _round),
           DiscsTab(round: _round),
           MistakesTab(round: _round),
+          MomentumTab(round: _round),
           SummaryTab(round: _round),
           CoachTab(round: _round),
           DeepAnalysisTab(round: _round),

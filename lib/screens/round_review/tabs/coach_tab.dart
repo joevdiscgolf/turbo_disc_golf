@@ -15,7 +15,7 @@ class CoachTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (round.aiCoachSuggestion != null &&
-              round.aiCoachSuggestion!.isNotEmpty) ...[
+              round.aiCoachSuggestion!.content.isNotEmpty) ...[
             Row(
               children: [
                 Image.asset(
@@ -35,11 +35,45 @@ class CoachTab extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            if (round.isAICoachingOutdated)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This coaching is out of date with the current round',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Card(
               color: Theme.of(context).colorScheme.primaryContainer,
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: CustomMarkdownContent(data: round.aiCoachSuggestion!),
+                child:
+                    CustomMarkdownContent(data: round.aiCoachSuggestion!.content),
               ),
             ),
           ]

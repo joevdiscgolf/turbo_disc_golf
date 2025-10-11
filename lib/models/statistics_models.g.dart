@@ -251,3 +251,104 @@ Map<String, dynamic> _$BirdieRateStatsToJson(BirdieRateStats instance) =>
       'birdieCount': instance.birdieCount,
       'totalAttempts': instance.totalAttempts,
     };
+
+SectionPerformance _$SectionPerformanceFromJson(Map<String, dynamic> json) =>
+    SectionPerformance(
+      sectionName: json['sectionName'] as String,
+      holesPlayed: (json['holesPlayed'] as num).toInt(),
+      avgScore: (json['avgScore'] as num).toDouble(),
+      birdieRate: (json['birdieRate'] as num).toDouble(),
+      parRate: (json['parRate'] as num).toDouble(),
+      bogeyPlusRate: (json['bogeyPlusRate'] as num).toDouble(),
+      shotQualityRate: (json['shotQualityRate'] as num).toDouble(),
+      c1InRegRate: (json['c1InRegRate'] as num).toDouble(),
+      c2InRegRate: (json['c2InRegRate'] as num).toDouble(),
+      fairwayHitRate: (json['fairwayHitRate'] as num).toDouble(),
+      obRate: (json['obRate'] as num).toDouble(),
+      mistakeCount: (json['mistakeCount'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$SectionPerformanceToJson(SectionPerformance instance) =>
+    <String, dynamic>{
+      'sectionName': instance.sectionName,
+      'holesPlayed': instance.holesPlayed,
+      'avgScore': instance.avgScore,
+      'birdieRate': instance.birdieRate,
+      'parRate': instance.parRate,
+      'bogeyPlusRate': instance.bogeyPlusRate,
+      'shotQualityRate': instance.shotQualityRate,
+      'c1InRegRate': instance.c1InRegRate,
+      'c2InRegRate': instance.c2InRegRate,
+      'fairwayHitRate': instance.fairwayHitRate,
+      'obRate': instance.obRate,
+      'mistakeCount': instance.mistakeCount,
+    };
+
+ScoringTransition _$ScoringTransitionFromJson(Map<String, dynamic> json) =>
+    ScoringTransition(
+      fromScore: json['fromScore'] as String,
+      toBirdiePercent: (json['toBirdiePercent'] as num).toDouble(),
+      toParPercent: (json['toParPercent'] as num).toDouble(),
+      toBogeyPercent: (json['toBogeyPercent'] as num).toDouble(),
+      toDoublePercent: (json['toDoublePercent'] as num).toDouble(),
+    );
+
+Map<String, dynamic> _$ScoringTransitionToJson(ScoringTransition instance) =>
+    <String, dynamic>{
+      'fromScore': instance.fromScore,
+      'toBirdiePercent': instance.toBirdiePercent,
+      'toParPercent': instance.toParPercent,
+      'toBogeyPercent': instance.toBogeyPercent,
+      'toDoublePercent': instance.toDoublePercent,
+    };
+
+MomentumStats _$MomentumStatsFromJson(Map<String, dynamic> json) =>
+    MomentumStats(
+      transitionMatrix: (json['transitionMatrix'] as Map<String, dynamic>).map(
+        (k, e) =>
+            MapEntry(k, ScoringTransition.fromJson(e as Map<String, dynamic>)),
+      ),
+      momentumMultiplier: (json['momentumMultiplier'] as num).toDouble(),
+      tiltFactor: (json['tiltFactor'] as num).toDouble(),
+      bounceBackRate: (json['bounceBackRate'] as num).toDouble(),
+      compoundErrorRate: (json['compoundErrorRate'] as num).toDouble(),
+      longestParStreak: (json['longestParStreak'] as num).toInt(),
+      mentalProfile: json['mentalProfile'] as String,
+      insights: (json['insights'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      front9Performance: json['front9Performance'] == null
+          ? null
+          : SectionPerformance.fromJson(
+              json['front9Performance'] as Map<String, dynamic>,
+            ),
+      back9Performance: json['back9Performance'] == null
+          ? null
+          : SectionPerformance.fromJson(
+              json['back9Performance'] as Map<String, dynamic>,
+            ),
+      last6Performance: json['last6Performance'] == null
+          ? null
+          : SectionPerformance.fromJson(
+              json['last6Performance'] as Map<String, dynamic>,
+            ),
+      conditioningScore: (json['conditioningScore'] as num).toDouble(),
+    );
+
+Map<String, dynamic> _$MomentumStatsToJson(MomentumStats instance) =>
+    <String, dynamic>{
+      'transitionMatrix': instance.transitionMatrix.map(
+        (k, e) => MapEntry(k, e.toJson()),
+      ),
+      'momentumMultiplier': instance.momentumMultiplier,
+      'tiltFactor': instance.tiltFactor,
+      'bounceBackRate': instance.bounceBackRate,
+      'compoundErrorRate': instance.compoundErrorRate,
+      'longestParStreak': instance.longestParStreak,
+      'mentalProfile': instance.mentalProfile,
+      'insights': instance.insights,
+      'front9Performance': instance.front9Performance?.toJson(),
+      'back9Performance': instance.back9Performance?.toJson(),
+      'last6Performance': instance.last6Performance?.toJson(),
+      'conditioningScore': instance.conditioningScore,
+    };

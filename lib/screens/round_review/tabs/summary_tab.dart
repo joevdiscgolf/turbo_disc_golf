@@ -14,7 +14,8 @@ class SummaryTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (round.aiSummary != null && round.aiSummary!.isNotEmpty) ...[
+          if (round.aiSummary != null &&
+              round.aiSummary!.content.isNotEmpty) ...[
             Row(
               children: [
                 Image.asset(
@@ -34,10 +35,43 @@ class SummaryTab extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            if (round.isAISummaryOutdated)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This summary is out of date with the current round',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: CustomMarkdownContent(data: round.aiSummary!),
+                child: CustomMarkdownContent(data: round.aiSummary!.content),
               ),
             ),
           ] else

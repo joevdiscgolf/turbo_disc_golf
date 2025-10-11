@@ -10,12 +10,14 @@ class DGHole {
     required this.par,
     this.feet,
     required this.throws,
+    this.holeType,
   });
 
   final int number;
   final int par;
   final int? feet;
   final List<DiscThrow> throws;
+  final HoleType? holeType;
 
   int get holeScore =>
       (throws.length +

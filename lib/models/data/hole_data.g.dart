@@ -13,6 +13,7 @@ DGHole _$DGHoleFromJson(Map json) => DGHole(
   throws: (json['throws'] as List<dynamic>)
       .map((e) => DiscThrow.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
+  holeType: $enumDecodeNullable(_$HoleTypeEnumMap, json['holeType']),
 );
 
 Map<String, dynamic> _$DGHoleToJson(DGHole instance) => <String, dynamic>{
@@ -20,4 +21,11 @@ Map<String, dynamic> _$DGHoleToJson(DGHole instance) => <String, dynamic>{
   'par': instance.par,
   'feet': instance.feet,
   'throws': instance.throws.map((e) => e.toJson()).toList(),
+  'holeType': _$HoleTypeEnumMap[instance.holeType],
+};
+
+const _$HoleTypeEnumMap = {
+  HoleType.open: 'open',
+  HoleType.slightlyWooded: 'slightly_wooded',
+  HoleType.wooded: 'wooded',
 };

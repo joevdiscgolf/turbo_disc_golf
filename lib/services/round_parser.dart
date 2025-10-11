@@ -139,6 +139,7 @@ class RoundParser extends ChangeNotifier {
         analysis: analysis,
         aiSummary: insights['summary'],
         aiCoachSuggestion: insights['coaching'],
+        versionId: 1, // Set initial version ID
       );
 
       // Save to shared preferences for future use
@@ -217,6 +218,7 @@ class RoundParser extends ChangeNotifier {
       courseName: round.courseName,
       holes: enhancedHoles,
       id: round.id,
+      versionId: round.versionId,
     );
   }
 
@@ -229,6 +231,10 @@ class RoundParser extends ChangeNotifier {
         courseName: _parsedRound!.courseName,
         holes: updatedHoles,
         id: _parsedRound!.id,
+        analysis: _parsedRound!.analysis,
+        aiSummary: _parsedRound!.aiSummary,
+        aiCoachSuggestion: _parsedRound!.aiCoachSuggestion,
+        versionId: _parsedRound!.versionId + 1, // Increment version on edit
       );
 
       notifyListeners();

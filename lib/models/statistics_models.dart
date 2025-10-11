@@ -359,3 +359,126 @@ class BirdieRateStats {
       _$BirdieRateStatsFromJson(json);
   Map<String, dynamic> toJson() => _$BirdieRateStatsToJson(this);
 }
+
+/// Performance statistics for a section of the round
+@JsonSerializable()
+class SectionPerformance {
+  final String sectionName; // "Front 9", "Back 9", "Last 6"
+  final int holesPlayed;
+  final double avgScore; // Average relative to par
+  final double birdieRate;
+  final double parRate;
+  final double bogeyPlusRate;
+  final double shotQualityRate; // Percentage of successful shots
+  final double c1InRegRate;
+  final double c2InRegRate;
+  final double fairwayHitRate;
+  final double obRate;
+  final int mistakeCount;
+
+  SectionPerformance({
+    required this.sectionName,
+    required this.holesPlayed,
+    required this.avgScore,
+    required this.birdieRate,
+    required this.parRate,
+    required this.bogeyPlusRate,
+    required this.shotQualityRate,
+    required this.c1InRegRate,
+    required this.c2InRegRate,
+    required this.fairwayHitRate,
+    required this.obRate,
+    required this.mistakeCount,
+  });
+
+  factory SectionPerformance.fromJson(Map<String, dynamic> json) =>
+      _$SectionPerformanceFromJson(json);
+  Map<String, dynamic> toJson() => _$SectionPerformanceToJson(this);
+}
+
+/// Scoring transition data - represents one row in the momentum transition matrix
+@JsonSerializable()
+class ScoringTransition {
+  final String fromScore; // "Birdie", "Par", "Bogey", "Double+"
+  final double toBirdiePercent;
+  final double toParPercent;
+  final double toBogeyPercent;
+  final double toDoublePercent;
+
+  ScoringTransition({
+    required this.fromScore,
+    required this.toBirdiePercent,
+    required this.toParPercent,
+    required this.toBogeyPercent,
+    required this.toDoublePercent,
+  });
+
+  /// Helper: Par or better rate (birdie + par)
+  double get parOrBetterPercent => toBirdiePercent + toParPercent;
+
+  /// Helper: Bogey or worse rate (bogey + double+)
+  double get bogeyOrWorsePercent => toBogeyPercent + toDoublePercent;
+
+  factory ScoringTransition.fromJson(Map<String, dynamic> json) =>
+      _$ScoringTransitionFromJson(json);
+  Map<String, dynamic> toJson() => _$ScoringTransitionToJson(this);
+}
+
+/// Complete momentum and psychological analysis
+@JsonSerializable(explicitToJson: true)
+class MomentumStats {
+  /// Transition matrix: from score -> transition percentages
+  final Map<String, ScoringTransition> transitionMatrix;
+
+  /// How much more likely to birdie after birdie vs after bogey
+  final double momentumMultiplier;
+
+  /// Performance drop percentage after bad holes
+  final double tiltFactor;
+
+  /// Par-or-better rate after bogey+ holes
+  final double bounceBackRate;
+
+  /// Frequency of back-to-back bogey+ holes
+  final double compoundErrorRate;
+
+  /// Longest streak of consecutive par-or-better holes
+  final int longestParStreak;
+
+  /// Mental game profile classification
+  final String mentalProfile; // "Momentum Player", "Even Keel", "Clutch Closer", "Slow Starter"
+
+  /// Actionable insights based on patterns
+  final List<String> insights;
+
+  /// Performance statistics for front 9 holes
+  final SectionPerformance? front9Performance;
+
+  /// Performance statistics for back 9 holes
+  final SectionPerformance? back9Performance;
+
+  /// Performance statistics for last 6 holes
+  final SectionPerformance? last6Performance;
+
+  /// Conditioning score (0-100) - measures performance drop over the round
+  final double conditioningScore;
+
+  MomentumStats({
+    required this.transitionMatrix,
+    required this.momentumMultiplier,
+    required this.tiltFactor,
+    required this.bounceBackRate,
+    required this.compoundErrorRate,
+    required this.longestParStreak,
+    required this.mentalProfile,
+    required this.insights,
+    this.front9Performance,
+    this.back9Performance,
+    this.last6Performance,
+    required this.conditioningScore,
+  });
+
+  factory MomentumStats.fromJson(Map<String, dynamic> json) =>
+      _$MomentumStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$MomentumStatsToJson(this);
+}

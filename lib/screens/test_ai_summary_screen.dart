@@ -95,8 +95,11 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
         analysis: analysis,
       );
 
-      final summary = insights['summary'] ?? '';
-      final coaching = insights['coaching'] ?? '';
+      final summaryContent = insights['summary'];
+      final coachingContent = insights['coaching'];
+
+      final summary = summaryContent?.content ?? '';
+      final coaching = coachingContent?.content ?? '';
 
       debugPrint('==========================================');
       debugPrint('📊 AI SUMMARY:');
