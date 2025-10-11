@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -147,10 +146,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RoundReviewScreen(
-              round: round,
-              showStoryOnLoad: true,
-            ),
+            builder: (context) =>
+                RoundReviewScreen(round: round, showStoryOnLoad: true),
           ),
         );
       }

@@ -11,10 +11,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 class RoundStoryView extends StatefulWidget {
   final DGRound round;
 
-  const RoundStoryView({
-    super.key,
-    required this.round,
-  });
+  const RoundStoryView({super.key, required this.round});
 
   @override
   State<RoundStoryView> createState() => _RoundStoryViewState();
@@ -23,7 +20,8 @@ class RoundStoryView extends StatefulWidget {
 class _RoundStoryViewState extends State<RoundStoryView> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 7; // Summary, Course, Drives, Putting, Discs, Mistakes, Coach
+  final int _totalPages =
+      7; // Summary, Course, Drives, Putting, Discs, Mistakes, Coach
 
   @override
   void dispose() {
@@ -68,7 +66,9 @@ class _RoundStoryViewState extends State<RoundStoryView> {
               decoration: BoxDecoration(
                 color: isActive
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -126,8 +126,12 @@ class _RoundStoryViewState extends State<RoundStoryView> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
-                      Theme.of(context).scaffoldBackgroundColor.withOpacity(0.0),
+                      Theme.of(
+                        context,
+                      ).scaffoldBackgroundColor.withValues(alpha: 0.95),
+                      Theme.of(
+                        context,
+                      ).scaffoldBackgroundColor.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
@@ -178,9 +182,7 @@ class _RoundStoryViewState extends State<RoundStoryView> {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(
-            child: content,
-          ),
+          Expanded(child: content),
         ],
       ),
     );
