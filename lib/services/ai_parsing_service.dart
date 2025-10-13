@@ -26,7 +26,7 @@ class AiParsingService {
     try {
       final prompt = _buildParsingPrompt(voiceTranscript, userBag, courseName);
       debugPrint('Sending request to Gemini...');
-      String? responseText = await getContentFromModel(prompt: prompt);
+      String? responseText = await _getContentFromModel(prompt: prompt);
 
       if (responseText == null) {
         throw Exception('No response from Gemini');
@@ -120,7 +120,7 @@ class AiParsingService {
     try {
       final prompt = _buildInsightsPrompt(round, analysis);
 
-      final response = await getContentFromModel(prompt: prompt);
+      final response = await _getContentFromModel(prompt: prompt);
 
       // Parse response in markdown format
       var responseText = response ?? '';
@@ -150,7 +150,7 @@ class AiParsingService {
     }
   }
 
-  Future<String?> getContentFromModel({required String prompt}) async {
+  Future<String?> _getContentFromModel({required String prompt}) async {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
         return locator.get<GeminiService>().generateContent(prompt: prompt);
