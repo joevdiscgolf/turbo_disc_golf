@@ -12,19 +12,30 @@ class CourseTab extends StatelessWidget {
   Widget build(BuildContext context) {
     // Use cached analysis if available, otherwise compute live
     final analysis = round.analysis;
+    final statsService = RoundStatisticsService(round);
 
-    final scoringStats = analysis?.scoringStats ??
-        RoundStatisticsService(round).getScoringStats();
-    final totalScore = analysis?.totalScoreRelativeToPar ??
-        RoundStatisticsService(round).getTotalScoreRelativeToPar();
-    final bounceBackPct = analysis?.bounceBackPercentage ??
-        RoundStatisticsService(round).getBounceBackPercentage();
-    final birdieRateByPar = analysis?.birdieRateByPar ??
-        RoundStatisticsService(round).getBirdieRateByPar();
-    final birdieRateByLength = analysis?.birdieRateByLength ??
-        RoundStatisticsService(round).getBirdieRateByHoleLength();
-    final avgBirdieDistance = analysis?.avgBirdieHoleDistance ??
-        RoundStatisticsService(round).getAverageBirdieHoleDistance();
+    final scoringStats =
+        analysis?.scoringStats ?? statsService.getScoringStats();
+    final totalScore =
+        analysis?.totalScoreRelativeToPar ??
+        statsService.getTotalScoreRelativeToPar();
+    final bounceBackPct =
+        analysis?.bounceBackPercentage ??
+        statsService.getBounceBackPercentage();
+    final birdieRateByPar =
+        analysis?.birdieRateByPar ?? statsService.getBirdieRateByPar();
+    final birdieRateByLength =
+        analysis?.birdieRateByLength ??
+        statsService.getBirdieRateByHoleLength();
+    final avgBirdieDistance =
+        analysis?.avgBirdieHoleDistance ??
+        statsService.getAverageBirdieHoleDistance();
+
+    // New statistics
+    final performanceByPar = statsService.getPerformanceByPar();
+    final c1c2ByLength = statsService.getC1C2ByHoleLength();
+    final performanceByFairwayWidth = statsService
+        .getPerformanceByFairwayWidth();
 
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
@@ -32,12 +43,15 @@ class CourseTab extends StatelessWidget {
         [
           _buildScoreSummary(context, totalScore, scoringStats, bounceBackPct),
           _buildScoreDistribution(context, scoringStats),
+          _buildPerformanceByPar(context, performanceByPar),
           _buildBirdieTrends(
             context,
             birdieRateByPar,
             birdieRateByLength,
             avgBirdieDistance,
+            c1c2ByLength,
           ),
+          _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
         ],
         runSpacing: 16,
         axis: Axis.vertical,
@@ -54,8 +68,8 @@ class CourseTab extends StatelessWidget {
     final scoreColor = totalScore < 0
         ? const Color(0xFF00F5D4)
         : totalScore > 0
-            ? const Color(0xFFFF7A7A)
-            : const Color(0xFFF5F5F5);
+        ? const Color(0xFFFF7A7A)
+        : const Color(0xFFF5F5F5);
 
     return Card(
       child: Padding(
@@ -65,9 +79,9 @@ class CourseTab extends StatelessWidget {
           children: [
             Text(
               'Round Summary',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -87,7 +101,7 @@ class CourseTab extends StatelessWidget {
                 ),
                 _buildKPI(
                   context,
-                  'Pars',
+                  scoringStats.pars == 1 ? 'Par' : 'Pars',
                   '${scoringStats.pars}',
                   Colors.grey,
                 ),
@@ -125,16 +139,16 @@ class CourseTab extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -151,9 +165,9 @@ class CourseTab extends StatelessWidget {
           children: [
             Text(
               'Score Distribution',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildDistributionBar(
@@ -208,15 +222,12 @@ class CourseTab extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text(label, style: Theme.of(context).textTheme.bodyMedium),
             Text(
               '$count (${percentage.toStringAsFixed(0)}%)',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -239,15 +250,16 @@ class CourseTab extends StatelessWidget {
     Map<int, double> birdieRateByPar,
     Map<String, double> birdieRateByLength,
     double avgBirdieDistance,
+    Map<String, Map<String, double>> c1c2ByLength,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Birdie Trends',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          'Performance by Distance',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         Card(
@@ -258,9 +270,9 @@ class CourseTab extends StatelessWidget {
               children: [
                 Text(
                   'Birdie % by Par',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -289,23 +301,58 @@ class CourseTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Birdie % by Hole Length',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  'Performance by Hole Length',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 ...birdieRateByLength.entries.map((entry) {
+                  final distanceCategory = entry.key;
+                  final birdieRate = entry.value;
+                  final c1c2Stats = c1c2ByLength[distanceCategory];
+                  final c1Rate = c1c2Stats?['c1InRegRate'] ?? 0;
+                  final c2Rate = c1c2Stats?['c2InRegRate'] ?? 0;
+                  final holesPlayed = c1c2Stats?['holesPlayed']?.toInt() ?? 0;
+
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(entry.key),
-                        Text(
-                          '${entry.value.toStringAsFixed(0)}%',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              distanceCategory,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            if (holesPlayed > 0)
+                              Text(
+                                '$holesPlayed holes',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                          ],
                         ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildDistanceStatItem(
+                              context,
+                              'Birdie',
+                              birdieRate,
+                            ),
+                            _buildDistanceStatItem(context, 'C1 Reg', c1Rate),
+                            _buildDistanceStatItem(context, 'C2 Reg', c2Rate),
+                          ],
+                        ),
+                        if (entry != birdieRateByLength.entries.last)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8),
+                            child: Divider(),
+                          ),
                       ],
                     ),
                   );
@@ -330,14 +377,31 @@ class CourseTab extends StatelessWidget {
                   child: Text(
                     'Average hole distance when birdied: ${avgBirdieDistance.toStringAsFixed(0)} ft',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDistanceStatItem(
+    BuildContext context,
+    String label,
+    double value,
+  ) {
+    return Column(
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          '${value.toStringAsFixed(0)}%',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -355,17 +419,286 @@ class CourseTab extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF00F5D4),
-                ),
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF00F5D4),
+            ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
+    );
+  }
+
+  Widget _buildPerformanceByPar(
+    BuildContext context,
+    Map<int, Map<String, double>> performanceByPar,
+  ) {
+    if (performanceByPar.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Performance by Par',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        ...performanceByPar.entries.map((entry) {
+          final par = entry.key;
+          final stats = entry.value;
+          final holesPlayed = stats['holesPlayed']?.toInt() ?? 0;
+
+          if (holesPlayed == 0) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Par $par',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '$holesPlayed holes',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildParStatColumn(
+                          context,
+                          'Birdie',
+                          stats['birdieRate'] ?? 0,
+                          const Color(0xFF00F5D4),
+                        ),
+                        _buildParStatColumn(
+                          context,
+                          'Par',
+                          stats['parRate'] ?? 0,
+                          Colors.grey,
+                        ),
+                        _buildParStatColumn(
+                          context,
+                          'Bogey+',
+                          stats['bogeyRate'] ?? 0,
+                          const Color(0xFFFF7A7A),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildParStatColumn(
+                          context,
+                          'C1 Reg',
+                          stats['c1InRegRate'] ?? 0,
+                          const Color(0xFF4CAF50),
+                        ),
+                        _buildParStatColumn(
+                          context,
+                          'C2 Reg',
+                          stats['c2InRegRate'] ?? 0,
+                          const Color(0xFF8BC34A),
+                        ),
+                        _buildParStatColumn(
+                          context,
+                          'Avg Score',
+                          stats['avgScore'] ?? 0,
+                          Theme.of(context).colorScheme.primary,
+                          isAverage: true,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildParStatColumn(
+    BuildContext context,
+    String label,
+    double value,
+    Color color, {
+    bool isAverage = false,
+  }) {
+    final displayValue = isAverage
+        ? value.toStringAsFixed(2)
+        : '${value.toStringAsFixed(0)}%';
+
+    return Column(
+      children: [
+        Text(
+          displayValue,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPerformanceByFairwayWidth(
+    BuildContext context,
+    Map<String, Map<String, double>> performanceByWidth,
+  ) {
+    if (performanceByWidth.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Performance by Fairway Width',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: performanceByWidth.entries.map((entry) {
+                final width = entry.key;
+                final stats = entry.value;
+                final holesPlayed = stats['holesPlayed']?.toInt() ?? 0;
+
+                if (holesPlayed == 0) return const SizedBox.shrink();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatFairwayWidth(width),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '$holesPlayed holes',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildWidthStatItem(
+                            context,
+                            'Birdie',
+                            stats['birdieRate'] ?? 0,
+                          ),
+                          _buildWidthStatItem(
+                            context,
+                            'Par',
+                            stats['parRate'] ?? 0,
+                          ),
+                          _buildWidthStatItem(
+                            context,
+                            'Bogey+',
+                            stats['bogeyRate'] ?? 0,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildWidthStatItem(
+                            context,
+                            'C1 Reg',
+                            stats['c1InRegRate'] ?? 0,
+                          ),
+                          _buildWidthStatItem(
+                            context,
+                            'C2 Reg',
+                            stats['c2InRegRate'] ?? 0,
+                          ),
+                          _buildWidthStatItem(
+                            context,
+                            'OB',
+                            stats['obRate'] ?? 0,
+                          ),
+                        ],
+                      ),
+                      if (entry != performanceByWidth.entries.last)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 12),
+                          child: Divider(),
+                        ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatFairwayWidth(String width) {
+    switch (width) {
+      case 'open':
+        return 'Open Fairway';
+      case 'moderate':
+        return 'Moderate Fairway';
+      case 'tight':
+        return 'Tight Fairway';
+      case 'very_tight':
+        return 'Very Tight Fairway';
+      default:
+        return width;
+    }
+  }
+
+  Widget _buildWidthStatItem(BuildContext context, String label, double value) {
+    return Column(
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(
+          '${value.toStringAsFixed(0)}%',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 }

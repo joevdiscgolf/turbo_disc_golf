@@ -18,8 +18,15 @@ DGRound _$DGRoundFromJson(Map json) => DGRound(
       : RoundAnalysis.fromJson(
           Map<String, dynamic>.from(json['analysis'] as Map),
         ),
-  aiSummary: json['aiSummary'] as String?,
-  aiCoachSuggestion: json['aiCoachSuggestion'] as String?,
+  aiSummary: json['aiSummary'] == null
+      ? null
+      : AIContent.fromJson(Map<String, dynamic>.from(json['aiSummary'] as Map)),
+  aiCoachSuggestion: json['aiCoachSuggestion'] == null
+      ? null
+      : AIContent.fromJson(
+          Map<String, dynamic>.from(json['aiCoachSuggestion'] as Map),
+        ),
+  versionId: (json['versionId'] as num?)?.toInt() ?? 1,
 );
 
 Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{
@@ -28,6 +35,7 @@ Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{
   'courseName': instance.courseName,
   'holes': instance.holes.map((e) => e.toJson()).toList(),
   'analysis': instance.analysis?.toJson(),
-  'aiSummary': instance.aiSummary,
-  'aiCoachSuggestion': instance.aiCoachSuggestion,
+  'aiSummary': instance.aiSummary?.toJson(),
+  'aiCoachSuggestion': instance.aiCoachSuggestion?.toJson(),
+  'versionId': instance.versionId,
 };

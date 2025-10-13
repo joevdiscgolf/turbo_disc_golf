@@ -18,19 +18,40 @@ class DrivesTab extends StatelessWidget {
     final teeShotBirdieRates = statsService.getTeeShotBirdieRateStats();
     final allTeeShotsByType = statsService.getAllTeeShotsByType();
     final circleInRegByType = statsService.getCircleInRegByThrowType();
+    final techniqueComparison = statsService.getTechniqueComparison();
+    final shotShapeBirdieRates = statsService.getShotShapeBirdieRateStats();
+    final circleInRegByShape = statsService.getCircleInRegByShotShape();
+    final performanceByFairwayWidth = statsService
+        .getPerformanceByFairwayWidth();
 
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
       children: addRunSpacing(
         [
           _buildCoreStatsKPIs(context, coreStats),
+          _buildShotShapeAndTechniqueCard(
+            context,
+            techniqueComparison,
+            shotShapeBirdieRates,
+            circleInRegByShape,
+          ),
           _buildBirdieRateByThrowType(
             context,
             teeShotBirdieRates,
             allTeeShotsByType,
           ),
-          _buildC1InRegByThrowType(context, circleInRegByType, allTeeShotsByType),
-          _buildC2InRegByThrowType(context, circleInRegByType, allTeeShotsByType),
+          _buildC1InRegByThrowType(
+            context,
+            circleInRegByType,
+            allTeeShotsByType,
+          ),
+          _buildC2InRegByThrowType(
+            context,
+            circleInRegByType,
+            allTeeShotsByType,
+          ),
+          if (performanceByFairwayWidth.isNotEmpty)
+            _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
           _buildInsightCard(context, teeShotBirdieRates),
         ],
         runSpacing: 16,
@@ -48,9 +69,9 @@ class DrivesTab extends StatelessWidget {
           children: [
             Text(
               'Driving Performance',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -113,16 +134,16 @@ class DrivesTab extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -149,9 +170,9 @@ class DrivesTab extends StatelessWidget {
           children: [
             Text(
               'Birdie Rate by Throw Type',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...sortedEntries.map((entry) {
@@ -163,9 +184,9 @@ class DrivesTab extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     childrenPadding: const EdgeInsets.only(top: 8),
@@ -179,10 +200,8 @@ class DrivesTab extends StatelessWidget {
                         ),
                         Text(
                           '${percentage.toStringAsFixed(0)}% (${stats.birdieCount}/${stats.totalAttempts})',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -193,9 +212,9 @@ class DrivesTab extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: percentage / 100,
                           minHeight: 12,
-                          backgroundColor: const Color(0xFF00F5D4).withValues(
-                            alpha: 0.2,
-                          ),
+                          backgroundColor: const Color(
+                            0xFF00F5D4,
+                          ).withValues(alpha: 0.2),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             Color(0xFF00F5D4),
                           ),
@@ -206,8 +225,12 @@ class DrivesTab extends StatelessWidget {
                       if (allThrows.isNotEmpty) ...[
                         const Divider(),
                         () {
-                          final birdieThrows = allThrows.where((e) => e.key.relativeHoleScore < 0).toList();
-                          final nonBirdieThrows = allThrows.where((e) => e.key.relativeHoleScore >= 0).toList();
+                          final birdieThrows = allThrows
+                              .where((e) => e.key.relativeHoleScore < 0)
+                              .toList();
+                          final nonBirdieThrows = allThrows
+                              .where((e) => e.key.relativeHoleScore >= 0)
+                              .toList();
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,9 +238,8 @@ class DrivesTab extends StatelessWidget {
                               if (birdieThrows.isNotEmpty) ...[
                                 Text(
                                   'Birdie Throws (${birdieThrows.length})',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
                                 ...birdieThrows.map((entry) {
@@ -250,7 +272,9 @@ class DrivesTab extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(context).textTheme.bodySmall,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
                                         ),
                                         if (teeShot.landingSpot != null)
@@ -260,17 +284,24 @@ class DrivesTab extends StatelessWidget {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF00F5D4).withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: const Color(
+                                                0xFF00F5D4,
+                                              ).withValues(alpha: 0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              _landingSpotLabel(teeShot.landingSpot!),
+                                              _landingSpotLabel(
+                                                teeShot.landingSpot!,
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
                                                     fontSize: 10,
-                                                    color: const Color(0xFF00F5D4),
+                                                    color: const Color(
+                                                      0xFF00F5D4,
+                                                    ),
                                                   ),
                                             ),
                                           ),
@@ -279,7 +310,8 @@ class DrivesTab extends StatelessWidget {
                                   );
                                 }),
                               ],
-                              if (birdieThrows.isNotEmpty && nonBirdieThrows.isNotEmpty) ...[
+                              if (birdieThrows.isNotEmpty &&
+                                  nonBirdieThrows.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 const Divider(),
                                 const SizedBox(height: 8),
@@ -287,9 +319,8 @@ class DrivesTab extends StatelessWidget {
                               if (nonBirdieThrows.isNotEmpty) ...[
                                 Text(
                                   'Other Throws (${nonBirdieThrows.length})',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
                                 ...nonBirdieThrows.map((entry) {
@@ -304,14 +335,18 @@ class DrivesTab extends StatelessWidget {
                                           width: 24,
                                           height: 24,
                                           decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest,
                                             shape: BoxShape.circle,
                                           ),
                                           child: Center(
                                             child: Text(
                                               '${hole.number}',
                                               style: TextStyle(
-                                                color: Theme.of(context).colorScheme.onSurface,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurface,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 11,
                                               ),
@@ -322,7 +357,9 @@ class DrivesTab extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(context).textTheme.bodySmall,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
                                         ),
                                         if (teeShot.landingSpot != null)
@@ -332,17 +369,24 @@ class DrivesTab extends StatelessWidget {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              _landingSpotLabel(teeShot.landingSpot!),
+                                              _landingSpotLabel(
+                                                teeShot.landingSpot!,
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
                                                     fontSize: 10,
-                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSurface,
                                                   ),
                                             ),
                                           ),
@@ -391,7 +435,9 @@ class DrivesTab extends StatelessWidget {
     }
 
     final sortedEntries = circleInRegByType.entries.toList()
-      ..sort((a, b) => b.value['c1Percentage']!.compareTo(a.value['c1Percentage']!));
+      ..sort(
+        (a, b) => b.value['c1Percentage']!.compareTo(a.value['c1Percentage']!),
+      );
 
     return Card(
       child: Padding(
@@ -401,16 +447,16 @@ class DrivesTab extends StatelessWidget {
           children: [
             Text(
               'C1 in Regulation by Throw Type',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Holes where you reached C1 with a chance for birdie',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             ...sortedEntries.map((entry) {
@@ -424,9 +470,9 @@ class DrivesTab extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     childrenPadding: const EdgeInsets.only(top: 8),
@@ -440,10 +486,8 @@ class DrivesTab extends StatelessWidget {
                         ),
                         Text(
                           '${c1Percentage.toStringAsFixed(0)}% ($c1Count/$totalAttempts)',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -454,9 +498,9 @@ class DrivesTab extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: c1Percentage / 100,
                           minHeight: 12,
-                          backgroundColor: const Color(0xFF4CAF50).withValues(
-                            alpha: 0.2,
-                          ),
+                          backgroundColor: const Color(
+                            0xFF4CAF50,
+                          ).withValues(alpha: 0.2),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             Color(0xFF4CAF50),
                           ),
@@ -476,10 +520,16 @@ class DrivesTab extends StatelessWidget {
                             bool reachedC1 = false;
 
                             if (regulationStrokes > 0) {
-                              for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+                              for (
+                                int i = 0;
+                                i < hole.throws.length && i < regulationStrokes;
+                                i++
+                              ) {
                                 final discThrow = hole.throws[i];
-                                if (discThrow.landingSpot == LandingSpot.circle1 ||
-                                    discThrow.landingSpot == LandingSpot.parked) {
+                                if (discThrow.landingSpot ==
+                                        LandingSpot.circle1 ||
+                                    discThrow.landingSpot ==
+                                        LandingSpot.parked) {
                                   reachedC1 = true;
                                   break;
                                 }
@@ -499,9 +549,8 @@ class DrivesTab extends StatelessWidget {
                               if (c1Throws.isNotEmpty) ...[
                                 Text(
                                   'C1 in Reg (${c1Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
                                 ...c1Throws.map((entry) {
@@ -533,7 +582,9 @@ class DrivesTab extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(context).textTheme.bodySmall,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
                                         ),
                                         if (teeShot.landingSpot != null)
@@ -543,18 +594,24 @@ class DrivesTab extends StatelessWidget {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF4CAF50)
-                                                  .withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: const Color(
+                                                0xFF4CAF50,
+                                              ).withValues(alpha: 0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              _landingSpotLabel(teeShot.landingSpot!),
+                                              _landingSpotLabel(
+                                                teeShot.landingSpot!,
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
                                                     fontSize: 10,
-                                                    color: const Color(0xFF4CAF50),
+                                                    color: const Color(
+                                                      0xFF4CAF50,
+                                                    ),
                                                   ),
                                             ),
                                           ),
@@ -563,7 +620,8 @@ class DrivesTab extends StatelessWidget {
                                   );
                                 }),
                               ],
-                              if (c1Throws.isNotEmpty && nonC1Throws.isNotEmpty) ...[
+                              if (c1Throws.isNotEmpty &&
+                                  nonC1Throws.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 const Divider(),
                                 const SizedBox(height: 8),
@@ -571,9 +629,8 @@ class DrivesTab extends StatelessWidget {
                               if (nonC1Throws.isNotEmpty) ...[
                                 Text(
                                   'Other Throws (${nonC1Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
                                 ...nonC1Throws.map((entry) {
@@ -587,14 +644,18 @@ class DrivesTab extends StatelessWidget {
                                           width: 24,
                                           height: 24,
                                           decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest,
                                             shape: BoxShape.circle,
                                           ),
                                           child: Center(
                                             child: Text(
                                               '${hole.number}',
                                               style: TextStyle(
-                                                color: Theme.of(context).colorScheme.onSurface,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurface,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 11,
                                               ),
@@ -605,7 +666,9 @@ class DrivesTab extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(context).textTheme.bodySmall,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
                                         ),
                                         if (teeShot.landingSpot != null)
@@ -615,17 +678,24 @@ class DrivesTab extends StatelessWidget {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              _landingSpotLabel(teeShot.landingSpot!),
+                                              _landingSpotLabel(
+                                                teeShot.landingSpot!,
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
                                                     fontSize: 10,
-                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSurface,
                                                   ),
                                             ),
                                           ),
@@ -659,7 +729,9 @@ class DrivesTab extends StatelessWidget {
     }
 
     final sortedEntries = circleInRegByType.entries.toList()
-      ..sort((a, b) => b.value['c2Percentage']!.compareTo(a.value['c2Percentage']!));
+      ..sort(
+        (a, b) => b.value['c2Percentage']!.compareTo(a.value['c2Percentage']!),
+      );
 
     return Card(
       child: Padding(
@@ -669,16 +741,16 @@ class DrivesTab extends StatelessWidget {
           children: [
             Text(
               'C2 in Regulation by Throw Type',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Holes where you reached C2 with a chance for birdie',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             ...sortedEntries.map((entry) {
@@ -692,9 +764,9 @@ class DrivesTab extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     childrenPadding: const EdgeInsets.only(top: 8),
@@ -708,10 +780,8 @@ class DrivesTab extends StatelessWidget {
                         ),
                         Text(
                           '${c2Percentage.toStringAsFixed(0)}% ($c2Count/$totalAttempts)',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -722,9 +792,9 @@ class DrivesTab extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: c2Percentage / 100,
                           minHeight: 12,
-                          backgroundColor: const Color(0xFF2196F3).withValues(
-                            alpha: 0.2,
-                          ),
+                          backgroundColor: const Color(
+                            0xFF2196F3,
+                          ).withValues(alpha: 0.2),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             Color(0xFF2196F3),
                           ),
@@ -744,11 +814,18 @@ class DrivesTab extends StatelessWidget {
                             bool reachedC2 = false;
 
                             if (regulationStrokes > 0) {
-                              for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+                              for (
+                                int i = 0;
+                                i < hole.throws.length && i < regulationStrokes;
+                                i++
+                              ) {
                                 final discThrow = hole.throws[i];
-                                if (discThrow.landingSpot == LandingSpot.circle1 ||
-                                    discThrow.landingSpot == LandingSpot.parked ||
-                                    discThrow.landingSpot == LandingSpot.circle2) {
+                                if (discThrow.landingSpot ==
+                                        LandingSpot.circle1 ||
+                                    discThrow.landingSpot ==
+                                        LandingSpot.parked ||
+                                    discThrow.landingSpot ==
+                                        LandingSpot.circle2) {
                                   reachedC2 = true;
                                   break;
                                 }
@@ -768,9 +845,8 @@ class DrivesTab extends StatelessWidget {
                               if (c2Throws.isNotEmpty) ...[
                                 Text(
                                   'C2 in Reg (${c2Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
                                 ...c2Throws.map((entry) {
@@ -802,7 +878,9 @@ class DrivesTab extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(context).textTheme.bodySmall,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
                                         ),
                                         if (teeShot.landingSpot != null)
@@ -812,18 +890,24 @@ class DrivesTab extends StatelessWidget {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF2196F3)
-                                                  .withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: const Color(
+                                                0xFF2196F3,
+                                              ).withValues(alpha: 0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              _landingSpotLabel(teeShot.landingSpot!),
+                                              _landingSpotLabel(
+                                                teeShot.landingSpot!,
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
                                                     fontSize: 10,
-                                                    color: const Color(0xFF2196F3),
+                                                    color: const Color(
+                                                      0xFF2196F3,
+                                                    ),
                                                   ),
                                             ),
                                           ),
@@ -832,7 +916,8 @@ class DrivesTab extends StatelessWidget {
                                   );
                                 }),
                               ],
-                              if (c2Throws.isNotEmpty && nonC2Throws.isNotEmpty) ...[
+                              if (c2Throws.isNotEmpty &&
+                                  nonC2Throws.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 const Divider(),
                                 const SizedBox(height: 8),
@@ -840,9 +925,8 @@ class DrivesTab extends StatelessWidget {
                               if (nonC2Throws.isNotEmpty) ...[
                                 Text(
                                   'Other Throws (${nonC2Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
                                 ...nonC2Throws.map((entry) {
@@ -856,14 +940,18 @@ class DrivesTab extends StatelessWidget {
                                           width: 24,
                                           height: 24,
                                           decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest,
                                             shape: BoxShape.circle,
                                           ),
                                           child: Center(
                                             child: Text(
                                               '${hole.number}',
                                               style: TextStyle(
-                                                color: Theme.of(context).colorScheme.onSurface,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurface,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 11,
                                               ),
@@ -874,7 +962,9 @@ class DrivesTab extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(context).textTheme.bodySmall,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
                                           ),
                                         ),
                                         if (teeShot.landingSpot != null)
@@ -884,17 +974,24 @@ class DrivesTab extends StatelessWidget {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              _landingSpotLabel(teeShot.landingSpot!),
+                                              _landingSpotLabel(
+                                                teeShot.landingSpot!,
+                                              ),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
                                                     fontSize: 10,
-                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSurface,
                                                   ),
                                             ),
                                           ),
@@ -956,10 +1053,434 @@ class DrivesTab extends StatelessWidget {
               child: Text(
                 '$bestName drives resulted in birdies ${best.value.percentage.toStringAsFixed(0)}% of the time vs ${worst.value.percentage.toStringAsFixed(0)}% for $worstName.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShotShapeAndTechniqueCard(
+    BuildContext context,
+    Map<String, Map<String, double>> techniqueComparison,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    // If no data available, don't show the card
+    if (techniqueComparison.isEmpty && shotShapeBirdieRates.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Shot Shape & Technique Success',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            // Technique Comparison Section
+            if (techniqueComparison.isNotEmpty) ...[
+              Text(
+                'Technique Comparison',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              _buildTechniqueComparisonRows(context, techniqueComparison),
+            ],
+            // Shot Shape Analysis Section
+            if (shotShapeBirdieRates.isNotEmpty) ...[
+              if (techniqueComparison.isNotEmpty) const SizedBox(height: 24),
+              Text(
+                'Shot Shape Performance',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              _buildShotShapeRows(
+                context,
+                shotShapeBirdieRates,
+                circleInRegByShape,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTechniqueComparisonRows(
+    BuildContext context,
+    Map<String, Map<String, double>> techniqueComparison,
+  ) {
+    final backhand = techniqueComparison['backhand'];
+    final forehand = techniqueComparison['forehand'];
+
+    if (backhand == null && forehand == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        _buildComparisonRow(
+          context,
+          'Birdie %',
+          'Backhand',
+          backhand?['birdiePercentage'] ?? 0,
+          backhand?['totalAttempts']?.toInt() ?? 0,
+          'Forehand',
+          forehand?['birdiePercentage'] ?? 0,
+          forehand?['totalAttempts']?.toInt() ?? 0,
+          const Color(0xFF00F5D4),
+        ),
+        const SizedBox(height: 12),
+        _buildComparisonRow(
+          context,
+          'C1 in Reg',
+          'Backhand',
+          backhand?['c1InRegPercentage'] ?? 0,
+          backhand?['totalAttempts']?.toInt() ?? 0,
+          'Forehand',
+          forehand?['c1InRegPercentage'] ?? 0,
+          forehand?['totalAttempts']?.toInt() ?? 0,
+          const Color(0xFF4CAF50),
+        ),
+        const SizedBox(height: 12),
+        _buildComparisonRow(
+          context,
+          'C2 in Reg',
+          'Backhand',
+          backhand?['c2InRegPercentage'] ?? 0,
+          backhand?['totalAttempts']?.toInt() ?? 0,
+          'Forehand',
+          forehand?['c2InRegPercentage'] ?? 0,
+          forehand?['totalAttempts']?.toInt() ?? 0,
+          const Color(0xFF2196F3),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildComparisonRow(
+    BuildContext context,
+    String label,
+    String technique1,
+    double percentage1,
+    int count1,
+    String technique2,
+    double percentage2,
+    int count2,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        technique1,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        count1 > 0
+                            ? '${percentage1.toStringAsFixed(0)}% ($count1)'
+                            : 'No data',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (count1 > 0)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: percentage1 / 100,
+                        minHeight: 8,
+                        backgroundColor: color.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        technique2,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        count2 > 0
+                            ? '${percentage2.toStringAsFixed(0)}% ($count2)'
+                            : 'No data',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (count2 > 0)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: percentage2 / 100,
+                        minHeight: 8,
+                        backgroundColor: color.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShotShapeRows(
+    BuildContext context,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    // Filter and sort relevant shot shapes
+    final relevantShapes = ['hyzer', 'flat', 'anhyzer'];
+    final filteredShapes = shotShapeBirdieRates.entries
+        .where((entry) => relevantShapes.contains(entry.key))
+        .toList();
+
+    if (filteredShapes.isEmpty) {
+      return Text(
+        'No shot shape data available',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    // Sort by overall success (combination of birdie rate and C1 in reg)
+    filteredShapes.sort((a, b) {
+      final aStats = circleInRegByShape[a.key];
+      final bStats = circleInRegByShape[b.key];
+      final aScore = a.value.percentage + (aStats?['c1Percentage'] ?? 0);
+      final bScore = b.value.percentage + (bStats?['c1Percentage'] ?? 0);
+      return bScore.compareTo(aScore);
+    });
+
+    return Column(
+      children: filteredShapes.map((entry) {
+        final shapeName = entry.key;
+        final shapeStats = entry.value;
+        final circleStats = circleInRegByShape[shapeName];
+
+        final displayName =
+            shapeName.substring(0, 1).toUpperCase() + shapeName.substring(1);
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                displayName,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              _buildShapeMetricRow(
+                context,
+                'Birdie',
+                shapeStats.percentage,
+                shapeStats.totalAttempts,
+                const Color(0xFF00F5D4),
+              ),
+              const SizedBox(height: 6),
+              _buildShapeMetricRow(
+                context,
+                'C1 in Reg',
+                circleStats?['c1Percentage'] ?? 0,
+                circleStats?['totalAttempts']?.toInt() ?? 0,
+                const Color(0xFF4CAF50),
+              ),
+              const SizedBox(height: 6),
+              _buildShapeMetricRow(
+                context,
+                'C2 in Reg',
+                circleStats?['c2Percentage'] ?? 0,
+                circleStats?['totalAttempts']?.toInt() ?? 0,
+                const Color(0xFF2196F3),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildShapeMetricRow(
+    BuildContext context,
+    String label,
+    double percentage,
+    int count,
+    Color color,
+  ) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 70,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 12,
+              backgroundColor: color.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 80,
+          child: Text(
+            count > 0
+                ? '${percentage.toStringAsFixed(0)}% ($count)'
+                : 'No data',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPerformanceByFairwayWidth(
+    BuildContext context,
+    Map<String, Map<String, double>> performanceByFairwayWidth,
+  ) {
+    if (performanceByFairwayWidth.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Define display order and labels for fairway widths
+    final widthOrder = ['open', 'moderate', 'tight', 'veryTight'];
+    final widthLabels = {
+      'open': 'Open',
+      'moderate': 'Moderate',
+      'tight': 'Tight',
+      'veryTight': 'Very Tight',
+    };
+
+    // Filter and sort by defined order
+    final sortedWidths = widthOrder
+        .where((width) => performanceByFairwayWidth.containsKey(width))
+        .toList();
+
+    if (sortedWidths.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Performance by Fairway Width',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...sortedWidths.map((width) {
+              final stats = performanceByFairwayWidth[width]!;
+              final displayName = widthLabels[width] ?? width;
+              final holesPlayed = stats['holesPlayed']?.toInt() ?? 0;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$displayName ($holesPlayed hole${holesPlayed != 1 ? 's' : ''})',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildShapeMetricRow(
+                      context,
+                      'Birdie',
+                      stats['birdieRate'] ?? 0,
+                      holesPlayed,
+                      const Color(0xFF00F5D4),
+                    ),
+                    const SizedBox(height: 6),
+                    _buildShapeMetricRow(
+                      context,
+                      'C1 in Reg',
+                      stats['c1InRegRate'] ?? 0,
+                      holesPlayed,
+                      const Color(0xFF4CAF50),
+                    ),
+                    const SizedBox(height: 6),
+                    _buildShapeMetricRow(
+                      context,
+                      'C2 in Reg',
+                      stats['c2InRegRate'] ?? 0,
+                      holesPlayed,
+                      const Color(0xFF2196F3),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       ),

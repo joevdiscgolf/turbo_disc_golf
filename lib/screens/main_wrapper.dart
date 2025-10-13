@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -33,9 +34,12 @@ class _MainWrapperState extends State<MainWrapper> {
         appBarTitle = 'Add Round';
         break;
       case 1:
-        appBarTitle = 'Round History';
+        appBarTitle = 'Stats';
         break;
       case 2:
+        appBarTitle = 'Round History';
+        break;
+      case 3:
         appBarTitle = 'Test AI Summary';
         break;
       default:
@@ -50,6 +54,7 @@ class _MainWrapperState extends State<MainWrapper> {
         index: _selectedIndex,
         children: [
           const RecordRoundScreen(),
+          const StatsScreen(),
           _buildRoundsTab(),
           const TestAiSummaryScreen(),
         ],
@@ -59,6 +64,10 @@ class _MainWrapperState extends State<MainWrapper> {
           BottomNavigationBarItem(
             icon: Icon(Icons.add_circle),
             label: 'Add Round',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Stats',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history),
@@ -71,6 +80,7 @@ class _MainWrapperState extends State<MainWrapper> {
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }

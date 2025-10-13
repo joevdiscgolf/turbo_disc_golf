@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 
 class GeminiService {
   late final GenerativeModel _model;
@@ -514,7 +515,7 @@ $schemaExample
   }
 
   /// Generates AI summary and coaching based on round data and analysis
-  Future<Map<String, String>> generateRoundInsights({
+  Future<Map<String, AIContent?>> generateRoundInsights({
     required DGRound round,
     required dynamic analysis, // RoundAnalysis
   }) async {
@@ -531,11 +532,19 @@ $schemaExample
       // Split on the separator
       final parts = responseText.split('---SPLIT---');
 
-      final summary = parts.isNotEmpty ? parts[0].trim() : '';
-      final coaching = parts.length > 1 ? parts[1].trim() : '';
+      final summaryText = parts.isNotEmpty ? parts[0].trim() : '';
+      final coachingText = parts.length > 1 ? parts[1].trim() : '';
 
-      debugPrint('Parsed summary length: ${summary.length} chars');
-      debugPrint('Parsed coaching length: ${coaching.length} chars');
+      debugPrint('Parsed summary length: ${summaryText.length} chars');
+      debugPrint('Parsed coaching length: ${coachingText.length} chars');
+
+      // Create AIContent objects with the round's version ID
+      final summary = summaryText.isNotEmpty
+          ? AIContent(content: summaryText, roundVersionId: round.versionId)
+          : null;
+      final coaching = coachingText.isNotEmpty
+          ? AIContent(content: coachingText, roundVersionId: round.versionId)
+          : null;
 
       return {
         'summary': summary,
@@ -543,7 +552,7 @@ $schemaExample
       };
     } catch (e) {
       debugPrint('Error generating insights: $e');
-      return {'summary': '', 'coaching': ''};
+      return {'summary': null, 'coaching': null};
     }
   }
 
