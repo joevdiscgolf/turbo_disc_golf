@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
+import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
@@ -42,6 +43,9 @@ class _MainWrapperState extends State<MainWrapper> {
       case 3:
         appBarTitle = 'Test AI Summary';
         break;
+      case 4:
+        appBarTitle = 'Test Image Parsing';
+        break;
       default:
         appBarTitle = 'Add Round';
     }
@@ -57,6 +61,7 @@ class _MainWrapperState extends State<MainWrapper> {
           const StatsScreen(),
           _buildRoundsTab(),
           const TestAiSummaryScreen(),
+          const TestImageParsingScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -76,6 +81,10 @@ class _MainWrapperState extends State<MainWrapper> {
           BottomNavigationBarItem(
             icon: Icon(Icons.psychology),
             label: 'Test AI',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.image_search),
+            label: 'Test Image',
           ),
         ],
         currentIndex: _selectedIndex,

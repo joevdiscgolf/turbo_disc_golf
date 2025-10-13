@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:uuid/uuid.dart';
@@ -22,9 +23,15 @@ class AiParsingService {
     required String voiceTranscript,
     required List<DGDisc> userBag,
     String? courseName,
+    List<HoleMetadata>? preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
     try {
-      final prompt = _buildParsingPrompt(voiceTranscript, userBag, courseName);
+      final prompt = _buildParsingPrompt(
+        voiceTranscript,
+        userBag,
+        courseName,
+        preParsedHoles: preParsedHoles, // Pass through to prompt builder
+      );
       debugPrint('Sending request to Gemini...');
       String? responseText = await _getContentFromModel(prompt: prompt);
 
@@ -99,6 +106,72 @@ class AiParsingService {
     }
   }
 
+  /// Parse a scorecard image to extract hole metadata
+  /// Returns list of HoleMetadata (hole number, par, distance, score)
+  Future<List<HoleMetadata>> parseScorecard({
+    required String imagePath,
+  }) async {
+    try {
+      debugPrint('Parsing scorecard image: $imagePath');
+
+      final prompt = _buildScorecardExtractionPrompt();
+
+      // Use vision model to process image
+      String? responseText;
+      switch (_selectedModel) {
+        case AiParsingModel.gemini:
+          responseText = await locator
+              .get<GeminiService>()
+              .generateContentWithImage(prompt: prompt, imagePath: imagePath);
+      }
+
+      if (responseText == null || responseText.trim().isEmpty) {
+        debugPrint('No response from AI for scorecard extraction');
+        return [];
+      }
+
+      debugPrint('Scorecard extraction response: $responseText');
+
+      // Clean up response - remove markdown if present
+      responseText = responseText.trim();
+      if (responseText.startsWith('```json') || responseText.startsWith('```JSON')) {
+        responseText = responseText.substring(responseText.indexOf('\n') + 1);
+      }
+      if (responseText.startsWith('```')) {
+        responseText = responseText.substring(3);
+      }
+      if (responseText.endsWith('```')) {
+        responseText = responseText.substring(0, responseText.length - 3).trim();
+      }
+
+      // Parse JSON response
+      final jsonData = json.decode(responseText);
+
+      if (jsonData is! List) {
+        debugPrint('Response is not a JSON array');
+        return [];
+      }
+
+      // Convert to List<HoleMetadata>
+      final holes = <HoleMetadata>[];
+      for (final holeJson in jsonData) {
+        try {
+          holes.add(HoleMetadata.fromJson(holeJson as Map<String, dynamic>));
+        } catch (e) {
+          debugPrint('Error parsing hole metadata: $e');
+          // Continue with other holes
+        }
+      }
+
+      debugPrint('Successfully extracted ${holes.length} holes from scorecard');
+      return holes;
+    } catch (e, trace) {
+      debugPrint('Error parsing scorecard: $e');
+      debugPrint(trace.toString());
+      return [];
+    }
+  }
+
   // Test method to validate the service
   Future<bool> testModelConnection() async {
     try {
@@ -160,14 +233,16 @@ class AiParsingService {
   String _buildParsingPrompt(
     String voiceTranscript,
     List<DGDisc> userBag,
-    String? courseName,
-  ) {
+    String? courseName, {
+    List<HoleMetadata>? preParsedHoles,
+  }) {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
         return locator.get<GeminiService>().buildGeminiParsingPrompt(
           voiceTranscript,
           userBag,
           courseName,
+          preParsedHoles: preParsedHoles,
         );
     }
   }
@@ -179,6 +254,13 @@ class AiParsingService {
           round,
           analysis,
         );
+    }
+  }
+
+  String _buildScorecardExtractionPrompt() {
+    switch (_selectedModel) {
+      case AiParsingModel.gemini:
+        return locator.get<GeminiService>().buildScorecardExtractionPrompt();
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
@@ -37,6 +38,7 @@ class RoundParser extends ChangeNotifier {
     String transcript, {
     String? courseName,
     bool useSharedPreferences = false,
+    List<HoleMetadata>? preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
     final BagService bagService = locator.get<BagService>();
     if (transcript.trim().isEmpty) {
@@ -101,6 +103,7 @@ class RoundParser extends ChangeNotifier {
             voiceTranscript: transcript,
             userBag: bagService.userBag,
             courseName: courseName,
+            preParsedHoles: preParsedHoles, // Pass through pre-parsed holes
           );
 
       if (_parsedRound == null) {

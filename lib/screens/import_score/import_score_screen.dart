@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:turbo_disc_golf/services/scorecard_ocr_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/services/scorecard_ocr_service.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/locator.dart';
 
 class ImportScoreScreen extends StatefulWidget {
   const ImportScoreScreen({super.key});
@@ -19,7 +21,7 @@ class ImportScoreScreen extends StatefulWidget {
 
 class _ImportScoreScreenState extends State<ImportScoreScreen> {
   final ImagePicker _picker = ImagePicker();
-  final ScoreCardOCRService _ocrService = ScoreCardOCRService();
+  late final AiParsingService _aiParsingService;
   final TextEditingController _courseNameController = TextEditingController();
 
   String? _selectedImagePath;
@@ -28,8 +30,13 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _aiParsingService = locator.get<AiParsingService>();
+  }
+
+  @override
   void dispose() {
-    _ocrService.dispose();
     _courseNameController.dispose();
     super.dispose();
   }
@@ -126,7 +133,35 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
     });
 
     try {
-      final holes = await _ocrService.processScoreCard(imagePath);
+      debugPrint('🖼️ Processing scorecard image with Gemini...');
+
+      // Use Gemini to parse the scorecard image
+      final holeMetadata = await _aiParsingService.parseScorecard(
+        imagePath: imagePath,
+      );
+
+      // Log the parsed hole metadata
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint(
+        '📊 GEMINI PARSED HOLE METADATA (${holeMetadata.length} holes)',
+      );
+      debugPrint('═══════════════════════════════════════════════════════');
+      for (final hole in holeMetadata) {
+        debugPrint(hole.toString());
+      }
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      // Convert HoleMetadata to ScoreCardHoleData for UI display
+      final holes = holeMetadata.map((metadata) {
+        return ScoreCardHoleData(
+          holeNumber: metadata.holeNumber,
+          par: metadata.par,
+          distance: metadata.distanceFeet,
+          score: metadata.score,
+          confidence: 0.9, // Gemini typically has high confidence
+        );
+      }).toList();
+
       setState(() {
         _extractedData = holes;
         _isProcessing = false;
@@ -140,6 +175,7 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
         _isProcessing = false;
         _errorMessage = 'Failed to process image: $e';
       });
+      debugPrint('❌ Error processing scorecard image: $e');
     }
   }
 
