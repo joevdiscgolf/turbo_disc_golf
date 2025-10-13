@@ -27,8 +27,11 @@ class PuttHeatMapPainter extends CustomPainter {
 
     // Vertically center the heat map based on circle type
     final centerY = circle == PuttingCircle.circle2
-        ? size.height / 2 + maxRadius * 0.65  // Circle 2: Move down to center the ring
-        : (size.height + maxRadius - 20) / 2;  // Circle 1: Move up to center with basket
+        ? size.height / 2 +
+              maxRadius *
+                  0.65 // Circle 2: Move down to center the ring
+        : (size.height + maxRadius - 20) /
+              2; // Circle 1: Move up to center with basket
 
     final center = Offset(size.width / 2, centerY);
 
@@ -43,8 +46,6 @@ class PuttHeatMapPainter extends CustomPainter {
       textAlign: TextAlign.center,
     );
 
-    // Generate distance rings based on range
-    final distanceRange = rangeEnd - rangeStart;
     if (rangeStart == 10 && rangeEnd == 33) {
       // Circle 1: 10-33 ft
       _drawDistanceRing(

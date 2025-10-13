@@ -1158,7 +1158,8 @@ class RoundStatisticsService {
     }
 
     return scoresByDisc.map((disc, scores) {
-      final avg = scores.fold<int>(0, (sum, score) => sum + score) / scores.length;
+      final avg =
+          scores.fold<int>(0, (sum, score) => sum + score) / scores.length;
       return MapEntry(disc, avg);
     });
   }
@@ -1196,7 +1197,11 @@ class RoundStatisticsService {
         // Check if reached C1 in regulation (par - 2 strokes or less)
         final regulationStrokes = hole.par - 2;
         if (regulationStrokes > 0) {
-          for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          for (
+            int i = 0;
+            i < hole.throws.length && i < regulationStrokes;
+            i++
+          ) {
             final discThrow = hole.throws[i];
             if (discThrow.landingSpot == LandingSpot.circle1 ||
                 discThrow.landingSpot == LandingSpot.parked) {
@@ -1230,7 +1235,11 @@ class RoundStatisticsService {
         // Check if reached C2 in regulation (par - 2 strokes or less)
         final regulationStrokes = hole.par - 2;
         if (regulationStrokes > 0) {
-          for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          for (
+            int i = 0;
+            i < hole.throws.length && i < regulationStrokes;
+            i++
+          ) {
             final discThrow = hole.throws[i];
             if (discThrow.landingSpot == LandingSpot.circle1 ||
                 discThrow.landingSpot == LandingSpot.parked ||
@@ -1310,34 +1319,41 @@ class RoundStatisticsService {
         final actualStrokeNumber = strokeNumbers[i];
 
         // Check for indicators of a good throw
-        final isGoodLanding = discThrow.landingSpot == LandingSpot.circle1 ||
+        final isGoodLanding =
+            discThrow.landingSpot == LandingSpot.circle1 ||
             discThrow.landingSpot == LandingSpot.circle2 ||
             discThrow.landingSpot == LandingSpot.parked ||
             discThrow.landingSpot == LandingSpot.fairway;
 
-        final hasGoodRating = discThrow.resultRating == ThrowResultRating.excellent ||
+        final hasGoodRating =
+            discThrow.resultRating == ThrowResultRating.excellent ||
             discThrow.resultRating == ThrowResultRating.good;
 
         // Check if next throw is a short putt (indicates this approach was good)
-        final bool nextThrowIsShortPutt = i < hole.throws.length - 1 &&
+        final bool nextThrowIsShortPutt =
+            i < hole.throws.length - 1 &&
             hole.throws[i + 1].purpose == ThrowPurpose.putt &&
             (hole.throws[i + 1].distanceFeet ?? 999) <= 33;
 
         // Check if this was likely a good throw based on multiple signals
-        final isLikelyGoodThrow = isGoodLanding || hasGoodRating || nextThrowIsShortPutt;
+        final isLikelyGoodThrow =
+            isGoodLanding || hasGoodRating || nextThrowIsShortPutt;
 
         // Recovery after penalty logic
-        final isRecoveryAfterPenalty = i > 0 &&
+        final isRecoveryAfterPenalty =
+            i > 0 &&
             (hole.throws[i - 1].penaltyStrokes ?? 0) > 0 &&
             isLikelyGoodThrow;
 
         // Override the analysis for approaches that seem good but weren't marked as such
-        final isApproachWithGoodSignals = discThrow.purpose == ThrowPurpose.approach &&
+        final isApproachWithGoodSignals =
+            discThrow.purpose == ThrowPurpose.approach &&
             isLikelyGoodThrow &&
             analysis.execCategory == ExecCategory.bad;
 
-        final isMistake = (analysis.execCategory == ExecCategory.bad ||
-            analysis.execCategory == ExecCategory.severe) &&
+        final isMistake =
+            (analysis.execCategory == ExecCategory.bad ||
+                analysis.execCategory == ExecCategory.severe) &&
             !isRecoveryAfterPenalty &&
             !isApproachWithGoodSignals;
 
@@ -1600,7 +1616,9 @@ class RoundStatisticsService {
       birdieRate: (birdies / totalHoles) * 100,
       parRate: (pars / totalHoles) * 100,
       bogeyPlusRate: (bogeyPlus / totalHoles) * 100,
-      shotQualityRate: totalShots > 0 ? (successfulShots / totalShots) * 100 : 0.0,
+      shotQualityRate: totalShots > 0
+          ? (successfulShots / totalShots) * 100
+          : 0.0,
       c1InRegRate: (c1InReg / totalHoles) * 100,
       c2InRegRate: (c2InReg / totalHoles) * 100,
       fairwayHitRate: (fairwayHits / totalHoles) * 100,
@@ -1640,11 +1658,13 @@ class RoundStatisticsService {
           ? '$startHole'
           : '$startHole-$endHole';
 
-      segments.add(ScoreSegment(
-        label: label,
-        avgScore: avgScore,
-        holesPlayed: segmentHoles.length,
-      ));
+      segments.add(
+        ScoreSegment(
+          label: label,
+          avgScore: avgScore,
+          holesPlayed: segmentHoles.length,
+        ),
+      );
     }
 
     if (segments.length < 2) {
@@ -1656,13 +1676,15 @@ class RoundStatisticsService {
     final lastThirdCount = (segments.length / 3).ceil();
 
     final firstThirdSegments = segments.sublist(0, firstThirdCount);
-    final lastThirdSegments = segments.sublist(segments.length - lastThirdCount);
+    final lastThirdSegments = segments.sublist(
+      segments.length - lastThirdCount,
+    );
 
-    final firstThirdAvg = firstThirdSegments
-        .fold<double>(0.0, (sum, seg) => sum + seg.avgScore) /
+    final firstThirdAvg =
+        firstThirdSegments.fold<double>(0.0, (sum, seg) => sum + seg.avgScore) /
         firstThirdSegments.length;
-    final lastThirdAvg = lastThirdSegments
-        .fold<double>(0.0, (sum, seg) => sum + seg.avgScore) /
+    final lastThirdAvg =
+        lastThirdSegments.fold<double>(0.0, (sum, seg) => sum + seg.avgScore) /
         lastThirdSegments.length;
 
     // Trend strength: negative means scores got better (improving)
@@ -1765,8 +1787,7 @@ class RoundStatisticsService {
       int count = 0;
 
       if (transitionMatrix.containsKey('Bogey')) {
-        avgBogeyPlusAfterBad +=
-            transitionMatrix['Bogey']!.bogeyOrWorsePercent;
+        avgBogeyPlusAfterBad += transitionMatrix['Bogey']!.bogeyOrWorsePercent;
         count++;
       }
       if (transitionMatrix.containsKey('Double+')) {
@@ -1778,8 +1799,8 @@ class RoundStatisticsService {
       if (count > 0) {
         avgBogeyPlusAfterBad /= count;
         // Compare to overall bogey rate
-        final overallBogeyRate = getScoringStats().bogeyRate +
-            getScoringStats().doubleBogeyPlusRate;
+        final overallBogeyRate =
+            getScoringStats().bogeyRate + getScoringStats().doubleBogeyPlusRate;
         tiltFactor = avgBogeyPlusAfterBad - overallBogeyRate;
       }
     }
@@ -1796,8 +1817,8 @@ class RoundStatisticsService {
       if (currentHole.relativeHoleScore > 0) {
         // Bogey or worse
         bounceBackOpportunities++;
-        if (nextHole.relativeHoleScore <= 0) {
-          // Par or better
+        if (nextHole.relativeHoleScore < 0) {
+          // Birdie or better
           bounceBackSuccesses++;
         }
       }
@@ -1829,7 +1850,8 @@ class RoundStatisticsService {
     }
 
     // Step 7: Find longest birdie+ streak
-    int longestParStreak = 0; // Note: field name kept for backward compatibility
+    int longestParStreak =
+        0; // Note: field name kept for backward compatibility
     int currentStreak = 0;
 
     for (var hole in round.holes) {
@@ -1860,11 +1882,11 @@ class RoundStatisticsService {
       final last3Holes = round.holes.sublist(round.holes.length - 3);
       final first3Holes = round.holes.sublist(0, 3);
 
-      final last3Avg = last3Holes.fold<double>(
-              0.0, (sum, h) => sum + h.relativeHoleScore) /
+      final last3Avg =
+          last3Holes.fold<double>(0.0, (sum, h) => sum + h.relativeHoleScore) /
           3;
-      final first3Avg = first3Holes.fold<double>(
-              0.0, (sum, h) => sum + h.relativeHoleScore) /
+      final first3Avg =
+          first3Holes.fold<double>(0.0, (sum, h) => sum + h.relativeHoleScore) /
           3;
 
       if (last3Avg < first3Avg - 0.5) {
@@ -1912,9 +1934,7 @@ class RoundStatisticsService {
 
     // Compound error insight
     if (compoundErrorRate < 20) {
-      insights.add(
-        'You rarely compound mistakes - excellent damage control!',
-      );
+      insights.add('You rarely compound mistakes - excellent damage control!');
     } else if (compoundErrorRate > 40) {
       insights.add(
         'Back-to-back mistakes are common (${compoundErrorRate.toStringAsFixed(0)}%). Focus on breaking the chain after the first bad hole.',
@@ -1983,7 +2003,8 @@ class RoundStatisticsService {
     double conditioningScore = 50.0; // Default neutral score
 
     if (front9Performance != null && back9Performance != null) {
-      final scoreDiff = (back9Performance.avgScore - front9Performance.avgScore).abs();
+      final scoreDiff = (back9Performance.avgScore - front9Performance.avgScore)
+          .abs();
 
       // Score drops up to 2.0 strokes, scale from 100 (no drop) to 0 (2+ stroke drop)
       conditioningScore = (100 - (scoreDiff * 50)).clamp(0, 100);
@@ -2000,7 +2021,8 @@ class RoundStatisticsService {
       }
 
       // Check shot quality drop
-      if (back9Performance.shotQualityRate < front9Performance.shotQualityRate - 15) {
+      if (back9Performance.shotQualityRate <
+          front9Performance.shotQualityRate - 15) {
         insights.add(
           'Shot quality drops ${(front9Performance.shotQualityRate - back9Performance.shotQualityRate).toStringAsFixed(0)}% in back 9. Focus on maintaining form when fatigued.',
         );
@@ -2009,10 +2031,12 @@ class RoundStatisticsService {
 
     // Last 6 holes analysis
     if (last6Performance != null) {
-      final overallAvgScore = round.holes.fold<int>(
-        0,
-        (sum, hole) => sum + hole.relativeHoleScore,
-      ) / round.holes.length;
+      final overallAvgScore =
+          round.holes.fold<int>(
+            0,
+            (sum, hole) => sum + hole.relativeHoleScore,
+          ) /
+          round.holes.length;
 
       if (last6Performance.avgScore > overallAvgScore + 0.75) {
         insights.add(
@@ -2084,7 +2108,11 @@ class RoundStatisticsService {
         // Check C1/C2 in regulation
         final regulationStrokes = hole.par - 2;
         if (regulationStrokes > 0) {
-          for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          for (
+            int i = 0;
+            i < hole.throws.length && i < regulationStrokes;
+            i++
+          ) {
             final discThrow = hole.throws[i];
             if (discThrow.landingSpot == LandingSpot.circle1 ||
                 discThrow.landingSpot == LandingSpot.parked) {
@@ -2160,7 +2188,11 @@ class RoundStatisticsService {
         // Check C1/C2 in regulation
         final regulationStrokes = hole.par - 2;
         if (regulationStrokes > 0) {
-          for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          for (
+            int i = 0;
+            i < hole.throws.length && i < regulationStrokes;
+            i++
+          ) {
             final discThrow = hole.throws[i];
             if (discThrow.landingSpot == LandingSpot.circle1 ||
                 discThrow.landingSpot == LandingSpot.parked) {
@@ -2301,7 +2333,11 @@ class RoundStatisticsService {
         // Check C1/C2 in regulation
         final regulationStrokes = hole.par - 2;
         if (regulationStrokes > 0) {
-          for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          for (
+            int i = 0;
+            i < hole.throws.length && i < regulationStrokes;
+            i++
+          ) {
             final discThrow = hole.throws[i];
             if (discThrow.landingSpot == LandingSpot.circle1 ||
                 discThrow.landingSpot == LandingSpot.parked) {
@@ -2440,7 +2476,8 @@ class RoundStatisticsService {
 
   /// Get ALL tee shots grouped by shot shape
   Map<String, List<MapEntry<DGHole, DiscThrow>>> getAllTeeShotsByShotShape() {
-    final Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByShape = {};
+    final Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByShape =
+        {};
 
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
@@ -2475,11 +2512,13 @@ class RoundStatisticsService {
       // Only track backhand and forehand
       if (techniqueName != 'backhand' && techniqueName != 'forehand') continue;
 
-      totalByTechnique[techniqueName] = (totalByTechnique[techniqueName] ?? 0) + 1;
+      totalByTechnique[techniqueName] =
+          (totalByTechnique[techniqueName] ?? 0) + 1;
 
       // Count birdies
       if (hole.relativeHoleScore < 0) {
-        birdiesByTechnique[techniqueName] = (birdiesByTechnique[techniqueName] ?? 0) + 1;
+        birdiesByTechnique[techniqueName] =
+            (birdiesByTechnique[techniqueName] ?? 0) + 1;
       }
 
       // Check C1/C2 in regulation
@@ -2489,11 +2528,14 @@ class RoundStatisticsService {
           final discThrow = hole.throws[i];
           if (discThrow.landingSpot == LandingSpot.circle1 ||
               discThrow.landingSpot == LandingSpot.parked) {
-            c1InRegByTechnique[techniqueName] = (c1InRegByTechnique[techniqueName] ?? 0) + 1;
-            c2InRegByTechnique[techniqueName] = (c2InRegByTechnique[techniqueName] ?? 0) + 1;
+            c1InRegByTechnique[techniqueName] =
+                (c1InRegByTechnique[techniqueName] ?? 0) + 1;
+            c2InRegByTechnique[techniqueName] =
+                (c2InRegByTechnique[techniqueName] ?? 0) + 1;
             break;
           } else if (discThrow.landingSpot == LandingSpot.circle2) {
-            c2InRegByTechnique[techniqueName] = (c2InRegByTechnique[techniqueName] ?? 0) + 1;
+            c2InRegByTechnique[techniqueName] =
+                (c2InRegByTechnique[techniqueName] ?? 0) + 1;
             break;
           }
         }

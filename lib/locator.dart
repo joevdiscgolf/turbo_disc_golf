@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
@@ -9,6 +10,7 @@ import 'package:turbo_disc_golf/services/rounds_service.dart';
 final locator = GetIt.instance;
 void setUpLocator() {
   // Register core services first
+  locator.registerSingleton<AiParsingService>(AiParsingService());
   locator.registerSingleton<GeminiService>(GeminiService());
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
@@ -20,11 +22,5 @@ void setUpLocator() {
   );
 
   // Register RoundParser which depends on other services
-  locator.registerSingleton<RoundParser>(
-    RoundParser(
-      geminiService: locator.get<GeminiService>(),
-      bagService: locator.get<BagService>(),
-      storageService: locator.get<RoundStorageService>(),
-    ),
-  );
+  locator.registerSingleton<RoundParser>(RoundParser());
 }

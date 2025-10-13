@@ -1,46 +1,17 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:yaml/yaml.dart';
-import 'package:uuid/uuid.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
+import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 class GeminiService {
   late final GenerativeModel _model;
   static const String _defaultApiKey =
       'AIzaSyDGTZoOaO_U76ysJ5dG8Ohdc7B-soUn3rE'; // Replace with actual key
-  static const _uuid = Uuid();
 
   String? _lastRawResponse; // Store the last raw response
   String? get lastRawResponse => _lastRawResponse;
-
-  // Helper method to get enum values as strings with proper snake_case formatting
-  static String _getEnumValuesAsString<T>(List<T> values) {
-    return values
-        .map((e) {
-          final str = e.toString().split('.').last;
-          // Convert camelCase to snake_case for JSON values
-          // Special handling for names with numbers like circle1 -> circle_1
-          String snakeCase = str
-              .replaceAllMapped(
-                RegExp(
-                  r'([a-z])([0-9])',
-                ), // lowercase letter followed by number
-                (Match m) => '${m[1]}_${m[2]}',
-              )
-              .replaceAllMapped(
-                RegExp(r'[A-Z]'),
-                (Match m) => '_${m[0]!.toLowerCase()}',
-              )
-              .replaceAll(RegExp(r'^_'), '');
-          return snakeCase;
-        })
-        .join(', ');
-  }
 
   GeminiService({String? apiKey}) {
     _model = GenerativeModel(
@@ -56,114 +27,51 @@ class GeminiService {
     );
   }
 
-  Future<DGRound?> parseRoundDescription({
-    required String voiceTranscript,
-    required List<DGDisc> userBag,
-    String? courseName,
-  }) async {
+  Future<String?> generateContent({required String prompt}) async {
     try {
-      // Check for API key
-      if (_defaultApiKey == 'YOUR_API_KEY_HERE') {
-        throw Exception(
-          'Please add your Gemini API key in gemini_service.dart line 10',
-        );
-      }
-
-      final prompt = _buildPrompt(voiceTranscript, userBag, courseName);
-      debugPrint('Sending request to Gemini...');
-      final response = await _model.generateContent([Content.text(prompt)]);
-
-      if (response.text == null) {
-        throw Exception('No response from Gemini');
-      }
-
-      // Store the raw response
-      _lastRawResponse = response.text;
-
-      debugPrint('Gemini response received, parsing YAML...');
-      debugPrint(
-        '==================== RAW GEMINI RESPONSE ====================',
-      );
-      // debugPrint in chunks to avoid truncation
-      String responseText = response.text!;
-      const chunkSize =
-          800; // Flutter's console typically truncates around 1024 chars
-      for (int i = 0; i < responseText.length; i += chunkSize) {
-        final end = (i + chunkSize < responseText.length)
-            ? i + chunkSize
-            : responseText.length;
-        debugPrint(responseText.substring(i, end));
-      }
-      debugPrint(
-        '==============================================================',
-      );
-      debugPrint('Response length: ${responseText.length} characters');
-
-      // Clean up the response - remove markdown code blocks if present
-      responseText = responseText.trim();
-
-      // Remove ```yaml or ```YAML at the beginning
-      if (responseText.startsWith('```yaml') ||
-          responseText.startsWith('```YAML')) {
-        responseText = responseText.substring(responseText.indexOf('\n') + 1);
-      }
-
-      // Remove just 'yaml' or 'YAML' at the beginning
-      if (responseText.startsWith('yaml\n') ||
-          responseText.startsWith('YAML\n')) {
-        responseText = responseText.substring(5);
-      }
-
-      // Remove closing ``` at the end
-      if (responseText.endsWith('```')) {
-        responseText = responseText
-            .substring(0, responseText.length - 3)
-            .trim();
-      }
-
-      debugPrint('Cleaned response for parsing...');
-
-      // Parse the YAML response
-      debugPrint('Parsing YAML response...');
-      final yamlDoc = loadYaml(responseText);
-
-      // Convert YamlMap to regular Map<String, dynamic>
-      final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
-
-      jsonMap['id'] = _uuid.v4();
-      jsonMap['courseName'] = courseName;
-
-      debugPrint('YAML parsed successfully, converting to DGRound...');
-      return DGRound.fromJson(jsonMap);
+      return _model
+          .generateContent([Content.text(prompt)])
+          .then((response) => response.text);
     } catch (e, trace) {
-      debugPrint('Error parsing round with Gemini: $e');
+      debugPrint('Error generating content with Gemini');
+      debugPrint(e.toString());
       debugPrint(trace.toString());
-      if (e.toString().contains('API key')) {
-        throw Exception('API Key Error: $e');
-      }
-      rethrow;
+      return null;
     }
   }
 
-  String _buildPrompt(
+  // Test method to validate the service
+  Future<bool> testConnection() async {
+    try {
+      final response = await _model.generateContent([
+        Content.text('Reply with just "OK" to confirm the connection works.'),
+      ]);
+      return response.text?.contains('OK') ?? false;
+    } catch (e) {
+      debugPrint('Gemini connection test failed: $e');
+      return false;
+    }
+  }
+
+  String buildGeminiParsingPrompt(
     String voiceTranscript,
     List<DGDisc> userBag,
     String? courseName,
   ) {
     // Get enum values dynamically
-    final throwPurposeValues = _getEnumValuesAsString(ThrowPurpose.values);
-    final techniqueValues = _getEnumValuesAsString(ThrowTechnique.values);
-    final puttStyleValues = _getEnumValuesAsString(PuttStyle.values);
-    final shotShapeValues = _getEnumValuesAsString(ShotShape.values);
-    final stanceValues = _getEnumValuesAsString(StanceType.values);
-    final throwPowerValues = _getEnumValuesAsString(ThrowPower.values);
-    final windDirectionValues = _getEnumValuesAsString(WindDirection.values);
-    final windStrengthValues = _getEnumValuesAsString(WindStrength.values);
-    final resultRatingValues = _getEnumValuesAsString(ThrowResultRating.values);
-    final landingSpotValues = _getEnumValuesAsString(LandingSpot.values);
-    final fairwayWidthValues = _getEnumValuesAsString(FairwayWidth.values);
-    final gripTypeValues = _getEnumValuesAsString(GripType.values);
-    final throwHandValues = _getEnumValuesAsString(ThrowHand.values);
+    final throwPurposeValues = getEnumValuesAsString(ThrowPurpose.values);
+    final techniqueValues = getEnumValuesAsString(ThrowTechnique.values);
+    final puttStyleValues = getEnumValuesAsString(PuttStyle.values);
+    final shotShapeValues = getEnumValuesAsString(ShotShape.values);
+    final stanceValues = getEnumValuesAsString(StanceType.values);
+    final throwPowerValues = getEnumValuesAsString(ThrowPower.values);
+    final windDirectionValues = getEnumValuesAsString(WindDirection.values);
+    final windStrengthValues = getEnumValuesAsString(WindStrength.values);
+    final resultRatingValues = getEnumValuesAsString(ThrowResultRating.values);
+    final landingSpotValues = getEnumValuesAsString(LandingSpot.values);
+    final fairwayWidthValues = getEnumValuesAsString(FairwayWidth.values);
+    final gripTypeValues = getEnumValuesAsString(GripType.values);
+    final throwHandValues = getEnumValuesAsString(ThrowHand.values);
 
     // Create disc list string
     final discListString = userBag
@@ -501,74 +409,23 @@ $schemaExample
 ''';
   }
 
-  // Test method to validate the service
-  Future<bool> testConnection() async {
-    try {
-      final response = await _model.generateContent([
-        Content.text('Reply with just "OK" to confirm the connection works.'),
-      ]);
-      return response.text?.contains('OK') ?? false;
-    } catch (e) {
-      debugPrint('Gemini connection test failed: $e');
-      return false;
-    }
-  }
-
-  /// Generates AI summary and coaching based on round data and analysis
-  Future<Map<String, AIContent?>> generateRoundInsights({
-    required DGRound round,
-    required dynamic analysis, // RoundAnalysis
-  }) async {
-    try {
-      final prompt = _buildInsightsPrompt(round, analysis);
-
-      final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
-
-      // Parse response in markdown format
-      var responseText = response.text ?? '';
-      debugPrint('Gemini insights raw response: $responseText');
-
-      // Split on the separator
-      final parts = responseText.split('---SPLIT---');
-
-      final summaryText = parts.isNotEmpty ? parts[0].trim() : '';
-      final coachingText = parts.length > 1 ? parts[1].trim() : '';
-
-      debugPrint('Parsed summary length: ${summaryText.length} chars');
-      debugPrint('Parsed coaching length: ${coachingText.length} chars');
-
-      // Create AIContent objects with the round's version ID
-      final summary = summaryText.isNotEmpty
-          ? AIContent(content: summaryText, roundVersionId: round.versionId)
-          : null;
-      final coaching = coachingText.isNotEmpty
-          ? AIContent(content: coachingText, roundVersionId: round.versionId)
-          : null;
-
-      return {
-        'summary': summary,
-        'coaching': coaching,
-      };
-    } catch (e) {
-      debugPrint('Error generating insights: $e');
-      return {'summary': null, 'coaching': null};
-    }
-  }
-
-
-  String _buildInsightsPrompt(DGRound round, dynamic analysis) {
+  String buildGeminiInsightsPrompt(DGRound round, dynamic analysis) {
     // Format disc performance data
     final discPerf = (analysis.discPerformances as List)
         .take(5)
-        .map((disc) =>
-            '- ${disc.discName}: ${disc.totalShots} throws, ${disc.goodPercentage.toStringAsFixed(0)}% good')
+        .map(
+          (disc) =>
+              '- ${disc.discName}: ${disc.totalShots} throws, ${disc.goodPercentage.toStringAsFixed(0)}% good',
+        )
         .join('\n');
 
     // Format top mistakes
     final topMistakes = (analysis.mistakeTypes as List)
         .take(3)
-        .map((m) => '- ${m.label}: ${m.count} (${m.percentage.toStringAsFixed(0)}%)')
+        .map(
+          (m) =>
+              '- ${m.label}: ${m.count} (${m.percentage.toStringAsFixed(0)}%)',
+        )
         .join('\n');
 
     return '''

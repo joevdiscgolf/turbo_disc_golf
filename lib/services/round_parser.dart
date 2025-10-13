@@ -1,31 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/services/round_storage_service.dart';
 
 class RoundParser extends ChangeNotifier {
-  final GeminiService _geminiService;
-  final BagService _bagService;
-  final RoundStorageService _storageService;
-
   DGRound? _parsedRound;
   bool _isProcessing = false;
   String _lastError = '';
   bool _shouldNavigateToReview = false;
-
-  RoundParser({
-    required GeminiService geminiService,
-    required BagService bagService,
-    RoundStorageService? storageService,
-  }) : _geminiService = geminiService,
-       _bagService = bagService,
-       _storageService = storageService ?? RoundStorageService();
 
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
@@ -50,6 +38,7 @@ class RoundParser extends ChangeNotifier {
     String? courseName,
     bool useSharedPreferences = false,
   }) async {
+    final BagService bagService = locator.get<BagService>();
     if (transcript.trim().isEmpty) {
       _lastError = 'Transcript is empty';
       notifyListeners();
@@ -72,7 +61,9 @@ class RoundParser extends ChangeNotifier {
       // If using shared preferences, try to load cached round first
       if (useSharedPreferences) {
         debugPrint('Attempting to load round from shared preferences...');
-        final cachedRound = await _storageService.loadRound();
+        final cachedRound = await locator
+            .get<RoundStorageService>()
+            .loadRound();
 
         if (cachedRound != null) {
           debugPrint(
@@ -80,7 +71,8 @@ class RoundParser extends ChangeNotifier {
           );
           _parsedRound = cachedRound;
           _isProcessing = false;
-          _shouldNavigateToReview = true; // Signal that navigation should happen
+          _shouldNavigateToReview =
+              true; // Signal that navigation should happen
           notifyListeners();
           return true;
         } else {
@@ -93,21 +85,23 @@ class RoundParser extends ChangeNotifier {
       }
 
       // Load user's bag if not already loaded
-      if (_bagService.userBag.isEmpty) {
-        await _bagService.loadBag();
+      if (bagService.userBag.isEmpty) {
+        await bagService.loadBag();
 
         // If still empty, load sample bag for testing
-        if (_bagService.userBag.isEmpty) {
-          _bagService.loadSampleBag();
+        if (bagService.userBag.isEmpty) {
+          bagService.loadSampleBag();
         }
       }
 
       // Parse with Gemini
-      _parsedRound = await _geminiService.parseRoundDescription(
-        voiceTranscript: transcript,
-        userBag: _bagService.userBag,
-        courseName: courseName,
-      );
+      _parsedRound = await locator
+          .get<AiParsingService>()
+          .parseRoundDescription(
+            voiceTranscript: transcript,
+            userBag: bagService.userBag,
+            courseName: courseName,
+          );
 
       if (_parsedRound == null) {
         _lastError = 'Failed to parse round. Check console for details.';
@@ -125,10 +119,9 @@ class RoundParser extends ChangeNotifier {
 
       // Generate AI insights (summary and coaching)
       debugPrint('Generating AI summary and coaching...');
-      final insights = await _geminiService.generateRoundInsights(
-        round: _parsedRound!,
-        analysis: analysis,
-      );
+      final insights = await locator
+          .get<AiParsingService>()
+          .generateRoundInsights(round: _parsedRound!, analysis: analysis);
 
       // Update round with analysis and insights
       _parsedRound = DGRound(
@@ -144,7 +137,9 @@ class RoundParser extends ChangeNotifier {
 
       // Save to shared preferences for future use
       debugPrint('Saving parsed round to shared preferences...');
-      final savedLocally = await _storageService.saveRound(_parsedRound!);
+      final savedLocally = await locator.get<RoundStorageService>().saveRound(
+        _parsedRound!,
+      );
       if (savedLocally) {
         debugPrint('Successfully saved round to shared preferences');
       } else {
@@ -180,7 +175,7 @@ class RoundParser extends ChangeNotifier {
       final enhancedThrows = hole.throws.map((discThrow) {
         // If disc name is provided but not found in bag, try to match
         // if (discThrow.discName != null && discThrow.discId == null) {
-        //   final matchedDisc = _bagService.findDiscByName(discThrow.discName!);
+        //   final matchedDisc = bagService.findDiscByName(discThrow.discName!);
         //   if (matchedDisc != null) {
         //     return DiscThrow(
         //       distanceFeet: discThrow.distanceFeet,

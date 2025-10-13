@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
-import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/services/round_storage_service.dart';
 
 class TestAiSummaryScreen extends StatefulWidget {
   const TestAiSummaryScreen({super.key});
@@ -15,7 +16,7 @@ class TestAiSummaryScreen extends StatefulWidget {
 
 class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
   final RoundStorageService _storageService = RoundStorageService();
-  final GeminiService _geminiService = locator.get<GeminiService>();
+  final AiParsingService _aiParsingService = locator.get<AiParsingService>();
 
   bool _isLoading = false;
   String? _aiSummary;
@@ -90,10 +91,8 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
 
       // Generate AI insights (summary and coaching)
       debugPrint('🔄 Calling Gemini to generate insights...');
-      final insights = await _geminiService.generateRoundInsights(
-        round: _cachedRound!,
-        analysis: analysis,
-      );
+      final Map<String, AIContent?> insights = await _aiParsingService
+          .generateRoundInsights(round: _cachedRound!, analysis: analysis);
 
       final summaryContent = insights['summary'];
       final coachingContent = insights['coaching'];
@@ -126,7 +125,6 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,9 +135,9 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
           children: [
             Text(
               'Test AI Summary Generator',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -153,9 +151,8 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
                     children: [
                       Text(
                         'Cached Round',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text('Course: ${_cachedRound!.courseName}'),
