@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
@@ -58,11 +59,16 @@ const String testRoundDescription4 = '''
 Whole one is a 200-ft par 3 on a hill that is sloped I threw my tactic on a backhand and parked it and tap that in for the birdie Hole 2 is a downhill 160 ft hole wide open I threw my tactic to 30 ft and then made the birdie putt whole three is a wide open 250 ft hole I threw my md3 on the backhand and ended up 40 ft short attempted that part ended up 20 ft long and then missed that putt for par so I took a bogey whole four is a 250 ft backhand through the woods it's a backhand hyzer line I hit a tree and landed in the Fairway and then through a forehand to approach the basket and tapped in for the par hole five is a short 140 ft Par 3 I threw a forehand to 20 ft and made the birdie putt '06 is a short 180 ft Par 3 I threw a backhand standstill shot with my Putter and parked that took the birdie whole seven is a tunnel forehand Shot Through the Woods I threw my Vanguard on a forehand and ended up 30 ft short and right and made a putt around a tree to get the birdie whole eight is a 180 ft Par 3 through some trees I hit a gap with a forehand and parked it and tapped it in for birdie with my tactic hole nine is a pretty tightly wooded hole I threw a backhand and it hit a tree and I had to lay up with a forehand on the second shot and then made the par putt for par whole 10 is a 280 ft uphill Par 3 I threw my Vanguard but ended up 70 ft left and long so I laid that up and tapped in for the par hole 11 is a 315-ft par 3 I threw my with a low ceiling I threw my instinct to 25 ft just inside the bushes and made the birdie putt whole 12 is a 330 ft wide open Par 3 I threw my Glacier on a backhand and parked it and tapped it in for the birdie whole 13 is a tight low ceiling hole that I threw a forehand on and hit a tree and laid up and tapped in for the par the next hole hole 14 was a 220 ft Par 3 I threw a backhand hyzer with my md3 to 10 ft and tap that in for the birdie whole 15 is a low ceiling shot I tried to throw a forehand but hit a tree it's a 300 ft hole and then I threw my approach to 30 ft and made the pot for par hole 16 is a 320 ft Par 3 through the woods tight Fairway I threw a forehand and hit the last tree and ended up 60 ft left and try to make the pot missed tapped in for the par hole 17 is a 260 ft Par 3 I had to hit a gap on a forehand with my Vanguard and parked the shot so tapped in for birdie and then hole 18 is a tight backhand shot about 300 ft I hit a tree with my Vanguard and kicked left then my neck shot I tried to scramble to get close but that also hit a tree my third shot was a putt and I hit a tree and dropped down so I had to put to try to make the bogey and I miss that from 30 ft and I tapped in for double bogey on the 18th hole 
 ''';
 
+const String flingsGivingRound2Description = '''
+Whole one is a 600 ft par 4 that's wide open in downhill at the start and then goes into the trees for the second part I threw my halo Destroyer off the tee on a backhand just flat and it ended up just into the trees and 140 ft away and I threw a forehand up shot with my razor claw and that parked at 10 ft away so I buried hold two is a 170 ft Par 3 pretty wide open I threw a forehand tactic out to the left side on Heiser and parked it two feet away all three is a wide open 370 ft Par 3 I threw my PD on a backhand hyzer and ended up 25 ft left with a birdie putt I miss that Putt and then I missed the comeback butt from 25 ft so I tapped in for a bogey on that hole whole four is a 380 ft Par 3 it's pretty wide open but the green is protected by some trees I threw a backhand hyzer with a pd2 out to the right and then I ended up 25 ft long and out of bounds and I made my par put from 25 ft whole five was a 440 ft par 4 I threw a forehand off the tee and had another forehand approach from 140 ft into the green and made a 23 ft pot for birdie whole six is a wide open and 30 ft Par 3 I threw a backhand hyzer with my md4 to 25 ft and made the putt whole seven is a 500 ft powerful through a bunch of trees pretty tight I hit the first tree with my cloud breaker on a backhand and then I threw my second shot with a backhand dd3 and hit another tree and ended up 250 ft short I threw a forehand pd2 through the trees to try to get a par but it ended up 45 ft away I tried to make the 45 foot pot for par I missed that and went out of bounds past the basket and then I missed my 15-ft pot for double bogey and tapped in for a triple bogey.Call 8 is a 240 ft pretty wide open hole with a low ceiling off the tee I threw my fd3 on a forehand hyzer and threw it to 15 ft and made that putt whole nine is a 300 ft downhill Par 3 wide open until the very end where the basket is just into the forest I threw my pd2 on a forehand flat shot and threw it to 28 ft and made the putt through the woods for birdie whole 10 is a 550 ft par 4 that's wide open most of the way and then finishes where the basket is guarded by trees I threw my wraith on a backhand turnover and it hit a tree stopping at 80 ft short and then I laid up that putt to about 10 ft and tapped in for birdie then hole 11 is a 315-ft par 3 pretty wide open until the end where the basket is in a Grove of pine trees I threw my fd3 on a backhand hyzer out to the right side and low and it skipped up to 3 ft away from the basket and I tap that in for birdie whole 12 is a 200 ft wide open Par 3 I threw a forehand md5 to about 10 ft and tap that in for birdie whole 13 is a 800 ft par 5 very wide open with out of bounds on the left and right I threw my wraith on a backhand hyzer flip to about 315 ft away from the basket then I threw my buzz 228 ft left of the basket and I miss that putt just low for Eagle so I tapped in for the birdie whole 14 is a 340 ft wide open Par 3 with some trees guarding the basket at the end I threw it a little bit short and left to 50 ft and laid that up to tap in for par whole 15 is a wide open Par 3 where you just have to get over a bunker in front of the basket I threw a forehand into a tree On the left and laid that up that ended up 50 ft away and laid that up to tap in for the par hole 16 starts wide open and then finishes into a Grove of trees with a big opening I threw my Razor cloth on a forehand and it ended up 25 ft short and right and I made that putt for birdie whole 17 is a wide open 700 ft power 4 I threw my wraith on a backhand hyzer flip and ended up in the Fairway and then I had 215 ft into the basket I threw a skip shot with my md5 on a backhand which rolled and ended up 35 ft away I missed that putt for birdie and had a 20 ft pop back for par I missed that putt for par and made it 20 ft pot for bogey on 18 it's a 400 ft Par 3 without a bounds on the left and right but wide open otherwise I threw my md1 on a backhand turnover and threw it to 40 ft left and short and laid up and tapped in for the three 
+''';
+
 const testRoundDescriptions = [
   testRoundDescription,
   testRoundDescription2,
   testRoundDescription3,
   testRoundDescription4,
+  flingsGivingRound2Description,
 ];
 
 const String testCourseName = 'Foxwood';
@@ -239,6 +245,25 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                 labelText: 'Course Name (Optional)',
                 border: OutlineInputBorder(),
                 hintText: 'Enter the course name',
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Import from Screenshot button
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ImportScoreScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.image),
+              label: const Text('Import from Screenshot'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00F5D4),
+                foregroundColor: const Color(0xFF0A0E17),
+                minimumSize: const Size(double.infinity, 48),
               ),
             ),
             const SizedBox(height: 24),
