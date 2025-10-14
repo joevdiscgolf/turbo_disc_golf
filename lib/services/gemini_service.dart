@@ -24,11 +24,14 @@ class GeminiService {
       model: 'gemini-2.5-flash-lite',
       apiKey: apiKeyToUse,
       generationConfig: GenerationConfig(
-        temperature: 0.3, // Lower temperature for more consistent parsing
-        topK: 20,
-        topP: 0.8,
-        maxOutputTokens: 4096,
-        // Removed responseMimeType to allow YAML responses
+        temperature: 0.4, // Slightly higher to prevent loops
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 8192, // Increased for longer rounds (18 holes)
+        stopSequences: [
+          '```', // Stop at markdown code blocks
+          'STOP', // Emergency stop
+        ],
       ),
     );
 

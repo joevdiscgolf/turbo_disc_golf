@@ -19,6 +19,51 @@ class AiParsingService {
   String? _lastRawResponse; // Store the last raw response
   String? get lastRawResponse => _lastRawResponse;
 
+  /// Detects and removes repetitive text patterns (model stuck in a loop)
+  String _removeRepetitiveText(String text) {
+    // Check for patterns where a phrase repeats many times
+    final words = text.split(' ');
+
+    // If text is suspiciously long (>6000 chars) with few unique words, likely repetition
+    if (text.length > 6000) {
+      final uniqueWords = words.toSet().length;
+      final totalWords = words.length;
+
+      // If less than 20% unique words, likely stuck in loop
+      if (uniqueWords < totalWords * 0.2) {
+        debugPrint('⚠️ Detected repetitive output! Attempting to truncate...');
+
+        // Find where the repetition starts by looking for repeated sequences
+        // Look for a phrase that repeats 5+ times
+        for (int phraseLength = 2; phraseLength <= 10; phraseLength++) {
+          for (int i = 0; i < words.length - (phraseLength * 5); i++) {
+            final phrase = words.sublist(i, i + phraseLength).join(' ');
+            int count = 0;
+
+            // Count consecutive repetitions
+            for (int j = i; j < words.length - phraseLength; j += phraseLength) {
+              final testPhrase = words.sublist(j, j + phraseLength).join(' ');
+              if (testPhrase == phrase) {
+                count++;
+              } else {
+                break;
+              }
+            }
+
+            // If we found 5+ repetitions, truncate there
+            if (count >= 5) {
+              final truncatedText = words.sublist(0, i).join(' ');
+              debugPrint('✂️ Truncated at position $i (found "$phrase" repeated $count times)');
+              return truncatedText;
+            }
+          }
+        }
+      }
+    }
+
+    return text;
+  }
+
   Future<DGRound?> parseRoundDescription({
     required String voiceTranscript,
     required List<DGDisc> userBag,
@@ -41,6 +86,9 @@ class AiParsingService {
 
       // Store the raw response
       _lastRawResponse = responseText;
+
+      // Detect and handle repetitive output
+      responseText = _removeRepetitiveText(responseText);
 
       debugPrint('Gemini response received, parsing YAML...');
       debugPrint(

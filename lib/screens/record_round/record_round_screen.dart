@@ -233,280 +233,389 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _courseNameController,
-              decoration: const InputDecoration(
-                labelText: 'Course Name (Optional)',
-                border: OutlineInputBorder(),
-                hintText: 'Enter the course name',
-              ),
-            ),
             const SizedBox(height: 16),
 
-            // Import from Screenshot button
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ImportScoreScreen(),
+            // Header
+            Text(
+              'Record Your Round',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              },
-              icon: const Icon(Icons.image),
-              label: const Text('Import from Screenshot'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00F5D4),
-                foregroundColor: const Color(0xFF0A0E17),
-                minimumSize: const Size(double.infinity, 48),
-              ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-
-            // Test mode toggle
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Test Mode', style: TextStyle(fontSize: 16)),
-                Switch(
-                  value: _testMode,
-                  onChanged: (value) {
-                    setState(() {
-                      _testMode = value;
-                      if (value) {
-                        // Load constant test string
-                        _transcriptController.text = getCorrectTestDescription;
-                        _voiceService.updateText(getCorrectTestDescription);
-                      } else {
-                        _transcriptController.clear();
-                        _voiceService.clearText();
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
-                const Tooltip(
-                  message: 'Uses TEST_ROUND_DESCRIPTION constant from line 27',
-                  child: Icon(Icons.info_outline, size: 16),
-                ),
-              ],
-            ),
-
             const SizedBox(height: 8),
-
-            // Use Shared Preferences toggle
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Use Shared Preferences',
-                  style: TextStyle(fontSize: 16),
-                ),
-                Switch(
-                  value: _useSharedPreferences,
-                  onChanged: (value) {
-                    setState(() {
-                      _useSharedPreferences = value;
-                    });
-                  },
-                ),
-                const SizedBox(width: 8),
-                const Tooltip(
-                  message:
-                      'Load cached round from storage instead of calling Gemini',
-                  child: Icon(Icons.info_outline, size: 16),
-                ),
-              ],
-            ),
-
-            // Test Parse button - only visible in test mode
-            if (_testMode) ...[
-              ElevatedButton.icon(
-                onPressed: _roundParser.isProcessing
-                    ? null
-                    : () async {
-                        // Parse the test constant directly
-                        await _roundParser.parseVoiceTranscript(
-                          getCorrectTestDescription,
-                          courseName: testCourseName,
-                          useSharedPreferences: _useSharedPreferences,
-                        );
-
-                        if (_roundParser.lastError.isNotEmpty &&
-                            context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(_roundParser.lastError)),
-                          );
-                        }
-                        // Raw response dialog disabled
-                        // else if (_geminiService.lastRawResponse != null &&
-                        //     context.mounted) {
-                        //   showDialog(
-                        //     context: context,
-                        //     builder: (context) => RawResponseDialog(
-                        //       rawResponse: _geminiService.lastRawResponse!,
-                        //     ),
-                        //   );
-                        // }
-                      },
-                icon: _roundParser.isProcessing
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.science),
-                label: Text(
-                  _roundParser.isProcessing
-                      ? 'Processing...'
-                      : 'Test Parse Constant',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9D4EDD), // Purple variant
-                  foregroundColor: const Color(0xFFF5F5F5),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+            Text(
+              'Choose how you want to input your round data',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFFB0B0B0),
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Raw Response button disabled
-              // if (_geminiService.lastRawResponse != null)
-              //   TextButton.icon(
-              //     onPressed: () {
-              //       showDialog(
-              //         context: context,
-              //         builder: (context) => RawResponseDialog(
-              //           rawResponse: _geminiService.lastRawResponse!,
-              //         ),
-              //       );
-              //     },
-              //     icon: const Icon(Icons.code),
-              //     label: const Text('Show Last Raw Response'),
-              //   ),
-            ],
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
 
-            const SizedBox(height: 24),
-
-            // Error display
-            if (_voiceService.lastError.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D1818), // Dark red background
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFF7A7A)),
-                ),
+            // Option 1: Image + Voice
+            Card(
+              color: const Color(0xFF1E293B),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: Color(0xFFFF7A7A),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _voiceService.lastError,
-                            style: const TextStyle(color: Color(0xFFFFBBBB)),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00F5D4).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (_voiceService.lastError.contains('permission'))
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            // Force re-initialization
-                            await _voiceService.initialize();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.settings, size: 18),
-                          label: const Text('Re-request Permission'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF7A7A),
-                            foregroundColor: const Color(0xFF0A0E17),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                          child: const Center(
+                            child: Text(
+                              '1',
+                              style: TextStyle(
+                                color: Color(0xFF00F5D4),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Image + Voice Input',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Upload a scorecard screenshot to capture hole info (par, distance, score), then describe your throws with voice.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFFB0B0B0),
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ImportScoreScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.image),
+                      label: const Text('Import from Screenshot'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00F5D4),
+                        foregroundColor: const Color(0xFF0A0E17),
+                        minimumSize: const Size(double.infinity, 48),
                       ),
+                    ),
                   ],
                 ),
               ),
+            ),
 
-            // Recording button
-            Center(
-              child: GestureDetector(
-                onTap: _toggleRecording,
-                child: AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _voiceService.isListening
-                            ? const Color(0xFF10E5FF).withValues(
-                                alpha: 0.9,
-                              ) // Brighter electric blue when recording
-                            : const Color(
-                                0xFF9D7FFF,
-                              ), // Brighter purple when idle
-                        boxShadow: _voiceService.isListening
-                            ? [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF10E5FF,
-                                  ).withValues(alpha: 0.7),
-                                  blurRadius: 20 * _animationController.value,
-                                  spreadRadius: 5 * _animationController.value,
-                                ),
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF9D7FFF,
-                                  ).withValues(alpha: 0.4),
-                                  blurRadius: 10,
-                                  spreadRadius: 3,
-                                ),
-                              ],
+            const SizedBox(height: 24),
+
+            // Divider with "OR"
+            Row(
+              children: [
+                const Expanded(child: Divider(color: Color(0xFF334155))),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'OR',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                const Expanded(child: Divider(color: Color(0xFF334155))),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Option 2: Voice Only
+            Card(
+              color: const Color(0xFF1E293B),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF9D7FFF).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '2',
+                              style: TextStyle(
+                                color: Color(0xFF9D7FFF),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Voice-Only Input',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Describe your entire round with voice, including hole numbers, par, distance, and all your throws.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFFB0B0B0),
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _courseNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Course Name (Optional)',
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter the course name',
                       ),
-                      child: Icon(
-                        _voiceService.isListening ? Icons.mic : Icons.mic_none,
-                        size: 40,
-                        color: const Color(0xFFF5F5F5),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Error display
+                    if (_voiceService.lastError.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2D1818),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFFF7A7A)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Color(0xFFFF7A7A),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _voiceService.lastError,
+                                style: const TextStyle(color: Color(0xFFFFBBBB)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    );
-                  },
+
+                    // Recording button
+                    Center(
+                      child: GestureDetector(
+                        onTap: _toggleRecording,
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _voiceService.isListening
+                                    ? const Color(0xFF10E5FF).withValues(alpha: 0.9)
+                                    : const Color(0xFF9D7FFF),
+                                boxShadow: _voiceService.isListening
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF10E5FF)
+                                              .withValues(alpha: 0.7),
+                                          blurRadius:
+                                              20 * _animationController.value,
+                                          spreadRadius:
+                                              5 * _animationController.value,
+                                        ),
+                                      ]
+                                    : [
+                                        BoxShadow(
+                                          color: const Color(0xFF9D7FFF)
+                                              .withValues(alpha: 0.4),
+                                          blurRadius: 10,
+                                          spreadRadius: 3,
+                                        ),
+                                      ],
+                              ),
+                              child: Icon(
+                                _voiceService.isListening
+                                    ? Icons.mic
+                                    : Icons.mic_none,
+                                size: 40,
+                                color: const Color(0xFFF5F5F5),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Status text
+                    Center(
+                      child: Text(
+                        _testMode
+                            ? 'Test Mode Active'
+                            : _voiceService.isListening
+                                ? 'Listening... Describe your round!'
+                                : 'Tap mic to record',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 8),
 
-            // Status text
-            Center(
-              child: Text(
-                _testMode
-                    ? 'Test Mode Active - Edit TEST_ROUND_DESCRIPTION in code'
-                    : _voiceService.isListening
-                    ? 'Listening... Describe your round!'
-                    : 'Tap mic to record with voice',
-                style: Theme.of(context).textTheme.bodyMedium,
+            const SizedBox(height: 32),
+
+            // Test/Debug Section
+            ExpansionTile(
+              title: Row(
+                children: [
+                  const Icon(Icons.science, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Test & Debug Tools',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ],
               ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Test mode toggle
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Test Mode',
+                              style: TextStyle(fontSize: 16)),
+                          Switch(
+                            value: _testMode,
+                            onChanged: (value) {
+                              setState(() {
+                                _testMode = value;
+                                if (value) {
+                                  _transcriptController.text =
+                                      getCorrectTestDescription;
+                                  _voiceService
+                                      .updateText(getCorrectTestDescription);
+                                } else {
+                                  _transcriptController.clear();
+                                  _voiceService.clearText();
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          const Tooltip(
+                            message: 'Uses test constant',
+                            child: Icon(Icons.info_outline, size: 16),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Use Shared Preferences toggle
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Use Cached Round',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Switch(
+                            value: _useSharedPreferences,
+                            onChanged: (value) {
+                              setState(() {
+                                _useSharedPreferences = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          const Tooltip(
+                            message: 'Load from storage instead of calling AI',
+                            child: Icon(Icons.info_outline, size: 16),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Test Parse button
+                      if (_testMode)
+                        ElevatedButton.icon(
+                          onPressed: _roundParser.isProcessing
+                              ? null
+                              : () async {
+                                  await _roundParser.parseVoiceTranscript(
+                                    getCorrectTestDescription,
+                                    courseName: testCourseName,
+                                    useSharedPreferences: _useSharedPreferences,
+                                  );
+
+                                  if (_roundParser.lastError.isNotEmpty &&
+                                      context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(_roundParser.lastError)),
+                                    );
+                                  }
+                                },
+                          icon: _roundParser.isProcessing
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              : const Icon(Icons.science),
+                          label: Text(
+                            _roundParser.isProcessing
+                                ? 'Processing...'
+                                : 'Test Parse Constant',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF9D4EDD),
+                            foregroundColor: const Color(0xFFF5F5F5),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),

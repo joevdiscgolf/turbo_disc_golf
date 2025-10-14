@@ -4,11 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:turbo_disc_golf/services/scorecard_ocr_service.dart';
-import 'package:uuid/uuid.dart';
-import 'package:turbo_disc_golf/models/data/hole_data.dart';
-import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
+import 'package:turbo_disc_golf/screens/voice_detail_input_screen.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/locator.dart';
 
@@ -194,11 +191,11 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
     });
   }
 
-  void _confirmAndCreateRound() {
+  void _continueToVoiceInput() {
     // Validate that we have valid data
     if (_extractedData.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hole data to create round')),
+        const SnackBar(content: Text('No hole data from scorecard')),
       );
       return;
     }
@@ -211,8 +208,7 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
       return;
     }
 
-    // Convert extracted data to DGHole objects
-    final holes = <DGHole>[];
+    // Validate that all holes have required data
     for (final holeData in _extractedData) {
       if (holeData.par == null || holeData.score == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -224,45 +220,159 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
         );
         return;
       }
-
-      // Create placeholder throws based on score
-      // We don't have detailed throw data from the screenshot,
-      // so we create simple throws
-      final throws = <DiscThrow>[];
-      for (int i = 0; i < holeData.score!; i++) {
-        throws.add(
-          DiscThrow(
-            index: i,
-            notes: 'Imported from screenshot',
-            parseConfidence: holeData.confidence,
-          ),
-        );
-      }
-
-      holes.add(
-        DGHole(
-          number: holeData.holeNumber,
-          par: holeData.par!,
-          feet: holeData.distance,
-          throws: throws,
-        ),
-      );
     }
 
-    // Create the round
-    final round = DGRound(
-      id: const Uuid().v4(),
-      courseName: _courseNameController.text.trim(),
-      holes: holes,
-    );
+    // Convert ScoreCardHoleData to HoleMetadata
+    final holeMetadata = _extractedData.map((hole) {
+      return HoleMetadata(
+        holeNumber: hole.holeNumber,
+        par: hole.par!,
+        distanceFeet: hole.distance,
+        score: hole.score!,
+      );
+    }).toList();
 
-    // Navigate to round review screen
-    Navigator.of(context).pushReplacement(
+    // Navigate to voice detail input screen
+    Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            RoundReviewScreen(round: round, showStoryOnLoad: false),
+        builder: (context) => VoiceDetailInputScreen(
+          holeMetadata: holeMetadata,
+          courseName: _courseNameController.text.trim(),
+        ),
       ),
     );
+  }
+
+  Widget _buildScoreSummaryCard() {
+    // Calculate totals and scoring breakdown
+    int totalPar = 0;
+    int totalScore = 0;
+    int eagles = 0;
+    int birdies = 0;
+    int pars = 0;
+    int bogeys = 0;
+    int doubleBogeyPlus = 0;
+
+    for (final hole in _extractedData) {
+      if (hole.par != null && hole.score != null) {
+        totalPar += hole.par!;
+        totalScore += hole.score!;
+        final relativeToPar = hole.score! - hole.par!;
+
+        if (relativeToPar <= -2) {
+          eagles++;
+        } else if (relativeToPar == -1) {
+          birdies++;
+        } else if (relativeToPar == 0) {
+          pars++;
+        } else if (relativeToPar == 1) {
+          bogeys++;
+        } else {
+          doubleBogeyPlus++;
+        }
+      }
+    }
+
+    final scoreToPar = totalScore - totalPar;
+    final scoreToParText = scoreToPar == 0
+        ? 'E'
+        : scoreToPar > 0
+            ? '+$scoreToPar'
+            : '$scoreToPar';
+
+    return Card(
+      color: const Color(0xFF1E293B),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Total score display
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Column(
+                  children: [
+                    Text(
+                      scoreToParText,
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: _getScoreColorForRelativeToPar(scoreToPar),
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$totalScore strokes',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFFB0B0B0),
+                          ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFF334155)),
+            const SizedBox(height: 16),
+            // Scoring breakdown
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                if (eagles > 0) _buildScoreChip('Eagles', eagles, Colors.purple),
+                if (birdies > 0)
+                  _buildScoreChip('Birdies', birdies, Colors.blue),
+                if (pars > 0) _buildScoreChip('Pars', pars, Colors.green),
+                if (bogeys > 0) _buildScoreChip('Bogeys', bogeys, Colors.orange),
+                if (doubleBogeyPlus > 0)
+                  _buildScoreChip('2B+', doubleBogeyPlus, Colors.red),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoreChip(String label, int count, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFFB0B0B0),
+              ),
+        ),
+      ],
+    );
+  }
+
+  Color _getScoreColorForRelativeToPar(int scoreToPar) {
+    if (scoreToPar <= -5) {
+      return Colors.purple;
+    } else if (scoreToPar < 0) {
+      return Colors.blue;
+    } else if (scoreToPar == 0) {
+      return Colors.green;
+    } else if (scoreToPar <= 5) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
   }
 
   @override
@@ -369,16 +479,25 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
             if (_extractedData.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
                       'Extracted Data (${_extractedData.length} holes)',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    TextButton(
-                      onPressed: _confirmAndCreateRound,
-                      child: const Text('Confirm'),
+                    const SizedBox(height: 16),
+                    _buildScoreSummaryCard(),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: _continueToVoiceInput,
+                      icon: const Icon(Icons.arrow_forward),
+                      label: const Text('Continue with Voice'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00F5D4),
+                        foregroundColor: const Color(0xFF0A0E17),
+                        minimumSize: const Size(double.infinity, 48),
+                      ),
                     ),
                   ],
                 ),
