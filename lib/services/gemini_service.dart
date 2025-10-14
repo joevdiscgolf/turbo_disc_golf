@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 class GeminiService {
-  late final GenerativeModel _model;
+  late final GenerativeModel _textModel; // For text parsing
+  late final GenerativeModel _visionModel; // For image + text (multimodal)
   static const String _defaultApiKey =
       'AIzaSyDGTZoOaO_U76ysJ5dG8Ohdc7B-soUn3rE'; // Replace with actual key
 
@@ -14,22 +17,40 @@ class GeminiService {
   String? get lastRawResponse => _lastRawResponse;
 
   GeminiService({String? apiKey}) {
-    _model = GenerativeModel(
+    final apiKeyToUse = apiKey ?? _defaultApiKey;
+
+    // Text model for voice transcript parsing
+    _textModel = GenerativeModel(
       model: 'gemini-2.5-flash-lite',
-      apiKey: apiKey ?? _defaultApiKey,
+      apiKey: apiKeyToUse,
       generationConfig: GenerationConfig(
-        temperature: 0.3, // Lower temperature for more consistent parsing
-        topK: 20,
+        temperature: 0.4, // Slightly higher to prevent loops
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 8192, // Increased for longer rounds (18 holes)
+        stopSequences: [
+          '```', // Stop at markdown code blocks
+          'STOP', // Emergency stop
+        ],
+      ),
+    );
+
+    // Vision model for scorecard image processing
+    _visionModel = GenerativeModel(
+      model: 'gemini-2.0-flash-exp',
+      apiKey: apiKeyToUse,
+      generationConfig: GenerationConfig(
+        temperature: 0.1, // Very low temperature for accurate data extraction
+        topK: 10,
         topP: 0.8,
-        maxOutputTokens: 4096,
-        // Removed responseMimeType to allow YAML responses
+        maxOutputTokens: 2048,
       ),
     );
   }
 
   Future<String?> generateContent({required String prompt}) async {
     try {
-      return _model
+      return _textModel
           .generateContent([Content.text(prompt)])
           .then((response) => response.text);
     } catch (e, trace) {
@@ -40,10 +61,61 @@ class GeminiService {
     }
   }
 
+  /// Generate content with image (multimodal) - uses vision model
+  Future<String?> generateContentWithImage({
+    required String prompt,
+    required String imagePath,
+  }) async {
+    try {
+      // Load image bytes
+      final imageFile = File(imagePath);
+      if (!await imageFile.exists()) {
+        debugPrint('Image file does not exist: $imagePath');
+        return null;
+      }
+
+      final imageBytes = await imageFile.readAsBytes();
+
+      // Determine MIME type based on file extension
+      final extension = imagePath.split('.').last.toLowerCase();
+      String mimeType;
+      switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+          mimeType = 'image/jpeg';
+          break;
+        case 'png':
+          mimeType = 'image/png';
+          break;
+        case 'gif':
+          mimeType = 'image/gif';
+          break;
+        case 'webp':
+          mimeType = 'image/webp';
+          break;
+        default:
+          mimeType = 'image/jpeg'; // Default fallback
+      }
+
+      // Create multimodal content
+      final content = Content.multi([
+        TextPart(prompt),
+        DataPart(mimeType, imageBytes),
+      ]);
+
+      final response = await _visionModel.generateContent([content]);
+      return response.text;
+    } catch (e, trace) {
+      debugPrint('Error generating content with image: $e');
+      debugPrint(trace.toString());
+      return null;
+    }
+  }
+
   // Test method to validate the service
   Future<bool> testConnection() async {
     try {
-      final response = await _model.generateContent([
+      final response = await _textModel.generateContent([
         Content.text('Reply with just "OK" to confirm the connection works.'),
       ]);
       return response.text?.contains('OK') ?? false;
@@ -56,8 +128,49 @@ class GeminiService {
   String buildGeminiParsingPrompt(
     String voiceTranscript,
     List<DGDisc> userBag,
-    String? courseName,
-  ) {
+    String? courseName, {
+    List<HoleMetadata>? preParsedHoles,
+  }) {
+    // Build hole metadata table if provided
+    String holeMetadataSection = '';
+    if (preParsedHoles != null && preParsedHoles.isNotEmpty) {
+      final holeTable = preParsedHoles
+          .map((h) =>
+              'Hole ${h.holeNumber}: Par ${h.par}, ${h.distanceFeet != null ? "${h.distanceFeet}ft" : "distance unknown"}, Score ${h.score}')
+          .join('\n');
+
+      holeMetadataSection = '''
+
+═══════════════════════════════════════════════════════════════════════════
+📋 PRE-PARSED SCORECARD DATA (FROM IMAGE - THIS IS GROUND TRUTH) 📋
+═══════════════════════════════════════════════════════════════════════════
+
+$holeTable
+
+CRITICAL PARSING RULES FOR IMAGE-FIRST MODE:
+1. Use the scorecard data above for: hole number, par, distance, and FINAL SCORE
+2. The SCORE from the image is ABSOLUTE TRUTH - parse exactly that many throws
+3. Parse the voice transcript to extract throw-by-throw details ONLY
+4. Match voice descriptions to the correct hole numbers from the table above
+5. For each hole, create throws that total to the exact score shown above
+6. If voice doesn't mention a hole that's in the scorecard, skip it (only parse holes with voice details)
+
+EXAMPLE:
+Scorecard shows: Hole 1, Par 3, 350ft, Score 3
+Voice says: "Hole 1, threw my destroyer, landed circle 1, made the putt"
+You parse: 2 throws (drive → circle_1, putt → in_basket)
+BUT WAIT - scorecard says score is 3, so you're missing a throw!
+Add the missing throw to match the score: drive → circle_1, missed putt, made putt = 3 throws ✓
+
+YOUR TASK:
+Parse the voice transcript and create detailed throw data for each hole mentioned,
+ensuring throw count + penalties = the score from the scorecard table above.
+
+═══════════════════════════════════════════════════════════════════════════
+
+''';
+    }
+
     // Get enum values dynamically
     final throwPurposeValues = getEnumValuesAsString(ThrowPurpose.values);
     final techniqueValues = getEnumValuesAsString(ThrowTechnique.values);
@@ -135,7 +248,7 @@ USER'S DISC BAG:
 $discListString
 
 ${courseName != null ? 'COURSE NAME: $courseName' : 'Extract the course name from the transcript if mentioned.'}
-
+$holeMetadataSection
 INSTRUCTIONS:
 1. Parse each hole mentioned in the transcript
 2. For each throw, assign index starting from 0 (0=tee shot, 1=second throw, etc.)
@@ -506,7 +619,66 @@ CRITICAL FORMATTING RULES:
 - Avoid overly enthusiastic language - be direct and honest
 - Start directly with "## What Went Well" as the first line
 - Use "---SPLIT---" to separate the summary section from the coaching section
-- Do NOT include "# Summary" or "# Coaching" headings - only use ## subheadings
+- DO NOT include "# Summary" or "# Coaching" headings - only use ## subheadings
+''';
+  }
+
+  /// Builds prompt for extracting hole metadata from scorecard image
+  String buildScorecardExtractionPrompt() {
+    return '''
+You are a disc golf scorecard data extractor. Analyze the attached scorecard image and extract hole information.
+
+TASK:
+Extract hole number, par, distance (in feet), and score for EVERY hole visible in the image.
+
+OUTPUT FORMAT:
+Return ONLY a JSON array of holes. Do NOT include any explanatory text.
+
+REQUIRED FIELDS:
+- holeNumber: integer (1-18)
+- par: integer (3-5)
+- distanceFeet: integer or null (if not visible)
+- score: integer (player's score for that hole)
+
+CRITICAL RULES:
+1. Extract ALL holes visible in the image (typically 9 or 18 holes)
+2. If distance is not visible or unclear, use null
+3. Par and score are REQUIRED - if you can't read them, skip that hole
+4. Return ONLY the JSON array, no markdown formatting
+5. Do NOT wrap in ```json or any code blocks
+6. Start directly with the opening bracket [
+
+IMPORTANT - COLOR-CODED SCORES:
+Disc golf scorecards often use color-coding to indicate score performance:
+- GREEN background/circle = Birdie (1 under par) - EXTRACT THESE
+- WHITE/CLEAR background = Par (even with par) - EXTRACT THESE
+- LIGHT GRAY background = Bogey (1 over par) - EXTRACT THESE TOO!
+- DARK GRAY background = Double bogey or worse (2+ over par) - EXTRACT THESE TOO!
+
+⚠️ CRITICAL: You MUST extract ALL holes regardless of background color!
+Gray backgrounds (bogeys/worse) are JUST AS IMPORTANT as green (birdies) or white (pars).
+Do NOT skip holes with gray backgrounds - they may have slightly lower contrast but the numbers are still readable.
+
+VALIDATION:
+- After extraction, count how many holes you found
+- If you found less than 9 or 18 holes, you likely MISSED some gray-background holes
+- Go back and look specifically for gray-colored score circles/backgrounds
+- Extract ALL holes you can see, don't skip any!
+
+EXAMPLE OUTPUT:
+[
+  {"holeNumber": 1, "par": 3, "distanceFeet": 350, "score": 3},
+  {"holeNumber": 2, "par": 4, "distanceFeet": 480, "score": 4},
+  {"holeNumber": 3, "par": 3, "distanceFeet": 375, "score": 4},
+  {"holeNumber": 4, "par": 3, "distanceFeet": 390, "score": 3}
+]
+
+COMMON SCORECARD FORMATS:
+- UDisc: Usually shows hole#, distance, par, score in columns or rows with color-coded circles
+- PDGA: Similar table format with hole info
+- Handwritten: May have varying formats - extract what's clearly visible
+
+If the image is unclear or not a scorecard, return an empty array: []
 ''';
   }
 }
