@@ -365,6 +365,11 @@ PsychStats _$PsychStatsFromJson(Map<String, dynamic> json) => PsychStats(
   scoreTrend: json['scoreTrend'] == null
       ? null
       : ScoreTrend.fromJson(json['scoreTrend'] as Map<String, dynamic>),
+  flowStateAnalysis: json['flowStateAnalysis'] == null
+      ? null
+      : FlowStateAnalysis.fromJson(
+          json['flowStateAnalysis'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$PsychStatsToJson(PsychStats instance) =>
@@ -384,4 +389,77 @@ Map<String, dynamic> _$PsychStatsToJson(PsychStats instance) =>
       'last6Performance': instance.last6Performance?.toJson(),
       'conditioningScore': instance.conditioningScore,
       'scoreTrend': instance.scoreTrend?.toJson(),
+      'flowStateAnalysis': instance.flowStateAnalysis?.toJson(),
+    };
+
+FlowStatePeriod _$FlowStatePeriodFromJson(Map<String, dynamic> json) =>
+    FlowStatePeriod(
+      startHole: (json['startHole'] as num).toInt(),
+      endHole: (json['endHole'] as num).toInt(),
+      duration: (json['duration'] as num).toInt(),
+      avgScore: (json['avgScore'] as num).toDouble(),
+      shotQualityRate: (json['shotQualityRate'] as num).toDouble(),
+      birdieCount: (json['birdieCount'] as num).toInt(),
+      parCount: (json['parCount'] as num).toInt(),
+      mistakeCount: (json['mistakeCount'] as num).toInt(),
+      commonDiscs: (json['commonDiscs'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      commonTechniques: (json['commonTechniques'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      dominantWindCondition: json['dominantWindCondition'] as String?,
+      flowQuality: json['flowQuality'] as String,
+    );
+
+Map<String, dynamic> _$FlowStatePeriodToJson(FlowStatePeriod instance) =>
+    <String, dynamic>{
+      'startHole': instance.startHole,
+      'endHole': instance.endHole,
+      'duration': instance.duration,
+      'avgScore': instance.avgScore,
+      'shotQualityRate': instance.shotQualityRate,
+      'birdieCount': instance.birdieCount,
+      'parCount': instance.parCount,
+      'mistakeCount': instance.mistakeCount,
+      'commonDiscs': instance.commonDiscs,
+      'commonTechniques': instance.commonTechniques,
+      'dominantWindCondition': instance.dominantWindCondition,
+      'flowQuality': instance.flowQuality,
+    };
+
+FlowStateAnalysis _$FlowStateAnalysisFromJson(Map<String, dynamic> json) =>
+    FlowStateAnalysis(
+      flowPeriods: (json['flowPeriods'] as List<dynamic>)
+          .map((e) => FlowStatePeriod.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      totalFlowHoles: (json['totalFlowHoles'] as num).toInt(),
+      flowPercentage: (json['flowPercentage'] as num).toDouble(),
+      longestFlow: json['longestFlow'] == null
+          ? null
+          : FlowStatePeriod.fromJson(
+              json['longestFlow'] as Map<String, dynamic>,
+            ),
+      bestFlow: json['bestFlow'] == null
+          ? null
+          : FlowStatePeriod.fromJson(json['bestFlow'] as Map<String, dynamic>),
+      flowTriggers: (json['flowTriggers'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      insights: (json['insights'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      overallFlowScore: (json['overallFlowScore'] as num).toDouble(),
+    );
+
+Map<String, dynamic> _$FlowStateAnalysisToJson(FlowStateAnalysis instance) =>
+    <String, dynamic>{
+      'flowPeriods': instance.flowPeriods.map((e) => e.toJson()).toList(),
+      'totalFlowHoles': instance.totalFlowHoles,
+      'flowPercentage': instance.flowPercentage,
+      'longestFlow': instance.longestFlow?.toJson(),
+      'bestFlow': instance.bestFlow?.toJson(),
+      'flowTriggers': instance.flowTriggers,
+      'insights': instance.insights,
+      'overallFlowScore': instance.overallFlowScore,
     };

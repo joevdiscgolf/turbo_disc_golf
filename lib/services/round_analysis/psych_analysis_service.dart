@@ -362,6 +362,9 @@ class PsychAnalysisService {
     // Calculate score trend
     final scoreTrend = getScoreTrend(round);
 
+    // Calculate flow state analysis
+    final flowStateAnalysis = getFlowStateAnalysis(round);
+
     return PsychStats(
       transitionMatrix: transitionMatrix,
       momentumMultiplier: momentumMultiplier,
@@ -376,6 +379,7 @@ class PsychAnalysisService {
       last6Performance: last6Performance,
       conditioningScore: conditioningScore,
       scoreTrend: scoreTrend,
+      flowStateAnalysis: flowStateAnalysis,
     );
   }
 
@@ -576,5 +580,403 @@ class PsychAnalysisService {
       obRate: (obHoles / totalHoles) * 100,
       mistakeCount: mistakeCount,
     );
+  }
+
+  /// Detect flow states - periods of peak performance
+  FlowStateAnalysis? getFlowStateAnalysis(DGRound round) {
+    // Need at least 4 holes for flow state detection
+    if (round.holes.length < 4) {
+      return null;
+    }
+
+    // Step 1: Calculate per-hole performance metrics
+    final List<Map<String, dynamic>> holeMetrics = [];
+
+    for (var hole in round.holes) {
+      // Calculate shot quality for this hole
+      final totalShots = hole.throws.length;
+      if (totalShots == 0) continue;
+
+      // Count mistakes on this hole
+      final allMistakes = locator
+          .get<MistakesAnalysisService>()
+          .getMistakeThrowDetails(round);
+      final holeMistakes = allMistakes
+          .where((m) => m['holeNumber'] == hole.number)
+          .length;
+
+      final shotQuality = totalShots > 0
+          ? ((totalShots - holeMistakes) / totalShots) * 100
+          : 0.0;
+
+      // Check if par or better
+      final parOrBetter = hole.relativeHoleScore <= 0;
+
+      // Check for C1/C2 in regulation
+      bool c1InReg = false;
+      bool c2InReg = false;
+      final regulationStrokes = hole.par - 2;
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1InReg = true;
+            c2InReg = true;
+            break;
+          } else if (discThrow.landingSpot == LandingSpot.circle2) {
+            c2InReg = true;
+            break;
+          }
+        }
+      }
+
+      // Collect discs and techniques used on this hole
+      final discsUsed = hole.throws
+          .where((t) => t.discName != null && t.discName!.isNotEmpty)
+          .map((t) => t.discName!)
+          .toList();
+
+      final techniquesUsed = hole.throws
+          .where((t) => t.technique != null)
+          .map((t) => t.technique!.name)
+          .toList();
+
+      // Get wind condition (use most common on this hole)
+      final windConditions = hole.throws
+          .where((t) => t.windDirection != null)
+          .map((t) => t.windDirection!.name)
+          .toList();
+      final dominantWind = windConditions.isNotEmpty
+          ? _getMostCommon(windConditions)
+          : 'none';
+
+      holeMetrics.add({
+        'holeNumber': hole.number,
+        'shotQuality': shotQuality,
+        'parOrBetter': parOrBetter,
+        'relativeScore': hole.relativeHoleScore,
+        'c1InReg': c1InReg,
+        'c2InReg': c2InReg,
+        'mistakes': holeMistakes,
+        'discs': discsUsed,
+        'techniques': techniquesUsed,
+        'windCondition': dominantWind,
+      });
+    }
+
+    // Step 2: Find flow state periods (4+ consecutive high-performance holes)
+    final List<FlowStatePeriod> flowPeriods = [];
+    int flowStart = -1;
+
+    for (int i = 0; i < holeMetrics.length; i++) {
+      final metric = holeMetrics[i];
+
+      // Flow state criteria:
+      // - Shot quality >= 80%
+      // - Par or better OR C2 in regulation
+      final meetsFlowCriteria =
+          metric['shotQuality'] >= 80.0 &&
+          (metric['parOrBetter'] == true || metric['c2InReg'] == true);
+
+      if (meetsFlowCriteria) {
+        // Start or continue flow state
+        if (flowStart == -1) {
+          flowStart = i;
+        }
+      } else {
+        // Flow state ended
+        if (flowStart != -1) {
+          final flowLength = i - flowStart;
+          if (flowLength >= 4) {
+            // Valid flow state - create period
+            final flowPeriod = _createFlowPeriod(
+              round,
+              holeMetrics,
+              flowStart,
+              i - 1,
+            );
+            flowPeriods.add(flowPeriod);
+          }
+          flowStart = -1;
+        }
+      }
+    }
+
+    // Check if flow state extends to the end of the round
+    if (flowStart != -1) {
+      final flowLength = holeMetrics.length - flowStart;
+      if (flowLength >= 4) {
+        final flowPeriod = _createFlowPeriod(
+          round,
+          holeMetrics,
+          flowStart,
+          holeMetrics.length - 1,
+        );
+        flowPeriods.add(flowPeriod);
+      }
+    }
+
+    // Step 3: Calculate overall flow statistics
+    final totalFlowHoles = flowPeriods.fold<int>(
+      0,
+      (sum, period) => sum + period.duration,
+    );
+    final flowPercentage = round.holes.isNotEmpty
+        ? (totalFlowHoles / round.holes.length) * 100
+        : 0.0;
+
+    // Find longest and best flow periods
+    FlowStatePeriod? longestFlow;
+    FlowStatePeriod? bestFlow;
+
+    if (flowPeriods.isNotEmpty) {
+      longestFlow = flowPeriods.reduce(
+        (a, b) => a.duration > b.duration ? a : b,
+      );
+
+      // Best flow = highest shot quality * duration
+      bestFlow = flowPeriods.reduce(
+        (a, b) =>
+            (a.shotQualityRate * a.duration) > (b.shotQualityRate * b.duration)
+            ? a
+            : b,
+      );
+    }
+
+    // Step 4: Identify flow triggers (common patterns across flow periods)
+    final List<String> flowTriggers = [];
+    if (flowPeriods.isNotEmpty) {
+      // Find most common discs across all flow periods
+      final allFlowDiscs = <String>[];
+      final allFlowTechniques = <String>[];
+
+      for (var period in flowPeriods) {
+        allFlowDiscs.addAll(period.commonDiscs);
+        allFlowTechniques.addAll(period.commonTechniques);
+      }
+
+      if (allFlowDiscs.isNotEmpty) {
+        final topDisc = _getMostCommon(allFlowDiscs);
+        final discCount = allFlowDiscs.where((d) => d == topDisc).length;
+        if (discCount >= 3) {
+          flowTriggers.add('$topDisc is your flow disc');
+        }
+      }
+
+      if (allFlowTechniques.isNotEmpty) {
+        final topTechnique = _getMostCommon(allFlowTechniques);
+        final techCount = allFlowTechniques
+            .where((t) => t == topTechnique)
+            .length;
+        if (techCount >= 3) {
+          flowTriggers.add('$topTechnique shots trigger your flow');
+        }
+      }
+
+      // Check if flow occurs at specific times (front/back 9)
+      final frontNineFlows = flowPeriods.where((p) => p.startHole <= 9).length;
+      final backNineFlows = flowPeriods.where((p) => p.startHole > 9).length;
+
+      if (frontNineFlows > backNineFlows * 1.5 && frontNineFlows >= 2) {
+        flowTriggers.add('You enter flow more in the front 9');
+      } else if (backNineFlows > frontNineFlows * 1.5 && backNineFlows >= 2) {
+        flowTriggers.add('You find flow more in the back 9');
+      }
+    }
+
+    // Step 5: Generate insights
+    final List<String> insights = [];
+
+    if (flowPeriods.isEmpty) {
+      insights.add(
+        'No flow states detected. Focus on stringing together 4+ consistent holes.',
+      );
+    } else {
+      insights.add(
+        'You entered flow state ${flowPeriods.length} time${flowPeriods.length > 1 ? 's' : ''} - great mental game!',
+      );
+
+      if (longestFlow != null && longestFlow.duration >= 6) {
+        insights.add(
+          'Your longest flow lasted ${longestFlow.duration} holes (${longestFlow.label}) - you can sustain excellence!',
+        );
+      }
+
+      if (bestFlow != null) {
+        insights.add(
+          'Peak flow: ${bestFlow.label} with ${bestFlow.shotQualityRate.toStringAsFixed(0)}% shot quality',
+        );
+      }
+
+      if (flowPercentage >= 50) {
+        insights.add(
+          'You spent ${flowPercentage.toStringAsFixed(0)}% of the round in flow - elite consistency!',
+        );
+      } else if (flowPercentage >= 30) {
+        insights.add(
+          'Flow state covered ${flowPercentage.toStringAsFixed(0)}% of your round - solid mental game.',
+        );
+      }
+
+      // Analyze gaps between flow states
+      if (flowPeriods.length >= 2) {
+        final gaps = <int>[];
+        for (int i = 1; i < flowPeriods.length; i++) {
+          gaps.add(flowPeriods[i].startHole - flowPeriods[i - 1].endHole - 1);
+        }
+        final avgGap = gaps.reduce((a, b) => a + b) / gaps.length;
+
+        if (avgGap <= 2) {
+          insights.add(
+            'You recover flow quickly after breaks - excellent mental reset ability.',
+          );
+        } else if (avgGap >= 5) {
+          insights.add(
+            'Long gaps between flow states - work on consistency to maintain peak performance.',
+          );
+        }
+      }
+    }
+
+    // Step 6: Calculate overall flow score (0-100)
+    double overallFlowScore = 0.0;
+    if (round.holes.length >= 4) {
+      // Components: percentage in flow (50%), number of periods (25%), average quality (25%)
+      final percentageScore = flowPercentage.clamp(0, 100) * 0.5;
+
+      final periodScore = flowPeriods.length >= 3
+          ? 25.0
+          : flowPeriods.length >= 2
+          ? 20.0
+          : flowPeriods.length == 1
+          ? 15.0
+          : 0.0;
+
+      final avgQuality = flowPeriods.isNotEmpty
+          ? flowPeriods.fold<double>(0.0, (sum, p) => sum + p.shotQualityRate) /
+                flowPeriods.length
+          : 0.0;
+      final qualityScore = (avgQuality * 0.25).clamp(0, 25);
+
+      overallFlowScore = percentageScore + periodScore + qualityScore;
+    }
+
+    return FlowStateAnalysis(
+      flowPeriods: flowPeriods,
+      totalFlowHoles: totalFlowHoles,
+      flowPercentage: flowPercentage,
+      longestFlow: longestFlow,
+      bestFlow: bestFlow,
+      flowTriggers: flowTriggers,
+      insights: insights,
+      overallFlowScore: overallFlowScore,
+    );
+  }
+
+  /// Helper to create a flow state period from a range of holes
+  FlowStatePeriod _createFlowPeriod(
+    DGRound round,
+    List<Map<String, dynamic>> holeMetrics,
+    int startIndex,
+    int endIndex,
+  ) {
+    final periodMetrics = holeMetrics.sublist(startIndex, endIndex + 1);
+    final duration = periodMetrics.length;
+
+    // Calculate aggregate stats for this period
+    final avgScore =
+        periodMetrics.fold<double>(
+          0.0,
+          (sum, m) => sum + (m['relativeScore'] as int),
+        ) /
+        duration;
+
+    final avgShotQuality =
+        periodMetrics.fold<double>(
+          0.0,
+          (sum, m) => sum + (m['shotQuality'] as double),
+        ) /
+        duration;
+
+    final birdieCount = periodMetrics
+        .where((m) => m['relativeScore'] < 0)
+        .length;
+    final parCount = periodMetrics.where((m) => m['relativeScore'] == 0).length;
+
+    final totalMistakes = periodMetrics.fold<int>(
+      0,
+      (sum, m) => sum + (m['mistakes'] as int),
+    );
+
+    // Collect all discs and techniques used in this period
+    final allDiscs = <String>[];
+    final allTechniques = <String>[];
+    final allWindConditions = <String>[];
+
+    for (var metric in periodMetrics) {
+      allDiscs.addAll(metric['discs'] as List<String>);
+      allTechniques.addAll(metric['techniques'] as List<String>);
+      allWindConditions.add(metric['windCondition'] as String);
+    }
+
+    // Get top 2 most common discs and techniques
+    final commonDiscs = _getTopN(allDiscs, 2);
+    final commonTechniques = _getTopN(allTechniques, 2);
+    final dominantWind = allWindConditions.isNotEmpty
+        ? _getMostCommon(allWindConditions)
+        : null;
+
+    // Determine flow quality based on shot quality and scoring
+    String flowQuality;
+    if (avgShotQuality >= 90 && avgScore <= -0.5) {
+      flowQuality = 'Elite';
+    } else if (avgShotQuality >= 85 && avgScore <= 0) {
+      flowQuality = 'Strong';
+    } else {
+      flowQuality = 'Moderate';
+    }
+
+    return FlowStatePeriod(
+      startHole: periodMetrics.first['holeNumber'] as int,
+      endHole: periodMetrics.last['holeNumber'] as int,
+      duration: duration,
+      avgScore: avgScore,
+      shotQualityRate: avgShotQuality,
+      birdieCount: birdieCount,
+      parCount: parCount,
+      mistakeCount: totalMistakes,
+      commonDiscs: commonDiscs,
+      commonTechniques: commonTechniques,
+      dominantWindCondition: dominantWind,
+      flowQuality: flowQuality,
+    );
+  }
+
+  /// Helper to find most common element in a list
+  String _getMostCommon(List<String> items) {
+    if (items.isEmpty) return '';
+
+    final counts = <String, int>{};
+    for (var item in items) {
+      counts[item] = (counts[item] ?? 0) + 1;
+    }
+
+    return counts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+  }
+
+  /// Helper to get top N most common elements
+  List<String> _getTopN(List<String> items, int n) {
+    if (items.isEmpty) return [];
+
+    final counts = <String, int>{};
+    for (var item in items) {
+      counts[item] = (counts[item] ?? 0) + 1;
+    }
+
+    final sorted = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sorted.take(n).map((e) => e.key).toList();
   }
 }

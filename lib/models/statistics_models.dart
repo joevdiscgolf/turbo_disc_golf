@@ -528,6 +528,9 @@ class PsychStats {
   /// Progressive score trend analysis throughout the round
   final ScoreTrend? scoreTrend;
 
+  /// Flow state analysis - identifying periods of peak performance
+  final FlowStateAnalysis? flowStateAnalysis;
+
   PsychStats({
     required this.transitionMatrix,
     required this.momentumMultiplier,
@@ -542,9 +545,86 @@ class PsychStats {
     this.last6Performance,
     required this.conditioningScore,
     this.scoreTrend,
+    this.flowStateAnalysis,
   });
 
   factory PsychStats.fromJson(Map<String, dynamic> json) =>
       _$PsychStatsFromJson(json);
   Map<String, dynamic> toJson() => _$PsychStatsToJson(this);
+}
+
+/// Represents a single flow state period (consecutive holes of peak performance)
+@JsonSerializable(explicitToJson: true)
+class FlowStatePeriod {
+  final int startHole; // Hole number where flow started (1-indexed)
+  final int endHole; // Hole number where flow ended (1-indexed)
+  final int duration; // Number of holes in flow state
+  final double avgScore; // Average relative score during flow
+  final double shotQualityRate; // Percentage of good shots
+  final int birdieCount;
+  final int parCount;
+  final int mistakeCount;
+  final List<String> commonDiscs; // Most used discs during flow
+  final List<String> commonTechniques; // Most used techniques during flow
+  final String? dominantWindCondition; // Most common wind condition
+  final String flowQuality; // "Elite", "Strong", "Moderate"
+
+  FlowStatePeriod({
+    required this.startHole,
+    required this.endHole,
+    required this.duration,
+    required this.avgScore,
+    required this.shotQualityRate,
+    required this.birdieCount,
+    required this.parCount,
+    required this.mistakeCount,
+    required this.commonDiscs,
+    required this.commonTechniques,
+    this.dominantWindCondition,
+    required this.flowQuality,
+  });
+
+  /// Total holes that were par or better
+  int get parOrBetterCount => birdieCount + parCount;
+
+  /// Display label for the flow period
+  String get label => duration == 1 ? 'Hole $startHole' : 'Holes $startHole-$endHole';
+
+  factory FlowStatePeriod.fromJson(Map<String, dynamic> json) =>
+      _$FlowStatePeriodFromJson(json);
+  Map<String, dynamic> toJson() => _$FlowStatePeriodToJson(this);
+}
+
+/// Complete flow state analysis
+@JsonSerializable(explicitToJson: true)
+class FlowStateAnalysis {
+  final List<FlowStatePeriod> flowPeriods;
+  final int totalFlowHoles; // Total holes spent in flow state
+  final double flowPercentage; // Percentage of round spent in flow
+  final FlowStatePeriod? longestFlow; // Longest flow period
+  final FlowStatePeriod? bestFlow; // Highest quality flow period
+  final List<String> flowTriggers; // Common patterns that trigger flow
+  final List<String> insights; // Actionable insights about flow state
+  final double overallFlowScore; // 0-100 score for flow state performance
+
+  FlowStateAnalysis({
+    required this.flowPeriods,
+    required this.totalFlowHoles,
+    required this.flowPercentage,
+    this.longestFlow,
+    this.bestFlow,
+    required this.flowTriggers,
+    required this.insights,
+    required this.overallFlowScore,
+  });
+
+  /// Whether any flow states were detected
+  bool get hasFlowStates => flowPeriods.isNotEmpty;
+
+  /// Number of distinct flow periods
+  int get flowCount => flowPeriods.length;
+
+  factory FlowStateAnalysis.fromJson(Map<String, dynamic> json) =>
+      _$FlowStateAnalysisFromJson(json);
+  Map<String, dynamic> toJson() => _$FlowStateAnalysisToJson(this);
 }

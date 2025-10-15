@@ -51,27 +51,27 @@ class DiscsTab extends StatelessWidget {
         });
 
     // Get all discs with the top birdie rate(s) - could be more than 3
-    final topBirdieRate = sortedDiscs.isNotEmpty
-        ? sortedDiscs.first.value
-        : 0.0;
-    final topPerformingDiscs = sortedDiscs
-        .where((disc) => disc.value == topBirdieRate && disc.value > 0)
-        .toList();
+    // final topBirdieRate = sortedDiscs.isNotEmpty
+    //     ? sortedDiscs.first.value
+    //     : 0.0;
+    // final topPerformingDiscs = sortedDiscs
+    //     .where((disc) => disc.value == topBirdieRate && disc.value > 0)
+    //     .toList();
 
     // Get all discs with tee shots (birdie rate > 0 means used off tee)
-    final discsWithTeeSshots = sortedDiscs
-        .where((disc) => discBirdieRates.containsKey(disc.key))
-        .toList();
+    // final discsWithTeeSshots = sortedDiscs
+    //     .where((disc) => discBirdieRates.containsKey(disc.key))
+    //     .toList();
 
     // Get worst performing discs (lowest birdie rate among discs with tee shots)
-    final worstBirdieRate = discsWithTeeSshots.isNotEmpty
-        ? discsWithTeeSshots.last.value
-        : 0.0;
-    final worstPerformingDiscs = discsWithTeeSshots
-        .where(
-          (disc) => disc.value == worstBirdieRate && disc.value < topBirdieRate,
-        )
-        .toList();
+    // final worstBirdieRate = discsWithTeeSshots.isNotEmpty
+    //     ? discsWithTeeSshots.last.value
+    //     : 0.0;
+    // final worstPerformingDiscs = discsWithTeeSshots
+    //     .where(
+    //       (disc) => disc.value == worstBirdieRate && disc.value < topBirdieRate,
+    //     )
+    //     .toList();
 
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
@@ -114,123 +114,123 @@ class DiscsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildTopPerformingDiscs(
-    BuildContext context,
-    List<MapEntry<String, double>> topDiscs,
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Top Performing Discs',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Birdie Rate by Disc',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: topDiscs.map((entry) {
-                return _buildTopDiscCard(
-                  context,
-                  entry.key,
-                  entry.value,
-                  const Color(0xFF00F5D4),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildTopPerformingDiscs(
+  //   BuildContext context,
+  //   List<MapEntry<String, double>> topDiscs,
+  // ) {
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'Top Performing Discs',
+  //             style: Theme.of(
+  //               context,
+  //             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+  //           ),
+  //           const SizedBox(height: 4),
+  //           Text(
+  //             'Birdie Rate by Disc',
+  //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //               color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Wrap(
+  //             spacing: 12,
+  //             runSpacing: 12,
+  //             children: topDiscs.map((entry) {
+  //               return _buildTopDiscCard(
+  //                 context,
+  //                 entry.key,
+  //                 entry.value,
+  //                 const Color(0xFF00F5D4),
+  //               );
+  //             }).toList(),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildWorstPerformingDiscs(
-    BuildContext context,
-    List<MapEntry<String, double>> worstDiscs,
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Worst Performing Discs',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Birdie Rate by Disc',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: worstDiscs.map((entry) {
-                return _buildTopDiscCard(
-                  context,
-                  entry.key,
-                  entry.value,
-                  const Color(0xFFFF7A7A),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildWorstPerformingDiscs(
+  //   BuildContext context,
+  //   List<MapEntry<String, double>> worstDiscs,
+  // ) {
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'Worst Performing Discs',
+  //             style: Theme.of(
+  //               context,
+  //             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+  //           ),
+  //           const SizedBox(height: 4),
+  //           Text(
+  //             'Birdie Rate by Disc',
+  //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //               color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Wrap(
+  //             spacing: 12,
+  //             runSpacing: 12,
+  //             children: worstDiscs.map((entry) {
+  //               return _buildTopDiscCard(
+  //                 context,
+  //                 entry.key,
+  //                 entry.value,
+  //                 const Color(0xFFFF7A7A),
+  //               );
+  //             }).toList(),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildTopDiscCard(
-    BuildContext context,
-    String discName,
-    double birdieRate,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '${birdieRate.toStringAsFixed(0)}%',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            discName,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildTopDiscCard(
+  //   BuildContext context,
+  //   String discName,
+  //   double birdieRate,
+  //   Color color,
+  // ) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //     decoration: BoxDecoration(
+  //       color: color.withValues(alpha: 0.1),
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: color.withValues(alpha: 0.3)),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Text(
+  //           '${birdieRate.toStringAsFixed(0)}%',
+  //           style: Theme.of(context).textTheme.titleLarge?.copyWith(
+  //             fontWeight: FontWeight.bold,
+  //             color: color,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 4),
+  //         Text(
+  //           discName,
+  //           style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //             color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildDiscPerformanceCard(
     BuildContext context,
@@ -270,18 +270,18 @@ class DiscsTab extends StatelessWidget {
                     Text(
                       'Avg: ${avgScore >= 0 ? '+' : ''}${avgScore.toStringAsFixed(1)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: avgScore < 0
-                                ? const Color(0xFF00F5D4)
-                                : const Color(0xFFFF7A7A),
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: avgScore < 0
+                            ? const Color(0xFF00F5D4)
+                            : const Color(0xFFFF7A7A),
+                      ),
                     ),
                     Text(
                       'Throws: ${throws.length}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -414,22 +414,22 @@ class DiscsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildStatChip(BuildContext context, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+  // Widget _buildStatChip(BuildContext context, String label, Color color) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //     decoration: BoxDecoration(
+  //       color: color.withValues(alpha: 0.1),
+  //       borderRadius: BorderRadius.circular(12),
+  //     ),
+  //     child: Text(
+  //       label,
+  //       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //         color: color,
+  //         fontWeight: FontWeight.bold,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildStatBar(
     BuildContext context,
