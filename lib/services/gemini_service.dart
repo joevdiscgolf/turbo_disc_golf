@@ -229,13 +229,16 @@ INSTRUCTIONS:
 2. For each throw, assign index starting from 0 (0=tee shot, 1=second throw, etc.)
 3. ONLY include distanceFeet when the actual throw distance is explicitly stated
 4. Include brief natural language description in the "notes" field
-5. Map landing positions to landingSpot enum based on distance from basket:
+5. Map landing positions to landingSpot enum based on WHERE THE DISC ENDED UP (distance from basket):
    - "made" or "in the basket" = in_basket
    - Within 10 feet or "parked" = parked
    - 10-33 feet or "C1" = circle_1
    - 33-66 feet or "C2" = circle_2
    - On the intended playing surface beyond C2 = fairway
-   - Off the intended line or in rough/trees = off_fairway (NOT for missed putts!)
+   - ONLY use off_fairway when user EXPLICITLY says "off the fairway" or "off fairway"
+   - "Hit a tree", "caught a tree", "clipped a tree", "stopped by tree" do NOT mean off_fairway
+   - Mentions of "trees", "rough", "woods", "bushes" alone do NOT mean off_fairway (fairway can include these!)
+   - Prioritize FINAL POSITION over obstacles hit: if disc ends up 80 ft from basket, use circle_2 (not off_fairway)
    - OB, water, or out of bounds = out_of_bounds
    - Missed putts: Usually omit landingSpot or use parked/circle_1 based on distance
    - NEVER use off_fairway for missed putts - putts stay near the basket
@@ -257,7 +260,10 @@ SCORE-FIRST VALIDATION: When the player states their score (birdie, par, bogey, 
 - Calculate the expected throw count from the stated score FIRST
 - Then ensure you parse EXACTLY that many throws
 - If you can't find enough throws, you MISSED one - re-analyze the description
+- If you have TOO MANY throws, you probably created a throw from a position description (like "had a 20 ft putt")
 - Common score phrases: "I took a bogey", "I made par", "for birdie", "so I got to par", "tapped in for bogey"
+- CRITICAL: "made [distance] putt for [score]" is the FINAL score - count backwards to validate
+- Example: "made 20 ft putt for bogey" on par 4 = EXACTLY 5 throws (not 6, not 4)
 - Examples:
   - "I took a bogey" on par 3 = 4 throws total
   - "for par" on par 3 = 3 throws
@@ -271,9 +277,23 @@ For EVERY hole, count throws carefully by analyzing the narrative:
 3. NEVER put information about a second throw in the notes of the first throw
    - WRONG: "ended up 25 ft long and I missed the putt" in one throw's notes
    - CORRECT: First throw notes "ended up 25 ft long", SEPARATE throw for "missed the putt"
-4. EVERY HOLE MUST END WITH landingSpot: in_basket - holes must be completed!
-5. "Took a bogey/par/birdie" or "for par/birdie/bogey" = they FINISHED the hole, add final made putt if missing
-6. Pay special attention to phrases that indicate multiple throws:
+4. CRITICAL - DON'T OVER-SPLIT SINGLE THROW DESCRIPTIONS:
+   - "threw X and then ended up [position]" = ONE throw (the "ended up" describes where it landed)
+   - "threw X out to the right and ended up OB" = ONE throw
+   - "threw X and it went [direction/distance]" = ONE throw
+   - ONLY create a new throw when a SECOND ACTION is described (re-tee, putt, approach, etc.)
+   - After OB, the next throw is typically either a re-tee OR a putt/approach from drop zone
+   - "missed putt and had a [distance] putt for [score]" = ONE throw (the "had a X ft putt" describes where it ended up)
+   - "had a [distance] putt for [score]" is DESCRIBING POSITION after a previous action, NOT a new throw
+   - Only "made/missed the putt" or "threw" indicates an actual new throwing action
+5. EVERY HOLE MUST END WITH landingSpot: in_basket - holes must be completed!
+6. "Took a bogey/par/birdie" or "for par/birdie/bogey" = they FINISHED the hole, add final made putt if missing
+7. CRITICAL - "PARKED" ALWAYS NEEDS A TAP-IN:
+   - "parked it and birdied" = 2 throws (parked + tap-in with landingSpot: in_basket)
+   - "parked at 10 ft so I birdied" = the approach that parked + tap-in for birdie
+   - "parked it 2 feet away" followed by score mention = add tap-in (distanceFeet: 8, landingSpot: in_basket)
+   - NEVER end a hole with landingSpot: parked - must add final putt with landingSpot: in_basket
+8. Pay special attention to phrases that indicate multiple throws:
    - "Two putts" or "two-putted" = ALWAYS 2 separate putt throws (NEVER combine!)
    - "Three putts" or "3-putted" = ALWAYS 3 separate putt throws
    - "Missed the putt" or "I missed the putt" = ALWAYS a separate throw (don't put this in notes of previous throw!)
@@ -292,10 +312,14 @@ For EVERY hole, count throws carefully by analyzing the narrative:
    - "Tap in" or "tapped in" or "tap that in" = ALWAYS a separate throw (ALWAYS use 8 feet for tap-in distance)
    - "Pitch out" = a separate approach/scramble throw
    - "Scrambled" = a recovery throw
+   - "approach from X AND made Y ft putt" = 2 SEPARATE throws (approach + putt)
+   - "approach into the green AND made putt" = 2 SEPARATE throws (approach + putt)
+   - NEVER combine approach and putt into one throw - they are ALWAYS separate actions
    CRITICAL: When you see "laid up" followed by "tap in", you MUST create two separate throw entries!
    CRITICAL: When you see "which left me" or "left me a putt", the previous action was a separate throw!
    CRITICAL: When you see "two putts", you MUST create two separate throw entries!
    CRITICAL: "and tap that in for [score]" almost NEVER means hole-in-one - it's a separate tap-in after previous throw(s)!
+   CRITICAL: "approach AND made putt" = 2 throws (approach + putt), NEVER combine these!
 7. Handle penalties correctly:
    - "OB" or "out of bounds" = Add penaltyStrokes: 1 to that throw
    - "Water hazard" or "lost disc" = Add penaltyStrokes: 1 to that throw
@@ -409,6 +433,47 @@ CORRECT (3 throws for par on par 3):
 - index 0: Tee shot, technique: forehand, notes: "ended up 25 ft long", landingSpot: circle_1
 - index 1: Missed putt (the "I missed the putt" is throw #2), distanceFeet: 25, notes: "went straight through the basket"
 - index 2: Made par putt (the "got to par" is throw #3), distanceFeet: 8, landingSpot: in_basket
+
+Hole 4: "380 ft par 3. I threw a backhand hyzer with a pd2 out to the right and then I ended up 25 ft long and out of bounds and I made my par putt from 25 ft"
+YOUR MISTAKE: Split one tee shot description into TWO throws (tee + phantom approach)
+CRITICAL: "threw X and then I ended up [position]" describes ONE throw, not two!
+CORRECT (2 throws for par on par 3):
+- index 0: Tee shot, technique: backhand, shotShape: hyzer, notes: "threw pd2 out to the right, ended up 25 ft long and out of bounds", landingSpot: out_of_bounds, penaltyStrokes: 1
+- index 1: Made putt from drop zone, distanceFeet: 25, notes: "made par putt", landingSpot: in_basket
+
+Hole 1: "600 ft par 4. I threw my halo Destroyer off the tee and it ended up just into the trees and 140 ft away and I threw a forehand upshot with my razor claw and that parked at 10 ft away so I birdied"
+YOUR MISTAKE: Only counted 2 throws, missing tap-in after "parked...so I birdied"
+CRITICAL: "parked...so I birdied" means they FINISHED the hole - add tap-in!
+CORRECT (3 throws for birdie on par 4):
+- index 0: Tee shot, technique: backhand, notes: "ended up just into the trees", landingSpot: fairway
+- index 1: Upshot, technique: forehand, notes: "parked at 10 ft", landingSpot: parked
+- index 2: Tap-in for birdie, distanceFeet: 8, landingSpot: in_basket
+
+Hole 2: "170 ft par 3. I threw a forehand tactic out to the left side on hyzer and parked it two feet away"
+YOUR MISTAKE: Only counted 1 throw, missing tap-in after "parked"
+CRITICAL: When hole ends with "parked" and no more description, add tap-in to complete hole
+CORRECT (2 throws for birdie on par 3):
+- index 0: Tee shot, technique: forehand, shotShape: hyzer, notes: "parked two feet away", landingSpot: parked
+- index 1: Tap-in, distanceFeet: 8, landingSpot: in_basket
+
+Hole 5: "440 ft par 4. I threw a forehand off the tee and had another forehand approach from 140 ft into the green and made a 23 ft putt for birdie"
+YOUR MISTAKE: Combined approach and putt into ONE throw
+CRITICAL: "approach from X AND made Y ft putt" = TWO separate throws!
+CORRECT (3 throws for birdie on par 4):
+- index 0: Tee drive, technique: forehand, landingSpot: fairway
+- index 1: Approach, technique: forehand, notes: "approach from 140 ft into the green"
+- index 2: Made putt, distanceFeet: 23, notes: "made putt for birdie", landingSpot: in_basket
+
+Hole 17: "700 ft par 4. I threw a hyzer flip and ended up in the fairway. I threw a skip shot which rolled and ended up 35 ft away. I missed that putt for birdie and had a 20 ft putt back for par. I missed that putt for par and made a 20-ft putt for bogey."
+YOUR MISTAKE: Created a throw for "had a 20 ft putt back for par" - that's describing position, not a new throw! Counted 6 throws (double bogey) instead of 5 (bogey)
+CRITICAL: "had a [distance] putt for [score]" describes where the previous putt ended up, NOT a new throw!
+CRITICAL: "made X ft putt for bogey" = the final score is bogey, validate throw count matches!
+CORRECT (5 throws for bogey on par 4):
+- index 0: Tee drive, shotShape: hyzer_flip, landingSpot: fairway
+- index 1: Approach/skip shot, notes: "rolled and ended up 35 ft away", landingSpot: circle_2
+- index 2: Missed birdie putt, distanceFeet: 35, notes: "missed putt for birdie, had 20 ft putt back", landingSpot: circle_1
+- index 3: Missed par putt, distanceFeet: 20, notes: "missed putt for par", landingSpot: circle_1
+- index 4: Made bogey putt, distanceFeet: 20, notes: "made putt for bogey", landingSpot: in_basket
 
 ENUM CATEGORY EXAMPLES - CORRECT USAGE:
 Example: "Threw a backhand flex shot"
@@ -663,13 +728,16 @@ INSTRUCTIONS:
 5. Assign purpose field based on the throw's role: tee_drive for first throw, approach for positioning shots, putt for basket attempts
 6. ONLY include distanceFeet when the actual throw distance is explicitly stated
 7. Include brief natural language description in the "notes" field
-8. Map landing positions to landingSpot enum based on distance from basket:
+8. Map landing positions to landingSpot enum based on WHERE THE DISC ENDED UP (distance from basket):
    - "made" or "in the basket" = in_basket
    - Within 10 feet or "parked" = parked
    - 10-33 feet or "C1" = circle_1
    - 33-66 feet or "C2" = circle_2
    - On the intended playing surface beyond C2 = fairway
-   - Off the intended line or in rough/trees = off_fairway (NOT for missed putts!)
+   - ONLY use off_fairway when user EXPLICITLY says "off the fairway" or "off fairway"
+   - "Hit a tree", "caught a tree", "clipped a tree", "stopped by tree" do NOT mean off_fairway
+   - Mentions of "trees", "rough", "woods", "bushes" alone do NOT mean off_fairway (fairway can include these!)
+   - Prioritize FINAL POSITION over obstacles hit: if disc ends up 80 ft from basket, use circle_2 (not off_fairway)
    - OB, water, or out of bounds = out_of_bounds
    - Missed putts: Usually omit landingSpot or use parked/circle_1 based on distance
    - NEVER use off_fairway for missed putts - putts stay near the basket
@@ -708,8 +776,22 @@ For EVERY hole, parse throws by analyzing the narrative:
 3. NEVER put information about a second throw in the notes of the first throw
    - WRONG: "ended up 25 ft long and I missed the putt" in one throw's notes
    - CORRECT: First throw notes "ended up 25 ft long", SEPARATE throw for "missed the putt"
-4. Parse throws as described - if they say the hole is finished, end with landingSpot: in_basket
-5. Pay special attention to phrases that indicate multiple throws:
+4. CRITICAL - DON'T OVER-SPLIT SINGLE THROW DESCRIPTIONS:
+   - "threw X and then ended up [position]" = ONE throw (the "ended up" describes where it landed)
+   - "threw X out to the right and ended up OB" = ONE throw
+   - "threw X and it went [direction/distance]" = ONE throw
+   - ONLY create a new throw when a SECOND ACTION is described (re-tee, putt, approach, etc.)
+   - After OB, the next throw is typically either a re-tee OR a putt/approach from drop zone
+   - "missed putt and had a [distance] putt for [score]" = ONE throw (the "had a X ft putt" describes where it ended up)
+   - "had a [distance] putt for [score]" is DESCRIBING POSITION after a previous action, NOT a new throw
+   - Only "made/missed the putt" or "threw" indicates an actual new throwing action
+5. Parse throws as described - if they say the hole is finished, end with landingSpot: in_basket
+6. CRITICAL - "PARKED" ALWAYS NEEDS A TAP-IN:
+   - "parked it and birdied" = 2 throws (parked + tap-in with landingSpot: in_basket)
+   - "parked at 10 ft so I birdied" = the approach that parked + tap-in for birdie
+   - "parked it 2 feet away" followed by score mention = add tap-in (distanceFeet: 8, landingSpot: in_basket)
+   - NEVER end a hole with landingSpot: parked - must add final putt with landingSpot: in_basket
+7. Pay special attention to phrases that indicate multiple throws:
    - "Two putts" or "two-putted" = ALWAYS 2 separate putt throws (NEVER combine!)
    - "Three putts" or "3-putted" = ALWAYS 3 separate putt throws
    - "Missed the putt" or "I missed the putt" = ALWAYS a separate throw (don't put this in notes of previous throw!)
@@ -725,10 +807,14 @@ For EVERY hole, parse throws by analyzing the narrative:
    - "Tap in" or "tapped in" or "tap that in" = ALWAYS a separate throw (ALWAYS use 8 feet for tap-in distance)
    - "Pitch out" = a separate approach/scramble throw
    - "Scrambled" = a recovery throw
+   - "approach from X AND made Y ft putt" = 2 SEPARATE throws (approach + putt)
+   - "approach into the green AND made putt" = 2 SEPARATE throws (approach + putt)
+   - NEVER combine approach and putt into one throw - they are ALWAYS separate actions
    CRITICAL: When you see "laid up" followed by "tap in", you MUST create two separate throw entries!
    CRITICAL: When you see "which left me" or "left me a putt", the previous action was a separate throw!
    CRITICAL: When you see "two putts", you MUST create two separate throw entries!
    CRITICAL: "and tap that in for [score]" almost NEVER means hole-in-one - it's a separate tap-in after previous throw(s)!
+   CRITICAL: "approach AND made putt" = 2 throws (approach + putt), NEVER combine these!
 6. Handle penalties correctly:
    - "OB" or "out of bounds" = Add penaltyStrokes: 1 to that throw
    - "Water hazard" or "lost disc" = Add penaltyStrokes: 1 to that throw

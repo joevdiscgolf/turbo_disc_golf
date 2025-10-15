@@ -75,7 +75,7 @@ class MomentumTab extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Conditioning & Focus
-          ConditioningCard(stats: momentumStats),
+          ConditioningCard(stats: momentumStats, round: round),
 
           const SizedBox(height: 16),
 

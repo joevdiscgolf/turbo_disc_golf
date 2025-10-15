@@ -66,11 +66,13 @@ class MistakesAnalysisService {
         final actualStrokeNumber = strokeNumbers[i];
 
         // Check for indicators of a good throw
-        final isGoodLanding =
-            discThrow.landingSpot == LandingSpot.circle1 ||
-            discThrow.landingSpot == LandingSpot.circle2 ||
-            discThrow.landingSpot == LandingSpot.parked ||
-            discThrow.landingSpot == LandingSpot.fairway;
+        // For putts, only in_basket is good; for other throws, C1/C2/parked/fairway are good
+        final isGoodLanding = discThrow.purpose == ThrowPurpose.putt
+            ? discThrow.landingSpot == LandingSpot.inBasket
+            : (discThrow.landingSpot == LandingSpot.circle1 ||
+                discThrow.landingSpot == LandingSpot.circle2 ||
+                discThrow.landingSpot == LandingSpot.parked ||
+                discThrow.landingSpot == LandingSpot.fairway);
 
         final hasGoodRating =
             discThrow.resultRating == ThrowResultRating.excellent ||
@@ -86,9 +88,10 @@ class MistakesAnalysisService {
         final isLikelyGoodThrow =
             isGoodLanding || hasGoodRating || nextThrowIsShortPutt;
 
-        // Recovery after penalty logic
+        // Recovery after penalty logic (putts are never considered recovery)
         final isRecoveryAfterPenalty =
             i > 0 &&
+            discThrow.purpose != ThrowPurpose.putt &&
             (hole.throws[i - 1].penaltyStrokes ?? 0) > 0 &&
             isLikelyGoodThrow;
 

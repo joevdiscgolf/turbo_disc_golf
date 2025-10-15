@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/line_chart_painter.dart';
 
 class ConditioningCard extends StatelessWidget {
   final MomentumStats stats;
+  final DGRound round;
 
-  const ConditioningCard({super.key, required this.stats});
+  const ConditioningCard({super.key, required this.stats, required this.round});
 
   @override
   Widget build(BuildContext context) {
@@ -278,6 +281,9 @@ class ConditioningCard extends StatelessWidget {
             ],
           ),
         ),
+
+        // Add hole-by-hole line chart
+        _buildHoleByHoleLineChart(context),
       ],
     );
   }
@@ -465,6 +471,72 @@ class ConditioningCard extends StatelessWidget {
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHoleByHoleLineChart(BuildContext context) {
+    // Prepare data points from round holes
+    final dataPoints = <LineChartDataPoint>[];
+    for (final hole in round.holes) {
+      dataPoints.add(
+        LineChartDataPoint(
+          holeNumber: hole.number,
+          score: hole.relativeHoleScore.toDouble(),
+        ),
+      );
+    }
+
+    if (dataPoints.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Find max absolute score for scaling
+    final maxAbsScore = dataPoints
+        .map((p) => p.score.abs())
+        .reduce((a, b) => a > b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            const Icon(
+              Icons.show_chart,
+              color: Color(0xFF2196F3),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Hole-by-Hole',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: SizedBox(
+            height: 200,
+            child: CustomPaint(
+              painter: LineChartPainter(
+                dataPoints: dataPoints,
+                maxAbsScore: maxAbsScore,
+                totalHoles: round.holes.length,
+              ),
+              size: Size.infinite,
+            ),
           ),
         ),
       ],
