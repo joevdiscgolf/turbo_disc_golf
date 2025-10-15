@@ -69,7 +69,7 @@ class DiscThrowParser {
       shotShape: shotShape,
       stance: stance,
       power: power,
-      distanceFeet: distanceFeet,
+      distanceFeetBeforeThrow: distanceFeet,
       elevationChangeFeet: elevationFeet,
       windDirection: windDir,
       windStrength: windStrength,

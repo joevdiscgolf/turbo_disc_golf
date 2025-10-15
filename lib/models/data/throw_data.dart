@@ -13,7 +13,8 @@ class DiscThrow {
     this.shotShape,
     this.stance,
     this.power,
-    this.distanceFeet,
+    this.distanceFeetBeforeThrow,
+    this.distanceFeetAfterThrow,
     this.elevationChangeFeet,
     this.windDirection,
     this.windStrength,
@@ -24,6 +25,7 @@ class DiscThrow {
     this.notes,
     this.rawText,
     this.parseConfidence,
+    this.discName,
     this.disc,
   });
 
@@ -38,7 +40,9 @@ class DiscThrow {
   final ThrowPower? power;
 
   /// Distances — store both when possible; LLM should parse numeric value and convert.
-  final int? distanceFeet;
+  final int? distanceFeetBeforeThrow;
+  final int? distanceFeetAfterThrow;
+
   final double? elevationChangeFeet;
 
   final WindDirection? windDirection;
@@ -53,6 +57,7 @@ class DiscThrow {
   final String? notes; // short human-friendly note
   final String? rawText; // original sentence/snippet parsed
   final double? parseConfidence;
+  final String? discName; //(to be matched to bag)
   final DGDisc? disc;
 
   factory DiscThrow.fromJson(Map<String, dynamic> json) =>

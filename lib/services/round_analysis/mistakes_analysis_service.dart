@@ -70,9 +70,9 @@ class MistakesAnalysisService {
         final isGoodLanding = discThrow.purpose == ThrowPurpose.putt
             ? discThrow.landingSpot == LandingSpot.inBasket
             : (discThrow.landingSpot == LandingSpot.circle1 ||
-                discThrow.landingSpot == LandingSpot.circle2 ||
-                discThrow.landingSpot == LandingSpot.parked ||
-                discThrow.landingSpot == LandingSpot.fairway);
+                  discThrow.landingSpot == LandingSpot.circle2 ||
+                  discThrow.landingSpot == LandingSpot.parked ||
+                  discThrow.landingSpot == LandingSpot.fairway);
 
         final hasGoodRating =
             discThrow.resultRating == ThrowResultRating.excellent ||
@@ -82,7 +82,7 @@ class MistakesAnalysisService {
         final bool nextThrowIsShortPutt =
             i < hole.throws.length - 1 &&
             hole.throws[i + 1].purpose == ThrowPurpose.putt &&
-            (hole.throws[i + 1].distanceFeet ?? 999) <= 33;
+            (hole.throws[i + 1].distanceFeetBeforeThrow ?? 999) <= 33;
 
         // Check if this was likely a good throw based on multiple signals
         final isLikelyGoodThrow =
@@ -154,8 +154,9 @@ class MistakesAnalysisService {
     final purpose = discThrow.purpose;
     final lossReason = analysis.lossReason;
 
-    if (purpose == ThrowPurpose.putt && discThrow.distanceFeet != null) {
-      final distance = discThrow.distanceFeet!;
+    if (purpose == ThrowPurpose.putt &&
+        discThrow.distanceFeetBeforeThrow != null) {
+      final distance = discThrow.distanceFeetBeforeThrow!;
       if (distance <= 12) return 'Missed short putt';
       if (distance <= 33) return 'Missed C1X putt';
       if (distance <= 66) return 'Missed C2 putt';

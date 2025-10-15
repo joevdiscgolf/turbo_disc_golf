@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
@@ -275,13 +276,13 @@ class MistakesTab extends StatelessWidget {
             ...mistakes.map((mistake) {
               final holeNumber = mistake['holeNumber'];
               final throwIndex = mistake['throwIndex'];
-              final discThrow = mistake['throw'];
+              final DiscThrow discThrow = mistake['throw'];
               final label = mistake['label'];
 
               final List<String> subtitleParts = [];
               subtitleParts.add('Hole $holeNumber, Shot ${throwIndex + 1}');
-              if (discThrow.distanceFeet != null) {
-                subtitleParts.add('${discThrow.distanceFeet} ft');
+              if (discThrow.distanceFeetBeforeThrow != null) {
+                subtitleParts.add('${discThrow.distanceFeetBeforeThrow} ft');
               }
 
               return Card(

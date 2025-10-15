@@ -38,6 +38,8 @@ class PuttingTab extends StatelessWidget {
               horizontalPadding: 0,
             ),
           ),
+          // Heat map visualization
+          PuttHeatMapCard(round: round),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: PuttingDistanceCard(
@@ -49,18 +51,10 @@ class PuttingTab extends StatelessWidget {
             ),
           ),
 
-          // Old cards (commented out but kept for reference)
-          // _buildKPICards(context, puttingSummary),
-          // _buildDistanceBuckets(context, puttingSummary),
-
-          // _buildBirdiePuttDistance(context, avgBirdiePuttDist),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildComebackPutts(context, comebackStats),
           ),
-
-          // Heat map visualization
-          PuttHeatMapCard(round: round),
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

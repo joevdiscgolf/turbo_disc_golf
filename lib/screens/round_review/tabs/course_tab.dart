@@ -280,38 +280,6 @@ class CourseTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Birdie % by Par',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: birdieRateByPar.entries.expand((entry) sync* {
-                    yield Expanded(
-                      child: _buildSmallStatCard(
-                        context,
-                        'Par ${entry.key}',
-                        '${entry.value.toStringAsFixed(0)}%',
-                      ),
-                    );
-                    if (entry != birdieRateByPar.entries.last) {
-                      yield const SizedBox(width: 12);
-                    }
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
                   'Performance by Hole Length',
                   style: Theme.of(
                     context,
@@ -430,28 +398,28 @@ class CourseTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSmallStatCard(BuildContext context, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF00F5D4),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
+  // Widget _buildSmallStatCard(BuildContext context, String label, String value) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(vertical: 12),
+  //     decoration: BoxDecoration(
+  //       color: Theme.of(context).colorScheme.surfaceContainerHighest,
+  //       borderRadius: BorderRadius.circular(8),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Text(
+  //           value,
+  //           style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  //             fontWeight: FontWeight.bold,
+  //             color: const Color(0xFF00F5D4),
+  //           ),
+  //         ),
+  //         const SizedBox(height: 4),
+  //         Text(label, style: Theme.of(context).textTheme.bodySmall),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildPerformanceByPar(
     BuildContext context,
@@ -747,6 +715,7 @@ class CourseTab extends StatelessWidget {
 
   Widget _buildHolesList(BuildContext context, List<DGHole> holes) {
     final birdieHoles = holes.where((h) => h.relativeHoleScore < 0).toList();
+    final parHoles = holes.where((h) => h.relativeHoleScore == 0).toList();
     final bogeyHoles = holes.where((h) => h.relativeHoleScore > 0).toList();
 
     return Column(
@@ -816,7 +785,73 @@ class CourseTab extends StatelessWidget {
             );
           }),
         ],
-        if (birdieHoles.isNotEmpty && bogeyHoles.isNotEmpty) ...[
+        if (birdieHoles.isNotEmpty &&
+            (parHoles.isNotEmpty || bogeyHoles.isNotEmpty)) ...[
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 8),
+        ],
+        if (parHoles.isNotEmpty) ...[
+          Text(
+            'Pars (${parHoles.length})',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ...parHoles.map((hole) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${hole.number}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Par',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+        if (parHoles.isNotEmpty && bogeyHoles.isNotEmpty) ...[
           const SizedBox(height: 12),
           const Divider(),
           const SizedBox(height: 8),

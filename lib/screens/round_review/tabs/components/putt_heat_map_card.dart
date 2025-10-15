@@ -31,17 +31,6 @@ class PuttHeatMapCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'Putt Location Heat Maps',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 8),
-
         // Legend
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -57,17 +46,17 @@ class PuttHeatMapCard extends StatelessWidget {
         const SizedBox(height: 12),
 
         // PageView with heat maps
-        SizedBox(
-          height: 400,
-          child: PageView(
-            physics: const ClampingScrollPhysics(),
-            padEnds: false,
-            controller: PageController(viewportFraction: 0.9),
-            children: [
-              if (c1Putts.isNotEmpty)
-                Container(
-                  margin: EdgeInsets.only(left: 16),
-                  child: _buildHeatMapCard(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SizedBox(
+            height: 400,
+            child: PageView(
+              physics: const ClampingScrollPhysics(),
+              padEnds: false,
+              controller: PageController(viewportFraction: 0.9),
+              children: [
+                if (c1Putts.isNotEmpty)
+                  _buildHeatMapCard(
                     context,
                     0,
                     'Circle 1 (10-33 ft)',
@@ -76,11 +65,8 @@ class PuttHeatMapCard extends StatelessWidget {
                     33,
                     PuttingCircle.circle1,
                   ),
-                ),
-              if (c2Putts.isNotEmpty)
-                Container(
-                  margin: EdgeInsets.only(right: 16),
-                  child: _buildHeatMapCard(
+                if (c2Putts.isNotEmpty)
+                  _buildHeatMapCard(
                     context,
                     c1Putts.isEmpty ? 0 : 1,
                     'Circle 2 (33-66 ft)',
@@ -89,8 +75,8 @@ class PuttHeatMapCard extends StatelessWidget {
                     66,
                     PuttingCircle.circle2,
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
 

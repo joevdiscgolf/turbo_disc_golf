@@ -38,7 +38,8 @@ class RoundParser extends ChangeNotifier {
     String transcript, {
     String? courseName,
     bool useSharedPreferences = false,
-    List<HoleMetadata>? preParsedHoles, // NEW: Pre-parsed hole metadata from image
+    List<HoleMetadata>?
+    preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
     final BagService bagService = locator.get<BagService>();
     if (transcript.trim().isEmpty) {
@@ -173,35 +174,102 @@ class RoundParser extends ChangeNotifier {
   }
 
   DGRound _validateAndEnhanceRound(DGRound round) {
+    final bagService = locator.get<BagService>();
+
     // Ensure all throws have valid disc references
     final enhancedHoles = round.holes.map((hole) {
       final enhancedThrows = hole.throws.map((discThrow) {
-        // If disc name is provided but not found in bag, try to match
-        // if (discThrow.discName != null && discThrow.discId == null) {
-        //   final matchedDisc = bagService.findDiscByName(discThrow.discName!);
-        //   if (matchedDisc != null) {
-        //     return DiscThrow(
-        //       distanceFeet: discThrow.distanceFeet,
-        //       index: discThrow.index,
-        //       purpose: discThrow.purpose,
-        //       technique: discThrow.technique,
-        //       puttStyle: discThrow.puttStyle,
-        //       shotShape: discThrow.shotShape,
-        //       stance: discThrow.stance,
-        //       power: discThrow.power,
-        //       elevationChangeFeet: discThrow.elevationChangeFeet,
-        //       windDirection: discThrow.windDirection,
-        //       windStrength: discThrow.windStrength,
-        //       resultRating: discThrow.resultRating,
-        //       landingSpot: discThrow.landingSpot,
-        //       fairwayWidth: discThrow.fairwayWidth,
-        //       notes: discThrow.notes,
-        //       rawText: discThrow.rawText,
-        //       parseConfidence: discThrow.parseConfidence,
-        //     );
-        //   }
-        // }
-        return discThrow;
+        DiscThrow workingThrow = discThrow;
+
+        // If disc name is provided, try to match it to the user's bag
+        if (workingThrow.discName != null && workingThrow.disc == null) {
+          final matchedDisc = bagService.findDiscByName(workingThrow.discName!);
+          if (matchedDisc != null) {
+            workingThrow = DiscThrow(
+              index: workingThrow.index,
+              purpose: workingThrow.purpose,
+              technique: workingThrow.technique,
+              puttStyle: workingThrow.puttStyle,
+              shotShape: workingThrow.shotShape,
+              stance: workingThrow.stance,
+              power: workingThrow.power,
+              distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
+              distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
+              elevationChangeFeet: workingThrow.elevationChangeFeet,
+              windDirection: workingThrow.windDirection,
+              windStrength: workingThrow.windStrength,
+              resultRating: workingThrow.resultRating,
+              landingSpot: workingThrow.landingSpot,
+              fairwayWidth: workingThrow.fairwayWidth,
+              penaltyStrokes: workingThrow.penaltyStrokes,
+              notes: workingThrow.notes,
+              rawText: workingThrow.rawText,
+              parseConfidence: workingThrow.parseConfidence,
+              discName: workingThrow.discName,
+              disc: matchedDisc,
+            );
+          }
+        }
+
+        // Validate and correct landingSpot based on distanceFeetAfterThrow
+        if (workingThrow.distanceFeetAfterThrow != null) {
+          final distance = workingThrow.distanceFeetAfterThrow!;
+          LandingSpot? correctLandingSpot;
+
+          if (distance == 0) {
+            correctLandingSpot = LandingSpot.inBasket;
+          } else if (distance <= 10) {
+            correctLandingSpot = LandingSpot.parked;
+          } else if (distance <= 33) {
+            correctLandingSpot = LandingSpot.circle1;
+          } else if (distance <= 66) {
+            correctLandingSpot = LandingSpot.circle2;
+          } else {
+            // For distances > 66 feet, keep the AI's decision between fairway/off_fairway/out_of_bounds
+            // Only correct if it was incorrectly set to a circle
+            if (workingThrow.landingSpot == LandingSpot.parked ||
+                workingThrow.landingSpot == LandingSpot.circle1 ||
+                workingThrow.landingSpot == LandingSpot.circle2) {
+              correctLandingSpot = LandingSpot.fairway;
+            }
+          }
+
+          // If we determined a correction is needed, apply it
+          if (correctLandingSpot != null &&
+              correctLandingSpot != workingThrow.landingSpot) {
+            debugPrint(
+              '⚠️ Correcting landingSpot for throw ${workingThrow.index} in hole ${hole.number}: '
+              '${workingThrow.landingSpot?.name} → ${correctLandingSpot.name} '
+              '(distance: $distance ft)',
+            );
+
+            workingThrow = DiscThrow(
+              index: workingThrow.index,
+              purpose: workingThrow.purpose,
+              technique: workingThrow.technique,
+              puttStyle: workingThrow.puttStyle,
+              shotShape: workingThrow.shotShape,
+              stance: workingThrow.stance,
+              power: workingThrow.power,
+              distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
+              distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
+              elevationChangeFeet: workingThrow.elevationChangeFeet,
+              windDirection: workingThrow.windDirection,
+              windStrength: workingThrow.windStrength,
+              resultRating: workingThrow.resultRating,
+              landingSpot: correctLandingSpot,
+              fairwayWidth: workingThrow.fairwayWidth,
+              penaltyStrokes: workingThrow.penaltyStrokes,
+              notes: workingThrow.notes,
+              rawText: workingThrow.rawText,
+              parseConfidence: workingThrow.parseConfidence,
+              discName: workingThrow.discName,
+              disc: workingThrow.disc,
+            );
+          }
+        }
+
+        return workingThrow;
       }).toList();
 
       return DGHole(

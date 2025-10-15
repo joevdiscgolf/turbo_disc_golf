@@ -25,10 +25,7 @@ class ThrowListItem extends StatelessWidget {
       ),
       subtitle: _buildSubtitle(),
       trailing: showEditButton
-          ? IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: onEdit,
-            )
+          ? IconButton(icon: const Icon(Icons.edit), onPressed: onEdit)
           : null,
     );
   }
@@ -36,8 +33,8 @@ class ThrowListItem extends StatelessWidget {
   Widget? _buildSubtitle() {
     final List<String> subtitleParts = [];
 
-    if (discThrow.distanceFeet != null) {
-      subtitleParts.add('${discThrow.distanceFeet} ft');
+    if (discThrow.distanceFeetBeforeThrow != null) {
+      subtitleParts.add('${discThrow.distanceFeetBeforeThrow} ft');
     }
 
     if (discThrow.disc != null) {

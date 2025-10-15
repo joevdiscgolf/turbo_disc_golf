@@ -14,8 +14,8 @@ class PuttingAnalysisService {
     for (var hole in round.holes) {
       for (var discThrow in hole.throws) {
         if (discThrow.purpose == ThrowPurpose.putt &&
-            discThrow.distanceFeet != null) {
-          final distance = discThrow.distanceFeet!;
+            discThrow.distanceFeetBeforeThrow != null) {
+          final distance = discThrow.distanceFeetBeforeThrow!;
           if (distance <= 15) {
             puttsByRange['0-15 ft']!.add(discThrow);
           } else if (distance <= 33) {
@@ -63,8 +63,8 @@ class PuttingAnalysisService {
     for (var hole in round.holes) {
       for (var discThrow in hole.throws) {
         if (discThrow.purpose == ThrowPurpose.putt &&
-            discThrow.distanceFeet != null) {
-          final distance = discThrow.distanceFeet!;
+            discThrow.distanceFeetBeforeThrow != null) {
+          final distance = discThrow.distanceFeetBeforeThrow!;
           final made = discThrow.landingSpot == LandingSpot.inBasket;
           allDistances.add(distance.toDouble());
 
@@ -117,7 +117,7 @@ class PuttingAnalysisService {
       final avgDistance =
           putts.fold<double>(
             0.0,
-            (sum, p) => sum + (p.distanceFeet?.toDouble() ?? 0.0),
+            (sum, p) => sum + (p.distanceFeetBeforeThrow?.toDouble() ?? 0.0),
           ) /
           putts.length;
 
@@ -170,8 +170,10 @@ class PuttingAnalysisService {
       for (var discThrow in hole.throws) {
         if (discThrow.purpose == ThrowPurpose.putt &&
             discThrow.landingSpot == LandingSpot.inBasket &&
-            discThrow.distanceFeet != null) {
-          birdiePuttDistances.add(discThrow.distanceFeet!.toDouble());
+            discThrow.distanceFeetBeforeThrow != null) {
+          birdiePuttDistances.add(
+            discThrow.distanceFeetBeforeThrow!.toDouble(),
+          );
           break; // Only count the made putt
         }
       }
@@ -201,7 +203,7 @@ class PuttingAnalysisService {
 
             comebackDetails.add({
               'holeNumber': hole.number,
-              'distance': discThrow.distanceFeet,
+              'distance': discThrow.distanceFeetBeforeThrow,
               'made': made,
             });
           }
@@ -227,9 +229,9 @@ class PuttingAnalysisService {
       for (int i = 0; i < hole.throws.length; i++) {
         final discThrow = hole.throws[i];
         if (discThrow.purpose == ThrowPurpose.putt &&
-            discThrow.distanceFeet != null) {
+            discThrow.distanceFeetBeforeThrow != null) {
           puttAttempts.add({
-            'distance': discThrow.distanceFeet!.toDouble(),
+            'distance': discThrow.distanceFeetBeforeThrow!.toDouble(),
             'made': discThrow.landingSpot == LandingSpot.inBasket,
             'holeNumber': hole.number,
             'throwIndex': i,
