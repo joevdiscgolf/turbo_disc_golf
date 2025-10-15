@@ -3,7 +3,6 @@ import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
-import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
