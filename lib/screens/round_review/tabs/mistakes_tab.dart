@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class MistakesTab extends StatelessWidget {
@@ -10,12 +11,17 @@ class MistakesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final MistakesAnalysisService mistakesAnalysisService = locator
+        .get<MistakesAnalysisService>();
 
-    final totalMistakes = statsService.getTotalMistakesCount();
-    final mistakesByCategory = statsService.getMistakesByCategory();
-    final mistakeTypes = statsService.getMistakeTypes();
-    final mistakeDetails = statsService.getMistakeThrowDetails();
+    final totalMistakes = mistakesAnalysisService.getTotalMistakesCount(round);
+    final mistakesByCategory = mistakesAnalysisService.getMistakesByCategory(
+      round,
+    );
+    final mistakeTypes = mistakesAnalysisService.getMistakeTypes(round);
+    final mistakeDetails = mistakesAnalysisService.getMistakeThrowDetails(
+      round,
+    );
 
     if (totalMistakes == 0) {
       return const Center(child: Text('No mistakes detected'));

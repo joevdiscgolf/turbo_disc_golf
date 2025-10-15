@@ -3,6 +3,12 @@ import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
@@ -10,6 +16,15 @@ import 'package:turbo_disc_golf/services/rounds_service.dart';
 final locator = GetIt.instance;
 void setUpLocator() {
   // Register core services first
+
+  // Round analysis
+  locator.registerSingleton<DiscAnalysisService>(DiscAnalysisService());
+  locator.registerSingleton<MistakesAnalysisService>(MistakesAnalysisService());
+  locator.registerSingleton<PsychAnalysisService>(PsychAnalysisService());
+  locator.registerSingleton<PuttingAnalysisService>(PuttingAnalysisService());
+  locator.registerSingleton<ScoreAnalysisService>(ScoreAnalysisService());
+  locator.registerSingleton<ShotAnalysisService>(ShotAnalysisService());
+
   locator.registerSingleton<AiParsingService>(AiParsingService());
   locator.registerSingleton<GeminiService>(GeminiService());
   locator.registerSingleton<BagService>(BagService());

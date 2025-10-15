@@ -22,16 +22,13 @@ class GeminiService {
     // Text model for voice transcript parsing
     _textModel = GenerativeModel(
       model: 'gemini-2.5-flash-lite',
-      apiKey: apiKeyToUse,
+      apiKey: apiKey ?? _defaultApiKey,
       generationConfig: GenerationConfig(
-        temperature: 0.4, // Slightly higher to prevent loops
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 8192, // Increased for longer rounds (18 holes)
-        stopSequences: [
-          '```', // Stop at markdown code blocks
-          'STOP', // Emergency stop
-        ],
+        temperature: 0.3, // Lower temperature for more consistent parsing
+        topK: 20,
+        topP: 0.8,
+        maxOutputTokens: 4096,
+        // Removed responseMimeType to allow YAML responses
       ),
     );
 
@@ -131,46 +128,24 @@ class GeminiService {
     String? courseName, {
     List<HoleMetadata>? preParsedHoles,
   }) {
-    // Build hole metadata table if provided
-    String holeMetadataSection = '';
+    // Use different prompts based on whether we have pre-parsed holes
     if (preParsedHoles != null && preParsedHoles.isNotEmpty) {
-      final holeTable = preParsedHoles
-          .map((h) =>
-              'Hole ${h.holeNumber}: Par ${h.par}, ${h.distanceFeet != null ? "${h.distanceFeet}ft" : "distance unknown"}, Score ${h.score}')
-          .join('\n');
-
-      holeMetadataSection = '''
-
-═══════════════════════════════════════════════════════════════════════════
-📋 PRE-PARSED SCORECARD DATA (FROM IMAGE - THIS IS GROUND TRUTH) 📋
-═══════════════════════════════════════════════════════════════════════════
-
-$holeTable
-
-CRITICAL PARSING RULES FOR IMAGE-FIRST MODE:
-1. Use the scorecard data above for: hole number, par, distance, and FINAL SCORE
-2. The SCORE from the image is ABSOLUTE TRUTH - parse exactly that many throws
-3. Parse the voice transcript to extract throw-by-throw details ONLY
-4. Match voice descriptions to the correct hole numbers from the table above
-5. For each hole, create throws that total to the exact score shown above
-6. If voice doesn't mention a hole that's in the scorecard, skip it (only parse holes with voice details)
-
-EXAMPLE:
-Scorecard shows: Hole 1, Par 3, 350ft, Score 3
-Voice says: "Hole 1, threw my destroyer, landed circle 1, made the putt"
-You parse: 2 throws (drive → circle_1, putt → in_basket)
-BUT WAIT - scorecard says score is 3, so you're missing a throw!
-Add the missing throw to match the score: drive → circle_1, missed putt, made putt = 3 throws ✓
-
-YOUR TASK:
-Parse the voice transcript and create detailed throw data for each hole mentioned,
-ensuring throw count + penalties = the score from the scorecard table above.
-
-═══════════════════════════════════════════════════════════════════════════
-
-''';
+      return _buildImageVoicePrompt(
+        voiceTranscript,
+        userBag,
+        courseName,
+        preParsedHoles,
+      );
+    } else {
+      return _buildVoiceOnlyPrompt(voiceTranscript, userBag, courseName);
     }
+  }
 
+  String _buildVoiceOnlyPrompt(
+    String voiceTranscript,
+    List<DGDisc> userBag,
+    String? courseName,
+  ) {
     // Get enum values dynamically
     final throwPurposeValues = getEnumValuesAsString(ThrowPurpose.values);
     final techniqueValues = getEnumValuesAsString(ThrowTechnique.values);
@@ -248,19 +223,22 @@ USER'S DISC BAG:
 $discListString
 
 ${courseName != null ? 'COURSE NAME: $courseName' : 'Extract the course name from the transcript if mentioned.'}
-$holeMetadataSection
+
 INSTRUCTIONS:
 1. Parse each hole mentioned in the transcript
 2. For each throw, assign index starting from 0 (0=tee shot, 1=second throw, etc.)
 3. ONLY include distanceFeet when the actual throw distance is explicitly stated
 4. Include brief natural language description in the "notes" field
-5. Map landing positions to landingSpot enum based on distance from basket:
+5. Map landing positions to landingSpot enum based on WHERE THE DISC ENDED UP (distance from basket):
    - "made" or "in the basket" = in_basket
    - Within 10 feet or "parked" = parked
    - 10-33 feet or "C1" = circle_1
    - 33-66 feet or "C2" = circle_2
    - On the intended playing surface beyond C2 = fairway
-   - Off the intended line or in rough/trees = off_fairway (NOT for missed putts!)
+   - ONLY use off_fairway when user EXPLICITLY says "off the fairway" or "off fairway"
+   - "Hit a tree", "caught a tree", "clipped a tree", "stopped by tree" do NOT mean off_fairway
+   - Mentions of "trees", "rough", "woods", "bushes" alone do NOT mean off_fairway (fairway can include these!)
+   - Prioritize FINAL POSITION over obstacles hit: if disc ends up 80 ft from basket, use circle_2 (not off_fairway)
    - OB, water, or out of bounds = out_of_bounds
    - Missed putts: Usually omit landingSpot or use parked/circle_1 based on distance
    - NEVER use off_fairway for missed putts - putts stay near the basket
@@ -282,7 +260,10 @@ SCORE-FIRST VALIDATION: When the player states their score (birdie, par, bogey, 
 - Calculate the expected throw count from the stated score FIRST
 - Then ensure you parse EXACTLY that many throws
 - If you can't find enough throws, you MISSED one - re-analyze the description
+- If you have TOO MANY throws, you probably created a throw from a position description (like "had a 20 ft putt")
 - Common score phrases: "I took a bogey", "I made par", "for birdie", "so I got to par", "tapped in for bogey"
+- CRITICAL: "made [distance] putt for [score]" is the FINAL score - count backwards to validate
+- Example: "made 20 ft putt for bogey" on par 4 = EXACTLY 5 throws (not 6, not 4)
 - Examples:
   - "I took a bogey" on par 3 = 4 throws total
   - "for par" on par 3 = 3 throws
@@ -296,9 +277,23 @@ For EVERY hole, count throws carefully by analyzing the narrative:
 3. NEVER put information about a second throw in the notes of the first throw
    - WRONG: "ended up 25 ft long and I missed the putt" in one throw's notes
    - CORRECT: First throw notes "ended up 25 ft long", SEPARATE throw for "missed the putt"
-4. EVERY HOLE MUST END WITH landingSpot: in_basket - holes must be completed!
-5. "Took a bogey/par/birdie" or "for par/birdie/bogey" = they FINISHED the hole, add final made putt if missing
-6. Pay special attention to phrases that indicate multiple throws:
+4. CRITICAL - DON'T OVER-SPLIT SINGLE THROW DESCRIPTIONS:
+   - "threw X and then ended up [position]" = ONE throw (the "ended up" describes where it landed)
+   - "threw X out to the right and ended up OB" = ONE throw
+   - "threw X and it went [direction/distance]" = ONE throw
+   - ONLY create a new throw when a SECOND ACTION is described (re-tee, putt, approach, etc.)
+   - After OB, the next throw is typically either a re-tee OR a putt/approach from drop zone
+   - "missed putt and had a [distance] putt for [score]" = ONE throw (the "had a X ft putt" describes where it ended up)
+   - "had a [distance] putt for [score]" is DESCRIBING POSITION after a previous action, NOT a new throw
+   - Only "made/missed the putt" or "threw" indicates an actual new throwing action
+5. EVERY HOLE MUST END WITH landingSpot: in_basket - holes must be completed!
+6. "Took a bogey/par/birdie" or "for par/birdie/bogey" = they FINISHED the hole, add final made putt if missing
+7. CRITICAL - "PARKED" ALWAYS NEEDS A TAP-IN:
+   - "parked it and birdied" = 2 throws (parked + tap-in with landingSpot: in_basket)
+   - "parked at 10 ft so I birdied" = the approach that parked + tap-in for birdie
+   - "parked it 2 feet away" followed by score mention = add tap-in (distanceFeet: 8, landingSpot: in_basket)
+   - NEVER end a hole with landingSpot: parked - must add final putt with landingSpot: in_basket
+8. Pay special attention to phrases that indicate multiple throws:
    - "Two putts" or "two-putted" = ALWAYS 2 separate putt throws (NEVER combine!)
    - "Three putts" or "3-putted" = ALWAYS 3 separate putt throws
    - "Missed the putt" or "I missed the putt" = ALWAYS a separate throw (don't put this in notes of previous throw!)
@@ -317,10 +312,14 @@ For EVERY hole, count throws carefully by analyzing the narrative:
    - "Tap in" or "tapped in" or "tap that in" = ALWAYS a separate throw (ALWAYS use 8 feet for tap-in distance)
    - "Pitch out" = a separate approach/scramble throw
    - "Scrambled" = a recovery throw
+   - "approach from X AND made Y ft putt" = 2 SEPARATE throws (approach + putt)
+   - "approach into the green AND made putt" = 2 SEPARATE throws (approach + putt)
+   - NEVER combine approach and putt into one throw - they are ALWAYS separate actions
    CRITICAL: When you see "laid up" followed by "tap in", you MUST create two separate throw entries!
    CRITICAL: When you see "which left me" or "left me a putt", the previous action was a separate throw!
    CRITICAL: When you see "two putts", you MUST create two separate throw entries!
    CRITICAL: "and tap that in for [score]" almost NEVER means hole-in-one - it's a separate tap-in after previous throw(s)!
+   CRITICAL: "approach AND made putt" = 2 throws (approach + putt), NEVER combine these!
 7. Handle penalties correctly:
    - "OB" or "out of bounds" = Add penaltyStrokes: 1 to that throw
    - "Water hazard" or "lost disc" = Add penaltyStrokes: 1 to that throw
@@ -435,6 +434,47 @@ CORRECT (3 throws for par on par 3):
 - index 1: Missed putt (the "I missed the putt" is throw #2), distanceFeet: 25, notes: "went straight through the basket"
 - index 2: Made par putt (the "got to par" is throw #3), distanceFeet: 8, landingSpot: in_basket
 
+Hole 4: "380 ft par 3. I threw a backhand hyzer with a pd2 out to the right and then I ended up 25 ft long and out of bounds and I made my par putt from 25 ft"
+YOUR MISTAKE: Split one tee shot description into TWO throws (tee + phantom approach)
+CRITICAL: "threw X and then I ended up [position]" describes ONE throw, not two!
+CORRECT (2 throws for par on par 3):
+- index 0: Tee shot, technique: backhand, shotShape: hyzer, notes: "threw pd2 out to the right, ended up 25 ft long and out of bounds", landingSpot: out_of_bounds, penaltyStrokes: 1
+- index 1: Made putt from drop zone, distanceFeet: 25, notes: "made par putt", landingSpot: in_basket
+
+Hole 1: "600 ft par 4. I threw my halo Destroyer off the tee and it ended up just into the trees and 140 ft away and I threw a forehand upshot with my razor claw and that parked at 10 ft away so I birdied"
+YOUR MISTAKE: Only counted 2 throws, missing tap-in after "parked...so I birdied"
+CRITICAL: "parked...so I birdied" means they FINISHED the hole - add tap-in!
+CORRECT (3 throws for birdie on par 4):
+- index 0: Tee shot, technique: backhand, notes: "ended up just into the trees", landingSpot: fairway
+- index 1: Upshot, technique: forehand, notes: "parked at 10 ft", landingSpot: parked
+- index 2: Tap-in for birdie, distanceFeet: 8, landingSpot: in_basket
+
+Hole 2: "170 ft par 3. I threw a forehand tactic out to the left side on hyzer and parked it two feet away"
+YOUR MISTAKE: Only counted 1 throw, missing tap-in after "parked"
+CRITICAL: When hole ends with "parked" and no more description, add tap-in to complete hole
+CORRECT (2 throws for birdie on par 3):
+- index 0: Tee shot, technique: forehand, shotShape: hyzer, notes: "parked two feet away", landingSpot: parked
+- index 1: Tap-in, distanceFeet: 8, landingSpot: in_basket
+
+Hole 5: "440 ft par 4. I threw a forehand off the tee and had another forehand approach from 140 ft into the green and made a 23 ft putt for birdie"
+YOUR MISTAKE: Combined approach and putt into ONE throw
+CRITICAL: "approach from X AND made Y ft putt" = TWO separate throws!
+CORRECT (3 throws for birdie on par 4):
+- index 0: Tee drive, technique: forehand, landingSpot: fairway
+- index 1: Approach, technique: forehand, notes: "approach from 140 ft into the green"
+- index 2: Made putt, distanceFeet: 23, notes: "made putt for birdie", landingSpot: in_basket
+
+Hole 17: "700 ft par 4. I threw a hyzer flip and ended up in the fairway. I threw a skip shot which rolled and ended up 35 ft away. I missed that putt for birdie and had a 20 ft putt back for par. I missed that putt for par and made a 20-ft putt for bogey."
+YOUR MISTAKE: Created a throw for "had a 20 ft putt back for par" - that's describing position, not a new throw! Counted 6 throws (double bogey) instead of 5 (bogey)
+CRITICAL: "had a [distance] putt for [score]" describes where the previous putt ended up, NOT a new throw!
+CRITICAL: "made X ft putt for bogey" = the final score is bogey, validate throw count matches!
+CORRECT (5 throws for bogey on par 4):
+- index 0: Tee drive, shotShape: hyzer_flip, landingSpot: fairway
+- index 1: Approach/skip shot, notes: "rolled and ended up 35 ft away", landingSpot: circle_2
+- index 2: Missed birdie putt, distanceFeet: 35, notes: "missed putt for birdie, had 20 ft putt back", landingSpot: circle_1
+- index 3: Missed par putt, distanceFeet: 20, notes: "missed putt for par", landingSpot: circle_1
+- index 4: Made bogey putt, distanceFeet: 20, notes: "made putt for bogey", landingSpot: in_basket
+
 ENUM CATEGORY EXAMPLES - CORRECT USAGE:
 Example: "Threw a backhand flex shot"
 CORRECT:
@@ -518,6 +558,451 @@ CRITICAL YAML FORMAT REQUIREMENTS:
 6. Only include fields that have values - create minimal, clean YAML
 
 Example of CLEAN YAML output (notice only mentioned fields are included):
+$schemaExample
+''';
+  }
+
+  /// Prompt for IMAGE + VOICE mode (scorecard already parsed)
+  String _buildImageVoicePrompt(
+    String voiceTranscript,
+    List<DGDisc> userBag,
+    String? courseName,
+    List<HoleMetadata> preParsedHoles,
+  ) {
+    // Build hole metadata table
+    String holeMetadataSection = '';
+    final holeTable = preParsedHoles
+        .map(
+          (h) =>
+              'Hole ${h.holeNumber}: Par ${h.par}, ${h.distanceFeet != null ? "${h.distanceFeet}ft" : "distance unknown"}, Score ${h.score}',
+        )
+        .join('\n');
+
+    holeMetadataSection =
+        '''
+
+═══════════════════════════════════════════════════════════════════════════
+📋 PRE-PARSED SCORECARD DATA (FROM IMAGE - THIS IS GROUND TRUTH) 📋
+═══════════════════════════════════════════════════════════════════════════
+
+$holeTable
+
+CRITICAL PARSING RULES FOR IMAGE-FIRST MODE:
+1. Use the scorecard data above for: hole number, par, distance, and FINAL SCORE
+2. The SCORE from the image is ABSOLUTE TRUTH and CANNOT BE CHANGED OR RECALCULATED
+3. EVERY HOLE IN YOUR YAML OUTPUT MUST INCLUDE A "score" FIELD WITH THE SCORECARD SCORE
+4. Parse the voice transcript to extract throw-by-throw details ONLY - just what the user said
+5. Match voice descriptions to the correct hole numbers from the table above
+6. The throws you parse are the user's description of what happened - parse them as stated
+7. DO NOT try to make the throw count match the score - the scorecard score overrides everything
+8. DO NOT add, remove, or modify throws to match the score - parse exactly what was said
+9. If the user said "for birdie" but the scorecard shows triple bogey, the scorecard is correct
+10. If voice doesn't mention a hole that's in the scorecard, skip it (only parse holes with voice details)
+
+⚠️ CRITICAL - DO NOT RELABEL THROWS BASED ON SCORE:
+- Index 0 (first throw) MUST ALWAYS have purpose: tee_drive - NEVER change this to putt or approach
+- DO NOT change a throw's purpose field based on score discrepancies
+- DO NOT infer "they must have missed a putt" and relabel a tee drive as a putt
+- Parse throws EXACTLY as described - if they say "threw destroyer off the tee", that's purpose: tee_drive
+- If throw count doesn't match score, that's EXPECTED and OK - don't "fix" it by relabeling
+
+CRITICAL: When you see a DISCREPANCY between what the user says and the scorecard:
+- User says: "tapped in for birdie"
+- Scorecard shows: Score 7 (triple bogey)
+- YOU MUST: Ignore the "for birdie" part and trust the scorecard score of 7
+- The user may have misspoken or recorded incorrectly during the round
+- Your job is to parse the THROWS they described, not verify their math
+
+EXAMPLE 1:
+Scorecard shows: Hole 7, Par 4, 500ft, Score 7 (triple bogey)
+Voice says: "Hole 7, made it through the double mando, second shot parked, tapped in for birdie"
+You parse:
+  - Throw 1: Tee drive → made it through double mando
+  - Throw 2: Approach shot → parked
+  - Throw 3: Tap-in → in_basket
+  - Final score: 7 (from scorecard - NOT 3!)
+The user said "for birdie" but the scorecard shows 7, so use 7 as the final score.
+
+EXAMPLE 2:
+Scorecard shows: Hole 1, Par 3, 350ft, Score 3 (Par)
+Voice says: "Hole 1, threw destroyer, circle 1, made putt"
+You parse:
+  - Throw 1: Tee drive → circle_1
+  - Throw 2: Putt → in_basket
+  - Final score: 3 (from scorecard - even though only 2 throws described)
+
+YOUR TASK:
+Parse ONLY the throws the user described in the voice transcript.
+Use the SCORE from the scorecard table above as the final score for each hole.
+IGNORE any score-related phrases in the voice description (birdie, par, bogey, etc.) - use the scorecard score instead.
+
+═══════════════════════════════════════════════════════════════════════════
+
+''';
+
+    // Get enum values dynamically
+    final throwPurposeValues = getEnumValuesAsString(ThrowPurpose.values);
+    final techniqueValues = getEnumValuesAsString(ThrowTechnique.values);
+    final puttStyleValues = getEnumValuesAsString(PuttStyle.values);
+    final shotShapeValues = getEnumValuesAsString(ShotShape.values);
+    final stanceValues = getEnumValuesAsString(StanceType.values);
+    final throwPowerValues = getEnumValuesAsString(ThrowPower.values);
+    final windDirectionValues = getEnumValuesAsString(WindDirection.values);
+    final windStrengthValues = getEnumValuesAsString(WindStrength.values);
+    final resultRatingValues = getEnumValuesAsString(ThrowResultRating.values);
+    final landingSpotValues = getEnumValuesAsString(LandingSpot.values);
+    final fairwayWidthValues = getEnumValuesAsString(FairwayWidth.values);
+    final gripTypeValues = getEnumValuesAsString(GripType.values);
+    final throwHandValues = getEnumValuesAsString(ThrowHand.values);
+
+    // Create disc list string
+    final discListString = userBag
+        .map(
+          (disc) =>
+              '- ${disc.name} (${disc.moldName ?? "Unknown mold"} by ${disc.brand ?? "Unknown brand"})',
+        )
+        .join('\n');
+
+    // Create the expected YAML schema as a string - showing clean output with only mentioned fields
+    final schemaExample = '''
+course: Course Name
+holes:
+  - number: 1
+    par: 3
+    feet: 350
+    score: 3
+    throws:
+      - index: 0
+        distanceFeet: 300
+        purpose: tee_drive
+        technique: backhand
+        shotShape: hyzer
+        power: full
+        notes: threw straight down the fairway
+        landingSpot: fairway
+      - index: 1
+        distanceFeet: 50
+        purpose: putt
+        technique: backhand
+        puttStyle: staggered
+        notes: made the putt
+        landingSpot: in_basket
+  - number: 2
+    par: 3
+    feet: 280
+    score: 4
+    throws:
+      - index: 0
+        purpose: tee_drive
+        notes: went OB right
+        landingSpot: out_of_bounds
+        penaltyStrokes: 1
+      - index: 1
+        distanceFeet: 250
+        purpose: tee_drive
+        technique: backhand
+        notes: re-teed and threw safe
+        landingSpot: circle_2
+      - index: 2
+        distanceFeet: 8
+        purpose: putt
+        notes: tapped in for bogey
+        landingSpot: in_basket''';
+
+    return '''
+You are a disc golf scorecard parser. Parse the following voice transcript of a disc golf round into structured YAML data.
+
+VOICE TRANSCRIPT:
+"$voiceTranscript"
+
+USER'S DISC BAG:
+$discListString
+
+${courseName != null ? 'COURSE NAME: $courseName' : 'Extract the course name from the transcript if mentioned.'}
+$holeMetadataSection
+INSTRUCTIONS:
+1. Parse each hole mentioned in the transcript
+2. For each throw, assign index starting from 0 (0=tee shot, 1=second throw, etc.)
+3. CRITICAL: Index 0 MUST have purpose: tee_drive (NEVER putt, NEVER approach, ALWAYS tee_drive)
+4. ⚠️ CRITICAL: Each hole MUST include "score: X" field with the SCORECARD SCORE from the table above
+5. Assign purpose field based on the throw's role: tee_drive for first throw, approach for positioning shots, putt for basket attempts
+6. ONLY include distanceFeet when the actual throw distance is explicitly stated
+7. Include brief natural language description in the "notes" field
+8. Map landing positions to landingSpot enum based on WHERE THE DISC ENDED UP (distance from basket):
+   - "made" or "in the basket" = in_basket
+   - Within 10 feet or "parked" = parked
+   - 10-33 feet or "C1" = circle_1
+   - 33-66 feet or "C2" = circle_2
+   - On the intended playing surface beyond C2 = fairway
+   - ONLY use off_fairway when user EXPLICITLY says "off the fairway" or "off fairway"
+   - "Hit a tree", "caught a tree", "clipped a tree", "stopped by tree" do NOT mean off_fairway
+   - Mentions of "trees", "rough", "woods", "bushes" alone do NOT mean off_fairway (fairway can include these!)
+   - Prioritize FINAL POSITION over obstacles hit: if disc ends up 80 ft from basket, use circle_2 (not off_fairway)
+   - OB, water, or out of bounds = out_of_bounds
+   - Missed putts: Usually omit landingSpot or use parked/circle_1 based on distance
+   - NEVER use off_fairway for missed putts - putts stay near the basket
+9. If par or hole distance isn't mentioned, use the values from the scorecard table above
+10. Number holes sequentially starting from 1
+
+CRITICAL DISTANCE RULES:
+- ONLY include distanceFeet when the THROW DISTANCE is explicitly stated
+- "to 25 feet" means the disc ended up 25 feet FROM THE BASKET, NOT that the throw was 25 feet
+- "Pitch out to 25 feet" = DO NOT include distanceFeet (we don't know throw distance)
+- "Threw 280 feet" = distanceFeet: 280 (actual throw distance stated)
+- "40 feet short" describes landing position, NOT throw distance (unless context makes it clear)
+- Exception: "Tap in" or "tapped in" ALWAYS = distanceFeet: 8
+- Exception: "Gimme" or "drop in" ALWAYS = distanceFeet: 3
+
+CRITICAL THROW PARSING RULES FOR IMAGE+VOICE MODE:
+IN THIS MODE, THE SCORECARD SCORE IS THE FINAL SCORE - DO NOT VALIDATE THROW COUNTS!
+- The scorecard score from the image is ABSOLUTE TRUTH (already provided above)
+- Your job is to parse ONLY the throws the user described in their voice transcript
+- DO NOT try to validate throw count against the scorecard score
+- DO NOT add missing throws to make the count match the score
+- The throw count may not match the scorecard score - this is EXPECTED and OK
+- Focus on capturing what the user SAID, not validating their math
+- IGNORE score-related phrases like "for birdie", "took bogey" - the scorecard score is already known
+
+⚠️ CRITICAL - PRESERVE THROW PURPOSE LABELS:
+- Index 0 = ALWAYS purpose: tee_drive (even if it landed at C1, even if you think it should have been a different score)
+- DO NOT relabel throws based on "this doesn't match the score" thinking
+- DO NOT change purpose: tee_drive to purpose: putt just because the scorecard shows a different score than expected
+- A tee shot that parks it is STILL a tee shot (purpose: tee_drive), not a putt
+- Parse the throw purpose based on WHAT THE USER DESCRIBED, not based on score math
+
+For EVERY hole, parse throws by analyzing the narrative:
+1. Start with the tee shot (index 0)
+2. Track each subsequent throw mentioned - NEVER combine multiple throws into one
+3. NEVER put information about a second throw in the notes of the first throw
+   - WRONG: "ended up 25 ft long and I missed the putt" in one throw's notes
+   - CORRECT: First throw notes "ended up 25 ft long", SEPARATE throw for "missed the putt"
+4. CRITICAL - DON'T OVER-SPLIT SINGLE THROW DESCRIPTIONS:
+   - "threw X and then ended up [position]" = ONE throw (the "ended up" describes where it landed)
+   - "threw X out to the right and ended up OB" = ONE throw
+   - "threw X and it went [direction/distance]" = ONE throw
+   - ONLY create a new throw when a SECOND ACTION is described (re-tee, putt, approach, etc.)
+   - After OB, the next throw is typically either a re-tee OR a putt/approach from drop zone
+   - "missed putt and had a [distance] putt for [score]" = ONE throw (the "had a X ft putt" describes where it ended up)
+   - "had a [distance] putt for [score]" is DESCRIBING POSITION after a previous action, NOT a new throw
+   - Only "made/missed the putt" or "threw" indicates an actual new throwing action
+5. Parse throws as described - if they say the hole is finished, end with landingSpot: in_basket
+6. CRITICAL - "PARKED" ALWAYS NEEDS A TAP-IN:
+   - "parked it and birdied" = 2 throws (parked + tap-in with landingSpot: in_basket)
+   - "parked at 10 ft so I birdied" = the approach that parked + tap-in for birdie
+   - "parked it 2 feet away" followed by score mention = add tap-in (distanceFeet: 8, landingSpot: in_basket)
+   - NEVER end a hole with landingSpot: parked - must add final putt with landingSpot: in_basket
+7. Pay special attention to phrases that indicate multiple throws:
+   - "Two putts" or "two-putted" = ALWAYS 2 separate putt throws (NEVER combine!)
+   - "Three putts" or "3-putted" = ALWAYS 3 separate putt throws
+   - "Missed the putt" or "I missed the putt" = ALWAYS a separate throw (don't put this in notes of previous throw!)
+   - "Missed the putt, tapped in" = 2 separate throws (missed putt + tap-in)
+   - "Missed the par putt" = 2 putts (missed par putt + made bogey/par putt)
+   - "Missed the birdie putt" = 2 putts (missed birdie putt + made par putt)
+   - "Made the comeback putt" = 2 putts (first missed + comeback made)
+   - "3-putted" or "three-putted" = ALWAYS exactly 3 putt throws (2 missed + 1 made)
+   - "so I laid up" or "had to lay up" = a separate layup/approach throw AFTER the previous throw
+   - "laid up and tapped in" = 2 SEPARATE throws (layup + tap-in, NEVER combine these!)
+   - "which left me a [distance] putt" = the previous action was a SEPARATE throw
+   - "and tap that in" or "and tapped that in" = ALWAYS a separate throw from the previous
+   - "Tap in" or "tapped in" or "tap that in" = ALWAYS a separate throw (ALWAYS use 8 feet for tap-in distance)
+   - "Pitch out" = a separate approach/scramble throw
+   - "Scrambled" = a recovery throw
+   - "approach from X AND made Y ft putt" = 2 SEPARATE throws (approach + putt)
+   - "approach into the green AND made putt" = 2 SEPARATE throws (approach + putt)
+   - NEVER combine approach and putt into one throw - they are ALWAYS separate actions
+   CRITICAL: When you see "laid up" followed by "tap in", you MUST create two separate throw entries!
+   CRITICAL: When you see "which left me" or "left me a putt", the previous action was a separate throw!
+   CRITICAL: When you see "two putts", you MUST create two separate throw entries!
+   CRITICAL: "and tap that in for [score]" almost NEVER means hole-in-one - it's a separate tap-in after previous throw(s)!
+   CRITICAL: "approach AND made putt" = 2 throws (approach + putt), NEVER combine these!
+6. Handle penalties correctly:
+   - "OB" or "out of bounds" = Add penaltyStrokes: 1 to that throw
+   - "Water hazard" or "lost disc" = Add penaltyStrokes: 1 to that throw
+   - Re-tee after OB = The re-tee is a separate throw (don't add penalty there)
+7. DO NOT VALIDATE THROW COUNTS:
+   - In image+voice mode, throw count may NOT match the scorecard score
+   - This is EXPECTED - the user may have described only some throws
+   - Parse exactly what was said, nothing more, nothing less
+   - The scorecard score is the final score regardless of your throw count
+
+
+EXAMPLES - PARSING THROWS WITHOUT VALIDATING COUNTS:
+
+Example 1: Detecting multiple putts (MUST include score field)
+Voice: "250 ft par 3. I threw my fd3 to Circle one about 25 ft away missed the putt off the cage and then miss the par putt because it's bad back at me so I took a bogey there"
+Scorecard: Hole 2, Par 3, Score 4
+YAML OUTPUT MUST INCLUDE:
+  - number: 2
+    par: 3
+    feet: 250
+    score: 4
+    throws:
+      - index: 0
+        notes: threw fd3 to circle one
+        landingSpot: circle_1
+        purpose: tee_drive
+      - index: 1
+        distanceFeet: 25
+        notes: missed the putt off the cage
+        landingSpot: circle_1
+        purpose: putt
+      - index: 2
+        distanceFeet: 8
+        notes: miss the par putt because it bounced back
+        purpose: putt
+      - index: 3
+        distanceFeet: 8
+        notes: made the putt
+        landingSpot: in_basket
+        purpose: putt
+
+Example 2: Completing the hole (MUST include score field)
+Voice: "380 ft par 3. Threw forehand 70 ft short. Tried putt from 70 ft, rolled to 15 ft, missed that 15 ft putt, took bogey"
+Scorecard: Hole 3, Par 3, Score 4
+YAML OUTPUT MUST INCLUDE:
+  - number: 3
+    par: 3
+    feet: 380
+    score: 4
+    throws:
+      - index: 0
+        landingSpot: circle_2
+        purpose: tee_drive
+      - index: 1
+        distanceFeet: 70
+        purpose: putt
+      - index: 2
+        distanceFeet: 15
+        purpose: putt
+      - index: 3
+        distanceFeet: 8
+        landingSpot: in_basket
+        purpose: putt
+
+Example 3: Including score field is MANDATORY
+Voice: "475 feet par 4. Threw Firebird 280 feet. Threw Buzzz 195 feet into rough. Pitch out to 25 feet, made putt for par."
+Scorecard: Hole 7, Par 4, Score 4
+YAML OUTPUT MUST INCLUDE:
+  - number: 7
+    par: 4
+    feet: 475
+    score: 4
+    throws:
+      - index: 0
+        distanceFeet: 280
+        purpose: tee_drive
+      - index: 1
+        distanceFeet: 195
+        purpose: approach
+      - index: 2
+        purpose: approach
+      - index: 3
+        distanceFeet: 25
+        landingSpot: in_basket
+        purpose: putt
+
+Example 4: Index 0 is ALWAYS tee_drive, even if score doesn't match
+Voice: "Hole 4, threw my MD4, parked it about 10 feet"
+Scorecard: Hole 4, Par 3, Score 3 (par)
+NOTE: Voice only describes 1 throw, but scorecard shows score of 3
+YAML OUTPUT MUST INCLUDE:
+  - number: 4
+    par: 3
+    score: 3
+    throws:
+      - index: 0
+        notes: threw MD4, parked it
+        landingSpot: parked
+        purpose: tee_drive
+WRONG - DO NOT DO THIS:
+- index 0: purpose: putt (NEVER change index 0 to putt!)
+- Adding extra throws to match score (DON'T add throws not described)
+- Changing the score to 1 (NEVER recalculate score!)
+
+ENUM CATEGORY EXAMPLES - CORRECT USAGE:
+Example: "Threw a backhand flex shot"
+CORRECT:
+- technique: backhand (HOW it was thrown)
+- shotShape: flex_shot (the flight path)
+WRONG: technique: flex_shot (flex_shot is NOT a technique!)
+
+Example: "Forehand roller"
+CORRECT:
+- technique: forehand_roller (this is a specific throwing technique)
+WRONG: technique: forehand, shotShape: roller
+
+Example: "Backhand hyzer"
+CORRECT:
+- technique: backhand
+- shotShape: hyzer
+WRONG: technique: hyzer (hyzer is a shot shape, not a technique!)
+
+CRITICAL ENUM FORMATTING AND USAGE:
+ALL enum values MUST be in lower snake_case format with underscores between words.
+For example: "circle_1" NOT "circle1", "tee_drive" NOT "teeDrive"
+
+STRICT ENUM CATEGORY RULES - NEVER MIX CATEGORIES:
+- technique: HOW the disc is thrown (backhand, forehand, etc.) - NOT shot shapes
+- shotShape: The FLIGHT PATH/CURVE (hyzer, anhyzer, flex_shot, etc.) - NOT techniques
+- NEVER use a shotShape value for technique or vice versa
+- Example: "flex_shot" is a shotShape, NOT a technique
+- Example: "backhand" is a technique, NOT a shotShape
+
+ALLOWED ENUM VALUES (use ONLY these exact values - NEVER mix categories):
+- purpose (what the throw is for): $throwPurposeValues
+- technique (HOW it's thrown): $techniqueValues
+- puttStyle (putt-specific technique): $puttStyleValues
+- shotShape (flight path/curve): $shotShapeValues
+- stance (footwork): $stanceValues
+- power (effort level): $throwPowerValues
+- windDirection: $windDirectionValues
+- windStrength: $windStrengthValues
+- resultRating: $resultRatingValues
+- landingSpot (where it ended up): $landingSpotValues
+- fairwayWidth: $fairwayWidthValues
+- gripType: $gripTypeValues
+- throwHand: $throwHandValues
+
+OTHER FIELDS (integers, not enums):
+- penaltyStrokes: Number of penalty strokes for this throw (1 for OB/water/lost disc, omit if no penalty)
+- distanceFeet: Actual throw distance in feet (only when explicitly stated)
+
+VALIDATION RULES:
+- If unsure which category a value belongs to, OMIT the field entirely
+- NEVER guess or place values in wrong categories
+- Each field can ONLY use values from its specific enum list above
+
+IMPORTANT YAML OUTPUT RULES:
+- OMIT any field that is not explicitly mentioned in the voice input
+- NEVER include fields with null values (e.g., don't write "windDirection: null")
+- Only include fields that have actual values from the voice transcript
+- Only use "other" when something is explicitly mentioned but doesn't match the allowed values
+- Keep the YAML clean and minimal - only include what was actually said
+
+Common disc golf terms to understand:
+- "Parked" = very close to the basket
+- "C1" = Circle 1, within 33 feet
+- "C2" = Circle 2, 33-66 feet
+- "OB" = Out of bounds
+- "Ace" = Hole in one
+- "Birdie" = One under par
+- "Eagle" = Two under par
+- "Bogey" = One over par
+- "Island hole" = Hole with island green surrounded by OB (water/hazard)
+- "Landed on the island" = In play, use appropriate landingSpot (fairway, circle_1, etc.)
+- "Landed in the water" or "went in the water" = out_of_bounds with penaltyStrokes: 1
+- For island holes: if it lands "on the island", it's NOT out_of_bounds
+
+CRITICAL YAML FORMAT REQUIREMENTS:
+1. Return ONLY raw YAML content - no markdown, no code blocks
+2. Do NOT include the word 'yaml' at the beginning
+3. Do NOT wrap in ``` or ```yaml
+4. Do NOT add any explanatory text before or after
+5. Start directly with "course:" as the first line
+6. Only include fields that have values - create minimal, clean YAML
+7. ⚠️⚠️⚠️ EVERY HOLE MUST INCLUDE "score: X" FIELD WITH THE SCORECARD SCORE ⚠️⚠️⚠️
+
+Example of CLEAN YAML output (notice EVERY hole includes the "score" field from the scorecard):
 $schemaExample
 ''';
   }

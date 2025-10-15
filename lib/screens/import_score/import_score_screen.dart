@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/services/scorecard_ocr_service.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/voice_detail_input_screen.dart';
@@ -10,13 +11,22 @@ import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/locator.dart';
 
 class ImportScoreScreen extends StatefulWidget {
-  const ImportScoreScreen({super.key});
+  final bool testMode;
+  final String? testVoiceDescription;
+
+  const ImportScoreScreen({
+    super.key,
+    this.testMode = false,
+    this.testVoiceDescription,
+  });
 
   @override
   State<ImportScoreScreen> createState() => _ImportScoreScreenState();
 }
 
 class _ImportScoreScreenState extends State<ImportScoreScreen> {
+  static const String _cacheKey = 'cached_hole_metadata';
+
   final ImagePicker _picker = ImagePicker();
   late final AiParsingService _aiParsingService;
   final TextEditingController _courseNameController = TextEditingController();
@@ -25,11 +35,66 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
   bool _isProcessing = false;
   List<ScoreCardHoleData> _extractedData = [];
   String? _errorMessage;
+  bool _useCachedData = false;
 
   @override
   void initState() {
     super.initState();
     _aiParsingService = locator.get<AiParsingService>();
+
+    // Auto-load test data if in test mode
+    if (widget.testMode) {
+      _loadTestData();
+    }
+  }
+
+  Future<void> _loadTestData() async {
+    try {
+      // Load list of test images from assets
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+      final Map<String, dynamic> manifestMap = Map<String, dynamic>.from(
+        const JsonDecoder().convert(manifestContent) as Map,
+      );
+
+      final testImages = manifestMap.keys
+          .where((key) => key.startsWith('assets/test_scorecards/'))
+          .where((key) => !key.endsWith('/') && !key.endsWith('.gitkeep'))
+          .toList();
+
+      if (testImages.isEmpty) {
+        setState(() {
+          _errorMessage = 'No test images found in assets/test_scorecards/';
+          _courseNameController.text = 'Flings Giving Test Course';
+        });
+        return;
+      }
+
+      // Use the first test image
+      final selectedImage = testImages.first;
+      debugPrint('🧪 Test mode: Loading image $selectedImage');
+
+      // Copy asset to temporary file for processing
+      final byteData = await rootBundle.load(selectedImage);
+      final tempDir = Directory.systemTemp;
+      final tempFile = File(
+        '${tempDir.path}/temp_scorecard_test_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await tempFile.writeAsBytes(byteData.buffer.asUint8List());
+
+      setState(() {
+        _selectedImagePath = tempFile.path;
+        _courseNameController.text = 'Flings Giving Test Course';
+      });
+
+      // Process the image with Gemini
+      await _processImage(tempFile.path);
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load test image: $e';
+        _courseNameController.text = 'Flings Giving Test Course';
+      });
+      debugPrint('❌ Error loading test data: $e');
+    }
   }
 
   @override
@@ -123,6 +188,67 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
     }
   }
 
+  Future<void> _saveCachedHoleData(List<ScoreCardHoleData> holes) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final holesJson = holes.map((hole) {
+        return {
+          'holeNumber': hole.holeNumber,
+          'par': hole.par,
+          'distance': hole.distance,
+          'score': hole.score,
+          'confidence': hole.confidence,
+        };
+      }).toList();
+      await prefs.setString(_cacheKey, jsonEncode(holesJson));
+      debugPrint('💾 Cached ${holes.length} holes to shared preferences');
+    } catch (e) {
+      debugPrint('❌ Failed to cache hole data: $e');
+    }
+  }
+
+  Future<List<ScoreCardHoleData>?> _loadCachedHoleData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString(_cacheKey);
+      if (cachedJson == null) {
+        debugPrint('📭 No cached hole data found');
+        return null;
+      }
+
+      final List<dynamic> holesJson = jsonDecode(cachedJson);
+      final holes = holesJson.map((json) {
+        return ScoreCardHoleData(
+          holeNumber: json['holeNumber'] as int,
+          par: json['par'] as int?,
+          distance: json['distance'] as int?,
+          score: json['score'] as int?,
+          confidence: (json['confidence'] as num).toDouble(),
+        );
+      }).toList();
+
+      debugPrint('📦 Loaded ${holes.length} holes from cache');
+      return holes;
+    } catch (e) {
+      debugPrint('❌ Failed to load cached hole data: $e');
+      return null;
+    }
+  }
+
+  List<ScoreCardHoleData> _convertToScoreCardHoleData(
+    List<HoleMetadata> holeMetadata,
+  ) {
+    return holeMetadata.map((metadata) {
+      return ScoreCardHoleData(
+        holeNumber: metadata.holeNumber,
+        par: metadata.par,
+        distance: metadata.distanceFeet,
+        score: metadata.score,
+        confidence: 0.9, // Gemini typically has high confidence
+      );
+    }).toList();
+  }
+
   Future<void> _processImage(String imagePath) async {
     setState(() {
       _isProcessing = true;
@@ -130,34 +256,49 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
     });
 
     try {
-      debugPrint('🖼️ Processing scorecard image with Gemini...');
+      List<ScoreCardHoleData> holes;
 
-      // Use Gemini to parse the scorecard image
-      final holeMetadata = await _aiParsingService.parseScorecard(
-        imagePath: imagePath,
-      );
+      // Check if we should use cached data
+      if (_useCachedData) {
+        debugPrint('🔄 Using cached hole data...');
+        final cachedHoles = await _loadCachedHoleData();
+        if (cachedHoles != null && cachedHoles.isNotEmpty) {
+          holes = cachedHoles;
+          debugPrint('✅ Using ${holes.length} cached holes');
+        } else {
+          debugPrint('⚠️ No cached data available, calling Gemini...');
+          // Fall back to Gemini if no cache available
+          final holeMetadata = await _aiParsingService.parseScorecard(
+            imagePath: imagePath,
+          );
+          holes = _convertToScoreCardHoleData(holeMetadata);
+          // Save to cache for next time
+          await _saveCachedHoleData(holes);
+        }
+      } else {
+        debugPrint('🖼️ Processing scorecard image with Gemini...');
 
-      // Log the parsed hole metadata
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint(
-        '📊 GEMINI PARSED HOLE METADATA (${holeMetadata.length} holes)',
-      );
-      debugPrint('═══════════════════════════════════════════════════════');
-      for (final hole in holeMetadata) {
-        debugPrint(hole.toString());
-      }
-      debugPrint('═══════════════════════════════════════════════════════');
-
-      // Convert HoleMetadata to ScoreCardHoleData for UI display
-      final holes = holeMetadata.map((metadata) {
-        return ScoreCardHoleData(
-          holeNumber: metadata.holeNumber,
-          par: metadata.par,
-          distance: metadata.distanceFeet,
-          score: metadata.score,
-          confidence: 0.9, // Gemini typically has high confidence
+        // Use Gemini to parse the scorecard image
+        final holeMetadata = await _aiParsingService.parseScorecard(
+          imagePath: imagePath,
         );
-      }).toList();
+
+        // Log the parsed hole metadata
+        debugPrint('═══════════════════════════════════════════════════════');
+        debugPrint(
+          '📊 GEMINI PARSED HOLE METADATA (${holeMetadata.length} holes)',
+        );
+        debugPrint('═══════════════════════════════════════════════════════');
+        for (final hole in holeMetadata) {
+          debugPrint(hole.toString());
+        }
+        debugPrint('═══════════════════════════════════════════════════════');
+
+        holes = _convertToScoreCardHoleData(holeMetadata);
+
+        // Save to cache
+        await _saveCachedHoleData(holes);
+      }
 
       setState(() {
         _extractedData = holes;
@@ -238,6 +379,7 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
         builder: (context) => VoiceDetailInputScreen(
           holeMetadata: holeMetadata,
           courseName: _courseNameController.text.trim(),
+          testVoiceDescription: widget.testVoiceDescription,
         ),
       ),
     );
@@ -277,8 +419,8 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
     final scoreToParText = scoreToPar == 0
         ? 'E'
         : scoreToPar > 0
-            ? '+$scoreToPar'
-            : '$scoreToPar';
+        ? '+$scoreToPar'
+        : '$scoreToPar';
 
     return Card(
       color: const Color(0xFF1E293B),
@@ -294,7 +436,8 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
                   children: [
                     Text(
                       scoreToParText,
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: _getScoreColorForRelativeToPar(scoreToPar),
                           ),
@@ -303,8 +446,8 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
                     Text(
                       '$totalScore strokes',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFFB0B0B0),
-                          ),
+                        color: const Color(0xFFB0B0B0),
+                      ),
                     ),
                   ],
                 ),
@@ -317,11 +460,13 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                if (eagles > 0) _buildScoreChip('Eagles', eagles, Colors.purple),
+                if (eagles > 0)
+                  _buildScoreChip('Eagles', eagles, Colors.purple),
                 if (birdies > 0)
                   _buildScoreChip('Birdies', birdies, Colors.blue),
                 if (pars > 0) _buildScoreChip('Pars', pars, Colors.green),
-                if (bogeys > 0) _buildScoreChip('Bogeys', bogeys, Colors.orange),
+                if (bogeys > 0)
+                  _buildScoreChip('Bogeys', bogeys, Colors.orange),
                 if (doubleBogeyPlus > 0)
                   _buildScoreChip('2B+', doubleBogeyPlus, Colors.red),
               ],
@@ -353,9 +498,9 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFFB0B0B0),
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: const Color(0xFFB0B0B0)),
         ),
       ],
     );
@@ -428,6 +573,33 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 40),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Cache toggle
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.cached, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Use Cached Hole Data',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      Switch(
+                        value: _useCachedData,
+                        onChanged: (value) {
+                          setState(() {
+                            _useCachedData = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                      const Tooltip(
+                        message:
+                            'Load from cache instead of calling Gemini (faster)',
+                        child: Icon(Icons.info_outline, size: 16),
+                      ),
+                    ],
                   ),
                 ],
               ),

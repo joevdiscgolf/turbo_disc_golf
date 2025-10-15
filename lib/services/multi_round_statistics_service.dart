@@ -1,5 +1,10 @@
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
+import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 
 /// Service for calculating aggregated statistics across multiple rounds
@@ -17,7 +22,9 @@ class MultiRoundStatisticsService {
     int totalHoles = 0;
 
     for (var round in rounds) {
-      final roundStats = RoundStatisticsService(round).getScoringStats();
+      final roundStats = locator.get<ScoreAnalysisService>().getScoringStats(
+        round,
+      );
       totalBirdies += roundStats.birdies;
       totalPars += roundStats.pars;
       totalBogeys += roundStats.bogeys;
@@ -52,7 +59,9 @@ class MultiRoundStatisticsService {
     final Map<String, List<double>> bucketDistances = {};
 
     for (var round in rounds) {
-      final roundPuttStats = RoundStatisticsService(round).getPuttingSummary();
+      final roundPuttStats = locator
+          .get<PuttingAnalysisService>()
+          .getPuttingSummary(round);
 
       totalC1Makes += roundPuttStats.c1Makes;
       totalC1Misses += roundPuttStats.c1Misses;
@@ -91,15 +100,20 @@ class MultiRoundStatisticsService {
         ? allMissDistances.reduce((a, b) => a + b) / allMissDistances.length
         : 0.0;
     final avgAttemptDistance = allAttemptDistances.isNotEmpty
-        ? allAttemptDistances.reduce((a, b) => a + b) / allAttemptDistances.length
+        ? allAttemptDistances.reduce((a, b) => a + b) /
+              allAttemptDistances.length
         : 0.0;
 
     // Build aggregated bucket stats
     final Map<String, PuttBucketStats> aggregatedBucketStats = {};
     bucketMakes.forEach((label, makes) {
       final totalMakes = makes.fold<int>(0, (sum, val) => sum + val);
-      final totalMisses = bucketMisses[label]!.fold<int>(0, (sum, val) => sum + val);
-      final avgDist = bucketDistances[label]!.fold<double>(0.0, (sum, val) => sum + val) /
+      final totalMisses = bucketMisses[label]!.fold<int>(
+        0,
+        (sum, val) => sum + val,
+      );
+      final avgDist =
+          bucketDistances[label]!.fold<double>(0.0, (sum, val) => sum + val) /
           bucketDistances[label]!.length;
 
       aggregatedBucketStats[label] = PuttBucketStats(
@@ -162,7 +176,9 @@ class MultiRoundStatisticsService {
     final Map<String, int> attemptsByTechnique = {};
 
     for (var round in rounds) {
-      final roundStats = RoundStatisticsService(round).getTeeShotBirdieRateStats();
+      final roundStats = RoundStatisticsService(
+        round,
+      ).getTeeShotBirdieRateStats();
       roundStats.forEach((technique, stats) {
         birdiesByTechnique[technique] =
             (birdiesByTechnique[technique] ?? 0) + stats.birdieCount;
@@ -190,8 +206,9 @@ class MultiRoundStatisticsService {
     final Map<String, Map<String, int>> performanceByDisc = {};
 
     for (var round in rounds) {
-      final roundSummaries =
-          RoundStatisticsService(round).getDiscPerformanceSummaries();
+      final roundSummaries = locator
+          .get<DiscAnalysisService>()
+          .getDiscPerformanceSummaries(round);
       for (var summary in roundSummaries) {
         performanceByDisc.putIfAbsent(
           summary.discName,
@@ -233,7 +250,9 @@ class MultiRoundStatisticsService {
     int totalMistakes = 0;
 
     for (var round in rounds) {
-      final roundMistakes = RoundStatisticsService(round).getMistakeTypes();
+      final roundMistakes = locator
+          .get<MistakesAnalysisService>()
+          .getMistakeTypes(round);
       for (var mistake in roundMistakes) {
         mistakeTypeCounts[mistake.label] =
             (mistakeTypeCounts[mistake.label] ?? 0) + mistake.count;
@@ -262,7 +281,9 @@ class MultiRoundStatisticsService {
     final List<double> birdiePuttDistances = [];
 
     for (var round in rounds) {
-      final distance = RoundStatisticsService(round).getAverageBirdiePuttDistance();
+      final distance = locator
+          .get<PuttingAnalysisService>()
+          .getAverageBirdiePuttDistance(round);
       if (distance > 0) {
         birdiePuttDistances.add(distance);
       }
@@ -270,7 +291,8 @@ class MultiRoundStatisticsService {
 
     if (birdiePuttDistances.isEmpty) return 0.0;
 
-    return birdiePuttDistances.reduce((a, b) => a + b) / birdiePuttDistances.length;
+    return birdiePuttDistances.reduce((a, b) => a + b) /
+        birdiePuttDistances.length;
   }
 
   /// Get average score relative to par across all rounds
@@ -281,7 +303,9 @@ class MultiRoundStatisticsService {
     int roundCount = 0;
 
     for (var round in rounds) {
-      final relativeScore = RoundStatisticsService(round).getTotalScoreRelativeToPar();
+      final relativeScore = RoundStatisticsService(
+        round,
+      ).getTotalScoreRelativeToPar();
       totalRelativeScore += relativeScore;
       roundCount++;
     }
@@ -308,8 +332,9 @@ class MultiRoundStatisticsService {
     int forehandSuccessful = 0;
 
     for (var round in rounds) {
-      final comparison =
-          RoundStatisticsService(round).compareBackhandVsForehandTeeShots();
+      final comparison = RoundStatisticsService(
+        round,
+      ).compareBackhandVsForehandTeeShots();
 
       // Aggregate backhand stats
       backhandAttempts += comparison.technique1Count;

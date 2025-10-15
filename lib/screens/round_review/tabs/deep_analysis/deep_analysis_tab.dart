@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -9,6 +10,9 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/componen
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/shot_type_birdie_rates_card.dart';
+import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
@@ -21,19 +25,25 @@ class DeepAnalysisTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final PuttingAnalysisService puttingAnalysisService = locator
+        .get<PuttingAnalysisService>();
 
     final Map<String, BirdieRateStats> teeShotBirdieRateStats = statsService
         .getTeeShotBirdieRateStats();
     final Map<String, List<MapEntry<DGHole, DiscThrow>>> teeShotBirdieDetails =
         statsService.getTeeShotBirdieDetails();
-    final PuttStats puttingSummary = statsService.getPuttingSummary();
-    final double avgBirdiePuttDist = statsService
-        .getAverageBirdiePuttDistance();
+    final PuttStats puttingSummary = puttingAnalysisService.getPuttingSummary(
+      round,
+    );
+    final double avgBirdiePuttDist = puttingAnalysisService
+        .getAverageBirdiePuttDistance(round);
     final CoreStats coreStats = statsService.getCoreStats();
-    final List<DiscPerformanceSummary> discPerformances = statsService
-        .getDiscPerformanceSummaries();
-    final List<MistakeTypeSummary> mistakeTypes = statsService
-        .getMistakeTypes();
+    final List<DiscPerformanceSummary> discPerformances = locator
+        .get<DiscAnalysisService>()
+        .getDiscPerformanceSummaries(round);
+    final List<MistakeTypeSummary> mistakeTypes = locator
+        .get<MistakesAnalysisService>()
+        .getMistakeTypes(round);
 
     return ListView(
       padding: const EdgeInsets.only(top: 24, bottom: 80),

@@ -63,12 +63,21 @@ const String flingsGivingRound2Description = '''
 Whole one is a 600 ft par 4 that's wide open in downhill at the start and then goes into the trees for the second part I threw my halo Destroyer off the tee on a backhand just flat and it ended up just into the trees and 140 ft away and I threw a forehand up shot with my razor claw and that parked at 10 ft away so I buried hold two is a 170 ft Par 3 pretty wide open I threw a forehand tactic out to the left side on Heiser and parked it two feet away all three is a wide open 370 ft Par 3 I threw my PD on a backhand hyzer and ended up 25 ft left with a birdie putt I miss that Putt and then I missed the comeback butt from 25 ft so I tapped in for a bogey on that hole whole four is a 380 ft Par 3 it's pretty wide open but the green is protected by some trees I threw a backhand hyzer with a pd2 out to the right and then I ended up 25 ft long and out of bounds and I made my par put from 25 ft whole five was a 440 ft par 4 I threw a forehand off the tee and had another forehand approach from 140 ft into the green and made a 23 ft pot for birdie whole six is a wide open and 30 ft Par 3 I threw a backhand hyzer with my md4 to 25 ft and made the putt whole seven is a 500 ft powerful through a bunch of trees pretty tight I hit the first tree with my cloud breaker on a backhand and then I threw my second shot with a backhand dd3 and hit another tree and ended up 250 ft short I threw a forehand pd2 through the trees to try to get a par but it ended up 45 ft away I tried to make the 45 foot pot for par I missed that and went out of bounds past the basket and then I missed my 15-ft pot for double bogey and tapped in for a triple bogey.Call 8 is a 240 ft pretty wide open hole with a low ceiling off the tee I threw my fd3 on a forehand hyzer and threw it to 15 ft and made that putt whole nine is a 300 ft downhill Par 3 wide open until the very end where the basket is just into the forest I threw my pd2 on a forehand flat shot and threw it to 28 ft and made the putt through the woods for birdie whole 10 is a 550 ft par 4 that's wide open most of the way and then finishes where the basket is guarded by trees I threw my wraith on a backhand turnover and it hit a tree stopping at 80 ft short and then I laid up that putt to about 10 ft and tapped in for birdie then hole 11 is a 315-ft par 3 pretty wide open until the end where the basket is in a Grove of pine trees I threw my fd3 on a backhand hyzer out to the right side and low and it skipped up to 3 ft away from the basket and I tap that in for birdie whole 12 is a 200 ft wide open Par 3 I threw a forehand md5 to about 10 ft and tap that in for birdie whole 13 is a 800 ft par 5 very wide open with out of bounds on the left and right I threw my wraith on a backhand hyzer flip to about 315 ft away from the basket then I threw my buzz 228 ft left of the basket and I miss that putt just low for Eagle so I tapped in for the birdie whole 14 is a 340 ft wide open Par 3 with some trees guarding the basket at the end I threw it a little bit short and left to 50 ft and laid that up to tap in for par whole 15 is a wide open Par 3 where you just have to get over a bunker in front of the basket I threw a forehand into a tree On the left and laid that up that ended up 50 ft away and laid that up to tap in for the par hole 16 starts wide open and then finishes into a Grove of trees with a big opening I threw my Razor cloth on a forehand and it ended up 25 ft short and right and I made that putt for birdie whole 17 is a wide open 700 ft power 4 I threw my wraith on a backhand hyzer flip and ended up in the Fairway and then I had 215 ft into the basket I threw a skip shot with my md5 on a backhand which rolled and ended up 35 ft away I missed that putt for birdie and had a 20 ft pop back for par I missed that putt for par and made it 20 ft pot for bogey on 18 it's a 400 ft Par 3 without a bounds on the left and right but wide open otherwise I threw my md1 on a backhand turnover and threw it to 40 ft left and short and laid up and tapped in for the three 
 ''';
 
+const String elevenUnderWhitesDescriptionNoHoleDistance = '''
+Hole one I threw my Destroyer on a big backhand line and it landed in the middle of the Fairway then I threw my md4 and parked it about 5 ft away and tapped it in for the birdie. Hole two I threw my fd3 to Circle one about 25 ft away missed the putt off the cage and then miss the par putt because it's bad back at me so I took a bogey there. Hole three pretty open I threw a power forehand but the right to left wind crushed it down 70 ft short then I tried to make the putt from 70 ft and it rolled to 15 ft and then I missed that 15-ft putt so I took a bogey. Hole four there's one tree you have to miss and get underneath and I threw a perfect shot with my md4 got underneath the tree and made it to 10 ft and tapped that in for birdie. Hole five I threw a high turnover backhand with my dd3 into the middle of the Fairway and then threw a good standstill backhand approach from 180 ft and made that 15 footer for birdie. Hole six is short but it has a specific Landing Zone. I threw my logic about 30 ft long and right and then I made that 35 ft come back putt for birdie. Hole seven with a double Mando that you have to hit I made it through the double Mando off the tee and I threw a great second shot to get myself parked for the birdie tapped that in for the birdie three. Hole eight I threw my forehand razor claw tactic to about 25 ft long and left made that birdie putt. Hole nine is downhill and wide open I threw my fd3 on a forehand and it landed 10 ft away from the basket. Hole ten is pretty wide open I threw my PD on a hyzer and parked out under the basket 3 ft away tapped that in for birdie. Hole eleven I threw my forehand fd3 a bit wide I ended up 35 ft short and left and made a great 35 ft putt for birdie. Hole twelve I threw my cloudbreaker off the tee landed a bit left side of the Fairway which is what I wanted and then threw my second shot which caught a tree and landed short so I laid up and tapped in my birdie for. Hole thirteen with out of bounds on the right side I threw a forehand and it was too right and nose up and it faded out out of bounds on the right so I threw my second shot from out of bounds and that missed so I had a bogey putt which I made from 25 ft. Hole fourteen I threw my Destroyer on a flexshot off the tee then I threw a different Destroyer on a Flex Shot around the right side and then I laid up with a hundred foot forehand approach to give myself a short birdie putt which I made for birdie. Hole fifteen is a low ceiling tight hole I threw a good shot down the middle low and left myself 25 ft left and short made that birdie putt. Hole sixteen has a gap of trees that you have to hit late in the Fairway and I perfectly threw my backhand through that Gap and I ended up 25 ft past the basket and made that putt for birdie. Hole seventeen with a double mandatory that you have to go through halfway up the Fairway I threw a backhand just short of that and then threw a backhand Md4 to 25 ft and then I missed that putt and then I made a 25-ft par putt. Hole eighteen where you have to hit a gap in the trees 200 ft off the tee I hit the Gap but threw it a little bit too high so I got dropped down short but had a wide open shot to throw my PD on a backhand and landed about 20 ft away and I made that birdie putt.
+''';
+
+const String flingsGivingRound2DescriptionNoHoleDistance = '''
+Hole one is wide open and downhill at the start and then goes into the trees for the second part. I threw my halo Destroyer off the tee on a backhand just flat and it ended up just into the trees and 140 ft away and I threw a forehand upshot with my razor claw and that parked at 10 ft away so I birdied. Hole two is pretty wide open. I threw a forehand tactic out to the left side on hyzer and parked it two feet away. Hole three is wide open. I threw my PD on a backhand hyzer and ended up 25 ft left with a birdie putt. I missed that putt and then I missed the comeback putt from 25 ft so I tapped in for a bogey on that hole. Hole four is pretty wide open but the green is protected by some trees. I threw a backhand hyzer with a pd2 out to the right and then I ended up 25 ft long and out of bounds and I made my par putt from 25 ft. Hole five I threw a forehand off the tee and had another forehand approach from 140 ft into the green and made a 23 ft putt for birdie. Hole six is wide open. I threw a backhand hyzer with my md4 to 25 ft and made the putt. Hole seven goes through a bunch of trees, pretty tight. I hit the first tree with my cloud breaker on a backhand and then I threw my second shot with a backhand dd3 and hit another tree and ended up short. I threw a forehand pd2 through the trees to try to get a par but it ended up 45 ft away. I tried to make the 45-ft putt for par, I missed that and went out of bounds past the basket, and then I missed my 15-ft putt for double bogey and tapped in for a triple bogey. Hole eight is pretty wide open with a low ceiling off the tee. I threw my fd3 on a forehand hyzer and threw it to 15 ft and made that putt. Hole nine is downhill and wide open until the very end where the basket is just into the forest. I threw my pd2 on a forehand flat shot and threw it to 28 ft and made the putt through the woods for birdie. Hole ten is wide open most of the way and then finishes where the basket is guarded by trees. I threw my wraith on a backhand turnover and it hit a tree stopping at 80 ft short and then I laid up that putt to about 10 ft and tapped in for birdie. Hole eleven is pretty wide open until the end where the basket is in a grove of pine trees. I threw my fd3 on a backhand hyzer out to the right side and low and it skipped up to 3 ft away from the basket and I tapped that in for birdie. Hole twelve is wide open. I threw a forehand md5 to about 10 ft and tapped that in for birdie. Hole thirteen is very wide open with out of bounds on the left and right. I threw my wraith on a backhand hyzer flip and then I threw my buzz left of the basket and I missed that putt just low for eagle so I tapped in for the birdie. Hole fourteen is wide open with some trees guarding the basket at the end. I threw it a little bit short and left to 50 ft and laid that up to tap in for par. Hole fifteen is wide open where you just have to get over a bunker in front of the basket. I threw a forehand into a tree on the left and that ended up 50 ft away and I laid that up to tap in for the par. Hole sixteen starts wide open and then finishes into a grove of trees with a big opening. I threw my razor claw on a forehand and it ended up 25 ft short and right and I made that putt for birdie. Hole seventeen is wide open. I threw my wraith on a backhand hyzer flip and ended up in the fairway and then I had a shot into the basket. I threw a skip shot with my md5 on a backhand which rolled and ended up 35 ft away. I missed that putt for birdie and had a 20 ft putt back for par. I missed that putt for par and made a 20-ft putt for bogey. Hole eighteen has out of bounds on the left and right but is wide open otherwise. I threw my md1 on a backhand turnover and threw it to 40 ft left and short and laid up and tapped in for the three.
+''';
+
 const testRoundDescriptions = [
   testRoundDescription,
   testRoundDescription2,
   testRoundDescription3,
   testRoundDescription4,
   flingsGivingRound2Description,
+  elevenUnderWhitesDescriptionNoHoleDistance,
 ];
 
 const String testCourseName = 'Foxwood';
@@ -82,7 +91,7 @@ class RecordRoundScreen extends StatefulWidget {
 
 class _RecordRoundScreenState extends State<RecordRoundScreen>
     with SingleTickerProviderStateMixin {
-  static const descriptionIndex = 1;
+  static const descriptionIndex = 4;
   String get getCorrectTestDescription =>
       testRoundDescriptions[descriptionIndex];
   late final VoiceRecordingService _voiceService;
@@ -243,17 +252,17 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
             // Header
             Text(
               'Record Your Round',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Choose how you want to input your round data',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFB0B0B0),
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFB0B0B0)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -272,7 +281,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00F5D4).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFF00F5D4,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Center(
@@ -289,10 +300,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                         const SizedBox(width: 12),
                         Text(
                           'Image + Voice Input',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -300,8 +309,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                     Text(
                       'Upload a scorecard screenshot to capture hole info (par, distance, score), then describe your throws with voice.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFB0B0B0),
-                          ),
+                        color: const Color(0xFFB0B0B0),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -336,9 +345,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                   child: Text(
                     'OR',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: const Color(0xFF64748B),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const Expanded(child: Divider(color: Color(0xFF334155))),
@@ -361,7 +370,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF9D7FFF).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFF9D7FFF,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Center(
@@ -378,10 +389,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                         const SizedBox(width: 12),
                         Text(
                           'Voice-Only Input',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -389,8 +398,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                     Text(
                       'Describe your entire round with voice, including hole numbers, par, distance, and all your throws.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFB0B0B0),
-                          ),
+                        color: const Color(0xFFB0B0B0),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -423,7 +432,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                             Expanded(
                               child: Text(
                                 _voiceService.lastError,
-                                style: const TextStyle(color: Color(0xFFFFBBBB)),
+                                style: const TextStyle(
+                                  color: Color(0xFFFFBBBB),
+                                ),
                               ),
                             ),
                           ],
@@ -443,13 +454,16 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: _voiceService.isListening
-                                    ? const Color(0xFF10E5FF).withValues(alpha: 0.9)
+                                    ? const Color(
+                                        0xFF10E5FF,
+                                      ).withValues(alpha: 0.9)
                                     : const Color(0xFF9D7FFF),
                                 boxShadow: _voiceService.isListening
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFF10E5FF)
-                                              .withValues(alpha: 0.7),
+                                          color: const Color(
+                                            0xFF10E5FF,
+                                          ).withValues(alpha: 0.7),
                                           blurRadius:
                                               20 * _animationController.value,
                                           spreadRadius:
@@ -458,8 +472,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                                       ]
                                     : [
                                         BoxShadow(
-                                          color: const Color(0xFF9D7FFF)
-                                              .withValues(alpha: 0.4),
+                                          color: const Color(
+                                            0xFF9D7FFF,
+                                          ).withValues(alpha: 0.4),
                                           blurRadius: 10,
                                           spreadRadius: 3,
                                         ),
@@ -485,8 +500,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                         _testMode
                             ? 'Test Mode Active'
                             : _voiceService.isListening
-                                ? 'Listening... Describe your round!'
-                                : 'Tap mic to record',
+                            ? 'Listening... Describe your round!'
+                            : 'Tap mic to record',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
@@ -519,8 +534,10 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('Test Mode',
-                              style: TextStyle(fontSize: 16)),
+                          const Text(
+                            'Test Mode',
+                            style: TextStyle(fontSize: 16),
+                          ),
                           Switch(
                             value: _testMode,
                             onChanged: (value) {
@@ -529,8 +546,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                                 if (value) {
                                   _transcriptController.text =
                                       getCorrectTestDescription;
-                                  _voiceService
-                                      .updateText(getCorrectTestDescription);
+                                  _voiceService.updateText(
+                                    getCorrectTestDescription,
+                                  );
                                 } else {
                                   _transcriptController.clear();
                                   _voiceService.clearText();
@@ -590,7 +608,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                                       context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                          content: Text(_roundParser.lastError)),
+                                        content: Text(_roundParser.lastError),
+                                      ),
                                     );
                                   }
                                 },
@@ -599,7 +618,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Icon(Icons.science),
                           label: Text(
@@ -610,6 +630,32 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF9D4EDD),
                             foregroundColor: const Color(0xFFF5F5F5),
+                          ),
+                        ),
+
+                      if (_testMode) const SizedBox(height: 12),
+
+                      // Test Image + Voice button
+                      if (_testMode)
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ImportScoreScreen(
+                                  testMode: true,
+                                  testVoiceDescription:
+                                      flingsGivingRound2DescriptionNoHoleDistance,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.image),
+                          label: const Text(
+                            'Test Image + Voice (Pre-processed)',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00F5D4),
+                            foregroundColor: const Color(0xFF0A0E17),
                           ),
                         ),
                     ],

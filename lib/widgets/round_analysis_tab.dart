@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/round_review_stat_card.dart';
+import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 
 /// Tab 3: Detailed analysis with disc performance and technique breakdowns
@@ -15,9 +17,9 @@ class RoundAnalysisTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final RoundStatisticsService statsService = RoundStatisticsService(round);
 
-    final List<DiscInsight> topDiscs = statsService.getTopPerformingDiscs(
-      limit: 5,
-    );
+    final List<DiscInsight> topDiscs = locator
+        .get<DiscAnalysisService>()
+        .getTopPerformingDiscs(round, limit: 5);
     final approachComparison = statsService
         .compareBackhandVsForehandApproaches();
     final Map<String, TechniqueStats> teeStats = statsService.getTechniqueStats(
