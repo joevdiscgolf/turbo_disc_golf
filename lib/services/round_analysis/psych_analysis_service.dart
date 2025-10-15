@@ -5,14 +5,13 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
-import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.dart';
 
 class PsychAnalysisService {
   /// Get comprehensive momentum and psychological analysis
-  MomentumStats getMomentumStats(DGRound round) {
+  PsychStats getPsychStats(DGRound round) {
     // Need at least 3 holes for meaningful momentum analysis
     if (round.holes.length < 3) {
-      return MomentumStats(
+      return PsychStats(
         transitionMatrix: {},
         momentumMultiplier: 1.0,
         tiltFactor: 0.0,
@@ -363,7 +362,7 @@ class PsychAnalysisService {
     // Calculate score trend
     final scoreTrend = getScoreTrend(round);
 
-    return MomentumStats(
+    return PsychStats(
       transitionMatrix: transitionMatrix,
       momentumMultiplier: momentumMultiplier,
       tiltFactor: tiltFactor,
@@ -542,20 +541,10 @@ class PsychAnalysisService {
       }
     }
 
-    // Calculate shot quality
-    int successfulShots = 0;
+    // Count total shots in this section
     int totalShots = 0;
-
     for (var hole in sectionHoles) {
-      for (var discThrow in hole.throws) {
-        totalShots++;
-        if (locator.get<ShotAnalysisService>().isSuccessfulShot(
-          discThrow,
-          hole,
-        )) {
-          successfulShots++;
-        }
-      }
+      totalShots += hole.throws.length;
     }
 
     // Count mistakes in this section
@@ -567,6 +556,11 @@ class PsychAnalysisService {
         .where((m) => sectionHoleNumbers.contains(m['holeNumber']))
         .length;
 
+    // Calculate shot quality based on mistakes (consistent metric)
+    final shotQualityRate = totalShots > 0
+        ? ((totalShots - mistakeCount) / totalShots) * 100
+        : 0.0;
+
     final totalHoles = sectionHoles.length;
     return SectionPerformance(
       sectionName: sectionName,
@@ -575,9 +569,7 @@ class PsychAnalysisService {
       birdieRate: (birdies / totalHoles) * 100,
       parRate: (pars / totalHoles) * 100,
       bogeyPlusRate: (bogeyPlus / totalHoles) * 100,
-      shotQualityRate: totalShots > 0
-          ? (successfulShots / totalShots) * 100
-          : 0.0,
+      shotQualityRate: shotQualityRate,
       c1InRegRate: (c1InReg / totalHoles) * 100,
       c2InRegRate: (c2InReg / totalHoles) * 100,
       fairwayHitRate: (fairwayHits / totalHoles) * 100,

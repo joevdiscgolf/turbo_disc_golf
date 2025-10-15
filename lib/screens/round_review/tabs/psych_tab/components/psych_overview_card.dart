@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 
-class MomentumOverviewCard extends StatelessWidget {
-  final MomentumStats stats;
+class PsychOverviewCard extends StatelessWidget {
+  final PsychStats stats;
 
-  const MomentumOverviewCard({super.key, required this.stats});
+  const PsychOverviewCard({super.key, required this.stats});
 
   @override
   Widget build(BuildContext context) {

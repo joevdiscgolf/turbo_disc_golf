@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 
 class InsightsCard extends StatelessWidget {
-  final MomentumStats stats;
+  final PsychStats stats;
 
   const InsightsCard({super.key, required this.stats});
 
@@ -24,9 +24,9 @@ class InsightsCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Mental Game Insights',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -53,7 +53,7 @@ class InsightsCard extends StatelessWidget {
     IconData icon;
     Color color;
 
-    if (insight.contains('momentum') || insight.contains('birdie')) {
+    if (insight.contains('psych') || insight.contains('birdie')) {
       icon = Icons.trending_up;
       color = const Color(0xFF9D4EDD);
     } else if (insight.contains('tilt') || insight.contains('reset')) {
@@ -84,9 +84,7 @@ class InsightsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,10 +99,7 @@ class InsightsCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              insight,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(insight, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),

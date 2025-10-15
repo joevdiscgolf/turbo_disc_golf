@@ -1029,6 +1029,91 @@ class RoundStatisticsService {
     return allTeeShotsByShape;
   }
 
+  /// Get birdie rate statistics by shot shape AND technique combination
+  /// Returns data grouped by keys like "backhand_hyzer", "forehand_flat", etc.
+  Map<String, BirdieRateStats> getShotShapeByTechniqueBirdieRateStats() {
+    final Map<String, List<DGHole>> teeThrowsByCombo = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      // Get the tee shot (first throw, index 0)
+      final teeShot = hole.throws.first;
+
+      if (teeShot.technique != null && teeShot.shotShape != null) {
+        final comboKey = '${teeShot.technique!.name}_${teeShot.shotShape!.name}';
+        teeThrowsByCombo.putIfAbsent(comboKey, () => []);
+        teeThrowsByCombo[comboKey]!.add(hole);
+      }
+    }
+
+    // Calculate birdie percentage and counts for each combination
+    return teeThrowsByCombo.map((comboKey, holes) {
+      final birdieCount = holes
+          .where((hole) => hole.relativeHoleScore < 0)
+          .length;
+      final totalAttempts = holes.length;
+      final birdieRate = totalAttempts > 0
+          ? (birdieCount / totalAttempts) * 100
+          : 0.0;
+      return MapEntry(
+        comboKey,
+        BirdieRateStats(
+          percentage: birdieRate,
+          birdieCount: birdieCount,
+          totalAttempts: totalAttempts,
+        ),
+      );
+    });
+  }
+
+  /// Get C1 and C2 in regulation percentages by shot shape AND technique combination
+  /// Returns data grouped by keys like "backhand_hyzer", "forehand_flat", etc.
+  Map<String, Map<String, double>> getCircleInRegByShotShapeAndTechnique() {
+    final Map<String, int> c1InRegByCombo = {};
+    final Map<String, int> c2InRegByCombo = {};
+    final Map<String, int> totalByCombo = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.shotShape == null || teeShot.technique == null) continue;
+
+      final comboKey = '${teeShot.technique!.name}_${teeShot.shotShape!.name}';
+      totalByCombo[comboKey] = (totalByCombo[comboKey] ?? 0) + 1;
+
+      // Check if reached C1/C2 in regulation (par - 2 strokes or less)
+      final regulationStrokes = hole.par - 2;
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1InRegByCombo[comboKey] = (c1InRegByCombo[comboKey] ?? 0) + 1;
+            c2InRegByCombo[comboKey] = (c2InRegByCombo[comboKey] ?? 0) + 1;
+            break;
+          } else if (discThrow.landingSpot == LandingSpot.circle2) {
+            c2InRegByCombo[comboKey] = (c2InRegByCombo[comboKey] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByCombo.map((comboKey, total) {
+      final c1Count = c1InRegByCombo[comboKey] ?? 0;
+      final c2Count = c2InRegByCombo[comboKey] ?? 0;
+      return MapEntry(comboKey, {
+        'c1Percentage': total > 0 ? (c1Count / total) * 100 : 0.0,
+        'c2Percentage': total > 0 ? (c2Count / total) * 100 : 0.0,
+        'c1Count': c1Count.toDouble(),
+        'c2Count': c2Count.toDouble(),
+        'totalAttempts': total.toDouble(),
+      });
+    });
+  }
+
   /// Get technique comparison for backhand vs forehand across multiple metrics
   Map<String, Map<String, double>> getTechniqueComparison() {
     final Map<String, int> birdiesByTechnique = {};

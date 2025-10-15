@@ -83,13 +83,13 @@ class DiscThrowParser {
 
   // ---------- distance & wind extraction ----------
   static int? _extractFeet(String text) {
-    final ftRegex = RegExp(r"(\d{2,4})\s*(?:ft|feet|foot|'|\bft\.)\b");
+    final ftRegex = RegExp(r"(\d{1,4})\s*(?:ft|feet|foot|'|\bft\.)\b");
     final m = ftRegex.firstMatch(text);
     return m != null ? int.tryParse(m.group(1)!) : null;
   }
 
   static double? _extractMeters(String text) {
-    final mRegex = RegExp(r'(\d{2,4}(?:\.\d+)?)\s*(?:m|meters)\b');
+    final mRegex = RegExp(r'(\d{1,4}(?:\.\d+)?)\s*(?:m|meters)\b');
     final m = mRegex.firstMatch(text);
     return m != null ? double.tryParse(m.group(1)!) : null;
   }

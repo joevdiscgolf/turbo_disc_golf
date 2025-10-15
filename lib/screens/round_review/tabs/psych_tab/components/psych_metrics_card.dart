@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 
-class MomentumMetricsCard extends StatelessWidget {
-  final MomentumStats stats;
+class PsychMetricsCard extends StatelessWidget {
+  final PsychStats stats;
 
-  const MomentumMetricsCard({super.key, required this.stats});
+  const PsychMetricsCard({super.key, required this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +20,9 @@ class MomentumMetricsCard extends StatelessWidget {
         children: [
           Text(
             'Key Metrics',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 
@@ -36,8 +36,8 @@ class MomentumMetricsCard extends StatelessWidget {
             description: stats.momentumMultiplier > 2.0
                 ? 'High - you ride momentum waves'
                 : stats.momentumMultiplier < 1.5
-                    ? 'Low - very consistent mentally'
-                    : 'Moderate momentum effect',
+                ? 'Low - very consistent mentally'
+                : 'Moderate momentum effect',
           ),
 
           const SizedBox(height: 12),
@@ -128,14 +128,14 @@ class MomentumMetricsCard extends StatelessWidget {
                     Text(
                       label,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -143,9 +143,9 @@ class MomentumMetricsCard extends StatelessWidget {
               Text(
                 value,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: iconColor,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: iconColor,
+                ),
               ),
             ],
           ),

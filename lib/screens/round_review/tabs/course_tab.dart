@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
@@ -19,12 +20,7 @@ class CourseTab extends StatelessWidget {
     final scoringStats =
         analysis?.scoringStats ??
         locator.get<ScoreAnalysisService>().getScoringStats(round);
-    final totalScore =
-        analysis?.totalScoreRelativeToPar ??
-        statsService.getTotalScoreRelativeToPar();
-    final bounceBackPct =
-        analysis?.bounceBackPercentage ??
-        statsService.getBounceBackPercentage();
+    statsService.getBounceBackPercentage();
     final birdieRateByPar =
         analysis?.birdieRateByPar ?? statsService.getBirdieRateByPar();
     final birdieRateByLength =
@@ -44,7 +40,7 @@ class CourseTab extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
       children: addRunSpacing(
         [
-          _buildScoreSummary(context, totalScore, scoringStats, bounceBackPct),
+          // _buildScoreSummary(context, totalScore, scoringStats, bounceBackPct),
           _buildScoreDistribution(context, scoringStats),
           _buildPerformanceByPar(context, performanceByPar),
           _buildBirdieTrends(
@@ -62,100 +58,112 @@ class CourseTab extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreSummary(
-    BuildContext context,
-    int totalScore,
-    scoringStats,
-    double bounceBackPct,
-  ) {
-    final scoreColor = totalScore < 0
-        ? const Color(0xFF00F5D4)
-        : totalScore > 0
-        ? const Color(0xFFFF7A7A)
-        : const Color(0xFFF5F5F5);
+  // Widget _buildScoreSummary(
+  //   BuildContext context,
+  //   int totalScore,
+  //   ScoringStats scoringStats,
+  //   double bounceBackPct,
+  // ) {
+  //   final scoreColor = totalScore < 0
+  //       ? const Color(0xFF00F5D4)
+  //       : totalScore > 0
+  //       ? const Color(0xFFFF7A7A)
+  //       : const Color(0xFFF5F5F5);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Round Summary',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildKPI(
-                  context,
-                  'Score',
-                  totalScore >= 0 ? '+$totalScore' : '$totalScore',
-                  scoreColor,
-                ),
-                _buildKPI(
-                  context,
-                  'Birdies',
-                  '${scoringStats.birdies}',
-                  const Color(0xFF00F5D4),
-                ),
-                _buildKPI(
-                  context,
-                  scoringStats.pars == 1 ? 'Par' : 'Pars',
-                  '${scoringStats.pars}',
-                  Colors.grey,
-                ),
-                _buildKPI(
-                  context,
-                  'Bogeys',
-                  '${scoringStats.bogeys}',
-                  const Color(0xFFFF7A7A),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: _buildKPI(
-                context,
-                'Bounce Back %',
-                '${bounceBackPct.toStringAsFixed(0)}%',
-                const Color(0xFF4CAF50),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  //   final hasEagles = scoringStats.eagles > 0;
 
-  Widget _buildKPI(
-    BuildContext context,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'Round Summary',
+  //             style: Theme.of(
+  //               context,
+  //             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceAround,
+  //             children: [
+  //               _buildKPI(
+  //                 context,
+  //                 'Score',
+  //                 totalScore >= 0 ? '+$totalScore' : '$totalScore',
+  //                 scoreColor,
+  //               ),
+  //               if (hasEagles)
+  //                 _buildKPI(
+  //                   context,
+  //                   scoringStats.eagles == 1 ? 'Eagle' : 'Eagles',
+  //                   '${scoringStats.eagles}',
+  //                   const Color(0xFFFFD700),
+  //                 ),
+  //               _buildKPI(
+  //                 context,
+  //                 scoringStats.birdies == 1 ? 'Birdie' : 'Birdies',
+  //                 '${scoringStats.birdies}',
+  //                 const Color(0xFF00F5D4),
+  //               ),
+  //               _buildKPI(
+  //                 context,
+  //                 scoringStats.pars == 1 ? 'Par' : 'Pars',
+  //                 '${scoringStats.pars}',
+  //                 Colors.grey,
+  //               ),
+  //             ],
+  //           ),
+  //           const SizedBox(height: 16),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceAround,
+  //             children: [
+  //               _buildKPI(
+  //                 context,
+  //                 scoringStats.bogeys == 1 ? 'Bogey' : 'Bogeys',
+  //                 '${scoringStats.bogeys}',
+  //                 const Color(0xFFFF7A7A),
+  //               ),
+  //               _buildKPI(
+  //                 context,
+  //                 'Double Bogey+',
+  //                 '${scoringStats.doubleBogeyPlus}',
+  //                 const Color(0xFFD32F2F),
+  //               ),
+  //             ],
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildKPI(
+  //   BuildContext context,
+  //   String label,
+  //   String value,
+  //   Color color,
+  // ) {
+  //   return Column(
+  //     children: [
+  //       Text(
+  //         value,
+  //         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+  //           fontWeight: FontWeight.bold,
+  //           color: color,
+  //         ),
+  //       ),
+  //       const SizedBox(height: 4),
+  //       Text(
+  //         label,
+  //         style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //           color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildScoreDistribution(BuildContext context, scoringStats) {
     final total = scoringStats.totalHoles;
@@ -318,12 +326,21 @@ class CourseTab extends StatelessWidget {
                   final c2Rate = c1c2Stats?['c2InRegRate'] ?? 0;
                   final holesPlayed = c1c2Stats?['holesPlayed']?.toInt() ?? 0;
 
+                  // Get holes for this distance category
+                  final holesInCategory = _getHolesForDistanceCategory(
+                    distanceCategory,
+                  );
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    child: Theme(
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: const EdgeInsets.only(top: 8),
+                        title: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
@@ -338,25 +355,28 @@ class CourseTab extends StatelessWidget {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildDistanceStatItem(
-                              context,
-                              'Birdie',
-                              birdieRate,
-                            ),
-                            _buildDistanceStatItem(context, 'C1 Reg', c1Rate),
-                            _buildDistanceStatItem(context, 'C2 Reg', c2Rate),
-                          ],
-                        ),
-                        if (entry != birdieRateByLength.entries.last)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Divider(),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildDistanceStatItem(
+                                context,
+                                'Birdie',
+                                birdieRate,
+                              ),
+                              _buildDistanceStatItem(context, 'C1 Reg', c1Rate),
+                              _buildDistanceStatItem(context, 'C2 Reg', c2Rate),
+                            ],
                           ),
-                      ],
+                        ),
+                        children: [
+                          if (holesInCategory.isNotEmpty) ...[
+                            const Divider(),
+                            _buildHolesList(context, holesInCategory),
+                          ],
+                        ],
+                      ),
                     ),
                   );
                 }),
@@ -701,6 +721,174 @@ class CourseTab extends StatelessWidget {
             context,
           ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
+      ],
+    );
+  }
+
+  List<DGHole> _getHolesForDistanceCategory(String category) {
+    return round.holes.where((hole) {
+      final feet = hole.feet;
+      if (feet == null) return false;
+
+      switch (category) {
+        case '<300 ft':
+          return feet < 300;
+        case '300-400 ft':
+          return feet >= 300 && feet < 400;
+        case '400-500 ft':
+          return feet >= 400 && feet < 500;
+        case '>500 ft':
+          return feet >= 500;
+        default:
+          return false;
+      }
+    }).toList();
+  }
+
+  Widget _buildHolesList(BuildContext context, List<DGHole> holes) {
+    final birdieHoles = holes.where((h) => h.relativeHoleScore < 0).toList();
+    final bogeyHoles = holes.where((h) => h.relativeHoleScore > 0).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (birdieHoles.isNotEmpty) ...[
+          Text(
+            'Birdies (${birdieHoles.length})',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ...birdieHoles.map((hole) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF00F5D4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${hole.number}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00F5D4).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      hole.relativeHoleScore == -1
+                          ? 'Birdie'
+                          : hole.relativeHoleScore == -2
+                          ? 'Eagle'
+                          : '${hole.relativeHoleScore}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        color: const Color(0xFF00F5D4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+        if (birdieHoles.isNotEmpty && bogeyHoles.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          const Divider(),
+          const SizedBox(height: 8),
+        ],
+        if (bogeyHoles.isNotEmpty) ...[
+          Text(
+            'Bogeys (${bogeyHoles.length})',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ...bogeyHoles.map((hole) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${hole.number}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      hole.relativeHoleScore == 1
+                          ? 'Bogey'
+                          : hole.relativeHoleScore == 2
+                          ? 'Double'
+                          : '+${hole.relativeHoleScore}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
       ],
     );
   }
