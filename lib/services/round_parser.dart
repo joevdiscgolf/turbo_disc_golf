@@ -212,60 +212,74 @@ class RoundParser extends ChangeNotifier {
         }
 
         // Validate and correct landingSpot based on distanceFeetAfterThrow
+        // CRITICAL: NEVER override out_of_bounds or off_fairway - these are always correct
         if (workingThrow.distanceFeetAfterThrow != null) {
           final distance = workingThrow.distanceFeetAfterThrow!;
-          LandingSpot? correctLandingSpot;
+          final currentSpot = workingThrow.landingSpot;
 
-          if (distance == 0) {
-            correctLandingSpot = LandingSpot.inBasket;
-          } else if (distance <= 10) {
-            correctLandingSpot = LandingSpot.parked;
-          } else if (distance <= 33) {
-            correctLandingSpot = LandingSpot.circle1;
-          } else if (distance <= 66) {
-            correctLandingSpot = LandingSpot.circle2;
-          } else {
-            // For distances > 66 feet, keep the AI's decision between fairway/off_fairway/out_of_bounds
-            // Only correct if it was incorrectly set to a circle
-            if (workingThrow.landingSpot == LandingSpot.parked ||
-                workingThrow.landingSpot == LandingSpot.circle1 ||
-                workingThrow.landingSpot == LandingSpot.circle2) {
-              correctLandingSpot = LandingSpot.fairway;
-            }
-          }
-
-          // If we determined a correction is needed, apply it
-          if (correctLandingSpot != null &&
-              correctLandingSpot != workingThrow.landingSpot) {
+          // NEVER override OB or off_fairway regardless of distance
+          if (currentSpot == LandingSpot.outOfBounds ||
+              currentSpot == LandingSpot.offFairway) {
+            // These are intentional and correct - do not modify
             debugPrint(
-              '⚠️ Correcting landingSpot for throw ${workingThrow.index} in hole ${hole.number}: '
-              '${workingThrow.landingSpot?.name} → ${correctLandingSpot.name} '
-              '(distance: $distance ft)',
+              '✓ Preserving ${currentSpot?.name} for throw ${workingThrow.index} in hole ${hole.number} '
+              '(distance: $distance ft) - not overriding intentional landing spot',
             );
+          } else {
+            // Only correct other landing spots based on distance
+            LandingSpot? correctLandingSpot;
 
-            workingThrow = DiscThrow(
-              index: workingThrow.index,
-              purpose: workingThrow.purpose,
-              technique: workingThrow.technique,
-              puttStyle: workingThrow.puttStyle,
-              shotShape: workingThrow.shotShape,
-              stance: workingThrow.stance,
-              power: workingThrow.power,
-              distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
-              distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
-              elevationChangeFeet: workingThrow.elevationChangeFeet,
-              windDirection: workingThrow.windDirection,
-              windStrength: workingThrow.windStrength,
-              resultRating: workingThrow.resultRating,
-              landingSpot: correctLandingSpot,
-              fairwayWidth: workingThrow.fairwayWidth,
-              penaltyStrokes: workingThrow.penaltyStrokes,
-              notes: workingThrow.notes,
-              rawText: workingThrow.rawText,
-              parseConfidence: workingThrow.parseConfidence,
-              discName: workingThrow.discName,
-              disc: workingThrow.disc,
-            );
+            if (distance == 0) {
+              correctLandingSpot = LandingSpot.inBasket;
+            } else if (distance <= 10) {
+              correctLandingSpot = LandingSpot.parked;
+            } else if (distance <= 33) {
+              correctLandingSpot = LandingSpot.circle1;
+            } else if (distance <= 66) {
+              correctLandingSpot = LandingSpot.circle2;
+            } else {
+              // For distances > 66 feet, keep the AI's decision between fairway/other
+              // Only correct if it was incorrectly set to a circle
+              if (currentSpot == LandingSpot.parked ||
+                  currentSpot == LandingSpot.circle1 ||
+                  currentSpot == LandingSpot.circle2) {
+                correctLandingSpot = LandingSpot.fairway;
+              }
+            }
+
+            // If we determined a correction is needed, apply it
+            if (correctLandingSpot != null &&
+                correctLandingSpot != currentSpot) {
+              debugPrint(
+                '⚠️ Correcting landingSpot for throw ${workingThrow.index} in hole ${hole.number}: '
+                '${currentSpot?.name} → ${correctLandingSpot.name} '
+                '(distance: $distance ft)',
+              );
+
+              workingThrow = DiscThrow(
+                index: workingThrow.index,
+                purpose: workingThrow.purpose,
+                technique: workingThrow.technique,
+                puttStyle: workingThrow.puttStyle,
+                shotShape: workingThrow.shotShape,
+                stance: workingThrow.stance,
+                power: workingThrow.power,
+                distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
+                distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
+                elevationChangeFeet: workingThrow.elevationChangeFeet,
+                windDirection: workingThrow.windDirection,
+                windStrength: workingThrow.windStrength,
+                resultRating: workingThrow.resultRating,
+                landingSpot: correctLandingSpot,
+                fairwayWidth: workingThrow.fairwayWidth,
+                penaltyStrokes: workingThrow.penaltyStrokes,
+                notes: workingThrow.notes,
+                rawText: workingThrow.rawText,
+                parseConfidence: workingThrow.parseConfidence,
+                discName: workingThrow.discName,
+                disc: workingThrow.disc,
+              );
+            }
           }
         }
 
