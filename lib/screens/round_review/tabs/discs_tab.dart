@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/throw_list_item.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class DiscsTab extends StatelessWidget {
@@ -13,41 +14,46 @@ class DiscsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final DiscAnalysisService discAnalysisService = locator
+        .get<DiscAnalysisService>();
 
-    final discBirdieRates = statsService.getDiscBirdieRates();
-    final discParRates = statsService.getDiscParRates();
-    final discBogeyRates = statsService.getDiscBogeyRates();
-    final discAverageScores = statsService.getDiscAverageScores();
-    final discPerformances = statsService.getDiscPerformanceSummaries();
-    final discThrowCounts = statsService.getDiscThrowCounts();
-    final discC1InRegPercentages = statsService.getDiscC1InRegPercentages();
-    final discC2InRegPercentages = statsService.getDiscC2InRegPercentages();
+    final discBirdieRates = discAnalysisService.getDiscBirdieRates(round);
+    final discParRates = discAnalysisService.getDiscParRates(round);
+    final discBogeyRates = discAnalysisService.getDiscBogeyRates(round);
+    final discAverageScores = discAnalysisService.getDiscAverageScores(round);
+    final discPerformances = discAnalysisService.getDiscPerformanceSummaries(
+      round,
+    );
+    final discThrowCounts = discAnalysisService.getDiscThrowCounts(round);
+    final discC1InRegPercentages = discAnalysisService
+        .getDiscC1InRegPercentages(round);
+    final discC2InRegPercentages = discAnalysisService
+        .getDiscC2InRegPercentages(round);
 
     if (discPerformances.isEmpty) {
-      return const Center(
-        child: Text('No disc data available'),
-      );
+      return const Center(child: Text('No disc data available'));
     }
 
     // Sort all discs by birdie rate (primary), then by throw count (secondary)
-    final sortedDiscs = discPerformances.map((perf) {
-      final birdieRate = discBirdieRates[perf.discName] ?? 0.0;
-      return MapEntry(perf.discName, birdieRate);
-    }).toList()
-      ..sort((a, b) {
-        // First compare by birdie rate (descending)
-        final birdieRateComparison = b.value.compareTo(a.value);
-        if (birdieRateComparison != 0) return birdieRateComparison;
+    final sortedDiscs =
+        discPerformances.map((perf) {
+          final birdieRate = discBirdieRates[perf.discName] ?? 0.0;
+          return MapEntry(perf.discName, birdieRate);
+        }).toList()..sort((a, b) {
+          // First compare by birdie rate (descending)
+          final birdieRateComparison = b.value.compareTo(a.value);
+          if (birdieRateComparison != 0) return birdieRateComparison;
 
-        // If birdie rates are equal, compare by throw count (descending)
-        final aPerf = discPerformances.firstWhere((p) => p.discName == a.key);
-        final bPerf = discPerformances.firstWhere((p) => p.discName == b.key);
-        return bPerf.totalShots.compareTo(aPerf.totalShots);
-      });
+          // If birdie rates are equal, compare by throw count (descending)
+          final aPerf = discPerformances.firstWhere((p) => p.discName == a.key);
+          final bPerf = discPerformances.firstWhere((p) => p.discName == b.key);
+          return bPerf.totalShots.compareTo(aPerf.totalShots);
+        });
 
     // Get all discs with the top birdie rate(s) - could be more than 3
-    final topBirdieRate = sortedDiscs.isNotEmpty ? sortedDiscs.first.value : 0.0;
+    final topBirdieRate = sortedDiscs.isNotEmpty
+        ? sortedDiscs.first.value
+        : 0.0;
     final topPerformingDiscs = sortedDiscs
         .where((disc) => disc.value == topBirdieRate && disc.value > 0)
         .toList();
@@ -62,7 +68,9 @@ class DiscsTab extends StatelessWidget {
         ? discsWithTeeSshots.last.value
         : 0.0;
     final worstPerformingDiscs = discsWithTeeSshots
-        .where((disc) => disc.value == worstBirdieRate && disc.value < topBirdieRate)
+        .where(
+          (disc) => disc.value == worstBirdieRate && disc.value < topBirdieRate,
+        )
         .toList();
 
     return ListView(
@@ -97,7 +105,6 @@ class DiscsTab extends StatelessWidget {
               c1InRegPct,
               c2InRegPct,
               performance,
-              statsService,
             );
           }),
         ],
@@ -119,16 +126,16 @@ class DiscsTab extends StatelessWidget {
           children: [
             Text(
               'Top Performing Discs',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
               'Birdie Rate by Disc',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -161,16 +168,16 @@ class DiscsTab extends StatelessWidget {
           children: [
             Text(
               'Worst Performing Discs',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
               'Birdie Rate by Disc',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -202,25 +209,23 @@ class DiscsTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
           Text(
             '${birdieRate.toStringAsFixed(0)}%',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             discName,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -238,21 +243,21 @@ class DiscsTab extends StatelessWidget {
     double c1InRegPct,
     double c2InRegPct,
     performance,
-    RoundStatisticsService statsService,
   ) {
-    final throws = statsService.getThrowsForDisc(discName);
+    final throws = locator.get<DiscAnalysisService>().getThrowsForDisc(
+      discName,
+      round,
+    );
 
     return Card(
       child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-        ),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           title: Text(
             discName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -309,8 +314,8 @@ class DiscsTab extends StatelessWidget {
                   Text(
                     'Performance Breakdown',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -340,8 +345,8 @@ class DiscsTab extends StatelessWidget {
                   Text(
                     'Total Throws: ${performance.totalShots}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Divider(),
@@ -349,8 +354,8 @@ class DiscsTab extends StatelessWidget {
                   Text(
                     'All Throws',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ...throws.map((throwData) {
@@ -363,18 +368,28 @@ class DiscsTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 8, top: 4, bottom: 4),
+                          padding: const EdgeInsets.only(
+                            left: 8,
+                            top: 4,
+                            bottom: 4,
+                          ),
                           child: Row(
                             children: [
                               Text(
                                 'Hole $holeNumber',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
                               const SizedBox(width: 8),
-                              _buildPerformanceBadge(context, analysis.execCategory),
+                              _buildPerformanceBadge(
+                                context,
+                                analysis.execCategory,
+                              ),
                             ],
                           ),
                         ),
@@ -405,9 +420,9 @@ class DiscsTab extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -423,16 +438,16 @@ class DiscsTab extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -468,10 +483,10 @@ class DiscsTab extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 10,
-            ),
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
       ),
     );
   }

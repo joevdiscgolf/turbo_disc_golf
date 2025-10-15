@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class PuttingTab extends StatelessWidget {
@@ -13,11 +14,13 @@ class PuttingTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final PuttingAnalysisService puttingAnalysisService = locator
+        .get<PuttingAnalysisService>();
 
-    final puttingSummary = statsService.getPuttingSummary();
-    final avgBirdiePuttDist = statsService.getAverageBirdiePuttDistance();
-    final comebackStats = statsService.getComebackPuttStats();
+    final puttingSummary = puttingAnalysisService.getPuttingSummary(round);
+    final avgBirdiePuttDist = puttingAnalysisService
+        .getAverageBirdiePuttDistance(round);
+    final comebackStats = puttingAnalysisService.getComebackPuttStats(round);
 
     if (puttingSummary.totalAttempts == 0) {
       return const Center(child: Text('No putting data available'));

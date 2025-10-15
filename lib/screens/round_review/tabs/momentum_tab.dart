@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/momentum_overview_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/transition_matrix_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/momentum_metrics_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/conditioning_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/insights_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/momentum_metrics_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/momentum_overview_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/transition_matrix_card.dart';
+import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 
 class MomentumTab extends StatelessWidget {
   final DGRound round;
@@ -15,8 +16,9 @@ class MomentumTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Calculate momentum stats
-    final statsService = RoundStatisticsService(round);
-    final momentumStats = statsService.getMomentumStats();
+    final momentumStats = locator.get<PsychAnalysisService>().getMomentumStats(
+      round,
+    );
 
     // Check if we have enough data
     if (momentumStats.mentalProfile == 'Insufficient Data') {
@@ -35,15 +37,15 @@ class MomentumTab extends StatelessWidget {
               Text(
                 'Not Enough Data',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Play at least 3 holes to see your mental game analysis.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],

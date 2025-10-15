@@ -255,10 +255,8 @@ class GPTAnalysisService {
       );
     }
 
-    // If the throw is a putt (either declared or by distance)
-    final isPutt =
-        t.purpose == ThrowPurpose.putt ||
-        (dist != null && dist <= puttThresholdFeet);
+    // Only treat throws as putts if they're explicitly marked as putts
+    final isPutt = t.purpose == ThrowPurpose.putt;
 
     if (isPutt) {
       // made?

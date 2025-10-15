@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_painter.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 
 class PuttHeatMapCard extends StatelessWidget {
   final DGRound round;
@@ -11,8 +12,9 @@ class PuttHeatMapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statsService = RoundStatisticsService(round);
-    final puttAttempts = statsService.getPuttAttempts();
+    final puttAttempts = locator.get<PuttingAnalysisService>().getPuttAttempts(
+      round,
+    );
 
     if (puttAttempts.isEmpty) {
       return const SizedBox.shrink();

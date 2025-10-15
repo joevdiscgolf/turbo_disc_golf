@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+
+// Test constant for image + voice mode (no hole distance/par info)
 
 /// Screen for recording throw-by-throw voice details after scorecard image has been parsed.
 /// The hole metadata (par, distance, score) is already known from the image.
@@ -11,11 +14,13 @@ import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 class VoiceDetailInputScreen extends StatefulWidget {
   final List<HoleMetadata> holeMetadata;
   final String courseName;
+  final String? testVoiceDescription;
 
   const VoiceDetailInputScreen({
     super.key,
     required this.holeMetadata,
     required this.courseName,
+    this.testVoiceDescription,
   });
 
   @override
@@ -143,18 +148,16 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
     );
 
     if (_roundParser.lastError.isNotEmpty && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_roundParser.lastError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Record Throw Details'),
-      ),
+      appBar: AppBar(title: const Text('Record Throw Details')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -170,11 +173,15 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.info_outline, color: Color(0xFF00F5D4)),
+                        const Icon(
+                          Icons.info_outline,
+                          color: Color(0xFF00F5D4),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'How to Record',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
                                 color: const Color(0xFF00F5D4),
                                 fontWeight: FontWeight.bold,
                               ),
@@ -185,16 +192,16 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                     Text(
                       'Describe your throws for each hole. You don\'t need to say the par, distance, or score - we already have that from your scorecard!',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFFF5F5F5),
-                          ),
+                        color: const Color(0xFFF5F5F5),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Example: "Hole 1, threw my Destroyer down the fairway, ended up in circle 1, made the putt for birdie."',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFB0B0B0),
-                            fontStyle: FontStyle.italic,
-                          ),
+                        color: const Color(0xFFB0B0B0),
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ],
                 ),
@@ -217,16 +224,14 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                         children: [
                           Text(
                             'Course',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: const Color(0xFFB0B0B0),
-                                ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: const Color(0xFFB0B0B0)),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             widget.courseName,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -247,13 +252,15 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.format_list_numbered, color: Color(0xFF9D4EDD)),
+                        const Icon(
+                          Icons.format_list_numbered,
+                          color: Color(0xFF9D4EDD),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Holes from Scorecard',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const Spacer(),
                         Container(
@@ -262,7 +269,9 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF9D4EDD).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFF9D4EDD,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -282,7 +291,8 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                       Center(
                         child: Text(
                           '+ ${widget.holeMetadata.length - 5} more holes',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: const Color(0xFFB0B0B0),
                                 fontStyle: FontStyle.italic,
                               ),
@@ -338,16 +348,18 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                         boxShadow: _voiceService.isListening
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF10E5FF)
-                                      .withValues(alpha: 0.7),
+                                  color: const Color(
+                                    0xFF10E5FF,
+                                  ).withValues(alpha: 0.7),
                                   blurRadius: 20 * _animationController.value,
                                   spreadRadius: 5 * _animationController.value,
                                 ),
                               ]
                             : [
                                 BoxShadow(
-                                  color: const Color(0xFF9D7FFF)
-                                      .withValues(alpha: 0.4),
+                                  color: const Color(
+                                    0xFF9D7FFF,
+                                  ).withValues(alpha: 0.4),
                                   blurRadius: 10,
                                   spreadRadius: 3,
                                 ),
@@ -377,6 +389,26 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
 
             const SizedBox(height: 24),
 
+            // Test mode button - show if test voice description is provided
+            if (widget.testVoiceDescription != null) ...[
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _transcriptController.text = widget.testVoiceDescription!;
+                    _voiceService.updateText(widget.testVoiceDescription!);
+                  });
+                },
+                icon: const Icon(Icons.science),
+                label: const Text('Use Test Voice Description'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9D4EDD),
+                  foregroundColor: const Color(0xFFF5F5F5),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Transcript display (optional, for debugging)
             if (_transcriptController.text.isNotEmpty)
               Card(
@@ -403,7 +435,9 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
 
             // Parse button
             ElevatedButton.icon(
-              onPressed: _roundParser.isProcessing || _transcriptController.text.isEmpty
+              onPressed:
+                  _roundParser.isProcessing ||
+                      _transcriptController.text.isEmpty
                   ? null
                   : _parseRound,
               icon: _roundParser.isProcessing
@@ -422,6 +456,50 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                 minimumSize: const Size(double.infinity, 48),
               ),
             ),
+
+            const SizedBox(height: 32),
+
+            // Test/Debug Section
+            ExpansionTile(
+              title: Row(
+                children: [
+                  const Icon(Icons.science, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Test & Debug Tools',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ],
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Load test transcript button
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _transcriptController.text =
+                                flingsGivingRound2DescriptionNoHoleDistance;
+                            _voiceService.updateText(
+                              flingsGivingRound2DescriptionNoHoleDistance,
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.text_fields),
+                        label: const Text('Load Test Voice Transcript'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF9D4EDD),
+                          foregroundColor: const Color(0xFFF5F5F5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -433,8 +511,8 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
     final relativeToParText = relativeToPar == 0
         ? 'E'
         : relativeToPar > 0
-            ? '+$relativeToPar'
-            : '$relativeToPar';
+        ? '+$relativeToPar'
+        : '$relativeToPar';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),

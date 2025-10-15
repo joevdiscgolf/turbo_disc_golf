@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/round_review_stat_card.dart';
 
@@ -12,8 +15,12 @@ class RoundStatsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statsService = RoundStatisticsService(round);
-    final scoringStats = statsService.getScoringStats();
-    final puttingStats = statsService.getPuttingStatsByDistance();
+    final scoringStats = locator.get<ScoreAnalysisService>().getScoringStats(
+      round,
+    );
+    final puttingStats = locator
+        .get<PuttingAnalysisService>()
+        .getPuttingStatsByDistance(round);
     final teeComparison = statsService.compareBackhandVsForehandTeeShots();
     final scrambleStats = statsService.getScrambleStats();
 

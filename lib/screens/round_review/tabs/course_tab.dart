@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
@@ -15,7 +17,8 @@ class CourseTab extends StatelessWidget {
     final statsService = RoundStatisticsService(round);
 
     final scoringStats =
-        analysis?.scoringStats ?? statsService.getScoringStats();
+        analysis?.scoringStats ??
+        locator.get<ScoreAnalysisService>().getScoringStats(round);
     final totalScore =
         analysis?.totalScoreRelativeToPar ??
         statsService.getTotalScoreRelativeToPar();
