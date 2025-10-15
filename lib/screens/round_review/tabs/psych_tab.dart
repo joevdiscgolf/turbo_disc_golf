@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/conditioning_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/flow_state_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/insights_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/psych_metrics_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/psych_overview_card.dart';
@@ -61,6 +62,15 @@ class PsychTab extends StatelessWidget {
           PsychOverviewCard(stats: psychStats),
 
           const SizedBox(height: 16),
+
+          // Flow State card (if available)
+          if (psychStats.flowStateAnalysis != null)
+            FlowStateCard(
+              flowAnalysis: psychStats.flowStateAnalysis!,
+              totalHoles: round.holes.length,
+            ),
+
+          if (psychStats.flowStateAnalysis != null) const SizedBox(height: 16),
 
           // Transition matrix
           TransitionMatrixCard(stats: psychStats),

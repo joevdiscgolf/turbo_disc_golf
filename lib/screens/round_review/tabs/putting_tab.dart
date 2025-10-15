@@ -21,6 +21,7 @@ class PuttingTab extends StatelessWidget {
     final avgBirdiePuttDist = puttingAnalysisService
         .getAverageBirdiePuttDistance(round);
     final comebackStats = puttingAnalysisService.getComebackPuttStats(round);
+    final allPutts = puttingAnalysisService.getPuttAttempts(round);
 
     if (puttingSummary.totalAttempts == 0) {
       return const Center(child: Text('No putting data available'));
@@ -37,6 +38,11 @@ class PuttingTab extends StatelessWidget {
               puttingSummary: puttingSummary,
               horizontalPadding: 0,
             ),
+          ),
+          // All putts list
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildAllPuttsCard(context, allPutts),
           ),
           // Heat map visualization
           PuttHeatMapCard(round: round),
@@ -262,6 +268,110 @@ class PuttingTab extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAllPuttsCard(
+    BuildContext context,
+    List<Map<String, dynamic>> allPutts,
+  ) {
+    if (allPutts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          title: Text(
+            'All Putt Attempts',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${allPutts.length} total attempts',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: allPutts.map((putt) {
+                  final holeNumber = putt['holeNumber'];
+                  final distance = putt['distance'];
+                  final made = putt['made'] as bool;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: made
+                                ? const Color(0xFF4CAF50)
+                                : const Color(0xFFFF7A7A),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$holeNumber',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Hole $holeNumber - ${distance.toStringAsFixed(0)} ft',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: made
+                                ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
+                                : const Color(0xFFFF7A7A).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            made ? 'Made' : 'Missed',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: made
+                                      ? const Color(0xFF4CAF50)
+                                      : const Color(0xFFFF7A7A),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ],
