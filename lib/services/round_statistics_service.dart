@@ -347,10 +347,12 @@ class RoundStatisticsService {
       // Get tee shot (first throw)
       final teeShot = hole.throws.first;
 
-      // Fairway hit: tee shot that didn't go off_fairway, OB, or other
-      if (teeShot.landingSpot != LandingSpot.offFairway &&
-          teeShot.landingSpot != LandingSpot.outOfBounds &&
-          teeShot.landingSpot != LandingSpot.other) {
+      // Fairway hit: tee shot landed in a good position (fairway, circle1, circle2, parked, or in basket)
+      if (teeShot.landingSpot == LandingSpot.fairway ||
+          teeShot.landingSpot == LandingSpot.circle1 ||
+          teeShot.landingSpot == LandingSpot.circle2 ||
+          teeShot.landingSpot == LandingSpot.parked ||
+          teeShot.landingSpot == LandingSpot.inBasket) {
         fairwayHits++;
       }
 
@@ -1041,7 +1043,8 @@ class RoundStatisticsService {
       final teeShot = hole.throws.first;
 
       if (teeShot.technique != null && teeShot.shotShape != null) {
-        final comboKey = '${teeShot.technique!.name}_${teeShot.shotShape!.name}';
+        final comboKey =
+            '${teeShot.technique!.name}_${teeShot.shotShape!.name}';
         teeThrowsByCombo.putIfAbsent(comboKey, () => []);
         teeThrowsByCombo[comboKey]!.add(hole);
       }
