@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
@@ -19,8 +21,8 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
   final AiParsingService _aiParsingService = locator.get<AiParsingService>();
 
   bool _isLoading = false;
-  String? _aiSummary;
-  String? _aiCoaching;
+  AIContent? _aiInsights;
+  RoundAnalysis? _analysis;
   String? _errorMessage;
   DGRound? _cachedRound;
 
@@ -74,13 +76,12 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _aiSummary = null;
-      _aiCoaching = null;
+      _aiInsights = null;
     });
 
     try {
       debugPrint('==========================================');
-      debugPrint('🤖 GENERATING AI SUMMARY AND COACHING');
+      debugPrint('🤖 GENERATING UNIFIED AI INSIGHTS');
       debugPrint('==========================================');
       debugPrint('Course: ${_cachedRound!.courseName}');
       debugPrint('Holes: ${_cachedRound!.holes.length}');
@@ -89,31 +90,22 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
       final analysis = RoundAnalysisGenerator.generateAnalysis(_cachedRound!);
       debugPrint('✅ Analysis generated');
 
-      // Generate AI insights (summary and coaching)
-      debugPrint('🔄 Calling Gemini to generate insights...');
+      // Generate AI insights (unified response)
+      debugPrint('🔄 Calling Gemini to generate unified insights...');
       final Map<String, AIContent?> insights = await _aiParsingService
           .generateRoundInsights(round: _cachedRound!, analysis: analysis);
 
-      final summaryContent = insights['summary'];
-      final coachingContent = insights['coaching'];
-
-      final summary = summaryContent?.content ?? '';
-      final coaching = coachingContent?.content ?? '';
+      final unifiedContent = insights['summary'];
 
       debugPrint('==========================================');
-      debugPrint('📊 AI SUMMARY:');
+      debugPrint('📊 UNIFIED AI INSIGHTS:');
       debugPrint('==========================================');
-      debugPrint(summary);
-      debugPrint('');
-      debugPrint('==========================================');
-      debugPrint('🎯 AI COACHING:');
-      debugPrint('==========================================');
-      debugPrint(coaching);
+      debugPrint(unifiedContent?.content ?? 'No insights generated');
       debugPrint('==========================================');
 
       setState(() {
-        _aiSummary = summary;
-        _aiCoaching = coaching;
+        _aiInsights = unifiedContent;
+        _analysis = analysis;
         _isLoading = false;
       });
     } catch (e) {
@@ -203,24 +195,26 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
                 ),
               ),
 
-            // AI Summary section
-            if (_aiSummary != null) ...[
+            // Unified AI Insights section
+            if (_aiInsights != null) ...[
               const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: CustomMarkdownContent(data: _aiSummary!),
-                ),
+              Text(
+                'AI Insights (Analysis + Coaching)',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
-            ],
-
-            // AI Coaching section
-            if (_aiCoaching != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: CustomMarkdownContent(data: _aiCoaching!),
+                  child: _analysis != null
+                      ? AIContentRenderer(
+                          aiContent: _aiInsights!,
+                          round: _cachedRound!,
+                          analysis: _analysis!,
+                        )
+                      : CustomMarkdownContent(data: _aiInsights!.content),
                 ),
               ),
             ],

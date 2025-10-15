@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 
 class CoachTab extends StatelessWidget {
   final DGRound round;
@@ -14,96 +13,43 @@ class CoachTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (round.aiCoachSuggestion != null &&
-              round.aiCoachSuggestion!.content.isNotEmpty) ...[
-            Row(
-              children: [
-                Image.asset(
-                  'assets/mascots/turbo_mascot.png',
-                  width: 60,
-                  height: 60,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Let me help you improve!',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.merge_type,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (round.isAICoachingOutdated)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                  const SizedBox(height: 16),
+                  Text(
+                    'Coaching is now in the Summary tab!',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 12),
+                  Text(
+                    'We\'ve combined analysis and coaching into one unified AI insights experience. Check out the Summary tab for both what happened and what to work on!',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'This coaching is out of date with the current round',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      // Switch to Summary tab (index 7)
+                      DefaultTabController.of(context).animateTo(7);
+                    },
+                    icon: const Icon(Icons.arrow_forward),
+                    label: const Text('Go to Summary'),
                   ),
-                ),
-              ),
-            Card(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child:
-                    CustomMarkdownContent(data: round.aiCoachSuggestion!.content),
+                ],
               ),
             ),
-          ]
-          else
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No AI coaching available for this round',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'AI coaching suggestions are generated automatically for new rounds',
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          ),
         ],
       ),
     );

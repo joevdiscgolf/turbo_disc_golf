@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 
 class SummaryTab extends StatelessWidget {
   final DGRound round;
@@ -9,6 +11,11 @@ class SummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Generate analysis if we have AI content with segments
+    final analysis = (round.aiSummary != null && round.aiSummary!.segments != null)
+        ? RoundAnalysisGenerator.generateAnalysis(round)
+        : null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       child: Column(
@@ -26,7 +33,7 @@ class SummaryTab extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Here\'s what I noticed about your round!',
+                    'Here\'s your round analysis and coaching!',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -71,7 +78,13 @@ class SummaryTab extends StatelessWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: CustomMarkdownContent(data: round.aiSummary!.content),
+                child: analysis != null
+                    ? AIContentRenderer(
+                        aiContent: round.aiSummary!,
+                        round: round,
+                        analysis: analysis,
+                      )
+                    : CustomMarkdownContent(data: round.aiSummary!.content),
               ),
             ),
           ] else
