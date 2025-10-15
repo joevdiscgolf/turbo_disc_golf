@@ -15,6 +15,7 @@ class MultiRoundStatisticsService {
 
   /// Get overall scoring statistics across all rounds
   ScoringStats getScoringStats() {
+    int totalEagles = 0;
     int totalBirdies = 0;
     int totalPars = 0;
     int totalBogeys = 0;
@@ -25,6 +26,7 @@ class MultiRoundStatisticsService {
       final roundStats = locator.get<ScoreAnalysisService>().getScoringStats(
         round,
       );
+      totalEagles += roundStats.eagles;
       totalBirdies += roundStats.birdies;
       totalPars += roundStats.pars;
       totalBogeys += roundStats.bogeys;
@@ -34,6 +36,7 @@ class MultiRoundStatisticsService {
 
     return ScoringStats(
       totalHoles: totalHoles,
+      eagles: totalEagles,
       birdies: totalBirdies,
       pars: totalPars,
       bogeys: totalBogeys,

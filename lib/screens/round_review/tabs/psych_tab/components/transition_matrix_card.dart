@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 
 class TransitionMatrixCard extends StatelessWidget {
-  final MomentumStats stats;
+  final PsychStats stats;
 
   const TransitionMatrixCard({super.key, required this.stats});
 
@@ -20,16 +20,16 @@ class TransitionMatrixCard extends StatelessWidget {
         children: [
           Text(
             'Scoring Transitions',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'How your next hole score depends on the current hole',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 20),
 
@@ -57,9 +57,9 @@ class TransitionMatrixCard extends StatelessWidget {
     return Center(
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
         textAlign: TextAlign.center,
       ),
     );
@@ -85,13 +85,15 @@ class TransitionMatrixCard extends StatelessWidget {
     for (var category in categories) {
       final transition = stats.transitionMatrix[category];
       if (transition != null) {
-        rows.add(_buildMatrixRow(
-          context,
-          emoji: emojis[category]!,
-          label: 'After $category',
-          description: labels[category]!,
-          transition: transition,
-        ));
+        rows.add(
+          _buildMatrixRow(
+            context,
+            emoji: emojis[category]!,
+            label: 'After $category',
+            description: labels[category]!,
+            transition: transition,
+          ),
+        );
         rows.add(const SizedBox(height: 8));
       }
     }
@@ -122,8 +124,8 @@ class TransitionMatrixCard extends StatelessWidget {
                     child: Text(
                       label,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -133,9 +135,9 @@ class TransitionMatrixCard extends StatelessWidget {
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 10,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -150,11 +152,7 @@ class TransitionMatrixCard extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _buildPercentageCell(
-            context,
-            transition.toParPercent,
-            'Par',
-          ),
+          child: _buildPercentageCell(context, transition.toParPercent, 'Par'),
         ),
         Expanded(
           child: _buildPercentageCell(

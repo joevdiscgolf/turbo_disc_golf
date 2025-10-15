@@ -65,6 +65,7 @@ Map<String, dynamic> _$TechniqueStatsToJson(TechniqueStats instance) =>
 
 ScoringStats _$ScoringStatsFromJson(Map<String, dynamic> json) => ScoringStats(
   totalHoles: (json['totalHoles'] as num).toInt(),
+  eagles: (json['eagles'] as num).toInt(),
   birdies: (json['birdies'] as num).toInt(),
   pars: (json['pars'] as num).toInt(),
   bogeys: (json['bogeys'] as num).toInt(),
@@ -74,6 +75,7 @@ ScoringStats _$ScoringStatsFromJson(Map<String, dynamic> json) => ScoringStats(
 Map<String, dynamic> _$ScoringStatsToJson(ScoringStats instance) =>
     <String, dynamic>{
       'totalHoles': instance.totalHoles,
+      'eagles': instance.eagles,
       'birdies': instance.birdies,
       'pars': instance.pars,
       'bogeys': instance.bogeys,
@@ -330,43 +332,42 @@ Map<String, dynamic> _$ScoringTransitionToJson(ScoringTransition instance) =>
       'toDoublePercent': instance.toDoublePercent,
     };
 
-MomentumStats _$MomentumStatsFromJson(Map<String, dynamic> json) =>
-    MomentumStats(
-      transitionMatrix: (json['transitionMatrix'] as Map<String, dynamic>).map(
-        (k, e) =>
-            MapEntry(k, ScoringTransition.fromJson(e as Map<String, dynamic>)),
-      ),
-      momentumMultiplier: (json['momentumMultiplier'] as num).toDouble(),
-      tiltFactor: (json['tiltFactor'] as num).toDouble(),
-      bounceBackRate: (json['bounceBackRate'] as num).toDouble(),
-      compoundErrorRate: (json['compoundErrorRate'] as num).toDouble(),
-      longestParStreak: (json['longestParStreak'] as num).toInt(),
-      mentalProfile: json['mentalProfile'] as String,
-      insights: (json['insights'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      front9Performance: json['front9Performance'] == null
-          ? null
-          : SectionPerformance.fromJson(
-              json['front9Performance'] as Map<String, dynamic>,
-            ),
-      back9Performance: json['back9Performance'] == null
-          ? null
-          : SectionPerformance.fromJson(
-              json['back9Performance'] as Map<String, dynamic>,
-            ),
-      last6Performance: json['last6Performance'] == null
-          ? null
-          : SectionPerformance.fromJson(
-              json['last6Performance'] as Map<String, dynamic>,
-            ),
-      conditioningScore: (json['conditioningScore'] as num).toDouble(),
-      scoreTrend: json['scoreTrend'] == null
-          ? null
-          : ScoreTrend.fromJson(json['scoreTrend'] as Map<String, dynamic>),
-    );
+PsychStats _$PsychStatsFromJson(Map<String, dynamic> json) => PsychStats(
+  transitionMatrix: (json['transitionMatrix'] as Map<String, dynamic>).map(
+    (k, e) =>
+        MapEntry(k, ScoringTransition.fromJson(e as Map<String, dynamic>)),
+  ),
+  momentumMultiplier: (json['momentumMultiplier'] as num).toDouble(),
+  tiltFactor: (json['tiltFactor'] as num).toDouble(),
+  bounceBackRate: (json['bounceBackRate'] as num).toDouble(),
+  compoundErrorRate: (json['compoundErrorRate'] as num).toDouble(),
+  longestParStreak: (json['longestParStreak'] as num).toInt(),
+  mentalProfile: json['mentalProfile'] as String,
+  insights: (json['insights'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  front9Performance: json['front9Performance'] == null
+      ? null
+      : SectionPerformance.fromJson(
+          json['front9Performance'] as Map<String, dynamic>,
+        ),
+  back9Performance: json['back9Performance'] == null
+      ? null
+      : SectionPerformance.fromJson(
+          json['back9Performance'] as Map<String, dynamic>,
+        ),
+  last6Performance: json['last6Performance'] == null
+      ? null
+      : SectionPerformance.fromJson(
+          json['last6Performance'] as Map<String, dynamic>,
+        ),
+  conditioningScore: (json['conditioningScore'] as num).toDouble(),
+  scoreTrend: json['scoreTrend'] == null
+      ? null
+      : ScoreTrend.fromJson(json['scoreTrend'] as Map<String, dynamic>),
+);
 
-Map<String, dynamic> _$MomentumStatsToJson(MomentumStats instance) =>
+Map<String, dynamic> _$PsychStatsToJson(PsychStats instance) =>
     <String, dynamic>{
       'transitionMatrix': instance.transitionMatrix.map(
         (k, e) => MapEntry(k, e.toJson()),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/line_chart_painter.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/line_chart_painter.dart';
 
 class ConditioningCard extends StatelessWidget {
-  final MomentumStats stats;
+  final PsychStats stats;
   final DGRound round;
 
   const ConditioningCard({super.key, required this.stats, required this.round});
@@ -504,11 +504,7 @@ class ConditioningCard extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            const Icon(
-              Icons.show_chart,
-              color: Color(0xFF2196F3),
-              size: 20,
-            ),
+            const Icon(Icons.show_chart, color: Color(0xFF2196F3), size: 20),
             const SizedBox(width: 8),
             Text(
               'Hole-by-Hole',

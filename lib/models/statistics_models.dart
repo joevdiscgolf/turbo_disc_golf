@@ -94,6 +94,7 @@ class TechniqueStats {
 @JsonSerializable()
 class ScoringStats {
   final int totalHoles;
+  final int eagles;
   final int birdies;
   final int pars;
   final int bogeys;
@@ -101,12 +102,14 @@ class ScoringStats {
 
   ScoringStats({
     required this.totalHoles,
+    required this.eagles,
     required this.birdies,
     required this.pars,
     required this.bogeys,
     required this.doubleBogeyPlus,
   });
 
+  double get eagleRate => totalHoles > 0 ? (eagles / totalHoles) * 100 : 0.0;
   double get birdieRate => totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0;
   double get parRate => totalHoles > 0 ? (pars / totalHoles) * 100 : 0.0;
   double get bogeyRate => totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0;
@@ -245,6 +248,24 @@ class PuttStats {
   int get totalMisses => c1Misses + c2Misses;
   int get totalAttempts => totalMakes + totalMisses;
 
+  // C1X stats (12-33 ft, excluding bulls-eye 0-11 ft)
+  int get c1xMakes {
+    final bucket1 = bucketStats['11-22 ft'];
+    final bucket2 = bucketStats['22-33 ft'];
+    return (bucket1?.makes ?? 0) + (bucket2?.makes ?? 0);
+  }
+
+  int get c1xMisses {
+    final bucket1 = bucketStats['11-22 ft'];
+    final bucket2 = bucketStats['22-33 ft'];
+    return (bucket1?.misses ?? 0) + (bucket2?.misses ?? 0);
+  }
+
+  int get c1xAttempts => c1xMakes + c1xMisses;
+
+  double get c1xPercentage =>
+      c1xAttempts > 0 ? (c1xMakes / c1xAttempts) * 100 : 0.0;
+
   double get c1Percentage =>
       c1Attempts > 0 ? (c1Makes / c1Attempts) * 100 : 0.0;
   double get c2Percentage =>
@@ -315,9 +336,12 @@ class DiscPerformanceSummary {
     required this.totalShots,
   });
 
-  double get goodPercentage => totalShots > 0 ? (goodShots / totalShots) * 100 : 0.0;
-  double get okayPercentage => totalShots > 0 ? (okayShots / totalShots) * 100 : 0.0;
-  double get badPercentage => totalShots > 0 ? (badShots / totalShots) * 100 : 0.0;
+  double get goodPercentage =>
+      totalShots > 0 ? (goodShots / totalShots) * 100 : 0.0;
+  double get okayPercentage =>
+      totalShots > 0 ? (okayShots / totalShots) * 100 : 0.0;
+  double get badPercentage =>
+      totalShots > 0 ? (badShots / totalShots) * 100 : 0.0;
 
   factory DiscPerformanceSummary.fromJson(Map<String, dynamic> json) =>
       _$DiscPerformanceSummaryFromJson(json);
@@ -383,7 +407,8 @@ class ScoreSegment {
 class ScoreTrend {
   final List<ScoreSegment> segments;
   final String trendDirection; // "improving", "worsening", "stable"
-  final double trendStrength; // Numeric measure of change (positive = improving)
+  final double
+  trendStrength; // Numeric measure of change (positive = improving)
 
   ScoreTrend({
     required this.segments,
@@ -462,7 +487,7 @@ class ScoringTransition {
 
 /// Complete momentum and psychological analysis
 @JsonSerializable(explicitToJson: true)
-class MomentumStats {
+class PsychStats {
   /// Transition matrix: from score -> transition percentages
   final Map<String, ScoringTransition> transitionMatrix;
 
@@ -482,7 +507,8 @@ class MomentumStats {
   final int longestParStreak;
 
   /// Mental game profile classification
-  final String mentalProfile; // "Momentum Player", "Even Keel", "Clutch Closer", "Slow Starter"
+  final String
+  mentalProfile; // "Momentum Player", "Even Keel", "Clutch Closer", "Slow Starter"
 
   /// Actionable insights based on patterns
   final List<String> insights;
@@ -502,7 +528,7 @@ class MomentumStats {
   /// Progressive score trend analysis throughout the round
   final ScoreTrend? scoreTrend;
 
-  MomentumStats({
+  PsychStats({
     required this.transitionMatrix,
     required this.momentumMultiplier,
     required this.tiltFactor,
@@ -518,7 +544,7 @@ class MomentumStats {
     this.scoreTrend,
   });
 
-  factory MomentumStats.fromJson(Map<String, dynamic> json) =>
-      _$MomentumStatsFromJson(json);
-  Map<String, dynamic> toJson() => _$MomentumStatsToJson(this);
+  factory PsychStats.fromJson(Map<String, dynamic> json) =>
+      _$PsychStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$PsychStatsToJson(this);
 }

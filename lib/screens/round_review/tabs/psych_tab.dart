@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/conditioning_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/insights_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/momentum_metrics_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/momentum_overview_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/momentum_tab/components/transition_matrix_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/conditioning_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/insights_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/psych_metrics_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/psych_overview_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/transition_matrix_card.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 
-class MomentumTab extends StatelessWidget {
+class PsychTab extends StatelessWidget {
   final DGRound round;
 
-  const MomentumTab({super.key, required this.round});
+  const PsychTab({super.key, required this.round});
 
   @override
   Widget build(BuildContext context) {
     // Calculate momentum stats
-    final momentumStats = locator.get<PsychAnalysisService>().getMomentumStats(
-      round,
-    );
+    final psychStats = locator.get<PsychAnalysisService>().getPsychStats(round);
 
     // Check if we have enough data
-    if (momentumStats.mentalProfile == 'Insufficient Data') {
+    if (psychStats.mentalProfile == 'Insufficient Data') {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -60,27 +58,27 @@ class MomentumTab extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Overview card
-          MomentumOverviewCard(stats: momentumStats),
+          PsychOverviewCard(stats: psychStats),
 
           const SizedBox(height: 16),
 
           // Transition matrix
-          TransitionMatrixCard(stats: momentumStats),
+          TransitionMatrixCard(stats: psychStats),
 
           const SizedBox(height: 16),
 
           // Key metrics
-          MomentumMetricsCard(stats: momentumStats),
+          PsychMetricsCard(stats: psychStats),
 
           const SizedBox(height: 16),
 
           // Conditioning & Focus
-          ConditioningCard(stats: momentumStats, round: round),
+          ConditioningCard(stats: psychStats, round: round),
 
           const SizedBox(height: 16),
 
           // Insights
-          InsightsCard(stats: momentumStats),
+          InsightsCard(stats: psychStats),
 
           const SizedBox(height: 24),
         ],

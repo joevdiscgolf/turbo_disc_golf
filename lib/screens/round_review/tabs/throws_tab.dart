@@ -60,7 +60,18 @@ class _ThrowsTabState extends State<ThrowsTab> {
                           Expanded(
                             child: _buildScoreKPICard(
                               context,
-                              'Total Score',
+                              'Score',
+                              _roundParser.getRelativeToPar() >= 0
+                                  ? '+${_roundParser.getRelativeToPar()}'
+                                  : '${_roundParser.getRelativeToPar()}',
+                              _getScoreColor(_roundParser.getRelativeToPar()),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildScoreKPICard(
+                              context,
+                              'Throws',
                               '${_roundParser.getTotalScore()}',
                               const Color(0xFF2196F3),
                             ),
@@ -72,19 +83,6 @@ class _ThrowsTabState extends State<ThrowsTab> {
                               'Par',
                               '${_roundParser.getTotalPar()}',
                               const Color(0xFFFFA726),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildScoreKPICard(
-                              context,
-                              'Score',
-                              _roundParser.getRelativeToPar() >= 0
-                                  ? '+${_roundParser.getRelativeToPar()}'
-                                  : '${_roundParser.getRelativeToPar()}',
-                              _getScoreColor(
-                                _roundParser.getRelativeToPar(),
-                              ),
                             ),
                           ),
                         ],
@@ -180,9 +178,7 @@ class _ThrowsTabState extends State<ThrowsTab> {
                               context,
                             ).colorScheme.secondary,
                             side: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.secondary,
+                              color: Theme.of(context).colorScheme.secondary,
                             ),
                           ),
                         ),

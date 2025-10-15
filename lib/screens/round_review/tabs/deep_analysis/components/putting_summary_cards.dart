@@ -86,20 +86,39 @@ class PuttingSummaryCards extends StatelessWidget {
                 Text(
                   '${overallPercentage.toStringAsFixed(1)}%',
                   maxLines: 1,
-
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: accentColor,
+                    fontSize: 26,
                   ),
                 ),
                 Text(
                   '$makes/$attempts',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
                     ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
+                // Add C1X for C1 card only
+                if (index == 0 && circleName == 'C1') ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'C1X: ${puttingSummary.c1xPercentage.toStringAsFixed(1)}%',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: accentColor.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  Text(
+                    '${puttingSummary.c1xMakes}/${puttingSummary.c1xAttempts}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

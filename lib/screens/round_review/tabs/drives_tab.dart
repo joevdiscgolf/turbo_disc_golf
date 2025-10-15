@@ -18,9 +18,9 @@ class DrivesTab extends StatelessWidget {
     final teeShotBirdieRates = statsService.getTeeShotBirdieRateStats();
     final allTeeShotsByType = statsService.getAllTeeShotsByType();
     final circleInRegByType = statsService.getCircleInRegByThrowType();
-    final techniqueComparison = statsService.getTechniqueComparison();
-    final shotShapeBirdieRates = statsService.getShotShapeBirdieRateStats();
-    final circleInRegByShape = statsService.getCircleInRegByShotShape();
+    // final techniqueComparison = statsService.getTechniqueComparison();
+    final shotShapeBirdieRates = statsService.getShotShapeByTechniqueBirdieRateStats();
+    final circleInRegByShape = statsService.getCircleInRegByShotShapeAndTechnique();
     final performanceByFairwayWidth = statsService
         .getPerformanceByFairwayWidth();
 
@@ -31,7 +31,6 @@ class DrivesTab extends StatelessWidget {
           _buildCoreStatsKPIs(context, coreStats),
           _buildShotShapeAndTechniqueCard(
             context,
-            techniqueComparison,
             shotShapeBirdieRates,
             circleInRegByShape,
           ),
@@ -1065,12 +1064,11 @@ class DrivesTab extends StatelessWidget {
 
   Widget _buildShotShapeAndTechniqueCard(
     BuildContext context,
-    Map<String, Map<String, double>> techniqueComparison,
     Map<String, dynamic> shotShapeBirdieRates,
     Map<String, Map<String, double>> circleInRegByShape,
   ) {
     // If no data available, don't show the card
-    if (techniqueComparison.isEmpty && shotShapeBirdieRates.isEmpty) {
+    if (shotShapeBirdieRates.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -1087,20 +1085,19 @@ class DrivesTab extends StatelessWidget {
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            // Technique Comparison Section
-            if (techniqueComparison.isNotEmpty) ...[
-              Text(
-                'Technique Comparison',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _buildTechniqueComparisonRows(context, techniqueComparison),
-            ],
+            // Technique Comparison Section - COMMENTED OUT
+            // if (techniqueComparison.isNotEmpty) ...[
+            //   Text(
+            //     'Technique Comparison',
+            //     style: Theme.of(
+            //       context,
+            //     ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            //   ),
+            //   const SizedBox(height: 12),
+            //   _buildTechniqueComparisonRows(context, techniqueComparison),
+            // ],
             // Shot Shape Analysis Section
             if (shotShapeBirdieRates.isNotEmpty) ...[
-              if (techniqueComparison.isNotEmpty) const SizedBox(height: 24),
               Text(
                 'Shot Shape Performance',
                 style: Theme.of(
@@ -1120,170 +1117,182 @@ class DrivesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildTechniqueComparisonRows(
-    BuildContext context,
-    Map<String, Map<String, double>> techniqueComparison,
-  ) {
-    final backhand = techniqueComparison['backhand'];
-    final forehand = techniqueComparison['forehand'];
+  // COMMENTED OUT - Technique Comparison is no longer used
+  // Widget _buildTechniqueComparisonRows(
+  //   BuildContext context,
+  //   Map<String, Map<String, double>> techniqueComparison,
+  // ) {
+  //   final backhand = techniqueComparison['backhand'];
+  //   final forehand = techniqueComparison['forehand'];
 
-    if (backhand == null && forehand == null) {
-      return const SizedBox.shrink();
-    }
+  //   if (backhand == null && forehand == null) {
+  //     return const SizedBox.shrink();
+  //   }
 
-    return Column(
-      children: [
-        _buildComparisonRow(
-          context,
-          'Birdie %',
-          'Backhand',
-          backhand?['birdiePercentage'] ?? 0,
-          backhand?['totalAttempts']?.toInt() ?? 0,
-          'Forehand',
-          forehand?['birdiePercentage'] ?? 0,
-          forehand?['totalAttempts']?.toInt() ?? 0,
-          const Color(0xFF00F5D4),
-        ),
-        const SizedBox(height: 12),
-        _buildComparisonRow(
-          context,
-          'C1 in Reg',
-          'Backhand',
-          backhand?['c1InRegPercentage'] ?? 0,
-          backhand?['totalAttempts']?.toInt() ?? 0,
-          'Forehand',
-          forehand?['c1InRegPercentage'] ?? 0,
-          forehand?['totalAttempts']?.toInt() ?? 0,
-          const Color(0xFF4CAF50),
-        ),
-        const SizedBox(height: 12),
-        _buildComparisonRow(
-          context,
-          'C2 in Reg',
-          'Backhand',
-          backhand?['c2InRegPercentage'] ?? 0,
-          backhand?['totalAttempts']?.toInt() ?? 0,
-          'Forehand',
-          forehand?['c2InRegPercentage'] ?? 0,
-          forehand?['totalAttempts']?.toInt() ?? 0,
-          const Color(0xFF2196F3),
-        ),
-      ],
-    );
-  }
+  //   return Column(
+  //     children: [
+  //       _buildComparisonRow(
+  //         context,
+  //         'Birdie %',
+  //         'Backhand',
+  //         backhand?['birdiePercentage'] ?? 0,
+  //         backhand?['totalAttempts']?.toInt() ?? 0,
+  //         'Forehand',
+  //         forehand?['birdiePercentage'] ?? 0,
+  //         forehand?['totalAttempts']?.toInt() ?? 0,
+  //         const Color(0xFF00F5D4),
+  //       ),
+  //       const SizedBox(height: 12),
+  //       _buildComparisonRow(
+  //         context,
+  //         'C1 in Reg',
+  //         'Backhand',
+  //         backhand?['c1InRegPercentage'] ?? 0,
+  //         backhand?['totalAttempts']?.toInt() ?? 0,
+  //         'Forehand',
+  //         forehand?['c1InRegPercentage'] ?? 0,
+  //         forehand?['totalAttempts']?.toInt() ?? 0,
+  //         const Color(0xFF4CAF50),
+  //       ),
+  //       const SizedBox(height: 12),
+  //       _buildComparisonRow(
+  //         context,
+  //         'C2 in Reg',
+  //         'Backhand',
+  //         backhand?['c2InRegPercentage'] ?? 0,
+  //         backhand?['totalAttempts']?.toInt() ?? 0,
+  //         'Forehand',
+  //         forehand?['c2InRegPercentage'] ?? 0,
+  //         forehand?['totalAttempts']?.toInt() ?? 0,
+  //         const Color(0xFF2196F3),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildComparisonRow(
-    BuildContext context,
-    String label,
-    String technique1,
-    double percentage1,
-    int count1,
-    String technique2,
-    double percentage2,
-    int count2,
-    Color color,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        technique1,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      Text(
-                        count1 > 0
-                            ? '${percentage1.toStringAsFixed(0)}% ($count1)'
-                            : 'No data',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  if (count1 > 0)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: percentage1 / 100,
-                        minHeight: 8,
-                        backgroundColor: color.withValues(alpha: 0.2),
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        technique2,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      Text(
-                        count2 > 0
-                            ? '${percentage2.toStringAsFixed(0)}% ($count2)'
-                            : 'No data',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  if (count2 > 0)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: percentage2 / 100,
-                        minHeight: 8,
-                        backgroundColor: color.withValues(alpha: 0.2),
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // COMMENTED OUT - Only used by technique comparison which is no longer active
+  // Widget _buildComparisonRow(
+  //   BuildContext context,
+  //   String label,
+  //   String technique1,
+  //   double percentage1,
+  //   int count1,
+  //   String technique2,
+  //   double percentage2,
+  //   int count2,
+  //   Color color,
+  // ) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         label,
+  //         style: Theme.of(
+  //           context,
+  //         ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+  //       ),
+  //       const SizedBox(height: 8),
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Row(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Text(
+  //                       technique1,
+  //                       style: Theme.of(context).textTheme.bodySmall,
+  //                     ),
+  //                     Text(
+  //                       count1 > 0
+  //                           ? '${percentage1.toStringAsFixed(0)}% ($count1)'
+  //                           : 'No data',
+  //                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                         fontWeight: FontWeight.bold,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 4),
+  //                 if (count1 > 0)
+  //                   ClipRRect(
+  //                     borderRadius: BorderRadius.circular(4),
+  //                     child: LinearProgressIndicator(
+  //                       value: percentage1 / 100,
+  //                       minHeight: 8,
+  //                       backgroundColor: color.withValues(alpha: 0.2),
+  //                       valueColor: AlwaysStoppedAnimation<Color>(color),
+  //                     ),
+  //                   ),
+  //               ],
+  //             ),
+  //           ),
+  //           const SizedBox(width: 16),
+  //           Expanded(
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Row(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Text(
+  //                       technique2,
+  //                       style: Theme.of(context).textTheme.bodySmall,
+  //                     ),
+  //                     Text(
+  //                       count2 > 0
+  //                           ? '${percentage2.toStringAsFixed(0)}% ($count2)'
+  //                           : 'No data',
+  //                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                         fontWeight: FontWeight.bold,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 4),
+  //                 if (count2 > 0)
+  //                   ClipRRect(
+  //                     borderRadius: BorderRadius.circular(4),
+  //                     child: LinearProgressIndicator(
+  //                       value: percentage2 / 100,
+  //                       minHeight: 8,
+  //                       backgroundColor: color.withValues(alpha: 0.2),
+  //                       valueColor: AlwaysStoppedAnimation<Color>(color),
+  //                     ),
+  //                   ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildShotShapeRows(
     BuildContext context,
     Map<String, dynamic> shotShapeBirdieRates,
     Map<String, Map<String, double>> circleInRegByShape,
   ) {
-    // Filter and sort relevant shot shapes
+    // Filter for relevant technique+shape combinations
     final relevantShapes = ['hyzer', 'flat', 'anhyzer'];
-    final filteredShapes = shotShapeBirdieRates.entries
-        .where((entry) => relevantShapes.contains(entry.key))
+    final relevantTechniques = ['backhand', 'forehand'];
+
+    final filteredCombos = shotShapeBirdieRates.entries
+        .where((entry) {
+          // Entry key format: "technique_shape" (e.g., "backhand_hyzer")
+          final parts = entry.key.split('_');
+          if (parts.length != 2) return false;
+          final technique = parts[0];
+          final shape = parts[1];
+          return relevantTechniques.contains(technique) &&
+                 relevantShapes.contains(shape);
+        })
         .toList();
 
-    if (filteredShapes.isEmpty) {
+    if (filteredCombos.isEmpty) {
       return Text(
         'No shot shape data available',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1293,7 +1302,7 @@ class DrivesTab extends StatelessWidget {
     }
 
     // Sort by overall success (combination of birdie rate and C1 in reg)
-    filteredShapes.sort((a, b) {
+    filteredCombos.sort((a, b) {
       final aStats = circleInRegByShape[a.key];
       final bStats = circleInRegByShape[b.key];
       final aScore = a.value.percentage + (aStats?['c1Percentage'] ?? 0);
@@ -1302,13 +1311,16 @@ class DrivesTab extends StatelessWidget {
     });
 
     return Column(
-      children: filteredShapes.map((entry) {
-        final shapeName = entry.key;
+      children: filteredCombos.map((entry) {
+        final comboKey = entry.key;
         final shapeStats = entry.value;
-        final circleStats = circleInRegByShape[shapeName];
+        final circleStats = circleInRegByShape[comboKey];
 
-        final displayName =
-            shapeName.substring(0, 1).toUpperCase() + shapeName.substring(1);
+        // Parse the combination key: "backhand_hyzer" -> "Backhand Hyzer"
+        final parts = comboKey.split('_');
+        final technique = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);
+        final shape = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1);
+        final displayName = '$technique $shape';
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
