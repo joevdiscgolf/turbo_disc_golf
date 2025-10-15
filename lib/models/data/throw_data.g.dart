@@ -14,7 +14,8 @@ DiscThrow _$DiscThrowFromJson(Map json) => DiscThrow(
   shotShape: $enumDecodeNullable(_$ShotShapeEnumMap, json['shotShape']),
   stance: $enumDecodeNullable(_$StanceTypeEnumMap, json['stance']),
   power: $enumDecodeNullable(_$ThrowPowerEnumMap, json['power']),
-  distanceFeet: (json['distanceFeet'] as num?)?.toInt(),
+  distanceFeetBeforeThrow: (json['distanceFeetBeforeThrow'] as num?)?.toInt(),
+  distanceFeetAfterThrow: (json['distanceFeetAfterThrow'] as num?)?.toInt(),
   elevationChangeFeet: (json['elevationChangeFeet'] as num?)?.toDouble(),
   windDirection: $enumDecodeNullable(
     _$WindDirectionEnumMap,
@@ -37,6 +38,7 @@ DiscThrow _$DiscThrowFromJson(Map json) => DiscThrow(
   notes: json['notes'] as String?,
   rawText: json['rawText'] as String?,
   parseConfidence: (json['parseConfidence'] as num?)?.toDouble(),
+  discName: json['discName'] as String?,
   disc: json['disc'] == null
       ? null
       : DGDisc.fromJson(Map<String, dynamic>.from(json['disc'] as Map)),
@@ -50,7 +52,8 @@ Map<String, dynamic> _$DiscThrowToJson(DiscThrow instance) => <String, dynamic>{
   'shotShape': _$ShotShapeEnumMap[instance.shotShape],
   'stance': _$StanceTypeEnumMap[instance.stance],
   'power': _$ThrowPowerEnumMap[instance.power],
-  'distanceFeet': instance.distanceFeet,
+  'distanceFeetBeforeThrow': instance.distanceFeetBeforeThrow,
+  'distanceFeetAfterThrow': instance.distanceFeetAfterThrow,
   'elevationChangeFeet': instance.elevationChangeFeet,
   'windDirection': _$WindDirectionEnumMap[instance.windDirection],
   'windStrength': _$WindStrengthEnumMap[instance.windStrength],
@@ -61,6 +64,7 @@ Map<String, dynamic> _$DiscThrowToJson(DiscThrow instance) => <String, dynamic>{
   'notes': instance.notes,
   'rawText': instance.rawText,
   'parseConfidence': instance.parseConfidence,
+  'discName': instance.discName,
   'disc': instance.disc?.toJson(),
 };
 

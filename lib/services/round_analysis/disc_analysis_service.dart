@@ -62,73 +62,103 @@ class DiscAnalysisService {
 
   Map<String, double> getDiscBirdieRates(DGRound round) {
     final Map<String, int> birdiesByDisc = {};
-    final Map<String, int> throwsByDisc = {};
+    final Map<String, Set<int>> holesWithDisc = {};
 
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
 
-      final teeShot = hole.throws.first;
-      final discName = _extractDiscName(teeShot);
+      // Track which discs were used on this hole
+      final discsUsedOnHole = <String>{};
+      for (var discThrow in hole.throws) {
+        final discName = _extractDiscName(discThrow);
+        if (discName != null) {
+          discsUsedOnHole.add(discName);
+        }
+      }
 
-      if (discName != null) {
-        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+      // For each disc used on this hole, count the hole outcome
+      for (var discName in discsUsedOnHole) {
+        holesWithDisc.putIfAbsent(discName, () => {});
+        holesWithDisc[discName]!.add(hole.number);
+
         if (hole.relativeHoleScore < 0) {
           birdiesByDisc[discName] = (birdiesByDisc[discName] ?? 0) + 1;
         }
       }
     }
 
-    return throwsByDisc.map((disc, count) {
+    return holesWithDisc.map((disc, holeNumbers) {
       final birdies = birdiesByDisc[disc] ?? 0;
-      return MapEntry(disc, count > 0 ? (birdies / count) * 100 : 0.0);
+      final totalHoles = holeNumbers.length;
+      return MapEntry(disc, totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0);
     });
   }
 
   Map<String, double> getDiscParRates(DGRound round) {
     final Map<String, int> parsByDisc = {};
-    final Map<String, int> throwsByDisc = {};
+    final Map<String, Set<int>> holesWithDisc = {};
 
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
 
-      final teeShot = hole.throws.first;
-      final discName = _extractDiscName(teeShot);
+      // Track which discs were used on this hole
+      final discsUsedOnHole = <String>{};
+      for (var discThrow in hole.throws) {
+        final discName = _extractDiscName(discThrow);
+        if (discName != null) {
+          discsUsedOnHole.add(discName);
+        }
+      }
 
-      if (discName != null) {
-        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+      // For each disc used on this hole, count the hole outcome
+      for (var discName in discsUsedOnHole) {
+        holesWithDisc.putIfAbsent(discName, () => {});
+        holesWithDisc[discName]!.add(hole.number);
+
         if (hole.relativeHoleScore == 0) {
           parsByDisc[discName] = (parsByDisc[discName] ?? 0) + 1;
         }
       }
     }
 
-    return throwsByDisc.map((disc, count) {
+    return holesWithDisc.map((disc, holeNumbers) {
       final pars = parsByDisc[disc] ?? 0;
-      return MapEntry(disc, count > 0 ? (pars / count) * 100 : 0.0);
+      final totalHoles = holeNumbers.length;
+      return MapEntry(disc, totalHoles > 0 ? (pars / totalHoles) * 100 : 0.0);
     });
   }
 
   Map<String, double> getDiscBogeyRates(DGRound round) {
     final Map<String, int> bogeysByDisc = {};
-    final Map<String, int> throwsByDisc = {};
+    final Map<String, Set<int>> holesWithDisc = {};
 
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
 
-      final teeShot = hole.throws.first;
-      final discName = _extractDiscName(teeShot);
+      // Track which discs were used on this hole
+      final discsUsedOnHole = <String>{};
+      for (var discThrow in hole.throws) {
+        final discName = _extractDiscName(discThrow);
+        if (discName != null) {
+          discsUsedOnHole.add(discName);
+        }
+      }
 
-      if (discName != null) {
-        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+      // For each disc used on this hole, count the hole outcome
+      for (var discName in discsUsedOnHole) {
+        holesWithDisc.putIfAbsent(discName, () => {});
+        holesWithDisc[discName]!.add(hole.number);
+
         if (hole.relativeHoleScore > 0) {
           bogeysByDisc[discName] = (bogeysByDisc[discName] ?? 0) + 1;
         }
       }
     }
 
-    return throwsByDisc.map((disc, count) {
+    return holesWithDisc.map((disc, holeNumbers) {
       final bogeys = bogeysByDisc[disc] ?? 0;
-      return MapEntry(disc, count > 0 ? (bogeys / count) * 100 : 0.0);
+      final totalHoles = holeNumbers.length;
+      return MapEntry(disc, totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0);
     });
   }
 
@@ -138,10 +168,17 @@ class DiscAnalysisService {
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
 
-      final teeShot = hole.throws.first;
-      final discName = _extractDiscName(teeShot);
+      // Track which discs were used on this hole
+      final discsUsedOnHole = <String>{};
+      for (var discThrow in hole.throws) {
+        final discName = _extractDiscName(discThrow);
+        if (discName != null) {
+          discsUsedOnHole.add(discName);
+        }
+      }
 
-      if (discName != null) {
+      // For each disc used on this hole, record the hole score
+      for (var discName in discsUsedOnHole) {
         scoresByDisc.putIfAbsent(discName, () => []);
         scoresByDisc[discName]!.add(hole.relativeHoleScore);
       }
@@ -155,34 +192,46 @@ class DiscAnalysisService {
   }
 
   Map<String, int> getDiscThrowCounts(DGRound round) {
-    final Map<String, int> throwsByDisc = {};
+    final Map<String, Set<int>> holesWithDisc = {};
 
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
 
-      final teeShot = hole.throws.first;
-      final discName = _extractDiscName(teeShot);
-
-      if (discName != null) {
-        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+      // Track which discs were used on this hole
+      for (var discThrow in hole.throws) {
+        final discName = _extractDiscName(discThrow);
+        if (discName != null) {
+          holesWithDisc.putIfAbsent(discName, () => {});
+          holesWithDisc[discName]!.add(hole.number);
+        }
       }
     }
 
-    return throwsByDisc;
+    return holesWithDisc.map((disc, holeNumbers) {
+      return MapEntry(disc, holeNumbers.length);
+    });
   }
 
   Map<String, double> getDiscC1InRegPercentages(DGRound round) {
     final Map<String, int> c1InRegByDisc = {};
-    final Map<String, int> throwsByDisc = {};
+    final Map<String, Set<int>> holesWithDisc = {};
 
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
 
-      final teeShot = hole.throws.first;
-      final discName = _extractDiscName(teeShot);
+      // Track which discs were used on this hole
+      final discsUsedOnHole = <String>{};
+      for (var discThrow in hole.throws) {
+        final discName = _extractDiscName(discThrow);
+        if (discName != null) {
+          discsUsedOnHole.add(discName);
+        }
+      }
 
-      if (discName != null) {
-        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+      // For each disc used on this hole
+      for (var discName in discsUsedOnHole) {
+        holesWithDisc.putIfAbsent(discName, () => {});
+        holesWithDisc[discName]!.add(hole.number);
 
         // Check if reached C1 in regulation (par - 2 strokes or less)
         final regulationStrokes = hole.par - 2;
@@ -203,24 +252,33 @@ class DiscAnalysisService {
       }
     }
 
-    return throwsByDisc.map((disc, count) {
+    return holesWithDisc.map((disc, holeNumbers) {
       final c1InReg = c1InRegByDisc[disc] ?? 0;
-      return MapEntry(disc, count > 0 ? (c1InReg / count) * 100 : 0.0);
+      final totalHoles = holeNumbers.length;
+      return MapEntry(disc, totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0);
     });
   }
 
   Map<String, double> getDiscC2InRegPercentages(DGRound round) {
     final Map<String, int> c2InRegByDisc = {};
-    final Map<String, int> throwsByDisc = {};
+    final Map<String, Set<int>> holesWithDisc = {};
 
     for (var hole in round.holes) {
       if (hole.throws.isEmpty) continue;
 
-      final teeShot = hole.throws.first;
-      final discName = _extractDiscName(teeShot);
+      // Track which discs were used on this hole
+      final discsUsedOnHole = <String>{};
+      for (var discThrow in hole.throws) {
+        final discName = _extractDiscName(discThrow);
+        if (discName != null) {
+          discsUsedOnHole.add(discName);
+        }
+      }
 
-      if (discName != null) {
-        throwsByDisc[discName] = (throwsByDisc[discName] ?? 0) + 1;
+      // For each disc used on this hole
+      for (var discName in discsUsedOnHole) {
+        holesWithDisc.putIfAbsent(discName, () => {});
+        holesWithDisc[discName]!.add(hole.number);
 
         // Check if reached C2 in regulation (par - 2 strokes or less)
         final regulationStrokes = hole.par - 2;
@@ -242,9 +300,10 @@ class DiscAnalysisService {
       }
     }
 
-    return throwsByDisc.map((disc, count) {
+    return holesWithDisc.map((disc, holeNumbers) {
       final c2InReg = c2InRegByDisc[disc] ?? 0;
-      return MapEntry(disc, count > 0 ? (c2InReg / count) * 100 : 0.0);
+      final totalHoles = holeNumbers.length;
+      return MapEntry(disc, totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0);
     });
   }
 
@@ -274,6 +333,11 @@ class DiscAnalysisService {
     // First check if there's a disc object
     if (discThrow.disc != null) {
       return discThrow.disc!.name;
+    }
+
+    // Second, check if there's a discName from the voice transcript
+    if (discThrow.discName != null && discThrow.discName!.isNotEmpty) {
+      return discThrow.discName;
     }
 
     // Fall back to parsing notes/rawText

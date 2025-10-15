@@ -109,7 +109,6 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             Tab(text: 'Psych'),
             Tab(text: 'Summary'),
             Tab(text: 'Coach'),
-            Tab(text: 'Deep Analysis'),
           ],
         ),
       ),

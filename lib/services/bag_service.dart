@@ -27,7 +27,9 @@ class BagService extends ChangeNotifier {
   Future<bool> saveBag() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bagJson = jsonEncode(_userBag.map((disc) => disc.toJson()).toList());
+      final bagJson = jsonEncode(
+        _userBag.map((disc) => disc.toJson()).toList(),
+      );
       await prefs.setString(_bagKey, bagJson);
       return true;
     } catch (e) {
@@ -66,22 +68,17 @@ class BagService extends ChangeNotifier {
 
   DGDisc? findDiscByName(String name) {
     final searchName = name.toLowerCase();
-    return _userBag.firstWhere(
-      (disc) =>
-        disc.name.toLowerCase().contains(searchName) ||
-        (disc.moldName?.toLowerCase().contains(searchName) ?? false),
-      orElse: () => _userBag.isNotEmpty ? _userBag.first : DGDisc(
-        id: 'unknown',
-        name: name,
-        speed: 0,
-        glide: 0,
-        turn: 0,
-        fade: 0,
-        brand: null,
-        moldName: null,
-        plasticType: null,
-      ),
-    );
+    try {
+      return _userBag.firstWhere(
+        (disc) =>
+            disc.name.toLowerCase().contains(searchName) ||
+            (disc.moldName?.toLowerCase().contains(searchName) ?? false),
+      );
+    } catch (e) {
+      // No match found, return null instead of defaulting to first disc
+      // debugPrint('No disc found matching "$name" in bag');
+      return null;
+    }
   }
 
   // Helper method to create disc ID

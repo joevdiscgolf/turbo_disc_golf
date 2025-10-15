@@ -19,8 +19,10 @@ class DrivesTab extends StatelessWidget {
     final allTeeShotsByType = statsService.getAllTeeShotsByType();
     final circleInRegByType = statsService.getCircleInRegByThrowType();
     // final techniqueComparison = statsService.getTechniqueComparison();
-    final shotShapeBirdieRates = statsService.getShotShapeByTechniqueBirdieRateStats();
-    final circleInRegByShape = statsService.getCircleInRegByShotShapeAndTechnique();
+    final shotShapeBirdieRates = statsService
+        .getShotShapeByTechniqueBirdieRateStats();
+    final circleInRegByShape = statsService
+        .getCircleInRegByShotShapeAndTechnique();
     final performanceByFairwayWidth = statsService
         .getPerformanceByFairwayWidth();
 
@@ -29,11 +31,12 @@ class DrivesTab extends StatelessWidget {
       children: addRunSpacing(
         [
           _buildCoreStatsKPIs(context, coreStats),
-          _buildShotShapeAndTechniqueCard(
-            context,
-            shotShapeBirdieRates,
-            circleInRegByShape,
-          ),
+
+          _buildOverallC1InRegCard(context, coreStats),
+          _buildOverallC2InRegCard(context, coreStats),
+          _buildOverallParkedCard(context, coreStats),
+          _buildOverallOBCard(context, coreStats),
+
           _buildBirdieRateByThrowType(
             context,
             teeShotBirdieRates,
@@ -48,6 +51,11 @@ class DrivesTab extends StatelessWidget {
             context,
             circleInRegByType,
             allTeeShotsByType,
+          ),
+          _buildShotShapeAndTechniqueCard(
+            context,
+            shotShapeBirdieRates,
+            circleInRegByShape,
           ),
           if (performanceByFairwayWidth.isNotEmpty)
             _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
@@ -422,6 +430,961 @@ class DrivesTab extends StatelessWidget {
       default:
         return '';
     }
+  }
+
+  String _scoreLabel(int relativeHoleScore) {
+    if (relativeHoleScore <= -3) {
+      return 'Albatross';
+    } else if (relativeHoleScore == -2) {
+      return 'Eagle';
+    } else if (relativeHoleScore == -1) {
+      return 'Birdie';
+    } else if (relativeHoleScore == 0) {
+      return 'Par';
+    } else if (relativeHoleScore == 1) {
+      return 'Bogey';
+    } else if (relativeHoleScore == 2) {
+      return 'Double Bogey';
+    } else if (relativeHoleScore == 3) {
+      return 'Triple Bogey';
+    } else {
+      return '+$relativeHoleScore';
+    }
+  }
+
+  Widget _buildOverallC1InRegCard(BuildContext context, coreStats) {
+    final c1InRegPct = coreStats.c1InRegPct;
+
+    // Calculate which holes reached C1 in regulation
+    final c1InRegHoles = <DGHole>[];
+    final notC1InRegHoles = <DGHole>[];
+
+    for (final hole in round.holes) {
+      final regulationStrokes = hole.par - 2;
+      bool reachedC1 = false;
+
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            reachedC1 = true;
+            break;
+          }
+        }
+      }
+
+      if (reachedC1) {
+        c1InRegHoles.add(hole);
+      } else {
+        notC1InRegHoles.add(hole);
+      }
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(top: 8),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'C1 in Regulation',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  '${c1InRegPct.toStringAsFixed(0)}% (${c1InRegHoles.length}/${round.holes.length})',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Holes where you reached C1 with a chance for birdie',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: c1InRegPct / 100,
+                      minHeight: 12,
+                      backgroundColor:
+                          const Color(0xFF00F5D4).withValues(alpha: 0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF00F5D4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            children: [
+              const Divider(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (c1InRegHoles.isNotEmpty) ...[
+                    Text(
+                      'C1 in Reg (${c1InRegHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...c1InRegHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF00F5D4),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00F5D4)
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: const Color(0xFF00F5D4),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                  if (c1InRegHoles.isNotEmpty && notC1InRegHoles.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                  ],
+                  if (notC1InRegHoles.isNotEmpty) ...[
+                    Text(
+                      'Not C1 in Reg (${notC1InRegHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...notC1InRegHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverallC2InRegCard(BuildContext context, coreStats) {
+    final c2InRegPct = coreStats.c2InRegPct;
+
+    // Calculate which holes reached C2 in regulation
+    final c2InRegHoles = <DGHole>[];
+    final notC2InRegHoles = <DGHole>[];
+
+    for (final hole in round.holes) {
+      final regulationStrokes = hole.par - 2;
+      bool reachedC2 = false;
+
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked ||
+              discThrow.landingSpot == LandingSpot.circle2) {
+            reachedC2 = true;
+            break;
+          }
+        }
+      }
+
+      if (reachedC2) {
+        c2InRegHoles.add(hole);
+      } else {
+        notC2InRegHoles.add(hole);
+      }
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(top: 8),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'C2 in Regulation',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  '${c2InRegPct.toStringAsFixed(0)}% (${c2InRegHoles.length}/${round.holes.length})',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Holes where you reached C2 with a chance for birdie',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: c2InRegPct / 100,
+                      minHeight: 12,
+                      backgroundColor:
+                          const Color(0xFF2196F3).withValues(alpha: 0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF2196F3),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            children: [
+              const Divider(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (c2InRegHoles.isNotEmpty) ...[
+                    Text(
+                      'C2 in Reg (${c2InRegHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...c2InRegHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF2196F3),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2196F3)
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: const Color(0xFF2196F3),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                  if (c2InRegHoles.isNotEmpty && notC2InRegHoles.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                  ],
+                  if (notC2InRegHoles.isNotEmpty) ...[
+                    Text(
+                      'Not C2 in Reg (${notC2InRegHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...notC2InRegHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverallParkedCard(BuildContext context, coreStats) {
+    final parkedPct = coreStats.parkedPct;
+
+    // Calculate which holes had parked throws
+    final parkedHoles = <DGHole>[];
+    final notParkedHoles = <DGHole>[];
+
+    for (final hole in round.holes) {
+      bool hadParkedThrow = false;
+
+      for (final discThrow in hole.throws) {
+        if (discThrow.landingSpot == LandingSpot.parked) {
+          hadParkedThrow = true;
+          break;
+        }
+      }
+
+      if (hadParkedThrow) {
+        parkedHoles.add(hole);
+      } else {
+        notParkedHoles.add(hole);
+      }
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(top: 8),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Parked',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  '${parkedPct.toStringAsFixed(0)}% (${parkedHoles.length}/${round.holes.length})',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Holes where you parked your disc (within 10 ft)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: parkedPct / 100,
+                      minHeight: 12,
+                      backgroundColor:
+                          const Color(0xFFFFA726).withValues(alpha: 0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFFFFA726),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            children: [
+              const Divider(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (parkedHoles.isNotEmpty) ...[
+                    Text(
+                      'Parked (${parkedHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...parkedHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFA726),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFA726)
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: const Color(0xFFFFA726),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                  if (parkedHoles.isNotEmpty && notParkedHoles.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                  ],
+                  if (notParkedHoles.isNotEmpty) ...[
+                    Text(
+                      'Not Parked (${notParkedHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...notParkedHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverallOBCard(BuildContext context, coreStats) {
+    final obPct = coreStats.obPct;
+
+    // Calculate which holes had OB throws
+    final obHoles = <DGHole>[];
+    final notOBHoles = <DGHole>[];
+
+    for (final hole in round.holes) {
+      bool hadOBThrow = false;
+
+      for (final discThrow in hole.throws) {
+        if (discThrow.landingSpot == LandingSpot.outOfBounds) {
+          hadOBThrow = true;
+          break;
+        }
+      }
+
+      if (hadOBThrow) {
+        obHoles.add(hole);
+      } else {
+        notOBHoles.add(hole);
+      }
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(top: 8),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Out of Bounds',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  '${obPct.toStringAsFixed(0)}% (${obHoles.length}/${round.holes.length})',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Holes where you went out of bounds',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: obPct / 100,
+                      minHeight: 12,
+                      backgroundColor:
+                          const Color(0xFFFF7A7A).withValues(alpha: 0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFFFF7A7A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            children: [
+              const Divider(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (obHoles.isNotEmpty) ...[
+                    Text(
+                      'OB (${obHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...obHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF7A7A),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF7A7A)
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: const Color(0xFFFF7A7A),
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                  if (obHoles.isNotEmpty && notOBHoles.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                  ],
+                  if (notOBHoles.isNotEmpty) ...[
+                    Text(
+                      'No OB (${notOBHoles.length})',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...notOBHoles.map((hole) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${hole.number}',
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _scoreLabel(hole.relativeHoleScore),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontSize: 10,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildC1InRegByThrowType(
@@ -1280,17 +2243,15 @@ class DrivesTab extends StatelessWidget {
     final relevantShapes = ['hyzer', 'flat', 'anhyzer'];
     final relevantTechniques = ['backhand', 'forehand'];
 
-    final filteredCombos = shotShapeBirdieRates.entries
-        .where((entry) {
-          // Entry key format: "technique_shape" (e.g., "backhand_hyzer")
-          final parts = entry.key.split('_');
-          if (parts.length != 2) return false;
-          final technique = parts[0];
-          final shape = parts[1];
-          return relevantTechniques.contains(technique) &&
-                 relevantShapes.contains(shape);
-        })
-        .toList();
+    final filteredCombos = shotShapeBirdieRates.entries.where((entry) {
+      // Entry key format: "technique_shape" (e.g., "backhand_hyzer")
+      final parts = entry.key.split('_');
+      if (parts.length != 2) return false;
+      final technique = parts[0];
+      final shape = parts[1];
+      return relevantTechniques.contains(technique) &&
+          relevantShapes.contains(shape);
+    }).toList();
 
     if (filteredCombos.isEmpty) {
       return Text(
@@ -1318,8 +2279,10 @@ class DrivesTab extends StatelessWidget {
 
         // Parse the combination key: "backhand_hyzer" -> "Backhand Hyzer"
         final parts = comboKey.split('_');
-        final technique = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);
-        final shape = parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1);
+        final technique =
+            parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);
+        final shape =
+            parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1);
         final displayName = '$technique $shape';
 
         return Padding(

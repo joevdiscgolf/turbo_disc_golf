@@ -237,7 +237,7 @@ class GPTAnalysisService {
   /// Analyze one throw deterministically
   static ThrowAnalysis analyzeThrow(DiscThrow t) {
     // helper to read numeric distance safely
-    final dist = t.distanceFeet;
+    final dist = t.distanceFeetBeforeThrow;
     final parseConf = (t.parseConfidence != null)
         ? t.parseConfidence!.clamp(0.0, 1.0)
         : 0.8;

@@ -136,9 +136,10 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
                     context,
                   ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                if (teeShot.distanceFeet != null && teeShot.distanceFeet! > 0)
+                if (teeShot.distanceFeetBeforeThrow != null &&
+                    teeShot.distanceFeetBeforeThrow! > 0)
                   Text(
-                    'Threw ${teeShot.distanceFeet} ft',
+                    'Threw ${teeShot.distanceFeetBeforeThrow} ft',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 if (teeShot.technique != null)

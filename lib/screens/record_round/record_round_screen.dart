@@ -60,7 +60,7 @@ Whole one is a 200-ft par 3 on a hill that is sloped I threw my tactic on a back
 ''';
 
 const String flingsGivingRound2Description = '''
-Whole one is a 600 ft par 4 that's wide open in downhill at the start and then goes into the trees for the second part I threw my halo Destroyer off the tee on a backhand just flat and it ended up just into the trees and 140 ft away and I threw a forehand up shot with my razor claw and that parked at 10 ft away so I buried hold two is a 170 ft Par 3 pretty wide open I threw a forehand tactic out to the left side on Heiser and parked it two feet away all three is a wide open 370 ft Par 3 I threw my PD on a backhand hyzer and ended up 25 ft left with a birdie putt I miss that Putt and then I missed the comeback butt from 25 ft so I tapped in for a bogey on that hole whole four is a 380 ft Par 3 it's pretty wide open but the green is protected by some trees I threw a backhand hyzer with a pd2 out to the right and then I ended up 25 ft long and out of bounds and I made my par put from 25 ft whole five was a 440 ft par 4 I threw a forehand off the tee and had another forehand approach from 140 ft into the green and made a 23 ft pot for birdie whole six is a wide open and 30 ft Par 3 I threw a backhand hyzer with my md4 to 25 ft and made the putt whole seven is a 500 ft powerful through a bunch of trees pretty tight I hit the first tree with my cloud breaker on a backhand and then I threw my second shot with a backhand dd3 and hit another tree and ended up 250 ft short I threw a forehand pd2 through the trees to try to get a par but it ended up 45 ft away I tried to make the 45 foot pot for par I missed that and went out of bounds past the basket and then I missed my 15-ft pot for double bogey and tapped in for a triple bogey.Call 8 is a 240 ft pretty wide open hole with a low ceiling off the tee I threw my fd3 on a forehand hyzer and threw it to 15 ft and made that putt whole nine is a 300 ft downhill Par 3 wide open until the very end where the basket is just into the forest I threw my pd2 on a forehand flat shot and threw it to 28 ft and made the putt through the woods for birdie whole 10 is a 550 ft par 4 that's wide open most of the way and then finishes where the basket is guarded by trees I threw my wraith on a backhand turnover and it hit a tree stopping at 80 ft short and then I laid up that putt to about 10 ft and tapped in for birdie then hole 11 is a 315-ft par 3 pretty wide open until the end where the basket is in a Grove of pine trees I threw my fd3 on a backhand hyzer out to the right side and low and it skipped up to 3 ft away from the basket and I tap that in for birdie whole 12 is a 200 ft wide open Par 3 I threw a forehand md5 to about 10 ft and tap that in for birdie whole 13 is a 800 ft par 5 very wide open with out of bounds on the left and right I threw my wraith on a backhand hyzer flip to about 315 ft away from the basket then I threw my buzz 228 ft left of the basket and I miss that putt just low for Eagle so I tapped in for the birdie whole 14 is a 340 ft wide open Par 3 with some trees guarding the basket at the end I threw it a little bit short and left to 50 ft and laid that up to tap in for par whole 15 is a wide open Par 3 where you just have to get over a bunker in front of the basket I threw a forehand into a tree On the left and laid that up that ended up 50 ft away and laid that up to tap in for the par hole 16 starts wide open and then finishes into a Grove of trees with a big opening I threw my Razor cloth on a forehand and it ended up 25 ft short and right and I made that putt for birdie whole 17 is a wide open 700 ft power 4 I threw my wraith on a backhand hyzer flip and ended up in the Fairway and then I had 215 ft into the basket I threw a skip shot with my md5 on a backhand which rolled and ended up 35 ft away I missed that putt for birdie and had a 20 ft pop back for par I missed that putt for par and made it 20 ft pot for bogey on 18 it's a 400 ft Par 3 without a bounds on the left and right but wide open otherwise I threw my md1 on a backhand turnover and threw it to 40 ft left and short and laid up and tapped in for the three 
+Whole one is a 600 ft par 4 that's wide open in downhill at the start and then goes into the trees for the second part I threw my halo Destroyer off the tee on a backhand just flat and it ended up just into the trees and 140 ft away and I threw a forehand up shot with my razor claw and that parked at 10 ft away so I buried hold two is a 170 ft Par 3 pretty wide open I threw a forehand tactic out to the left side on Heiser and parked it two feet away all three is a wide open 370 ft Par 3 I threw my PD on a backhand hyzer and ended up 25 ft left with a birdie putt I miss that Putt and then I missed the comeback butt from 25 ft so I tapped in for a bogey on that hole whole four is a 380 ft Par 3 it's pretty wide open but the green is protected by some trees I threw a backhand hyzer with a pd2 out to the right and then I ended up 25 ft long and out of bounds and I made my par put from 25 ft whole five was a 440 ft par 4 I threw a forehand off the tee and had another forehand approach from 140 ft into the green and made a 23 ft pot for birdie whole six is a wide open and 30 ft Par 3 I threw a backhand hyzer with my md4 to 25 ft and made the putt whole seven is a 500 ft powerful through a bunch of trees pretty tight I hit the first tree with my cloud breaker on a backhand and then I threw my second shot with a backhand dd3 and hit another tree and ended up 250 ft short I threw a forehand pd2 through the trees to try to get a par but it ended up 45 ft away I tried to make the 45 foot pot for par I missed that and went out of bounds past the basket and then I missed my 15-ft pot for double bogey and tapped in for a triple bogey.Call 8 is a 240 ft pretty wide open hole with a low ceiling off the tee I threw my fd3 on a forehand hyzer and threw it to 15 ft and made that putt whole nine is a 300 ft downhill Par 3 wide open until the very end where the basket is just into the forest I threw my pd2 on a forehand flat shot and threw it to 28 ft and made the putt through the woods for birdie whole 10 is a 550 ft par 4 that's wide open most of the way and then finishes where the basket is guarded by trees I threw my wraith on a backhand turnover and it hit a tree stopping at 80 ft short and then I laid up that putt to about 10 ft and tapped in for birdie then hole 11 is a 315-ft par 3 pretty wide open until the end where the basket is in a Grove of pine trees I threw my fd3 on a backhand hyzer out to the right side and low and it skipped up to 3 ft away from the basket and I tap that in for birdie whole 12 is a 200 ft wide open Par 3 I threw a forehand md5 to about 10 ft and tap that in for birdie whole 13 is a 800 ft par 5 very wide open with out of bounds on the left and right I threw my wraith on a backhand hyzer flip to about 315 ft away from the basket then I threw my buzz to 28 ft left of the basket and I miss that putt just low for Eagle so I tapped in for the birdie whole 14 is a 340 ft wide open Par 3 with some trees guarding the basket at the end I threw it a little bit short and left to 50 ft and laid that up to tap in for par whole 15 is a wide open Par 3 where you just have to get over a bunker in front of the basket I threw a forehand into a tree On the left and laid that up that ended up 50 ft away and laid that up to tap in for the par hole 16 starts wide open and then finishes into a Grove of trees with a big opening I threw my Razor cloth on a forehand and it ended up 25 ft short and right and I made that putt for birdie whole 17 is a wide open 700 ft power 4 I threw my wraith on a backhand hyzer flip and ended up in the Fairway and then I had 215 ft into the basket I threw a skip shot with my md5 on a backhand which rolled and ended up 35 ft away I missed that putt for birdie and had a 20 ft pop back for par I missed that putt for par and made it 20 ft pot for bogey on 18 it's a 400 ft Par 3 without a bounds on the left and right but wide open otherwise I threw my md1 on a backhand turnover and threw it to 40 ft left and short and laid up and tapped in for the three 
 ''';
 
 const String elevenUnderWhitesDescriptionNoHoleDistance = '''
@@ -100,7 +100,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
   late AnimationController _animationController;
   final TextEditingController _transcriptController = TextEditingController();
   final TextEditingController _courseNameController = TextEditingController();
-  bool _testMode = false;
+  bool _testMode = true;
   bool _useSharedPreferences = false;
   String? _lastNavigatedRoundId;
 
@@ -180,39 +180,39 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
     super.dispose();
   }
 
-  void _toggleRecording() async {
-    if (_voiceService.isListening) {
-      await _voiceService.stopListening();
-      _animationController.stop();
-    } else {
-      // Try to initialize first if not initialized
-      if (!_voiceService.isInitialized) {
-        final initialized = await _voiceService.initialize();
-        if (!initialized) {
-          // If still not initialized, show error
-          if (mounted) {
-            setState(() {});
-            // Check if it's a permission issue
-            if (_voiceService.lastError.contains('Settings')) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Please enable microphone access in Settings, then try again',
-                  ),
-                  duration: Duration(seconds: 4),
-                ),
-              );
-            }
-          }
-          return;
-        }
-      }
+  // void _toggleRecording() async {
+  //   if (_voiceService.isListening) {
+  //     await _voiceService.stopListening();
+  //     _animationController.stop();
+  //   } else {
+  //     // Try to initialize first if not initialized
+  //     if (!_voiceService.isInitialized) {
+  //       final initialized = await _voiceService.initialize();
+  //       if (!initialized) {
+  //         // If still not initialized, show error
+  //         if (mounted) {
+  //           setState(() {});
+  //           // Check if it's a permission issue
+  //           if (_voiceService.lastError.contains('Settings')) {
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               const SnackBar(
+  //                 content: Text(
+  //                   'Please enable microphone access in Settings, then try again',
+  //                 ),
+  //                 duration: Duration(seconds: 4),
+  //               ),
+  //             );
+  //           }
+  //         }
+  //         return;
+  //       }
+  //     }
 
-      await _voiceService.startListening();
-      _animationController.repeat();
-    }
-    setState(() {});
-  }
+  //     await _voiceService.startListening();
+  //     _animationController.repeat();
+  //   }
+  //   setState(() {});
+  // }
 
   // void _parseRound() async {
   //   if (_transcriptController.text.isEmpty) {
@@ -356,313 +356,441 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
 
             const SizedBox(height: 24),
 
-            // Option 2: Voice Only
-            Card(
-              color: const Color(0xFF1E293B),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF9D7FFF,
-                            ).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '2',
-                              style: TextStyle(
-                                color: Color(0xFF9D7FFF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Voice-Only Input',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Describe your entire round with voice, including hole numbers, par, distance, and all your throws.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFFB0B0B0),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _courseNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Course Name (Optional)',
-                        border: OutlineInputBorder(),
-                        hintText: 'Enter the course name',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+            // // Option 2: Voice Only
+            // Card(
+            //   color: const Color(0xFF1E293B),
+            //   child: Padding(
+            //     padding: const EdgeInsets.all(16.0),
+            //     child: Column(
+            //       crossAxisAlignment: CrossAxisAlignment.start,
+            //       children: [
+            //         Row(
+            //           children: [
+            //             Container(
+            //               width: 32,
+            //               height: 32,
+            //               decoration: BoxDecoration(
+            //                 color: const Color(
+            //                   0xFF9D7FFF,
+            //                 ).withValues(alpha: 0.2),
+            //                 borderRadius: BorderRadius.circular(8),
+            //               ),
+            //               child: const Center(
+            //                 child: Text(
+            //                   '2',
+            //                   style: TextStyle(
+            //                     color: Color(0xFF9D7FFF),
+            //                     fontWeight: FontWeight.bold,
+            //                     fontSize: 18,
+            //                   ),
+            //                 ),
+            //               ),
+            //             ),
+            //             const SizedBox(width: 12),
+            //             Text(
+            //               'Voice-Only Input',
+            //               style: Theme.of(context).textTheme.titleMedium
+            //                   ?.copyWith(fontWeight: FontWeight.bold),
+            //             ),
+            //           ],
+            //         ),
+            //         const SizedBox(height: 12),
+            //         Text(
+            //           'Describe your entire round with voice, including hole numbers, par, distance, and all your throws.',
+            //           style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            //             color: const Color(0xFFB0B0B0),
+            //           ),
+            //         ),
+            //         const SizedBox(height: 16),
+            //         TextField(
+            //           controller: _courseNameController,
+            //           decoration: const InputDecoration(
+            //             labelText: 'Course Name (Optional)',
+            //             border: OutlineInputBorder(),
+            //             hintText: 'Enter the course name',
+            //           ),
+            //         ),
+            //         const SizedBox(height: 16),
 
-                    // Error display
-                    if (_voiceService.lastError.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2D1818),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFF7A7A)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: Color(0xFFFF7A7A),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _voiceService.lastError,
-                                style: const TextStyle(
-                                  color: Color(0xFFFFBBBB),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+            //         // Error display
+            //         if (_voiceService.lastError.isNotEmpty)
+            //           Container(
+            //             padding: const EdgeInsets.all(12),
+            //             margin: const EdgeInsets.only(bottom: 16),
+            //             decoration: BoxDecoration(
+            //               color: const Color(0xFF2D1818),
+            //               borderRadius: BorderRadius.circular(8),
+            //               border: Border.all(color: const Color(0xFFFF7A7A)),
+            //             ),
+            //             child: Row(
+            //               children: [
+            //                 const Icon(
+            //                   Icons.error_outline,
+            //                   color: Color(0xFFFF7A7A),
+            //                 ),
+            //                 const SizedBox(width: 8),
+            //                 Expanded(
+            //                   child: Text(
+            //                     _voiceService.lastError,
+            //                     style: const TextStyle(
+            //                       color: Color(0xFFFFBBBB),
+            //                     ),
+            //                   ),
+            //                 ),
+            //               ],
+            //             ),
+            //           ),
 
-                    // Recording button
-                    Center(
-                      child: GestureDetector(
-                        onTap: _toggleRecording,
-                        child: AnimatedBuilder(
-                          animation: _animationController,
-                          builder: (context, child) {
-                            return Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _voiceService.isListening
-                                    ? const Color(
-                                        0xFF10E5FF,
-                                      ).withValues(alpha: 0.9)
-                                    : const Color(0xFF9D7FFF),
-                                boxShadow: _voiceService.isListening
-                                    ? [
-                                        BoxShadow(
-                                          color: const Color(
-                                            0xFF10E5FF,
-                                          ).withValues(alpha: 0.7),
-                                          blurRadius:
-                                              20 * _animationController.value,
-                                          spreadRadius:
-                                              5 * _animationController.value,
-                                        ),
-                                      ]
-                                    : [
-                                        BoxShadow(
-                                          color: const Color(
-                                            0xFF9D7FFF,
-                                          ).withValues(alpha: 0.4),
-                                          blurRadius: 10,
-                                          spreadRadius: 3,
-                                        ),
-                                      ],
-                              ),
-                              child: Icon(
-                                _voiceService.isListening
-                                    ? Icons.mic
-                                    : Icons.mic_none,
-                                size: 40,
-                                color: const Color(0xFFF5F5F5),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+            //         // Recording button
+            //         Center(
+            //           child: GestureDetector(
+            //             onTap: _toggleRecording,
+            //             child: AnimatedBuilder(
+            //               animation: _animationController,
+            //               builder: (context, child) {
+            //                 return Container(
+            //                   width: 80,
+            //                   height: 80,
+            //                   decoration: BoxDecoration(
+            //                     shape: BoxShape.circle,
+            //                     color: _voiceService.isListening
+            //                         ? const Color(
+            //                             0xFF10E5FF,
+            //                           ).withValues(alpha: 0.9)
+            //                         : const Color(0xFF9D7FFF),
+            //                     boxShadow: _voiceService.isListening
+            //                         ? [
+            //                             BoxShadow(
+            //                               color: const Color(
+            //                                 0xFF10E5FF,
+            //                               ).withValues(alpha: 0.7),
+            //                               blurRadius:
+            //                                   20 * _animationController.value,
+            //                               spreadRadius:
+            //                                   5 * _animationController.value,
+            //                             ),
+            //                           ]
+            //                         : [
+            //                             BoxShadow(
+            //                               color: const Color(
+            //                                 0xFF9D7FFF,
+            //                               ).withValues(alpha: 0.4),
+            //                               blurRadius: 10,
+            //                               spreadRadius: 3,
+            //                             ),
+            //                           ],
+            //                   ),
+            //                   child: Icon(
+            //                     _voiceService.isListening
+            //                         ? Icons.mic
+            //                         : Icons.mic_none,
+            //                     size: 40,
+            //                     color: const Color(0xFFF5F5F5),
+            //                   ),
+            //                 );
+            //               },
+            //             ),
+            //           ),
+            //         ),
+            //         const SizedBox(height: 8),
 
-                    // Status text
-                    Center(
-                      child: Text(
-                        _testMode
-                            ? 'Test Mode Active'
-                            : _voiceService.isListening
-                            ? 'Listening... Describe your round!'
-                            : 'Tap mic to record',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
+            //         // Status text
+            //         Center(
+            //           child: Text(
+            //             _testMode
+            //                 ? 'Test Mode Active'
+            //                 : _voiceService.isListening
+            //                 ? 'Listening... Describe your round!'
+            //                 : 'Tap mic to record',
+            //             style: Theme.of(context).textTheme.bodyMedium,
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
             const SizedBox(height: 32),
 
-            // Test/Debug Section
-            ExpansionTile(
-              title: Row(
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.science, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Test & Debug Tools',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ],
-              ),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // Test mode toggle
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Test mode toggle
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Test Mode',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          Switch(
-                            value: _testMode,
-                            onChanged: (value) {
-                              setState(() {
-                                _testMode = value;
-                                if (value) {
-                                  _transcriptController.text =
-                                      getCorrectTestDescription;
-                                  _voiceService.updateText(
-                                    getCorrectTestDescription,
-                                  );
-                                } else {
-                                  _transcriptController.clear();
-                                  _voiceService.clearText();
-                                }
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          const Tooltip(
-                            message: 'Uses test constant',
-                            child: Icon(Icons.info_outline, size: 16),
-                          ),
-                        ],
+                      const Text('Test Mode', style: TextStyle(fontSize: 16)),
+                      Switch(
+                        value: _testMode,
+                        onChanged: (value) {
+                          setState(() {
+                            _testMode = value;
+                            if (value) {
+                              _transcriptController.text =
+                                  getCorrectTestDescription;
+                              _voiceService.updateText(
+                                getCorrectTestDescription,
+                              );
+                            } else {
+                              _transcriptController.clear();
+                              _voiceService.clearText();
+                            }
+                          });
+                        },
                       ),
-
-                      const SizedBox(height: 8),
-
-                      // Use Shared Preferences toggle
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Use Cached Round',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          Switch(
-                            value: _useSharedPreferences,
-                            onChanged: (value) {
-                              setState(() {
-                                _useSharedPreferences = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          const Tooltip(
-                            message: 'Load from storage instead of calling AI',
-                            child: Icon(Icons.info_outline, size: 16),
-                          ),
-                        ],
+                      const SizedBox(width: 8),
+                      const Tooltip(
+                        message: 'Uses test constant',
+                        child: Icon(Icons.info_outline, size: 16),
                       ),
-
-                      const SizedBox(height: 16),
-
-                      // Test Parse button
-                      if (_testMode)
-                        ElevatedButton.icon(
-                          onPressed: _roundParser.isProcessing
-                              ? null
-                              : () async {
-                                  await _roundParser.parseVoiceTranscript(
-                                    getCorrectTestDescription,
-                                    courseName: testCourseName,
-                                    useSharedPreferences: _useSharedPreferences,
-                                  );
-
-                                  if (_roundParser.lastError.isNotEmpty &&
-                                      context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(_roundParser.lastError),
-                                      ),
-                                    );
-                                  }
-                                },
-                          icon: _roundParser.isProcessing
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.science),
-                          label: Text(
-                            _roundParser.isProcessing
-                                ? 'Processing...'
-                                : 'Test Parse Constant',
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF9D4EDD),
-                            foregroundColor: const Color(0xFFF5F5F5),
-                          ),
-                        ),
-
-                      if (_testMode) const SizedBox(height: 12),
-
-                      // Test Image + Voice button
-                      if (_testMode)
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const ImportScoreScreen(
-                                  testMode: true,
-                                  testVoiceDescription:
-                                      flingsGivingRound2DescriptionNoHoleDistance,
-                                ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.image),
-                          label: const Text(
-                            'Test Image + Voice (Pre-processed)',
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00F5D4),
-                            foregroundColor: const Color(0xFF0A0E17),
-                          ),
-                        ),
                     ],
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 8),
+
+                  // Use Shared Preferences toggle
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Use Cached Round',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      Switch(
+                        value: _useSharedPreferences,
+                        onChanged: (value) {
+                          setState(() {
+                            _useSharedPreferences = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      const Tooltip(
+                        message: 'Load from storage instead of calling AI',
+                        child: Icon(Icons.info_outline, size: 16),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Test Parse button
+                  if (_testMode)
+                    ElevatedButton.icon(
+                      onPressed: _roundParser.isProcessing
+                          ? null
+                          : () async {
+                              await _roundParser.parseVoiceTranscript(
+                                getCorrectTestDescription,
+                                courseName: testCourseName,
+                                useSharedPreferences: _useSharedPreferences,
+                              );
+
+                              if (_roundParser.lastError.isNotEmpty &&
+                                  context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(_roundParser.lastError),
+                                  ),
+                                );
+                              }
+                            },
+                      icon: _roundParser.isProcessing
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.science),
+                      label: Text(
+                        _roundParser.isProcessing
+                            ? 'Processing...'
+                            : 'Test Parse Constant',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9D4EDD),
+                        foregroundColor: const Color(0xFFF5F5F5),
+                      ),
+                    ),
+
+                  if (_testMode) const SizedBox(height: 12),
+
+                  // Test Image + Voice button
+                  if (_testMode)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ImportScoreScreen(
+                              testMode: true,
+                              testVoiceDescription:
+                                  flingsGivingRound2DescriptionNoHoleDistance,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.image),
+                      label: const Text('Test Image + Voice (Pre-processed)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00F5D4),
+                        foregroundColor: const Color(0xFF0A0E17),
+                      ),
+                    ),
+                ],
+              ),
             ),
+            // // Test/Debug Section
+            // ExpansionTile(
+            //   title: Row(
+            //     children: [
+            //       const Icon(Icons.science, size: 20),
+            //       const SizedBox(width: 8),
+            //       Text(
+            //         'Test & Debug Tools',
+            //         style: Theme.of(context).textTheme.titleSmall,
+            //       ),
+            //     ],
+            //   ),
+            //   children: [
+            //     Padding(
+            //       padding: const EdgeInsets.all(16.0),
+            //       child: Column(
+            //         crossAxisAlignment: CrossAxisAlignment.stretch,
+            //         children: [
+            //           // Test mode toggle
+            //           Row(
+            //             mainAxisAlignment: MainAxisAlignment.center,
+            //             children: [
+            //               const Text(
+            //                 'Test Mode',
+            //                 style: TextStyle(fontSize: 16),
+            //               ),
+            //               Switch(
+            //                 value: _testMode,
+            //                 onChanged: (value) {
+            //                   setState(() {
+            //                     _testMode = value;
+            //                     if (value) {
+            //                       _transcriptController.text =
+            //                           getCorrectTestDescription;
+            //                       _voiceService.updateText(
+            //                         getCorrectTestDescription,
+            //                       );
+            //                     } else {
+            //                       _transcriptController.clear();
+            //                       _voiceService.clearText();
+            //                     }
+            //                   });
+            //                 },
+            //               ),
+            //               const SizedBox(width: 8),
+            //               const Tooltip(
+            //                 message: 'Uses test constant',
+            //                 child: Icon(Icons.info_outline, size: 16),
+            //               ),
+            //             ],
+            //           ),
+
+            //           const SizedBox(height: 8),
+
+            //           // Use Shared Preferences toggle
+            //           Row(
+            //             mainAxisAlignment: MainAxisAlignment.center,
+            //             children: [
+            //               const Text(
+            //                 'Use Cached Round',
+            //                 style: TextStyle(fontSize: 16),
+            //               ),
+            //               Switch(
+            //                 value: _useSharedPreferences,
+            //                 onChanged: (value) {
+            //                   setState(() {
+            //                     _useSharedPreferences = value;
+            //                   });
+            //                 },
+            //               ),
+            //               const SizedBox(width: 8),
+            //               const Tooltip(
+            //                 message: 'Load from storage instead of calling AI',
+            //                 child: Icon(Icons.info_outline, size: 16),
+            //               ),
+            //             ],
+            //           ),
+
+            //           const SizedBox(height: 16),
+
+            //           // Test Parse button
+            //           if (_testMode)
+            //             ElevatedButton.icon(
+            //               onPressed: _roundParser.isProcessing
+            //                   ? null
+            //                   : () async {
+            //                       await _roundParser.parseVoiceTranscript(
+            //                         getCorrectTestDescription,
+            //                         courseName: testCourseName,
+            //                         useSharedPreferences: _useSharedPreferences,
+            //                       );
+
+            //                       if (_roundParser.lastError.isNotEmpty &&
+            //                           context.mounted) {
+            //                         ScaffoldMessenger.of(context).showSnackBar(
+            //                           SnackBar(
+            //                             content: Text(_roundParser.lastError),
+            //                           ),
+            //                         );
+            //                       }
+            //                     },
+            //               icon: _roundParser.isProcessing
+            //                   ? const SizedBox(
+            //                       height: 20,
+            //                       width: 20,
+            //                       child: CircularProgressIndicator(
+            //                         strokeWidth: 2,
+            //                       ),
+            //                     )
+            //                   : const Icon(Icons.science),
+            //               label: Text(
+            //                 _roundParser.isProcessing
+            //                     ? 'Processing...'
+            //                     : 'Test Parse Constant',
+            //               ),
+            //               style: ElevatedButton.styleFrom(
+            //                 backgroundColor: const Color(0xFF9D4EDD),
+            //                 foregroundColor: const Color(0xFFF5F5F5),
+            //               ),
+            //             ),
+
+            //           if (_testMode) const SizedBox(height: 12),
+
+            //           // Test Image + Voice button
+            //           if (_testMode)
+            //             ElevatedButton.icon(
+            //               onPressed: () {
+            //                 Navigator.of(context).push(
+            //                   MaterialPageRoute(
+            //                     builder: (context) => const ImportScoreScreen(
+            //                       testMode: true,
+            //                       testVoiceDescription:
+            //                           flingsGivingRound2DescriptionNoHoleDistance,
+            //                     ),
+            //                   ),
+            //                 );
+            //               },
+            //               icon: const Icon(Icons.image),
+            //               label: const Text(
+            //                 'Test Image + Voice (Pre-processed)',
+            //               ),
+            //               style: ElevatedButton.styleFrom(
+            //                 backgroundColor: const Color(0xFF00F5D4),
+            //                 foregroundColor: const Color(0xFF0A0E17),
+            //               ),
+            //             ),
+            //         ],
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ],
         ),
       ),

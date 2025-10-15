@@ -77,10 +77,10 @@ class DiscsTab extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
       children: addRunSpacing(
         [
-          if (topPerformingDiscs.isNotEmpty)
-            _buildTopPerformingDiscs(context, topPerformingDiscs),
-          if (worstPerformingDiscs.isNotEmpty)
-            _buildWorstPerformingDiscs(context, worstPerformingDiscs),
+          // if (topPerformingDiscs.isNotEmpty)
+          //   _buildTopPerformingDiscs(context, topPerformingDiscs),
+          // if (worstPerformingDiscs.isNotEmpty)
+          //   _buildWorstPerformingDiscs(context, worstPerformingDiscs),
           ...sortedDiscs.map((entry) {
             final discName = entry.key;
             final birdieRate = entry.value;
@@ -261,46 +261,50 @@ class DiscsTab extends StatelessWidget {
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatChip(
-                  context,
-                  'Throws: ${throws.length}',
-                  Colors.grey,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Avg: ${avgScore >= 0 ? '+' : ''}${avgScore.toStringAsFixed(1)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: avgScore < 0
+                                ? const Color(0xFF00F5D4)
+                                : const Color(0xFFFF7A7A),
+                          ),
+                    ),
+                    Text(
+                      'Throws: ${throws.length}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
                 ),
-                _buildStatChip(
+                const SizedBox(height: 8),
+                _buildStatBar(
                   context,
-                  'Birdie: ${birdieRate.toStringAsFixed(0)}%',
+                  'Birdie',
+                  birdieRate,
                   const Color(0xFF00F5D4),
                 ),
-                _buildStatChip(
+                const SizedBox(height: 6),
+                _buildStatBar(
                   context,
-                  'Par: ${parRate.toStringAsFixed(0)}%',
-                  Colors.grey,
-                ),
-                _buildStatChip(
-                  context,
-                  'Bogey: ${bogeyRate.toStringAsFixed(0)}%',
-                  const Color(0xFFFF7A7A),
-                ),
-                _buildStatChip(
-                  context,
-                  'C1 in Reg: ${c1InRegPct.toStringAsFixed(0)}%',
+                  'C1 in Reg',
+                  c1InRegPct,
                   const Color(0xFF4CAF50),
                 ),
-                _buildStatChip(
+                const SizedBox(height: 6),
+                _buildStatBar(
                   context,
-                  'C2 in Reg: ${c2InRegPct.toStringAsFixed(0)}%',
+                  'C2 in Reg',
+                  c2InRegPct,
                   const Color(0xFF2196F3),
-                ),
-                _buildStatChip(
-                  context,
-                  'Avg: ${avgScore >= 0 ? '+' : ''}${avgScore.toStringAsFixed(1)}',
-                  avgScore < 0
-                      ? const Color(0xFF00F5D4)
-                      : const Color(0xFFFF7A7A),
                 ),
               ],
             ),
@@ -424,6 +428,50 @@ class DiscsTab extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
+    );
+  }
+
+  Widget _buildStatBar(
+    BuildContext context,
+    String label,
+    double percentage,
+    Color color,
+  ) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 70,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 10,
+              backgroundColor: color.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 50,
+          child: Text(
+            '${percentage.toStringAsFixed(0)}%',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
     );
   }
 

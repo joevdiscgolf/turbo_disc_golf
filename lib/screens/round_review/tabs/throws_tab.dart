@@ -308,7 +308,8 @@ class _ThrowsTabState extends State<ThrowsTab> {
                     // Create new throw
                     final newThrow = DiscThrow(
                       index: hole.throws.length,
-                      distanceFeet: distanceController.text.isNotEmpty
+                      distanceFeetBeforeThrow:
+                          distanceController.text.isNotEmpty
                           ? int.tryParse(distanceController.text)
                           : null,
                       purpose: selectedPurpose,
