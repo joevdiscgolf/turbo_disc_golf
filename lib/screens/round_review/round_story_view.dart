@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 
 class RoundStoryView extends StatefulWidget {
@@ -22,7 +23,7 @@ class _RoundStoryViewState extends State<RoundStoryView> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final int _totalPages =
-      8; // Summary, Course, Drives, Putting, Discs, Mistakes, Psych, Coach
+      9; // Summary, Course, Drives, Putting, Discs, Mistakes, Psych, Coach, Roast
 
   @override
   void dispose() {
@@ -112,6 +113,7 @@ class _RoundStoryViewState extends State<RoundStoryView> {
                   _buildStoryPage(MistakesTab(round: widget.round), 'Mistakes'),
                   _buildStoryPage(PsychTab(round: widget.round), 'Psych'),
                   _buildStoryPage(CoachTab(round: widget.round), 'Coach'),
+                  _buildStoryPage(RoastTab(round: widget.round), 'Roast'),
                 ],
               ),
             ),
