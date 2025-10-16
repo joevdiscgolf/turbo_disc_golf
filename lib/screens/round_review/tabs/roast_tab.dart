@@ -46,8 +46,8 @@ class _RoastTabState extends State<RoastTab> {
     buffer.writeln('- Talk DIRECTLY to the player using "you" and "your" - make it personal and conversational');
     buffer.writeln('- NO stage directions like (pause for applause) or (audience laughs) - this is NOT a script');
     buffer.writeln('- NO meta-commentary about performing or the audience - just ${shouldGlaze ? 'glaze' : 'roast'} them directly');
-    buffer.writeln('- Use Gen Z slang naturally: bro, no cap, fr fr, deadass, lowkey/highkey, ${shouldGlaze ? 'built different, HIM, goated, absolutely cooking' : 'mid, that\'s cheeks/buns, cooked, down bad'}, etc.');
-    buffer.writeln('- Mix Gen Z humor with disc golf references - make it feel authentic and funny');
+    buffer.writeln('- Keep it culturally relevant and contemporary - use slang SPARINGLY and only when it\'s genuinely funny (e.g., "that shot was cheeks" works, but don\'t force slang into every sentence)');
+    buffer.writeln('- Mix humor with disc golf references - make it feel authentic and funny');
     buffer.writeln('- Use DIVERSE comedy styles: observational humor, absurdist comedy, deadpan delivery, wordplay, ${shouldGlaze ? 'hyperbole' : 'sarcasm'}');
     buffer.writeln('- Vary your joke structures: one-liners, setups/punchlines, callbacks, rule of three, misdirection');
     buffer.writeln('- You can use "That\'s like..." or "It\'s like..." patterns ONCE or TWICE max - don\'t overdo it!');
@@ -67,8 +67,8 @@ class _RoastTabState extends State<RoastTab> {
     }
     buffer.writeln('');
     buffer.writeln('Make it 4-6 short paragraphs. Make it REALLY funny but good-natured.');
-    buffer.writeln('Write like you\'re their ${shouldGlaze ? 'biggest hype man' : 'brutally honest'} Gen Z friend ${shouldGlaze ? 'hyping them up' : 'giving them grief'} about their round.');
-    buffer.writeln('Keep it creative, unpredictable, and DIRECTLY addressed to them with natural slang!');
+    buffer.writeln('Write like you\'re their ${shouldGlaze ? 'biggest hype man' : 'brutally honest'} friend ${shouldGlaze ? 'hyping them up' : 'giving them grief'} about their round.');
+    buffer.writeln('Keep it creative, unpredictable, culturally relevant, and DIRECTLY addressed to them!');
     buffer.writeln('');
     buffer.writeln('ROUND STATS TO ROAST:');
     buffer.writeln('Course: ${round.courseName}');

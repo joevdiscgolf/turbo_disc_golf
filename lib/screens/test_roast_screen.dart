@@ -93,10 +93,10 @@ class _TestRoastScreenState extends State<TestRoastScreen> {
       '- NO meta-commentary about performing or the audience - just ${_shouldGlaze ? 'glaze' : 'roast'} them directly',
     );
     buffer.writeln(
-      '- Use Gen Z slang naturally: bro, no cap, fr fr, deadass, lowkey/highkey, ${_shouldGlaze ? 'built different, HIM, goated, absolutely cooking' : 'mid, that\'s cheeks/buns, cooked, down bad'}, etc.',
+      '- Keep it culturally relevant and contemporary - use slang SPARINGLY and only when it\'s genuinely funny (e.g., "that shot was cheeks" works, but don\'t force slang into every sentence)',
     );
     buffer.writeln(
-      '- Mix Gen Z humor with disc golf references - make it feel authentic and funny',
+      '- Mix humor with disc golf references - make it feel authentic and funny',
     );
     buffer.writeln(
       '- Use DIVERSE comedy styles: observational humor, absurdist comedy, deadpan delivery, wordplay, ${_shouldGlaze ? 'hyperbole' : 'sarcasm'}',
@@ -144,10 +144,10 @@ class _TestRoastScreenState extends State<TestRoastScreen> {
       'Make it 4-6 short paragraphs. Make it REALLY funny but good-natured.',
     );
     buffer.writeln(
-      'Write like you\'re their ${_shouldGlaze ? 'biggest hype man' : 'brutally honest'} Gen Z friend ${_shouldGlaze ? 'hyping them up' : 'giving them grief'} about their round.',
+      'Write like you\'re their ${_shouldGlaze ? 'biggest hype man' : 'brutally honest'} friend ${_shouldGlaze ? 'hyping them up' : 'giving them grief'} about their round.',
     );
     buffer.writeln(
-      'Keep it creative, unpredictable, and DIRECTLY addressed to them with natural slang!',
+      'Keep it creative, unpredictable, culturally relevant, and DIRECTLY addressed to them!',
     );
     buffer.writeln('');
     buffer.writeln('ROUND STATS TO ROAST:');
