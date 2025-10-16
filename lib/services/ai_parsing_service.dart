@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
 
@@ -233,7 +234,9 @@ class AiParsingService {
     }
   }
 
-  /// Generates AI summary and coaching based on round data and analysis
+  /// Generates unified AI insights based on round data and analysis
+  /// Returns both 'summary' and 'coaching' keys for backward compatibility,
+  /// but both contain the same unified content
   Future<Map<String, AIContent?>> generateRoundInsights({
     required DGRound round,
     required dynamic analysis, // RoundAnalysis
@@ -247,24 +250,25 @@ class AiParsingService {
       var responseText = response ?? '';
       debugPrint('Gemini insights raw response: $responseText');
 
-      // Split on the separator
-      final parts = responseText.split('---SPLIT---');
+      debugPrint('Parsed insights length: ${responseText.length} chars');
 
-      final summaryText = parts.isNotEmpty ? parts[0].trim() : '';
-      final coachingText = parts.length > 1 ? parts[1].trim() : '';
+      // Parse segments from the response
+      final segments = AIResponseParser.parse(responseText);
 
-      debugPrint('Parsed summary length: ${summaryText.length} chars');
-      debugPrint('Parsed coaching length: ${coachingText.length} chars');
+      debugPrint('Insights segments: ${segments.length}');
 
-      // Create AIContent objects with the round's version ID
-      final summary = summaryText.isNotEmpty
-          ? AIContent(content: summaryText, roundVersionId: round.versionId)
+      // Create AIContent object with the round's version ID and parsed segments
+      final insights = responseText.isNotEmpty
+          ? AIContent(
+              content: responseText,
+              roundVersionId: round.versionId,
+              segments: segments,
+            )
           : null;
-      final coaching = coachingText.isNotEmpty
-          ? AIContent(content: coachingText, roundVersionId: round.versionId)
-          : null;
 
-      return {'summary': summary, 'coaching': coaching};
+      // Return unified content in 'summary' key, null for 'coaching' (deprecated)
+      // This maintains backward compatibility while transitioning to unified response
+      return {'summary': insights, 'coaching': null};
     } catch (e) {
       debugPrint('Error generating insights: $e');
       return {'summary': null, 'coaching': null};
