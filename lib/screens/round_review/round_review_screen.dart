@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab.dart';
 
@@ -34,7 +35,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
   void initState() {
     super.initState();
     _round = widget.round;
-    _tabController = TabController(length: 9, vsync: this);
+    _tabController = TabController(length: 10, vsync: this);
 
     // Show story view if requested
     if (widget.showStoryOnLoad) {
@@ -109,6 +110,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             Tab(text: 'Psych'),
             Tab(text: 'Summary'),
             Tab(text: 'Coach'),
+            Tab(text: 'Roast'),
           ],
         ),
       ),
@@ -124,6 +126,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
           PsychTab(round: _round),
           SummaryTab(round: _round),
           CoachTab(round: _round),
+          RoastTab(round: _round),
         ],
       ),
     );

@@ -156,7 +156,7 @@ class CustomMarkdownContent extends StatelessWidget {
       ),
       h6Padding: subHeadingPadding,
       p: themeData.textTheme.bodyMedium?.copyWith(
-        fontSize: 14,
+        fontSize: 18,
         color: Theme.of(context).colorScheme.onSurface,
         height: 1.6,
       ),

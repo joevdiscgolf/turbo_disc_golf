@@ -48,11 +48,31 @@ class GeminiService {
     );
   }
 
-  Future<String?> generateContent({required String prompt}) async {
+  Future<String?> generateContent({
+    required String prompt,
+    bool useFullModel = false,
+  }) async {
     try {
-      return _textModel
-          .generateContent([Content.text(prompt)])
-          .then((response) => response.text);
+      // Use full flash model if requested, otherwise use lite model
+      if (useFullModel) {
+        final fullModel = GenerativeModel(
+          model: twoPointFiveFlashModel,
+          apiKey: _defaultApiKey,
+          generationConfig: GenerationConfig(
+            temperature: 1.0, // Higher temperature for creative content
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 4096,
+          ),
+        );
+        return fullModel
+            .generateContent([Content.text(prompt)])
+            .then((response) => response.text);
+      } else {
+        return _textModel
+            .generateContent([Content.text(prompt)])
+            .then((response) => response.text);
+      }
     } catch (e, trace) {
       debugPrint('Error generating content with Gemini');
       debugPrint(e.toString());
