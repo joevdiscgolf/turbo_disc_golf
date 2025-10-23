@@ -37,7 +37,6 @@ class DrivesTab extends StatelessWidget {
           // _buildOverallC2InRegCard(context, coreStats),
           // _buildOverallParkedCard(context, coreStats),
           // _buildOverallOBCard(context, coreStats),
-
           _CombinedStatsCard(round: round, coreStats: coreStats),
 
           // COMMENTED OUT - Replaced with _CombinedThrowTypeStatsCard
@@ -56,7 +55,6 @@ class DrivesTab extends StatelessWidget {
           //   circleInRegByType,
           //   allTeeShotsByType,
           // ),
-
           _CombinedThrowTypeStatsCard(
             teeShotBirdieRates: teeShotBirdieRates,
             circleInRegByType: circleInRegByType,
@@ -167,1825 +165,1825 @@ class DrivesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildBirdieRateByThrowType(
-    BuildContext context,
-    Map<String, dynamic> teeShotBirdieRates,
-    Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
-  ) {
-    if (teeShotBirdieRates.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  // Widget _buildBirdieRateByThrowType(
+  //   BuildContext context,
+  //   Map<String, dynamic> teeShotBirdieRates,
+  //   Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
+  // ) {
+  //   if (teeShotBirdieRates.isEmpty) {
+  //     return const SizedBox.shrink();
+  //   }
 
-    final sortedEntries = teeShotBirdieRates.entries.toList()
-      ..sort((a, b) => b.value.percentage.compareTo(a.value.percentage));
+  //   final sortedEntries = teeShotBirdieRates.entries.toList()
+  //     ..sort((a, b) => b.value.percentage.compareTo(a.value.percentage));
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Birdie Rate by Throw Type',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ...sortedEntries.map((entry) {
-              final technique = entry.key;
-              final stats = entry.value;
-              final percentage = stats.percentage;
-              final allThrows = allTeeShotsByType[technique] ?? [];
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'Birdie Rate by Throw Type',
+  //             style: Theme.of(
+  //               context,
+  //             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           ...sortedEntries.map((entry) {
+  //             final technique = entry.key;
+  //             final stats = entry.value;
+  //             final percentage = stats.percentage;
+  //             final allThrows = allTeeShotsByType[technique] ?? [];
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    childrenPadding: const EdgeInsets.only(top: 8),
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          technique.substring(0, 1).toUpperCase() +
-                              technique.substring(1),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        Text(
-                          '${percentage.toStringAsFixed(0)}% (${stats.birdieCount}/${stats.totalAttempts})',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: percentage / 100,
-                          minHeight: 12,
-                          backgroundColor: const Color(
-                            0xFF00F5D4,
-                          ).withValues(alpha: 0.2),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF00F5D4),
-                          ),
-                        ),
-                      ),
-                    ),
-                    children: [
-                      if (allThrows.isNotEmpty) ...[
-                        const Divider(),
-                        () {
-                          final birdieThrows = allThrows
-                              .where((e) => e.key.relativeHoleScore < 0)
-                              .toList();
-                          final nonBirdieThrows = allThrows
-                              .where((e) => e.key.relativeHoleScore >= 0)
-                              .toList();
+  //             return Padding(
+  //               padding: const EdgeInsets.only(bottom: 12),
+  //               child: Theme(
+  //                 data: Theme.of(
+  //                   context,
+  //                 ).copyWith(dividerColor: Colors.transparent),
+  //                 child: ExpansionTile(
+  //                   tilePadding: EdgeInsets.zero,
+  //                   childrenPadding: const EdgeInsets.only(top: 8),
+  //                   title: Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       Text(
+  //                         technique.substring(0, 1).toUpperCase() +
+  //                             technique.substring(1),
+  //                         style: Theme.of(context).textTheme.bodyMedium,
+  //                       ),
+  //                       Text(
+  //                         '${percentage.toStringAsFixed(0)}% (${stats.birdieCount}/${stats.totalAttempts})',
+  //                         style: Theme.of(context).textTheme.bodyMedium
+  //                             ?.copyWith(fontWeight: FontWeight.bold),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   subtitle: Padding(
+  //                     padding: const EdgeInsets.only(top: 4),
+  //                     child: ClipRRect(
+  //                       borderRadius: BorderRadius.circular(4),
+  //                       child: LinearProgressIndicator(
+  //                         value: percentage / 100,
+  //                         minHeight: 12,
+  //                         backgroundColor: const Color(
+  //                           0xFF00F5D4,
+  //                         ).withValues(alpha: 0.2),
+  //                         valueColor: const AlwaysStoppedAnimation<Color>(
+  //                           Color(0xFF00F5D4),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   children: [
+  //                     if (allThrows.isNotEmpty) ...[
+  //                       const Divider(),
+  //                       () {
+  //                         final birdieThrows = allThrows
+  //                             .where((e) => e.key.relativeHoleScore < 0)
+  //                             .toList();
+  //                         final nonBirdieThrows = allThrows
+  //                             .where((e) => e.key.relativeHoleScore >= 0)
+  //                             .toList();
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (birdieThrows.isNotEmpty) ...[
-                                Text(
-                                  'Birdie Throws (${birdieThrows.length})',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                ...birdieThrows.map((entry) {
-                                  final hole = entry.key;
-                                  final teeShot = entry.value;
+  //                         return Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             if (birdieThrows.isNotEmpty) ...[
+  //                               Text(
+  //                                 'Birdie Throws (${birdieThrows.length})',
+  //                                 style: Theme.of(context).textTheme.bodySmall
+  //                                     ?.copyWith(fontWeight: FontWeight.bold),
+  //                               ),
+  //                               const SizedBox(height: 8),
+  //                               ...birdieThrows.map((entry) {
+  //                                 final hole = entry.key;
+  //                                 final teeShot = entry.value;
 
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF00F5D4),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '${hole.number}',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        if (teeShot.landingSpot != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(
-                                                0xFF00F5D4,
-                                              ).withValues(alpha: 0.15),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _landingSpotLabel(
-                                                teeShot.landingSpot!,
-                                              ),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    fontSize: 10,
-                                                    color: const Color(
-                                                      0xFF00F5D4,
-                                                    ),
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                              if (birdieThrows.isNotEmpty &&
-                                  nonBirdieThrows.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                              ],
-                              if (nonBirdieThrows.isNotEmpty) ...[
-                                Text(
-                                  'Other Throws (${nonBirdieThrows.length})',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                ...nonBirdieThrows.map((entry) {
-                                  final hole = entry.key;
-                                  final teeShot = entry.value;
+  //                                 return Padding(
+  //                                   padding: const EdgeInsets.only(bottom: 4),
+  //                                   child: Row(
+  //                                     children: [
+  //                                       Container(
+  //                                         width: 24,
+  //                                         height: 24,
+  //                                         decoration: const BoxDecoration(
+  //                                           color: Color(0xFF00F5D4),
+  //                                           shape: BoxShape.circle,
+  //                                         ),
+  //                                         child: Center(
+  //                                           child: Text(
+  //                                             '${hole.number}',
+  //                                             style: const TextStyle(
+  //                                               color: Colors.white,
+  //                                               fontWeight: FontWeight.bold,
+  //                                               fontSize: 11,
+  //                                             ),
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                       const SizedBox(width: 8),
+  //                                       Expanded(
+  //                                         child: Text(
+  //                                           'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                                           style: Theme.of(
+  //                                             context,
+  //                                           ).textTheme.bodySmall,
+  //                                         ),
+  //                                       ),
+  //                                       if (teeShot.landingSpot != null)
+  //                                         Container(
+  //                                           padding: const EdgeInsets.symmetric(
+  //                                             horizontal: 6,
+  //                                             vertical: 2,
+  //                                           ),
+  //                                           decoration: BoxDecoration(
+  //                                             color: const Color(
+  //                                               0xFF00F5D4,
+  //                                             ).withValues(alpha: 0.15),
+  //                                             borderRadius:
+  //                                                 BorderRadius.circular(8),
+  //                                           ),
+  //                                           child: Text(
+  //                                             _landingSpotLabel(
+  //                                               teeShot.landingSpot!,
+  //                                             ),
+  //                                             style: Theme.of(context)
+  //                                                 .textTheme
+  //                                                 .bodySmall
+  //                                                 ?.copyWith(
+  //                                                   fontSize: 10,
+  //                                                   color: const Color(
+  //                                                     0xFF00F5D4,
+  //                                                   ),
+  //                                                 ),
+  //                                           ),
+  //                                         ),
+  //                                     ],
+  //                                   ),
+  //                                 );
+  //                               }),
+  //                             ],
+  //                             if (birdieThrows.isNotEmpty &&
+  //                                 nonBirdieThrows.isNotEmpty) ...[
+  //                               const SizedBox(height: 12),
+  //                               const Divider(),
+  //                               const SizedBox(height: 8),
+  //                             ],
+  //                             if (nonBirdieThrows.isNotEmpty) ...[
+  //                               Text(
+  //                                 'Other Throws (${nonBirdieThrows.length})',
+  //                                 style: Theme.of(context).textTheme.bodySmall
+  //                                     ?.copyWith(fontWeight: FontWeight.bold),
+  //                               ),
+  //                               const SizedBox(height: 8),
+  //                               ...nonBirdieThrows.map((entry) {
+  //                                 final hole = entry.key;
+  //                                 final teeShot = entry.value;
 
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHighest,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '${hole.number}',
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        if (teeShot.landingSpot != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceContainerHighest,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _landingSpotLabel(
-                                                teeShot.landingSpot!,
-                                              ),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    fontSize: 10,
-                                                    color: Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ],
-                          );
-                        }(),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
+  //                                 return Padding(
+  //                                   padding: const EdgeInsets.only(bottom: 4),
+  //                                   child: Row(
+  //                                     children: [
+  //                                       Container(
+  //                                         width: 24,
+  //                                         height: 24,
+  //                                         decoration: BoxDecoration(
+  //                                           color: Theme.of(context)
+  //                                               .colorScheme
+  //                                               .surfaceContainerHighest,
+  //                                           shape: BoxShape.circle,
+  //                                         ),
+  //                                         child: Center(
+  //                                           child: Text(
+  //                                             '${hole.number}',
+  //                                             style: TextStyle(
+  //                                               color: Theme.of(
+  //                                                 context,
+  //                                               ).colorScheme.onSurface,
+  //                                               fontWeight: FontWeight.bold,
+  //                                               fontSize: 11,
+  //                                             ),
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                       const SizedBox(width: 8),
+  //                                       Expanded(
+  //                                         child: Text(
+  //                                           'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                                           style: Theme.of(
+  //                                             context,
+  //                                           ).textTheme.bodySmall,
+  //                                         ),
+  //                                       ),
+  //                                       if (teeShot.landingSpot != null)
+  //                                         Container(
+  //                                           padding: const EdgeInsets.symmetric(
+  //                                             horizontal: 6,
+  //                                             vertical: 2,
+  //                                           ),
+  //                                           decoration: BoxDecoration(
+  //                                             color: Theme.of(context)
+  //                                                 .colorScheme
+  //                                                 .surfaceContainerHighest,
+  //                                             borderRadius:
+  //                                                 BorderRadius.circular(8),
+  //                                           ),
+  //                                           child: Text(
+  //                                             _landingSpotLabel(
+  //                                               teeShot.landingSpot!,
+  //                                             ),
+  //                                             style: Theme.of(context)
+  //                                                 .textTheme
+  //                                                 .bodySmall
+  //                                                 ?.copyWith(
+  //                                                   fontSize: 10,
+  //                                                   color: Theme.of(
+  //                                                     context,
+  //                                                   ).colorScheme.onSurface,
+  //                                                 ),
+  //                                           ),
+  //                                         ),
+  //                                     ],
+  //                                   ),
+  //                                 );
+  //                               }),
+  //                             ],
+  //                           ],
+  //                         );
+  //                       }(),
+  //                     ],
+  //                   ],
+  //                 ),
+  //               ),
+  //             );
+  //           }),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  String _landingSpotLabel(LandingSpot spot) {
-    switch (spot) {
-      case LandingSpot.parked:
-        return 'Parked';
-      case LandingSpot.circle1:
-        return 'C1';
-      case LandingSpot.circle2:
-        return 'C2';
-      case LandingSpot.fairway:
-        return 'Fairway';
-      default:
-        return '';
-    }
-  }
+  // String _landingSpotLabel(LandingSpot spot) {
+  //   switch (spot) {
+  //     case LandingSpot.parked:
+  //       return 'Parked';
+  //     case LandingSpot.circle1:
+  //       return 'C1';
+  //     case LandingSpot.circle2:
+  //       return 'C2';
+  //     case LandingSpot.fairway:
+  //       return 'Fairway';
+  //     default:
+  //       return '';
+  //   }
+  // }
 
-  String _scoreLabel(int relativeHoleScore) {
-    if (relativeHoleScore <= -3) {
-      return 'Albatross';
-    } else if (relativeHoleScore == -2) {
-      return 'Eagle';
-    } else if (relativeHoleScore == -1) {
-      return 'Birdie';
-    } else if (relativeHoleScore == 0) {
-      return 'Par';
-    } else if (relativeHoleScore == 1) {
-      return 'Bogey';
-    } else if (relativeHoleScore == 2) {
-      return 'Double Bogey';
-    } else if (relativeHoleScore == 3) {
-      return 'Triple Bogey';
-    } else {
-      return '+$relativeHoleScore';
-    }
-  }
+  // String _scoreLabel(int relativeHoleScore) {
+  //   if (relativeHoleScore <= -3) {
+  //     return 'Albatross';
+  //   } else if (relativeHoleScore == -2) {
+  //     return 'Eagle';
+  //   } else if (relativeHoleScore == -1) {
+  //     return 'Birdie';
+  //   } else if (relativeHoleScore == 0) {
+  //     return 'Par';
+  //   } else if (relativeHoleScore == 1) {
+  //     return 'Bogey';
+  //   } else if (relativeHoleScore == 2) {
+  //     return 'Double Bogey';
+  //   } else if (relativeHoleScore == 3) {
+  //     return 'Triple Bogey';
+  //   } else {
+  //     return '+$relativeHoleScore';
+  //   }
+  // }
 
-  Widget _buildOverallC1InRegCard(BuildContext context, coreStats) {
-    final c1InRegPct = coreStats.c1InRegPct;
+  // Widget _buildOverallC1InRegCard(BuildContext context, coreStats) {
+  //   final c1InRegPct = coreStats.c1InRegPct;
 
-    // Calculate which holes reached C1 in regulation
-    final c1InRegHoles = <DGHole>[];
-    final notC1InRegHoles = <DGHole>[];
+  //   // Calculate which holes reached C1 in regulation
+  //   final c1InRegHoles = <DGHole>[];
+  //   final notC1InRegHoles = <DGHole>[];
 
-    for (final hole in round.holes) {
-      final regulationStrokes = hole.par - 2;
-      bool reachedC1 = false;
+  //   for (final hole in round.holes) {
+  //     final regulationStrokes = hole.par - 2;
+  //     bool reachedC1 = false;
 
-      if (regulationStrokes > 0) {
-        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
-          final discThrow = hole.throws[i];
-          if (discThrow.landingSpot == LandingSpot.circle1 ||
-              discThrow.landingSpot == LandingSpot.parked) {
-            reachedC1 = true;
-            break;
-          }
-        }
-      }
+  //     if (regulationStrokes > 0) {
+  //       for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+  //         final discThrow = hole.throws[i];
+  //         if (discThrow.landingSpot == LandingSpot.circle1 ||
+  //             discThrow.landingSpot == LandingSpot.parked) {
+  //           reachedC1 = true;
+  //           break;
+  //         }
+  //       }
+  //     }
 
-      if (reachedC1) {
-        c1InRegHoles.add(hole);
-      } else {
-        notC1InRegHoles.add(hole);
-      }
-    }
+  //     if (reachedC1) {
+  //       c1InRegHoles.add(hole);
+  //     } else {
+  //       notC1InRegHoles.add(hole);
+  //     }
+  //   }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(top: 8),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'C1 in Regulation',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  '${c1InRegPct.toStringAsFixed(0)}% (${c1InRegHoles.length}/${round.holes.length})',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Holes where you reached C1 with a chance for birdie',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: c1InRegPct / 100,
-                      minHeight: 12,
-                      backgroundColor:
-                          const Color(0xFF00F5D4).withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF00F5D4),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            children: [
-              const Divider(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (c1InRegHoles.isNotEmpty) ...[
-                    Text(
-                      'C1 in Reg (${c1InRegHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...c1InRegHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF00F5D4),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF00F5D4)
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: const Color(0xFF00F5D4),
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  if (c1InRegHoles.isNotEmpty && notC1InRegHoles.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                  ],
-                  if (notC1InRegHoles.isNotEmpty) ...[
-                    Text(
-                      'Not C1 in Reg (${notC1InRegHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...notC1InRegHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Theme(
+  //         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+  //         child: ExpansionTile(
+  //           tilePadding: EdgeInsets.zero,
+  //           childrenPadding: const EdgeInsets.only(top: 8),
+  //           title: Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Text(
+  //                 'C1 in Regulation',
+  //                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //               Text(
+  //                 '${c1InRegPct.toStringAsFixed(0)}% (${c1InRegHoles.length}/${round.holes.length})',
+  //                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //             ],
+  //           ),
+  //           subtitle: Padding(
+  //             padding: const EdgeInsets.only(top: 8),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(
+  //                   'Holes where you reached C1 with a chance for birdie',
+  //                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //                       ),
+  //                 ),
+  //                 const SizedBox(height: 8),
+  //                 ClipRRect(
+  //                   borderRadius: BorderRadius.circular(4),
+  //                   child: LinearProgressIndicator(
+  //                     value: c1InRegPct / 100,
+  //                     minHeight: 12,
+  //                     backgroundColor:
+  //                         const Color(0xFF00F5D4).withValues(alpha: 0.2),
+  //                     valueColor: const AlwaysStoppedAnimation<Color>(
+  //                       Color(0xFF00F5D4),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           children: [
+  //             const Divider(),
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 if (c1InRegHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'C1 in Reg (${c1InRegHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...c1InRegHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: const BoxDecoration(
+  //                               color: Color(0xFF00F5D4),
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: const TextStyle(
+  //                                   color: Colors.white,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: const Color(0xFF00F5D4)
+  //                                   .withValues(alpha: 0.15),
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: const Color(0xFF00F5D4),
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //                 if (c1InRegHoles.isNotEmpty && notC1InRegHoles.isNotEmpty) ...[
+  //                   const SizedBox(height: 12),
+  //                   const Divider(),
+  //                   const SizedBox(height: 8),
+  //                 ],
+  //                 if (notC1InRegHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'Not C1 in Reg (${notC1InRegHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...notC1InRegHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: TextStyle(
+  //                                   color:
+  //                                       Theme.of(context).colorScheme.onSurface,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: Theme.of(context)
+  //                                         .colorScheme
+  //                                         .onSurface,
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildOverallC2InRegCard(BuildContext context, coreStats) {
-    final c2InRegPct = coreStats.c2InRegPct;
+  // Widget _buildOverallC2InRegCard(BuildContext context, coreStats) {
+  //   final c2InRegPct = coreStats.c2InRegPct;
 
-    // Calculate which holes reached C2 in regulation
-    final c2InRegHoles = <DGHole>[];
-    final notC2InRegHoles = <DGHole>[];
+  //   // Calculate which holes reached C2 in regulation
+  //   final c2InRegHoles = <DGHole>[];
+  //   final notC2InRegHoles = <DGHole>[];
 
-    for (final hole in round.holes) {
-      final regulationStrokes = hole.par - 2;
-      bool reachedC2 = false;
+  //   for (final hole in round.holes) {
+  //     final regulationStrokes = hole.par - 2;
+  //     bool reachedC2 = false;
 
-      if (regulationStrokes > 0) {
-        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
-          final discThrow = hole.throws[i];
-          if (discThrow.landingSpot == LandingSpot.circle1 ||
-              discThrow.landingSpot == LandingSpot.parked ||
-              discThrow.landingSpot == LandingSpot.circle2) {
-            reachedC2 = true;
-            break;
-          }
-        }
-      }
+  //     if (regulationStrokes > 0) {
+  //       for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+  //         final discThrow = hole.throws[i];
+  //         if (discThrow.landingSpot == LandingSpot.circle1 ||
+  //             discThrow.landingSpot == LandingSpot.parked ||
+  //             discThrow.landingSpot == LandingSpot.circle2) {
+  //           reachedC2 = true;
+  //           break;
+  //         }
+  //       }
+  //     }
 
-      if (reachedC2) {
-        c2InRegHoles.add(hole);
-      } else {
-        notC2InRegHoles.add(hole);
-      }
-    }
+  //     if (reachedC2) {
+  //       c2InRegHoles.add(hole);
+  //     } else {
+  //       notC2InRegHoles.add(hole);
+  //     }
+  //   }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(top: 8),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'C2 in Regulation',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  '${c2InRegPct.toStringAsFixed(0)}% (${c2InRegHoles.length}/${round.holes.length})',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Holes where you reached C2 with a chance for birdie',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: c2InRegPct / 100,
-                      minHeight: 12,
-                      backgroundColor:
-                          const Color(0xFF2196F3).withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF2196F3),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            children: [
-              const Divider(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (c2InRegHoles.isNotEmpty) ...[
-                    Text(
-                      'C2 in Reg (${c2InRegHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...c2InRegHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF2196F3),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2196F3)
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: const Color(0xFF2196F3),
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  if (c2InRegHoles.isNotEmpty && notC2InRegHoles.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                  ],
-                  if (notC2InRegHoles.isNotEmpty) ...[
-                    Text(
-                      'Not C2 in Reg (${notC2InRegHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...notC2InRegHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Theme(
+  //         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+  //         child: ExpansionTile(
+  //           tilePadding: EdgeInsets.zero,
+  //           childrenPadding: const EdgeInsets.only(top: 8),
+  //           title: Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Text(
+  //                 'C2 in Regulation',
+  //                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //               Text(
+  //                 '${c2InRegPct.toStringAsFixed(0)}% (${c2InRegHoles.length}/${round.holes.length})',
+  //                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //             ],
+  //           ),
+  //           subtitle: Padding(
+  //             padding: const EdgeInsets.only(top: 8),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(
+  //                   'Holes where you reached C2 with a chance for birdie',
+  //                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //                       ),
+  //                 ),
+  //                 const SizedBox(height: 8),
+  //                 ClipRRect(
+  //                   borderRadius: BorderRadius.circular(4),
+  //                   child: LinearProgressIndicator(
+  //                     value: c2InRegPct / 100,
+  //                     minHeight: 12,
+  //                     backgroundColor:
+  //                         const Color(0xFF2196F3).withValues(alpha: 0.2),
+  //                     valueColor: const AlwaysStoppedAnimation<Color>(
+  //                       Color(0xFF2196F3),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           children: [
+  //             const Divider(),
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 if (c2InRegHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'C2 in Reg (${c2InRegHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...c2InRegHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: const BoxDecoration(
+  //                               color: Color(0xFF2196F3),
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: const TextStyle(
+  //                                   color: Colors.white,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: const Color(0xFF2196F3)
+  //                                   .withValues(alpha: 0.15),
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: const Color(0xFF2196F3),
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //                 if (c2InRegHoles.isNotEmpty && notC2InRegHoles.isNotEmpty) ...[
+  //                   const SizedBox(height: 12),
+  //                   const Divider(),
+  //                   const SizedBox(height: 8),
+  //                 ],
+  //                 if (notC2InRegHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'Not C2 in Reg (${notC2InRegHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...notC2InRegHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: TextStyle(
+  //                                   color:
+  //                                       Theme.of(context).colorScheme.onSurface,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: Theme.of(context)
+  //                                         .colorScheme
+  //                                         .onSurface,
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildOverallParkedCard(BuildContext context, coreStats) {
-    final parkedPct = coreStats.parkedPct;
+  // Widget _buildOverallParkedCard(BuildContext context, coreStats) {
+  //   final parkedPct = coreStats.parkedPct;
 
-    // Calculate which holes had parked throws
-    final parkedHoles = <DGHole>[];
-    final notParkedHoles = <DGHole>[];
+  //   // Calculate which holes had parked throws
+  //   final parkedHoles = <DGHole>[];
+  //   final notParkedHoles = <DGHole>[];
 
-    for (final hole in round.holes) {
-      bool hadParkedThrow = false;
+  //   for (final hole in round.holes) {
+  //     bool hadParkedThrow = false;
 
-      for (final discThrow in hole.throws) {
-        if (discThrow.landingSpot == LandingSpot.parked) {
-          hadParkedThrow = true;
-          break;
-        }
-      }
+  //     for (final discThrow in hole.throws) {
+  //       if (discThrow.landingSpot == LandingSpot.parked) {
+  //         hadParkedThrow = true;
+  //         break;
+  //       }
+  //     }
 
-      if (hadParkedThrow) {
-        parkedHoles.add(hole);
-      } else {
-        notParkedHoles.add(hole);
-      }
-    }
+  //     if (hadParkedThrow) {
+  //       parkedHoles.add(hole);
+  //     } else {
+  //       notParkedHoles.add(hole);
+  //     }
+  //   }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(top: 8),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Parked',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  '${parkedPct.toStringAsFixed(0)}% (${parkedHoles.length}/${round.holes.length})',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Holes where you parked your disc (within 10 ft)',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: parkedPct / 100,
-                      minHeight: 12,
-                      backgroundColor:
-                          const Color(0xFFFFA726).withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFFFFA726),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            children: [
-              const Divider(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (parkedHoles.isNotEmpty) ...[
-                    Text(
-                      'Parked (${parkedHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...parkedHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFFA726),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFA726)
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: const Color(0xFFFFA726),
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  if (parkedHoles.isNotEmpty && notParkedHoles.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                  ],
-                  if (notParkedHoles.isNotEmpty) ...[
-                    Text(
-                      'Not Parked (${notParkedHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...notParkedHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Theme(
+  //         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+  //         child: ExpansionTile(
+  //           tilePadding: EdgeInsets.zero,
+  //           childrenPadding: const EdgeInsets.only(top: 8),
+  //           title: Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Text(
+  //                 'Parked',
+  //                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //               Text(
+  //                 '${parkedPct.toStringAsFixed(0)}% (${parkedHoles.length}/${round.holes.length})',
+  //                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //             ],
+  //           ),
+  //           subtitle: Padding(
+  //             padding: const EdgeInsets.only(top: 8),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(
+  //                   'Holes where you parked your disc (within 10 ft)',
+  //                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //                       ),
+  //                 ),
+  //                 const SizedBox(height: 8),
+  //                 ClipRRect(
+  //                   borderRadius: BorderRadius.circular(4),
+  //                   child: LinearProgressIndicator(
+  //                     value: parkedPct / 100,
+  //                     minHeight: 12,
+  //                     backgroundColor:
+  //                         const Color(0xFFFFA726).withValues(alpha: 0.2),
+  //                     valueColor: const AlwaysStoppedAnimation<Color>(
+  //                       Color(0xFFFFA726),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           children: [
+  //             const Divider(),
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 if (parkedHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'Parked (${parkedHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...parkedHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: const BoxDecoration(
+  //                               color: Color(0xFFFFA726),
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: const TextStyle(
+  //                                   color: Colors.white,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: const Color(0xFFFFA726)
+  //                                   .withValues(alpha: 0.15),
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: const Color(0xFFFFA726),
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //                 if (parkedHoles.isNotEmpty && notParkedHoles.isNotEmpty) ...[
+  //                   const SizedBox(height: 12),
+  //                   const Divider(),
+  //                   const SizedBox(height: 8),
+  //                 ],
+  //                 if (notParkedHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'Not Parked (${notParkedHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...notParkedHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: TextStyle(
+  //                                   color:
+  //                                       Theme.of(context).colorScheme.onSurface,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: Theme.of(context)
+  //                                         .colorScheme
+  //                                         .onSurface,
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildOverallOBCard(BuildContext context, coreStats) {
-    final obPct = coreStats.obPct;
+  // Widget _buildOverallOBCard(BuildContext context, coreStats) {
+  //   final obPct = coreStats.obPct;
 
-    // Calculate which holes had OB throws
-    final obHoles = <DGHole>[];
-    final notOBHoles = <DGHole>[];
+  //   // Calculate which holes had OB throws
+  //   final obHoles = <DGHole>[];
+  //   final notOBHoles = <DGHole>[];
 
-    for (final hole in round.holes) {
-      bool hadOBThrow = false;
+  //   for (final hole in round.holes) {
+  //     bool hadOBThrow = false;
 
-      for (final discThrow in hole.throws) {
-        if (discThrow.landingSpot == LandingSpot.outOfBounds) {
-          hadOBThrow = true;
-          break;
-        }
-      }
+  //     for (final discThrow in hole.throws) {
+  //       if (discThrow.landingSpot == LandingSpot.outOfBounds) {
+  //         hadOBThrow = true;
+  //         break;
+  //       }
+  //     }
 
-      if (hadOBThrow) {
-        obHoles.add(hole);
-      } else {
-        notOBHoles.add(hole);
-      }
-    }
+  //     if (hadOBThrow) {
+  //       obHoles.add(hole);
+  //     } else {
+  //       notOBHoles.add(hole);
+  //     }
+  //   }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(top: 8),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Out of Bounds',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  '${obPct.toStringAsFixed(0)}% (${obHoles.length}/${round.holes.length})',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Holes where you went out of bounds',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: obPct / 100,
-                      minHeight: 12,
-                      backgroundColor:
-                          const Color(0xFFFF7A7A).withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFFFF7A7A),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            children: [
-              const Divider(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (obHoles.isNotEmpty) ...[
-                    Text(
-                      'OB (${obHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...obHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFF7A7A),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF7A7A)
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: const Color(0xFFFF7A7A),
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  if (obHoles.isNotEmpty && notOBHoles.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                  ],
-                  if (notOBHoles.isNotEmpty) ...[
-                    Text(
-                      'No OB (${notOBHoles.length})',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    ...notOBHoles.map((hole) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${hole.number}',
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _scoreLabel(hole.relativeHoleScore),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      fontSize: 10,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Theme(
+  //         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+  //         child: ExpansionTile(
+  //           tilePadding: EdgeInsets.zero,
+  //           childrenPadding: const EdgeInsets.only(top: 8),
+  //           title: Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Text(
+  //                 'Out of Bounds',
+  //                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //               Text(
+  //                 '${obPct.toStringAsFixed(0)}% (${obHoles.length}/${round.holes.length})',
+  //                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //               ),
+  //             ],
+  //           ),
+  //           subtitle: Padding(
+  //             padding: const EdgeInsets.only(top: 8),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(
+  //                   'Holes where you went out of bounds',
+  //                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //                       ),
+  //                 ),
+  //                 const SizedBox(height: 8),
+  //                 ClipRRect(
+  //                   borderRadius: BorderRadius.circular(4),
+  //                   child: LinearProgressIndicator(
+  //                     value: obPct / 100,
+  //                     minHeight: 12,
+  //                     backgroundColor:
+  //                         const Color(0xFFFF7A7A).withValues(alpha: 0.2),
+  //                     valueColor: const AlwaysStoppedAnimation<Color>(
+  //                       Color(0xFFFF7A7A),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           children: [
+  //             const Divider(),
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 if (obHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'OB (${obHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...obHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: const BoxDecoration(
+  //                               color: Color(0xFFFF7A7A),
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: const TextStyle(
+  //                                   color: Colors.white,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: const Color(0xFFFF7A7A)
+  //                                   .withValues(alpha: 0.15),
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: const Color(0xFFFF7A7A),
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //                 if (obHoles.isNotEmpty && notOBHoles.isNotEmpty) ...[
+  //                   const SizedBox(height: 12),
+  //                   const Divider(),
+  //                   const SizedBox(height: 8),
+  //                 ],
+  //                 if (notOBHoles.isNotEmpty) ...[
+  //                   Text(
+  //                     'No OB (${notOBHoles.length})',
+  //                     style: Theme.of(context)
+  //                         .textTheme
+  //                         .bodySmall
+  //                         ?.copyWith(fontWeight: FontWeight.bold),
+  //                   ),
+  //                   const SizedBox(height: 8),
+  //                   ...notOBHoles.map((hole) {
+  //                     return Padding(
+  //                       padding: const EdgeInsets.only(bottom: 4),
+  //                       child: Row(
+  //                         children: [
+  //                           Container(
+  //                             width: 24,
+  //                             height: 24,
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               shape: BoxShape.circle,
+  //                             ),
+  //                             child: Center(
+  //                               child: Text(
+  //                                 '${hole.number}',
+  //                                 style: TextStyle(
+  //                                   color:
+  //                                       Theme.of(context).colorScheme.onSurface,
+  //                                   fontWeight: FontWeight.bold,
+  //                                   fontSize: 11,
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           ),
+  //                           const SizedBox(width: 8),
+  //                           Expanded(
+  //                             child: Text(
+  //                               'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                               style: Theme.of(context).textTheme.bodySmall,
+  //                             ),
+  //                           ),
+  //                           Container(
+  //                             padding: const EdgeInsets.symmetric(
+  //                               horizontal: 6,
+  //                               vertical: 2,
+  //                             ),
+  //                             decoration: BoxDecoration(
+  //                               color: Theme.of(context)
+  //                                   .colorScheme
+  //                                   .surfaceContainerHighest,
+  //                               borderRadius: BorderRadius.circular(8),
+  //                             ),
+  //                             child: Text(
+  //                               _scoreLabel(hole.relativeHoleScore),
+  //                               style: Theme.of(context)
+  //                                   .textTheme
+  //                                   .bodySmall
+  //                                   ?.copyWith(
+  //                                     fontSize: 10,
+  //                                     color: Theme.of(context)
+  //                                         .colorScheme
+  //                                         .onSurface,
+  //                                   ),
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                     );
+  //                   }),
+  //                 ],
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildC1InRegByThrowType(
-    BuildContext context,
-    Map<String, Map<String, double>> circleInRegByType,
-    Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
-  ) {
-    if (circleInRegByType.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  // Widget _buildC1InRegByThrowType(
+  //   BuildContext context,
+  //   Map<String, Map<String, double>> circleInRegByType,
+  //   Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
+  // ) {
+  //   if (circleInRegByType.isEmpty) {
+  //     return const SizedBox.shrink();
+  //   }
 
-    final sortedEntries = circleInRegByType.entries.toList()
-      ..sort(
-        (a, b) => b.value['c1Percentage']!.compareTo(a.value['c1Percentage']!),
-      );
+  //   final sortedEntries = circleInRegByType.entries.toList()
+  //     ..sort(
+  //       (a, b) => b.value['c1Percentage']!.compareTo(a.value['c1Percentage']!),
+  //     );
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'C1 in Regulation by Throw Type',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Holes where you reached C1 with a chance for birdie',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...sortedEntries.map((entry) {
-              final technique = entry.key;
-              final stats = entry.value;
-              final c1Percentage = stats['c1Percentage']!;
-              final totalAttempts = stats['totalAttempts']!.toInt();
-              final c1Count = stats['c1Count']!.toInt();
-              final allThrows = allTeeShotsByType[technique] ?? [];
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'C1 in Regulation by Throw Type',
+  //             style: Theme.of(
+  //               context,
+  //             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           Text(
+  //             'Holes where you reached C1 with a chance for birdie',
+  //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //               color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           ...sortedEntries.map((entry) {
+  //             final technique = entry.key;
+  //             final stats = entry.value;
+  //             final c1Percentage = stats['c1Percentage']!;
+  //             final totalAttempts = stats['totalAttempts']!.toInt();
+  //             final c1Count = stats['c1Count']!.toInt();
+  //             final allThrows = allTeeShotsByType[technique] ?? [];
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    childrenPadding: const EdgeInsets.only(top: 8),
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          technique.substring(0, 1).toUpperCase() +
-                              technique.substring(1),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        Text(
-                          '${c1Percentage.toStringAsFixed(0)}% ($c1Count/$totalAttempts)',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: c1Percentage / 100,
-                          minHeight: 12,
-                          backgroundColor: const Color(
-                            0xFF4CAF50,
-                          ).withValues(alpha: 0.2),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF4CAF50),
-                          ),
-                        ),
-                      ),
-                    ),
-                    children: [
-                      if (allThrows.isNotEmpty) ...[
-                        const Divider(),
-                        () {
-                          final c1Throws = <MapEntry<DGHole, DiscThrow>>[];
-                          final nonC1Throws = <MapEntry<DGHole, DiscThrow>>[];
+  //             return Padding(
+  //               padding: const EdgeInsets.only(bottom: 12),
+  //               child: Theme(
+  //                 data: Theme.of(
+  //                   context,
+  //                 ).copyWith(dividerColor: Colors.transparent),
+  //                 child: ExpansionTile(
+  //                   tilePadding: EdgeInsets.zero,
+  //                   childrenPadding: const EdgeInsets.only(top: 8),
+  //                   title: Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       Text(
+  //                         technique.substring(0, 1).toUpperCase() +
+  //                             technique.substring(1),
+  //                         style: Theme.of(context).textTheme.bodyMedium,
+  //                       ),
+  //                       Text(
+  //                         '${c1Percentage.toStringAsFixed(0)}% ($c1Count/$totalAttempts)',
+  //                         style: Theme.of(context).textTheme.bodyMedium
+  //                             ?.copyWith(fontWeight: FontWeight.bold),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   subtitle: Padding(
+  //                     padding: const EdgeInsets.only(top: 4),
+  //                     child: ClipRRect(
+  //                       borderRadius: BorderRadius.circular(4),
+  //                       child: LinearProgressIndicator(
+  //                         value: c1Percentage / 100,
+  //                         minHeight: 12,
+  //                         backgroundColor: const Color(
+  //                           0xFF4CAF50,
+  //                         ).withValues(alpha: 0.2),
+  //                         valueColor: const AlwaysStoppedAnimation<Color>(
+  //                           Color(0xFF4CAF50),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   children: [
+  //                     if (allThrows.isNotEmpty) ...[
+  //                       const Divider(),
+  //                       () {
+  //                         final c1Throws = <MapEntry<DGHole, DiscThrow>>[];
+  //                         final nonC1Throws = <MapEntry<DGHole, DiscThrow>>[];
 
-                          for (final entry in allThrows) {
-                            final hole = entry.key;
-                            final regulationStrokes = hole.par - 2;
-                            bool reachedC1 = false;
+  //                         for (final entry in allThrows) {
+  //                           final hole = entry.key;
+  //                           final regulationStrokes = hole.par - 2;
+  //                           bool reachedC1 = false;
 
-                            if (regulationStrokes > 0) {
-                              for (
-                                int i = 0;
-                                i < hole.throws.length && i < regulationStrokes;
-                                i++
-                              ) {
-                                final discThrow = hole.throws[i];
-                                if (discThrow.landingSpot ==
-                                        LandingSpot.circle1 ||
-                                    discThrow.landingSpot ==
-                                        LandingSpot.parked) {
-                                  reachedC1 = true;
-                                  break;
-                                }
-                              }
-                            }
+  //                           if (regulationStrokes > 0) {
+  //                             for (
+  //                               int i = 0;
+  //                               i < hole.throws.length && i < regulationStrokes;
+  //                               i++
+  //                             ) {
+  //                               final discThrow = hole.throws[i];
+  //                               if (discThrow.landingSpot ==
+  //                                       LandingSpot.circle1 ||
+  //                                   discThrow.landingSpot ==
+  //                                       LandingSpot.parked) {
+  //                                 reachedC1 = true;
+  //                                 break;
+  //                               }
+  //                             }
+  //                           }
 
-                            if (reachedC1) {
-                              c1Throws.add(entry);
-                            } else {
-                              nonC1Throws.add(entry);
-                            }
-                          }
+  //                           if (reachedC1) {
+  //                             c1Throws.add(entry);
+  //                           } else {
+  //                             nonC1Throws.add(entry);
+  //                           }
+  //                         }
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (c1Throws.isNotEmpty) ...[
-                                Text(
-                                  'C1 in Reg (${c1Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                ...c1Throws.map((entry) {
-                                  final hole = entry.key;
-                                  final teeShot = entry.value;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF4CAF50),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '${hole.number}',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        if (teeShot.landingSpot != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(
-                                                0xFF4CAF50,
-                                              ).withValues(alpha: 0.15),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _landingSpotLabel(
-                                                teeShot.landingSpot!,
-                                              ),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    fontSize: 10,
-                                                    color: const Color(
-                                                      0xFF4CAF50,
-                                                    ),
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                              if (c1Throws.isNotEmpty &&
-                                  nonC1Throws.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                              ],
-                              if (nonC1Throws.isNotEmpty) ...[
-                                Text(
-                                  'Other Throws (${nonC1Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                ...nonC1Throws.map((entry) {
-                                  final hole = entry.key;
-                                  final teeShot = entry.value;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHighest,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '${hole.number}',
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        if (teeShot.landingSpot != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceContainerHighest,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _landingSpotLabel(
-                                                teeShot.landingSpot!,
-                                              ),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    fontSize: 10,
-                                                    color: Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ],
-                          );
-                        }(),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
+  //                         return Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             if (c1Throws.isNotEmpty) ...[
+  //                               Text(
+  //                                 'C1 in Reg (${c1Throws.length})',
+  //                                 style: Theme.of(context).textTheme.bodySmall
+  //                                     ?.copyWith(fontWeight: FontWeight.bold),
+  //                               ),
+  //                               const SizedBox(height: 8),
+  //                               ...c1Throws.map((entry) {
+  //                                 final hole = entry.key;
+  //                                 final teeShot = entry.value;
+  //                                 return Padding(
+  //                                   padding: const EdgeInsets.only(bottom: 4),
+  //                                   child: Row(
+  //                                     children: [
+  //                                       Container(
+  //                                         width: 24,
+  //                                         height: 24,
+  //                                         decoration: const BoxDecoration(
+  //                                           color: Color(0xFF4CAF50),
+  //                                           shape: BoxShape.circle,
+  //                                         ),
+  //                                         child: Center(
+  //                                           child: Text(
+  //                                             '${hole.number}',
+  //                                             style: const TextStyle(
+  //                                               color: Colors.white,
+  //                                               fontWeight: FontWeight.bold,
+  //                                               fontSize: 11,
+  //                                             ),
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                       const SizedBox(width: 8),
+  //                                       Expanded(
+  //                                         child: Text(
+  //                                           'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                                           style: Theme.of(
+  //                                             context,
+  //                                           ).textTheme.bodySmall,
+  //                                         ),
+  //                                       ),
+  //                                       if (teeShot.landingSpot != null)
+  //                                         Container(
+  //                                           padding: const EdgeInsets.symmetric(
+  //                                             horizontal: 6,
+  //                                             vertical: 2,
+  //                                           ),
+  //                                           decoration: BoxDecoration(
+  //                                             color: const Color(
+  //                                               0xFF4CAF50,
+  //                                             ).withValues(alpha: 0.15),
+  //                                             borderRadius:
+  //                                                 BorderRadius.circular(8),
+  //                                           ),
+  //                                           child: Text(
+  //                                             _landingSpotLabel(
+  //                                               teeShot.landingSpot!,
+  //                                             ),
+  //                                             style: Theme.of(context)
+  //                                                 .textTheme
+  //                                                 .bodySmall
+  //                                                 ?.copyWith(
+  //                                                   fontSize: 10,
+  //                                                   color: const Color(
+  //                                                     0xFF4CAF50,
+  //                                                   ),
+  //                                                 ),
+  //                                           ),
+  //                                         ),
+  //                                     ],
+  //                                   ),
+  //                                 );
+  //                               }),
+  //                             ],
+  //                             if (c1Throws.isNotEmpty &&
+  //                                 nonC1Throws.isNotEmpty) ...[
+  //                               const SizedBox(height: 12),
+  //                               const Divider(),
+  //                               const SizedBox(height: 8),
+  //                             ],
+  //                             if (nonC1Throws.isNotEmpty) ...[
+  //                               Text(
+  //                                 'Other Throws (${nonC1Throws.length})',
+  //                                 style: Theme.of(context).textTheme.bodySmall
+  //                                     ?.copyWith(fontWeight: FontWeight.bold),
+  //                               ),
+  //                               const SizedBox(height: 8),
+  //                               ...nonC1Throws.map((entry) {
+  //                                 final hole = entry.key;
+  //                                 final teeShot = entry.value;
+  //                                 return Padding(
+  //                                   padding: const EdgeInsets.only(bottom: 4),
+  //                                   child: Row(
+  //                                     children: [
+  //                                       Container(
+  //                                         width: 24,
+  //                                         height: 24,
+  //                                         decoration: BoxDecoration(
+  //                                           color: Theme.of(context)
+  //                                               .colorScheme
+  //                                               .surfaceContainerHighest,
+  //                                           shape: BoxShape.circle,
+  //                                         ),
+  //                                         child: Center(
+  //                                           child: Text(
+  //                                             '${hole.number}',
+  //                                             style: TextStyle(
+  //                                               color: Theme.of(
+  //                                                 context,
+  //                                               ).colorScheme.onSurface,
+  //                                               fontWeight: FontWeight.bold,
+  //                                               fontSize: 11,
+  //                                             ),
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                       const SizedBox(width: 8),
+  //                                       Expanded(
+  //                                         child: Text(
+  //                                           'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                                           style: Theme.of(
+  //                                             context,
+  //                                           ).textTheme.bodySmall,
+  //                                         ),
+  //                                       ),
+  //                                       if (teeShot.landingSpot != null)
+  //                                         Container(
+  //                                           padding: const EdgeInsets.symmetric(
+  //                                             horizontal: 6,
+  //                                             vertical: 2,
+  //                                           ),
+  //                                           decoration: BoxDecoration(
+  //                                             color: Theme.of(context)
+  //                                                 .colorScheme
+  //                                                 .surfaceContainerHighest,
+  //                                             borderRadius:
+  //                                                 BorderRadius.circular(8),
+  //                                           ),
+  //                                           child: Text(
+  //                                             _landingSpotLabel(
+  //                                               teeShot.landingSpot!,
+  //                                             ),
+  //                                             style: Theme.of(context)
+  //                                                 .textTheme
+  //                                                 .bodySmall
+  //                                                 ?.copyWith(
+  //                                                   fontSize: 10,
+  //                                                   color: Theme.of(
+  //                                                     context,
+  //                                                   ).colorScheme.onSurface,
+  //                                                 ),
+  //                                           ),
+  //                                         ),
+  //                                     ],
+  //                                   ),
+  //                                 );
+  //                               }),
+  //                             ],
+  //                           ],
+  //                         );
+  //                       }(),
+  //                     ],
+  //                   ],
+  //                 ),
+  //               ),
+  //             );
+  //           }),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildC2InRegByThrowType(
-    BuildContext context,
-    Map<String, Map<String, double>> circleInRegByType,
-    Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
-  ) {
-    if (circleInRegByType.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  // Widget _buildC2InRegByThrowType(
+  //   BuildContext context,
+  //   Map<String, Map<String, double>> circleInRegByType,
+  //   Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
+  // ) {
+  //   if (circleInRegByType.isEmpty) {
+  //     return const SizedBox.shrink();
+  //   }
 
-    final sortedEntries = circleInRegByType.entries.toList()
-      ..sort(
-        (a, b) => b.value['c2Percentage']!.compareTo(a.value['c2Percentage']!),
-      );
+  //   final sortedEntries = circleInRegByType.entries.toList()
+  //     ..sort(
+  //       (a, b) => b.value['c2Percentage']!.compareTo(a.value['c2Percentage']!),
+  //     );
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'C2 in Regulation by Throw Type',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Holes where you reached C2 with a chance for birdie',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...sortedEntries.map((entry) {
-              final technique = entry.key;
-              final stats = entry.value;
-              final c2Percentage = stats['c2Percentage']!;
-              final totalAttempts = stats['totalAttempts']!.toInt();
-              final c2Count = stats['c2Count']!.toInt();
-              final allThrows = allTeeShotsByType[technique] ?? [];
+  //   return Card(
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(16),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'C2 in Regulation by Throw Type',
+  //             style: Theme.of(
+  //               context,
+  //             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           Text(
+  //             'Holes where you reached C2 with a chance for birdie',
+  //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //               color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //             ),
+  //           ),
+  //           const SizedBox(height: 16),
+  //           ...sortedEntries.map((entry) {
+  //             final technique = entry.key;
+  //             final stats = entry.value;
+  //             final c2Percentage = stats['c2Percentage']!;
+  //             final totalAttempts = stats['totalAttempts']!.toInt();
+  //             final c2Count = stats['c2Count']!.toInt();
+  //             final allThrows = allTeeShotsByType[technique] ?? [];
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    childrenPadding: const EdgeInsets.only(top: 8),
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          technique.substring(0, 1).toUpperCase() +
-                              technique.substring(1),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        Text(
-                          '${c2Percentage.toStringAsFixed(0)}% ($c2Count/$totalAttempts)',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: c2Percentage / 100,
-                          minHeight: 12,
-                          backgroundColor: const Color(
-                            0xFF2196F3,
-                          ).withValues(alpha: 0.2),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF2196F3),
-                          ),
-                        ),
-                      ),
-                    ),
-                    children: [
-                      if (allThrows.isNotEmpty) ...[
-                        const Divider(),
-                        () {
-                          final c2Throws = <MapEntry<DGHole, DiscThrow>>[];
-                          final nonC2Throws = <MapEntry<DGHole, DiscThrow>>[];
+  //             return Padding(
+  //               padding: const EdgeInsets.only(bottom: 12),
+  //               child: Theme(
+  //                 data: Theme.of(
+  //                   context,
+  //                 ).copyWith(dividerColor: Colors.transparent),
+  //                 child: ExpansionTile(
+  //                   tilePadding: EdgeInsets.zero,
+  //                   childrenPadding: const EdgeInsets.only(top: 8),
+  //                   title: Row(
+  //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                     children: [
+  //                       Text(
+  //                         technique.substring(0, 1).toUpperCase() +
+  //                             technique.substring(1),
+  //                         style: Theme.of(context).textTheme.bodyMedium,
+  //                       ),
+  //                       Text(
+  //                         '${c2Percentage.toStringAsFixed(0)}% ($c2Count/$totalAttempts)',
+  //                         style: Theme.of(context).textTheme.bodyMedium
+  //                             ?.copyWith(fontWeight: FontWeight.bold),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                   subtitle: Padding(
+  //                     padding: const EdgeInsets.only(top: 4),
+  //                     child: ClipRRect(
+  //                       borderRadius: BorderRadius.circular(4),
+  //                       child: LinearProgressIndicator(
+  //                         value: c2Percentage / 100,
+  //                         minHeight: 12,
+  //                         backgroundColor: const Color(
+  //                           0xFF2196F3,
+  //                         ).withValues(alpha: 0.2),
+  //                         valueColor: const AlwaysStoppedAnimation<Color>(
+  //                           Color(0xFF2196F3),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ),
+  //                   children: [
+  //                     if (allThrows.isNotEmpty) ...[
+  //                       const Divider(),
+  //                       () {
+  //                         final c2Throws = <MapEntry<DGHole, DiscThrow>>[];
+  //                         final nonC2Throws = <MapEntry<DGHole, DiscThrow>>[];
 
-                          for (final entry in allThrows) {
-                            final hole = entry.key;
-                            final regulationStrokes = hole.par - 2;
-                            bool reachedC2 = false;
+  //                         for (final entry in allThrows) {
+  //                           final hole = entry.key;
+  //                           final regulationStrokes = hole.par - 2;
+  //                           bool reachedC2 = false;
 
-                            if (regulationStrokes > 0) {
-                              for (
-                                int i = 0;
-                                i < hole.throws.length && i < regulationStrokes;
-                                i++
-                              ) {
-                                final discThrow = hole.throws[i];
-                                if (discThrow.landingSpot ==
-                                        LandingSpot.circle1 ||
-                                    discThrow.landingSpot ==
-                                        LandingSpot.parked ||
-                                    discThrow.landingSpot ==
-                                        LandingSpot.circle2) {
-                                  reachedC2 = true;
-                                  break;
-                                }
-                              }
-                            }
+  //                           if (regulationStrokes > 0) {
+  //                             for (
+  //                               int i = 0;
+  //                               i < hole.throws.length && i < regulationStrokes;
+  //                               i++
+  //                             ) {
+  //                               final discThrow = hole.throws[i];
+  //                               if (discThrow.landingSpot ==
+  //                                       LandingSpot.circle1 ||
+  //                                   discThrow.landingSpot ==
+  //                                       LandingSpot.parked ||
+  //                                   discThrow.landingSpot ==
+  //                                       LandingSpot.circle2) {
+  //                                 reachedC2 = true;
+  //                                 break;
+  //                               }
+  //                             }
+  //                           }
 
-                            if (reachedC2) {
-                              c2Throws.add(entry);
-                            } else {
-                              nonC2Throws.add(entry);
-                            }
-                          }
+  //                           if (reachedC2) {
+  //                             c2Throws.add(entry);
+  //                           } else {
+  //                             nonC2Throws.add(entry);
+  //                           }
+  //                         }
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (c2Throws.isNotEmpty) ...[
-                                Text(
-                                  'C2 in Reg (${c2Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                ...c2Throws.map((entry) {
-                                  final hole = entry.key;
-                                  final teeShot = entry.value;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF2196F3),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '${hole.number}',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        if (teeShot.landingSpot != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(
-                                                0xFF2196F3,
-                                              ).withValues(alpha: 0.15),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _landingSpotLabel(
-                                                teeShot.landingSpot!,
-                                              ),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    fontSize: 10,
-                                                    color: const Color(
-                                                      0xFF2196F3,
-                                                    ),
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                              if (c2Throws.isNotEmpty &&
-                                  nonC2Throws.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                              ],
-                              if (nonC2Throws.isNotEmpty) ...[
-                                Text(
-                                  'Other Throws (${nonC2Throws.length})',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                ...nonC2Throws.map((entry) {
-                                  final hole = entry.key;
-                                  final teeShot = entry.value;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHighest,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '${hole.number}',
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                          ),
-                                        ),
-                                        if (teeShot.landingSpot != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceContainerHighest,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _landingSpotLabel(
-                                                teeShot.landingSpot!,
-                                              ),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    fontSize: 10,
-                                                    color: Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ],
-                          );
-                        }(),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
+  //                         return Column(
+  //                           crossAxisAlignment: CrossAxisAlignment.start,
+  //                           children: [
+  //                             if (c2Throws.isNotEmpty) ...[
+  //                               Text(
+  //                                 'C2 in Reg (${c2Throws.length})',
+  //                                 style: Theme.of(context).textTheme.bodySmall
+  //                                     ?.copyWith(fontWeight: FontWeight.bold),
+  //                               ),
+  //                               const SizedBox(height: 8),
+  //                               ...c2Throws.map((entry) {
+  //                                 final hole = entry.key;
+  //                                 final teeShot = entry.value;
+  //                                 return Padding(
+  //                                   padding: const EdgeInsets.only(bottom: 4),
+  //                                   child: Row(
+  //                                     children: [
+  //                                       Container(
+  //                                         width: 24,
+  //                                         height: 24,
+  //                                         decoration: const BoxDecoration(
+  //                                           color: Color(0xFF2196F3),
+  //                                           shape: BoxShape.circle,
+  //                                         ),
+  //                                         child: Center(
+  //                                           child: Text(
+  //                                             '${hole.number}',
+  //                                             style: const TextStyle(
+  //                                               color: Colors.white,
+  //                                               fontWeight: FontWeight.bold,
+  //                                               fontSize: 11,
+  //                                             ),
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                       const SizedBox(width: 8),
+  //                                       Expanded(
+  //                                         child: Text(
+  //                                           'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                                           style: Theme.of(
+  //                                             context,
+  //                                           ).textTheme.bodySmall,
+  //                                         ),
+  //                                       ),
+  //                                       if (teeShot.landingSpot != null)
+  //                                         Container(
+  //                                           padding: const EdgeInsets.symmetric(
+  //                                             horizontal: 6,
+  //                                             vertical: 2,
+  //                                           ),
+  //                                           decoration: BoxDecoration(
+  //                                             color: const Color(
+  //                                               0xFF2196F3,
+  //                                             ).withValues(alpha: 0.15),
+  //                                             borderRadius:
+  //                                                 BorderRadius.circular(8),
+  //                                           ),
+  //                                           child: Text(
+  //                                             _landingSpotLabel(
+  //                                               teeShot.landingSpot!,
+  //                                             ),
+  //                                             style: Theme.of(context)
+  //                                                 .textTheme
+  //                                                 .bodySmall
+  //                                                 ?.copyWith(
+  //                                                   fontSize: 10,
+  //                                                   color: const Color(
+  //                                                     0xFF2196F3,
+  //                                                   ),
+  //                                                 ),
+  //                                           ),
+  //                                         ),
+  //                                     ],
+  //                                   ),
+  //                                 );
+  //                               }),
+  //                             ],
+  //                             if (c2Throws.isNotEmpty &&
+  //                                 nonC2Throws.isNotEmpty) ...[
+  //                               const SizedBox(height: 12),
+  //                               const Divider(),
+  //                               const SizedBox(height: 8),
+  //                             ],
+  //                             if (nonC2Throws.isNotEmpty) ...[
+  //                               Text(
+  //                                 'Other Throws (${nonC2Throws.length})',
+  //                                 style: Theme.of(context).textTheme.bodySmall
+  //                                     ?.copyWith(fontWeight: FontWeight.bold),
+  //                               ),
+  //                               const SizedBox(height: 8),
+  //                               ...nonC2Throws.map((entry) {
+  //                                 final hole = entry.key;
+  //                                 final teeShot = entry.value;
+  //                                 return Padding(
+  //                                   padding: const EdgeInsets.only(bottom: 4),
+  //                                   child: Row(
+  //                                     children: [
+  //                                       Container(
+  //                                         width: 24,
+  //                                         height: 24,
+  //                                         decoration: BoxDecoration(
+  //                                           color: Theme.of(context)
+  //                                               .colorScheme
+  //                                               .surfaceContainerHighest,
+  //                                           shape: BoxShape.circle,
+  //                                         ),
+  //                                         child: Center(
+  //                                           child: Text(
+  //                                             '${hole.number}',
+  //                                             style: TextStyle(
+  //                                               color: Theme.of(
+  //                                                 context,
+  //                                               ).colorScheme.onSurface,
+  //                                               fontWeight: FontWeight.bold,
+  //                                               fontSize: 11,
+  //                                             ),
+  //                                           ),
+  //                                         ),
+  //                                       ),
+  //                                       const SizedBox(width: 8),
+  //                                       Expanded(
+  //                                         child: Text(
+  //                                           'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                                           style: Theme.of(
+  //                                             context,
+  //                                           ).textTheme.bodySmall,
+  //                                         ),
+  //                                       ),
+  //                                       if (teeShot.landingSpot != null)
+  //                                         Container(
+  //                                           padding: const EdgeInsets.symmetric(
+  //                                             horizontal: 6,
+  //                                             vertical: 2,
+  //                                           ),
+  //                                           decoration: BoxDecoration(
+  //                                             color: Theme.of(context)
+  //                                                 .colorScheme
+  //                                                 .surfaceContainerHighest,
+  //                                             borderRadius:
+  //                                                 BorderRadius.circular(8),
+  //                                           ),
+  //                                           child: Text(
+  //                                             _landingSpotLabel(
+  //                                               teeShot.landingSpot!,
+  //                                             ),
+  //                                             style: Theme.of(context)
+  //                                                 .textTheme
+  //                                                 .bodySmall
+  //                                                 ?.copyWith(
+  //                                                   fontSize: 10,
+  //                                                   color: Theme.of(
+  //                                                     context,
+  //                                                   ).colorScheme.onSurface,
+  //                                                 ),
+  //                                           ),
+  //                                         ),
+  //                                     ],
+  //                                   ),
+  //                                 );
+  //                               }),
+  //                             ],
+  //                           ],
+  //                         );
+  //                       }(),
+  //                     ],
+  //                   ],
+  //                 ),
+  //               ),
+  //             );
+  //           }),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildInsightCard(
     BuildContext context,
@@ -2474,16 +2472,14 @@ class DrivesTab extends StatelessWidget {
 }
 
 enum _StatType { c1InReg, c2InReg, parked, outOfBounds }
+
 enum _ThrowTypeStatType { birdieRate, c1InReg, c2InReg }
 
 class _CombinedStatsCard extends StatefulWidget {
   final DGRound round;
   final dynamic coreStats;
 
-  const _CombinedStatsCard({
-    required this.round,
-    required this.coreStats,
-  });
+  const _CombinedStatsCard({required this.round, required this.coreStats});
 
   @override
   State<_CombinedStatsCard> createState() => _CombinedStatsCardState();
@@ -2555,7 +2551,11 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
         case _StatType.c1InReg:
           final regulationStrokes = hole.par - 2;
           if (regulationStrokes > 0) {
-            for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+            for (
+              int i = 0;
+              i < hole.throws.length && i < regulationStrokes;
+              i++
+            ) {
               final discThrow = hole.throws[i];
               if (discThrow.landingSpot == LandingSpot.circle1 ||
                   discThrow.landingSpot == LandingSpot.parked) {
@@ -2569,7 +2569,11 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
         case _StatType.c2InReg:
           final regulationStrokes = hole.par - 2;
           if (regulationStrokes > 0) {
-            for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+            for (
+              int i = 0;
+              i < hole.throws.length && i < regulationStrokes;
+              i++
+            ) {
               final discThrow = hole.throws[i];
               if (discThrow.landingSpot == LandingSpot.circle1 ||
                   discThrow.landingSpot == LandingSpot.parked ||
@@ -2656,7 +2660,11 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
     }
   }
 
-  Widget _buildTextButton(BuildContext context, String label, _StatType statType) {
+  Widget _buildTextButton(
+    BuildContext context,
+    String label,
+    _StatType statType,
+  ) {
     final isSelected = _selectedStat == statType;
 
     return InkWell(
@@ -2699,10 +2707,18 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
             Row(
               children: [
                 Expanded(
-                  child: _buildTextButton(context, 'C1 in Reg', _StatType.c1InReg),
+                  child: _buildTextButton(
+                    context,
+                    'C1 in Reg',
+                    _StatType.c1InReg,
+                  ),
                 ),
                 Expanded(
-                  child: _buildTextButton(context, 'C2 in Reg', _StatType.c2InReg),
+                  child: _buildTextButton(
+                    context,
+                    'C2 in Reg',
+                    _StatType.c2InReg,
+                  ),
                 ),
                 Expanded(
                   child: _buildTextButton(context, 'Parked', _StatType.parked),
@@ -2715,7 +2731,9 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
             const SizedBox(height: 16),
             // Expansion tile with stats
             Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: const EdgeInsets.only(top: 8),
@@ -2725,14 +2743,14 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                     Text(
                       _getTitle(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       '${percentage.toStringAsFixed(0)}% (${qualifyingHoles.length}/${widget.round.holes.length})',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -2744,8 +2762,8 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                       Text(
                         _getDescription(),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       ClipRRect(
@@ -2768,9 +2786,7 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                       if (qualifyingHoles.isNotEmpty) ...[
                         Text(
                           '${_getQualifyingLabel()} (${qualifyingHoles.length})',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
+                          style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
@@ -2801,7 +2817,9 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                                 Expanded(
                                   child: Text(
                                     'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                   ),
                                 ),
                                 Container(
@@ -2815,13 +2833,8 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                                   ),
                                   child: Text(
                                     _scoreLabel(hole.relativeHoleScore),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          fontSize: 10,
-                                          color: color,
-                                        ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontSize: 10, color: color),
                                   ),
                                 ),
                               ],
@@ -2829,7 +2842,8 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                           );
                         }),
                       ],
-                      if (qualifyingHoles.isNotEmpty && notQualifyingHoles.isNotEmpty) ...[
+                      if (qualifyingHoles.isNotEmpty &&
+                          notQualifyingHoles.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         const Divider(),
                         const SizedBox(height: 8),
@@ -2837,9 +2851,7 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                       if (notQualifyingHoles.isNotEmpty) ...[
                         Text(
                           '${_getNotQualifyingLabel()} (${notQualifyingHoles.length})',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
+                          style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
@@ -2852,16 +2864,18 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                                   width: 24,
                                   height: 24,
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Center(
                                     child: Text(
                                       '${hole.number}',
                                       style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onSurface,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -2872,7 +2886,9 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                                 Expanded(
                                   child: Text(
                                     'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                   ),
                                 ),
                                 Container(
@@ -2881,19 +2897,19 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     _scoreLabel(hole.relativeHoleScore),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           fontSize: 10,
-                                          color: Theme.of(context).colorScheme.onSurface,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
                                         ),
                                   ),
                                 ),
@@ -2970,19 +2986,18 @@ class _CombinedThrowTypeStatsCardState
   List<MapEntry<String, dynamic>> _getSortedEntries() {
     switch (_selectedStat) {
       case _ThrowTypeStatType.birdieRate:
-        return widget.teeShotBirdieRates.entries
-            .toList()
+        return widget.teeShotBirdieRates.entries.toList()
           ..sort((a, b) => b.value.percentage.compareTo(a.value.percentage));
       case _ThrowTypeStatType.c1InReg:
-        return widget.circleInRegByType.entries
-            .toList()
-          ..sort((a, b) =>
-              b.value['c1Percentage']!.compareTo(a.value['c1Percentage']!));
+        return widget.circleInRegByType.entries.toList()..sort(
+          (a, b) =>
+              b.value['c1Percentage']!.compareTo(a.value['c1Percentage']!),
+        );
       case _ThrowTypeStatType.c2InReg:
-        return widget.circleInRegByType.entries
-            .toList()
-          ..sort((a, b) =>
-              b.value['c2Percentage']!.compareTo(a.value['c2Percentage']!));
+        return widget.circleInRegByType.entries.toList()..sort(
+          (a, b) =>
+              b.value['c2Percentage']!.compareTo(a.value['c2Percentage']!),
+        );
     }
   }
 
@@ -3002,7 +3017,10 @@ class _CombinedThrowTypeStatsCardState
   }
 
   Widget _buildTextButton(
-      BuildContext context, String label, _ThrowTypeStatType statType) {
+    BuildContext context,
+    String label,
+    _ThrowTypeStatType statType,
+  ) {
     final isSelected = _selectedStat == statType;
 
     return InkWell(
@@ -3017,11 +3035,11 @@ class _CombinedThrowTypeStatsCardState
           child: Text(
             label,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.onSurface
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -3035,10 +3053,12 @@ class _CombinedThrowTypeStatsCardState
     dynamic stats,
     List<MapEntry<DGHole, DiscThrow>> allThrows,
   ) {
-    final birdieThrows =
-        allThrows.where((e) => e.key.relativeHoleScore < 0).toList();
-    final nonBirdieThrows =
-        allThrows.where((e) => e.key.relativeHoleScore >= 0).toList();
+    final birdieThrows = allThrows
+        .where((e) => e.key.relativeHoleScore < 0)
+        .toList();
+    final nonBirdieThrows = allThrows
+        .where((e) => e.key.relativeHoleScore >= 0)
+        .toList();
     final color = _getColor();
 
     return Column(
@@ -3047,10 +3067,9 @@ class _CombinedThrowTypeStatsCardState
         if (birdieThrows.isNotEmpty) ...[
           Text(
             'Birdie Throws (${birdieThrows.length})',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           ...birdieThrows.map((entry) {
@@ -3099,9 +3118,9 @@ class _CombinedThrowTypeStatsCardState
                       child: Text(
                         _landingSpotLabel(teeShot.landingSpot!),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              color: color,
-                            ),
+                          fontSize: 10,
+                          color: color,
+                        ),
                       ),
                     ),
                 ],
@@ -3117,10 +3136,9 @@ class _CombinedThrowTypeStatsCardState
         if (nonBirdieThrows.isNotEmpty) ...[
           Text(
             'Other Throws (${nonBirdieThrows.length})',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           ...nonBirdieThrows.map((entry) {
@@ -3135,9 +3153,9 @@ class _CombinedThrowTypeStatsCardState
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -3165,17 +3183,17 @@ class _CombinedThrowTypeStatsCardState
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         _landingSpotLabel(teeShot.landingSpot!),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                          fontSize: 10,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                 ],
@@ -3203,9 +3221,7 @@ class _CombinedThrowTypeStatsCardState
       bool reachedCircle = false;
 
       if (regulationStrokes > 0) {
-        for (int i = 0;
-            i < hole.throws.length && i < regulationStrokes;
-            i++) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
           final discThrow = hole.throws[i];
           if (circleType == 'c1') {
             if (discThrow.landingSpot == LandingSpot.circle1 ||
@@ -3240,10 +3256,9 @@ class _CombinedThrowTypeStatsCardState
         if (qualifyingThrows.isNotEmpty) ...[
           Text(
             '$label (${qualifyingThrows.length})',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           ...qualifyingThrows.map((entry) {
@@ -3291,9 +3306,9 @@ class _CombinedThrowTypeStatsCardState
                       child: Text(
                         _landingSpotLabel(teeShot.landingSpot!),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              color: color,
-                            ),
+                          fontSize: 10,
+                          color: color,
+                        ),
                       ),
                     ),
                 ],
@@ -3309,10 +3324,9 @@ class _CombinedThrowTypeStatsCardState
         if (nonQualifyingThrows.isNotEmpty) ...[
           Text(
             'Other Throws (${nonQualifyingThrows.length})',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           ...nonQualifyingThrows.map((entry) {
@@ -3326,9 +3340,9 @@ class _CombinedThrowTypeStatsCardState
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -3356,17 +3370,17 @@ class _CombinedThrowTypeStatsCardState
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         _landingSpotLabel(teeShot.landingSpot!),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                          fontSize: 10,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                 ],
@@ -3400,34 +3414,42 @@ class _CombinedThrowTypeStatsCardState
             Row(
               children: [
                 Expanded(
-                  child: _buildTextButton(context, 'Birdie Rate',
-                      _ThrowTypeStatType.birdieRate),
+                  child: _buildTextButton(
+                    context,
+                    'Birdie Rate',
+                    _ThrowTypeStatType.birdieRate,
+                  ),
                 ),
                 Expanded(
                   child: _buildTextButton(
-                      context, 'C1 in Reg', _ThrowTypeStatType.c1InReg),
+                    context,
+                    'C1 in Reg',
+                    _ThrowTypeStatType.c1InReg,
+                  ),
                 ),
                 Expanded(
                   child: _buildTextButton(
-                      context, 'C2 in Reg', _ThrowTypeStatType.c2InReg),
+                    context,
+                    'C2 in Reg',
+                    _ThrowTypeStatType.c2InReg,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               _getTitle(),
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (_getDescription().isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 _getDescription(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
             const SizedBox(height: 16),
@@ -3463,8 +3485,9 @@ class _CombinedThrowTypeStatsCardState
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     childrenPadding: const EdgeInsets.only(top: 8),
@@ -3478,9 +3501,7 @@ class _CombinedThrowTypeStatsCardState
                         ),
                         Text(
                           percentageText,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
