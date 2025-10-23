@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/putting_constants.dart';
@@ -35,6 +36,14 @@ class PuttingTab extends StatelessWidget {
       padding: const EdgeInsets.only(top: 24, bottom: 80),
       children: addRunSpacing(
         [
+          // New cards from deep analysis
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PuttingSummaryCards(
+              puttingSummary: puttingStats,
+              horizontalPadding: 0,
+            ),
+          ),
           // Putting stats KPIs
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
