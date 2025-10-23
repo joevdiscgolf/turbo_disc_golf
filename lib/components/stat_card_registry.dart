@@ -85,7 +85,7 @@ class StatCardRegistry {
       label: 'C1x Putts Made',
       numerator: stats.c1xMakes,
       denominator: stats.c1xAttempts,
-      color: const Color(0xFF00F5D4),
+      color: const Color(0xFF137e66),
     );
   }
 
@@ -95,7 +95,7 @@ class StatCardRegistry {
       label: 'C1 Putts Made',
       numerator: stats.c1Makes,
       denominator: stats.c1Attempts,
-      color: const Color(0xFF00F5D4),
+      color: const Color(0xFF137e66),
     );
   }
 
@@ -114,7 +114,7 @@ class StatCardRegistry {
     return CompactStatCards.buildComparisonCard(
       leftLabel: 'C1',
       leftValue: '${stats.c1Percentage.toStringAsFixed(0)}%',
-      leftColor: const Color(0xFF00F5D4),
+      leftColor: const Color(0xFF137e66),
       rightLabel: 'C2',
       rightValue: '${stats.c2Percentage.toStringAsFixed(0)}%',
       rightColor: const Color(0xFF10E5FF),
@@ -136,7 +136,7 @@ class StatCardRegistry {
     return CompactStatCards.buildPercentageCard(
       label: 'C1 in Regulation',
       percentage: analysis.coreStats.c1InRegPct,
-      color: const Color(0xFF00F5D4),
+      color: const Color(0xFF137e66),
       subtitle: 'Chance for birdie in C1',
     );
   }

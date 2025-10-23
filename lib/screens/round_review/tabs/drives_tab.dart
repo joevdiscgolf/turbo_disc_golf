@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/hole_breakdown_list.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -78,49 +79,46 @@ class DrivesTab extends StatelessWidget {
   Widget _buildCoreStatsKPIs(BuildContext context, coreStats) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Driving Performance',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildKPICard(
-                  context,
-                  'Fairway Hit',
-                  '${coreStats.fairwayHitPct.toStringAsFixed(0)}%',
-                  const Color(0xFF4CAF50),
-                ),
-                _buildKPICard(
+                _buildProgressRing(
                   context,
                   'C1 in Reg',
-                  '${coreStats.c1InRegPct.toStringAsFixed(0)}%',
-                  const Color(0xFF00F5D4),
+                  coreStats.c1InRegPct / 100,
+                  const Color(0xFF137e66),
                 ),
-                _buildKPICard(
+                _buildProgressRing(
                   context,
                   'C2 in Reg',
-                  '${coreStats.c2InRegPct.toStringAsFixed(0)}%',
+                  coreStats.c2InRegPct / 100,
                   const Color(0xFF2196F3),
                 ),
-                _buildKPICard(
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildSmallProgressRing(
+                  context,
+                  'Fairway',
+                  coreStats.fairwayHitPct / 100,
+                  const Color(0xFF4CAF50),
+                ),
+                _buildSmallProgressRing(
                   context,
                   'OB',
-                  '${coreStats.obPct.toStringAsFixed(0)}%',
+                  coreStats.obPct / 100,
                   const Color(0xFFFF7A7A),
                 ),
-                _buildKPICard(
+                _buildSmallProgressRing(
                   context,
                   'Parked',
-                  '${coreStats.parkedPct.toStringAsFixed(0)}%',
+                  coreStats.parkedPct / 100,
                   const Color(0xFFFFA726),
                 ),
               ],
@@ -128,6 +126,102 @@ class DrivesTab extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProgressRing(
+    BuildContext context,
+    String label,
+    double value,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        SizedBox(
+          width: 120,
+          height: 120,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularProgressIndicator(
+                  value: value,
+                  strokeWidth: 12,
+                  backgroundColor: color.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${(value * 100).toStringAsFixed(0)}%',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSmallProgressRing(
+    BuildContext context,
+    String label,
+    double value,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        SizedBox(
+          width: 60,
+          height: 60,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(
+                  value: value,
+                  strokeWidth: 7,
+                  backgroundColor: color.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+              Text(
+                '${(value * 100).toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 
@@ -228,10 +322,10 @@ class DrivesTab extends StatelessWidget {
   //                         value: percentage / 100,
   //                         minHeight: 12,
   //                         backgroundColor: const Color(
-  //                           0xFF00F5D4,
+  //                           0xFF137e66,
   //                         ).withValues(alpha: 0.2),
   //                         valueColor: const AlwaysStoppedAnimation<Color>(
-  //                           Color(0xFF00F5D4),
+  //                           Color(0xFF137e66),
   //                         ),
   //                       ),
   //                     ),
@@ -269,7 +363,7 @@ class DrivesTab extends StatelessWidget {
   //                                         width: 24,
   //                                         height: 24,
   //                                         decoration: const BoxDecoration(
-  //                                           color: Color(0xFF00F5D4),
+  //                                           color: Color(0xFF137e66),
   //                                           shape: BoxShape.circle,
   //                                         ),
   //                                         child: Center(
@@ -300,7 +394,7 @@ class DrivesTab extends StatelessWidget {
   //                                           ),
   //                                           decoration: BoxDecoration(
   //                                             color: const Color(
-  //                                               0xFF00F5D4,
+  //                                               0xFF137e66,
   //                                             ).withValues(alpha: 0.15),
   //                                             borderRadius:
   //                                                 BorderRadius.circular(8),
@@ -315,7 +409,7 @@ class DrivesTab extends StatelessWidget {
   //                                                 ?.copyWith(
   //                                                   fontSize: 10,
   //                                                   color: const Color(
-  //                                                     0xFF00F5D4,
+  //                                                     0xFF137e66,
   //                                                   ),
   //                                                 ),
   //                                           ),
@@ -532,9 +626,9 @@ class DrivesTab extends StatelessWidget {
   //                     value: c1InRegPct / 100,
   //                     minHeight: 12,
   //                     backgroundColor:
-  //                         const Color(0xFF00F5D4).withValues(alpha: 0.2),
+  //                         const Color(0xFF137e66).withValues(alpha: 0.2),
   //                     valueColor: const AlwaysStoppedAnimation<Color>(
-  //                       Color(0xFF00F5D4),
+  //                       Color(0xFF137e66),
   //                     ),
   //                   ),
   //                 ),
@@ -564,7 +658,7 @@ class DrivesTab extends StatelessWidget {
   //                             width: 24,
   //                             height: 24,
   //                             decoration: const BoxDecoration(
-  //                               color: Color(0xFF00F5D4),
+  //                               color: Color(0xFF137e66),
   //                               shape: BoxShape.circle,
   //                             ),
   //                             child: Center(
@@ -591,7 +685,7 @@ class DrivesTab extends StatelessWidget {
   //                               vertical: 2,
   //                             ),
   //                             decoration: BoxDecoration(
-  //                               color: const Color(0xFF00F5D4)
+  //                               color: const Color(0xFF137e66)
   //                                   .withValues(alpha: 0.15),
   //                               borderRadius: BorderRadius.circular(8),
   //                             ),
@@ -602,7 +696,7 @@ class DrivesTab extends StatelessWidget {
   //                                   .bodySmall
   //                                   ?.copyWith(
   //                                     fontSize: 10,
-  //                                     color: const Color(0xFF00F5D4),
+  //                                     color: const Color(0xFF137e66),
   //                                   ),
   //                             ),
   //                           ),
@@ -2111,7 +2205,7 @@ class DrivesTab extends StatelessWidget {
   //         'Forehand',
   //         forehand?['birdiePercentage'] ?? 0,
   //         forehand?['totalAttempts']?.toInt() ?? 0,
-  //         const Color(0xFF00F5D4),
+  //         const Color(0xFF137e66),
   //       ),
   //       const SizedBox(height: 12),
   //       _buildComparisonRow(
@@ -2310,7 +2404,7 @@ class DrivesTab extends StatelessWidget {
                 'Birdie',
                 shapeStats.percentage,
                 shapeStats.totalAttempts,
-                const Color(0xFF00F5D4),
+                const Color(0xFF137e66),
               ),
               const SizedBox(height: 6),
               _buildShapeMetricRow(
@@ -2442,7 +2536,7 @@ class DrivesTab extends StatelessWidget {
                       'Birdie',
                       stats['birdieRate'] ?? 0,
                       holesPlayed,
-                      const Color(0xFF00F5D4),
+                      const Color(0xFF137e66),
                     ),
                     const SizedBox(height: 6),
                     _buildShapeMetricRow(
@@ -2488,32 +2582,6 @@ class _CombinedStatsCard extends StatefulWidget {
 class _CombinedStatsCardState extends State<_CombinedStatsCard> {
   _StatType _selectedStat = _StatType.c1InReg;
 
-  String _getTitle() {
-    switch (_selectedStat) {
-      case _StatType.c1InReg:
-        return 'C1 in Regulation';
-      case _StatType.c2InReg:
-        return 'C2 in Regulation';
-      case _StatType.parked:
-        return 'Parked';
-      case _StatType.outOfBounds:
-        return 'Out of Bounds';
-    }
-  }
-
-  String _getDescription() {
-    switch (_selectedStat) {
-      case _StatType.c1InReg:
-        return 'Holes where you reached C1 with a chance for birdie';
-      case _StatType.c2InReg:
-        return 'Holes where you reached C2 with a chance for birdie';
-      case _StatType.parked:
-        return 'Holes where you parked your disc (within 10 ft)';
-      case _StatType.outOfBounds:
-        return 'Holes where you went out of bounds';
-    }
-  }
-
   double _getPercentage() {
     switch (_selectedStat) {
       case _StatType.c1InReg:
@@ -2530,7 +2598,7 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
   Color _getColor() {
     switch (_selectedStat) {
       case _StatType.c1InReg:
-        return const Color(0xFF00F5D4);
+        return const Color(0xFF137e66);
       case _StatType.c2InReg:
         return const Color(0xFF2196F3);
       case _StatType.parked:
@@ -2707,18 +2775,10 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
             Row(
               children: [
                 Expanded(
-                  child: _buildTextButton(
-                    context,
-                    'C1 in Reg',
-                    _StatType.c1InReg,
-                  ),
+                  child: _buildTextButton(context, 'C1 reg', _StatType.c1InReg),
                 ),
                 Expanded(
-                  child: _buildTextButton(
-                    context,
-                    'C2 in Reg',
-                    _StatType.c2InReg,
-                  ),
+                  child: _buildTextButton(context, 'C2 reg', _StatType.c2InReg),
                 ),
                 Expanded(
                   child: _buildTextButton(context, 'Parked', _StatType.parked),
@@ -2737,42 +2797,44 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
               child: ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: const EdgeInsets.only(top: 8),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _getTitle(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '${percentage.toStringAsFixed(0)}% (${qualifyingHoles.length}/${widget.round.holes.length})',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                title: Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _getDescription(),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: CircularProgressIndicator(
+                                value: percentage / 100,
+                                strokeWidth: 8,
+                                backgroundColor: color.withValues(alpha: 0.15),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  color,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${percentage.toStringAsFixed(0)}%',
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: color,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: percentage / 100,
-                          minHeight: 12,
-                          backgroundColor: color.withValues(alpha: 0.2),
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                      Text(
+                        '${qualifyingHoles.length}/${widget.round.holes.length}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -2780,144 +2842,22 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                 ),
                 children: [
                   const Divider(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (qualifyingHoles.isNotEmpty) ...[
-                        Text(
-                          '${_getQualifyingLabel()} (${qualifyingHoles.length})',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        ...qualifyingHoles.map((hole) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${hole.number}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    _scoreLabel(hole.relativeHoleScore),
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(fontSize: 10, color: color),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
-                      if (qualifyingHoles.isNotEmpty &&
-                          notQualifyingHoles.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        const SizedBox(height: 8),
-                      ],
-                      if (notQualifyingHoles.isNotEmpty) ...[
-                        Text(
-                          '${_getNotQualifyingLabel()} (${notQualifyingHoles.length})',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        ...notQualifyingHoles.map((hole) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${hole.number}',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    _scoreLabel(hole.relativeHoleScore),
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          fontSize: 10,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                        ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
+                  HoleBreakdownList(
+                    classifications: [
+                      HoleClassification(
+                        label: '${_getQualifyingLabel()} (${qualifyingHoles.length})',
+                        circleColor: color,
+                        holes: qualifyingHoles,
+                        getBadgeLabel: (hole) => _scoreLabel(hole.relativeHoleScore),
+                        badgeColor: color,
+                      ),
+                      HoleClassification(
+                        label: '${_getNotQualifyingLabel()} (${notQualifyingHoles.length})',
+                        circleColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        holes: notQualifyingHoles,
+                        getBadgeLabel: (hole) => _scoreLabel(hole.relativeHoleScore),
+                        badgeColor: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ],
                   ),
                 ],
@@ -2975,7 +2915,7 @@ class _CombinedThrowTypeStatsCardState
   Color _getColor() {
     switch (_selectedStat) {
       case _ThrowTypeStatType.birdieRate:
-        return const Color(0xFF00F5D4);
+        return const Color(0xFF137e66);
       case _ThrowTypeStatType.c1InReg:
         return const Color(0xFF4CAF50);
       case _ThrowTypeStatType.c2InReg:

@@ -23,7 +23,13 @@ class _StatsScreenState extends State<StatsScreen> {
   final RoundsService _roundsService = locator.get<RoundsService>();
   int _selectedRoundCount = 10; // Default to last 10 rounds
 
-  final List<int> _roundCountOptions = [5, 10, 15, 20, -1]; // -1 means all rounds
+  final List<int> _roundCountOptions = [
+    5,
+    10,
+    15,
+    20,
+    -1,
+  ]; // -1 means all rounds
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +51,9 @@ class _StatsScreenState extends State<StatsScreen> {
                     Icon(
                       Icons.analytics_outlined,
                       size: 80,
-                      color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -83,9 +91,12 @@ class _StatsScreenState extends State<StatsScreen> {
             final teeShotBirdieRates = statsService.getTeeShotBirdieRates();
             final discPerformances = statsService.getDiscPerformanceSummaries();
             final mistakeTypes = statsService.getMistakeTypes();
-            final avgBirdiePuttDistance = statsService.getAverageBirdiePuttDistance();
-            final avgScoreRelativeToPar = statsService.getAverageScoreRelativeToPar();
-            final backhandVsForehand = statsService.compareBackhandVsForehandTeeShots();
+            final avgBirdiePuttDistance = statsService
+                .getAverageBirdiePuttDistance();
+            final avgScoreRelativeToPar = statsService
+                .getAverageScoreRelativeToPar();
+            final backhandVsForehand = statsService
+                .compareBackhandVsForehandTeeShots();
             final scrambleStats = statsService.getScrambleStats();
 
             return Column(
@@ -117,13 +128,17 @@ class _StatsScreenState extends State<StatsScreen> {
                         if (teeShotBirdieRates.isNotEmpty)
                           ShotTypeBirdieRatesCard(
                             teeShotBirdieRateStats: teeShotBirdieRates,
-                            teeShotBirdieDetails: const {}, // Not showing details in multi-round view
+                            teeShotBirdieDetails:
+                                const {}, // Not showing details in multi-round view
                           ),
 
                         // Backhand vs Forehand comparison
                         if (backhandVsForehand.technique1Count > 0 ||
                             backhandVsForehand.technique2Count > 0)
-                          _buildTechniqueComparisonCard(context, backhandVsForehand),
+                          _buildTechniqueComparisonCard(
+                            context,
+                            backhandVsForehand,
+                          ),
 
                         // Putting summary
                         if (puttingStats.totalAttempts > 0)
@@ -144,11 +159,15 @@ class _StatsScreenState extends State<StatsScreen> {
 
                         // Disc performance
                         if (discPerformances.isNotEmpty)
-                          DiscPerformanceCard(discPerformances: discPerformances),
+                          DiscPerformanceCard(
+                            discPerformances: discPerformances,
+                          ),
 
                         // Mistakes breakdown
                         if (mistakeTypes.isNotEmpty)
-                          MistakeReasonBreakdownCard(mistakeTypes: mistakeTypes),
+                          MistakeReasonBreakdownCard(
+                            mistakeTypes: mistakeTypes,
+                          ),
                       ],
                       runSpacing: 12,
                       axis: Axis.vertical,
@@ -169,19 +188,16 @@ class _StatsScreenState extends State<StatsScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 1,
-          ),
+          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
         ),
       ),
       child: Row(
         children: [
           Text(
             'Show stats for:',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -195,12 +211,10 @@ class _StatsScreenState extends State<StatsScreen> {
                   label = 'All rounds ($totalRounds)';
                 } else {
                   final actualCount = count > totalRounds ? totalRounds : count;
-                  label = 'Last $actualCount round${actualCount == 1 ? '' : 's'}';
+                  label =
+                      'Last $actualCount round${actualCount == 1 ? '' : 's'}';
                 }
-                return DropdownMenuItem<int>(
-                  value: count,
-                  child: Text(label),
-                );
+                return DropdownMenuItem<int>(value: count, child: Text(label));
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
@@ -225,8 +239,8 @@ class _StatsScreenState extends State<StatsScreen> {
     final scoreText = avgScoreRelativeToPar == 0
         ? 'E'
         : avgScoreRelativeToPar > 0
-            ? '+${avgScoreRelativeToPar.toStringAsFixed(1)}'
-            : avgScoreRelativeToPar.toStringAsFixed(1);
+        ? '+${avgScoreRelativeToPar.toStringAsFixed(1)}'
+        : avgScoreRelativeToPar.toStringAsFixed(1);
 
     Color scoreColor;
     if (avgScoreRelativeToPar <= -2) {
@@ -248,7 +262,9 @@ class _StatsScreenState extends State<StatsScreen> {
         gradient: LinearGradient(
           colors: [
             Theme.of(context).colorScheme.primaryContainer,
-            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
+            Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -260,9 +276,9 @@ class _StatsScreenState extends State<StatsScreen> {
           Text(
             'Statistics Overview',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
           ),
           const SizedBox(height: 20),
           Row(
@@ -312,18 +328,18 @@ class _StatsScreenState extends State<StatsScreen> {
         Text(
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: valueColor ?? Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
+            fontWeight: FontWeight.bold,
+            color:
+                valueColor ?? Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
         ),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimaryContainer
-                    .withValues(alpha: 0.8),
-              ),
+            color: Theme.of(
+              context,
+            ).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+          ),
         ),
       ],
     );
@@ -342,9 +358,9 @@ class _StatsScreenState extends State<StatsScreen> {
         children: [
           Text(
             'Scoring Summary',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           _buildScoringStatRow(
@@ -394,19 +410,16 @@ class _StatsScreenState extends State<StatsScreen> {
       children: [
         SizedBox(
           width: 110,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ),
         const SizedBox(width: 12),
         SizedBox(
           width: 40,
           child: Text(
             '$count',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(width: 8),
@@ -428,9 +441,9 @@ class _StatsScreenState extends State<StatsScreen> {
             '${percentage.toStringAsFixed(1)}%',
             textAlign: TextAlign.right,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
         ),
       ],
@@ -453,9 +466,9 @@ class _StatsScreenState extends State<StatsScreen> {
         children: [
           Text(
             'Tee Shot Technique Comparison',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
@@ -466,7 +479,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   comparison.technique1,
                   comparison.technique1BirdieRate,
                   comparison.technique1Count,
-                  const Color(0xFF00F5D4),
+                  const Color(0xFF137e66),
                 ),
               ),
               const SizedBox(width: 16),
@@ -505,22 +518,19 @@ class _StatsScreenState extends State<StatsScreen> {
           Text(
             technique,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             '${birdieRate.toStringAsFixed(1)}%',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-          Text(
-            'birdie rate',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text('birdie rate', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 8),
           Text(
             '$attempts attempts',
@@ -544,9 +554,9 @@ class _StatsScreenState extends State<StatsScreen> {
         children: [
           Text(
             'Scramble Performance',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
@@ -557,9 +567,9 @@ class _StatsScreenState extends State<StatsScreen> {
                   Text(
                     '${stats.scrambleRate.toStringAsFixed(1)}%',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF4CAF50),
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF4CAF50),
+                    ),
                   ),
                   Text(
                     'Scramble Rate',
@@ -572,8 +582,8 @@ class _StatsScreenState extends State<StatsScreen> {
                   Text(
                     '${stats.scrambleSaves}/${stats.scrambleOpportunities}',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     'Saves / Opportunities',

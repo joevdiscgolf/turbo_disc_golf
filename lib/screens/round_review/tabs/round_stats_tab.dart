@@ -36,7 +36,7 @@ class RoundStatsTab extends StatelessWidget {
             PercentageBar(
               label: 'Birdies',
               percentage: scoringStats.birdieRate,
-              color: const Color(0xFF00F5D4),
+              color: const Color(0xFF137e66),
               subtitle:
                   '${scoringStats.birdies} of ${scoringStats.totalHoles} holes',
             ),
@@ -118,15 +118,15 @@ class RoundStatsTab extends StatelessWidget {
               Color color;
               if (entry.key.contains('0-15')) {
                 color = stats.makePercentage >= 90
-                    ? const Color(0xFF00F5D4)
+                    ? const Color(0xFF137e66)
                     : const Color(0xFFFF7A7A);
               } else if (entry.key.contains('15-33')) {
                 color = stats.makePercentage >= 60
-                    ? const Color(0xFF00F5D4)
+                    ? const Color(0xFF137e66)
                     : const Color(0xFFFF7A7A);
               } else {
                 color = stats.makePercentage >= 30
-                    ? const Color(0xFF00F5D4)
+                    ? const Color(0xFF137e66)
                     : const Color(0xFFFF7A7A);
               }
 
@@ -162,10 +162,10 @@ class RoundStatsTab extends StatelessWidget {
                 label: 'Scramble Success',
                 value: '${scrambleStats.scrambleRate.toStringAsFixed(0)}%',
                 iconColor: scrambleStats.scrambleRate >= 50
-                    ? const Color(0xFF00F5D4)
+                    ? const Color(0xFF137e66)
                     : const Color(0xFFFF7A7A),
                 valueColor: scrambleStats.scrambleRate >= 50
-                    ? const Color(0xFF00F5D4)
+                    ? const Color(0xFF137e66)
                     : const Color(0xFFFF7A7A),
               ),
               const SizedBox(height: 8),
@@ -176,7 +176,7 @@ class RoundStatsTab extends StatelessWidget {
               StatRow(
                 label: 'Par saves',
                 value: '${scrambleStats.scrambleSaves}',
-                valueColor: const Color(0xFF00F5D4),
+                valueColor: const Color(0xFF137e66),
                 bold: true,
               ),
             ] else ...[
@@ -187,14 +187,14 @@ class RoundStatsTab extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.check_circle,
-                        color: const Color(0xFF00F5D4),
+                        color: const Color(0xFF137e66),
                         size: 48,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Clean round - no scrambles needed!',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: const Color(0xFF00F5D4),
+                          color: const Color(0xFF137e66),
                           fontWeight: FontWeight.bold,
                         ),
                       ),

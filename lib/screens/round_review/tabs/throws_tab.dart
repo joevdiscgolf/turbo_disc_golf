@@ -376,7 +376,7 @@ class _ThrowsTabState extends State<ThrowsTab> {
 
   Color _getScoreColor(int score) {
     if (score < 0) {
-      return const Color(0xFF00F5D4);
+      return const Color(0xFF137e66);
     } else if (score > 0) {
       return const Color(0xFFFF7A7A);
     } else {

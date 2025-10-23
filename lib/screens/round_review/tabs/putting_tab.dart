@@ -40,12 +40,13 @@ class PuttingTab extends StatelessWidget {
             ),
           ),
           // All putts list
+
+          // Heat map visualization
+          PuttHeatMapCard(round: round),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildAllPuttsCard(context, allPutts),
           ),
-          // Heat map visualization
-          PuttHeatMapCard(round: round),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: PuttingDistanceCard(
@@ -287,9 +288,7 @@ class PuttingTab extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-        ),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           title: Text(
             'All Putt Attempts',
@@ -354,7 +353,9 @@ class PuttingTab extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: made
                                 ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                                : const Color(0xFFFF7A7A).withValues(alpha: 0.1),
+                                : const Color(
+                                    0xFFFF7A7A,
+                                  ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

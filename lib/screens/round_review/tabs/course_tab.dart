@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/hole_breakdown_list.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -65,7 +66,7 @@ class CourseTab extends StatelessWidget {
   //   double bounceBackPct,
   // ) {
   //   final scoreColor = totalScore < 0
-  //       ? const Color(0xFF00F5D4)
+  //       ? const Color(0xFF137e66)
   //       : totalScore > 0
   //       ? const Color(0xFFFF7A7A)
   //       : const Color(0xFFF5F5F5);
@@ -105,7 +106,7 @@ class CourseTab extends StatelessWidget {
   //                 context,
   //                 scoringStats.birdies == 1 ? 'Birdie' : 'Birdies',
   //                 '${scoringStats.birdies}',
-  //                 const Color(0xFF00F5D4),
+  //                 const Color(0xFF137e66),
   //               ),
   //               _buildKPI(
   //                 context,
@@ -166,88 +167,148 @@ class CourseTab extends StatelessWidget {
   // }
 
   Widget _buildScoreDistribution(BuildContext context, scoringStats) {
-    final totalHoles = scoringStats.birdies +
+    final totalHoles =
+        scoringStats.birdies +
         scoringStats.pars +
         scoringStats.bogeys +
         scoringStats.doubleBogeyPlus;
 
+    // Group holes by score type
+    final birdieHoles = round.holes
+        .where((h) => h.relativeHoleScore < 0)
+        .toList();
+    final parHoles = round.holes
+        .where((h) => h.relativeHoleScore == 0)
+        .toList();
+    final bogeyHoles = round.holes
+        .where((h) => h.relativeHoleScore == 1)
+        .toList();
+    final doublePlusHoles = round.holes
+        .where((h) => h.relativeHoleScore >= 2)
+        .toList();
+
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Score Distribution',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            // Legend
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                if (scoringStats.birdies > 0)
-                  _buildLegendItem(context, 'Birdies', const Color(0xFF00F5D4)),
-                if (scoringStats.pars > 0)
-                  _buildLegendItem(context, 'Pars', Colors.grey),
-                if (scoringStats.bogeys > 0)
-                  _buildLegendItem(context, 'Bogeys', const Color(0xFFFF7A7A)),
-                if (scoringStats.doubleBogeyPlus > 0)
-                  _buildLegendItem(context, 'Double+', const Color(0xFFD32F2F)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Stacked progress bar with percentages inside
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                height: 40,
-                child: Row(
-                  children: [
-                    if (scoringStats.birdies > 0)
-                      _buildBarSegment(
-                        context,
-                        scoringStats.birdies,
-                        totalHoles,
-                        const Color(0xFF00F5D4),
-                      ),
-                    if (scoringStats.birdies > 0 && scoringStats.pars > 0)
-                      const SizedBox(width: 2),
-                    if (scoringStats.pars > 0)
-                      _buildBarSegment(
-                        context,
-                        scoringStats.pars,
-                        totalHoles,
-                        Colors.grey,
-                      ),
-                    if ((scoringStats.birdies > 0 || scoringStats.pars > 0) &&
-                        scoringStats.bogeys > 0)
-                      const SizedBox(width: 2),
-                    if (scoringStats.bogeys > 0)
-                      _buildBarSegment(
-                        context,
-                        scoringStats.bogeys,
-                        totalHoles,
-                        const Color(0xFFFF7A7A),
-                      ),
-                    if ((scoringStats.birdies > 0 ||
-                            scoringStats.pars > 0 ||
-                            scoringStats.bogeys > 0) &&
-                        scoringStats.doubleBogeyPlus > 0)
-                      const SizedBox(width: 2),
-                    if (scoringStats.doubleBogeyPlus > 0)
-                      _buildBarSegment(
-                        context,
-                        scoringStats.doubleBogeyPlus,
-                        totalHoles,
-                        const Color(0xFFD32F2F),
-                      ),
-                  ],
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          childrenPadding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            bottom: 16,
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  if (scoringStats.birdies > 0)
+                    _buildLegendItem(
+                      context,
+                      'Birdie',
+                      const Color(0xFF137e66),
+                    ),
+                  if (scoringStats.pars > 0)
+                    _buildLegendItem(context, 'Par', Colors.grey),
+                  if (scoringStats.bogeys > 0)
+                    _buildLegendItem(context, 'Bogey', const Color(0xFFFF7A7A)),
+                  if (scoringStats.doubleBogeyPlus > 0)
+                    _buildLegendItem(context, 'Dbl+', const Color(0xFFD32F2F)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Stacked progress bar with percentages inside
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  height: 40,
+                  child: Row(
+                    children: [
+                      if (scoringStats.birdies > 0)
+                        _buildBarSegment(
+                          context,
+                          scoringStats.birdies,
+                          totalHoles,
+                          const Color(0xFF137e66),
+                        ),
+                      if (scoringStats.birdies > 0 && scoringStats.pars > 0)
+                        const SizedBox(width: 2),
+                      if (scoringStats.pars > 0)
+                        _buildBarSegment(
+                          context,
+                          scoringStats.pars,
+                          totalHoles,
+                          Colors.grey,
+                        ),
+                      if ((scoringStats.birdies > 0 || scoringStats.pars > 0) &&
+                          scoringStats.bogeys > 0)
+                        const SizedBox(width: 2),
+                      if (scoringStats.bogeys > 0)
+                        _buildBarSegment(
+                          context,
+                          scoringStats.bogeys,
+                          totalHoles,
+                          const Color(0xFFFF7A7A),
+                        ),
+                      if ((scoringStats.birdies > 0 ||
+                              scoringStats.pars > 0 ||
+                              scoringStats.bogeys > 0) &&
+                          scoringStats.doubleBogeyPlus > 0)
+                        const SizedBox(width: 2),
+                      if (scoringStats.doubleBogeyPlus > 0)
+                        _buildBarSegment(
+                          context,
+                          scoringStats.doubleBogeyPlus,
+                          totalHoles,
+                          const Color(0xFFD32F2F),
+                        ),
+                    ],
+                  ),
                 ),
               ),
+            ],
+          ),
+          children: [
+            const Divider(),
+            HoleBreakdownList(
+              classifications: [
+                HoleClassification(
+                  label: 'Birdies (${birdieHoles.length})',
+                  circleColor: const Color(0xFF137e66),
+                  holes: birdieHoles,
+                  getBadgeLabel: (hole) => hole.relativeHoleScore == -1
+                      ? 'Birdie'
+                      : hole.relativeHoleScore == -2
+                      ? 'Eagle'
+                      : '${hole.relativeHoleScore}',
+                  badgeColor: const Color(0xFF137e66),
+                ),
+                HoleClassification(
+                  label: 'Pars (${parHoles.length})',
+                  circleColor: Colors.grey.withValues(alpha: 0.3),
+                  holes: parHoles,
+                  getBadgeLabel: (hole) => 'Par',
+                  badgeColor: Colors.grey,
+                ),
+                HoleClassification(
+                  label: 'Bogeys (${bogeyHoles.length})',
+                  circleColor: const Color(0xFFFF7A7A).withValues(alpha: 0.3),
+                  holes: bogeyHoles,
+                  getBadgeLabel: (hole) => 'Bogey',
+                  badgeColor: const Color(0xFFFF7A7A),
+                ),
+                HoleClassification(
+                  label: 'Double Bogey+ (${doublePlusHoles.length})',
+                  circleColor: const Color(0xFFD32F2F).withValues(alpha: 0.3),
+                  holes: doublePlusHoles,
+                  getBadgeLabel: (hole) => hole.relativeHoleScore == 2
+                      ? 'Double'
+                      : '+${hole.relativeHoleScore}',
+                  badgeColor: const Color(0xFFD32F2F),
+                ),
+              ],
             ),
           ],
         ),
@@ -262,16 +323,10 @@ class CourseTab extends StatelessWidget {
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -324,75 +379,199 @@ class CourseTab extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Performance by Hole Length',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                // Header row
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 85,
+                      child: Text(
+                        'Distance',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Avg',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Birdie',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Par',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Bogey',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Dbl+',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
-                ...birdieRateByLength.entries.map((entry) {
-                  final distanceCategory = entry.key;
-                  final birdieRate = entry.value;
-                  final c1c2Stats = c1c2ByLength[distanceCategory];
-                  final c1Rate = c1c2Stats?['c1InRegRate'] ?? 0;
-                  final c2Rate = c1c2Stats?['c2InRegRate'] ?? 0;
-                  final holesPlayed = c1c2Stats?['holesPlayed']?.toInt() ?? 0;
-
-                  // Get holes for this distance category
+                const Divider(height: 1),
+                // Data rows
+                ...[
+                  '<300 ft',
+                  '300-400 ft',
+                  '400-500 ft',
+                  '>500 ft',
+                ].asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final distanceCategory = entry.value;
                   final holesInCategory = _getHolesForDistanceCategory(
                     distanceCategory,
                   );
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Theme(
-                      data: Theme.of(
-                        context,
-                      ).copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        childrenPadding: const EdgeInsets.only(top: 8),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  if (holesInCategory.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  // Calculate stats for this distance category
+                  final totalHoles = holesInCategory.length;
+                  final totalScore = holesInCategory.fold<int>(
+                    0,
+                    (sum, hole) => sum + hole.relativeHoleScore,
+                  );
+                  final avgScore = totalScore / totalHoles;
+                  final birdieCount = holesInCategory
+                      .where((h) => h.relativeHoleScore < 0)
+                      .length;
+                  final parCount = holesInCategory
+                      .where((h) => h.relativeHoleScore == 0)
+                      .length;
+                  final bogeyCount = holesInCategory
+                      .where((h) => h.relativeHoleScore == 1)
+                      .length;
+                  final doublePlusCount = holesInCategory
+                      .where((h) => h.relativeHoleScore >= 2)
+                      .length;
+
+                  final birdieRate = (birdieCount / totalHoles) * 100;
+                  final parRate = (parCount / totalHoles) * 100;
+                  final bogeyRate = (bogeyCount / totalHoles) * 100;
+                  final doublePlusRate = (doublePlusCount / totalHoles) * 100;
+
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
                           children: [
-                            Text(
-                              distanceCategory,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            SizedBox(
+                              width: 85,
+                              child: Text(
+                                distanceCategory,
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
                             ),
-                            if (holesPlayed > 0)
-                              Text(
-                                '$holesPlayed holes',
-                                style: Theme.of(context).textTheme.bodySmall,
+                            Expanded(
+                              child: Text(
+                                avgScore.toStringAsFixed(2),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFF1976D2),
+                                      fontWeight: FontWeight.w500,
+                                    ),
                               ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${birdieRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFF137e66),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${parRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${bogeyRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFFFF7A7A),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${doublePlusRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFFD32F2F),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
                           ],
                         ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildDistanceStatItem(
-                                context,
-                                'Birdie',
-                                birdieRate,
-                              ),
-                              _buildDistanceStatItem(context, 'C1 Reg', c1Rate),
-                              _buildDistanceStatItem(context, 'C2 Reg', c2Rate),
-                            ],
-                          ),
-                        ),
-                        children: [
-                          if (holesInCategory.isNotEmpty) ...[
-                            const Divider(),
-                            _buildHolesList(context, holesInCategory),
-                          ],
-                        ],
                       ),
-                    ),
+                      if (index < 3 &&
+                          _getHolesForDistanceCategory(
+                            [
+                              '<300 ft',
+                              '300-400 ft',
+                              '400-500 ft',
+                              '>500 ft',
+                            ][(index + 1)],
+                          ).isNotEmpty)
+                        const Divider(height: 1),
+                    ],
                   );
                 }),
               ],
@@ -458,7 +637,7 @@ class CourseTab extends StatelessWidget {
   //           value,
   //           style: Theme.of(context).textTheme.titleMedium?.copyWith(
   //             fontWeight: FontWeight.bold,
-  //             color: const Color(0xFF00F5D4),
+  //             color: const Color(0xFF137e66),
   //           ),
   //         ),
   //         const SizedBox(height: 4),
@@ -479,6 +658,15 @@ class CourseTab extends StatelessWidget {
     final sortedEntries = performanceByPar.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
+    // Filter out entries with no holes played
+    final validEntries = sortedEntries
+        .where((entry) => (entry.value['holesPlayed']?.toInt() ?? 0) > 0)
+        .toList();
+
+    if (validEntries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -489,101 +677,170 @@ class CourseTab extends StatelessWidget {
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        ...sortedEntries.map((entry) {
-          final par = entry.key;
-          final stats = entry.value;
-          final holesPlayed = stats['holesPlayed']?.toInt() ?? 0;
-
-          if (holesPlayed == 0) return const SizedBox.shrink();
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Header row
+                Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Par $par',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                    SizedBox(
+                      width: 45,
+                      child: Text(
+                        'Par',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        Text(
-                          '$holesPlayed holes',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildParStatColumn(
-                          context,
-                          'Avg Score',
-                          stats['avgScore'] ?? 0,
-                          Theme.of(context).colorScheme.primary,
-                          isAverage: true,
+                    Expanded(
+                      child: Text(
+                        'Avg',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        _buildParStatColumn(
-                          context,
-                          'Birdie',
-                          stats['birdieRate'] ?? 0,
-                          const Color(0xFF00F5D4),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Birdie',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        _buildParStatColumn(
-                          context,
-                          'Par',
-                          stats['parRate'] ?? 0,
-                          Colors.grey,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Par',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        _buildParStatColumn(
-                          context,
-                          'Bogey+',
-                          stats['bogeyRate'] ?? 0,
-                          const Color(0xFFFF7A7A),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Bogey',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                      ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Dbl+',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                // Data rows
+                ...validEntries.asMap().entries.map((mapEntry) {
+                  final index = mapEntry.key;
+                  final entry = mapEntry.value;
+                  final par = entry.key;
+                  final stats = entry.value;
+                  final avgScore = stats['avgScore'] ?? 0;
+                  final birdieRate = stats['birdieRate'] ?? 0;
+                  final parRate = stats['parRate'] ?? 0;
+                  final bogeyRate = stats['bogeyRate'] ?? 0;
+                  final doubleBogeyPlusRate = stats['doubleBogeyPlusRate'] ?? 0;
+
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 45,
+                              child: Text(
+                                '$par',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                avgScore.toStringAsFixed(2),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFF1976D2),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${birdieRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFF137e66),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${parRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${bogeyRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFFFF7A7A),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${doubleBogeyPlusRate.toStringAsFixed(0)}%',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFFD32F2F),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (index < validEntries.length - 1)
+                        const Divider(height: 1),
+                    ],
+                  );
+                }),
+              ],
             ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildParStatColumn(
-    BuildContext context,
-    String label,
-    double value,
-    Color color, {
-    bool isAverage = false,
-  }) {
-    final displayValue = isAverage
-        ? value.toStringAsFixed(2)
-        : '${value.toStringAsFixed(0)}%';
-
-    return Column(
-      children: [
-        Text(
-          displayValue,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -770,7 +1027,7 @@ class CourseTab extends StatelessWidget {
                     width: 24,
                     height: 24,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF00F5D4),
+                      color: Color(0xFF137e66),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -797,7 +1054,7 @@ class CourseTab extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00F5D4).withValues(alpha: 0.15),
+                      color: const Color(0xFF137e66).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -808,7 +1065,7 @@ class CourseTab extends StatelessWidget {
                           : '${hole.relativeHoleScore}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontSize: 10,
-                        color: const Color(0xFF00F5D4),
+                        color: const Color(0xFF137e66),
                       ),
                     ),
                   ),

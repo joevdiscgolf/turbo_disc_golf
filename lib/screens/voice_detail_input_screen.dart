@@ -175,14 +175,14 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                       children: [
                         const Icon(
                           Icons.info_outline,
-                          color: Color(0xFF00F5D4),
+                          color: Color(0xFF137e66),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'How to Record',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                color: const Color(0xFF00F5D4),
+                                color: const Color(0xFF137e66),
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
@@ -216,7 +216,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    const Icon(Icons.golf_course, color: Color(0xFF00F5D4)),
+                    const Icon(Icons.golf_course, color: Color(0xFF137e66)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -451,7 +451,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                 _roundParser.isProcessing ? 'Processing...' : 'Parse Round',
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00F5D4),
+                backgroundColor: const Color(0xFF137e66),
                 foregroundColor: const Color(0xFF0A0E17),
                 minimumSize: const Size(double.infinity, 48),
               ),
