@@ -21,80 +21,77 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Turbo Disc Golf',
       theme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         useMaterial3: true,
-        colorScheme: ColorScheme.dark(
-          primary: const Color(
-            0xFF9D7FFF,
-          ), // Brighter purple (30% more vibrant)
-          secondary: const Color(0xFF10E5FF), // Brighter electric blue
-          surface: const Color(
-            0xFF242938,
-          ), // Lighter surface for better separation
-          error: const Color(0xFFFF7A7A), // Brighter warm red
-          onPrimary: const Color(0xFFF5F5F5), // 96% white (WCAG AAA)
-          onSecondary: const Color(0xFFF5F5F5), // 96% white
-          onSurface: const Color(0xFFF5F5F5), // 96% white
-          onError: const Color(0xFF0A0E17), // Dark on error
+        colorScheme: ColorScheme.light(
+          primary: const Color(0xFFB8E986), // Soft mint green
+          secondary: const Color(0xFF5B7EFF), // Vibrant blue
+          surface: const Color(0xFFFFFFFF), // Pure white for cards
+          error: const Color(0xFFFF7F7F), // Coral
+          onPrimary: const Color(0xFF2C2C2C), // Dark text on mint
+          onSecondary: const Color(0xFFFFFFFF), // White text on blue
+          onSurface: const Color(0xFF2C2C2C), // Dark text on surface
+          onError: const Color(0xFFFFFFFF), // White text on error
         ),
-        scaffoldBackgroundColor: const Color(0xFF0A0E17),
+        scaffoldBackgroundColor: Colors.transparent, // Transparent for gradient background
         cardTheme: const CardThemeData(
-          color: Color(0xFF242938),
-          elevation: 6,
-          shadowColor: Colors.black87,
+          color: Color(0xFFFFFFFF), // Pure white cards
+          elevation: 2,
+          shadowColor: Colors.black12,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF242938),
-          foregroundColor: Color(0xFFF5F5F5),
-          elevation: 3,
+          backgroundColor: Colors.transparent, // Transparent to show gradient
+          foregroundColor: Color(0xFF2C2C2C), // Dark text
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
         ),
         textTheme: const TextTheme(
-          displayLarge: TextStyle(color: Color(0xFFF5F5F5)),
-          displayMedium: TextStyle(color: Color(0xFFF5F5F5)),
-          displaySmall: TextStyle(color: Color(0xFFF5F5F5)),
-          headlineLarge: TextStyle(color: Color(0xFFF5F5F5)),
-          headlineMedium: TextStyle(color: Color(0xFFF5F5F5)),
-          headlineSmall: TextStyle(color: Color(0xFFF5F5F5)),
-          titleLarge: TextStyle(color: Color(0xFFF5F5F5)),
-          titleMedium: TextStyle(color: Color(0xFFF5F5F5)),
-          titleSmall: TextStyle(color: Color(0xFFF5F5F5)),
-          bodyLarge: TextStyle(color: Color(0xFFF5F5F5)),
-          bodyMedium: TextStyle(color: Color(0xFFF5F5F5)),
-          bodySmall: TextStyle(color: Color(0xFFC0C0C0)),
-          labelLarge: TextStyle(color: Color(0xFFF5F5F5)),
-          labelMedium: TextStyle(color: Color(0xFFF5F5F5)),
-          labelSmall: TextStyle(color: Color(0xFFC0C0C0)),
+          displayLarge: TextStyle(color: Color(0xFF2C2C2C)),
+          displayMedium: TextStyle(color: Color(0xFF2C2C2C)),
+          displaySmall: TextStyle(color: Color(0xFF2C2C2C)),
+          headlineLarge: TextStyle(color: Color(0xFF2C2C2C)),
+          headlineMedium: TextStyle(color: Color(0xFF2C2C2C)),
+          headlineSmall: TextStyle(color: Color(0xFF2C2C2C)),
+          titleLarge: TextStyle(color: Color(0xFF2C2C2C)),
+          titleMedium: TextStyle(color: Color(0xFF2C2C2C)),
+          titleSmall: TextStyle(color: Color(0xFF2C2C2C)),
+          bodyLarge: TextStyle(color: Color(0xFF2C2C2C)),
+          bodyMedium: TextStyle(color: Color(0xFF2C2C2C)),
+          bodySmall: TextStyle(color: Color(0xFF6B7280)),
+          labelLarge: TextStyle(color: Color(0xFF2C2C2C)),
+          labelMedium: TextStyle(color: Color(0xFF6B7280)),
+          labelSmall: TextStyle(color: Color(0xFF6B7280)),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF242938),
+          fillColor: const Color(0xFFFFFFFF), // Pure white fill
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF9D7FFF)),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF4A4F5E)),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF9D7FFF), width: 2),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFB8E986), width: 2),
           ),
-          labelStyle: const TextStyle(color: Color(0xFFC0C0C0)),
-          hintStyle: const TextStyle(color: Color(0xFF8A8F9E)),
+          labelStyle: const TextStyle(color: Color(0xFF6B7280)),
+          hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF9D7FFF),
-            foregroundColor: const Color(0xFFF5F5F5),
-            elevation: 6,
-            shadowColor: Colors.black.withValues(alpha: 0.6),
+            backgroundColor: const Color(0xFFB8E986), // Mint green
+            foregroundColor: const Color(0xFF2C2C2C), // Dark text
+            elevation: 2,
+            shadowColor: Colors.black.withValues(alpha: 0.1),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(foregroundColor: const Color(0xFF10E5FF)),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF5B7EFF)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFF5F5F5)),
+        iconTheme: const IconThemeData(color: Color(0xFF2C2C2C)),
       ),
       home: const MainWrapper(),
     );

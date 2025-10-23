@@ -166,7 +166,10 @@ class CourseTab extends StatelessWidget {
   // }
 
   Widget _buildScoreDistribution(BuildContext context, scoringStats) {
-    final total = scoringStats.totalHoles;
+    final totalHoles = scoringStats.birdies +
+        scoringStats.pars +
+        scoringStats.bogeys +
+        scoringStats.doubleBogeyPlus;
 
     return Card(
       child: Padding(
@@ -180,37 +183,71 @@ class CourseTab extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            _buildDistributionBar(
-              context,
-              'Birdies',
-              scoringStats.birdies,
-              total,
-              const Color(0xFF00F5D4),
+            const SizedBox(height: 12),
+            // Legend
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                if (scoringStats.birdies > 0)
+                  _buildLegendItem(context, 'Birdies', const Color(0xFF00F5D4)),
+                if (scoringStats.pars > 0)
+                  _buildLegendItem(context, 'Pars', Colors.grey),
+                if (scoringStats.bogeys > 0)
+                  _buildLegendItem(context, 'Bogeys', const Color(0xFFFF7A7A)),
+                if (scoringStats.doubleBogeyPlus > 0)
+                  _buildLegendItem(context, 'Double+', const Color(0xFFD32F2F)),
+              ],
             ),
-            const SizedBox(height: 8),
-            _buildDistributionBar(
-              context,
-              'Pars',
-              scoringStats.pars,
-              total,
-              Colors.grey,
-            ),
-            const SizedBox(height: 8),
-            _buildDistributionBar(
-              context,
-              'Bogeys',
-              scoringStats.bogeys,
-              total,
-              const Color(0xFFFF7A7A),
-            ),
-            const SizedBox(height: 8),
-            _buildDistributionBar(
-              context,
-              'Double Bogey+',
-              scoringStats.doubleBogeyPlus,
-              total,
-              const Color(0xFFD32F2F),
+            const SizedBox(height: 12),
+            // Stacked progress bar with percentages inside
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                height: 40,
+                child: Row(
+                  children: [
+                    if (scoringStats.birdies > 0)
+                      _buildBarSegment(
+                        context,
+                        scoringStats.birdies,
+                        totalHoles,
+                        const Color(0xFF00F5D4),
+                      ),
+                    if (scoringStats.birdies > 0 && scoringStats.pars > 0)
+                      const SizedBox(width: 2),
+                    if (scoringStats.pars > 0)
+                      _buildBarSegment(
+                        context,
+                        scoringStats.pars,
+                        totalHoles,
+                        Colors.grey,
+                      ),
+                    if ((scoringStats.birdies > 0 || scoringStats.pars > 0) &&
+                        scoringStats.bogeys > 0)
+                      const SizedBox(width: 2),
+                    if (scoringStats.bogeys > 0)
+                      _buildBarSegment(
+                        context,
+                        scoringStats.bogeys,
+                        totalHoles,
+                        const Color(0xFFFF7A7A),
+                      ),
+                    if ((scoringStats.birdies > 0 ||
+                            scoringStats.pars > 0 ||
+                            scoringStats.bogeys > 0) &&
+                        scoringStats.doubleBogeyPlus > 0)
+                      const SizedBox(width: 2),
+                    if (scoringStats.doubleBogeyPlus > 0)
+                      _buildBarSegment(
+                        context,
+                        scoringStats.doubleBogeyPlus,
+                        totalHoles,
+                        const Color(0xFFD32F2F),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -218,41 +255,51 @@ class CourseTab extends StatelessWidget {
     );
   }
 
-  Widget _buildDistributionBar(
+  Widget _buildLegendItem(BuildContext context, String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBarSegment(
     BuildContext context,
-    String label,
     int count,
     int total,
     Color color,
   ) {
-    final percentage = total > 0 ? (count / total) * 100 : 0.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: Theme.of(context).textTheme.bodyMedium),
-            Text(
-              '$count (${percentage.toStringAsFixed(0)}%)',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+    final percentage = (count / total * 100).round();
+    return Expanded(
+      flex: count,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 45),
+        color: color,
+        child: Center(
+          child: Text(
+            '$percentage%',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: count / total,
-            minHeight: 12,
-            backgroundColor: color.withValues(alpha: 0.2),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -429,6 +476,9 @@ class CourseTab extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final sortedEntries = performanceByPar.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -439,7 +489,7 @@ class CourseTab extends StatelessWidget {
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        ...performanceByPar.entries.map((entry) {
+        ...sortedEntries.map((entry) {
           final par = entry.key;
           final stats = entry.value;
           final holesPlayed = stats['holesPlayed']?.toInt() ?? 0;
@@ -474,6 +524,13 @@ class CourseTab extends StatelessWidget {
                       children: [
                         _buildParStatColumn(
                           context,
+                          'Avg Score',
+                          stats['avgScore'] ?? 0,
+                          Theme.of(context).colorScheme.primary,
+                          isAverage: true,
+                        ),
+                        _buildParStatColumn(
+                          context,
                           'Birdie',
                           stats['birdieRate'] ?? 0,
                           const Color(0xFF00F5D4),
@@ -489,31 +546,6 @@ class CourseTab extends StatelessWidget {
                           'Bogey+',
                           stats['bogeyRate'] ?? 0,
                           const Color(0xFFFF7A7A),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildParStatColumn(
-                          context,
-                          'C1 Reg',
-                          stats['c1InRegRate'] ?? 0,
-                          const Color(0xFF4CAF50),
-                        ),
-                        _buildParStatColumn(
-                          context,
-                          'C2 Reg',
-                          stats['c2InRegRate'] ?? 0,
-                          const Color(0xFF8BC34A),
-                        ),
-                        _buildParStatColumn(
-                          context,
-                          'Avg Score',
-                          stats['avgScore'] ?? 0,
-                          Theme.of(context).colorScheme.primary,
-                          isAverage: true,
                         ),
                       ],
                     ),

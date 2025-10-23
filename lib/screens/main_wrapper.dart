@@ -54,51 +54,71 @@ class _MainWrapperState extends State<MainWrapper> {
         appBarTitle = 'Add Round';
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(appBarTitle),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFEEE8F5), // Light gray with faint purple tint
+            Color(0xFFECECEE), // Light gray
+            Color(0xFFE8F4E8), // Light gray with faint green tint
+            Color(0xFFEAE8F0), // Light gray with subtle purple
+          ],
+          stops: [0.0, 0.3, 0.7, 1.0],
+        ),
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          const RecordRoundScreen(),
-          const StatsScreen(),
-          _buildRoundsTab(),
-          const TestAiSummaryScreen(),
-          const TestImageParsingScreen(),
-          const TestRoastScreen(),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle),
-            label: 'Add Round',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Stats',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'Rounds',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.psychology),
-            label: 'Test AI',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.image_search),
-            label: 'Test Image',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_fire_department),
-            label: 'Test Roast',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text(appBarTitle),
+        ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            const RecordRoundScreen(),
+            const StatsScreen(),
+            _buildRoundsTab(),
+            const TestAiSummaryScreen(),
+            const TestImageParsingScreen(),
+            const TestRoastScreen(),
+          ],
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
+          selectedItemColor: const Color(0xFFB8E986),
+          unselectedItemColor: const Color(0xFF6B7280),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle),
+              label: 'Add Round',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.analytics),
+              label: 'Stats',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history),
+              label: 'Rounds',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.psychology),
+              label: 'Test AI',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.image_search),
+              label: 'Test Image',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_fire_department),
+              label: 'Test Roast',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+        ),
       ),
     );
   }
