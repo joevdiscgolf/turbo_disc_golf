@@ -1,5 +1,26 @@
 # Turbo Disc Golf - Claude Code Guidelines
 
+## Disc Golf Terminology and Constants
+
+### Putting Zones
+
+When working with putting statistics, always reference the constants defined in `lib/utils/putting_constants.dart`:
+
+- **C1 (Circle 1)**: Putts from 0-33 feet
+  - Represents putts inside Circle 1, which is regulation for scoring
+  - Use `c1MinDistance` (0.0) and `c1MaxDistance` (33.0)
+
+- **C1X (Circle 1 Extended)**: Putts from 11-33 feet
+  - Represents the outer portion of Circle 1, excluding gimme putts
+  - Calculated by combining the '11-22 ft' and '22-33 ft' buckets
+  - Use `c1xMinDistance` (11.0), `c1xMaxDistance` (33.0), and `c1xBuckets` list
+
+- **C2 (Circle 2)**: Putts from 33-66 feet
+  - Represents putts inside Circle 2, the outer regulation circle
+  - Use `c2MinDistance` (33.0) and `c2MaxDistance` (66.0)
+
+These definitions follow PDGA (Professional Disc Golf Association) standards.
+
 ## Code Style and Architecture
 
 ### Widget Composition Philosophy
@@ -90,6 +111,146 @@ import 'package:turbo_disc_golf/services/analytics_service.dart';
 ```
 
 ### Widget Structure Guidelines
+
+**CRITICAL: Avoid Super Nested and Huge Widget Build Functions**
+
+Build methods should be concise and readable. If your build method exceeds ~50 lines or has more than 3-4 levels of nesting, split it up.
+
+#### When to Extract:
+
+1. **Extract to private Widget methods** (`Widget _buildX(...)`) when:
+   - The widget is only used in this screen/file
+   - It's a simple helper that doesn't need lifecycle management
+   - You want to keep related code together
+
+2. **Extract to StatelessWidget** when:
+   - The widget might be reused elsewhere
+   - It has complex logic or multiple helper methods
+   - You want better performance (const constructors, less rebuilds)
+   - The component has a clear, single responsibility
+
+3. **Extract to StatefulWidget** when:
+   - The component needs to manage its own local state
+   - It has animations, controllers, or subscriptions
+   - The state is specific to this component and shouldn't be lifted up
+   - The component is complex enough to benefit from modular state management
+
+#### Example: Splitting a Large Build Function
+
+❌ **AVOID: Massive, deeply nested build method**
+```dart
+@override
+Widget build(BuildContext context) {
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                child: Column(
+                  children: [
+                    Text('Title'),
+                    Text('Subtitle'),
+                    Row(
+                      children: [
+                        Icon(Icons.star),
+                        Text('4.5'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // ... 50+ more lines
+            ],
+          ),
+          // ... 100+ more lines
+        ],
+      ),
+    ),
+  );
+}
+```
+
+✅ **PREFER: Split into logical sections**
+```dart
+@override
+Widget build(BuildContext context) {
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildHeader(context),
+          _buildContent(context),
+          _buildFooter(context),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildHeader(BuildContext context) {
+  return Row(
+    children: [
+      const _HeaderIcon(),
+      _HeaderText(),
+      const _HeaderRating(),
+    ],
+  );
+}
+
+Widget _buildContent(BuildContext context) {
+  // Implementation
+}
+
+Widget _buildFooter(BuildContext context) {
+  // Implementation
+}
+```
+
+✅ **EVEN BETTER: Extract reusable components**
+```dart
+@override
+Widget build(BuildContext context) {
+  return InfoCard(
+    header: const InfoCardHeader(
+      title: 'Title',
+      subtitle: 'Subtitle',
+      rating: 4.5,
+    ),
+    content: const InfoCardContent(...),
+    footer: const InfoCardFooter(...),
+  );
+}
+
+// In separate file: lib/components/info_card.dart
+class InfoCard extends StatelessWidget {
+  const InfoCard({
+    Key? key,
+    required this.header,
+    required this.content,
+    required this.footer,
+  }) : super(key: key);
+
+  final Widget header;
+  final Widget content;
+  final Widget footer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [header, content, footer],
+        ),
+      ),
+    );
+  }
+}
+```
 
 #### 1. Use Private Widget Methods for Screen-Specific Components
 
@@ -463,9 +624,12 @@ onPressed: () {
 ## Summary Checklist
 
 Before submitting code, verify:
+- [ ] Build methods are concise (<50 lines) and not deeply nested (≤3-4 levels)
+- [ ] Large build methods are split into smaller Widget methods or StatelessWidgets
 - [ ] Components are extracted from nested widget trees
-- [ ] Reusable widgets are in separate files under `lib/components/`
+- [ ] Reusable widgets are in separate files under `lib/components/` or `lib/widgets/`
 - [ ] StatelessWidget is used unless state is required
+- [ ] StatefulWidget is used when component needs local state management
 - [ ] Const constructors are used where possible
 - [ ] Variables use explicit type annotations (e.g., `final String name = 'value'`)
 - [ ] Imports are organized correctly
