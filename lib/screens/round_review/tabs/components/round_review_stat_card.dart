@@ -209,7 +209,7 @@ class ComparisonWidget extends StatelessWidget {
     required this.value2,
     this.subtitle1,
     this.subtitle2,
-    this.positiveColor = const Color(0xFF00F5D4),
+    this.positiveColor = const Color(0xFF137e66),
     this.negativeColor = const Color(0xFFFF7A7A),
   });
 

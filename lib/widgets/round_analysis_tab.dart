@@ -51,7 +51,7 @@ class RoundAnalysisTab extends StatelessWidget {
           RoundReviewStatCard(
             title: 'Top Performing Discs',
             icon: Icons.disc_full,
-            accentColor: const Color(0xFF00F5D4),
+            accentColor: const Color(0xFF137e66),
             children: [
               ...topDiscs.map((disc) {
                 Color categoryColor;
@@ -59,7 +59,7 @@ class RoundAnalysisTab extends StatelessWidget {
 
                 switch (disc.category) {
                   case 'excellent':
-                    categoryColor = const Color(0xFF00F5D4);
+                    categoryColor = const Color(0xFF137e66);
                     categoryIcon = Icons.star;
                     break;
                   case 'good':
@@ -165,7 +165,7 @@ class RoundAnalysisTab extends StatelessWidget {
                           child: _StatBox(
                             label: 'Birdies',
                             value: '${stats.birdies}',
-                            color: const Color(0xFF00F5D4),
+                            color: const Color(0xFF137e66),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -174,7 +174,7 @@ class RoundAnalysisTab extends StatelessWidget {
                             label: 'Success',
                             value: '${stats.successRate.toStringAsFixed(0)}%',
                             color: stats.successRate >= 50
-                                ? const Color(0xFF00F5D4)
+                                ? const Color(0xFF137e66)
                                 : const Color(0xFFFF7A7A),
                           ),
                         ),
@@ -189,7 +189,7 @@ class RoundAnalysisTab extends StatelessWidget {
                       ).colorScheme.surface.withValues(alpha: 0.3),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         stats.birdieRate >= 40
-                            ? const Color(0xFF00F5D4)
+                            ? const Color(0xFF137e66)
                             : const Color(0xFFFF7A7A),
                       ),
                     ),
@@ -234,7 +234,7 @@ class RoundAnalysisTab extends StatelessWidget {
                     label: '${stats.techniqueName.capitalize()} approaches',
                     value: '${stats.successful}/${stats.attempts} successful',
                     valueColor: stats.successRate >= 50
-                        ? const Color(0xFF00F5D4)
+                        ? const Color(0xFF137e66)
                         : const Color(0xFFFF7A7A),
                     bold: true,
                   ),
@@ -317,7 +317,7 @@ class RoundAnalysisTab extends StatelessWidget {
           RoundReviewStatCard(
             title: 'Areas to Improve',
             icon: Icons.check_circle,
-            accentColor: const Color(0xFF00F5D4),
+            accentColor: const Color(0xFF137e66),
             children: [
               Center(
                 child: Padding(
@@ -326,7 +326,7 @@ class RoundAnalysisTab extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.emoji_events,
-                        color: const Color(0xFF00F5D4),
+                        color: const Color(0xFF137e66),
                         size: 64,
                       ),
                       const SizedBox(height: 12),
@@ -334,7 +334,7 @@ class RoundAnalysisTab extends StatelessWidget {
                         'Great round!',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
-                              color: const Color(0xFF00F5D4),
+                              color: const Color(0xFF137e66),
                               fontWeight: FontWeight.bold,
                             ),
                       ),

@@ -31,7 +31,7 @@ class PuttingSummaryCards extends StatelessWidget {
               puttingSummary.c1Makes,
               puttingSummary.c1Attempts,
               ['1-11 ft', '11-22 ft', '22-33 ft'],
-              const Color(0xFF00F5D4),
+              const Color(0xFF137e66),
             ),
             _buildCircleCard(
               context,

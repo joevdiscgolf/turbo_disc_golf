@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
@@ -40,12 +40,16 @@ class PuttingTab extends StatelessWidget {
             ),
           ),
           // All putts list
+
+          // Heat map visualization
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PuttHeatMapCardV2(round: round),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildAllPuttsCard(context, allPutts),
           ),
-          // Heat map visualization
-          PuttHeatMapCard(round: round),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: PuttingDistanceCard(
@@ -287,9 +291,7 @@ class PuttingTab extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Theme(
-        data: Theme.of(context).copyWith(
-          dividerColor: Colors.transparent,
-        ),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           title: Text(
             'All Putt Attempts',
@@ -354,7 +356,9 @@ class PuttingTab extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: made
                                 ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                                : const Color(0xFFFF7A7A).withValues(alpha: 0.1),
+                                : const Color(
+                                    0xFFFF7A7A,
+                                  ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

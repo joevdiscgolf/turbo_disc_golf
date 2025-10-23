@@ -666,7 +666,7 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
                       icon: const Icon(Icons.arrow_forward),
                       label: const Text('Continue with Voice'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00F5D4),
+                        backgroundColor: const Color(0xFF137e66),
                         foregroundColor: const Color(0xFF0A0E17),
                         minimumSize: const Size(double.infinity, 48),
                       ),

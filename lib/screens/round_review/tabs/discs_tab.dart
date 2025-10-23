@@ -146,7 +146,7 @@ class DiscsTab extends StatelessWidget {
   //                 context,
   //                 entry.key,
   //                 entry.value,
-  //                 const Color(0xFF00F5D4),
+  //                 const Color(0xFF137e66),
   //               );
   //             }).toList(),
   //           ),
@@ -272,7 +272,7 @@ class DiscsTab extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: avgScore < 0
-                            ? const Color(0xFF00F5D4)
+                            ? const Color(0xFF137e66)
                             : const Color(0xFFFF7A7A),
                       ),
                     ),
@@ -290,7 +290,7 @@ class DiscsTab extends StatelessWidget {
                   context,
                   'Birdie',
                   birdieRate,
-                  const Color(0xFF00F5D4),
+                  const Color(0xFF137e66),
                 ),
                 const SizedBox(height: 6),
                 _buildStatBar(

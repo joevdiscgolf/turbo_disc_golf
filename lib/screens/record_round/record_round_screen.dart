@@ -282,7 +282,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                           height: 32,
                           decoration: BoxDecoration(
                             color: const Color(
-                              0xFF00F5D4,
+                              0xFF137e66,
                             ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -290,7 +290,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                             child: Text(
                               '1',
                               style: TextStyle(
-                                color: Color(0xFF00F5D4),
+                                color: Color(0xFF137e66),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),
@@ -324,7 +324,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                       icon: const Icon(Icons.image),
                       label: const Text('Import from Screenshot'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00F5D4),
+                        backgroundColor: const Color(0xFF137e66),
                         foregroundColor: const Color(0xFF0A0E17),
                         minimumSize: const Size(double.infinity, 48),
                       ),
@@ -633,7 +633,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                       icon: const Icon(Icons.image),
                       label: const Text('Test Image + Voice (Pre-processed)'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00F5D4),
+                        backgroundColor: const Color(0xFF137e66),
                         foregroundColor: const Color(0xFF0A0E17),
                       ),
                     ),
@@ -782,7 +782,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
             //                 'Test Image + Voice (Pre-processed)',
             //               ),
             //               style: ElevatedButton.styleFrom(
-            //                 backgroundColor: const Color(0xFF00F5D4),
+            //                 backgroundColor: const Color(0xFF137e66),
             //                 foregroundColor: const Color(0xFF0A0E17),
             //               ),
             //             ),

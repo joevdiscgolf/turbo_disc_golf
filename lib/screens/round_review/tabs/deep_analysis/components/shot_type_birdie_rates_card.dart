@@ -27,7 +27,7 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
     return RoundReviewStatCard(
       title: 'Birdie %',
       hasArrow: true,
-      accentColor: const Color(0xFF00F5D4),
+      accentColor: const Color(0xFF137e66),
 
       onPressed: () {
         Navigator.push(
@@ -78,7 +78,7 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
                   displayName.toUpperCase(),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF00F5D4),
+                    color: const Color(0xFF137e66),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -101,7 +101,7 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: const Color(0xFF00F5D4).withValues(alpha: 0.2),
+          color: const Color(0xFF137e66).withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -111,7 +111,7 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF00F5D4).withValues(alpha: 0.2),
+              color: const Color(0xFF137e66).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Center(
@@ -119,7 +119,7 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
                 '${hole.number}',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF00F5D4),
+                  color: const Color(0xFF137e66),
                 ),
               ),
             ),
@@ -196,9 +196,9 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
               child: LinearProgressIndicator(
                 value: stats.percentage / 100,
                 minHeight: 12,
-                backgroundColor: const Color(0xFF00F5D4).withValues(alpha: 0.2),
+                backgroundColor: const Color(0xFF137e66).withValues(alpha: 0.2),
                 valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF00F5D4),
+                  Color(0xFF137e66),
                 ),
               ),
             ),
@@ -215,7 +215,7 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
                   textAlign: TextAlign.right,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF00F5D4),
+                    color: const Color(0xFF137e66),
                   ),
                 ),
                 Text(

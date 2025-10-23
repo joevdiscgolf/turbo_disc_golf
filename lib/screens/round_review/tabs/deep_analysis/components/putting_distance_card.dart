@@ -42,7 +42,7 @@ class PuttingDistanceCard extends StatelessWidget {
                   context,
                   'Avg Made',
                   '${avgMakeDistance.toStringAsFixed(1)} ft',
-                  const Color(0xFF00F5D4),
+                  const Color(0xFF137e66),
                 ),
               ),
               const SizedBox(width: 12),
