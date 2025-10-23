@@ -66,68 +66,76 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_round.courseName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.auto_stories),
-            tooltip: 'View as Story',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => RoundStoryView(round: _round),
-                  fullscreenDialog: true,
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              // todo: Implement save functionality
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Round saved!')));
-            },
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Theme.of(context).colorScheme.secondary,
-          labelColor: Theme.of(context).colorScheme.secondary,
-          unselectedLabelColor: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.6),
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Throws'),
-            Tab(text: 'Course'),
-            Tab(text: 'Drives'),
-            Tab(text: 'Putting'),
-            Tab(text: 'Discs'),
-            Tab(text: 'Mistakes'),
-            Tab(text: 'Psych'),
-            Tab(text: 'Summary'),
-            Tab(text: 'Coach'),
-            Tab(text: 'Roast'),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFEEE8F5), // Light gray with faint purple tint
+            Color(0xFFECECEE), // Light gray
+            Color(0xFFE8F4E8), // Light gray with faint green tint
+            Color(0xFFEAE8F0), // Light gray with subtle purple
           ],
+          stops: [0.0, 0.3, 0.7, 1.0],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          ThrowsTab(round: _round),
-          CourseTab(round: _round),
-          DrivesTab(round: _round),
-          PuttingTab(round: _round),
-          DiscsTab(round: _round),
-          MistakesTab(round: _round),
-          PsychTab(round: _round),
-          SummaryTab(round: _round),
-          CoachTab(round: _round),
-          RoastTab(round: _round),
-        ],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text(_round.courseName),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.auto_stories),
+              tooltip: 'View as Story',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => RoundStoryView(round: _round),
+                    fullscreenDialog: true,
+                  ),
+                );
+              },
+            ),
+          ],
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: Theme.of(context).colorScheme.secondary,
+            labelColor: Theme.of(context).colorScheme.secondary,
+            unselectedLabelColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+            isScrollable: true,
+            tabs: const [
+              Tab(text: 'Throws'),
+              Tab(text: 'Course'),
+              Tab(text: 'Drives'),
+              Tab(text: 'Putting'),
+              Tab(text: 'Discs'),
+              Tab(text: 'Mistakes'),
+              Tab(text: 'Psych'),
+              Tab(text: 'Summary'),
+              Tab(text: 'Coach'),
+              Tab(text: 'Roast'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            ThrowsTab(round: _round),
+            CourseTab(round: _round),
+            DrivesTab(round: _round),
+            PuttingTab(round: _round),
+            DiscsTab(round: _round),
+            MistakesTab(round: _round),
+            PsychTab(round: _round),
+            SummaryTab(round: _round),
+            CoachTab(round: _round),
+            RoastTab(round: _round),
+          ],
+        ),
       ),
     );
   }
