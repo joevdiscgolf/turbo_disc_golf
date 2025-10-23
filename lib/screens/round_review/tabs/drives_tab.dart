@@ -225,39 +225,39 @@ class DrivesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildKPICard(
-    BuildContext context,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildKPICard(
+  //   BuildContext context,
+  //   String label,
+  //   String value,
+  //   Color color,
+  // ) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //     decoration: BoxDecoration(
+  //       color: color.withValues(alpha: 0.1),
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: color.withValues(alpha: 0.3)),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Text(
+  //           value,
+  //           style: Theme.of(context).textTheme.titleLarge?.copyWith(
+  //             fontWeight: FontWeight.bold,
+  //             color: color,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 4),
+  //         Text(
+  //           label,
+  //           style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //             color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Widget _buildBirdieRateByThrowType(
   //   BuildContext context,
@@ -2845,17 +2845,23 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                   HoleBreakdownList(
                     classifications: [
                       HoleClassification(
-                        label: '${_getQualifyingLabel()} (${qualifyingHoles.length})',
+                        label:
+                            '${_getQualifyingLabel()} (${qualifyingHoles.length})',
                         circleColor: color,
                         holes: qualifyingHoles,
-                        getBadgeLabel: (hole) => _scoreLabel(hole.relativeHoleScore),
+                        getBadgeLabel: (hole) =>
+                            _scoreLabel(hole.relativeHoleScore),
                         badgeColor: color,
                       ),
                       HoleClassification(
-                        label: '${_getNotQualifyingLabel()} (${notQualifyingHoles.length})',
-                        circleColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        label:
+                            '${_getNotQualifyingLabel()} (${notQualifyingHoles.length})',
+                        circleColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         holes: notQualifyingHoles,
-                        getBadgeLabel: (hole) => _scoreLabel(hole.relativeHoleScore),
+                        getBadgeLabel: (hole) =>
+                            _scoreLabel(hole.relativeHoleScore),
                         badgeColor: Theme.of(context).colorScheme.onSurface,
                       ),
                     ],

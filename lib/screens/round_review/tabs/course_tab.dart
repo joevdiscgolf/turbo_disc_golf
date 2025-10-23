@@ -611,23 +611,23 @@ class CourseTab extends StatelessWidget {
     );
   }
 
-  Widget _buildDistanceStatItem(
-    BuildContext context,
-    String label,
-    double value,
-  ) {
-    return Column(
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        Text(
-          '${value.toStringAsFixed(0)}%',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
+  // Widget _buildDistanceStatItem(
+  //   BuildContext context,
+  //   String label,
+  //   double value,
+  // ) {
+  //   return Column(
+  //     children: [
+  //       Text(label, style: Theme.of(context).textTheme.bodySmall),
+  //       Text(
+  //         '${value.toStringAsFixed(0)}%',
+  //         style: Theme.of(
+  //           context,
+  //         ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   // Widget _buildSmallStatCard(BuildContext context, String label, String value) {
   //   return Container(
@@ -1007,220 +1007,220 @@ class CourseTab extends StatelessWidget {
     }).toList();
   }
 
-  Widget _buildHolesList(BuildContext context, List<DGHole> holes) {
-    final birdieHoles = holes.where((h) => h.relativeHoleScore < 0).toList();
-    final parHoles = holes.where((h) => h.relativeHoleScore == 0).toList();
-    final bogeyHoles = holes.where((h) => h.relativeHoleScore > 0).toList();
+  // Widget _buildHolesList(BuildContext context, List<DGHole> holes) {
+  //   final birdieHoles = holes.where((h) => h.relativeHoleScore < 0).toList();
+  //   final parHoles = holes.where((h) => h.relativeHoleScore == 0).toList();
+  //   final bogeyHoles = holes.where((h) => h.relativeHoleScore > 0).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (birdieHoles.isNotEmpty) ...[
-          Text(
-            'Birdies (${birdieHoles.length})',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...birdieHoles.map((hole) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF137e66),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${hole.number}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF137e66).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      hole.relativeHoleScore == -1
-                          ? 'Birdie'
-                          : hole.relativeHoleScore == -2
-                          ? 'Eagle'
-                          : '${hole.relativeHoleScore}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: const Color(0xFF137e66),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-        if (birdieHoles.isNotEmpty &&
-            (parHoles.isNotEmpty || bogeyHoles.isNotEmpty)) ...[
-          const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 8),
-        ],
-        if (parHoles.isNotEmpty) ...[
-          Text(
-            'Pars (${parHoles.length})',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...parHoles.map((hole) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${hole.number}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Par',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-        if (parHoles.isNotEmpty && bogeyHoles.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 8),
-        ],
-        if (bogeyHoles.isNotEmpty) ...[
-          Text(
-            'Bogeys (${bogeyHoles.length})',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...bogeyHoles.map((hole) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${hole.number}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      hole.relativeHoleScore == 1
-                          ? 'Bogey'
-                          : hole.relativeHoleScore == 2
-                          ? 'Double'
-                          : '+${hole.relativeHoleScore}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ],
-    );
-  }
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       if (birdieHoles.isNotEmpty) ...[
+  //         Text(
+  //           'Birdies (${birdieHoles.length})',
+  //           style: Theme.of(
+  //             context,
+  //           ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+  //         ),
+  //         const SizedBox(height: 8),
+  //         ...birdieHoles.map((hole) {
+  //           return Padding(
+  //             padding: const EdgeInsets.only(bottom: 4),
+  //             child: Row(
+  //               children: [
+  //                 Container(
+  //                   width: 24,
+  //                   height: 24,
+  //                   decoration: const BoxDecoration(
+  //                     color: Color(0xFF137e66),
+  //                     shape: BoxShape.circle,
+  //                   ),
+  //                   child: Center(
+  //                     child: Text(
+  //                       '${hole.number}',
+  //                       style: const TextStyle(
+  //                         color: Colors.white,
+  //                         fontWeight: FontWeight.bold,
+  //                         fontSize: 11,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 Expanded(
+  //                   child: Text(
+  //                     'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                     style: Theme.of(context).textTheme.bodySmall,
+  //                   ),
+  //                 ),
+  //                 Container(
+  //                   padding: const EdgeInsets.symmetric(
+  //                     horizontal: 6,
+  //                     vertical: 2,
+  //                   ),
+  //                   decoration: BoxDecoration(
+  //                     color: const Color(0xFF137e66).withValues(alpha: 0.15),
+  //                     borderRadius: BorderRadius.circular(8),
+  //                   ),
+  //                   child: Text(
+  //                     hole.relativeHoleScore == -1
+  //                         ? 'Birdie'
+  //                         : hole.relativeHoleScore == -2
+  //                         ? 'Eagle'
+  //                         : '${hole.relativeHoleScore}',
+  //                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                       fontSize: 10,
+  //                       color: const Color(0xFF137e66),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         }),
+  //       ],
+  //       if (birdieHoles.isNotEmpty &&
+  //           (parHoles.isNotEmpty || bogeyHoles.isNotEmpty)) ...[
+  //         const SizedBox(height: 12),
+  //         const Divider(),
+  //         const SizedBox(height: 8),
+  //       ],
+  //       if (parHoles.isNotEmpty) ...[
+  //         Text(
+  //           'Pars (${parHoles.length})',
+  //           style: Theme.of(
+  //             context,
+  //           ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+  //         ),
+  //         const SizedBox(height: 8),
+  //         ...parHoles.map((hole) {
+  //           return Padding(
+  //             padding: const EdgeInsets.only(bottom: 4),
+  //             child: Row(
+  //               children: [
+  //                 Container(
+  //                   width: 24,
+  //                   height: 24,
+  //                   decoration: BoxDecoration(
+  //                     color: Colors.grey.withValues(alpha: 0.3),
+  //                     shape: BoxShape.circle,
+  //                   ),
+  //                   child: Center(
+  //                     child: Text(
+  //                       '${hole.number}',
+  //                       style: TextStyle(
+  //                         color: Theme.of(context).colorScheme.onSurface,
+  //                         fontWeight: FontWeight.bold,
+  //                         fontSize: 11,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 Expanded(
+  //                   child: Text(
+  //                     'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                     style: Theme.of(context).textTheme.bodySmall,
+  //                   ),
+  //                 ),
+  //                 Container(
+  //                   padding: const EdgeInsets.symmetric(
+  //                     horizontal: 6,
+  //                     vertical: 2,
+  //                   ),
+  //                   decoration: BoxDecoration(
+  //                     color: Colors.grey.withValues(alpha: 0.15),
+  //                     borderRadius: BorderRadius.circular(8),
+  //                   ),
+  //                   child: Text(
+  //                     'Par',
+  //                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                       fontSize: 10,
+  //                       color: Colors.grey,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         }),
+  //       ],
+  //       if (parHoles.isNotEmpty && bogeyHoles.isNotEmpty) ...[
+  //         const SizedBox(height: 12),
+  //         const Divider(),
+  //         const SizedBox(height: 8),
+  //       ],
+  //       if (bogeyHoles.isNotEmpty) ...[
+  //         Text(
+  //           'Bogeys (${bogeyHoles.length})',
+  //           style: Theme.of(
+  //             context,
+  //           ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+  //         ),
+  //         const SizedBox(height: 8),
+  //         ...bogeyHoles.map((hole) {
+  //           return Padding(
+  //             padding: const EdgeInsets.only(bottom: 4),
+  //             child: Row(
+  //               children: [
+  //                 Container(
+  //                   width: 24,
+  //                   height: 24,
+  //                   decoration: BoxDecoration(
+  //                     color: Theme.of(
+  //                       context,
+  //                     ).colorScheme.surfaceContainerHighest,
+  //                     shape: BoxShape.circle,
+  //                   ),
+  //                   child: Center(
+  //                     child: Text(
+  //                       '${hole.number}',
+  //                       style: TextStyle(
+  //                         color: Theme.of(context).colorScheme.onSurface,
+  //                         fontWeight: FontWeight.bold,
+  //                         fontSize: 11,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 Expanded(
+  //                   child: Text(
+  //                     'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+  //                     style: Theme.of(context).textTheme.bodySmall,
+  //                   ),
+  //                 ),
+  //                 Container(
+  //                   padding: const EdgeInsets.symmetric(
+  //                     horizontal: 6,
+  //                     vertical: 2,
+  //                   ),
+  //                   decoration: BoxDecoration(
+  //                     color: Theme.of(
+  //                       context,
+  //                     ).colorScheme.surfaceContainerHighest,
+  //                     borderRadius: BorderRadius.circular(8),
+  //                   ),
+  //                   child: Text(
+  //                     hole.relativeHoleScore == 1
+  //                         ? 'Bogey'
+  //                         : hole.relativeHoleScore == 2
+  //                         ? 'Double'
+  //                         : '+${hole.relativeHoleScore}',
+  //                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+  //                       fontSize: 10,
+  //                       color: Theme.of(context).colorScheme.onSurface,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         }),
+  //       ],
+  //     ],
+  //   );
+  // }
 
   Widget _buildWhatCouldHaveBeen(BuildContext context) {
     final scenarios = _calculateScenarios();
@@ -1233,16 +1233,18 @@ class CourseTab extends StatelessWidget {
       0,
       (sum, hole) => sum + hole.relativeHoleScore,
     );
-    final currentScoreStr = currentScore >= 0 ? '+$currentScore' : '$currentScore';
+    final currentScoreStr = currentScore >= 0
+        ? '+$currentScore'
+        : '$currentScore';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'What Could Have Been',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         Card(
@@ -1257,19 +1259,19 @@ class CourseTab extends StatelessWidget {
                     Text(
                       'Your Score',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     Text(
                       currentScoreStr,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: currentScore < 0
                                 ? const Color(0xFF137e66)
                                 : currentScore > 0
-                                    ? const Color(0xFFFF7A7A)
-                                    : Theme.of(context).colorScheme.onSurface,
+                                ? const Color(0xFFFF7A7A)
+                                : Theme.of(context).colorScheme.onSurface,
                           ),
                     ),
                   ],
@@ -1313,7 +1315,8 @@ class CourseTab extends StatelessWidget {
       for (final putt in missedC1xPutts) {
         final holeNumber = putt['holeNumber'] as int?;
         if (holeNumber != null) {
-          missedPuttsPerHole[holeNumber] = (missedPuttsPerHole[holeNumber] ?? 0) + 1;
+          missedPuttsPerHole[holeNumber] =
+              (missedPuttsPerHole[holeNumber] ?? 0) + 1;
         }
       }
 
@@ -1327,8 +1330,7 @@ class CourseTab extends StatelessWidget {
       scenarios.add(
         ImprovementScenario(
           title: 'Clean Up C1X Putts',
-          description:
-              'Make your putts from 11-33 feet (Circle 1 extended)',
+          description: 'Make your putts from 11-33 feet (Circle 1 extended)',
           strokesSaved: missedC1xPutts.length,
           category: 'Easy Wins',
           emoji: '🎯',
@@ -1342,12 +1344,14 @@ class CourseTab extends StatelessWidget {
     }
 
     // Scenario 2: Eliminate Disasters - turn double bogeys+ into bogeys
-    final disasterHoles =
-        round.holes.where((h) => h.relativeHoleScore >= 2).toList();
+    final disasterHoles = round.holes
+        .where((h) => h.relativeHoleScore >= 2)
+        .toList();
     if (disasterHoles.isNotEmpty) {
       final strokesSaved = disasterHoles.fold<int>(
         0,
-        (sum, hole) => sum + (hole.relativeHoleScore - 1), // Convert to bogey (+1)
+        (sum, hole) =>
+            sum + (hole.relativeHoleScore - 1), // Convert to bogey (+1)
       );
       scenarios.add(
         ImprovementScenario(
@@ -1391,8 +1395,7 @@ class CourseTab extends StatelessWidget {
       scenarios.add(
         ImprovementScenario(
           title: 'Perfect Scrambling',
-          description:
-              'Save par when you go off fairway with good short game',
+          description: 'Save par when you go off fairway with good short game',
           strokesSaved: strokesSaved,
           category: 'Short Game',
           emoji: '🎲',

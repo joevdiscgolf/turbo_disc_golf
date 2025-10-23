@@ -1,6 +1,6 @@
-/// Constants for putting statistics and ranges
-///
-/// These definitions follow PDGA standards for disc golf putting zones.
+// Constants for putting statistics and ranges
+//
+// These definitions follow PDGA standards for disc golf putting zones.
 
 /// Circle 1 (C1): Putts from 0-33 feet
 /// This represents putts inside Circle 1, which is regulation for scoring.

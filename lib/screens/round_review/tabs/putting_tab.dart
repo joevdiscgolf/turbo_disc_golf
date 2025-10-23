@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
@@ -18,13 +19,15 @@ class PuttingTab extends StatelessWidget {
     final PuttingAnalysisService puttingAnalysisService = locator
         .get<PuttingAnalysisService>();
 
-    final puttingSummary = puttingAnalysisService.getPuttingSummary(round);
+    final PuttStats puttingStats = puttingAnalysisService.getPuttingSummary(
+      round,
+    );
     final avgBirdiePuttDist = puttingAnalysisService
         .getAverageBirdiePuttDistance(round);
     final comebackStats = puttingAnalysisService.getComebackPuttStats(round);
     final allPutts = puttingAnalysisService.getPuttAttempts(round);
 
-    if (puttingSummary.totalAttempts == 0) {
+    if (puttingStats.totalAttempts == 0) {
       return const Center(child: Text('No putting data available'));
     }
 
@@ -35,7 +38,7 @@ class PuttingTab extends StatelessWidget {
           // Putting stats KPIs
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildPuttingStatsKPIs(context, puttingSummary),
+            child: _buildPuttingStatsKPIs(context, puttingStats),
           ),
 
           // Heat map visualization
@@ -50,10 +53,10 @@ class PuttingTab extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: PuttingDistanceCard(
-              avgMakeDistance: puttingSummary.avgMakeDistance,
-              avgAttemptDistance: puttingSummary.avgAttemptDistance,
+              avgMakeDistance: puttingStats.avgMakeDistance,
+              avgAttemptDistance: puttingStats.avgAttemptDistance,
               avgBirdiePuttDistance: avgBirdiePuttDist,
-              totalMadeDistance: puttingSummary.totalMadeDistance,
+              totalMadeDistance: puttingStats.totalMadeDistance,
               horizontalPadding: 0,
             ),
           ),
@@ -65,7 +68,7 @@ class PuttingTab extends StatelessWidget {
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildSummaryInsight(context, puttingSummary),
+            child: _buildSummaryInsight(context, puttingStats),
           ),
         ],
         runSpacing: 16,
@@ -74,15 +77,15 @@ class PuttingTab extends StatelessWidget {
     );
   }
 
-  Widget _buildPuttingStatsKPIs(BuildContext context, puttingSummary) {
+  Widget _buildPuttingStatsKPIs(BuildContext context, PuttStats puttingStats) {
     // Calculate C1X percentage (putts made from 11-33 ft)
     // C1X combines the buckets defined in putting_constants.dart
     int c1xAttempts = 0;
     int c1xMakes = 0;
     for (final bucketName in c1xBuckets) {
-      final bucket = puttingSummary.bucketStats[bucketName];
-      c1xAttempts += bucket?.attempts ?? 0;
-      c1xMakes += bucket?.makes ?? 0;
+      final bucket = puttingStats.bucketStats[bucketName];
+      c1xAttempts += (bucket?.attempts ?? 0);
+      c1xMakes += (bucket?.makes ?? 0);
     }
     final c1xPct = c1xAttempts > 0 ? (c1xMakes / c1xAttempts) * 100 : 0.0;
 
@@ -94,9 +97,10 @@ class PuttingTab extends StatelessWidget {
           children: [
             CircularStatIndicator(
               label: 'C1',
-              percentage: puttingSummary.c1Percentage,
+              percentage: puttingStats.c1Percentage,
               color: const Color(0xFF137e66),
-              internalLabel: '(${puttingSummary.c1Makes}/${puttingSummary.c1Attempts})',
+              internalLabel:
+                  '(${puttingStats.c1Makes}/${puttingStats.c1Attempts})',
               size: 90,
               strokeWidth: 7,
             ),
@@ -110,9 +114,10 @@ class PuttingTab extends StatelessWidget {
             ),
             CircularStatIndicator(
               label: 'C2',
-              percentage: puttingSummary.c2Percentage,
+              percentage: puttingStats.c2Percentage,
               color: const Color(0xFF2196F3),
-              internalLabel: '(${puttingSummary.c2Makes}/${puttingSummary.c2Attempts})',
+              internalLabel:
+                  '(${puttingStats.c2Makes}/${puttingStats.c2Attempts})',
               size: 90,
               strokeWidth: 7,
             ),
@@ -156,10 +161,9 @@ class PuttingTab extends StatelessWidget {
                   children: [
                     Text(
                       'Comeback Putts',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -215,7 +219,9 @@ class PuttingTab extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     'Hole $holeNumber${distance != null ? ' - $distance ft' : ''}',
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                 ),
                                 Container(
@@ -225,17 +231,17 @@ class PuttingTab extends StatelessWidget {
                                   ),
                                   decoration: BoxDecoration(
                                     color: made
-                                        ? const Color(0xFF4CAF50)
-                                            .withValues(alpha: 0.1)
-                                        : const Color(0xFFFF7A7A)
-                                            .withValues(alpha: 0.1),
+                                        ? const Color(
+                                            0xFF4CAF50,
+                                          ).withValues(alpha: 0.1)
+                                        : const Color(
+                                            0xFFFF7A7A,
+                                          ).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     made ? 'Made' : 'Missed',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: made
                                               ? const Color(0xFF4CAF50)
