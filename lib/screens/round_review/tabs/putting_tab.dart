@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
@@ -42,7 +42,10 @@ class PuttingTab extends StatelessWidget {
           // All putts list
 
           // Heat map visualization
-          PuttHeatMapCard(round: round),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: PuttHeatMapCardV2(round: round),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildAllPuttsCard(context, allPutts),
