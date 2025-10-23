@@ -273,6 +273,37 @@ Selector<AppStateModel, bool>(
 - **Constants**: camelCase with const (`const defaultPadding = 16.0`)
 - **Enums**: PascalCase for type, camelCase for values (`BreakdownType.assets`)
 
+### Variable Declaration
+
+**Always use explicit type annotations for variables whenever possible.**
+
+This improves code readability and makes types clear at a glance.
+
+✅ **PREFER: Explicit type annotations**
+```dart
+final String userName = 'John Doe';
+final int userAge = 25;
+final List<String> tags = ['flutter', 'dart'];
+final Map<String, dynamic> userData = {'name': 'John', 'age': 25};
+```
+
+❌ **AVOID: Type inference with var**
+```dart
+var userName = 'John Doe';  // Type not immediately clear
+var userAge = 25;
+var tags = ['flutter', 'dart'];
+```
+
+**Exceptions:**
+- When the type is obvious from the right-hand side (e.g., constructors):
+  ```dart
+  final controller = TextEditingController();  // Type is obvious
+  ```
+- In loop variables where the type is clear from context:
+  ```dart
+  for (var item in items) { ... }  // Acceptable when item type is obvious
+  ```
+
 ### Component Structure Template
 
 ```dart
@@ -436,6 +467,7 @@ Before submitting code, verify:
 - [ ] Reusable widgets are in separate files under `lib/components/`
 - [ ] StatelessWidget is used unless state is required
 - [ ] Const constructors are used where possible
+- [ ] Variables use explicit type annotations (e.g., `final String name = 'value'`)
 - [ ] Imports are organized correctly
 - [ ] Resources are properly disposed
 - [ ] Theme values are used instead of hardcoded colors

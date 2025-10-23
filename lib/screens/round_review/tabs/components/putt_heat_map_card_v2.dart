@@ -10,6 +10,16 @@ class PuttHeatMapCardV2 extends StatefulWidget {
 
   final DGRound round;
 
+  /// Segment colors for the heat map gradient
+  /// Index 0: Closest segments (highest make rate) - Very light green
+  /// Index 1: Middle segments (medium make rate) - Extra light green
+  /// Index 2: Farthest segments (lowest make rate) - White
+  static const List<Color> segmentColors = [
+    Color(0xFFE8F5E9), // Very light green
+    Color(0xFFF1F8F0), // Extra light green (weaker)
+    Colors.white, // White
+  ];
+
   @override
   State<PuttHeatMapCardV2> createState() => _PuttHeatMapCardV2State();
 }
@@ -176,13 +186,21 @@ class _HeatMapPainter extends CustomPainter {
         maxRadius * 0.5; // For Circle 2 visualization
     final outerRadius = maxRadius * 0.95; // Same size for both visualizations
 
-    // Paint for filled circles
-    final grayPaint = Paint()
-      ..color = Colors.grey[300]!
+    // Paint for filled circles - monochromatic green gradient
+    // Use colors from static const array for easy modification
+    final closestSegmentPaint = Paint()
+      ..color =
+          PuttHeatMapCardV2.segmentColors[0] // Medium-light green
       ..style = PaintingStyle.fill;
 
-    final whitePaint = Paint()
-      ..color = Colors.white
+    final middleSegmentPaint = Paint()
+      ..color =
+          PuttHeatMapCardV2.segmentColors[1] // Very light green
+      ..style = PaintingStyle.fill;
+
+    final farthestSegmentPaint = Paint()
+      ..color =
+          PuttHeatMapCardV2.segmentColors[2] // White
       ..style = PaintingStyle.fill;
 
     // Paint for circle outlines
@@ -192,19 +210,19 @@ class _HeatMapPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     if (showCircle1) {
-      // Frame 1: Show Circle 1 visualization with three segments
-      // Segment 3 (22-33 ft): Outermost - white
-      canvas.drawCircle(center, outerRadius, whitePaint);
+      // Frame 1: Show Circle 1 visualization with green gradient
+      // Segment 3 (22-33 ft): Outermost - white (lowest make rate ~50-60%)
+      canvas.drawCircle(center, outerRadius, farthestSegmentPaint);
 
-      // Segment 2 (11-22 ft): Middle - gray
+      // Segment 2 (11-22 ft): Middle - very light green (medium make rate ~70-80%)
       final segment2Radius =
           circle1InnerRadius + (outerRadius - circle1InnerRadius) * (2 / 3);
-      canvas.drawCircle(center, segment2Radius, grayPaint);
+      canvas.drawCircle(center, segment2Radius, middleSegmentPaint);
 
-      // Segment 1 (0-11 ft): Inner - white
+      // Segment 1 (0-11 ft): Inner - medium-light green (highest make rate 90%+)
       final segment1Radius =
           circle1InnerRadius + (outerRadius - circle1InnerRadius) * (1 / 3);
-      canvas.drawCircle(center, segment1Radius, whitePaint);
+      canvas.drawCircle(center, segment1Radius, closestSegmentPaint);
 
       // Draw outlines for segments
       canvas.drawCircle(center, outerRadius, strokePaint);
@@ -217,24 +235,24 @@ class _HeatMapPainter extends CustomPainter {
         ..style = PaintingStyle.fill;
       canvas.drawCircle(center, basketRadius, basketPaint);
     } else {
-      // Frame 2: Show Circle 2 visualization
-      // Outermost segment (55-66 ft): white
-      canvas.drawCircle(center, outerRadius, whitePaint);
+      // Frame 2: Show Circle 2 visualization with green gradient
+      // Outermost segment (55-66 ft): white (lowest make rate ~5-15%)
+      canvas.drawCircle(center, outerRadius, farthestSegmentPaint);
 
-      // Middle segment (44-55 ft): gray
+      // Middle segment (44-55 ft): very light green (low make rate ~15-25%)
       final c2Segment2Radius =
           circle1OuterRadiusSmall +
           (outerRadius - circle1OuterRadiusSmall) * (2 / 3);
-      canvas.drawCircle(center, c2Segment2Radius, grayPaint);
+      canvas.drawCircle(center, c2Segment2Radius, middleSegmentPaint);
 
-      // Inner segment of Circle 2 (33-44 ft): white
+      // Inner segment of Circle 2 (33-44 ft): medium-light green (highest in C2, ~30-40% make rate)
       final c2Segment1Radius =
           circle1OuterRadiusSmall +
           (outerRadius - circle1OuterRadiusSmall) * (1 / 3);
-      canvas.drawCircle(center, c2Segment1Radius, whitePaint);
+      canvas.drawCircle(center, c2Segment1Radius, closestSegmentPaint);
 
       // Inner filled circle (Circle 1 - white background)
-      canvas.drawCircle(center, circle1OuterRadiusSmall, whitePaint);
+      canvas.drawCircle(center, circle1OuterRadiusSmall, farthestSegmentPaint);
 
       // Add diagonal hash pattern to Circle 1 area to show it's excluded
       _drawHashPattern(
@@ -259,42 +277,72 @@ class _HeatMapPainter extends CustomPainter {
       canvas.drawCircle(center, basketRadius, basketPaint);
     }
 
-    // Draw putt dots
-    final random = Random(42); // Fixed seed for consistent positioning
+    // Draw putt dots - arranged symmetrically at the bottom
+    // Constant angular spacing between dots (easily adjustable)
+    const angularSpacing = 0.2; // ~8 degrees spacing between dots
+
+    // Group putts by distance buckets for better spacing
+    final Map<int, List<Map<String, dynamic>>> buckets = {};
 
     for (var putt in putts) {
       final distance = putt['distance'] as double?;
-      final made = putt['made'] as bool? ?? false;
       if (distance == null) continue;
 
-      // Use green for made putts, red for missed putts
-      final dotPaint = Paint()
-        ..color = made ? const Color(0xFF4CAF50) : const Color(0xFFEF5350)
-        ..style = PaintingStyle.fill;
+      // Create 2-foot buckets for grouping nearby putts
+      final bucketKey = (distance / 2).floor();
+      buckets.putIfAbsent(bucketKey, () => []).add(putt);
+    }
 
-      // Calculate position based on distance
-      double radius;
-      if (showCircle1) {
-        // Map 0-33ft to the area between circle1InnerRadius and outerRadius
-        radius =
-            circle1InnerRadius +
-            (distance / 33) * (outerRadius - circle1InnerRadius);
-      } else {
-        // Map 33-66ft to the area between circle1OuterRadiusSmall and outerRadius
-        final normalizedDistance = (distance - 33) / 33;
-        radius =
-            circle1OuterRadiusSmall +
-            normalizedDistance * (outerRadius - circle1OuterRadiusSmall);
+    // Process each bucket and arrange dots symmetrically
+    for (var bucket in buckets.values) {
+      final count = bucket.length;
+      const baseAngle = pi / 2; // Bottom center (6 o'clock position)
+
+      for (int i = 0; i < count; i++) {
+        final putt = bucket[i];
+        final distance = putt['distance'] as double;
+        final made = putt['made'] as bool? ?? false;
+
+        // Use green for made putts, red for missed putts
+        final dotPaint = Paint()
+          ..color = made ? const Color(0xFF4CAF50) : const Color(0xFFEF5350)
+          ..style = PaintingStyle.fill;
+
+        // Calculate exact radius based on actual distance
+        double radius;
+        if (showCircle1) {
+          // Map 0-33ft to the area between circle1InnerRadius and outerRadius
+          radius =
+              circle1InnerRadius +
+              (distance / 33) * (outerRadius - circle1InnerRadius);
+        } else {
+          // Map 33-66ft to the area between circle1OuterRadiusSmall and outerRadius
+          final normalizedDistance = (distance - 33) / 33;
+          radius =
+              circle1OuterRadiusSmall +
+              normalizedDistance * (outerRadius - circle1OuterRadiusSmall);
+        }
+
+        // Calculate angle offset from center for symmetrical arrangement
+        double angleOffset;
+        if (count % 2 == 1) {
+          // Odd count: center dot at baseAngle, others spread symmetrically
+          final centerIndex = count ~/ 2;
+          angleOffset = (i - centerIndex) * angularSpacing;
+        } else {
+          // Even count: no center dot, spread symmetrically around center
+          final centerOffset = count / 2 - 0.5;
+          angleOffset = (i - centerOffset) * angularSpacing;
+        }
+
+        final angle = baseAngle + angleOffset;
+
+        // Calculate position
+        final x = center.dx + radius * cos(angle);
+        final y = center.dy + radius * sin(angle);
+
+        canvas.drawCircle(Offset(x, y), 4, dotPaint);
       }
-
-      // Random angle
-      final angle = random.nextDouble() * 2 * pi;
-
-      // Calculate position
-      final x = center.dx + radius * cos(angle);
-      final y = center.dy + radius * sin(angle);
-
-      canvas.drawCircle(Offset(x, y), 4, dotPaint);
     }
   }
 
@@ -313,7 +361,8 @@ class _HeatMapPainter extends CustomPainter {
     canvas.save();
 
     // Clip to circle
-    final path = Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+    final path = Path()
+      ..addOval(Rect.fromCircle(center: center, radius: radius));
     canvas.clipPath(path);
 
     // Draw diagonal lines at 45-degree angle
