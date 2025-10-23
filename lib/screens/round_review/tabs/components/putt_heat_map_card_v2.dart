@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
+import 'package:turbo_disc_golf/utils/putting_constants.dart';
 
 class PuttHeatMapCardV2 extends StatefulWidget {
   const PuttHeatMapCardV2({super.key, required this.round});
@@ -32,15 +33,15 @@ class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2> {
     final puttingService = locator.get<PuttingAnalysisService>();
     final allPutts = puttingService.getPuttAttempts(widget.round);
 
-    // Filter putts by circle
+    // Filter putts by circle using constants from putting_constants.dart
     final circle1Putts = allPutts.where((putt) {
       final distance = putt['distance'] as double?;
-      return distance != null && distance <= 33;
+      return distance != null && distance <= c1MaxDistance;
     }).toList();
 
     final circle2Putts = allPutts.where((putt) {
       final distance = putt['distance'] as double?;
-      return distance != null && distance > 33 && distance <= 66;
+      return distance != null && distance > c2MinDistance && distance <= c2MaxDistance;
     }).toList();
 
     final displayPutts = _showCircle1 ? circle1Putts : circle2Putts;
@@ -314,10 +315,10 @@ class _HeatMapPainter extends CustomPainter {
           // Map 0-33ft to the area between circle1InnerRadius and outerRadius
           radius =
               circle1InnerRadius +
-              (distance / 33) * (outerRadius - circle1InnerRadius);
+              (distance / c1MaxDistance) * (outerRadius - circle1InnerRadius);
         } else {
           // Map 33-66ft to the area between circle1OuterRadiusSmall and outerRadius
-          final normalizedDistance = (distance - 33) / 33;
+          final normalizedDistance = (distance - c2MinDistance) / c1MaxDistance;
           radius =
               circle1OuterRadiusSmall +
               normalizedDistance * (outerRadius - circle1OuterRadiusSmall);
