@@ -4,7 +4,6 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/putting_constants.dart';
@@ -36,14 +35,14 @@ class PuttingTab extends StatelessWidget {
       padding: const EdgeInsets.only(top: 24, bottom: 80),
       children: addRunSpacing(
         [
-          // New cards from deep analysis
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PuttingSummaryCards(
-              puttingSummary: puttingStats,
-              horizontalPadding: 0,
-            ),
-          ),
+          // // New cards from deep analysis
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: PuttingSummaryCards(
+          //     puttingSummary: puttingStats,
+          //     horizontalPadding: 0,
+          //   ),
+          // ),
           // Putting stats KPIs
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -100,7 +99,7 @@ class PuttingTab extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+        padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -111,7 +110,7 @@ class PuttingTab extends StatelessWidget {
               internalLabel:
                   '(${puttingStats.c1Makes}/${puttingStats.c1Attempts})',
               size: 90,
-              strokeWidth: 7,
+              shouldAnimate: true,
             ),
             CircularStatIndicator(
               label: 'C1X',
@@ -119,7 +118,7 @@ class PuttingTab extends StatelessWidget {
               color: const Color(0xFF4CAF50),
               internalLabel: '($c1xMakes/$c1xAttempts)',
               size: 90,
-              strokeWidth: 7,
+              shouldAnimate: true,
             ),
             CircularStatIndicator(
               label: 'C2',
@@ -128,7 +127,7 @@ class PuttingTab extends StatelessWidget {
               internalLabel:
                   '(${puttingStats.c2Makes}/${puttingStats.c2Attempts})',
               size: 90,
-              strokeWidth: 7,
+              shouldAnimate: true,
             ),
           ],
         ),
@@ -155,34 +154,49 @@ class PuttingTab extends StatelessWidget {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          title: Row(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SmallCircularStatIndicator(
-                label: '',
-                percentage: percentage,
-                color: const Color(0xFF4CAF50),
-                internalLabel: '$makes/$attempts',
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Comeback Putts',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$makes/$attempts made',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+              Text(
+                'Comeback Putts',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  // CircularStatIndicator on the left
+                  CircularStatIndicator(
+                    label: '',
+                    percentage: percentage,
+                    color: const Color(0xFF4CAF50),
+                    size: 80,
+                    internalLabel: '$makes/$attempts',
+                  ),
+                  const SizedBox(width: 16),
+                  // Dots to the right
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: details.map((putt) {
+                        final made = putt['made'] as bool;
+                        return Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: made
+                                ? const Color(0xFF4CAF50)
+                                : const Color(0xFFFF7A7A),
+                            shape: BoxShape.circle,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
