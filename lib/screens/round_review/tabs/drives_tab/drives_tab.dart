@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/components/hole_breakdown_list.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/core_drive_stats_card.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
@@ -31,7 +32,7 @@ class DrivesTab extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
       children: addRunSpacing(
         [
-          _buildCoreStatsKPIs(context, coreStats),
+          CoreDriveStatsCard(coreStats: coreStats),
 
           // COMMENTED OUT - Replaced with _CombinedStatsCard
           // _buildOverallC1InRegCard(context, coreStats),
@@ -73,155 +74,6 @@ class DrivesTab extends StatelessWidget {
         runSpacing: 16,
         axis: Axis.vertical,
       ),
-    );
-  }
-
-  Widget _buildCoreStatsKPIs(BuildContext context, coreStats) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildProgressRing(
-                  context,
-                  'C1 in Reg',
-                  coreStats.c1InRegPct / 100,
-                  const Color(0xFF137e66),
-                ),
-                _buildProgressRing(
-                  context,
-                  'C2 in Reg',
-                  coreStats.c2InRegPct / 100,
-                  const Color(0xFF2196F3),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildSmallProgressRing(
-                  context,
-                  'Fairway',
-                  coreStats.fairwayHitPct / 100,
-                  const Color(0xFF4CAF50),
-                ),
-                _buildSmallProgressRing(
-                  context,
-                  'OB',
-                  coreStats.obPct / 100,
-                  const Color(0xFFFF7A7A),
-                ),
-                _buildSmallProgressRing(
-                  context,
-                  'Parked',
-                  coreStats.parkedPct / 100,
-                  const Color(0xFFFFA726),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressRing(
-    BuildContext context,
-    String label,
-    double value,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        SizedBox(
-          width: 120,
-          height: 120,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: CircularProgressIndicator(
-                  value: value,
-                  strokeWidth: 12,
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${(value * 100).toStringAsFixed(0)}%',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSmallProgressRing(
-    BuildContext context,
-    String label,
-    double value,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        SizedBox(
-          width: 60,
-          height: 60,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(
-                  value: value,
-                  strokeWidth: 7,
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                ),
-              ),
-              Text(
-                '${(value * 100).toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 

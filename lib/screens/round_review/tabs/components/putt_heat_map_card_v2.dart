@@ -41,7 +41,9 @@ class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2> {
 
     final circle2Putts = allPutts.where((putt) {
       final distance = putt['distance'] as double?;
-      return distance != null && distance > c2MinDistance && distance <= c2MaxDistance;
+      return distance != null &&
+          distance > c2MinDistance &&
+          distance <= c2MaxDistance;
     }).toList();
 
     final displayPutts = _showCircle1 ? circle1Putts : circle2Putts;
@@ -61,41 +63,157 @@ class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2> {
               },
             ),
             const SizedBox(height: 24),
-            AspectRatio(
-              aspectRatio: 1,
-              child: _PuttingCirclePainter(
-                putts: displayPutts,
-                showCircle1: _showCircle1,
-              ),
+            Row(
+              children: [
+                // Left side - Heat map (expanded to fill remaining space)
+                Expanded(
+                  flex: 19,
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: _PuttingCirclePainter(
+                      putts: displayPutts,
+                      showCircle1: _showCircle1,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Right side - Progress bars (40% less wide than before)
+                Expanded(flex: 6, child: _buildProgressBars(displayPutts)),
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildStats(displayPutts),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStats(List<Map<String, dynamic>> putts) {
-    final made = putts.where((p) => p['made'] as bool).length;
-    final attempts = putts.length;
-    final percentage = attempts > 0 ? (made / attempts * 100) : 0;
+  Widget _buildProgressBars(List<Map<String, dynamic>> putts) {
+    // Define distance buckets based on circle
+    final List<String> bucketLabels = _showCircle1
+        ? ['1-11 ft', '11-22 ft', '22-33 ft']
+        : ['33-44 ft', '44-55 ft', '55-66 ft'];
 
-    return Row(
+    final Color accentColor = _showCircle1
+        ? const Color(0xFF4CAF50) // Green for Circle 1
+        : const Color(0xFF2196F3); // Blue for Circle 2
+
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '$made/$attempts made',
-          style: Theme.of(context).textTheme.bodyMedium,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: bucketLabels
+          .map((label) => _buildBucketRow(putts, label, accentColor))
+          .toList(),
+    );
+  }
+
+  Widget _buildBucketRow(
+    List<Map<String, dynamic>> putts,
+    String bucketLabel,
+    Color accentColor,
+  ) {
+    // Parse the bucket range
+    final parts = bucketLabel.split('-');
+    final minDistance = double.parse(parts[0]);
+    final maxDistance = double.parse(parts[1].replaceAll(' ft', ''));
+
+    // Filter putts in this bucket
+    final bucketPutts = putts.where((putt) {
+      final distance = putt['distance'] as double?;
+      return distance != null &&
+          distance >= minDistance &&
+          distance < maxDistance;
+    }).toList();
+
+    final makes = bucketPutts.where((p) => p['made'] as bool).length;
+    final attempts = bucketPutts.length;
+    final percentage = attempts > 0 ? (makes / attempts * 100) : 0.0;
+
+    if (attempts == 0) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(bucketLabel, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: 0,
+                minHeight: 12,
+                backgroundColor: accentColor.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'N/A',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+                Text(
+                  '0/0',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          '(${percentage.toStringAsFixed(0)}%)',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(bucketLabel, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 12,
+              backgroundColor: accentColor.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${percentage.toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                ),
+              ),
+              Text(
+                '$makes/$attempts',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: 10,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -185,7 +303,7 @@ class _HeatMapPainter extends CustomPainter {
     final circle1InnerRadius = maxRadius * 0.15;
     final circle1OuterRadiusSmall =
         maxRadius * 0.5; // For Circle 2 visualization
-    final outerRadius = maxRadius * 0.95; // Same size for both visualizations
+    final outerRadius = maxRadius; // Use full available space
 
     // Paint for filled circles - monochromatic green gradient
     // Use colors from static const array for easy modification
@@ -271,9 +389,9 @@ class _HeatMapPainter extends CustomPainter {
       // Outer ring outline (Circle 2 boundary)
       canvas.drawCircle(center, outerRadius, strokePaint);
 
-      // Center basket (filled white)
+      // Center basket (filled grey - same as Circle 1)
       final basketPaint = Paint()
-        ..color = Colors.white
+        ..color = Colors.grey[400]!
         ..style = PaintingStyle.fill;
       canvas.drawCircle(center, basketRadius, basketPaint);
     }

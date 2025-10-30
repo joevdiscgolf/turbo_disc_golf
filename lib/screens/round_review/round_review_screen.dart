@@ -4,7 +4,7 @@ import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/coach_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/discs_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
