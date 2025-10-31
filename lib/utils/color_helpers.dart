@@ -59,10 +59,6 @@ class CustomColor extends ColorSwatch<int> {
 
   /// The darkest shade.
   Color get shade900 => this[900]!;
-
-  MaterialColor get asMaterialColor {
-    return MaterialColor(shade500.value, swatch);
-  }
 }
 
 abstract class TurbColors {
