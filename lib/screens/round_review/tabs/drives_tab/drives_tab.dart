@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/core_drive_stats_card.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 class DrivesTab extends StatelessWidget {
   final DGRound round;
@@ -2650,46 +2651,14 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: const EdgeInsets.only(top: 8),
                 title: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 80,
-                              height: 80,
-                              child: CircularProgressIndicator(
-                                value: percentage / 100,
-                                strokeWidth: 8,
-                                backgroundColor: color.withValues(alpha: 0.15),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  color,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              '${percentage.toStringAsFixed(0)}%',
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: color,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
+                  child: CircularStatIndicator(
+                    label:
                         '${qualifyingHoles.length}/${widget.round.holes.length}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                    percentage: percentage,
+                    color: color,
+                    size: 80,
+                    strokeWidth: 8,
+                    shouldAnimate: true,
                   ),
                 ),
                 children: [

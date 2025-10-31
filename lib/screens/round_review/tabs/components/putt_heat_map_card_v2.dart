@@ -7,9 +7,14 @@ import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service
 import 'package:turbo_disc_golf/utils/putting_constants.dart';
 
 class PuttHeatMapCardV2 extends StatefulWidget {
-  const PuttHeatMapCardV2({super.key, required this.round});
+  const PuttHeatMapCardV2({
+    super.key,
+    required this.round,
+    this.shouldAnimate = false,
+  });
 
   final DGRound round;
+  final bool shouldAnimate;
 
   /// Segment colors for the heat map gradient
   /// Index 0: Closest segments (highest make rate) - Very light green
@@ -25,8 +30,35 @@ class PuttHeatMapCardV2 extends StatefulWidget {
   State<PuttHeatMapCardV2> createState() => _PuttHeatMapCardV2State();
 }
 
-class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2> {
+class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2>
+    with SingleTickerProviderStateMixin {
   bool _showCircle1 = true;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+
+    if (widget.shouldAnimate) {
+      _animationController.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +91,11 @@ class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2> {
               onToggle: (value) {
                 setState(() {
                   _showCircle1 = value;
+                  // Restart animation when toggling circles
+                  if (widget.shouldAnimate) {
+                    _animationController.reset();
+                    _animationController.forward();
+                  }
                 });
               },
             ),
@@ -70,9 +107,15 @@ class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2> {
                   flex: 19,
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: _PuttingCirclePainter(
-                      putts: displayPutts,
-                      showCircle1: _showCircle1,
+                    child: AnimatedBuilder(
+                      animation: _animation,
+                      builder: (context, child) {
+                        return _PuttingCirclePainter(
+                          putts: displayPutts,
+                          showCircle1: _showCircle1,
+                          animationValue: widget.shouldAnimate ? _animation.value : 1.0,
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -274,24 +317,38 @@ class _ToggleButton extends StatelessWidget {
 }
 
 class _PuttingCirclePainter extends StatelessWidget {
-  const _PuttingCirclePainter({required this.putts, required this.showCircle1});
+  const _PuttingCirclePainter({
+    required this.putts,
+    required this.showCircle1,
+    this.animationValue = 1.0,
+  });
 
   final List<Map<String, dynamic>> putts;
   final bool showCircle1;
+  final double animationValue;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _HeatMapPainter(putts: putts, showCircle1: showCircle1),
+      painter: _HeatMapPainter(
+        putts: putts,
+        showCircle1: showCircle1,
+        animationValue: animationValue,
+      ),
     );
   }
 }
 
 class _HeatMapPainter extends CustomPainter {
-  _HeatMapPainter({required this.putts, required this.showCircle1});
+  _HeatMapPainter({
+    required this.putts,
+    required this.showCircle1,
+    this.animationValue = 1.0,
+  });
 
   final List<Map<String, dynamic>> putts;
   final bool showCircle1;
+  final double animationValue;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -400,17 +457,31 @@ class _HeatMapPainter extends CustomPainter {
     // Constant angular spacing between dots (easily adjustable)
     const angularSpacing = 0.2; // ~8 degrees spacing between dots
 
-    // Group putts by distance buckets for better spacing
-    final Map<int, List<Map<String, dynamic>>> buckets = {};
-
-    for (var putt in putts) {
+    // Add order index to each putt to preserve round order
+    final puttsWithIndex = <Map<String, dynamic>>[];
+    for (int idx = 0; idx < putts.length; idx++) {
+      final putt = putts[idx];
       final distance = putt['distance'] as double?;
       if (distance == null) continue;
+
+      final puttWithIndex = Map<String, dynamic>.from(putt);
+      puttWithIndex['orderIndex'] = idx;
+      puttsWithIndex.add(puttWithIndex);
+    }
+
+    // Group putts by distance buckets for positioning
+    final Map<int, List<Map<String, dynamic>>> buckets = {};
+
+    for (var putt in puttsWithIndex) {
+      final distance = putt['distance'] as double;
 
       // Create 2-foot buckets for grouping nearby putts
       final bucketKey = (distance / 2).floor();
       buckets.putIfAbsent(bucketKey, () => []).add(putt);
     }
+
+    // Calculate total number of dots
+    final totalDots = puttsWithIndex.length;
 
     // Process each bucket and arrange dots symmetrically
     for (var bucket in buckets.values) {
@@ -419,8 +490,36 @@ class _HeatMapPainter extends CustomPainter {
 
       for (int i = 0; i < count; i++) {
         final putt = bucket[i];
+        final orderIndex = putt['orderIndex'] as int;
         final distance = putt['distance'] as double;
         final made = putt['made'] as bool? ?? false;
+
+        // Calculate when this dot appears in the animation timeline
+        // Dots appear between 0.0 and 0.85, leaving 0.15 for the last dot's bounce
+        final dotAppearTime = (orderIndex / totalDots) * 0.85;
+
+        // Don't show dots that haven't appeared yet
+        if (animationValue < dotAppearTime) continue;
+
+        // Calculate individual dot progress for expand-then-shrink effect
+        // Each dot gets 0.15 (15%) of the total animation for its bounce
+        final bounceTime = (animationValue - dotAppearTime) / 0.15;
+        final dotBounceProgress = bounceTime.clamp(0.0, 1.0);
+
+        // Expand from 0 to 1.5, then shrink back to 1.0
+        double bounceScale;
+        if (dotBounceProgress <= 0.5) {
+          // Expand phase: 0.0 -> 1.5
+          bounceScale = dotBounceProgress * 3.0;
+        } else {
+          // Shrink phase: 1.5 -> 1.0
+          bounceScale = 1.5 - (dotBounceProgress - 0.5) * 1.0;
+        }
+
+        // Ensure dots are at final size once bounce completes
+        if (dotBounceProgress >= 1.0) {
+          bounceScale = 1.0;
+        }
 
         // Use green for made putts, red for missed putts
         final dotPaint = Paint()
@@ -460,7 +559,8 @@ class _HeatMapPainter extends CustomPainter {
         final x = center.dx + radius * cos(angle);
         final y = center.dy + radius * sin(angle);
 
-        canvas.drawCircle(Offset(x, y), 4, dotPaint);
+        // Draw with expand-then-shrink scale effect (base size 3.5)
+        canvas.drawCircle(Offset(x, y), 3.5 * bounceScale, dotPaint);
       }
     }
   }
@@ -504,6 +604,8 @@ class _HeatMapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_HeatMapPainter oldDelegate) {
-    return oldDelegate.putts != putts || oldDelegate.showCircle1 != showCircle1;
+    return oldDelegate.putts != putts ||
+        oldDelegate.showCircle1 != showCircle1 ||
+        oldDelegate.animationValue != animationValue;
   }
 }

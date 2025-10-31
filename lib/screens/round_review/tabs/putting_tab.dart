@@ -52,7 +52,7 @@ class PuttingTab extends StatelessWidget {
           // Heat map visualization
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PuttHeatMapCardV2(round: round),
+            child: PuttHeatMapCardV2(round: round, shouldAnimate: true),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -111,6 +111,7 @@ class PuttingTab extends StatelessWidget {
                   '(${puttingStats.c1Makes}/${puttingStats.c1Attempts})',
               size: 90,
               shouldAnimate: true,
+              shouldGlow: true,
             ),
             CircularStatIndicator(
               label: 'C1X',
@@ -119,6 +120,7 @@ class PuttingTab extends StatelessWidget {
               internalLabel: '($c1xMakes/$c1xAttempts)',
               size: 90,
               shouldAnimate: true,
+              shouldGlow: true,
             ),
             CircularStatIndicator(
               label: 'C2',
@@ -128,6 +130,7 @@ class PuttingTab extends StatelessWidget {
                   '(${puttingStats.c2Makes}/${puttingStats.c2Attempts})',
               size: 90,
               shouldAnimate: true,
+              shouldGlow: true,
             ),
           ],
         ),
@@ -160,9 +163,9 @@ class PuttingTab extends StatelessWidget {
             children: [
               Text(
                 'Comeback Putts',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Row(
@@ -174,6 +177,8 @@ class PuttingTab extends StatelessWidget {
                     color: const Color(0xFF4CAF50),
                     size: 80,
                     internalLabel: '$makes/$attempts',
+                    shouldAnimate: true,
+                    shouldGlow: true,
                   ),
                   const SizedBox(width: 16),
                   // Dots to the right
