@@ -47,6 +47,7 @@ class CourseTab extends StatelessWidget {
         [
           // _buildScoreSummary(context, totalScore, scoringStats, bounceBackPct),
           _buildScoreDistribution(context, scoringStats),
+          // HolesGrid(round: round),
           _buildWhatCouldHaveBeen(context),
           _buildPerformanceByPar(context, performanceByPar),
           _buildBirdieTrends(

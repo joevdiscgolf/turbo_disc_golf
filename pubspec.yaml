@@ -52,6 +52,7 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.0
   flutter_bounceable: ^1.2.0
   collection: ^1.19.1
+  flutter_animate: ^4.5.0
 
 dev_dependencies:
   flutter_test:

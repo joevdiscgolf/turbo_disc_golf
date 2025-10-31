@@ -3,7 +3,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/components/holes_list.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/components/holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/components/score_kpi_card.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/naming_constants.dart';
@@ -56,7 +56,8 @@ class _ThrowsTabState extends State<ThrowsTab> {
         ),
         child: ScoreKPICard(roundParser: _roundParser),
       ),
-      HolesList(round: _round, showAddThrowDialog: _showAddThrowDialog),
+      HolesGrid(round: _round),
+      // HolesList(round: _round, showAddThrowDialog: _showAddThrowDialog),
     ];
   }
 
