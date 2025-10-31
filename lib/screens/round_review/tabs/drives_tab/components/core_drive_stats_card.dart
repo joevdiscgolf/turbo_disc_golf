@@ -3,8 +3,21 @@ import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 class CoreDriveStatsCard extends StatefulWidget {
   final dynamic coreStats;
+  final Function()? onC1InRegPressed;
+  final Function()? onC2InRegPressed;
+  final Function()? onFairwayPressed;
+  final Function()? onOBPressed;
+  final Function()? onParkedPressed;
 
-  const CoreDriveStatsCard({super.key, required this.coreStats});
+  const CoreDriveStatsCard({
+    super.key,
+    required this.coreStats,
+    this.onC1InRegPressed,
+    this.onC2InRegPressed,
+    this.onFairwayPressed,
+    this.onOBPressed,
+    this.onParkedPressed,
+  });
 
   @override
   State<CoreDriveStatsCard> createState() => _CoreDriveStatsCardState();
@@ -32,6 +45,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   color: const Color(0xFF137e66),
                   shouldAnimate: true,
                   shouldGlow: true,
+                  onPressed: widget.onC1InRegPressed,
                 ),
                 CircularStatIndicator(
                   label: 'C2 in Reg',
@@ -39,6 +53,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   color: const Color.fromARGB(255, 13, 21, 28),
                   shouldAnimate: true,
                   shouldGlow: true,
+                  onPressed: widget.onC2InRegPressed,
                 ),
               ],
             ),
@@ -53,6 +68,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   size: 80,
                   shouldAnimate: true,
                   shouldGlow: true,
+                  onPressed: widget.onFairwayPressed,
                 ),
                 CircularStatIndicator(
                   label: 'OB',
@@ -61,6 +77,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   size: 80,
                   shouldAnimate: true,
                   shouldGlow: true,
+                  onPressed: widget.onOBPressed,
                 ),
                 CircularStatIndicator(
                   label: 'Parked',
@@ -69,6 +86,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   size: 80,
                   shouldAnimate: true,
                   shouldGlow: true,
+                  onPressed: widget.onParkedPressed,
                 ),
               ],
             ),

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
@@ -20,6 +21,7 @@ class CircularStatIndicator extends StatefulWidget {
   final bool shouldAnimate;
   final bool shouldGlow;
   final bool shouldScale;
+  final Function? onPressed;
 
   const CircularStatIndicator({
     super.key,
@@ -34,6 +36,7 @@ class CircularStatIndicator extends StatefulWidget {
     this.shouldAnimate = false,
     this.shouldGlow = false,
     this.shouldScale = false,
+    this.onPressed,
   });
 
   @override
@@ -71,8 +74,7 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
         CircularStatIndicator._scalePauseDuration.inMilliseconds;
     final int slamDuration =
         CircularStatIndicator._scaleSlamDuration.inMilliseconds;
-    final int totalScaleDuration =
-        swellDuration + pauseDuration + slamDuration;
+    final int totalScaleDuration = swellDuration + pauseDuration + slamDuration;
 
     _scaleAnimationController = AnimationController(
       vsync: this,
@@ -120,6 +122,19 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.onPressed != null) {
+      return Bounceable(
+        onTap: () {
+          widget.onPressed!();
+        },
+        child: _mainBody(),
+      );
+    } else {
+      return _mainBody();
+    }
+  }
+
+  Widget _mainBody() {
     // Scale font sizes based on circle size (default size is 120)
     final double scaledPercentageFontSize =
         widget.percentageFontSize ?? (widget.size / 120) * 28;
@@ -151,8 +166,7 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
             : widget.color;
 
         // Get scale value from animation when scale is enabled
-        final double scale =
-            widget.shouldScale ? _scaleAnimation.value : 1.0;
+        final double scale = widget.shouldScale ? _scaleAnimation.value : 1.0;
 
         return Column(
           children: [
@@ -162,51 +176,51 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
                 width: widget.size,
                 height: widget.size,
                 child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Halo/aura glow effect around the ring only
-                  if (widget.shouldGlow && glowIntensity > 0)
-                    _RingGlow(
-                      size: widget.size,
-                      strokeWidth: calculatedStrokeWidth,
-                      color: ringColor,
-                      intensity: glowIntensity,
-                      percentage: displayPercentage,
-                    ),
-                  SizedBox(
-                    width: widget.size,
-                    height: widget.size,
-                    child: CircularProgressIndicator(
-                      value: displayPercentage / 100,
-                      strokeWidth: calculatedStrokeWidth,
-                      backgroundColor: widget.color.withValues(alpha: 0.15),
-                      valueColor: AlwaysStoppedAnimation<Color>(ringColor),
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _CenteredPercentage(
+                  alignment: Alignment.center,
+                  children: [
+                    // Halo/aura glow effect around the ring only
+                    if (widget.shouldGlow && glowIntensity > 0)
+                      _RingGlow(
+                        size: widget.size,
+                        strokeWidth: calculatedStrokeWidth,
+                        color: ringColor,
+                        intensity: glowIntensity,
                         percentage: displayPercentage,
-                        fontSize: scaledPercentageFontSize * 1.15,
-                        color: widget.color,
                       ),
-                      if (widget.internalLabel != null)
-                        Text(
-                          widget.internalLabel!,
-                          style: TextStyle(
-                            fontSize: scaledInternalLabelFontSize,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
+                    SizedBox(
+                      width: widget.size,
+                      height: widget.size,
+                      child: CircularProgressIndicator(
+                        value: displayPercentage / 100,
+                        strokeWidth: calculatedStrokeWidth,
+                        backgroundColor: widget.color.withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(ringColor),
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _CenteredPercentage(
+                          percentage: displayPercentage,
+                          fontSize: scaledPercentageFontSize * 1.15,
+                          color: widget.color,
                         ),
-                    ],
-                  ),
-                ],
+                        if (widget.internalLabel != null)
+                          Text(
+                            widget.internalLabel!,
+                            style: TextStyle(
+                              fontSize: scaledInternalLabelFontSize,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
             if (widget.label.isNotEmpty) ...[
               const SizedBox(height: 12),

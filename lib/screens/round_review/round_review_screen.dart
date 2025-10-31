@@ -10,7 +10,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/throws_tab.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   final DGRound round;
