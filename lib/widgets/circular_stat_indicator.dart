@@ -1,9 +1,14 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 class CircularStatIndicator extends StatefulWidget {
+  static const Duration _scalePauseDuration = Duration(milliseconds: 300);
+  static const Duration _scaleSlamDuration = Duration(milliseconds: 200);
+  static const double _scaleAmount = 0.05; // 5% increase
+
   final String label;
   final double percentage;
   final Color color;
@@ -14,6 +19,7 @@ class CircularStatIndicator extends StatefulWidget {
   final double? internalLabelFontSize;
   final bool shouldAnimate;
   final bool shouldGlow;
+  final bool shouldScale;
 
   const CircularStatIndicator({
     super.key,
@@ -27,6 +33,7 @@ class CircularStatIndicator extends StatefulWidget {
     this.internalLabelFontSize,
     this.shouldAnimate = false,
     this.shouldGlow = false,
+    this.shouldScale = false,
   });
 
   @override
@@ -34,9 +41,11 @@ class CircularStatIndicator extends StatefulWidget {
 }
 
 class _CircularStatIndicatorState extends State<CircularStatIndicator>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late AnimationController _scaleAnimationController;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -56,14 +65,56 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
       end: widget.percentage,
     ).animate(curvedAnimation);
 
+    // Scale animation with three phases: swell, pause, slam
+    const int swellDuration = 1200;
+    final int pauseDuration =
+        CircularStatIndicator._scalePauseDuration.inMilliseconds;
+    final int slamDuration =
+        CircularStatIndicator._scaleSlamDuration.inMilliseconds;
+    final int totalScaleDuration =
+        swellDuration + pauseDuration + slamDuration;
+
+    _scaleAnimationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: totalScaleDuration),
+    );
+
+    _scaleAnimation = TweenSequence<double>([
+      // Phase 1: Swell up to 1.05
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.0 + CircularStatIndicator._scaleAmount,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: swellDuration.toDouble(),
+      ),
+      // Phase 2: Pause at peak
+      TweenSequenceItem<double>(
+        tween: ConstantTween<double>(1.0 + CircularStatIndicator._scaleAmount),
+        weight: pauseDuration.toDouble(),
+      ),
+      // Phase 3: Slam down to 1.0
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1.0 + CircularStatIndicator._scaleAmount,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInQuart)),
+        weight: slamDuration.toDouble(),
+      ),
+    ]).animate(_scaleAnimationController);
+
     if (widget.shouldAnimate && shouldAnimateProgressIndicators) {
       _animationController.forward();
+      if (widget.shouldScale) {
+        _scaleAnimationController.forward();
+      }
     }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _scaleAnimationController.dispose();
     super.dispose();
   }
 
@@ -79,7 +130,7 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
     final double calculatedStrokeWidth = widget.size * 0.06;
 
     return AnimatedBuilder(
-      animation: _animation,
+      animation: Listenable.merge([_animation, _scaleAnimation]),
       builder: (context, child) {
         final double displayPercentage = widget.shouldAnimate
             ? _animation.value
@@ -95,25 +146,22 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
             : 0.0;
 
         // Calculate brighter color for glow effect on the ring
-        final Color ringColor;
-        if (widget.shouldGlow && glowIntensity > 0) {
-          final HSLColor hslColor = HSLColor.fromColor(widget.color);
-          final double lightnessBoost = 0.3 * glowIntensity;
-          ringColor = hslColor
-              .withLightness(
-                (hslColor.lightness + lightnessBoost).clamp(0.0, 1.0),
-              )
-              .toColor();
-        } else {
-          ringColor = widget.color;
-        }
+        final Color ringColor = widget.shouldGlow && glowIntensity > 0
+            ? brighten(widget.color, 0.3 * glowIntensity)
+            : widget.color;
+
+        // Get scale value from animation when scale is enabled
+        final double scale =
+            widget.shouldScale ? _scaleAnimation.value : 1.0;
 
         return Column(
           children: [
-            SizedBox(
-              width: widget.size,
-              height: widget.size,
-              child: Stack(
+            Transform.scale(
+              scale: scale,
+              child: SizedBox(
+                width: widget.size,
+                height: widget.size,
+                child: Stack(
                 alignment: Alignment.center,
                 children: [
                   // Halo/aura glow effect around the ring only
@@ -158,6 +206,7 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
                   ),
                 ],
               ),
+            ),
             ),
             if (widget.label.isNotEmpty) ...[
               const SizedBox(height: 12),
