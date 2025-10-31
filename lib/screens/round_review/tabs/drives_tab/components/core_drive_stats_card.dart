@@ -31,12 +31,14 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   percentage: widget.coreStats.c1InRegPct,
                   color: const Color(0xFF137e66),
                   shouldAnimate: true,
+                  shouldGlow: true,
                 ),
                 CircularStatIndicator(
                   label: 'C2 in Reg',
                   percentage: widget.coreStats.c2InRegPct,
                   color: const Color.fromARGB(255, 13, 21, 28),
                   shouldAnimate: true,
+                  shouldGlow: true,
                 ),
               ],
             ),
@@ -50,6 +52,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   color: const Color(0xFF4CAF50),
                   size: 80,
                   shouldAnimate: true,
+                  shouldGlow: true,
                 ),
                 CircularStatIndicator(
                   label: 'OB',
@@ -57,6 +60,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   color: const Color(0xFFFF7A7A),
                   size: 80,
                   shouldAnimate: true,
+                  shouldGlow: true,
                 ),
                 CircularStatIndicator(
                   label: 'Parked',
@@ -64,6 +68,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   color: const Color(0xFFFFA726),
                   size: 80,
                   shouldAnimate: true,
+                  shouldGlow: true,
                 ),
               ],
             ),

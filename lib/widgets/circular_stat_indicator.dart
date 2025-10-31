@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
@@ -11,6 +13,7 @@ class CircularStatIndicator extends StatefulWidget {
   final double? percentageFontSize;
   final double? internalLabelFontSize;
   final bool shouldAnimate;
+  final bool shouldGlow;
 
   const CircularStatIndicator({
     super.key,
@@ -23,6 +26,7 @@ class CircularStatIndicator extends StatefulWidget {
     this.percentageFontSize,
     this.internalLabelFontSize,
     this.shouldAnimate = false,
+    this.shouldGlow = false,
   });
 
   @override
@@ -81,6 +85,29 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
             ? _animation.value
             : widget.percentage;
 
+        // Calculate glow intensity based on animation
+        // Starts at 0, increases to peak at midpoint, then fades back to 0 at completion
+        final double normalizedProgress = widget.percentage > 0
+            ? (_animation.value / widget.percentage).clamp(0.0, 1.0)
+            : 0.0;
+        final glowIntensity = widget.shouldGlow && widget.shouldAnimate
+            ? sin(normalizedProgress * pi)
+            : 0.0;
+
+        // Calculate brighter color for glow effect on the ring
+        final Color ringColor;
+        if (widget.shouldGlow && glowIntensity > 0) {
+          final HSLColor hslColor = HSLColor.fromColor(widget.color);
+          final double lightnessBoost = 0.3 * glowIntensity;
+          ringColor = hslColor
+              .withLightness(
+                (hslColor.lightness + lightnessBoost).clamp(0.0, 1.0),
+              )
+              .toColor();
+        } else {
+          ringColor = widget.color;
+        }
+
         return Column(
           children: [
             SizedBox(
@@ -89,6 +116,15 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
               child: Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Halo/aura glow effect around the ring only
+                  if (widget.shouldGlow && glowIntensity > 0)
+                    _RingGlow(
+                      size: widget.size,
+                      strokeWidth: calculatedStrokeWidth,
+                      color: ringColor,
+                      intensity: glowIntensity,
+                      percentage: displayPercentage,
+                    ),
                   SizedBox(
                     width: widget.size,
                     height: widget.size,
@@ -96,7 +132,7 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
                       value: displayPercentage / 100,
                       strokeWidth: calculatedStrokeWidth,
                       backgroundColor: widget.color.withValues(alpha: 0.15),
-                      valueColor: AlwaysStoppedAnimation<Color>(widget.color),
+                      valueColor: AlwaysStoppedAnimation<Color>(ringColor),
                     ),
                   ),
                   Column(
@@ -177,5 +213,87 @@ class _CenteredPercentage extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _RingGlow extends StatelessWidget {
+  final double size;
+  final double strokeWidth;
+  final Color color;
+  final double intensity;
+  final double percentage;
+
+  const _RingGlow({
+    required this.size,
+    required this.strokeWidth,
+    required this.color,
+    required this.intensity,
+    required this.percentage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _RingGlowPainter(
+        strokeWidth: strokeWidth,
+        color: color,
+        intensity: intensity,
+        percentage: percentage,
+      ),
+    );
+  }
+}
+
+class _RingGlowPainter extends CustomPainter {
+  final double strokeWidth;
+  final Color color;
+  final double intensity;
+  final double percentage;
+
+  _RingGlowPainter({
+    required this.strokeWidth,
+    required this.color,
+    required this.intensity,
+    required this.percentage,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (intensity <= 0) return;
+
+    final Offset center = Offset(size.width / 2, size.height / 2);
+    // Ring's center position (accounting for stroke width)
+    final double radius = (size.width / 2) - (strokeWidth / 2);
+
+    final Paint paint = Paint()
+      ..color = color.withValues(alpha: 0.6 * intensity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth =
+          strokeWidth *
+          0.4 // Glow width
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, strokeWidth * 0.2)
+      ..strokeCap = StrokeCap.round;
+
+    // Draw arc instead of full circle to match the progress indicator
+    // Start at -90 degrees (top) and sweep based on percentage
+    final double sweepAngle = (percentage / 100) * 2 * pi;
+    final Rect rect = Rect.fromCircle(center: center, radius: radius);
+
+    canvas.drawArc(
+      rect,
+      -pi / 2, // Start at top (-90 degrees)
+      sweepAngle,
+      false, // Don't use center (for stroke style)
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingGlowPainter oldDelegate) {
+    return oldDelegate.intensity != intensity ||
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.percentage != percentage;
   }
 }
