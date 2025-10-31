@@ -22,17 +22,6 @@ class ThrowListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    BorderRadius borderRadius;
-    if (isFirst && isLast) {
-      borderRadius = BorderRadius.circular(12);
-    } else if (isFirst) {
-      borderRadius = const BorderRadius.vertical(top: Radius.circular(12));
-    } else if (isLast) {
-      borderRadius = const BorderRadius.vertical(bottom: Radius.circular(12));
-    } else {
-      borderRadius = BorderRadius.zero;
-    }
-
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,

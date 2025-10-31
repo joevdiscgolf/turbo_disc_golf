@@ -41,19 +41,11 @@ List<Widget> addDividers(
         dividerColor ??
         (darkDivider ? TurbColors.gray[100]! : TurbColors.gray[100]!);
 
-    print('end indent: $horizontalPadding');
     if (i < numDividers) {
       withDividers.add(
         Center(
           child: axis == Axis.horizontal
-              ?
-                // ? Container(
-                //     color: dividerColor,
-                //     height: height,
-                //     width: double.infinity,
-                //     margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                //   )
-                Divider(
+              ? Divider(
                   color: color,
                   thickness: thickness,
                   height: height,
