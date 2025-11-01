@@ -10,6 +10,7 @@ class ThrowTypeStats {
     required this.c2InRegPct,
     required this.c2Count,
     required this.c2Total,
+    this.averageDistance,
   });
 
   final String throwType;
@@ -22,12 +23,18 @@ class ThrowTypeStats {
   final double c2InRegPct;
   final int c2Count;
   final int c2Total;
+  final double? averageDistance;
 
   String get displayName {
     return throwType.substring(0, 1).toUpperCase() + throwType.substring(1);
   }
 
   bool get hasSufficientData => totalHoles >= 3;
+
+  String get distanceDisplay {
+    if (averageDistance == null) return 'N/A';
+    return '${averageDistance!.round()} ft';
+  }
 }
 
 class ShotShapeStats {

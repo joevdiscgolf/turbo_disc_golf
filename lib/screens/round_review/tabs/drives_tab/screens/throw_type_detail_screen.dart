@@ -103,6 +103,43 @@ class ThrowTypeDetailScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+          if (overallStats.averageDistance != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.straighten,
+                    size: 16,
+                    color: Color(0xFF6B7280),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Average Distance',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 13,
+                          color: const Color(0xFF6B7280),
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    overallStats.distanceDisplay,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: const Color(0xFF111827),
+                        ),
+                  ),
+                ],
+              ),
+            ),
           _StatPill(
             icon: Icons.emoji_events_outlined,
             label: 'Birdie Rate',

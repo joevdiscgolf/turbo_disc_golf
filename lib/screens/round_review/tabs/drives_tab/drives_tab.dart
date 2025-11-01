@@ -157,9 +157,24 @@ class _DrivesTabState extends State<DrivesTab> {
     String throwType,
     Map<String, dynamic> teeShotBirdieRates,
     Map<String, Map<String, double>> circleInRegByType,
+    Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
   ) {
     final birdieData = teeShotBirdieRates[throwType];
     final c1c2Data = circleInRegByType[throwType];
+
+    // Calculate average distance
+    double? averageDistance;
+    final teeShots = allTeeShotsByType[throwType];
+    if (teeShots != null && teeShots.isNotEmpty) {
+      final holesWithDistance = teeShots.where((entry) => entry.key.feet != null).toList();
+      if (holesWithDistance.isNotEmpty) {
+        final totalDistance = holesWithDistance.fold<double>(
+          0,
+          (sum, entry) => sum + (entry.key.feet?.toDouble() ?? 0),
+        );
+        averageDistance = totalDistance / holesWithDistance.length;
+      }
+    }
 
     if (birdieData == null || c1c2Data == null) {
       return ThrowTypeStats(
@@ -173,6 +188,7 @@ class _DrivesTabState extends State<DrivesTab> {
         c2InRegPct: 0,
         c2Count: 0,
         c2Total: 0,
+        averageDistance: averageDistance,
       );
     }
 
@@ -187,6 +203,7 @@ class _DrivesTabState extends State<DrivesTab> {
       c2InRegPct: c1c2Data['c2Percentage'] ?? 0,
       c2Count: (c1c2Data['c2Count'] ?? 0).toInt(),
       c2Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
+      averageDistance: averageDistance,
     );
   }
 
@@ -259,9 +276,8 @@ class _DrivesTabState extends State<DrivesTab> {
 
     final coreStats = statsService.getCoreStats();
     final teeShotBirdieRates = statsService.getTeeShotBirdieRateStats();
-    // final allTeeShotsByType = statsService.getAllTeeShotsByType(); // Not needed for new design
+    final allTeeShotsByType = statsService.getAllTeeShotsByType();
     final circleInRegByType = statsService.getCircleInRegByThrowType();
-    // final techniqueComparison = statsService.getTechniqueComparison();
     final shotShapeBirdieRates = statsService
         .getShotShapeByTechniqueBirdieRateStats();
     final circleInRegByShape = statsService
@@ -276,6 +292,7 @@ class _DrivesTabState extends State<DrivesTab> {
         entry.key,
         teeShotBirdieRates,
         circleInRegByType,
+        allTeeShotsByType,
       );
       allThrowTypes.add(stats);
     }
