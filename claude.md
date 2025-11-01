@@ -21,6 +21,15 @@ When working with putting statistics, always reference the constants defined in 
 
 These definitions follow PDGA (Professional Disc Golf Association) standards.
 
+## Build and Testing Workflow
+
+**CRITICAL: Never automatically run iOS builds.**
+
+- **DO NOT run**: `flutter build ios` or any iOS-specific build commands
+- **The user will handle iOS builds manually**
+- **DO run**: `flutter analyze` to check for code issues and warnings
+- Running `flutter analyze` is encouraged after making code changes to catch potential problems early
+
 ## Code Style and Architecture
 
 ### Widget Composition Philosophy

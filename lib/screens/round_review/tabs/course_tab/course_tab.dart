@@ -37,22 +37,7 @@ class _CourseTabState extends State<CourseTab> {
 
   List<Widget> _getListViewChildren() {
     return [
-      Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: ScoreKPICard(roundParser: _roundParser),
-      ),
+      ScoreKPICard(round: _round, roundParser: _roundParser),
       HolesGrid(round: _round),
       // HolesList(round: _round, showAddThrowDialog: _showAddThrowDialog),
     ];
