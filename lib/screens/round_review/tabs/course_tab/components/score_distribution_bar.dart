@@ -17,24 +17,36 @@ class ScoreDistributionBar extends StatelessWidget {
         analysis?.scoringStats ??
         locator.get<ScoreAnalysisService>().getScoringStats(round);
 
-    // Create segments list with score counts and their corresponding colors
+    // Calculate total holes to convert counts to percentages
+    final int totalHoles = scoringStats.birdies +
+        scoringStats.pars +
+        scoringStats.bogeys +
+        scoringStats.doubleBogeyPlus;
+
+    // Convert counts to percentages
+    final double birdiePercentage = totalHoles > 0 ? (scoringStats.birdies / totalHoles) * 100 : 0;
+    final double parPercentage = totalHoles > 0 ? (scoringStats.pars / totalHoles) * 100 : 0;
+    final double bogeyPercentage = totalHoles > 0 ? (scoringStats.bogeys / totalHoles) * 100 : 0;
+    final double doubleBogeyPlusPercentage = totalHoles > 0 ? (scoringStats.doubleBogeyPlus / totalHoles) * 100 : 0;
+
+    // Create segments list with percentages and their corresponding colors
     // Using a list instead of a map to handle cases where multiple score types
-    // have the same count (e.g., 20% bogeys and 20% double bogeys)
+    // have the same percentage (e.g., 20% bogeys and 20% double bogeys)
     final List<DistributionSegment> segments = [
       DistributionSegment(
-        value: scoringStats.birdies,
+        value: birdiePercentage,
         color: const Color(0xFF137e66),
       ),
       DistributionSegment(
-        value: scoringStats.pars,
+        value: parPercentage,
         color: Colors.grey,
       ),
       DistributionSegment(
-        value: scoringStats.bogeys,
+        value: bogeyPercentage,
         color: const Color(0xFFFF7A7A),
       ),
       DistributionSegment(
-        value: scoringStats.doubleBogeyPlus,
+        value: doubleBogeyPlusPercentage,
         color: const Color(0xFFD32F2F),
       ),
     ];
