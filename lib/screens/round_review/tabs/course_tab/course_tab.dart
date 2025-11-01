@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/components/holes_grid.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/components/score_kpi_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/holes_grid.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_kpi_card.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
-class ThrowsTab extends StatefulWidget {
+class CourseTab extends StatefulWidget {
   final DGRound round;
 
-  const ThrowsTab({super.key, required this.round});
+  const CourseTab({super.key, required this.round});
 
   @override
-  State<ThrowsTab> createState() => _ThrowsTabState();
+  State<CourseTab> createState() => _CourseTabState();
 }
 
-class _ThrowsTabState extends State<ThrowsTab> {
+class _CourseTabState extends State<CourseTab> {
   late DGRound _round;
   late RoundParser _roundParser;
 

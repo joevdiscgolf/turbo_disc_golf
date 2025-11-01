@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/components/hole_list_item.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/hole_list_item.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class HolesList extends StatelessWidget {
