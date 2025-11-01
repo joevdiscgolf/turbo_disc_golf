@@ -19,7 +19,7 @@ class ScoresTab extends StatelessWidget {
       padding: const EdgeInsets.only(left: 0, right: 0, top: 16, bottom: 80),
       children: addRunSpacing(
         [
-          _buildInsightCards(context, statsService),
+          // _buildInsightCards(context, statsService),
           _buildPerformanceByPar(context, statsService),
 
           Padding(
