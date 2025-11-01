@@ -1,13 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 class ScoreKPICard extends StatelessWidget {
-  const ScoreKPICard({super.key, required this.roundParser});
+  const ScoreKPICard({
+    super.key,
+    required this.round,
+    required this.roundParser,
+  });
 
+  final DGRound round;
   final RoundParser roundParser;
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _kpiRow(context),
+          const SizedBox(height: 12),
+          ScoreDistributionBar(round: round),
+        ],
+      ),
+    );
+  }
+
+  Widget _kpiRow(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -17,7 +49,7 @@ class ScoreKPICard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildScoreKPICard(
+                    child: _buildScoreKPIStat(
                       context,
                       'Score',
                       roundParser.getRelativeToPar() >= 0
@@ -28,7 +60,7 @@ class ScoreKPICard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildScoreKPICard(
+                    child: _buildScoreKPIStat(
                       context,
                       'Throws',
                       '${roundParser.getTotalScore()}',
@@ -37,7 +69,7 @@ class ScoreKPICard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildScoreKPICard(
+                    child: _buildScoreKPIStat(
                       context,
                       'Par',
                       '${roundParser.getTotalPar()}',
@@ -53,7 +85,7 @@ class ScoreKPICard extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreKPICard(
+  Widget _buildScoreKPIStat(
     BuildContext context,
     String label,
     String value,

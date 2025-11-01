@@ -460,29 +460,29 @@ class RoundStatisticsService {
 
   Map<String, double> getBirdieRateByHoleLength() {
     final Map<String, int> birdiesByLength = {
-      'Short (<250 ft)': 0,
-      'Medium (250-400 ft)': 0,
-      'Long (400-550 ft)': 0,
-      'Very Long (550+ ft)': 0,
+      '<250 ft': 0,
+      '250-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
     };
     final Map<String, int> holesByLength = {
-      'Short (<250 ft)': 0,
-      'Medium (250-400 ft)': 0,
-      'Long (400-550 ft)': 0,
-      'Very Long (550+ ft)': 0,
+      '<250 ft': 0,
+      '250-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
     };
 
     for (var hole in round.holes) {
       final distance = hole.feet ?? 0;
       String category;
       if (distance < 250) {
-        category = 'Short (<250 ft)';
+        category = '<250 ft';
       } else if (distance < 400) {
-        category = 'Medium (250-400 ft)';
+        category = '250-400 ft';
       } else if (distance < 550) {
-        category = 'Long (400-550 ft)';
+        category = '400-550 ft';
       } else {
-        category = 'Very Long (550+ ft)';
+        category = '550+ ft';
       }
 
       holesByLength[category] = holesByLength[category]! + 1;
@@ -629,6 +629,78 @@ class RoundStatisticsService {
     return c2DetailsByType;
   }
 
+  /// Get performance statistics by hole distance
+  Map<String, Map<String, double>> getPerformanceByDistance() {
+    final Map<String, List<DGHole>> holesByDistance = {
+      '<250 ft': [],
+      '250-400 ft': [],
+      '400-550 ft': [],
+      '550+ ft': [],
+    };
+
+    // Group holes by distance
+    for (var hole in round.holes) {
+      final distance = hole.feet ?? 0;
+      String category;
+      if (distance < 250) {
+        category = '<250 ft';
+      } else if (distance < 400) {
+        category = '250-400 ft';
+      } else if (distance < 550) {
+        category = '400-550 ft';
+      } else {
+        category = '550+ ft';
+      }
+
+      holesByDistance[category]!.add(hole);
+    }
+
+    // Calculate stats for each distance category
+    final Map<String, Map<String, double>> result = {};
+
+    holesByDistance.forEach((distance, holes) {
+      if (holes.isEmpty) {
+        return; // Skip empty categories
+      }
+
+      int birdies = 0;
+      int pars = 0;
+      int bogeys = 0;
+      int doubleBogeyPlus = 0;
+      double totalScore = 0;
+
+      for (var hole in holes) {
+        totalScore += hole.relativeHoleScore;
+
+        // Count scores
+        if (hole.relativeHoleScore < 0) {
+          birdies++;
+        } else if (hole.relativeHoleScore == 0) {
+          pars++;
+        } else if (hole.relativeHoleScore == 1) {
+          bogeys++;
+        } else {
+          doubleBogeyPlus++;
+        }
+      }
+
+      final totalHoles = holes.length;
+
+      result[distance] = {
+        'birdieRate': totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0,
+        'parRate': totalHoles > 0 ? (pars / totalHoles) * 100 : 0.0,
+        'bogeyRate': totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0,
+        'doubleBogeyPlusRate': totalHoles > 0
+            ? (doubleBogeyPlus / totalHoles) * 100
+            : 0.0,
+        'avgScore': totalHoles > 0 ? totalScore / totalHoles : 0.0,
+        'holesPlayed': totalHoles.toDouble(),
+      };
+    });
+
+    return result;
+  }
+
   /// Get performance statistics by fairway width
   Map<String, Map<String, double>> getPerformanceByFairwayWidth() {
     final Map<FairwayWidth, List<DGHole>> holesByWidth = {};
@@ -651,18 +723,24 @@ class RoundStatisticsService {
       int birdies = 0;
       int pars = 0;
       int bogeys = 0;
+      int doubleBogeyPlus = 0;
       int c1InReg = 0;
       int c2InReg = 0;
       int obHoles = 0;
+      double totalScore = 0;
 
       for (var hole in holes) {
+        totalScore += hole.relativeHoleScore;
+
         // Count scores
         if (hole.relativeHoleScore < 0) {
           birdies++;
         } else if (hole.relativeHoleScore == 0) {
           pars++;
-        } else {
+        } else if (hole.relativeHoleScore == 1) {
           bogeys++;
+        } else {
+          doubleBogeyPlus++;
         }
 
         // Check C1/C2 in regulation
@@ -702,6 +780,10 @@ class RoundStatisticsService {
         'birdieRate': totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0,
         'parRate': totalHoles > 0 ? (pars / totalHoles) * 100 : 0.0,
         'bogeyRate': totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0,
+        'doubleBogeyPlusRate': totalHoles > 0
+            ? (doubleBogeyPlus / totalHoles) * 100
+            : 0.0,
+        'avgScore': totalHoles > 0 ? totalScore / totalHoles : 0.0,
         'c1InRegRate': totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0,
         'c2InRegRate': totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0,
         'obRate': totalHoles > 0 ? (obHoles / totalHoles) * 100 : 0.0,
@@ -731,18 +813,24 @@ class RoundStatisticsService {
       int birdies = 0;
       int pars = 0;
       int bogeys = 0;
+      int doubleBogeyPlus = 0;
       int c1InReg = 0;
       int c2InReg = 0;
       int obHoles = 0;
+      double totalScore = 0;
 
       for (var hole in holes) {
+        totalScore += hole.relativeHoleScore;
+
         // Count scores
         if (hole.relativeHoleScore < 0) {
           birdies++;
         } else if (hole.relativeHoleScore == 0) {
           pars++;
-        } else {
+        } else if (hole.relativeHoleScore == 1) {
           bogeys++;
+        } else {
+          doubleBogeyPlus++;
         }
 
         // Check C1/C2 in regulation
@@ -782,6 +870,10 @@ class RoundStatisticsService {
         'birdieRate': totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0,
         'parRate': totalHoles > 0 ? (pars / totalHoles) * 100 : 0.0,
         'bogeyRate': totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0,
+        'doubleBogeyPlusRate': totalHoles > 0
+            ? (doubleBogeyPlus / totalHoles) * 100
+            : 0.0,
+        'avgScore': totalHoles > 0 ? totalScore / totalHoles : 0.0,
         'c1InRegRate': totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0,
         'c2InRegRate': totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0,
         'obRate': totalHoles > 0 ? (obHoles / totalHoles) * 100 : 0.0,
@@ -795,35 +887,35 @@ class RoundStatisticsService {
   /// Get C1 and C2 in regulation percentages by hole length
   Map<String, Map<String, double>> getC1C2ByHoleLength() {
     final Map<String, int> c1InRegByLength = {
-      'Short (<250 ft)': 0,
-      'Medium (250-400 ft)': 0,
-      'Long (400-550 ft)': 0,
-      'Very Long (550+ ft)': 0,
+      '<250 ft': 0,
+      '250-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
     };
     final Map<String, int> c2InRegByLength = {
-      'Short (<250 ft)': 0,
-      'Medium (250-400 ft)': 0,
-      'Long (400-550 ft)': 0,
-      'Very Long (550+ ft)': 0,
+      '<250 ft': 0,
+      '250-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
     };
     final Map<String, int> holesByLength = {
-      'Short (<250 ft)': 0,
-      'Medium (250-400 ft)': 0,
-      'Long (400-550 ft)': 0,
-      'Very Long (550+ ft)': 0,
+      '<250 ft': 0,
+      '250-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
     };
 
     for (var hole in round.holes) {
       final distance = hole.feet ?? 0;
       String category;
       if (distance < 250) {
-        category = 'Short (<250 ft)';
+        category = '<250 ft';
       } else if (distance < 400) {
-        category = 'Medium (250-400 ft)';
+        category = '250-400 ft';
       } else if (distance < 550) {
-        category = 'Long (400-550 ft)';
+        category = '400-550 ft';
       } else {
-        category = 'Very Long (550+ ft)';
+        category = '550+ ft';
       }
 
       holesByLength[category] = holesByLength[category]! + 1;
@@ -874,6 +966,7 @@ class RoundStatisticsService {
       int birdies = 0;
       int pars = 0;
       int bogeys = 0;
+      int doubleBogeyPlus = 0;
       int c1InReg = 0;
       int c2InReg = 0;
       double totalScore = 0;
@@ -886,8 +979,10 @@ class RoundStatisticsService {
           birdies++;
         } else if (hole.relativeHoleScore == 0) {
           pars++;
-        } else {
+        } else if (hole.relativeHoleScore == 1) {
           bogeys++;
+        } else {
+          doubleBogeyPlus++;
         }
 
         // Check C1/C2 in regulation
@@ -914,10 +1009,20 @@ class RoundStatisticsService {
 
       final totalHoles = holes.length;
 
+      final birdieRateCalc = totalHoles > 0
+          ? (birdies / totalHoles) * 100
+          : 0.0;
+      final parRateCalc = totalHoles > 0 ? (pars / totalHoles) * 100 : 0.0;
+      final bogeyRateCalc = totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0;
+      final doubleBogeyPlusRateCalc = totalHoles > 0
+          ? (doubleBogeyPlus / totalHoles) * 100
+          : 0.0;
+
       result[par] = {
-        'birdieRate': totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0,
-        'parRate': totalHoles > 0 ? (pars / totalHoles) * 100 : 0.0,
-        'bogeyRate': totalHoles > 0 ? (bogeys / totalHoles) * 100 : 0.0,
+        'birdieRate': birdieRateCalc,
+        'parRate': parRateCalc,
+        'bogeyRate': bogeyRateCalc,
+        'doubleBogeyPlusRate': doubleBogeyPlusRateCalc,
         'c1InRegRate': totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0,
         'c2InRegRate': totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0,
         'avgScore': totalHoles > 0 ? totalScore / totalHoles : 0.0,
@@ -1179,6 +1284,235 @@ class RoundStatisticsService {
         'totalAttempts': total.toDouble(),
       });
     });
+  }
+
+  /// Get the player's strongest performance category
+  /// Returns a map with category info and performance metrics
+  Map<String, dynamic> getStrongestPerformance() {
+    String? strongestCategory;
+    double bestScore = double.infinity;
+    Map<String, double>? bestStats;
+    String? categoryType; // 'par', 'distance', 'holeType', 'fairwayWidth'
+
+    // Check performance by par
+    final parStats = getPerformanceByPar();
+    for (final entry in parStats.entries) {
+      final avgScore = entry.value['avgScore'] ?? 0.0;
+      final holesPlayed = entry.value['holesPlayed'] ?? 0.0;
+      if (holesPlayed >= 3 && avgScore < bestScore) {
+        bestScore = avgScore;
+        strongestCategory = 'Par ${entry.key}s';
+        bestStats = entry.value;
+        categoryType = 'par';
+      }
+    }
+
+    // Check performance by hole type
+    final holeTypeStats = getPerformanceByHoleType();
+    for (final entry in holeTypeStats.entries) {
+      final avgScore = entry.value['avgScore'] ?? 0.0;
+      final holesPlayed = entry.value['holesPlayed'] ?? 0.0;
+      if (holesPlayed >= 3 && avgScore < bestScore) {
+        bestScore = avgScore;
+        strongestCategory = _formatHoleTypeName(entry.key);
+        bestStats = entry.value;
+        categoryType = 'holeType';
+      }
+    }
+
+    // Check performance by fairway width
+    final fairwayStats = getPerformanceByFairwayWidth();
+    for (final entry in fairwayStats.entries) {
+      final avgScore = entry.value['avgScore'] ?? 0.0;
+      final holesPlayed = entry.value['holesPlayed'] ?? 0.0;
+      if (holesPlayed >= 3 && avgScore < bestScore) {
+        bestScore = avgScore;
+        strongestCategory = _formatFairwayWidthName(entry.key);
+        bestStats = entry.value;
+        categoryType = 'fairwayWidth';
+      }
+    }
+
+    if (strongestCategory == null || bestStats == null) {
+      return {};
+    }
+
+    return {
+      'category': strongestCategory,
+      'categoryType': categoryType,
+      'avgScore': bestScore,
+      'birdieRate': bestStats['birdieRate'] ?? 0.0,
+      'parRate': bestStats['parRate'] ?? 0.0,
+      'bogeyRate': bestStats['bogeyRate'] ?? 0.0,
+      'holesPlayed': bestStats['holesPlayed'] ?? 0.0,
+    };
+  }
+
+  /// Get the player's weakest performance category
+  /// Returns a map with category info and performance metrics
+  Map<String, dynamic> getWeakestPerformance() {
+    String? weakestCategory;
+    double worstScore = double.negativeInfinity;
+    Map<String, double>? worstStats;
+    String? categoryType;
+
+    // Check performance by par
+    final parStats = getPerformanceByPar();
+    for (final entry in parStats.entries) {
+      final avgScore = entry.value['avgScore'] ?? 0.0;
+      final holesPlayed = entry.value['holesPlayed'] ?? 0.0;
+      if (holesPlayed >= 3 && avgScore > worstScore) {
+        worstScore = avgScore;
+        weakestCategory = 'Par ${entry.key}s';
+        worstStats = entry.value;
+        categoryType = 'par';
+      }
+    }
+
+    // Check performance by hole type
+    final holeTypeStats = getPerformanceByHoleType();
+    for (final entry in holeTypeStats.entries) {
+      final avgScore = entry.value['avgScore'] ?? 0.0;
+      final holesPlayed = entry.value['holesPlayed'] ?? 0.0;
+      if (holesPlayed >= 3 && avgScore > worstScore) {
+        worstScore = avgScore;
+        weakestCategory = _formatHoleTypeName(entry.key);
+        worstStats = entry.value;
+        categoryType = 'holeType';
+      }
+    }
+
+    // Check performance by fairway width
+    final fairwayStats = getPerformanceByFairwayWidth();
+    for (final entry in fairwayStats.entries) {
+      final avgScore = entry.value['avgScore'] ?? 0.0;
+      final holesPlayed = entry.value['holesPlayed'] ?? 0.0;
+      if (holesPlayed >= 3 && avgScore > worstScore) {
+        worstScore = avgScore;
+        weakestCategory = _formatFairwayWidthName(entry.key);
+        worstStats = entry.value;
+        categoryType = 'fairwayWidth';
+      }
+    }
+
+    if (weakestCategory == null || worstStats == null) {
+      return {};
+    }
+
+    return {
+      'category': weakestCategory,
+      'categoryType': categoryType,
+      'avgScore': worstScore,
+      'birdieRate': worstStats['birdieRate'] ?? 0.0,
+      'parRate': worstStats['parRate'] ?? 0.0,
+      'bogeyRate': worstStats['bogeyRate'] ?? 0.0,
+      'holesPlayed': worstStats['holesPlayed'] ?? 0.0,
+    };
+  }
+
+  /// Get a key insight or opportunity for improvement
+  Map<String, dynamic> getKeyOpportunity() {
+    final List<Map<String, dynamic>> opportunities = [];
+
+    // Check if there's a significant difference between hole types
+    final holeTypeStats = getPerformanceByHoleType();
+    if (holeTypeStats.length >= 2) {
+      final entries = holeTypeStats.entries.toList();
+      for (int i = 0; i < entries.length; i++) {
+        for (int j = i + 1; j < entries.length; j++) {
+          final holesPlayed1 = entries[i].value['holesPlayed'] ?? 0.0;
+          final holesPlayed2 = entries[j].value['holesPlayed'] ?? 0.0;
+          if (holesPlayed1 >= 3 && holesPlayed2 >= 3) {
+            final avgScore1 = entries[i].value['avgScore'] ?? 0.0;
+            final avgScore2 = entries[j].value['avgScore'] ?? 0.0;
+            final difference = (avgScore1 - avgScore2).abs();
+            if (difference >= 0.5) {
+              final worseType = avgScore1 > avgScore2
+                  ? entries[i].key
+                  : entries[j].key;
+              final betterType = avgScore1 < avgScore2
+                  ? entries[i].key
+                  : entries[j].key;
+              opportunities.add({
+                'type': 'holeType',
+                'message':
+                    'You score ${difference.toStringAsFixed(1)} strokes better on ${_formatHoleTypeName(betterType)} holes than ${_formatHoleTypeName(worseType)} holes',
+                'priority': difference,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Check if there's a significant difference between fairway widths
+    final fairwayStats = getPerformanceByFairwayWidth();
+    if (fairwayStats.length >= 2) {
+      final entries = fairwayStats.entries.toList();
+      for (int i = 0; i < entries.length; i++) {
+        for (int j = i + 1; j < entries.length; j++) {
+          final holesPlayed1 = entries[i].value['holesPlayed'] ?? 0.0;
+          final holesPlayed2 = entries[j].value['holesPlayed'] ?? 0.0;
+          if (holesPlayed1 >= 3 && holesPlayed2 >= 3) {
+            final avgScore1 = entries[i].value['avgScore'] ?? 0.0;
+            final avgScore2 = entries[j].value['avgScore'] ?? 0.0;
+            final difference = (avgScore1 - avgScore2).abs();
+            if (difference >= 0.5) {
+              final worseType = avgScore1 > avgScore2
+                  ? entries[i].key
+                  : entries[j].key;
+              final betterType = avgScore1 < avgScore2
+                  ? entries[i].key
+                  : entries[j].key;
+              opportunities.add({
+                'type': 'fairwayWidth',
+                'message':
+                    'Your ${_formatFairwayWidthName(worseType)} fairway performance is ${difference.toStringAsFixed(1)} strokes worse than ${_formatFairwayWidthName(betterType)} fairways',
+                'priority': difference,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Return the highest priority opportunity
+    if (opportunities.isEmpty) {
+      return {};
+    }
+
+    opportunities.sort(
+      (a, b) => (b['priority'] as double).compareTo(a['priority'] as double),
+    );
+    return opportunities.first;
+  }
+
+  String _formatHoleTypeName(String holeType) {
+    switch (holeType.toLowerCase()) {
+      case 'open':
+        return 'Open';
+      case 'slightlywooded':
+        return 'Lightly Wooded';
+      case 'wooded':
+        return 'Wooded';
+      default:
+        return holeType.capitalize();
+    }
+  }
+
+  String _formatFairwayWidthName(String fairwayWidth) {
+    switch (fairwayWidth.toLowerCase()) {
+      case 'open':
+        return 'Open';
+      case 'moderate':
+        return 'Moderate';
+      case 'tight':
+        return 'Tight';
+      case 'verytight':
+        return 'Very Tight';
+      default:
+        return fairwayWidth.capitalize();
+    }
   }
 }
 
