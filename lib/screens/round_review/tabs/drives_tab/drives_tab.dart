@@ -4,6 +4,8 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/core_drive_stats_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/shot_shape_success_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/screens/driving_stat_detail_screen.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
@@ -12,6 +14,133 @@ class DrivesTab extends StatelessWidget {
   final DGRound round;
 
   const DrivesTab({super.key, required this.round});
+
+  void _navigateToStatDetail(
+    BuildContext context,
+    String statName,
+    double percentage,
+    Color color,
+    List<DGHole> successHoles,
+  ) {
+    final List<HoleResult> holeResults = [];
+
+    for (final DGHole hole in round.holes) {
+      final HoleResultStatus status = successHoles.contains(hole)
+          ? HoleResultStatus.success
+          : HoleResultStatus.failure;
+
+      holeResults.add(HoleResult(
+        holeNumber: hole.number,
+        status: status,
+      ));
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DrivingStatDetailScreen(
+          statName: statName,
+          percentage: percentage,
+          color: color,
+          successCount: successHoles.length,
+          totalHoles: round.holes.length,
+          holeResults: holeResults,
+        ),
+      ),
+    );
+  }
+
+  List<DGHole> _getC1InRegHoles() {
+    final List<DGHole> c1InRegHoles = [];
+
+    for (final DGHole hole in round.holes) {
+      final int regulationStrokes = hole.par - 2;
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final DiscThrow discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1InRegHoles.add(hole);
+            break;
+          }
+        }
+      }
+    }
+
+    return c1InRegHoles;
+  }
+
+  List<DGHole> _getC2InRegHoles() {
+    final List<DGHole> c2InRegHoles = [];
+
+    for (final DGHole hole in round.holes) {
+      final int regulationStrokes = hole.par - 2;
+      if (regulationStrokes > 0) {
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final DiscThrow discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked ||
+              discThrow.landingSpot == LandingSpot.circle2) {
+            c2InRegHoles.add(hole);
+            break;
+          }
+        }
+      }
+    }
+
+    return c2InRegHoles;
+  }
+
+  List<DGHole> _getFairwayHoles() {
+    final List<DGHole> fairwayHoles = [];
+
+    for (final DGHole hole in round.holes) {
+      bool hitFairway = false;
+      for (final DiscThrow discThrow in hole.throws) {
+        if (discThrow.landingSpot == LandingSpot.fairway ||
+            discThrow.landingSpot == LandingSpot.circle1 ||
+            discThrow.landingSpot == LandingSpot.circle2 ||
+            discThrow.landingSpot == LandingSpot.parked) {
+          hitFairway = true;
+          break;
+        }
+      }
+      if (hitFairway) {
+        fairwayHoles.add(hole);
+      }
+    }
+
+    return fairwayHoles;
+  }
+
+  List<DGHole> _getOBHoles() {
+    final List<DGHole> obHoles = [];
+
+    for (final DGHole hole in round.holes) {
+      for (final DiscThrow discThrow in hole.throws) {
+        if (discThrow.landingSpot == LandingSpot.outOfBounds) {
+          obHoles.add(hole);
+          break;
+        }
+      }
+    }
+
+    return obHoles;
+  }
+
+  List<DGHole> _getParkedHoles() {
+    final List<DGHole> parkedHoles = [];
+
+    for (final DGHole hole in round.holes) {
+      for (final DiscThrow discThrow in hole.throws) {
+        if (discThrow.landingSpot == LandingSpot.parked) {
+          parkedHoles.add(hole);
+          break;
+        }
+      }
+    }
+
+    return parkedHoles;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,14 +162,61 @@ class DrivesTab extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
       children: addRunSpacing(
         [
-          CoreDriveStatsCard(coreStats: coreStats),
+          CoreDriveStatsCard(
+            coreStats: coreStats,
+            onC1InRegPressed: () {
+              _navigateToStatDetail(
+                context,
+                'C1 in Reg',
+                coreStats.c1InRegPct,
+                const Color(0xFF137e66),
+                _getC1InRegHoles(),
+              );
+            },
+            onC2InRegPressed: () {
+              _navigateToStatDetail(
+                context,
+                'C2 in Reg',
+                coreStats.c2InRegPct,
+                const Color.fromARGB(255, 13, 21, 28),
+                _getC2InRegHoles(),
+              );
+            },
+            onFairwayPressed: () {
+              _navigateToStatDetail(
+                context,
+                'Fairway',
+                coreStats.fairwayHitPct,
+                const Color(0xFF4CAF50),
+                _getFairwayHoles(),
+              );
+            },
+            onOBPressed: () {
+              _navigateToStatDetail(
+                context,
+                'OB',
+                coreStats.obPct,
+                const Color(0xFFFF7A7A),
+                _getOBHoles(),
+              );
+            },
+            onParkedPressed: () {
+              _navigateToStatDetail(
+                context,
+                'Parked',
+                coreStats.parkedPct,
+                const Color(0xFFFFA726),
+                _getParkedHoles(),
+              );
+            },
+          ),
 
           // COMMENTED OUT - Replaced with _CombinedStatsCard
           // _buildOverallC1InRegCard(context, coreStats),
           // _buildOverallC2InRegCard(context, coreStats),
           // _buildOverallParkedCard(context, coreStats),
           // _buildOverallOBCard(context, coreStats),
-          _CombinedStatsCard(round: round, coreStats: coreStats),
+          // _CombinedStatsCard(round: round, coreStats: coreStats),
 
           // COMMENTED OUT - Replaced with _CombinedThrowTypeStatsCard
           // _buildBirdieRateByThrowType(
@@ -1985,53 +2161,16 @@ class DrivesTab extends StatelessWidget {
     Map<String, dynamic> shotShapeBirdieRates,
     Map<String, Map<String, double>> circleInRegByShape,
   ) {
-    // If no data available, don't show the card
+    // If no data available, don't show anything
     if (shotShapeBirdieRates.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Shot Shape & Technique Success',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            // Technique Comparison Section - COMMENTED OUT
-            // if (techniqueComparison.isNotEmpty) ...[
-            //   Text(
-            //     'Technique Comparison',
-            //     style: Theme.of(
-            //       context,
-            //     ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            //   ),
-            //   const SizedBox(height: 12),
-            //   _buildTechniqueComparisonRows(context, techniqueComparison),
-            // ],
-            // Shot Shape Analysis Section
-            if (shotShapeBirdieRates.isNotEmpty) ...[
-              Text(
-                'Shot Shape Performance',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _buildShotShapeRows(
-                context,
-                shotShapeBirdieRates,
-                circleInRegByShape,
-              ),
-            ],
-          ],
-        ),
-      ),
+    // Return individual cards for each shot shape
+    return _buildShotShapeCards(
+      context,
+      shotShapeBirdieRates,
+      circleInRegByShape,
     );
   }
 
@@ -2189,93 +2328,64 @@ class DrivesTab extends StatelessWidget {
   //   );
   // }
 
-  Widget _buildShotShapeRows(
+  Widget _buildShotShapeCards(
     BuildContext context,
     Map<String, dynamic> shotShapeBirdieRates,
     Map<String, Map<String, double>> circleInRegByShape,
   ) {
     // Filter for relevant technique+shape combinations
-    final relevantShapes = ['hyzer', 'flat', 'anhyzer'];
-    final relevantTechniques = ['backhand', 'forehand'];
+    final List<String> relevantShapes = ['hyzer', 'flat', 'anhyzer'];
+    final List<String> relevantTechniques = ['backhand', 'forehand'];
 
-    final filteredCombos = shotShapeBirdieRates.entries.where((entry) {
-      // Entry key format: "technique_shape" (e.g., "backhand_hyzer")
-      final parts = entry.key.split('_');
-      if (parts.length != 2) return false;
-      final technique = parts[0];
-      final shape = parts[1];
-      return relevantTechniques.contains(technique) &&
-          relevantShapes.contains(shape);
-    }).toList();
+    final List<MapEntry<String, dynamic>> filteredCombos = shotShapeBirdieRates
+        .entries
+        .where((entry) {
+          // Entry key format: "technique_shape" (e.g., "backhand_hyzer")
+          final List<String> parts = entry.key.split('_');
+          if (parts.length != 2) return false;
+          final String technique = parts[0];
+          final String shape = parts[1];
+          return relevantTechniques.contains(technique) &&
+              relevantShapes.contains(shape);
+        })
+        .toList();
 
     if (filteredCombos.isEmpty) {
-      return Text(
-        'No shot shape data available',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
-    // Sort by overall success (combination of birdie rate and C1 in reg)
+    // Sort by overall success (combination of C1 and C2 in reg)
     filteredCombos.sort((a, b) {
-      final aStats = circleInRegByShape[a.key];
-      final bStats = circleInRegByShape[b.key];
-      final aScore = a.value.percentage + (aStats?['c1Percentage'] ?? 0);
-      final bScore = b.value.percentage + (bStats?['c1Percentage'] ?? 0);
+      final Map<String, double>? aStats = circleInRegByShape[a.key];
+      final Map<String, double>? bStats = circleInRegByShape[b.key];
+      final double aScore =
+          (aStats?['c1Percentage'] ?? 0) + (aStats?['c2Percentage'] ?? 0);
+      final double bScore =
+          (bStats?['c1Percentage'] ?? 0) + (bStats?['c2Percentage'] ?? 0);
       return bScore.compareTo(aScore);
     });
 
     return Column(
       children: filteredCombos.map((entry) {
-        final comboKey = entry.key;
-        final shapeStats = entry.value;
-        final circleStats = circleInRegByShape[comboKey];
+        final String comboKey = entry.key;
+        final Map<String, double>? circleStats = circleInRegByShape[comboKey];
 
         // Parse the combination key: "backhand_hyzer" -> "Backhand Hyzer"
-        final parts = comboKey.split('_');
-        final technique =
+        final List<String> parts = comboKey.split('_');
+        final String technique =
             parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);
-        final shape =
+        final String shape =
             parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1);
-        final displayName = '$technique $shape';
+        final String displayName = '$technique $shape';
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                displayName,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              _buildShapeMetricRow(
-                context,
-                'Birdie',
-                shapeStats.percentage,
-                shapeStats.totalAttempts,
-                const Color(0xFF137e66),
-              ),
-              const SizedBox(height: 6),
-              _buildShapeMetricRow(
-                context,
-                'C1 in Reg',
-                circleStats?['c1Percentage'] ?? 0,
-                circleStats?['totalAttempts']?.toInt() ?? 0,
-                const Color(0xFF4CAF50),
-              ),
-              const SizedBox(height: 6),
-              _buildShapeMetricRow(
-                context,
-                'C2 in Reg',
-                circleStats?['c2Percentage'] ?? 0,
-                circleStats?['totalAttempts']?.toInt() ?? 0,
-                const Color(0xFF2196F3),
-              ),
-            ],
+          child: ShotShapeSuccessCard(
+            shapeName: displayName,
+            c1Percentage: circleStats?['c1Percentage'] ?? 0,
+            c1Count: circleStats?['c1Count']?.toInt() ?? 0,
+            c2Percentage: circleStats?['c2Percentage'] ?? 0,
+            c2Count: circleStats?['c2Count']?.toInt() ?? 0,
           ),
         );
       }).toList(),
@@ -2581,6 +2691,45 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
     }
   }
 
+  void _navigateToDetailScreen(
+    BuildContext context,
+    List<DGHole> qualifyingHoles,
+    List<DGHole> notQualifyingHoles,
+  ) {
+    // Create HoleResult list for all holes in the round
+    final List<HoleResult> holeResults = [];
+
+    for (final DGHole hole in widget.round.holes) {
+      HoleResultStatus status;
+
+      if (qualifyingHoles.contains(hole)) {
+        status = HoleResultStatus.success;
+      } else if (notQualifyingHoles.contains(hole)) {
+        status = HoleResultStatus.failure;
+      } else {
+        status = HoleResultStatus.noData;
+      }
+
+      holeResults.add(HoleResult(
+        holeNumber: hole.number,
+        status: status,
+      ));
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DrivingStatDetailScreen(
+          statName: _getQualifyingLabel(),
+          percentage: _getPercentage(),
+          color: _getColor(),
+          successCount: qualifyingHoles.length,
+          totalHoles: widget.round.holes.length,
+          holeResults: holeResults,
+        ),
+      ),
+    );
+  }
+
   Widget _buildTextButton(
     BuildContext context,
     String label,
@@ -2659,6 +2808,13 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
                     size: 80,
                     strokeWidth: 8,
                     shouldAnimate: true,
+                    onPressed: () {
+                      _navigateToDetailScreen(
+                        context,
+                        qualifyingHoles,
+                        notQualifyingHoles,
+                      );
+                    },
                   ),
                 ),
                 children: [

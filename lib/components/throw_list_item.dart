@@ -7,6 +7,8 @@ class ThrowListItem extends StatelessWidget {
   final int throwIndex;
   final VoidCallback? onEdit;
   final bool showEditButton;
+  final bool isFirst;
+  final bool isLast;
 
   const ThrowListItem({
     super.key,
@@ -14,19 +16,54 @@ class ThrowListItem extends StatelessWidget {
     required this.throwIndex,
     this.onEdit,
     this.showEditButton = true,
+    this.isFirst = false,
+    this.isLast = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(_getThrowTypeIcon(discThrow.purpose)),
-      title: Text(
-        'Throw ${throwIndex + 1}${discThrow.technique != null ? ': ${throwTechniqueToName[discThrow.technique]}' : ''}',
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        // borderRadius: borderRadius,
       ),
-      subtitle: _buildSubtitle(),
-      trailing: showEditButton
-          ? IconButton(icon: const Icon(Icons.edit), onPressed: onEdit)
-          : null,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(
+            _getThrowTypeIcon(discThrow.purpose),
+            color: Theme.of(context).iconTheme.color,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Throw ${throwIndex + 1}${discThrow.technique != null ? ': ${throwTechniqueToName[discThrow.technique]}' : ''}',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                if (_buildSubtitle() != null) ...[
+                  const SizedBox(height: 4),
+                  DefaultTextStyle(
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    child: _buildSubtitle()!,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (showEditButton)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: onEdit,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+        ],
+      ),
     );
   }
 
