@@ -11,10 +11,10 @@ import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.d
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
-class CourseTab extends StatelessWidget {
+class ScoresTab extends StatelessWidget {
   final DGRound round;
 
-  const CourseTab({super.key, required this.round});
+  const ScoresTab({super.key, required this.round});
 
   @override
   Widget build(BuildContext context) {

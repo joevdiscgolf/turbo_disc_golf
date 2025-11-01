@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/coach_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/scores_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/discs_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
@@ -106,7 +106,7 @@ class _RoundStoryViewState extends State<RoundStoryView> {
                 },
                 children: [
                   _buildStoryPage(SummaryTab(round: widget.round), 'Summary'),
-                  _buildStoryPage(CourseTab(round: widget.round), 'Course'),
+                  _buildStoryPage(ScoresTab(round: widget.round), 'Course'),
                   _buildStoryPage(DrivesTab(round: widget.round), 'Drives'),
                   _buildStoryPage(PuttingTab(round: widget.round), 'Putting'),
                   _buildStoryPage(DiscsTab(round: widget.round), 'Discs'),

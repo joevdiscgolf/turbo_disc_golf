@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/components/throw_timeline.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/throw_timeline.dart';
 
 class HolesGrid extends StatelessWidget {
   const HolesGrid({super.key, required this.round});

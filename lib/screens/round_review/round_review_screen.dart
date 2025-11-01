@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/coach_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/scores_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/discs_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
@@ -10,7 +10,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/throws_tab/throws_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/course_tab.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   final DGRound round;
@@ -108,8 +108,8 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             ).colorScheme.onSurface.withValues(alpha: 0.6),
             isScrollable: true,
             tabs: const [
-              Tab(text: 'Throws'),
               Tab(text: 'Course'),
+              Tab(text: 'Scores'),
               Tab(text: 'Drives'),
               Tab(text: 'Putting'),
               Tab(text: 'Discs'),
@@ -124,8 +124,8 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
-            ThrowsTab(round: _round),
             CourseTab(round: _round),
+            ScoresTab(round: _round),
             DrivesTab(round: _round),
             PuttingTab(round: _round),
             DiscsTab(round: _round),
