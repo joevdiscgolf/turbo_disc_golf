@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/components/hole_score_scatterplot.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/components/insight_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/components/performance_comparison_card.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
@@ -20,6 +21,11 @@ class ScoresTab extends StatelessWidget {
         [
           _buildInsightCards(context, statsService),
           _buildPerformanceByPar(context, statsService),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: HoleScoreScatterplot(round: round),
+          ),
           _buildPerformanceByDistance(context, statsService),
           _buildPerformanceByHoleType(context, statsService),
           _buildPerformanceByFairwayWidth(context, statsService),
@@ -109,9 +115,8 @@ class ScoresTab extends StatelessWidget {
     final sortedEntries = performanceByPar.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));
 
-    final validEntries = sortedEntries
-        .where((entry) => (entry.value['holesPlayed']?.toInt() ?? 0) >= 3)
-        .toList();
+    // Show all par values, even if only 1 hole of that par exists
+    final validEntries = sortedEntries;
 
     if (validEntries.isEmpty) {
       return const SizedBox.shrink();
@@ -167,7 +172,7 @@ class ScoresTab extends StatelessWidget {
       );
     }).toList();
 
-    return PerformanceComparisonCard(title: 'Performance by Par', items: items);
+    return PerformanceComparisonCard(title: 'Scores by par', items: items);
   }
 
   Widget _buildPerformanceByHoleType(
@@ -322,11 +327,7 @@ class ScoresTab extends StatelessWidget {
       );
     }).toList();
 
-    return PerformanceComparisonCard(
-      title: 'Performance by Distance',
-
-      items: items,
-    );
+    return PerformanceComparisonCard(title: 'Scores by distance', items: items);
   }
 
   Widget _buildPerformanceByFairwayWidth(

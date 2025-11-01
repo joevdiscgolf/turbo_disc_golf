@@ -338,25 +338,43 @@ class PuttingTab extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final int totalMade = allPutts.where((putt) => putt['made'] as bool).length;
+    final int totalAttempts = allPutts.length;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          title: Text(
-            'All Putt Attempts',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              '${allPutts.length} total attempts',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'All Putts ($totalMade/$totalAttempts)',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: allPutts.map((putt) {
+                  final bool made = putt['made'] as bool;
+                  return Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: made
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFFFF7A7A),
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
           children: [
             Padding(

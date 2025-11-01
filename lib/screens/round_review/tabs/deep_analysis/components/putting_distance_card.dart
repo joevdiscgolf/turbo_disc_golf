@@ -28,19 +28,19 @@ class PuttingDistanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Putting Distance Stats',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
+          // Text(
+          //   'Putting Distance Stats',
+          //   style: Theme.of(
+          //     context,
+          //   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          // ),
+          // const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: _buildStatBox(
                   context,
-                  'Avg Made',
+                  'Avg made',
                   '${avgMakeDistance.toStringAsFixed(1)} ft',
                   const Color(0xFF137e66),
                 ),
@@ -49,7 +49,7 @@ class PuttingDistanceCard extends StatelessWidget {
               Expanded(
                 child: _buildStatBox(
                   context,
-                  'Avg Attempted',
+                  'Avg attempted',
                   '${avgAttemptDistance.toStringAsFixed(1)} ft',
                   const Color(0xFF10E5FF),
                 ),
@@ -62,7 +62,7 @@ class PuttingDistanceCard extends StatelessWidget {
               Expanded(
                 child: _buildStatBox(
                   context,
-                  'Avg Birdie Putt',
+                  'Avg birdie putt',
                   '${avgBirdiePuttDistance.toStringAsFixed(1)} ft',
                   const Color(0xFFFFB800),
                 ),
@@ -71,7 +71,7 @@ class PuttingDistanceCard extends StatelessWidget {
               Expanded(
                 child: _buildStatBox(
                   context,
-                  'Total Made',
+                  'Total dst made',
                   '${totalMadeDistance.toStringAsFixed(0)} ft',
                   const Color(0xFFFF7A7A),
                 ),

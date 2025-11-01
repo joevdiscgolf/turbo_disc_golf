@@ -161,8 +161,10 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
             : 0.0;
 
         // Calculate brighter color for glow effect on the ring
-        final Color ringColor = widget.shouldGlow && glowIntensity > 0
-            ? brighten(widget.color, 0.3 * glowIntensity)
+        // Use Color.lerp to smoothly transition between base color and brightened color
+        final Color brightenedColor = brighten(widget.color, 0.3);
+        final Color ringColor = widget.shouldGlow && widget.shouldAnimate
+            ? Color.lerp(widget.color, brightenedColor, glowIntensity)!
             : widget.color;
 
         // Get scale value from animation when scale is enabled
@@ -323,32 +325,36 @@ class _RingGlowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (intensity <= 0) return;
+    if (intensity <= 0 || percentage <= 0) return;
 
     final Offset center = Offset(size.width / 2, size.height / 2);
     // Ring's center position (accounting for stroke width)
     final double radius = (size.width / 2) - (strokeWidth / 2);
 
-    final Paint paint = Paint()
-      ..color = color.withValues(alpha: 0.6 * intensity)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth =
-          strokeWidth *
-          0.4 // Glow width
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, strokeWidth * 0.2)
-      ..strokeCap = StrokeCap.round;
-
-    // Draw arc instead of full circle to match the progress indicator
-    // Start at -90 degrees (top) and sweep based on percentage
+    // Calculate sweep angle from percentage
     final double sweepAngle = (percentage / 100) * 2 * pi;
+
+    // Create a single stroke for the glow that appears outside the ring
+    // The glow stroke is thicker than the main progress stroke to create a halo effect
+    final double glowStrokeWidth = strokeWidth * 1.8;
+    final double glowBlurRadius = strokeWidth * 0.6;
+
+    final Paint glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.5 * intensity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = glowStrokeWidth
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlurRadius);
+
     final Rect rect = Rect.fromCircle(center: center, radius: radius);
 
+    // Draw the glow arc along the filled portion only
     canvas.drawArc(
       rect,
       -pi / 2, // Start at top (-90 degrees)
       sweepAngle,
       false, // Don't use center (for stroke style)
-      paint,
+      glowPaint,
     );
   }
 
