@@ -4,16 +4,27 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/core_drive_stats_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/shot_shape_success_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/throw_type_list_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/throw_type_radar_chart.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/view_mode_toggle.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/shot_detail.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/screens/driving_stat_detail_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/screens/throw_type_detail_screen.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
-import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
-class DrivesTab extends StatelessWidget {
+class DrivesTab extends StatefulWidget {
+  const DrivesTab({super.key, required this.round});
+
   final DGRound round;
 
-  const DrivesTab({super.key, required this.round});
+  @override
+  State<DrivesTab> createState() => _DrivesTabState();
+}
+
+class _DrivesTabState extends State<DrivesTab> {
+  DriveViewMode _viewMode = DriveViewMode.cards;
 
   void _navigateToStatDetail(
     BuildContext context,
@@ -24,15 +35,12 @@ class DrivesTab extends StatelessWidget {
   ) {
     final List<HoleResult> holeResults = [];
 
-    for (final DGHole hole in round.holes) {
+    for (final DGHole hole in widget.round.holes) {
       final HoleResultStatus status = successHoles.contains(hole)
           ? HoleResultStatus.success
           : HoleResultStatus.failure;
 
-      holeResults.add(HoleResult(
-        holeNumber: hole.number,
-        status: status,
-      ));
+      holeResults.add(HoleResult(holeNumber: hole.number, status: status));
     }
 
     Navigator.of(context).push(
@@ -42,7 +50,7 @@ class DrivesTab extends StatelessWidget {
           percentage: percentage,
           color: color,
           successCount: successHoles.length,
-          totalHoles: round.holes.length,
+          totalHoles: widget.round.holes.length,
           holeResults: holeResults,
         ),
       ),
@@ -52,7 +60,7 @@ class DrivesTab extends StatelessWidget {
   List<DGHole> _getC1InRegHoles() {
     final List<DGHole> c1InRegHoles = [];
 
-    for (final DGHole hole in round.holes) {
+    for (final DGHole hole in widget.round.holes) {
       final int regulationStrokes = hole.par - 2;
       if (regulationStrokes > 0) {
         for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
@@ -72,7 +80,7 @@ class DrivesTab extends StatelessWidget {
   List<DGHole> _getC2InRegHoles() {
     final List<DGHole> c2InRegHoles = [];
 
-    for (final DGHole hole in round.holes) {
+    for (final DGHole hole in widget.round.holes) {
       final int regulationStrokes = hole.par - 2;
       if (regulationStrokes > 0) {
         for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
@@ -93,7 +101,7 @@ class DrivesTab extends StatelessWidget {
   List<DGHole> _getFairwayHoles() {
     final List<DGHole> fairwayHoles = [];
 
-    for (final DGHole hole in round.holes) {
+    for (final DGHole hole in widget.round.holes) {
       bool hitFairway = false;
       for (final DiscThrow discThrow in hole.throws) {
         if (discThrow.landingSpot == LandingSpot.fairway ||
@@ -115,7 +123,7 @@ class DrivesTab extends StatelessWidget {
   List<DGHole> _getOBHoles() {
     final List<DGHole> obHoles = [];
 
-    for (final DGHole hole in round.holes) {
+    for (final DGHole hole in widget.round.holes) {
       for (final DiscThrow discThrow in hole.throws) {
         if (discThrow.landingSpot == LandingSpot.outOfBounds) {
           obHoles.add(hole);
@@ -130,7 +138,7 @@ class DrivesTab extends StatelessWidget {
   List<DGHole> _getParkedHoles() {
     final List<DGHole> parkedHoles = [];
 
-    for (final DGHole hole in round.holes) {
+    for (final DGHole hole in widget.round.holes) {
       for (final DiscThrow discThrow in hole.throws) {
         if (discThrow.landingSpot == LandingSpot.parked) {
           parkedHoles.add(hole);
@@ -142,15 +150,226 @@ class DrivesTab extends StatelessWidget {
     return parkedHoles;
   }
 
+  ThrowTypeStats _calculateThrowTypeStats(
+    String throwType,
+    Map<String, dynamic> teeShotBirdieRates,
+    Map<String, Map<String, double>> circleInRegByType,
+    Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType,
+  ) {
+    final birdieData = teeShotBirdieRates[throwType];
+    final c1c2Data = circleInRegByType[throwType];
+
+    // Calculate average distance
+    double? averageDistance;
+    final teeShots = allTeeShotsByType[throwType];
+    if (teeShots != null && teeShots.isNotEmpty) {
+      final holesWithDistance = teeShots
+          .where((entry) => entry.key.feet != null)
+          .toList();
+      if (holesWithDistance.isNotEmpty) {
+        final totalDistance = holesWithDistance.fold<double>(
+          0,
+          (sum, entry) => sum + (entry.key.feet?.toDouble() ?? 0),
+        );
+        averageDistance = totalDistance / holesWithDistance.length;
+      }
+    }
+
+    if (birdieData == null || c1c2Data == null) {
+      return ThrowTypeStats(
+        throwType: throwType,
+        birdieRate: 0,
+        birdieCount: 0,
+        totalHoles: 0,
+        c1InRegPct: 0,
+        c1Count: 0,
+        c1Total: 0,
+        c2InRegPct: 0,
+        c2Count: 0,
+        c2Total: 0,
+        averageDistance: averageDistance,
+      );
+    }
+
+    return ThrowTypeStats(
+      throwType: throwType,
+      birdieRate: birdieData.percentage,
+      birdieCount: birdieData.birdieCount,
+      totalHoles: birdieData.totalAttempts,
+      c1InRegPct: c1c2Data['c1Percentage'] ?? 0,
+      c1Count: (c1c2Data['c1Count'] ?? 0).toInt(),
+      c1Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
+      c2InRegPct: c1c2Data['c2Percentage'] ?? 0,
+      c2Count: (c1c2Data['c2Count'] ?? 0).toInt(),
+      c2Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
+      averageDistance: averageDistance,
+    );
+  }
+
+  List<ShotShapeStats> _getShotShapeStats(
+    String throwType,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    final List<ShotShapeStats> stats = [];
+
+    for (final entry in shotShapeBirdieRates.entries) {
+      final String shapeName = entry.key;
+      if (!shapeName.toLowerCase().startsWith(throwType.toLowerCase())) {
+        continue;
+      }
+
+      final birdieData = entry.value;
+      final c1c2Data = circleInRegByShape[shapeName];
+
+      if (birdieData != null && c1c2Data != null) {
+        stats.add(
+          ShotShapeStats(
+            shapeName: shapeName,
+            throwType: throwType,
+            birdieRate: birdieData.percentage,
+            birdieCount: birdieData.birdieCount,
+            totalAttempts: birdieData.totalAttempts,
+            c1InRegPct: c1c2Data['c1Percentage'] ?? 0,
+            c1Count: (c1c2Data['c1Count'] ?? 0).toInt(),
+            c1Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
+            c2InRegPct: c1c2Data['c2Percentage'] ?? 0,
+            c2Count: (c1c2Data['c2Count'] ?? 0).toInt(),
+            c2Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
+          ),
+        );
+      }
+    }
+
+    // Sort by birdie rate descending
+    stats.sort((a, b) => b.birdieRate.compareTo(a.birdieRate));
+
+    return stats;
+  }
+
+  /// Get shot details for a specific throw type (all shots of that type)
+  List<ShotDetail> _getShotDetailsForThrowType(String throwType) {
+    final List<ShotDetail> shotDetails = [];
+
+    for (final DGHole hole in widget.round.holes) {
+      for (int i = 0; i < hole.throws.length; i++) {
+        final DiscThrow discThrow = hole.throws[i];
+
+        // Check if this throw matches the throw type
+        if (discThrow.technique?.name == throwType) {
+          final ShotOutcome outcome = _calculateShotOutcome(hole, i);
+          shotDetails.add(ShotDetail(
+            hole: hole,
+            throwIndex: i,
+            shotOutcome: outcome,
+          ));
+        }
+      }
+    }
+
+    return shotDetails;
+  }
+
+  /// Get shot details grouped by shot shape for a specific throw type
+  Map<String, List<ShotDetail>> _getShotDetailsByShape(String throwType) {
+    final Map<String, List<ShotDetail>> shotDetailsByShape = {};
+
+    for (final DGHole hole in widget.round.holes) {
+      for (int i = 0; i < hole.throws.length; i++) {
+        final DiscThrow discThrow = hole.throws[i];
+
+        // Check if this throw matches the throw type
+        if (discThrow.technique?.name == throwType) {
+          final String? shotShape = discThrow.shotShape?.name;
+          if (shotShape != null) {
+            final String shapeKey = '${throwType}_$shotShape';
+            final ShotOutcome outcome = _calculateShotOutcome(hole, i);
+
+            shotDetailsByShape.putIfAbsent(shapeKey, () => []);
+            shotDetailsByShape[shapeKey]!.add(ShotDetail(
+              hole: hole,
+              throwIndex: i,
+              shotOutcome: outcome,
+            ));
+          }
+        }
+      }
+    }
+
+    return shotDetailsByShape;
+  }
+
+  /// Calculate whether a shot was successful for various metrics
+  ShotOutcome _calculateShotOutcome(DGHole hole, int throwIndex) {
+    final DiscThrow discThrow = hole.throws[throwIndex];
+    final bool isTeeShot = throwIndex == 0;
+
+    // Determine if this led to a birdie
+    final bool wasBirdie = hole.relativeHoleScore < 0;
+
+    // Determine if this was C1 in regulation (tee shot that landed in C1)
+    bool wasC1InReg = false;
+    if (isTeeShot) {
+      final LandingSpot? landing = discThrow.landingSpot;
+      wasC1InReg = landing == LandingSpot.circle1 || landing == LandingSpot.parked;
+    }
+
+    // Determine if this was C2 in regulation (tee shot that landed in C2)
+    bool wasC2InReg = false;
+    if (isTeeShot) {
+      final LandingSpot? landing = discThrow.landingSpot;
+      wasC2InReg = landing == LandingSpot.circle2;
+    }
+
+    return ShotOutcome(
+      wasBirdie: wasBirdie,
+      wasC1InReg: wasC1InReg,
+      wasC2InReg: wasC2InReg,
+    );
+  }
+
+  void _navigateToThrowTypeDetail(
+    BuildContext context,
+    String throwType,
+    ThrowTypeStats overallStats,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    final List<ShotShapeStats> shotShapes = _getShotShapeStats(
+      throwType,
+      shotShapeBirdieRates,
+      circleInRegByShape,
+    );
+
+    // Get shot details for overall performance
+    final List<ShotDetail> overallShotDetails = _getShotDetailsForThrowType(throwType);
+
+    // Get shot details grouped by shot shape
+    final Map<String, List<ShotDetail>> shotShapeDetails = _getShotDetailsByShape(throwType);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ThrowTypeDetailScreen(
+          throwType: throwType,
+          overallStats: overallStats,
+          shotShapeStats: shotShapes,
+          overallShotDetails: overallShotDetails,
+          shotShapeDetails: shotShapeDetails,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final RoundStatisticsService statsService = RoundStatisticsService(
+      widget.round,
+    );
 
     final coreStats = statsService.getCoreStats();
     final teeShotBirdieRates = statsService.getTeeShotBirdieRateStats();
     final allTeeShotsByType = statsService.getAllTeeShotsByType();
     final circleInRegByType = statsService.getCircleInRegByThrowType();
-    // final techniqueComparison = statsService.getTechniqueComparison();
     final shotShapeBirdieRates = statsService
         .getShotShapeByTechniqueBirdieRateStats();
     final circleInRegByShape = statsService
@@ -158,10 +377,32 @@ class DrivesTab extends StatelessWidget {
     final performanceByFairwayWidth = statsService
         .getPerformanceByFairwayWidth();
 
-    return ListView(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
-      children: addRunSpacing(
-        [
+    // Generate stats for ALL throw types dynamically
+    final List<ThrowTypeStats> allThrowTypes = [];
+    for (final entry in teeShotBirdieRates.entries) {
+      final ThrowTypeStats stats = _calculateThrowTypeStats(
+        entry.key,
+        teeShotBirdieRates,
+        circleInRegByType,
+        allTeeShotsByType,
+      );
+      allThrowTypes.add(stats);
+    }
+
+    // Sort by birdie rate descending to identify best/worst performers
+    allThrowTypes.sort((a, b) => b.birdieRate.compareTo(a.birdieRate));
+
+    return Container(
+      color: const Color(0xFFF8F9FA),
+      child: ListView(
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 80,
+        ),
+        children: [
+          // Core stats card
           CoreDriveStatsCard(
             coreStats: coreStats,
             onC1InRegPressed: () {
@@ -210,46 +451,61 @@ class DrivesTab extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 16),
 
-          // COMMENTED OUT - Replaced with _CombinedStatsCard
-          // _buildOverallC1InRegCard(context, coreStats),
-          // _buildOverallC2InRegCard(context, coreStats),
-          // _buildOverallParkedCard(context, coreStats),
-          // _buildOverallOBCard(context, coreStats),
-          // _CombinedStatsCard(round: round, coreStats: coreStats),
+          // Insight card
+          // if (allThrowTypes.length >= 2) ...[
+          //   InsightCard(
+          //     bestThrowType: allThrowTypes.first.displayName,
+          //     bestPercentage: allThrowTypes.first.birdieRate,
+          //     worstThrowType: allThrowTypes.last.displayName,
+          //     worstPercentage: allThrowTypes.last.birdieRate,
+          //   ),
+          //   const SizedBox(height: 16),
+          // ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Text(
+              'Throw Type Performance',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          // View mode toggle
+          ViewModeToggle(
+            selectedMode: _viewMode,
+            onModeChanged: (DriveViewMode mode) {
+              setState(() {
+                _viewMode = mode;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
 
-          // COMMENTED OUT - Replaced with _CombinedThrowTypeStatsCard
-          // _buildBirdieRateByThrowType(
-          //   context,
-          //   teeShotBirdieRates,
-          //   allTeeShotsByType,
-          // ),
-          // _buildC1InRegByThrowType(
-          //   context,
-          //   circleInRegByType,
-          //   allTeeShotsByType,
-          // ),
-          // _buildC2InRegByThrowType(
-          //   context,
-          //   circleInRegByType,
-          //   allTeeShotsByType,
-          // ),
-          _CombinedThrowTypeStatsCard(
-            teeShotBirdieRates: teeShotBirdieRates,
-            circleInRegByType: circleInRegByType,
-            allTeeShotsByType: allTeeShotsByType,
-          ),
-          _buildShotShapeAndTechniqueCard(
-            context,
-            shotShapeBirdieRates,
-            circleInRegByShape,
-          ),
-          if (performanceByFairwayWidth.isNotEmpty)
+          // Conditional rendering based on view mode
+          if (_viewMode == DriveViewMode.cards)
+            ThrowTypeListCard(
+              throwTypes: allThrowTypes,
+              onThrowTypeTap: (ThrowTypeStats stats) {
+                _navigateToThrowTypeDetail(
+                  context,
+                  stats.throwType,
+                  stats,
+                  shotShapeBirdieRates,
+                  circleInRegByShape,
+                );
+              },
+            )
+          else
+            ThrowTypeRadarChart(throwTypes: allThrowTypes),
+
+          // Performance by fairway width
+          if (performanceByFairwayWidth.isNotEmpty) ...[
+            const SizedBox(height: 16),
             _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
-          _buildInsightCard(context, teeShotBirdieRates),
+          ],
         ],
-        runSpacing: 16,
-        axis: Axis.vertical,
       ),
     );
   }
@@ -2108,72 +2364,6 @@ class DrivesTab extends StatelessWidget {
   //   );
   // }
 
-  Widget _buildInsightCard(
-    BuildContext context,
-    Map<String, dynamic> teeShotBirdieRates,
-  ) {
-    if (teeShotBirdieRates.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final sortedEntries = teeShotBirdieRates.entries.toList()
-      ..sort((a, b) => b.value.percentage.compareTo(a.value.percentage));
-
-    if (sortedEntries.length < 2) {
-      return const SizedBox.shrink();
-    }
-
-    final best = sortedEntries.first;
-    final worst = sortedEntries.last;
-
-    final bestName =
-        best.key.substring(0, 1).toUpperCase() + best.key.substring(1);
-    final worstName =
-        worst.key.substring(0, 1).toUpperCase() + worst.key.substring(1);
-
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              Icons.lightbulb,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '$bestName drives resulted in birdies ${best.value.percentage.toStringAsFixed(0)}% of the time vs ${worst.value.percentage.toStringAsFixed(0)}% for $worstName.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShotShapeAndTechniqueCard(
-    BuildContext context,
-    Map<String, dynamic> shotShapeBirdieRates,
-    Map<String, Map<String, double>> circleInRegByShape,
-  ) {
-    // If no data available, don't show anything
-    if (shotShapeBirdieRates.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    // Return individual cards for each shot shape
-    return _buildShotShapeCards(
-      context,
-      shotShapeBirdieRates,
-      circleInRegByShape,
-    );
-  }
-
   // COMMENTED OUT - Technique Comparison is no longer used
   // Widget _buildTechniqueComparisonRows(
   //   BuildContext context,
@@ -2327,70 +2517,6 @@ class DrivesTab extends StatelessWidget {
   //     ],
   //   );
   // }
-
-  Widget _buildShotShapeCards(
-    BuildContext context,
-    Map<String, dynamic> shotShapeBirdieRates,
-    Map<String, Map<String, double>> circleInRegByShape,
-  ) {
-    // Filter for relevant technique+shape combinations
-    final List<String> relevantShapes = ['hyzer', 'flat', 'anhyzer'];
-    final List<String> relevantTechniques = ['backhand', 'forehand'];
-
-    final List<MapEntry<String, dynamic>> filteredCombos = shotShapeBirdieRates
-        .entries
-        .where((entry) {
-          // Entry key format: "technique_shape" (e.g., "backhand_hyzer")
-          final List<String> parts = entry.key.split('_');
-          if (parts.length != 2) return false;
-          final String technique = parts[0];
-          final String shape = parts[1];
-          return relevantTechniques.contains(technique) &&
-              relevantShapes.contains(shape);
-        })
-        .toList();
-
-    if (filteredCombos.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    // Sort by overall success (combination of C1 and C2 in reg)
-    filteredCombos.sort((a, b) {
-      final Map<String, double>? aStats = circleInRegByShape[a.key];
-      final Map<String, double>? bStats = circleInRegByShape[b.key];
-      final double aScore =
-          (aStats?['c1Percentage'] ?? 0) + (aStats?['c2Percentage'] ?? 0);
-      final double bScore =
-          (bStats?['c1Percentage'] ?? 0) + (bStats?['c2Percentage'] ?? 0);
-      return bScore.compareTo(aScore);
-    });
-
-    return Column(
-      children: filteredCombos.map((entry) {
-        final String comboKey = entry.key;
-        final Map<String, double>? circleStats = circleInRegByShape[comboKey];
-
-        // Parse the combination key: "backhand_hyzer" -> "Backhand Hyzer"
-        final List<String> parts = comboKey.split('_');
-        final String technique =
-            parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);
-        final String shape =
-            parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1);
-        final String displayName = '$technique $shape';
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: ShotShapeSuccessCard(
-            shapeName: displayName,
-            c1Percentage: circleStats?['c1Percentage'] ?? 0,
-            c1Count: circleStats?['c1Count']?.toInt() ?? 0,
-            c2Percentage: circleStats?['c2Percentage'] ?? 0,
-            c2Count: circleStats?['c2Count']?.toInt() ?? 0,
-          ),
-        );
-      }).toList(),
-    );
-  }
 
   Widget _buildShapeMetricRow(
     BuildContext context,
@@ -2710,10 +2836,7 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
         status = HoleResultStatus.noData;
       }
 
-      holeResults.add(HoleResult(
-        holeNumber: hole.number,
-        status: status,
-      ));
+      holeResults.add(HoleResult(holeNumber: hole.number, status: status));
     }
 
     Navigator.of(context).push(
