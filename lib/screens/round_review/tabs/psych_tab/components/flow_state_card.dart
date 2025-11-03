@@ -30,20 +30,9 @@ class FlowStateCard extends StatelessWidget {
           // Header with icon and title
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF9D4EDD), Color(0xFF7B2CBF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  '🌊',
-                  style: TextStyle(fontSize: 24),
-                ),
+              const Text(
+                '🌊',
+                style: TextStyle(fontSize: 32),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -169,9 +158,9 @@ class FlowStateCard extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 60,
+          height: 40,
           child: CustomPaint(
-            size: Size(MediaQuery.of(context).size.width - 64, 60),
+            size: Size(MediaQuery.of(context).size.width - 64, 40),
             painter: FlowTimelinePainter(
               flowPeriods: flowAnalysis.flowPeriods,
               totalHoles: totalHoles,
@@ -480,7 +469,7 @@ class FlowTimelinePainter extends CustomPainter {
 
     final Paint flowPaint = Paint()
       ..color = const Color(0xFF4CAF50)
-      ..strokeWidth = 8
+      ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
 
     // Draw base timeline
