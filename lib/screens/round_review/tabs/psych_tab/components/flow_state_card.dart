@@ -40,10 +40,9 @@ class FlowStateCard extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.auto_awesome,
-                  color: Colors.white,
-                  size: 24,
+                child: const Text(
+                  '🌊',
+                  style: TextStyle(fontSize: 24),
                 ),
               ),
               const SizedBox(width: 12),
@@ -68,58 +67,43 @@ class FlowStateCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Flow score badge
+              // Coverage percentage badge
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 10,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: _getScoreGradient(flowAnalysis.overallFlowScore),
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: const Color(0xFF4CAF50),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${flowAnalysis.overallFlowScore.toStringAsFixed(0)}/100',
+                  '${flowAnalysis.flowPercentage.toStringAsFixed(0)}% coverage',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 13,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // Visual timeline
           _buildFlowTimeline(context),
 
-          const SizedBox(height: 20),
-
-          // Stats grid
-          _buildStatsGrid(context),
-
           // Flow triggers section
           if (flowAnalysis.flowTriggers.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildFlowTriggers(context),
           ],
 
           // Flow periods detail
           if (flowAnalysis.flowPeriods.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildFlowPeriods(context),
-          ],
-
-          // Insights
-          if (flowAnalysis.insights.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _buildInsights(context),
           ],
         ],
       ),
@@ -180,10 +164,10 @@ class FlowStateCard extends StatelessWidget {
         Text(
           'Round Timeline',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         SizedBox(
           height: 60,
           child: CustomPaint(
@@ -217,84 +201,6 @@ class FlowStateCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatItem(
-              context,
-              icon: Icons.timer,
-              label: 'Flow Holes',
-              value: '${flowAnalysis.totalFlowHoles}',
-              color: const Color(0xFF9D4EDD),
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
-          Expanded(
-            child: _buildStatItem(
-              context,
-              icon: Icons.percent,
-              label: 'Coverage',
-              value: '${flowAnalysis.flowPercentage.toStringAsFixed(0)}%',
-              color: const Color(0xFF4CAF50),
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
-          Expanded(
-            child: _buildStatItem(
-              context,
-              icon: Icons.waves,
-              label: 'Periods',
-              value: '${flowAnalysis.flowCount}',
-              color: const Color(0xFF2196F3),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildFlowTriggers(BuildContext context) {
     return Column(
@@ -302,53 +208,52 @@ class FlowStateCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
+            const Icon(
               Icons.bolt,
-              color: const Color(0xFFFFB800),
-              size: 20,
+              color: Color(0xFFFFB800),
+              size: 18,
             ),
             const SizedBox(width: 8),
             Text(
               'Flow Triggers',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: flowAnalysis.flowTriggers.map((trigger) {
             return Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
+                horizontal: 10,
+                vertical: 6,
               ),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFB800), Color(0xFFFF8A00)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                border: Border.all(
+                  color: const Color(0xFFFFB800),
+                  width: 1.5,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
                     Icons.bolt,
-                    color: Colors.white,
-                    size: 16,
+                    color: Color(0xFFFFB800),
+                    size: 14,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Text(
                     trigger,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -367,13 +272,13 @@ class FlowStateCard extends StatelessWidget {
         Text(
           'Flow Periods',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         ...flowAnalysis.flowPeriods.map((period) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 10),
             child: _buildFlowPeriodCard(context, period),
           );
         }),
@@ -382,15 +287,25 @@ class FlowStateCard extends StatelessWidget {
   }
 
   Widget _buildFlowPeriodCard(BuildContext context, FlowStatePeriod period) {
-    final qualityColor = _getQualityColor(period.flowQuality);
+    final Color qualityColor = _getQualityColor(period.flowQuality);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: qualityColor.withValues(alpha: 0.1),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE8F5E9),
+            Color(0xFFF1F8F4),
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: qualityColor.withValues(alpha: 0.3),
+        border: Border(
+          left: BorderSide(
+            color: qualityColor,
+            width: 4,
+          ),
         ),
       ),
       child: Column(
@@ -400,19 +315,19 @@ class FlowStateCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+                  horizontal: 6,
+                  vertical: 2,
                 ),
                 decoration: BoxDecoration(
                   color: qualityColor,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   period.flowQuality,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ),
@@ -421,7 +336,7 @@ class FlowStateCard extends StatelessWidget {
                 child: Text(
                   period.label,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
               ),
@@ -530,73 +445,6 @@ class FlowStateCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInsights(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(
-              Icons.lightbulb,
-              color: Color(0xFFFFB800),
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Flow Insights',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...flowAnalysis.insights.map((insight) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF9D4EDD).withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome,
-                    size: 12,
-                    color: Color(0xFF9D4EDD),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    insight,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  List<Color> _getScoreGradient(double score) {
-    if (score >= 70) {
-      return [const Color(0xFF4CAF50), const Color(0xFF2E7D32)];
-    } else if (score >= 50) {
-      return [const Color(0xFF9D4EDD), const Color(0xFF7B2CBF)];
-    } else if (score >= 30) {
-      return [const Color(0xFF2196F3), const Color(0xFF1565C0)];
-    } else {
-      return [const Color(0xFFFF9800), const Color(0xFFE65100)];
-    }
-  }
-
   Color _getQualityColor(String quality) {
     switch (quality) {
       case 'Elite':
@@ -625,27 +473,18 @@ class FlowTimelinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final baseLinePaint = Paint()
-      ..color = colorScheme.outlineVariant
+    final Paint baseLinePaint = Paint()
+      ..color = colorScheme.outlineVariant.withValues(alpha: 0.5)
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round;
+
+    final Paint flowPaint = Paint()
+      ..color = const Color(0xFF4CAF50)
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
 
-    final flowPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF9D4EDD), Color(0xFF7B2CBF)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..strokeWidth = 12
-      ..strokeCap = StrokeCap.round;
-
-    final eliteFlowPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
-
     // Draw base timeline
-    final y = size.height / 2;
+    final double y = size.height / 2;
     canvas.drawLine(
       Offset(0, y),
       Offset(size.width, y),
@@ -653,47 +492,35 @@ class FlowTimelinePainter extends CustomPainter {
     );
 
     // Draw flow periods
-    for (var period in flowPeriods) {
-      final startX = ((period.startHole - 1) / totalHoles) * size.width;
-      final endX = (period.endHole / totalHoles) * size.width;
-
-      final paint = period.flowQuality == 'Elite' ? eliteFlowPaint : flowPaint;
+    for (final FlowStatePeriod period in flowPeriods) {
+      final double startX = ((period.startHole - 1) / totalHoles) * size.width;
+      final double endX = (period.endHole / totalHoles) * size.width;
 
       canvas.drawLine(
         Offset(startX, y),
         Offset(endX, y),
-        paint,
-      );
-
-      // Draw glow effect for elite flow
-      if (period.flowQuality == 'Elite') {
-        final glowPaint = Paint()
-          ..color = const Color(0xFF4CAF50).withValues(alpha: 0.3)
-          ..strokeWidth = 20
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
-        canvas.drawLine(
-          Offset(startX, y),
-          Offset(endX, y),
-          glowPaint,
-        );
-      }
-    }
-
-    // Draw hole markers
-    for (int i = 0; i <= totalHoles; i += (totalHoles >= 18 ? 3 : 2)) {
-      final x = (i / totalHoles) * size.width;
-      final markerPaint = Paint()
-        ..color = colorScheme.onSurfaceVariant
-        ..strokeWidth = 2;
-
-      canvas.drawLine(
-        Offset(x, y - 15),
-        Offset(x, y + 15),
-        markerPaint,
+        flowPaint,
       );
     }
+
+    // Draw hole markers at start and end only
+    final Paint markerPaint = Paint()
+      ..color = colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
+      ..strokeWidth = 1.5;
+
+    // Start marker
+    canvas.drawLine(
+      Offset(0, y - 10),
+      Offset(0, y + 10),
+      markerPaint,
+    );
+
+    // End marker
+    canvas.drawLine(
+      Offset(size.width, y - 10),
+      Offset(size.width, y + 10),
+      markerPaint,
+    );
   }
 
   @override
