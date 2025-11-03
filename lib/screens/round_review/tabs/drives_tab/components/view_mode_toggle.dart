@@ -18,11 +18,10 @@ class ViewModeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.zero,
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         children: [
@@ -34,7 +33,7 @@ class ViewModeToggle extends StatelessWidget {
               onTap: () => onModeChanged(DriveViewMode.cards),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 3),
           Expanded(
             child: _ToggleButton(
               label: 'Radar',
@@ -68,18 +67,17 @@ class _ToggleButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.surface
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
                   ),
                 ]
               : [],
@@ -89,19 +87,20 @@ class _ToggleButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 20,
+              size: 18,
               color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ? const Color(0xFF111827)
+                  : const Color(0xFF9CA3AF),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 14,
                     color: isSelected
-                        ? Theme.of(context).colorScheme.onSurface
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ? const Color(0xFF111827)
+                        : const Color(0xFF6B7280),
                   ),
             ),
           ],

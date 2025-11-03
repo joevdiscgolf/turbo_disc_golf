@@ -96,10 +96,6 @@ class _ThrowTypeCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),
-            if (throwType.averageDistance != null) ...[
-              const SizedBox(height: 12),
-              _buildDistancePill(context),
-            ],
             const SizedBox(height: 16),
             _buildMetricRow(
               context,
@@ -161,6 +157,35 @@ class _ThrowTypeCard extends StatelessWidget {
             ),
           ),
         ),
+        if (throwType.averageDistance != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.straighten,
+                  size: 14,
+                  color: Color(0xFF6B7280),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  throwType.distanceDisplay,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: const Color(0xFF111827),
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         if (badge != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -188,40 +213,6 @@ class _ThrowTypeCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ],
-    );
-  }
-
-  Widget _buildDistancePill(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.straighten, size: 14, color: Color(0xFF6B7280)),
-          const SizedBox(width: 6),
-          Text(
-            'Avg Distance',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-              color: const Color(0xFF6B7280),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            throwType.distanceDisplay,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF111827),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

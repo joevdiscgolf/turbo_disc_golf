@@ -4,10 +4,10 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/core_drive_stats_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/insight_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/throw_type_list_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/throw_type_radar_chart.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/components/view_mode_toggle.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/shot_detail.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/screens/driving_stat_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/screens/throw_type_detail_screen.dart';
@@ -247,6 +247,87 @@ class _DrivesTabState extends State<DrivesTab> {
     return stats;
   }
 
+  /// Get shot details for a specific throw type (all shots of that type)
+  List<ShotDetail> _getShotDetailsForThrowType(String throwType) {
+    final List<ShotDetail> shotDetails = [];
+
+    for (final DGHole hole in widget.round.holes) {
+      for (int i = 0; i < hole.throws.length; i++) {
+        final DiscThrow discThrow = hole.throws[i];
+
+        // Check if this throw matches the throw type
+        if (discThrow.technique?.name == throwType) {
+          final ShotOutcome outcome = _calculateShotOutcome(hole, i);
+          shotDetails.add(ShotDetail(
+            hole: hole,
+            throwIndex: i,
+            shotOutcome: outcome,
+          ));
+        }
+      }
+    }
+
+    return shotDetails;
+  }
+
+  /// Get shot details grouped by shot shape for a specific throw type
+  Map<String, List<ShotDetail>> _getShotDetailsByShape(String throwType) {
+    final Map<String, List<ShotDetail>> shotDetailsByShape = {};
+
+    for (final DGHole hole in widget.round.holes) {
+      for (int i = 0; i < hole.throws.length; i++) {
+        final DiscThrow discThrow = hole.throws[i];
+
+        // Check if this throw matches the throw type
+        if (discThrow.technique?.name == throwType) {
+          final String? shotShape = discThrow.shotShape?.name;
+          if (shotShape != null) {
+            final String shapeKey = '${throwType}_$shotShape';
+            final ShotOutcome outcome = _calculateShotOutcome(hole, i);
+
+            shotDetailsByShape.putIfAbsent(shapeKey, () => []);
+            shotDetailsByShape[shapeKey]!.add(ShotDetail(
+              hole: hole,
+              throwIndex: i,
+              shotOutcome: outcome,
+            ));
+          }
+        }
+      }
+    }
+
+    return shotDetailsByShape;
+  }
+
+  /// Calculate whether a shot was successful for various metrics
+  ShotOutcome _calculateShotOutcome(DGHole hole, int throwIndex) {
+    final DiscThrow discThrow = hole.throws[throwIndex];
+    final bool isTeeShot = throwIndex == 0;
+
+    // Determine if this led to a birdie
+    final bool wasBirdie = hole.relativeHoleScore < 0;
+
+    // Determine if this was C1 in regulation (tee shot that landed in C1)
+    bool wasC1InReg = false;
+    if (isTeeShot) {
+      final LandingSpot? landing = discThrow.landingSpot;
+      wasC1InReg = landing == LandingSpot.circle1 || landing == LandingSpot.parked;
+    }
+
+    // Determine if this was C2 in regulation (tee shot that landed in C2)
+    bool wasC2InReg = false;
+    if (isTeeShot) {
+      final LandingSpot? landing = discThrow.landingSpot;
+      wasC2InReg = landing == LandingSpot.circle2;
+    }
+
+    return ShotOutcome(
+      wasBirdie: wasBirdie,
+      wasC1InReg: wasC1InReg,
+      wasC2InReg: wasC2InReg,
+    );
+  }
+
   void _navigateToThrowTypeDetail(
     BuildContext context,
     String throwType,
@@ -260,12 +341,20 @@ class _DrivesTabState extends State<DrivesTab> {
       circleInRegByShape,
     );
 
+    // Get shot details for overall performance
+    final List<ShotDetail> overallShotDetails = _getShotDetailsForThrowType(throwType);
+
+    // Get shot details grouped by shot shape
+    final Map<String, List<ShotDetail>> shotShapeDetails = _getShotDetailsByShape(throwType);
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ThrowTypeDetailScreen(
           throwType: throwType,
           overallStats: overallStats,
           shotShapeStats: shotShapes,
+          overallShotDetails: overallShotDetails,
+          shotShapeDetails: shotShapeDetails,
         ),
       ),
     );
