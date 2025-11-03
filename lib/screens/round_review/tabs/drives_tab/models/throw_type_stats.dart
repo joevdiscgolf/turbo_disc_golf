@@ -65,7 +65,13 @@ class ShotShapeStats {
   final int c2Total;
 
   String get displayName {
-    final shape = shapeName.replaceAll(throwType, '').trim();
+    String shape = shapeName.replaceAll(throwType, '').trim();
+    // Remove leading underscore if present
+    if (shape.startsWith('_')) {
+      shape = shape.substring(1);
+    }
+    // Capitalize first letter
+    if (shape.isEmpty) return shape;
     return shape.substring(0, 1).toUpperCase() + shape.substring(1);
   }
 

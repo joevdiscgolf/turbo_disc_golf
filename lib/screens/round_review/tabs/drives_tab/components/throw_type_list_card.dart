@@ -18,21 +18,25 @@ class ThrowTypeListCard extends StatelessWidget {
     }
 
     // Find best and worst performers for badges
-    final ThrowTypeStats? bestType = throwTypes.isNotEmpty ? throwTypes.first : null;
-    final ThrowTypeStats? worstType = throwTypes.length > 1 ? throwTypes.last : null;
+    final ThrowTypeStats? bestType = throwTypes.isNotEmpty
+        ? throwTypes.first
+        : null;
+    final ThrowTypeStats? worstType = throwTypes.length > 1
+        ? throwTypes.last
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: Text(
-            'Throw Type Performance',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        //   child: Text(
+        //     'Throw Type Performance',
+        //     style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        //           fontWeight: FontWeight.w600,
+        //         ),
+        //   ),
+        // ),
         const SizedBox(height: 8),
         ...throwTypes.map((throwType) {
           String? badge;
@@ -79,10 +83,7 @@ class _ThrowTypeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFE5E7EB),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -155,9 +156,9 @@ class _ThrowTypeCard extends StatelessWidget {
           child: Text(
             throwType.displayName,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
           ),
         ),
         if (badge != null)
@@ -172,12 +173,12 @@ class _ThrowTypeCard extends StatelessWidget {
             child: Text(
               badge!,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                    color: badge == 'Best'
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFFEF4444),
-                  ),
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                color: badge == 'Best'
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFFEF4444),
+              ),
             ),
           ),
         const SizedBox(width: 8),
@@ -200,28 +201,24 @@ class _ThrowTypeCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.straighten,
-            size: 14,
-            color: Color(0xFF6B7280),
-          ),
+          const Icon(Icons.straighten, size: 14, color: Color(0xFF6B7280)),
           const SizedBox(width: 6),
           Text(
             'Avg Distance',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 12,
-                  color: const Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
-                ),
+              fontSize: 12,
+              color: const Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
             throwType.distanceDisplay,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF111827),
-                ),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF111827),
+            ),
           ),
         ],
       ),
@@ -242,27 +239,23 @@ class _ThrowTypeCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: color,
-            ),
+            Icon(icon, size: 16, color: color),
             const SizedBox(width: 8),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                    color: const Color(0xFF6B7280),
-                  ),
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: const Color(0xFF6B7280),
+              ),
             ),
             const Spacer(),
             Text(
               '${percentage.toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
             ),
           ],
         ),
@@ -284,9 +277,9 @@ class _ThrowTypeCard extends StatelessWidget {
             Text(
               '$count/$total',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
-                    color: const Color(0xFF9CA3AF),
-                  ),
+                fontSize: 12,
+                color: const Color(0xFF9CA3AF),
+              ),
             ),
           ],
         ),

@@ -40,10 +40,7 @@ class _DrivesTabState extends State<DrivesTab> {
           ? HoleResultStatus.success
           : HoleResultStatus.failure;
 
-      holeResults.add(HoleResult(
-        holeNumber: hole.number,
-        status: status,
-      ));
+      holeResults.add(HoleResult(holeNumber: hole.number, status: status));
     }
 
     Navigator.of(context).push(
@@ -166,7 +163,9 @@ class _DrivesTabState extends State<DrivesTab> {
     double? averageDistance;
     final teeShots = allTeeShotsByType[throwType];
     if (teeShots != null && teeShots.isNotEmpty) {
-      final holesWithDistance = teeShots.where((entry) => entry.key.feet != null).toList();
+      final holesWithDistance = teeShots
+          .where((entry) => entry.key.feet != null)
+          .toList();
       if (holesWithDistance.isNotEmpty) {
         final totalDistance = holesWithDistance.fold<double>(
           0,
@@ -224,19 +223,21 @@ class _DrivesTabState extends State<DrivesTab> {
       final c1c2Data = circleInRegByShape[shapeName];
 
       if (birdieData != null && c1c2Data != null) {
-        stats.add(ShotShapeStats(
-          shapeName: shapeName,
-          throwType: throwType,
-          birdieRate: birdieData.percentage,
-          birdieCount: birdieData.birdieCount,
-          totalAttempts: birdieData.totalAttempts,
-          c1InRegPct: c1c2Data['c1Percentage'] ?? 0,
-          c1Count: (c1c2Data['c1Count'] ?? 0).toInt(),
-          c1Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
-          c2InRegPct: c1c2Data['c2Percentage'] ?? 0,
-          c2Count: (c1c2Data['c2Count'] ?? 0).toInt(),
-          c2Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
-        ));
+        stats.add(
+          ShotShapeStats(
+            shapeName: shapeName,
+            throwType: throwType,
+            birdieRate: birdieData.percentage,
+            birdieCount: birdieData.birdieCount,
+            totalAttempts: birdieData.totalAttempts,
+            c1InRegPct: c1c2Data['c1Percentage'] ?? 0,
+            c1Count: (c1c2Data['c1Count'] ?? 0).toInt(),
+            c1Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
+            c2InRegPct: c1c2Data['c2Percentage'] ?? 0,
+            c2Count: (c1c2Data['c2Count'] ?? 0).toInt(),
+            c2Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
+          ),
+        );
       }
     }
 
@@ -272,7 +273,9 @@ class _DrivesTabState extends State<DrivesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final RoundStatisticsService statsService = RoundStatisticsService(widget.round);
+    final RoundStatisticsService statsService = RoundStatisticsService(
+      widget.round,
+    );
 
     final coreStats = statsService.getCoreStats();
     final teeShotBirdieRates = statsService.getTeeShotBirdieRateStats();
@@ -303,7 +306,12 @@ class _DrivesTabState extends State<DrivesTab> {
     return Container(
       color: const Color(0xFFF8F9FA),
       child: ListView(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 80,
+        ),
         children: [
           // Core stats card
           CoreDriveStatsCard(
@@ -357,16 +365,24 @@ class _DrivesTabState extends State<DrivesTab> {
           const SizedBox(height: 16),
 
           // Insight card
-          if (allThrowTypes.length >= 2) ...[
-            InsightCard(
-              bestThrowType: allThrowTypes.first.displayName,
-              bestPercentage: allThrowTypes.first.birdieRate,
-              worstThrowType: allThrowTypes.last.displayName,
-              worstPercentage: allThrowTypes.last.birdieRate,
+          // if (allThrowTypes.length >= 2) ...[
+          //   InsightCard(
+          //     bestThrowType: allThrowTypes.first.displayName,
+          //     bestPercentage: allThrowTypes.first.birdieRate,
+          //     worstThrowType: allThrowTypes.last.displayName,
+          //     worstPercentage: allThrowTypes.last.birdieRate,
+          //   ),
+          //   const SizedBox(height: 16),
+          // ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Text(
+              'Throw Type Performance',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 16),
-          ],
-
+          ),
           // View mode toggle
           ViewModeToggle(
             selectedMode: _viewMode,
@@ -393,9 +409,7 @@ class _DrivesTabState extends State<DrivesTab> {
               },
             )
           else
-            ThrowTypeRadarChart(
-              throwTypes: allThrowTypes,
-            ),
+            ThrowTypeRadarChart(throwTypes: allThrowTypes),
 
           // Performance by fairway width
           if (performanceByFairwayWidth.isNotEmpty) ...[
@@ -2261,7 +2275,6 @@ class _DrivesTabState extends State<DrivesTab> {
   //   );
   // }
 
-
   // COMMENTED OUT - Technique Comparison is no longer used
   // Widget _buildTechniqueComparisonRows(
   //   BuildContext context,
@@ -2415,7 +2428,6 @@ class _DrivesTabState extends State<DrivesTab> {
   //     ],
   //   );
   // }
-
 
   Widget _buildShapeMetricRow(
     BuildContext context,
@@ -2735,10 +2747,7 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
         status = HoleResultStatus.noData;
       }
 
-      holeResults.add(HoleResult(
-        holeNumber: hole.number,
-        status: status,
-      ));
+      holeResults.add(HoleResult(holeNumber: hole.number, status: status));
     }
 
     Navigator.of(context).push(
