@@ -53,7 +53,7 @@ class ScoreDistributionBar extends StatelessWidget {
 
     return PercentageDistributionBar(
       segments: segments,
-      height: 40,
+      height: 24,
       borderRadius: 8,
       segmentSpacing: 2,
     );
