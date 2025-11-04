@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -16,7 +17,7 @@ class ScoreKPICard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -33,7 +34,11 @@ class ScoreKPICard extends StatelessWidget {
         children: [
           _kpiRow(context),
           const SizedBox(height: 12),
-          ScoreDistributionBar(round: round),
+
+          _buildCompactScorecard(),
+          const SizedBox(height: 16),
+
+          _CompactScoreDistributionBar(round: round),
         ],
       ),
     );
@@ -126,5 +131,87 @@ class ScoreKPICard extends StatelessWidget {
     } else {
       return const Color(0xFFF5F5F5);
     }
+  }
+
+  Widget _buildCompactScorecard() {
+    // Split into two rows (first 9, second 9)
+    final int halfLength = (round.holes.length / 2).ceil();
+    final List<DGHole> firstNine = round.holes.take(halfLength).toList();
+    final List<DGHole> secondNine = round.holes.skip(halfLength).toList();
+
+    return Column(
+      children: [
+        _buildScoreRow(firstNine),
+        const SizedBox(height: 12),
+        _buildScoreRow(secondNine),
+      ],
+    );
+  }
+
+  Widget _buildScoreRow(List<DGHole> holes) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: holes.map((hole) {
+        final int score = hole.holeScore;
+        final int scoreToPar = hole.relativeHoleScore;
+        final Color color = scoreToPar == 0
+            ? const Color(0xFFF5F5F5)
+            : scoreToPar < 0
+            ? const Color(0xFF137e66)
+            : const Color(0xFFFF7A7A);
+        final bool isPar = scoreToPar == 0;
+
+        return Expanded(
+          child: Column(
+            children: [
+              Text(
+                '${hole.number}',
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+              const SizedBox(height: 4),
+              isPar
+                  ? Text(
+                      '$score',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    )
+                  : Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$score',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// Compact version of ScoreDistributionBar with reduced height
+class _CompactScoreDistributionBar extends StatelessWidget {
+  const _CompactScoreDistributionBar({required this.round});
+
+  final DGRound round;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScoreDistributionBar(round: round);
   }
 }

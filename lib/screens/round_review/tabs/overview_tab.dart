@@ -2,19 +2,19 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/utils/putting_constants.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_kpi_card.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/utils/putting_constants.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
-import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 
 class OverviewTab extends StatefulWidget {
   final DGRound round;
@@ -45,23 +45,32 @@ class _OverviewTabState extends State<OverviewTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.only(top: 16, bottom: 80),
       children: [
         ScoreKPICard(round: widget.round, roundParser: _roundParser),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _ScorecardCard(
+          child: _SkillsOverviewCard(
             round: widget.round,
-            onTap: () => _navigateToTab(1), // Course tab
+            onTap: () => _navigateToTab(1), // Skills tab
           ),
         ),
         const SizedBox(height: 8),
+        // Scorecard now included in ScoreKPICard above
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: _ScorecardCard(
+        //     round: widget.round,
+        //     onTap: () => _navigateToTab(2), // Course tab (moved down)
+        //   ),
+        // ),
+        // const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _DrivingStatsCard(
             round: widget.round,
-            onTap: () => _navigateToTab(3), // Drives tab
+            onTap: () => _navigateToTab(4), // Drives tab
           ),
         ),
         const SizedBox(height: 8),
@@ -69,7 +78,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _PuttingStatsCard(
             round: widget.round,
-            onTap: () => _navigateToTab(4), // Putting tab
+            onTap: () => _navigateToTab(5), // Putting tab
           ),
         ),
         const SizedBox(height: 8),
@@ -77,7 +86,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _MistakesCard(
             round: widget.round,
-            onTap: () => _navigateToTab(6), // Mistakes tab
+            onTap: () => _navigateToTab(7), // Mistakes tab
           ),
         ),
         const SizedBox(height: 8),
@@ -85,7 +94,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _MentalGameCard(
             round: widget.round,
-            onTap: () => _navigateToTab(7), // Psych tab
+            onTap: () => _navigateToTab(8), // Psych tab
           ),
         ),
         const SizedBox(height: 8),
@@ -93,7 +102,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _DiscUsageCard(
             round: widget.round,
-            onTap: () => _navigateToTab(5), // Discs tab
+            onTap: () => _navigateToTab(6), // Discs tab
           ),
         ),
         const SizedBox(height: 8),
@@ -101,7 +110,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _AICoachCard(
             round: widget.round,
-            onTap: () => _navigateToTab(8), // Summary tab
+            onTap: () => _navigateToTab(9), // Summary tab
           ),
         ),
         const SizedBox(height: 8),
@@ -109,117 +118,10 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _AIRoastCard(
             round: widget.round,
-            onTap: () => _navigateToTab(10), // Roast tab
+            onTap: () => _navigateToTab(11), // Roast tab
           ),
         ),
       ],
-    );
-  }
-}
-
-// Scorecard Card
-class _ScorecardCard extends StatelessWidget {
-  final DGRound round;
-  final VoidCallback? onTap;
-
-  const _ScorecardCard({required this.round, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    '📋 Scorecard',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildCompactScorecard(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactScorecard() {
-    // Split into two rows (first 9, second 9)
-    final int halfLength = (round.holes.length / 2).ceil();
-    final List<DGHole> firstNine = round.holes.take(halfLength).toList();
-    final List<DGHole> secondNine = round.holes.skip(halfLength).toList();
-
-    return Column(
-      children: [
-        _buildScoreRow(firstNine),
-        const SizedBox(height: 12),
-        _buildScoreRow(secondNine),
-      ],
-    );
-  }
-
-  Widget _buildScoreRow(List<DGHole> holes) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: holes.map((hole) {
-        final int score = hole.holeScore;
-        final int scoreToPar = hole.relativeHoleScore;
-        final Color color = scoreToPar == 0
-            ? const Color(0xFFF5F5F5)
-            : scoreToPar < 0
-            ? const Color(0xFF137e66)
-            : const Color(0xFFFF7A7A);
-        final bool isPar = scoreToPar == 0;
-
-        return Expanded(
-          child: Column(
-            children: [
-              Text(
-                '${hole.number}',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-              const SizedBox(height: 4),
-              isPar
-                  ? Text(
-                      '$score',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    )
-                  : Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$score',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-            ],
-          ),
-        );
-      }).toList(),
     );
   }
 }
@@ -234,6 +136,27 @@ class _DrivingStatsCard extends StatelessWidget {
   Map<String, dynamic> _calculateDrivingStats() {
     final RoundStatisticsService statsService = RoundStatisticsService(round);
     final dynamic coreStats = statsService.getCoreStats();
+    final Map<String, Map<String, double>> circleInRegByType = statsService
+        .getCircleInRegByThrowType();
+
+    // Get C1 in reg % by throw type
+    final List<Map<String, dynamic>> throwTypeStats = [];
+    circleInRegByType.forEach((String throwType, Map<String, double> stats) {
+      final double c1Percentage = stats['c1Percentage'] ?? 0;
+      final int totalAttempts = (stats['totalAttempts'] ?? 0).toInt();
+      if (totalAttempts > 0) {
+        throwTypeStats.add({
+          'type': throwType,
+          'c1Pct': c1Percentage,
+          'attempts': totalAttempts,
+        });
+      }
+    });
+
+    // Sort by C1 percentage descending
+    throwTypeStats.sort(
+      (a, b) => (b['c1Pct'] as double).compareTo(a['c1Pct'] as double),
+    );
 
     return {
       'fairwayPct': coreStats.fairwayHitPct,
@@ -241,6 +164,7 @@ class _DrivingStatsCard extends StatelessWidget {
       'obPct': coreStats.obPct,
       'parkedPct': coreStats.parkedPct,
       'hasData': round.holes.isNotEmpty,
+      'throwTypeStats': throwTypeStats,
     };
   }
 
@@ -305,6 +229,32 @@ class _DrivingStatsCard extends StatelessWidget {
                   ),
                 ],
               ),
+              // C1 in Reg by Throw Type section hidden for cleaner overview
+              // if (throwTypeStats.isNotEmpty) ...[
+              //   const SizedBox(height: 16),
+              //   const Divider(),
+              //   const SizedBox(height: 8),
+              //   Text(
+              //     'C1 in Reg by Throw Type',
+              //     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              //           fontWeight: FontWeight.w600,
+              //           color: Colors.grey[700],
+              //         ),
+              //   ),
+              //   const SizedBox(height: 8),
+              //   Wrap(
+              //     spacing: 8,
+              //     runSpacing: 8,
+              //     children: throwTypeStats.map((typeStats) {
+              //       return _buildThrowTypeChip(
+              //         context,
+              //         typeStats['type'] as String,
+              //         typeStats['c1Pct'] as double,
+              //         typeStats['attempts'] as int,
+              //       );
+              //     }).toList(),
+              //   ),
+              // ],
             ],
           ),
         ),
@@ -429,60 +379,64 @@ class _PuttingStatsCard extends StatelessWidget {
                   Icon(Icons.chevron_right, color: Colors.black, size: 20),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Compact stat indicators
+              const SizedBox(height: 16),
+              // Circular stat indicators
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _CompactStatIndicator(
+                  CircularStatIndicator(
                     label: 'C1',
                     percentage: hasData ? stats['c1Pct'] as double : 0.0,
-                    makes: stats['c1Makes'] as int,
-                    attempts: stats['c1Attempts'] as int,
                     color: const Color(0xFF137e66),
+                    size: 87.5,
+                    shouldAnimate: true,
+                    shouldGlow: true,
                   ),
-                  _CompactStatIndicator(
+                  CircularStatIndicator(
                     label: 'C1X',
                     percentage: hasData ? stats['c1xPct'] as double : 0.0,
-                    makes: stats['c1xMakes'] as int,
-                    attempts: stats['c1xAttempts'] as int,
                     color: const Color(0xFF4CAF50),
+                    size: 87.5,
+                    shouldAnimate: true,
+                    shouldGlow: true,
                   ),
-                  _CompactStatIndicator(
+                  CircularStatIndicator(
                     label: 'C2',
                     percentage: hasData ? stats['c2Pct'] as double : 0.0,
-                    makes: stats['c2Makes'] as int,
-                    attempts: stats['c2Attempts'] as int,
                     color: const Color(0xFF2196F3),
+                    size: 87.5,
+                    shouldAnimate: true,
+                    shouldGlow: true,
                   ),
                 ],
               ),
-              if (hasData) ...[
-                const SizedBox(height: 16),
-                // Side-by-side heat maps
-                Row(
-                  children: [
-                    Expanded(
-                      child: _CompactHeatMap(showCircle1: true, round: round),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _CompactHeatMap(showCircle1: false, round: round),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    '${stats['totalMakes']}/${stats['totalPutts']} putts made',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ),
-              ],
+              // Heat maps hidden for now
+              // if (hasData) ...[
+              //   const SizedBox(height: 16),
+              //   // Side-by-side heat maps
+              //   Row(
+              //     children: [
+              //       Expanded(
+              //         child: _CompactHeatMap(showCircle1: true, round: round),
+              //       ),
+              //       const SizedBox(width: 12),
+              //       Expanded(
+              //         child: _CompactHeatMap(showCircle1: false, round: round),
+              //       ),
+              //     ],
+              //   ),
+              //   const SizedBox(height: 8),
+              //   Center(
+              //     child: Text(
+              //       '${stats['totalMakes']}/${stats['totalPutts']} putts made',
+              //       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              //         color: Theme.of(
+              //           context,
+              //         ).colorScheme.onSurface.withValues(alpha: 0.6),
+              //       ),
+              //     ),
+              //   ),
+              // ],
             ],
           ),
         ),
@@ -491,60 +445,59 @@ class _PuttingStatsCard extends StatelessWidget {
   }
 }
 
-// Compact stat indicator for overview
-class _CompactStatIndicator extends StatelessWidget {
-  const _CompactStatIndicator({
-    required this.label,
-    required this.percentage,
-    required this.makes,
-    required this.attempts,
-    required this.color,
-  });
+// // Compact stat indicator for overview
+// class _CompactStatIndicator extends StatelessWidget {
+//   const _CompactStatIndicator({
+//     required this.label,
+//     required this.percentage,
+//     required this.makes,
+//     required this.attempts,
+//     required this.color,
+//   });
 
-  final String label;
-  final double percentage;
-  final int makes;
-  final int attempts;
-  final Color color;
+//   final String label;
+//   final double percentage;
+//   final int makes;
+//   final int attempts;
+//   final Color color;
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${percentage.toStringAsFixed(0)}%',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '$makes/$attempts',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-            fontSize: 11,
-          ),
-        ),
-      ],
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       children: [
+//         Text(
+//           label,
+//           style: Theme.of(context).textTheme.bodySmall?.copyWith(
+//             fontWeight: FontWeight.bold,
+//             color: color,
+//           ),
+//         ),
+//         const SizedBox(height: 4),
+//         Text(
+//           '${percentage.toStringAsFixed(0)}%',
+//           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+//             fontWeight: FontWeight.bold,
+//             color: color,
+//           ),
+//         ),
+//         const SizedBox(height: 2),
+//         Text(
+//           '$makes/$attempts',
+//           style: Theme.of(context).textTheme.bodySmall?.copyWith(
+//             color: Theme.of(
+//               context,
+//             ).colorScheme.onSurface.withValues(alpha: 0.6),
+//             fontSize: 11,
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }
 
 // Compact heat map with dots and animation
 class _CompactHeatMap extends StatefulWidget {
-  const _CompactHeatMap({
-    required this.showCircle1,
-    required this.round,
-  });
+  const _CompactHeatMap({required this.showCircle1, required this.round});
 
   final bool showCircle1;
   final DGRound round;
@@ -582,8 +535,11 @@ class _CompactHeatMapState extends State<_CompactHeatMap>
 
   @override
   Widget build(BuildContext context) {
-    final PuttingAnalysisService puttingService = locator.get<PuttingAnalysisService>();
-    final List<Map<String, dynamic>> allPutts = puttingService.getPuttAttempts(widget.round);
+    final PuttingAnalysisService puttingService = locator
+        .get<PuttingAnalysisService>();
+    final List<Map<String, dynamic>> allPutts = puttingService.getPuttAttempts(
+      widget.round,
+    );
 
     // Filter putts by circle
     final List<Map<String, dynamic>> putts = allPutts.where((putt) {
@@ -601,9 +557,9 @@ class _CompactHeatMapState extends State<_CompactHeatMap>
       children: [
         Text(
           widget.showCircle1 ? 'C1' : 'C2',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         AspectRatio(
@@ -740,7 +696,9 @@ class _CompactHeatMapPainter extends CustomPainter {
       final double? distance = putt['distance'] as double?;
       if (distance == null) continue;
 
-      final Map<String, dynamic> puttWithIndex = Map<String, dynamic>.from(putt);
+      final Map<String, dynamic> puttWithIndex = Map<String, dynamic>.from(
+        putt,
+      );
       puttWithIndex['orderIndex'] = idx;
       puttsWithIndex.add(puttWithIndex);
     }
@@ -799,7 +757,8 @@ class _CompactHeatMapPainter extends CustomPainter {
               circle1InnerRadius +
               (distance / c1MaxDistance) * (outerRadius - circle1InnerRadius);
         } else {
-          final double normalizedDistance = (distance - c2MinDistance) / c1MaxDistance;
+          final double normalizedDistance =
+              (distance - c2MinDistance) / c1MaxDistance;
           radius =
               circle1OuterRadiusSmall +
               normalizedDistance * (outerRadius - circle1OuterRadiusSmall);
@@ -961,21 +920,24 @@ class _DiscUsageCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
                   Text(
-                    '💿 Top Discs',
+                    '🥏 Top Discs',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Icon(Icons.chevron_right, color: Colors.black, size: 20),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
               if (!hasData)
-                const Text(
-                  'No disc data available',
-                  style: TextStyle(color: Colors.grey),
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'No disc data available',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 )
               else ...[
                 const Text(
-                  'By C1 in Regulation %',
+                  'C1 in Reg %',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
@@ -986,58 +948,16 @@ class _DiscUsageCard extends StatelessWidget {
                     final String discName = disc['name'] as String;
                     final double c1InRegPct = disc['c1InRegPct'] as double;
                     final int throwCount = disc['throwCount'] as int;
-                    final String medal = index == 0
-                        ? '🥇'
-                        : index == 1
-                        ? '🥈'
-                        : '🥉';
 
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Text(medal, style: const TextStyle(fontSize: 20)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              discName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF137e66,
-                              ).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '${c1InRegPct.toStringAsFixed(0)}%',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF137e66),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$throwCount×',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
+                      padding: EdgeInsets.only(
+                        bottom: index < topDiscs.length - 1 ? 8 : 0,
+                      ),
+                      child: _MiniMedalCard(
+                        rank: index + 1,
+                        discName: discName,
+                        c1InRegPct: c1InRegPct,
+                        throwCount: throwCount,
                       ),
                     );
                   }),
@@ -1045,6 +965,95 @@ class _DiscUsageCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Mini medal card for overview
+class _MiniMedalCard extends StatelessWidget {
+  final int rank;
+  final String discName;
+  final double c1InRegPct;
+  final int throwCount;
+
+  const _MiniMedalCard({
+    required this.rank,
+    required this.discName,
+    required this.c1InRegPct,
+    required this.throwCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String medal = rank == 1
+        ? '🥇'
+        : rank == 2
+        ? '🥈'
+        : '🥉';
+    final Color gradientColor1 = rank == 1
+        ? const Color(0xFFFFD700)
+        : rank == 2
+        ? const Color(0xFFC0C0C0)
+        : const Color(0xFFCD7F32);
+    final Color gradientColor2 = rank == 1
+        ? const Color(0xFFDAA520)
+        : rank == 2
+        ? const Color(0xFFE8E8E8)
+        : const Color(0xFFFFE4D0);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            gradientColor1.withValues(alpha: 0.15),
+            gradientColor2.withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: gradientColor1.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Row(
+        children: [
+          Text(medal, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              discName,
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF137e66).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${c1InRegPct.toStringAsFixed(0)}%',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF137e66),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$throwCount×',
+            style: const TextStyle(fontSize: 10, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
@@ -1433,39 +1442,31 @@ class _AICoachCard extends StatelessWidget {
 
   const _AICoachCard({required this.round, this.onTap});
 
-  String _truncateMarkdown(String content, int maxChars) {
-    // First, try to get the first paragraph or two
+  String _getFirstSentences(String content, int maxLength) {
+    // Remove markdown headers and get clean text
     final List<String> lines = content.split('\n');
-    final StringBuffer preview = StringBuffer();
-    int charCount = 0;
+    final StringBuffer text = StringBuffer();
 
     for (final String line in lines) {
-      // Skip headers for preview
-      if (line.trim().startsWith('#')) continue;
-
       final String trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
+      // Skip headers and empty lines
+      if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
 
-      if (charCount + trimmed.length > maxChars) {
-        // If we already have some content, stop here
-        if (preview.isNotEmpty) break;
+      // Remove markdown formatting (bold, italic, etc.)
+      String cleaned = trimmed
+          .replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1') // bold
+          .replaceAll(RegExp(r'\*([^*]+)\*'), r'$1') // italic
+          .replaceAll(RegExp(r'__([^_]+)__'), r'$1') // bold
+          .replaceAll(RegExp(r'_([^_]+)_'), r'$1'); // italic
 
-        // Otherwise, truncate this line
-        final int remaining = maxChars - charCount;
-        if (remaining > 50) {
-          preview.writeln('${trimmed.substring(0, remaining)}...');
-        }
-        break;
-      }
+      text.write(cleaned);
+      text.write(' ');
 
-      preview.writeln(trimmed);
-      charCount += trimmed.length;
-
-      // Stop after we have a good amount of content
-      if (charCount > maxChars * 0.8) break;
+      // Stop if we have enough content
+      if (text.length >= maxLength) break;
     }
 
-    return preview.toString().trim();
+    return text.toString().trim();
   }
 
   @override
@@ -1473,7 +1474,7 @@ class _AICoachCard extends StatelessWidget {
     final bool hasSummary =
         round.aiSummary != null && round.aiSummary!.content.isNotEmpty;
     final String? preview = hasSummary
-        ? _truncateMarkdown(round.aiSummary!.content, 200)
+        ? _getFirstSentences(round.aiSummary!.content, 150)
         : null;
 
     return Card(
@@ -1496,29 +1497,13 @@ class _AICoachCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               if (hasSummary && preview != null && preview.isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.3),
-                    ),
+                Text(
+                  preview,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 100),
-                    child: SingleChildScrollView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: CustomMarkdownContent(
-                        data: preview,
-                        bodyPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -1560,6 +1545,380 @@ class _AICoachCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// Skills Overview Card
+class _SkillsOverviewCard extends StatelessWidget {
+  final DGRound round;
+  final VoidCallback? onTap;
+
+  const _SkillsOverviewCard({required this.round, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final SkillsAnalysisService service = SkillsAnalysisService();
+    final SkillsAnalysis analysis = service.getSkillsAnalysis(round);
+
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 12,
+            right: 4,
+            top: 16,
+            bottom: 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text(
+                      '⭐ Skills Overview',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: Colors.black,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Overall score and spider chart
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Overall score (left side, very compact)
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${analysis.overallScore.toStringAsFixed(0)}%',
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF137e66),
+                              fontSize: 28,
+                            ),
+                      ),
+                      Text(
+                        'Overall',
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 4),
+                  // Spider chart (right side, more space)
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 1.15,
+                      child: _CompactSkillsSpiderChart(
+                        analysis: analysis,
+                        shouldAnimate: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Compact Spider Chart for Overview Card
+class _CompactSkillsSpiderChart extends StatefulWidget {
+  const _CompactSkillsSpiderChart({
+    required this.analysis,
+    this.shouldAnimate = false,
+  });
+
+  final SkillsAnalysis analysis;
+  final bool shouldAnimate;
+
+  @override
+  State<_CompactSkillsSpiderChart> createState() =>
+      _CompactSkillsSpiderChartState();
+}
+
+class _CompactSkillsSpiderChartState extends State<_CompactSkillsSpiderChart>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    );
+
+    if (widget.shouldAnimate) {
+      _animationController.forward();
+    } else {
+      _animationController.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: _CompactSkillsSpiderChartPainter(
+            skills: widget.analysis.allSkills,
+            animationValue: widget.shouldAnimate ? _animation.value : 1.0,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CompactSkillsSpiderChartPainter extends CustomPainter {
+  _CompactSkillsSpiderChartPainter({
+    required this.skills,
+    this.animationValue = 1.0,
+  });
+
+  final List<SkillScore> skills;
+  final double animationValue;
+
+  static const Color gridColor = Color(0xFFE0E0E0);
+  static const Color dataColor = Color(0xFF137e66);
+  static const Color dataFillColor = Color(0x33137e66);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = Offset(size.width / 2, size.height / 2);
+    final double radius = min(size.width, size.height) / 2 * 0.55;
+    final int numSkills = skills.length;
+
+    // Draw grid circles
+    _drawGridCircles(canvas, center, radius);
+
+    // Draw axes
+    _drawAxes(canvas, center, radius, numSkills);
+
+    // Draw labels
+    _drawLabels(canvas, center, radius, numSkills);
+
+    // Draw data polygon
+    _drawDataPolygon(canvas, center, radius, numSkills);
+  }
+
+  void _drawGridCircles(Canvas canvas, Offset center, double radius) {
+    final Paint gridPaint = Paint()
+      ..color = gridColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    // Draw 5 concentric circles at 20%, 40%, 60%, 80%, 100%
+    for (int i = 1; i <= 5; i++) {
+      final double currentRadius = radius * (i / 5);
+      canvas.drawCircle(center, currentRadius, gridPaint);
+    }
+  }
+
+  void _drawAxes(Canvas canvas, Offset center, double radius, int numSkills) {
+    final Paint axisPaint = Paint()
+      ..color = gridColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    for (int i = 0; i < numSkills; i++) {
+      final double angle = (2 * pi / numSkills) * i - (pi / 2);
+      final double x = center.dx + radius * cos(angle);
+      final double y = center.dy + radius * sin(angle);
+
+      canvas.drawLine(center, Offset(x, y), axisPaint);
+    }
+  }
+
+  void _drawLabels(Canvas canvas, Offset center, double radius, int numSkills) {
+    for (int i = 0; i < numSkills; i++) {
+      final double angle = (2 * pi / numSkills) * i - (pi / 2);
+      final double labelRadius = radius * 1.30;
+      final double x = center.dx + labelRadius * cos(angle);
+      final double y = center.dy + labelRadius * sin(angle);
+
+      final String label = _getShortLabel(skills[i].skillName);
+      final String percentage = '${skills[i].percentage.toStringAsFixed(0)}%';
+
+      final TextPainter labelPainter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      );
+      labelPainter.layout();
+
+      final TextPainter percentagePainter = TextPainter(
+        text: TextSpan(
+          text: percentage,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: dataColor,
+          ),
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      );
+      percentagePainter.layout();
+
+      // Position label
+      double labelX = x - labelPainter.width / 2;
+      double labelY = y - labelPainter.height / 2;
+
+      // Adjust for corner positions to prevent overlap
+      if (angle < -pi / 4 && angle > -3 * pi / 4) {
+        // Top
+        labelY -= 14;
+      } else if (angle > pi / 4 && angle < 3 * pi / 4) {
+        // Bottom
+        labelY += 14;
+      } else if (angle >= -pi / 4 && angle <= pi / 4) {
+        // Right side
+        labelX += 6;
+      } else {
+        // Left side
+        labelX -= 6;
+      }
+
+      labelPainter.paint(canvas, Offset(labelX, labelY));
+
+      // Paint percentage below label
+      final double percentageX = x - percentagePainter.width / 2;
+      final double percentageY = labelY + labelPainter.height + 1;
+      percentagePainter.paint(canvas, Offset(percentageX, percentageY));
+    }
+  }
+
+  String _getShortLabel(String fullLabel) {
+    switch (fullLabel) {
+      case 'Backhand Driving':
+        return 'Backhand';
+      case 'Forehand Driving':
+        return 'Forehand';
+      case 'Approaching':
+        return 'Approach';
+      case 'Putting':
+        return 'Putting';
+      case 'Mental Focus':
+        return 'Mental';
+      default:
+        return fullLabel;
+    }
+  }
+
+  void _drawDataPolygon(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    int numSkills,
+  ) {
+    final Path dataPath = Path();
+    final List<Offset> points = [];
+
+    // Calculate points with animation - arms start from center and extend outward
+    // Each arm has a different speed/delay for a staggered effect
+    for (int i = 0; i < numSkills; i++) {
+      final double angle = (2 * pi / numSkills) * i - (pi / 2);
+      final double percentage = skills[i].percentage / 100;
+
+      // Stagger each arm's animation - each arm starts slightly later and moves at different speed
+      final double delay =
+          i * 0.08; // Each arm delayed by 8% of total animation
+      final double armProgress = ((animationValue - delay) / (1.0 - delay))
+          .clamp(0.0, 1.0);
+
+      // Animate from 0 (center) to full percentage with staggered timing
+      final double animatedPercentage = percentage * armProgress;
+      final double pointRadius = radius * animatedPercentage;
+      final double x = center.dx + pointRadius * cos(angle);
+      final double y = center.dy + pointRadius * sin(angle);
+
+      points.add(Offset(x, y));
+
+      if (i == 0) {
+        dataPath.moveTo(x, y);
+      } else {
+        dataPath.lineTo(x, y);
+      }
+    }
+
+    dataPath.close();
+
+    // Draw filled polygon
+    final Paint fillPaint = Paint()
+      ..color = dataFillColor
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(dataPath, fillPaint);
+
+    // Draw polygon outline
+    final Paint strokePaint = Paint()
+      ..color = dataColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawPath(dataPath, strokePaint);
+
+    // Draw points
+    final Paint pointPaint = Paint()
+      ..color = dataColor
+      ..style = PaintingStyle.fill;
+
+    for (final Offset point in points) {
+      canvas.drawCircle(point, 3, pointPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CompactSkillsSpiderChartPainter oldDelegate) {
+    return oldDelegate.skills != skills ||
+        oldDelegate.animationValue != animationValue;
   }
 }
 

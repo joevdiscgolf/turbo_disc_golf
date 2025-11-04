@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/overview_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/coach_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/scores_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/discs_tab.dart';
@@ -36,7 +37,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
   void initState() {
     super.initState();
     _round = widget.round;
-    _tabController = TabController(length: 11, vsync: this);
+    _tabController = TabController(length: 12, vsync: this);
 
     // Show story view if requested
     if (widget.showStoryOnLoad) {
@@ -110,6 +111,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             isScrollable: true,
             tabs: const [
               Tab(text: 'Overview'),
+              Tab(text: 'Skills'),
               Tab(text: 'Course'),
               Tab(text: 'Scores'),
               Tab(text: 'Drives'),
@@ -127,6 +129,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
           controller: _tabController,
           children: [
             OverviewTab(round: _round, tabController: _tabController),
+            SkillsTab(round: _round),
             CourseTab(round: _round),
             ScoresTab(round: _round),
             DrivesTab(round: _round),
