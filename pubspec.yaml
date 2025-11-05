@@ -53,7 +53,7 @@ dependencies:
   flutter_bounceable: ^1.2.0
   collection: ^1.19.1
   flutter_animate: ^4.5.0
-  google_fonts: ^6.2.1
+  # google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

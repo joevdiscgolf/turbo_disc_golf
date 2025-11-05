@@ -108,10 +108,8 @@ class _OverviewTabState extends State<OverviewTab> {
       final Widget screen = detailScreen;
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => _DetailScreenWrapper(
-            title: title,
-            child: screen,
-          ),
+          builder: (context) =>
+              _DetailScreenWrapper(title: title, child: screen),
         ),
       );
     }
@@ -122,7 +120,11 @@ class _OverviewTabState extends State<OverviewTab> {
     return ListView(
       padding: const EdgeInsets.only(top: 16, bottom: 80),
       children: [
-        ScoreKPICard(round: widget.round, roundParser: _roundParser),
+        ScoreKPICard(
+          round: widget.round,
+          roundParser: _roundParser,
+          isDetailScreen: false,
+        ),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2045,10 +2047,7 @@ class _DetailScreenWrapper extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _DetailScreenWrapper({
-    required this.title,
-    required this.child,
-  });
+  const _DetailScreenWrapper({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -2068,10 +2067,7 @@ class _DetailScreenWrapper extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          title: Text(title),
-        ),
+        appBar: AppBar(backgroundColor: Colors.transparent, title: Text(title)),
         body: child,
       ),
     );

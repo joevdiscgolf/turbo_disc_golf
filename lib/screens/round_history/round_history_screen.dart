@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
+import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
@@ -326,8 +327,25 @@ class _RecordRoundSheetState extends State<_RecordRoundSheet> {
   }
 
   void _handleContinue() {
-    // todo: Process the transcript and continue with round creation
-    Navigator.pop(context);
+    final String transcript = _voiceService.transcribedText;
+
+    if (transcript.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No transcript available')));
+      return;
+    }
+
+    // Replace the bottom sheet with the loading screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RoundProcessingLoadingScreen(
+          transcript: transcript,
+          useSharedPreferences: false,
+        ),
+      ),
+    );
   }
 
   @override
@@ -432,47 +450,32 @@ class _RecordRoundSheetState extends State<_RecordRoundSheet> {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final RoundParser roundParser = locator.get<RoundParser>();
-                    final RoundStorageService storageService =
-                        locator.get<RoundStorageService>();
+                    final RoundStorageService storageService = locator
+                        .get<RoundStorageService>();
 
                     // Check if there's a cached round available
-                    final bool useCached = await storageService.hasCachedRound();
+                    final bool useCached = await storageService
+                        .hasCachedRound();
                     debugPrint(
                       'Test Parse Constant: Using cached round: $useCached',
                     );
 
-                    await roundParser.parseVoiceTranscript(
-                      testRoundDescription,
-                      courseName: testCourseName,
-                      useSharedPreferences: useCached,
-                    );
+                    // Replace the bottom sheet with the loading screen
 
-                    if (roundParser.lastError.isNotEmpty && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(roundParser.lastError)),
-                      );
-                    } else if (roundParser.parsedRound != null &&
-                        context.mounted) {
-                      // Set the round so the parser can calculate stats
-                      roundParser.setRound(roundParser.parsedRound!);
+                    // if (context.mounted) {
+                    //   Navigator.of(context).pop();
+                    //   // return;
+                    // }
 
-                      // Close the bottom sheet
-                      Navigator.pop(context);
-
-                      // Navigate to the review screen
-                      Navigator.push(
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => useRoundReviewScreenV2
-                              ? RoundReviewScreenV2(
-                                  round: roundParser.parsedRound!,
-                                  showStoryOnLoad: true,
-                                )
-                              : RoundReviewScreen(
-                                  round: roundParser.parsedRound!,
-                                  showStoryOnLoad: true,
-                                ),
+                          builder: (context) => RoundProcessingLoadingScreen(
+                            transcript: testRoundDescription,
+                            courseName: testCourseName,
+                            useSharedPreferences: useCached,
+                          ),
                         ),
                       );
                     }
@@ -548,10 +551,11 @@ class _AnimatedMicrophoneButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isListening
-                      ? const Color(0xFFEF5350)
-                      : const Color(0xFF2196F3))
-                  .withValues(alpha: 0.4),
+              color:
+                  (isListening
+                          ? const Color(0xFFEF5350)
+                          : const Color(0xFF2196F3))
+                      .withValues(alpha: 0.4),
               blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 4),
@@ -561,10 +565,7 @@ class _AnimatedMicrophoneButton extends StatelessWidget {
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
+            return FadeTransition(opacity: animation, child: child);
           },
           child: isListening
               ? const _SoundWaveIndicator(key: ValueKey('soundwave'))
@@ -620,11 +621,11 @@ class _SoundWaveIndicatorState extends State<_SoundWaveIndicator>
             builder: (context, child) {
               // Create staggered animation for each bar
               final double delay = index * 0.1;
-              final double animationValue =
-                  (_controller.value + delay) % 1.0;
+              final double animationValue = (_controller.value + delay) % 1.0;
 
               // Use sine wave for smooth up/down motion
-              final double height = 6 + (18 * (0.5 + 0.5 * sin(animationValue * 2 * pi)));
+              final double height =
+                  6 + (18 * (0.5 + 0.5 * sin(animationValue * 2 * pi)));
 
               return Container(
                 width: 3,

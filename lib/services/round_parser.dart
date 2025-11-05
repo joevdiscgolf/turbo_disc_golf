@@ -13,11 +13,13 @@ import 'package:turbo_disc_golf/services/round_storage_service.dart';
 class RoundParser extends ChangeNotifier {
   DGRound? _parsedRound;
   bool _isProcessing = false;
+  bool _isReadyToNavigate = false;
   String _lastError = '';
   bool _shouldNavigateToReview = false;
 
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
+  bool get isReadyToNavigate => _isReadyToNavigate;
   String get lastError => _lastError;
   bool get shouldNavigateToReview => _shouldNavigateToReview;
 
@@ -32,6 +34,20 @@ class RoundParser extends ChangeNotifier {
   /// Resets the navigation flag after navigation has occurred
   void clearNavigationFlag() {
     _shouldNavigateToReview = false;
+    _isReadyToNavigate = false;
+  }
+
+  /// Signals that processing is complete and ready to navigate
+  /// This gives the UI time to show the loading animation before transitioning
+  void _setReadyToNavigate() {
+    _isReadyToNavigate = true;
+    notifyListeners();
+
+    // Add a small delay before allowing navigation to let the loading animation play
+    Future.delayed(const Duration(milliseconds: 800), () {
+      _shouldNavigateToReview = true;
+      notifyListeners();
+    });
   }
 
   Future<bool> parseVoiceTranscript(
@@ -42,11 +58,6 @@ class RoundParser extends ChangeNotifier {
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
     final BagService bagService = locator.get<BagService>();
-    if (transcript.trim().isEmpty) {
-      _lastError = 'Transcript is empty';
-      notifyListeners();
-      return false;
-    }
 
     debugPrint('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
     debugPrint('Use shared preferences: $useSharedPreferences');
@@ -72,11 +83,14 @@ class RoundParser extends ChangeNotifier {
           debugPrint(
             'Successfully loaded cached round from shared preferences',
           );
+
+          // Add a 5-second delay to show the loading animation
+          debugPrint('Showing loading animation for 5 seconds...');
+          await Future.delayed(const Duration(seconds: 5));
+
           _parsedRound = cachedRound;
           _isProcessing = false;
-          _shouldNavigateToReview =
-              true; // Signal that navigation should happen
-          notifyListeners();
+          _setReadyToNavigate(); // Signal that we're ready to navigate with a delay
           return true;
         } else {
           debugPrint('No cached round found in shared preferences');
@@ -85,6 +99,14 @@ class RoundParser extends ChangeNotifier {
           notifyListeners();
           return false;
         }
+      }
+
+      // Check if transcript is empty (only needed if we're actually parsing)
+      if (transcript.trim().isEmpty) {
+        _lastError = 'Transcript is empty';
+        _isProcessing = false;
+        notifyListeners();
+        return false;
       }
 
       // Load user's bag if not already loaded
@@ -162,8 +184,7 @@ class RoundParser extends ChangeNotifier {
       }
 
       _isProcessing = false;
-      _shouldNavigateToReview = true; // Signal that navigation should happen
-      notifyListeners();
+      _setReadyToNavigate(); // Signal that we're ready to navigate with a delay
       return true;
     } catch (e) {
       _lastError = 'Error parsing round: $e';

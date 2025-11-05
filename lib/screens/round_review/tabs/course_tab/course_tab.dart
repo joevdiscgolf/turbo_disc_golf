@@ -37,7 +37,11 @@ class _CourseTabState extends State<CourseTab> {
 
   List<Widget> _getListViewChildren() {
     return [
-      ScoreKPICard(round: _round, roundParser: _roundParser),
+      ScoreKPICard(
+        round: _round,
+        roundParser: _roundParser,
+        isDetailScreen: true,
+      ),
       const SizedBox(height: 8),
       HolesGrid(round: _round),
       // HolesList(round: _round, showAddThrowDialog: _showAddThrowDialog),

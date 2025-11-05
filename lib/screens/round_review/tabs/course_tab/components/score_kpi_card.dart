@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 class ScoreKPICard extends StatelessWidget {
@@ -9,37 +10,71 @@ class ScoreKPICard extends StatelessWidget {
     super.key,
     required this.round,
     required this.roundParser,
+    required this.isDetailScreen,
   });
 
   final DGRound round;
   final RoundParser roundParser;
+  final bool isDetailScreen;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        if (isDetailScreen) {
+          return;
+        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScoreDetailScreen(round: round),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _kpiRow(context),
-          const SizedBox(height: 12),
-
-          _buildCompactScorecard(),
-          const SizedBox(height: 16),
-
-          _CompactScoreDistributionBar(round: round),
-        ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                _kpiRow(context),
+                const SizedBox(height: 12),
+                if (!isDetailScreen) ...[
+                  _buildCompactScorecard(),
+                  const SizedBox(height: 16),
+                ],
+                ScoreDistributionBar(
+                  round: round,
+                  height: isDetailScreen ? 32 : 24,
+                ),
+              ],
+            ),
+            if (!isDetailScreen) ...[
+              // Arrow icon in top-right corner
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -201,17 +236,5 @@ class ScoreKPICard extends StatelessWidget {
         );
       }).toList(),
     );
-  }
-}
-
-// Compact version of ScoreDistributionBar with reduced height
-class _CompactScoreDistributionBar extends StatelessWidget {
-  const _CompactScoreDistributionBar({required this.round});
-
-  final DGRound round;
-
-  @override
-  Widget build(BuildContext context) {
-    return ScoreDistributionBar(round: round);
   }
 }
