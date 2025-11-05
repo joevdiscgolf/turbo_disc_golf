@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: true,
+        // fontFamily: GoogleFonts.inter().fontFamily,
         colorScheme: ColorScheme.light(
           primary: const Color(0xFFB8E986), // Soft mint green
           secondary: const Color(0xFF5B7EFF), // Vibrant blue
@@ -33,7 +34,8 @@ class MyApp extends StatelessWidget {
           onSurface: const Color(0xFF2C2C2C), // Dark text on surface
           onError: const Color(0xFFFFFFFF), // White text on error
         ),
-        scaffoldBackgroundColor: Colors.transparent, // Transparent for gradient background
+        scaffoldBackgroundColor:
+            Colors.transparent, // Transparent for gradient background
         cardTheme: const CardThemeData(
           color: Color(0xFFFFFFFF), // Pure white cards
           elevation: 2,

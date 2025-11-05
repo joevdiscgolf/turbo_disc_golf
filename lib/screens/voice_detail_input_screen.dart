@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
+import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 // Test constant for image + voice mode (no hole distance/par info)
 
@@ -34,6 +38,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
   late AnimationController _animationController;
   final TextEditingController _transcriptController = TextEditingController();
   String? _lastNavigatedRoundId;
+  bool _isShowingLoadingScreen = false;
 
   @override
   void initState() {
@@ -64,11 +69,27 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
   }
 
   void _onParserChange() {
+    // Only respond if this screen is currently visible
+    if (!mounted) {
+      debugPrint('⏭️ VoiceDetailInputScreen: Skipping - not mounted');
+      return;
+    }
+
+    debugPrint('🔔 VoiceDetailInputScreen _onParserChange called - isProcessing: ${_roundParser.isProcessing}, shouldNavigate: ${_roundParser.shouldNavigateToReview}, parsedRound: ${_roundParser.parsedRound?.id}');
+
+    // Show loading screen when processing starts
+    if (_roundParser.isProcessing && !_isShowingLoadingScreen) {
+      debugPrint('📱 VoiceDetailInputScreen: Showing loading screen');
+      _showLoadingScreen();
+      return; // Don't process further
+    }
+
     // Navigate to review when round is parsed
     if (_roundParser.parsedRound != null &&
         _roundParser.shouldNavigateToReview &&
-        mounted) {
+        _isShowingLoadingScreen) { // Only navigate if WE showed the loading screen
       final roundId = _roundParser.parsedRound!.id;
+      debugPrint('🚀 VoiceDetailInputScreen: Navigation requested for round: $roundId, lastNavigated: $_lastNavigatedRoundId');
 
       // Only navigate if this is a new round (not already navigated to)
       if (roundId != _lastNavigatedRoundId) {
@@ -77,16 +98,41 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
 
         final round = _roundParser.parsedRound!;
 
-        // Navigate to review screen with story shown on load
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                RoundReviewScreen(round: round, showStoryOnLoad: true),
+        debugPrint('✅ VoiceDetailInputScreen: Navigating to round review screen');
+        _isShowingLoadingScreen = false;
+
+        // Pop loading screen first to get back to VoiceDetailInputScreen
+        Navigator.of(context).pop();
+
+        // Then push review screen with zoom transition
+        Navigator.of(context).push(
+          ZoomPageRoute(
+            page: useRoundReviewScreenV2
+                ? RoundReviewScreenV2(round: round, showStoryOnLoad: false)
+                : RoundReviewScreen(round: round, showStoryOnLoad: false),
           ),
         );
+      } else {
+        debugPrint('⏭️ VoiceDetailInputScreen: Skipping navigation - already navigated to this round');
       }
     }
+  }
+
+  void _showLoadingScreen() {
+    _isShowingLoadingScreen = true;
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: true,
+        barrierDismissible: false,
+        pageBuilder: (context, _, __) => const RoundProcessingLoadingScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
   @override

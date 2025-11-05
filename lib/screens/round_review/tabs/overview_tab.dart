@@ -7,6 +7,14 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_kpi_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/discs_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
@@ -19,8 +27,14 @@ import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 class OverviewTab extends StatefulWidget {
   final DGRound round;
   final TabController? tabController;
+  final bool isReviewV2Screen;
 
-  const OverviewTab({super.key, required this.round, this.tabController});
+  const OverviewTab({
+    super.key,
+    required this.round,
+    this.tabController,
+    this.isReviewV2Screen = false,
+  });
 
   @override
   State<OverviewTab> createState() => _OverviewTabState();
@@ -37,8 +51,67 @@ class _OverviewTabState extends State<OverviewTab> {
   }
 
   void _navigateToTab(int tabIndex) {
-    if (widget.tabController != null) {
+    if (widget.isReviewV2Screen) {
+      // V2: Push new screen based on tab index
+      _pushDetailScreen(tabIndex);
+    } else if (widget.tabController != null) {
+      // V1: Navigate to tab
       widget.tabController!.animateTo(tabIndex);
+    }
+  }
+
+  void _pushDetailScreen(int tabIndex) {
+    // Import detail screens at the top of the file
+    // Tab indices from RoundReviewScreen:
+    // 0: Overview, 1: Skills, 2: Course, 3: Scores, 4: Drives, 5: Putting,
+    // 6: Discs, 7: Mistakes, 8: Psych, 9: Summary, 10: Coach, 11: Roast
+
+    Widget? detailScreen;
+    String title = '';
+
+    switch (tabIndex) {
+      case 1: // Skills
+        detailScreen = SkillsTab(round: widget.round);
+        title = 'Skills';
+        break;
+      case 4: // Drives
+        detailScreen = DrivesTab(round: widget.round);
+        title = 'Driving';
+        break;
+      case 5: // Putting
+        detailScreen = PuttingTab(round: widget.round);
+        title = 'Putting';
+        break;
+      case 6: // Discs
+        detailScreen = DiscsTab(round: widget.round);
+        title = 'Top Discs';
+        break;
+      case 7: // Mistakes
+        detailScreen = MistakesTab(round: widget.round);
+        title = 'Mistakes';
+        break;
+      case 8: // Psych
+        detailScreen = PsychTab(round: widget.round);
+        title = 'Mental Game';
+        break;
+      case 9: // Summary
+        detailScreen = SummaryTab(round: widget.round);
+        title = 'AI Insights';
+        break;
+      case 11: // Roast
+        detailScreen = RoastTab(round: widget.round);
+        title = 'AI Roast';
+        break;
+    }
+
+    if (detailScreen != null && mounted) {
+      final Widget screen = detailScreen;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              _DetailScreenWrapper(title: title, child: screen),
+        ),
+      );
     }
   }
 
@@ -47,7 +120,11 @@ class _OverviewTabState extends State<OverviewTab> {
     return ListView(
       padding: const EdgeInsets.only(top: 16, bottom: 80),
       children: [
-        ScoreKPICard(round: widget.round, roundParser: _roundParser),
+        ScoreKPICard(
+          round: widget.round,
+          roundParser: _roundParser,
+          isDetailScreen: false,
+        ),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1960,6 +2037,38 @@ class _AIRoastCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Detail Screen Wrapper for V2 navigation
+class _DetailScreenWrapper extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _DetailScreenWrapper({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFEEE8F5), // Light gray with faint purple tint
+            Color(0xFFECECEE), // Light gray
+            Color(0xFFE8F4E8), // Light gray with faint green tint
+            Color(0xFFEAE8F0), // Light gray with subtle purple
+          ],
+          stops: [0.0, 0.3, 0.7, 1.0],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(backgroundColor: Colors.transparent, title: Text(title)),
+        body: child,
       ),
     );
   }

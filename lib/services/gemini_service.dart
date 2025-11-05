@@ -690,11 +690,14 @@ ALL enum values MUST be in lower snake_case format with underscores between word
 For example: "circle_1" NOT "circle1", "tee_drive" NOT "teeDrive"
 
 STRICT ENUM CATEGORY RULES - NEVER MIX CATEGORIES:
-- technique: HOW the disc is thrown (backhand, forehand, etc.) - NOT shot shapes
+- technique: HOW the disc is thrown (backhand, forehand, etc.) - NOT shot shapes, NOT stances
 - shotShape: The FLIGHT PATH/CURVE (hyzer, anhyzer, flex_shot, etc.) - NOT techniques
+- stance: FOOTWORK TYPE (standstill, x_step, patent_pending) - NOT techniques
 - NEVER use a shotShape value for technique or vice versa
+- NEVER use a stance value for technique or vice versa
 - Example: "flex_shot" is a shotShape, NOT a technique
 - Example: "backhand" is a technique, NOT a shotShape
+- Example: "standstill" is a stance, NOT a technique
 
 ALLOWED ENUM VALUES (use ONLY these exact values - NEVER mix categories):
 - purpose (what the throw is for): $throwPurposeValues
@@ -710,6 +713,10 @@ ALLOWED ENUM VALUES (use ONLY these exact values - NEVER mix categories):
 - fairwayWidth: $fairwayWidthValues
 - gripType: $gripTypeValues
 - throwHand: $throwHandValues
+
+CRITICAL: For the 'technique' field, you MUST use ONLY these values: $techniqueValues
+DO NOT use "standstill" for technique - that is a stance value!
+DO NOT use "hyzer", "anhyzer", "flex_shot", etc. for technique - those are shotShape values!
 
 OTHER FIELDS (integers, not enums):
 - penaltyStrokes: Number of penalty strokes for this throw (1 for OB/water/lost disc, omit if no penalty)
@@ -1215,11 +1222,14 @@ ALL enum values MUST be in lower snake_case format with underscores between word
 For example: "circle_1" NOT "circle1", "tee_drive" NOT "teeDrive"
 
 STRICT ENUM CATEGORY RULES - NEVER MIX CATEGORIES:
-- technique: HOW the disc is thrown (backhand, forehand, etc.) - NOT shot shapes
+- technique: HOW the disc is thrown (backhand, forehand, etc.) - NOT shot shapes, NOT stances
 - shotShape: The FLIGHT PATH/CURVE (hyzer, anhyzer, flex_shot, etc.) - NOT techniques
+- stance: FOOTWORK TYPE (standstill, x_step, patent_pending) - NOT techniques
 - NEVER use a shotShape value for technique or vice versa
+- NEVER use a stance value for technique or vice versa
 - Example: "flex_shot" is a shotShape, NOT a technique
 - Example: "backhand" is a technique, NOT a shotShape
+- Example: "standstill" is a stance, NOT a technique
 
 ALLOWED ENUM VALUES (use ONLY these exact values - NEVER mix categories):
 - purpose (what the throw is for): $throwPurposeValues
@@ -1235,6 +1245,10 @@ ALLOWED ENUM VALUES (use ONLY these exact values - NEVER mix categories):
 - fairwayWidth: $fairwayWidthValues
 - gripType: $gripTypeValues
 - throwHand: $throwHandValues
+
+CRITICAL: For the 'technique' field, you MUST use ONLY these values: $techniqueValues
+DO NOT use "standstill" for technique - that is a stance value!
+DO NOT use "hyzer", "anhyzer", "flex_shot", etc. for technique - those are shotShape values!
 
 OTHER FIELDS (integers, not enums):
 - penaltyStrokes: Number of penalty strokes for this throw (1 for OB/water/lost disc, omit if no penalty)
