@@ -16,12 +16,12 @@ class VoiceRecordingService extends ChangeNotifier {
 
   Future<bool> initialize() async {
     try {
-      debugPrint('=== Initializing Voice Recording Service ===');
+      // debugPrint('=== Initializing Voice Recording Service ===');
 
       // Check current microphone permission status
-      debugPrint('Checking microphone permission...');
+      // debugPrint('Checking microphone permission...');
       var status = await Permission.microphone.status;
-      debugPrint('Current microphone permission status: $status');
+      // debugPrint('Current microphone permission status: $status');
 
       // For debug mode - try requesting even if "permanently denied"
       // This can happen if the permission was never actually shown
@@ -50,7 +50,7 @@ class VoiceRecordingService extends ChangeNotifier {
       }
 
       // Initialize speech to text
-      debugPrint('Initializing speech recognition...');
+      // debugPrint('Initializing speech recognition...');
       _isInitialized = await _speechToText.initialize(
         onError: (error) {
           _lastError = error.errorMsg;
@@ -88,7 +88,7 @@ class VoiceRecordingService extends ChangeNotifier {
     debugPrint('=== Starting voice recording ===');
 
     if (!_isInitialized) {
-      debugPrint('Not initialized, initializing now...');
+      // debugPrint('Not initialized, initializing now...');
       await initialize();
     }
 

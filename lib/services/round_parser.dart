@@ -59,21 +59,13 @@ class RoundParser extends ChangeNotifier {
   }) async {
     final BagService bagService = locator.get<BagService>();
 
-    debugPrint('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
-    debugPrint('Use shared preferences: $useSharedPreferences');
-    debugPrint('Transcript length: ${transcript.length} characters');
-    debugPrint('Course name: ${courseName ?? "Not specified"}');
-    debugPrint('Raw transcript:');
-    debugPrint(transcript);
-    debugPrint('==========================================');
-
-    _isProcessing = true;
-    _lastError = '';
-    notifyListeners();
-
     try {
       // If using shared preferences, try to load cached round first
       if (useSharedPreferences) {
+        _isProcessing = true;
+        _lastError = '';
+        notifyListeners();
+
         debugPrint('Attempting to load round from shared preferences...');
         final cachedRound = await locator
             .get<RoundStorageService>()
@@ -84,9 +76,8 @@ class RoundParser extends ChangeNotifier {
             'Successfully loaded cached round from shared preferences',
           );
 
-          // Add a 5-second delay to show the loading animation
-          debugPrint('Showing loading animation for 5 seconds...');
-          await Future.delayed(const Duration(seconds: 5));
+          // Add a 3-second delay to show the loading animation
+          await Future.delayed(const Duration(seconds: 3));
 
           _parsedRound = cachedRound;
           _isProcessing = false;
@@ -100,6 +91,18 @@ class RoundParser extends ChangeNotifier {
           return false;
         }
       }
+
+      // Only print these logs when we're actually parsing with Gemini
+      debugPrint('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
+      debugPrint('Transcript length: ${transcript.length} characters');
+      debugPrint('Course name: ${courseName ?? "Not specified"}');
+      // debugPrint('Raw transcript:');
+      // debugPrint(transcript);
+      // debugPrint('==========================================');
+
+      _isProcessing = true;
+      _lastError = '';
+      notifyListeners();
 
       // Check if transcript is empty (only needed if we're actually parsing)
       if (transcript.trim().isEmpty) {

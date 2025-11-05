@@ -41,7 +41,6 @@ class _RoundProcessingLoadingScreenState
   int _currentMessageIndex = 0;
   Timer? _messageTimer;
   late RoundParser _roundParser;
-  bool _hasNavigated = false;
 
   final List<String> _loadingMessages = [
     'Processing your round...',
@@ -54,16 +53,10 @@ class _RoundProcessingLoadingScreenState
   void initState() {
     super.initState();
     _roundParser = locator.get<RoundParser>();
-    _roundParser.addListener(_onRoundParserUpdate);
     _startMessageCycle();
 
-    // Delay processing until after the screen has fully transitioned in
-    // This prevents navigator lock errors
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _processRound();
-      }
-    });
+    // Start processing immediately
+    _processRound();
   }
 
   void _startMessageCycle() {
@@ -78,78 +71,50 @@ class _RoundProcessingLoadingScreenState
   }
 
   Future<void> _processRound() async {
-    debugPrint(
-      'RoundProcessingLoadingScreen: _processRound called - transcript length: ${widget.transcript.length}, useSharedPreferences: ${widget.useSharedPreferences}',
-    );
-
     // If using shared preferences (cached round), we still need a transcript
     // but it won't be used if a cached round is found
     if (widget.transcript.isEmpty && !widget.useSharedPreferences) {
-      debugPrint(
-        'RoundProcessingLoadingScreen: No transcript provided and not using cache - returning',
-      );
       return;
     }
 
-    debugPrint(
-      'RoundProcessingLoadingScreen: Starting processing (useSharedPreferences: ${widget.useSharedPreferences})',
-    );
-
-    // The RoundParser handles all the logic:
-    // - If useSharedPreferences=true and cached round exists: 5-second delay, no parsing
-    // - Otherwise: normal Gemini API processing
-    await _roundParser.parseVoiceTranscript(
-      widget.transcript,
-      courseName: widget.courseName,
-      useSharedPreferences: widget.useSharedPreferences,
-    );
-  }
-
-  void _onRoundParserUpdate() {
-    // Prevent multiple navigation attempts
-    if (_hasNavigated) return;
-
-    // Check for errors
-    if (_roundParser.lastError.isNotEmpty && mounted) {
-      debugPrint(
-        'RoundProcessingLoadingScreen: Error - ${_roundParser.lastError}',
-      );
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
-        }
-      });
-      return;
-    }
-
-    // When ready to navigate to review screen
-    if (_roundParser.shouldNavigateToReview && mounted) {
-      _hasNavigated = true; // Set flag BEFORE scheduling navigation
-      debugPrint(
-        'RoundProcessingLoadingScreen: Ready to navigate, scheduling...',
+    try {
+      // The RoundParser handles all the logic:
+      // - If useSharedPreferences=true and cached round exists: 5-second delay, no parsing
+      // - Otherwise: normal Gemini API processing
+      await _roundParser.parseVoiceTranscript(
+        widget.transcript,
+        courseName: widget.courseName,
+        useSharedPreferences: widget.useSharedPreferences,
       );
 
-      // Wait for next frame AND add a small delay to ensure navigator is unlocked
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (mounted) {
-          // Small delay to ensure any ongoing navigation completes
-          await Future.delayed(const Duration(milliseconds: 100));
-          if (mounted) {
-            debugPrint(
-              'RoundProcessingLoadingScreen: Navigating to review screen now',
-            );
-            _navigateToReviewScreen();
-          }
-        }
-      });
+      // After parsing completes, check if we have a valid round
+      if (!mounted) return;
+
+      if (_roundParser.lastError.isNotEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
+        Navigator.of(context).pop();
+        return;
+      }
+
+      if (_roundParser.parsedRound != null) {
+        _navigateToReviewScreen();
+      } else {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      debugPrint('RoundProcessingLoadingScreen: Exception during parsing: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error processing round: $e')));
+        Navigator.of(context).pop();
+      }
     }
   }
 
   void _navigateToReviewScreen() {
-    debugPrint('RoundProcessingLoadingScreen: _navigateToReviewScreen called');
-
     if (_roundParser.parsedRound == null) {
       debugPrint(
         'RoundProcessingLoadingScreen: ERROR - parsedRound is null, cannot navigate',
@@ -157,45 +122,102 @@ class _RoundProcessingLoadingScreenState
       return;
     }
 
-    debugPrint(
-      'RoundProcessingLoadingScreen: parsedRound exists, preparing to navigate',
-    );
-
     // Set the round so the parser can calculate stats
     _roundParser.setRound(_roundParser.parsedRound!);
 
-    // Clear the navigation flag
-    _roundParser.clearNavigationFlag();
-
-    debugPrint(
-      'RoundProcessingLoadingScreen: Calling Navigator.pushReplacement',
-    );
-
-    // Navigate to review screen, replacing this loading screen
+    // Navigate to review screen with magical zoom transition
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) {
-          debugPrint(
-            'RoundProcessingLoadingScreen: Building RoundReviewScreenV2',
-          );
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
           return RoundReviewScreenV2(
             round: _roundParser.parsedRound!,
             showStoryOnLoad: false,
           );
         },
-      ),
-    );
+        transitionDuration: const Duration(milliseconds: 800),
+        reverseTransitionDuration: const Duration(milliseconds: 500),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Smooth curved animation
+          final CurvedAnimation curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOutCubic,
+          );
 
-    debugPrint(
-      'RoundProcessingLoadingScreen: Navigator.pushReplacement called successfully',
+          // Scale animation - magical zoom from center
+          final Animation<double> scaleAnimation = Tween<double>(
+            begin: 0.8,
+            end: 1.0,
+          ).animate(curvedAnimation);
+
+          // Fade animation with smooth appearance
+          final Animation<double> fadeAnimation = Tween<double>(
+            begin: 0.0,
+            end: 1.0,
+          ).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+            ),
+          );
+
+          // Energy glow that pulses and fades
+          final Animation<double> glowAnimation = Tween<double>(
+            begin: 1.0,
+            end: 0.0,
+          ).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+            ),
+          );
+
+          return Stack(
+            children: [
+              // Multi-layered energy glow background
+              AnimatedBuilder(
+                animation: animation,
+                builder: (context, _) {
+                  final double glowIntensity = glowAnimation.value;
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment.center,
+                        radius: 1.5,
+                        colors: [
+                          const Color(0xFFB8E986).withValues(
+                            alpha: glowIntensity * 0.4,
+                          ),
+                          const Color(0xFF5B7EFF).withValues(
+                            alpha: glowIntensity * 0.3,
+                          ),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              // Main content with smooth transformations
+              ScaleTransition(
+                scale: scaleAnimation,
+                child: FadeTransition(
+                  opacity: fadeAnimation,
+                  child: child,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
   @override
   void dispose() {
     _messageTimer?.cancel();
-    _roundParser.removeListener(_onRoundParserUpdate);
     // Restore system UI when leaving the loading screen
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,

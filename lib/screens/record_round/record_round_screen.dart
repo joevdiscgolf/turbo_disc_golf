@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
-import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 const String testRoundDescription = '''
 Hole 1 was a 350 foot par 3. I threw my Star Destroyer with a backhand hyzer about 300 feet, ended up in circle 1. Made the putt with my Judge for birdie.
@@ -100,21 +95,17 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
       testRoundDescriptions[descriptionIndex];
   late final VoiceRecordingService _voiceService;
   late final BagService _bagService;
-  late final RoundParser _roundParser;
   late AnimationController _animationController;
   final TextEditingController _transcriptController = TextEditingController();
   final TextEditingController _courseNameController = TextEditingController();
   bool _testMode = true;
   bool _useSharedPreferences = false;
-  String? _lastNavigatedRoundId;
-  bool _isShowingLoadingScreen = false;
 
   @override
   void initState() {
     super.initState();
     _voiceService = VoiceRecordingService();
     _bagService = locator.get<BagService>();
-    _roundParser = locator.get<RoundParser>();
 
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -123,9 +114,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
 
     _initializeServices();
 
-    // Listen to voice service changes
+    // Listen to voice service changes only
     _voiceService.addListener(_onVoiceServiceChange);
-    _roundParser.addListener(_onParserChange);
 
     locator.get<FirestoreRoundService>().getRounds().then((rounds) {
       debugPrint('Firestore rounds: ${rounds.length}');
@@ -148,68 +138,27 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
     });
   }
 
-  void _onParserChange() {
-    // Only respond if this screen is currently visible
-    if (!mounted) {
-      debugPrint('⏭️ RecordRoundScreen: Skipping - not mounted');
-      return;
-    }
+  Future<void> _processAndNavigate({
+    required String transcript,
+    String? courseName,
+    required bool useSharedPreferences,
+  }) async {
+    debugPrint('RecordRoundScreen: Starting round processing');
 
-    debugPrint('🔔 RecordRoundScreen _onParserChange called - isProcessing: ${_roundParser.isProcessing}, shouldNavigate: ${_roundParser.shouldNavigateToReview}, parsedRound: ${_roundParser.parsedRound?.id}');
+    // Show loading screen
+    if (!mounted) return;
 
-    // Show loading screen when processing starts
-    if (_roundParser.isProcessing && !_isShowingLoadingScreen) {
-      debugPrint('📱 RecordRoundScreen: Showing loading screen');
-      _showLoadingScreen();
-      return; // Don't process further
-    }
-
-    // Only navigate if this is a newly parsed round (not loaded from history)
-    if (_roundParser.parsedRound != null &&
-        _roundParser.shouldNavigateToReview &&
-        _isShowingLoadingScreen) { // Only navigate if WE showed the loading screen
-      final roundId = _roundParser.parsedRound!.id;
-      debugPrint('🚀 RecordRoundScreen: Navigation requested for round: $roundId, lastNavigated: $_lastNavigatedRoundId');
-
-      // Only navigate if this is a new round (not already navigated to)
-      if (roundId != _lastNavigatedRoundId) {
-        _lastNavigatedRoundId = roundId;
-        _roundParser.clearNavigationFlag(); // Clear the flag before navigating
-
-        final round = _roundParser.parsedRound!;
-
-        debugPrint('✅ RecordRoundScreen: Navigating to round review screen');
-        _isShowingLoadingScreen = false;
-
-        // Pop loading screen first to get back to RecordRoundScreen
-        Navigator.of(context).pop();
-
-        // Then push review screen with zoom transition
-        Navigator.of(context).push(
-          ZoomPageRoute(
-            page: useRoundReviewScreenV2
-                ? RoundReviewScreenV2(round: round, showStoryOnLoad: false)
-                : RoundReviewScreen(round: round, showStoryOnLoad: false),
-          ),
-        );
-      } else {
-        debugPrint('⏭️ RecordRoundScreen: Skipping navigation - already navigated to this round');
-      }
-    }
-  }
-
-  void _showLoadingScreen() {
-    _isShowingLoadingScreen = true;
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: true,
         barrierDismissible: false,
-        pageBuilder: (context, _, __) => const RoundProcessingLoadingScreen(),
+        pageBuilder: (context, _, __) => RoundProcessingLoadingScreen(
+          transcript: transcript,
+          courseName: courseName,
+          useSharedPreferences: useSharedPreferences,
+        ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
@@ -218,7 +167,6 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
   @override
   void dispose() {
     _voiceService.removeListener(_onVoiceServiceChange);
-    _roundParser.removeListener(_onParserChange);
     _voiceService.dispose();
     _animationController.dispose();
     _transcriptController.dispose();
@@ -624,36 +572,15 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                   // Test Parse button
                   if (_testMode)
                     ElevatedButton.icon(
-                      onPressed: _roundParser.isProcessing
-                          ? null
-                          : () async {
-                              await _roundParser.parseVoiceTranscript(
-                                getCorrectTestDescription,
-                                courseName: testCourseName,
-                                useSharedPreferences: _useSharedPreferences,
-                              );
-
-                              if (_roundParser.lastError.isNotEmpty &&
-                                  context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(_roundParser.lastError),
-                                  ),
-                                );
-                              }
-                            },
-                      icon: _roundParser.isProcessing
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.science),
-                      label: Text(
-                        _roundParser.isProcessing
-                            ? 'Processing...'
-                            : 'Test Parse Constant',
-                      ),
+                      onPressed: () {
+                        _processAndNavigate(
+                          transcript: getCorrectTestDescription,
+                          courseName: testCourseName,
+                          useSharedPreferences: _useSharedPreferences,
+                        );
+                      },
+                      icon: const Icon(Icons.science),
+                      label: const Text('Test Parse Constant'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF9D4EDD),
                         foregroundColor: const Color(0xFFF5F5F5),
