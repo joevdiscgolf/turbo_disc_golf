@@ -15,6 +15,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
+import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
@@ -22,14 +23,15 @@ import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/putting_constants.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
-class OverviewTab extends StatefulWidget {
+class RoundOverviewBody extends StatefulWidget {
   final DGRound round;
   final TabController? tabController;
   final bool isReviewV2Screen;
 
-  const OverviewTab({
+  const RoundOverviewBody({
     super.key,
     required this.round,
     this.tabController,
@@ -37,11 +39,15 @@ class OverviewTab extends StatefulWidget {
   });
 
   @override
-  State<OverviewTab> createState() => _OverviewTabState();
+  State<RoundOverviewBody> createState() => _RoundOverviewBodyState();
 }
 
-class _OverviewTabState extends State<OverviewTab> {
+class _RoundOverviewBodyState extends State<RoundOverviewBody>
+    with AutomaticKeepAliveClientMixin {
   late RoundParser _roundParser;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -50,7 +56,7 @@ class _OverviewTabState extends State<OverviewTab> {
     _roundParser.setRound(widget.round);
   }
 
-  void _navigateToTab(int tabIndex) {
+  void _navigateToDetailView(int tabIndex) {
     if (widget.isReviewV2Screen) {
       // V2: Push new screen based on tab index
       _pushDetailScreen(tabIndex);
@@ -106,20 +112,55 @@ class _OverviewTabState extends State<OverviewTab> {
 
     if (detailScreen != null && mounted) {
       final Widget screen = detailScreen;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) =>
-              _DetailScreenWrapper(title: title, child: screen),
-        ),
-      );
+      if (useCustomPageTransitionsForRoundReview) {
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                _DetailScreenWrapper(title: title, child: screen),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  // Fade + scale animation for card expansion effect
+                  const begin = 0.92;
+                  const end = 1.0;
+                  const curve = Curves.easeInOut;
+
+                  final tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: curve));
+                  final scaleAnimation = animation.drive(tween);
+
+                  final fadeAnimation = animation.drive(
+                    CurveTween(curve: curve),
+                  );
+
+                  return FadeTransition(
+                    opacity: fadeAnimation,
+                    child: ScaleTransition(scale: scaleAnimation, child: child),
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 350),
+          ),
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) =>
+                _DetailScreenWrapper(title: title, child: screen),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 16, bottom: 80),
-      children: [
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    return Container(
+      color: Colors.transparent,
+      child: ListView(
+        padding: const EdgeInsets.only(top: 16, bottom: 80),
+        children: [
         ScoreKPICard(
           round: widget.round,
           roundParser: _roundParser,
@@ -128,9 +169,9 @@ class _OverviewTabState extends State<OverviewTab> {
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _SkillsOverviewCard(
+          child: SkillsOverviewCard(
             round: widget.round,
-            onTap: () => _navigateToTab(1), // Skills tab
+            onTap: () => _navigateToDetailView(1), // Skills tab
           ),
         ),
         const SizedBox(height: 8),
@@ -145,17 +186,17 @@ class _OverviewTabState extends State<OverviewTab> {
         // const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _DrivingStatsCard(
+          child: DrivingStatsCard(
             round: widget.round,
-            onTap: () => _navigateToTab(4), // Drives tab
+            onTap: () => _navigateToDetailView(4), // Drives tab
           ),
         ),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _PuttingStatsCard(
+          child: PuttingStatsCard(
             round: widget.round,
-            onTap: () => _navigateToTab(5), // Putting tab
+            onTap: () => _navigateToDetailView(5), // Putting tab
           ),
         ),
         const SizedBox(height: 8),
@@ -163,7 +204,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _MistakesCard(
             round: widget.round,
-            onTap: () => _navigateToTab(7), // Mistakes tab
+            onTap: () => _navigateToDetailView(7), // Mistakes tab
           ),
         ),
         const SizedBox(height: 8),
@@ -171,7 +212,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _MentalGameCard(
             round: widget.round,
-            onTap: () => _navigateToTab(8), // Psych tab
+            onTap: () => _navigateToDetailView(8), // Psych tab
           ),
         ),
         const SizedBox(height: 8),
@@ -179,7 +220,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _DiscUsageCard(
             round: widget.round,
-            onTap: () => _navigateToTab(6), // Discs tab
+            onTap: () => _navigateToDetailView(6), // Discs tab
           ),
         ),
         const SizedBox(height: 8),
@@ -187,7 +228,7 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _AICoachCard(
             round: widget.round,
-            onTap: () => _navigateToTab(9), // Summary tab
+            onTap: () => _navigateToDetailView(9), // Summary tab
           ),
         ),
         const SizedBox(height: 8),
@@ -195,23 +236,35 @@ class _OverviewTabState extends State<OverviewTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _AIRoastCard(
             round: widget.round,
-            onTap: () => _navigateToTab(11), // Roast tab
+            onTap: () => _navigateToDetailView(11), // Roast tab
           ),
         ),
       ],
+      ),
     );
   }
 }
 
 // Driving Stats Card
-class _DrivingStatsCard extends StatelessWidget {
+class DrivingStatsCard extends StatefulWidget {
   final DGRound round;
   final VoidCallback? onTap;
 
-  const _DrivingStatsCard({required this.round, this.onTap});
+  const DrivingStatsCard({super.key, required this.round, this.onTap});
+
+  @override
+  State<DrivingStatsCard> createState() => _DrivingStatsCardState();
+}
+
+class _DrivingStatsCardState extends State<DrivingStatsCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   Map<String, dynamic> _calculateDrivingStats() {
-    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final RoundStatisticsService statsService = RoundStatisticsService(
+      widget.round,
+    );
     final dynamic coreStats = statsService.getCoreStats();
     final Map<String, Map<String, double>> circleInRegByType = statsService
         .getCircleInRegByThrowType();
@@ -240,19 +293,20 @@ class _DrivingStatsCard extends StatelessWidget {
       'c1InRegPct': coreStats.c1InRegPct,
       'obPct': coreStats.obPct,
       'parkedPct': coreStats.parkedPct,
-      'hasData': round.holes.isNotEmpty,
+      'hasData': widget.round.holes.isNotEmpty,
       'throwTypeStats': throwTypeStats,
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final Map<String, dynamic> stats = _calculateDrivingStats();
     final bool hasData = stats['hasData'] as bool;
 
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -272,38 +326,118 @@ class _DrivingStatsCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  CircularStatIndicator(
-                    label: 'C1 in Reg',
-                    percentage: hasData ? stats['c1InRegPct'] as double : 0.0,
-                    color: const Color(0xFF137e66),
-                    size: 70,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                  ),
-                  CircularStatIndicator(
-                    label: 'Fairway',
-                    percentage: hasData ? stats['fairwayPct'] as double : 0.0,
-                    color: const Color(0xFF4CAF50),
-                    size: 70,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                  ),
-                  CircularStatIndicator(
-                    label: 'OB',
-                    percentage: hasData ? stats['obPct'] as double : 0.0,
-                    color: const Color(0xFFFF7A7A),
-                    size: 70,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                  ),
-                  CircularStatIndicator(
-                    label: 'Parked',
-                    percentage: hasData ? stats['parkedPct'] as double : 0.0,
-                    color: const Color(0xFFFFA726),
-                    size: 70,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                  ),
+                  useHeroAnimationsForRoundReview
+                      ? Hero(
+                          tag: 'driving_c1_in_reg',
+                          child: CircularStatIndicator(
+                            key: ValueKey(
+                              'driving_c1_in_reg_${widget.round.id}',
+                            ),
+                            label: 'C1 in Reg',
+                            percentage: hasData
+                                ? stats['c1InRegPct'] as double
+                                : 0.0,
+                            color: const Color(0xFF137e66),
+                            size: 70,
+                            shouldAnimate: true,
+                            shouldGlow: true,
+                            roundId: widget.round.id,
+                          ),
+                        )
+                      : CircularStatIndicator(
+                          key: ValueKey('driving_c1_in_reg_${widget.round.id}'),
+                          label: 'C1 in Reg',
+                          percentage: hasData
+                              ? stats['c1InRegPct'] as double
+                              : 0.0,
+                          color: const Color(0xFF137e66),
+                          size: 70,
+                          shouldAnimate: true,
+                          shouldGlow: true,
+                          roundId: widget.round.id,
+                        ),
+                  useHeroAnimationsForRoundReview
+                      ? Hero(
+                          tag: 'driving_fairway',
+                          child: CircularStatIndicator(
+                            key: ValueKey('driving_fairway_${widget.round.id}'),
+                            label: 'Fairway',
+                            percentage: hasData
+                                ? stats['fairwayPct'] as double
+                                : 0.0,
+                            color: const Color(0xFF4CAF50),
+                            size: 70,
+                            shouldAnimate: true,
+                            shouldGlow: true,
+                            roundId: widget.round.id,
+                          ),
+                        )
+                      : CircularStatIndicator(
+                          key: ValueKey('driving_fairway_${widget.round.id}'),
+                          label: 'Fairway',
+                          percentage: hasData
+                              ? stats['fairwayPct'] as double
+                              : 0.0,
+                          color: const Color(0xFF4CAF50),
+                          size: 70,
+                          shouldAnimate: true,
+                          shouldGlow: true,
+                          roundId: widget.round.id,
+                        ),
+                  useHeroAnimationsForRoundReview
+                      ? Hero(
+                          tag: 'driving_ob',
+                          child: CircularStatIndicator(
+                            key: ValueKey('driving_ob_${widget.round.id}'),
+                            label: 'OB',
+                            percentage: hasData
+                                ? stats['obPct'] as double
+                                : 0.0,
+                            color: const Color(0xFFFF7A7A),
+                            size: 70,
+                            shouldAnimate: true,
+                            shouldGlow: true,
+                            roundId: widget.round.id,
+                          ),
+                        )
+                      : CircularStatIndicator(
+                          key: ValueKey('driving_ob_${widget.round.id}'),
+                          label: 'OB',
+                          percentage: hasData ? stats['obPct'] as double : 0.0,
+                          color: const Color(0xFFFF7A7A),
+                          size: 70,
+                          shouldAnimate: true,
+                          shouldGlow: true,
+                          roundId: widget.round.id,
+                        ),
+                  useHeroAnimationsForRoundReview
+                      ? Hero(
+                          tag: 'driving_parked',
+                          child: CircularStatIndicator(
+                            key: ValueKey('driving_parked_${widget.round.id}'),
+                            label: 'Parked',
+                            percentage: hasData
+                                ? stats['parkedPct'] as double
+                                : 0.0,
+                            color: const Color(0xFFFFA726),
+                            size: 70,
+                            shouldAnimate: true,
+                            shouldGlow: true,
+                            roundId: widget.round.id,
+                          ),
+                        )
+                      : CircularStatIndicator(
+                          key: ValueKey('driving_parked_${widget.round.id}'),
+                          label: 'Parked',
+                          percentage: hasData
+                              ? stats['parkedPct'] as double
+                              : 0.0,
+                          color: const Color(0xFFFFA726),
+                          size: 70,
+                          shouldAnimate: true,
+                          shouldGlow: true,
+                          roundId: widget.round.id,
+                        ),
                 ],
               ),
               // C1 in Reg by Throw Type section hidden for cleaner overview
@@ -341,11 +475,20 @@ class _DrivingStatsCard extends StatelessWidget {
 }
 
 // Putting Stats Card
-class _PuttingStatsCard extends StatelessWidget {
+class PuttingStatsCard extends StatefulWidget {
   final DGRound round;
   final VoidCallback? onTap;
 
-  const _PuttingStatsCard({required this.round, this.onTap});
+  const PuttingStatsCard({super.key, required this.round, this.onTap});
+
+  @override
+  State<PuttingStatsCard> createState() => _PuttingStatsCardState();
+}
+
+class _PuttingStatsCardState extends State<PuttingStatsCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   Map<String, dynamic> _calculatePuttingStats() {
     int c1Attempts = 0;
@@ -360,7 +503,7 @@ class _PuttingStatsCard extends StatelessWidget {
     int scrambleAttempts = 0;
     final List<bool> allPutts = [];
 
-    for (final DGHole hole in round.holes) {
+    for (final DGHole hole in widget.round.holes) {
       for (final DiscThrow discThrow in hole.throws) {
         if (discThrow.purpose == ThrowPurpose.putt) {
           totalPutts++;
@@ -435,12 +578,13 @@ class _PuttingStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final Map<String, dynamic> stats = _calculatePuttingStats();
     final bool hasData = stats['hasData'] as bool;
 
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -461,30 +605,84 @@ class _PuttingStatsCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  CircularStatIndicator(
-                    label: 'C1',
-                    percentage: hasData ? stats['c1Pct'] as double : 0.0,
-                    color: const Color(0xFF137e66),
-                    size: 87.5,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                  ),
-                  CircularStatIndicator(
-                    label: 'C1X',
-                    percentage: hasData ? stats['c1xPct'] as double : 0.0,
-                    color: const Color(0xFF4CAF50),
-                    size: 87.5,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                  ),
-                  CircularStatIndicator(
-                    label: 'C2',
-                    percentage: hasData ? stats['c2Pct'] as double : 0.0,
-                    color: const Color(0xFF2196F3),
-                    size: 87.5,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                  ),
+                  useHeroAnimationsForRoundReview
+                      ? Hero(
+                          tag: 'putting_c1',
+                          child: CircularStatIndicator(
+                            key: ValueKey('putting_c1_${widget.round.id}'),
+                            label: 'C1',
+                            percentage: hasData
+                                ? stats['c1Pct'] as double
+                                : 0.0,
+                            color: const Color(0xFF137e66),
+                            size: 87.5,
+                            shouldAnimate: true,
+                            shouldGlow: true,
+                            roundId: widget.round.id,
+                          ),
+                        )
+                      : CircularStatIndicator(
+                          key: ValueKey('putting_c1_${widget.round.id}'),
+                          label: 'C1',
+                          percentage: hasData ? stats['c1Pct'] as double : 0.0,
+                          color: const Color(0xFF137e66),
+                          size: 87.5,
+                          shouldAnimate: true,
+                          shouldGlow: true,
+                          roundId: widget.round.id,
+                        ),
+                  useHeroAnimationsForRoundReview
+                      ? Hero(
+                          tag: 'putting_c1x',
+                          child: CircularStatIndicator(
+                            key: ValueKey('putting_c1x_${widget.round.id}'),
+                            label: 'C1X',
+                            percentage: hasData
+                                ? stats['c1xPct'] as double
+                                : 0.0,
+                            color: const Color(0xFF4CAF50),
+                            size: 87.5,
+                            shouldAnimate: true,
+                            shouldGlow: true,
+                            roundId: widget.round.id,
+                          ),
+                        )
+                      : CircularStatIndicator(
+                          key: ValueKey('putting_c1x_${widget.round.id}'),
+                          label: 'C1X',
+                          percentage: hasData ? stats['c1xPct'] as double : 0.0,
+                          color: const Color(0xFF4CAF50),
+                          size: 87.5,
+                          shouldAnimate: true,
+                          shouldGlow: true,
+                          roundId: widget.round.id,
+                        ),
+                  useHeroAnimationsForRoundReview
+                      ? Hero(
+                          tag: 'putting_c2',
+                          child: CircularStatIndicator(
+                            key: ValueKey('putting_c2_${widget.round.id}'),
+                            label: 'C2',
+                            percentage: hasData
+                                ? stats['c2Pct'] as double
+                                : 0.0,
+                            color: const Color(0xFF2196F3),
+                            size: 87.5,
+                            shouldAnimate: true,
+                            shouldGlow: true,
+                            roundId: widget.round.id,
+                          ),
+                        )
+                      : CircularStatIndicator(
+                          key: ValueKey('putting_c2_${widget.round.id}'),
+                          label: 'C2',
+                          percentage: hasData ? stats['c2Pct'] as double : 0.0,
+                          color: const Color(0xFF2196F3),
+                          size: 87.5,
+                          shouldAnimate: true,
+                          shouldGlow: true,
+                          roundId: widget.round.id,
+                        ),
                 ],
               ),
               // Heat maps hidden for now
@@ -1079,7 +1277,7 @@ class _MiniMedalCard extends StatelessWidget {
         ? const Color(0xFFE8E8E8)
         : const Color(0xFFFFE4D0);
 
-    return Container(
+    final Widget cardContent = Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -1133,6 +1331,13 @@ class _MiniMedalCard extends StatelessWidget {
         ],
       ),
     );
+
+    return useHeroAnimationsForRoundReview
+        ? Hero(
+            tag: 'top_disc_$rank',
+            child: Material(color: Colors.transparent, child: cardContent),
+          )
+        : cardContent;
   }
 }
 
@@ -1192,26 +1397,53 @@ class _MistakesCard extends StatelessWidget {
                   style: TextStyle(color: Colors.grey),
                 )
               else ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '$totalMistakes',
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFF7A7A),
+                useHeroAnimationsForRoundReview
+                    ? Hero(
+                        tag: 'mistakes_count',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '$totalMistakes',
+                                style: Theme.of(context).textTheme.displaySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFFF7A7A),
+                                    ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'mistakes',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '$totalMistakes',
+                            style: Theme.of(context).textTheme.displaySmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFFF7A7A),
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'mistakes',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: Colors.grey),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'mistakes',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(color: Colors.grey),
-                    ),
-                  ],
-                ),
                 if (topMistakes.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   ...topMistakes.asMap().entries.map((entry) {
@@ -1626,20 +1858,30 @@ class _AICoachCard extends StatelessWidget {
 }
 
 // Skills Overview Card
-class _SkillsOverviewCard extends StatelessWidget {
+class SkillsOverviewCard extends StatefulWidget {
   final DGRound round;
   final VoidCallback? onTap;
 
-  const _SkillsOverviewCard({required this.round, this.onTap});
+  const SkillsOverviewCard({super.key, required this.round, this.onTap});
+
+  @override
+  State<SkillsOverviewCard> createState() => _SkillsOverviewCardState();
+}
+
+class _SkillsOverviewCardState extends State<SkillsOverviewCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final SkillsAnalysisService service = SkillsAnalysisService();
-    final SkillsAnalysis analysis = service.getSkillsAnalysis(round);
+    final SkillsAnalysis analysis = service.getSkillsAnalysis(widget.round);
 
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: Padding(
           padding: const EdgeInsets.only(
             left: 12,
@@ -1710,10 +1952,24 @@ class _SkillsOverviewCard extends StatelessWidget {
                   Expanded(
                     child: AspectRatio(
                       aspectRatio: 1.15,
-                      child: _CompactSkillsSpiderChart(
-                        analysis: analysis,
-                        shouldAnimate: true,
-                      ),
+                      child: useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'skills_spider_chart',
+                              child: _CompactSkillsSpiderChart(
+                                key: ValueKey(
+                                  'spider_chart_${widget.round.id}',
+                                ),
+                                analysis: analysis,
+                                roundId: widget.round.id,
+                                shouldAnimate: true,
+                              ),
+                            )
+                          : _CompactSkillsSpiderChart(
+                              key: ValueKey('spider_chart_${widget.round.id}'),
+                              analysis: analysis,
+                              roundId: widget.round.id,
+                              shouldAnimate: true,
+                            ),
                     ),
                   ),
                 ],
@@ -1729,11 +1985,14 @@ class _SkillsOverviewCard extends StatelessWidget {
 // Compact Spider Chart for Overview Card
 class _CompactSkillsSpiderChart extends StatefulWidget {
   const _CompactSkillsSpiderChart({
+    super.key,
     required this.analysis,
+    required this.roundId,
     this.shouldAnimate = false,
   });
 
   final SkillsAnalysis analysis;
+  final String roundId;
   final bool shouldAnimate;
 
   @override
@@ -1742,9 +2001,12 @@ class _CompactSkillsSpiderChart extends StatefulWidget {
 }
 
 class _CompactSkillsSpiderChartState extends State<_CompactSkillsSpiderChart>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -1759,8 +2021,22 @@ class _CompactSkillsSpiderChartState extends State<_CompactSkillsSpiderChart>
       curve: Curves.easeOutCubic,
     );
 
+    // Check if animation should play using AnimationStateService
     if (widget.shouldAnimate) {
-      _animationController.forward();
+      const String widgetKey = 'spider_chart';
+      final bool hasAnimated = AnimationStateService.instance.hasAnimated(
+        widget.roundId,
+        widgetKey,
+      );
+
+      if (!hasAnimated) {
+        // Play animation and mark as animated
+        _animationController.forward();
+        AnimationStateService.instance.markAnimated(widget.roundId, widgetKey);
+      } else {
+        // Skip animation, jump to end state
+        _animationController.value = 1.0;
+      }
     } else {
       _animationController.value = 1.0;
     }
@@ -1774,6 +2050,7 @@ class _CompactSkillsSpiderChartState extends State<_CompactSkillsSpiderChart>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {

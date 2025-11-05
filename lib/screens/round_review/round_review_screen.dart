@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/overview_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/coach_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/scores_tab.dart';
@@ -128,7 +128,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
-            OverviewTab(round: _round, tabController: _tabController),
+            RoundOverviewBody(round: _round, tabController: _tabController),
             SkillsTab(round: _round),
             CourseTab(round: _round),
             ScoresTab(round: _round),

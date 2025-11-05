@@ -66,11 +66,7 @@ class ScoreKPICard extends StatelessWidget {
               Positioned(
                 top: 0,
                 right: 0,
-                child: Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                child: Icon(Icons.chevron_right, color: Colors.black, size: 20),
               ),
             ],
           ],

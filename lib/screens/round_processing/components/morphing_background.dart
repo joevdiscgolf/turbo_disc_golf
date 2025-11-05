@@ -12,21 +12,9 @@ class MorphingBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Base gradient layer
+        // Base solid color layer - consistent light background
         Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFEEE8F5), // Light purple tint
-                Color(0xFFE8F4E8), // Light green tint
-                Color(0xFFECECEE), // Light gray
-                Color(0xFFEAE8F0), // Light purple
-              ],
-              stops: [0.0, 0.3, 0.7, 1.0],
-            ),
-          ),
+          color: const Color(0xFFEEE8F5), // Light purple-gray (consistent)
         ),
 
         // Animated overlay blobs - Top left

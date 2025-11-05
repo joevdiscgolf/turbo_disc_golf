@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/overview_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 
 class RoundReviewScreenV2 extends StatefulWidget {
   final DGRound round;
@@ -76,7 +76,7 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2> {
             ),
           ],
         ),
-        body: OverviewTab(
+        body: RoundOverviewBody(
           round: _round,
           isReviewV2Screen: true,
         ),

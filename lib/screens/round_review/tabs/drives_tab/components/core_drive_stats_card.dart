@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 class CoreDriveStatsCard extends StatefulWidget {
@@ -37,15 +38,28 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            CircularStatIndicator(
-              label: 'C1 in Reg',
-              percentage: widget.coreStats.c1InRegPct,
-              color: const Color(0xFF137e66),
-              size: 70,
-              shouldAnimate: true,
-              shouldGlow: true,
-              onPressed: widget.onC1InRegPressed,
-            ),
+            useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'driving_c1_in_reg',
+                    child: CircularStatIndicator(
+                      label: 'C1 in Reg',
+                      percentage: widget.coreStats.c1InRegPct,
+                      color: const Color(0xFF137e66),
+                      size: 70,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                      onPressed: widget.onC1InRegPressed,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'C1 in Reg',
+                    percentage: widget.coreStats.c1InRegPct,
+                    color: const Color(0xFF137e66),
+                    size: 70,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                    onPressed: widget.onC1InRegPressed,
+                  ),
             // Temporarily hidden - C2 in Reg will be shown in detail views
             // CircularStatIndicator(
             //   label: 'C2 in Reg',
@@ -56,33 +70,72 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
             //   shouldGlow: true,
             //   onPressed: widget.onC2InRegPressed,
             // ),
-            CircularStatIndicator(
-              label: 'Fairway',
-              percentage: widget.coreStats.fairwayHitPct,
-              color: const Color(0xFF4CAF50),
-              size: 70,
-              shouldAnimate: true,
-              shouldGlow: true,
-              onPressed: widget.onFairwayPressed,
-            ),
-            CircularStatIndicator(
-              label: 'OB',
-              percentage: widget.coreStats.obPct,
-              color: const Color(0xFFFF7A7A),
-              size: 70,
-              shouldAnimate: true,
-              shouldGlow: true,
-              onPressed: widget.onOBPressed,
-            ),
-            CircularStatIndicator(
-              label: 'Parked',
-              percentage: widget.coreStats.parkedPct,
-              color: const Color(0xFFFFA726),
-              size: 70,
-              shouldAnimate: true,
-              shouldGlow: true,
-              onPressed: widget.onParkedPressed,
-            ),
+            useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'driving_fairway',
+                    child: CircularStatIndicator(
+                      label: 'Fairway',
+                      percentage: widget.coreStats.fairwayHitPct,
+                      color: const Color(0xFF4CAF50),
+                      size: 70,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                      onPressed: widget.onFairwayPressed,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'Fairway',
+                    percentage: widget.coreStats.fairwayHitPct,
+                    color: const Color(0xFF4CAF50),
+                    size: 70,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                    onPressed: widget.onFairwayPressed,
+                  ),
+            useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'driving_ob',
+                    child: CircularStatIndicator(
+                      label: 'OB',
+                      percentage: widget.coreStats.obPct,
+                      color: const Color(0xFFFF7A7A),
+                      size: 70,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                      onPressed: widget.onOBPressed,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'OB',
+                    percentage: widget.coreStats.obPct,
+                    color: const Color(0xFFFF7A7A),
+                    size: 70,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                    onPressed: widget.onOBPressed,
+                  ),
+            useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'driving_parked',
+                    child: CircularStatIndicator(
+                      label: 'Parked',
+                      percentage: widget.coreStats.parkedPct,
+                      color: const Color(0xFFFFA726),
+                      size: 70,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                      onPressed: widget.onParkedPressed,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'Parked',
+                    percentage: widget.coreStats.parkedPct,
+                    color: const Color(0xFFFFA726),
+                    size: 70,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                    onPressed: widget.onParkedPressed,
+                  ),
           ],
         ),
       ),

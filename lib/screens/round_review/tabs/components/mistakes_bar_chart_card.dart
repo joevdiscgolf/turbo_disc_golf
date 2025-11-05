@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 class MistakesBarChartCard extends StatefulWidget {
   final int totalMistakes;
@@ -66,30 +67,65 @@ class _MistakesBarChartCardState extends State<MistakesBarChartCard> {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          '${widget.totalMistakes}',
-                          style: Theme.of(context).textTheme.displaySmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFF7A7A),
+                    child: useHeroAnimationsForRoundReview
+                        ? Hero(
+                            tag: 'mistakes_count',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    '${widget.totalMistakes}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displaySmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFFFF7A7A),
+                                        ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'mistakes',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
                               ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'mistakes',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                            ),
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '${widget.totalMistakes}',
+                                style: Theme.of(context).textTheme.displaySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFFF7A7A),
+                                    ),
                               ),
-                        ),
-                      ],
-                    ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'mistakes',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
                   ),
                   AnimatedRotation(
                     turns: _isExpanded ? 0.5 : 0.0,

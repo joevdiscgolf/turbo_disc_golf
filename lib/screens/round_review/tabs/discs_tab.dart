@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 class DiscsTab extends StatelessWidget {
   final DGRound round;
@@ -71,9 +72,9 @@ class DiscsTab extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4, bottom: 4),
               child: Text(
                 'Other Discs',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             ...otherDiscs.map((entry) {
@@ -171,11 +172,7 @@ class DiscsTab extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: addRunSpacing(
-        widgets,
-        runSpacing: 12,
-        axis: Axis.vertical,
-      ),
+      children: addRunSpacing(widgets, runSpacing: 12, axis: Axis.vertical),
     );
   }
 
@@ -296,7 +293,6 @@ class DiscsTab extends StatelessWidget {
   //     ),
   //   );
   // }
-
 }
 
 /// Top performer card - Large featured card for #1 disc
@@ -319,7 +315,7 @@ class _TopPerformerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget cardContent = Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -345,10 +341,7 @@ class _TopPerformerCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Text(
-                    '🥇',
-                    style: TextStyle(fontSize: 28),
-                  ),
+                  const Text('🥇', style: TextStyle(fontSize: 28)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -381,7 +374,9 @@ class _TopPerformerCard extends StatelessWidget {
                     context,
                     'Avg',
                     '${avgScore >= 0 ? '+' : ''}${avgScore.toStringAsFixed(1)}',
-                    avgScore < 0 ? const Color(0xFF137e66) : const Color(0xFFFF7A7A),
+                    avgScore < 0
+                        ? const Color(0xFF137e66)
+                        : const Color(0xFFFF7A7A),
                   ),
                   _buildStat(
                     context,
@@ -396,9 +391,21 @@ class _TopPerformerCard extends StatelessWidget {
         ),
       ),
     );
+
+    return useHeroAnimationsForRoundReview
+        ? Hero(
+            tag: 'top_disc_$rank',
+            child: Material(color: Colors.transparent, child: cardContent),
+          )
+        : cardContent;
   }
 
-  Widget _buildStat(BuildContext context, String label, String value, Color color) {
+  Widget _buildStat(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Column(
       children: [
         Text(
@@ -476,10 +483,7 @@ class _RunnerUpCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(
-                    medal,
-                    style: const TextStyle(fontSize: 24),
-                  ),
+                  Text(medal, style: const TextStyle(fontSize: 24)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -506,7 +510,9 @@ class _RunnerUpCard extends StatelessWidget {
                     context,
                     'Avg',
                     '${avgScore >= 0 ? '+' : ''}${avgScore.toStringAsFixed(1)}',
-                    avgScore < 0 ? const Color(0xFF137e66) : const Color(0xFFFF7A7A),
+                    avgScore < 0
+                        ? const Color(0xFF137e66)
+                        : const Color(0xFFFF7A7A),
                   ),
                   _buildStat(
                     context,
@@ -523,7 +529,12 @@ class _RunnerUpCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStat(BuildContext context, String label, String value, Color color) {
+  Widget _buildStat(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Column(
       children: [
         Text(
@@ -610,7 +621,8 @@ class _CompactDiscCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final DiscAnalysisService discAnalysisService = locator.get<DiscAnalysisService>();
+    final DiscAnalysisService discAnalysisService = locator
+        .get<DiscAnalysisService>();
     final throws = discAnalysisService.getThrowsForDisc(discName, round);
 
     return Container(
@@ -621,10 +633,7 @@ class _CompactDiscCard extends StatelessWidget {
           colors: _getGradientColors(),
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _getBorderColor(),
-          width: 1,
-        ),
+        border: Border.all(color: _getBorderColor(), width: 1),
       ),
       child: Card(
         elevation: 0,
@@ -632,7 +641,10 @@ class _CompactDiscCard extends StatelessWidget {
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
             title: Row(
               children: [
                 Expanded(
@@ -644,7 +656,10 @@ class _CompactDiscCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF137e66).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
@@ -654,10 +669,11 @@ class _CompactDiscCard extends StatelessWidget {
                     children: [
                       Text(
                         '${c1InRegPct.toStringAsFixed(0)}%',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF137e66),
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF137e66),
+                            ),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -744,20 +760,27 @@ class _CompactDiscCard extends StatelessWidget {
                     ...throws.map((throwData) {
                       final int holeNumber = throwData['holeNumber'];
                       final int throwIndex = throwData['throwIndex'];
-                      final DiscThrow discThrow = throwData['throw'] as DiscThrow;
-                      final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+                      final DiscThrow discThrow =
+                          throwData['throw'] as DiscThrow;
+                      final analysis = GPTAnalysisService.analyzeThrow(
+                        discThrow,
+                      );
 
                       final List<String> subtitleParts = [];
                       subtitleParts.add('Shot ${throwIndex + 1}');
                       if (discThrow.distanceFeetBeforeThrow != null) {
-                        subtitleParts.add('${discThrow.distanceFeetBeforeThrow} ft');
+                        subtitleParts.add(
+                          '${discThrow.distanceFeetBeforeThrow} ft',
+                        );
                       }
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _getPerformanceColor(analysis.execCategory),
+                            backgroundColor: _getPerformanceColor(
+                              analysis.execCategory,
+                            ),
                             child: Text(
                               '$holeNumber',
                               style: const TextStyle(
@@ -770,10 +793,15 @@ class _CompactDiscCard extends StatelessWidget {
                             children: [
                               Text(
                                 'Hole $holeNumber',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(width: 8),
-                              _buildPerformanceBadge(context, analysis.execCategory),
+                              _buildPerformanceBadge(
+                                context,
+                                analysis.execCategory,
+                              ),
                             ],
                           ),
                           subtitle: Text(subtitleParts.join(' • ')),
