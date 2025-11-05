@@ -1,12 +1,15 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
@@ -425,6 +428,71 @@ class _RecordRoundSheetState extends State<_RecordRoundSheet> {
                   ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 ),
               ),
+              if (kDebugMode) ...[
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final RoundParser roundParser = locator.get<RoundParser>();
+                    final RoundStorageService storageService =
+                        locator.get<RoundStorageService>();
+
+                    // Check if there's a cached round available
+                    final bool useCached = await storageService.hasCachedRound();
+                    debugPrint(
+                      'Test Parse Constant: Using cached round: $useCached',
+                    );
+
+                    await roundParser.parseVoiceTranscript(
+                      testRoundDescription,
+                      courseName: testCourseName,
+                      useSharedPreferences: useCached,
+                    );
+
+                    if (roundParser.lastError.isNotEmpty && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(roundParser.lastError)),
+                      );
+                    } else if (roundParser.parsedRound != null &&
+                        context.mounted) {
+                      // Set the round so the parser can calculate stats
+                      roundParser.setRound(roundParser.parsedRound!);
+
+                      // Close the bottom sheet
+                      Navigator.pop(context);
+
+                      // Navigate to the review screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => useRoundReviewScreenV2
+                              ? RoundReviewScreenV2(
+                                  round: roundParser.parsedRound!,
+                                  showStoryOnLoad: true,
+                                )
+                              : RoundReviewScreen(
+                                  round: roundParser.parsedRound!,
+                                  showStoryOnLoad: true,
+                                ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.science),
+                  label: const Text(
+                    'Test Parse Constant',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9D4EDD),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ],
               if (hasTranscript && !isListening) ...[
                 const SizedBox(height: 24),
                 ElevatedButton(
