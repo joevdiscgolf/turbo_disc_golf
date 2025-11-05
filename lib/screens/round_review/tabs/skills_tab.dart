@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 class SkillsTab extends StatelessWidget {
   const SkillsTab({super.key, required this.round});
@@ -62,24 +63,24 @@ class _OverallScoreCard extends StatelessWidget {
           children: [
             Text(
               'Overall Skills Score',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Text(
               '${overallScore.toStringAsFixed(1)}%',
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF137e66),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF137e66),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Average across all skills',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -103,14 +104,19 @@ class _SkillsSpiderChartCard extends StatelessWidget {
           children: [
             Text(
               'Skills Overview',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             AspectRatio(
               aspectRatio: 1,
-              child: _SkillsSpiderChart(analysis: analysis),
+              child: useHeroAnimationsForRoundReview
+                  ? Hero(
+                      tag: 'skills_spider_chart',
+                      child: _SkillsSpiderChart(analysis: analysis),
+                    )
+                  : _SkillsSpiderChart(analysis: analysis),
             ),
           ],
         ),
@@ -127,9 +133,7 @@ class _SkillsSpiderChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _SkillsSpiderChartPainter(
-        skills: analysis.allSkills,
-      ),
+      painter: _SkillsSpiderChartPainter(skills: analysis.allSkills),
     );
   }
 }
@@ -339,16 +343,16 @@ class _SkillBreakdownCard extends StatelessWidget {
               children: [
                 Text(
                   skill.skillName,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   '${skill.percentage.toStringAsFixed(1)}%',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _color,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: _color,
+                  ),
                 ),
               ],
             ),
@@ -366,9 +370,9 @@ class _SkillBreakdownCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '${skill.rawValue.toStringAsFixed(0)} / ${skill.maxValue.toStringAsFixed(0)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ],

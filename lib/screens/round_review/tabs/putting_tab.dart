@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/componen
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/putting_constants.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 class PuttingTab extends StatelessWidget {
@@ -103,35 +104,76 @@ class PuttingTab extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            CircularStatIndicator(
-              label: 'C1',
-              percentage: puttingStats.c1Percentage,
-              color: const Color(0xFF137e66),
-              internalLabel:
-                  '(${puttingStats.c1Makes}/${puttingStats.c1Attempts})',
-              size: 90,
-              shouldAnimate: true,
-              shouldGlow: true,
-            ),
-            CircularStatIndicator(
-              label: 'C1X',
-              percentage: c1xPct,
-              color: const Color(0xFF4CAF50),
-              internalLabel: '($c1xMakes/$c1xAttempts)',
-              size: 90,
-              shouldAnimate: true,
-              shouldGlow: true,
-            ),
-            CircularStatIndicator(
-              label: 'C2',
-              percentage: puttingStats.c2Percentage,
-              color: const Color(0xFF2196F3),
-              internalLabel:
-                  '(${puttingStats.c2Makes}/${puttingStats.c2Attempts})',
-              size: 90,
-              shouldAnimate: true,
-              shouldGlow: true,
-            ),
+            useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'putting_c1',
+                    child: CircularStatIndicator(
+                      label: 'C1',
+                      percentage: puttingStats.c1Percentage,
+                      color: const Color(0xFF137e66),
+                      internalLabel:
+                          '(${puttingStats.c1Makes}/${puttingStats.c1Attempts})',
+                      size: 90,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'C1',
+                    percentage: puttingStats.c1Percentage,
+                    color: const Color(0xFF137e66),
+                    internalLabel:
+                        '(${puttingStats.c1Makes}/${puttingStats.c1Attempts})',
+                    size: 90,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                  ),
+            useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'putting_c1x',
+                    child: CircularStatIndicator(
+                      label: 'C1X',
+                      percentage: c1xPct,
+                      color: const Color(0xFF4CAF50),
+                      internalLabel: '($c1xMakes/$c1xAttempts)',
+                      size: 90,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'C1X',
+                    percentage: c1xPct,
+                    color: const Color(0xFF4CAF50),
+                    internalLabel: '($c1xMakes/$c1xAttempts)',
+                    size: 90,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                  ),
+            useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'putting_c2',
+                    child: CircularStatIndicator(
+                      label: 'C2',
+                      percentage: puttingStats.c2Percentage,
+                      color: const Color(0xFF2196F3),
+                      internalLabel:
+                          '(${puttingStats.c2Makes}/${puttingStats.c2Attempts})',
+                      size: 90,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'C2',
+                    percentage: puttingStats.c2Percentage,
+                    color: const Color(0xFF2196F3),
+                    internalLabel:
+                        '(${puttingStats.c2Makes}/${puttingStats.c2Attempts})',
+                    size: 90,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                  ),
           ],
         ),
       ),

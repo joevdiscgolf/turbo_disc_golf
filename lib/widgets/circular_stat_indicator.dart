@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
+import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
@@ -22,6 +23,7 @@ class CircularStatIndicator extends StatefulWidget {
   final bool shouldGlow;
   final bool shouldScale;
   final Function? onPressed;
+  final String? roundId;
 
   const CircularStatIndicator({
     super.key,
@@ -37,6 +39,7 @@ class CircularStatIndicator extends StatefulWidget {
     this.shouldGlow = false,
     this.shouldScale = false,
     this.onPressed,
+    this.roundId,
   });
 
   @override
@@ -44,11 +47,14 @@ class CircularStatIndicator extends StatefulWidget {
 }
 
 class _CircularStatIndicatorState extends State<CircularStatIndicator>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
   late AnimationController _scaleAnimationController;
   late Animation<double> _scaleAnimation;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -105,7 +111,31 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
       ),
     ]).animate(_scaleAnimationController);
 
-    if (widget.shouldAnimate && shouldAnimateProgressIndicators) {
+    // Check if animation should play
+    bool shouldPlayAnimation = widget.shouldAnimate && shouldAnimateProgressIndicators;
+
+    // If roundId is provided, check animation state service
+    if (shouldPlayAnimation && widget.roundId != null) {
+      final String widgetKey = 'circular_${widget.label}';
+      final bool hasAnimated = AnimationStateService.instance.hasAnimated(
+        widget.roundId!,
+        widgetKey,
+      );
+
+      if (!hasAnimated) {
+        // Play animation and mark as animated
+        _animationController.forward();
+        if (widget.shouldScale) {
+          _scaleAnimationController.forward();
+        }
+        AnimationStateService.instance.markAnimated(widget.roundId!, widgetKey);
+      } else {
+        // Skip animation, jump to end state
+        _animationController.value = 1.0;
+        _scaleAnimationController.value = 1.0;
+      }
+    } else if (shouldPlayAnimation) {
+      // No roundId provided, always animate (fallback behavior)
       _animationController.forward();
       if (widget.shouldScale) {
         _scaleAnimationController.forward();
@@ -122,6 +152,7 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     if (widget.onPressed != null) {
       return Bounceable(
         onTap: () {
