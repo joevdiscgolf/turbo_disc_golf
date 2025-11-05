@@ -3,8 +3,10 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 // Test constant for image + voice mode (no hole distance/par info)
 
@@ -81,8 +83,9 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                RoundReviewScreen(round: round, showStoryOnLoad: true),
+            builder: (context) => useRoundReviewScreenV2
+                ? RoundReviewScreenV2(round: round, showStoryOnLoad: true)
+                : RoundReviewScreen(round: round, showStoryOnLoad: true),
           ),
         );
       }

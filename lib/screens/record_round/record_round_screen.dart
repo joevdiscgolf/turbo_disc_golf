@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 const String testRoundDescription = '''
 Hole 1 was a 350 foot par 3. I threw my Star Destroyer with a backhand hyzer about 300 feet, ended up in circle 1. Made the putt with my Judge for birdie.
@@ -161,8 +163,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                RoundReviewScreen(round: round, showStoryOnLoad: true),
+            builder: (context) => useRoundReviewScreenV2
+                ? RoundReviewScreenV2(round: round, showStoryOnLoad: true)
+                : RoundReviewScreen(round: round, showStoryOnLoad: true),
           ),
         );
       }

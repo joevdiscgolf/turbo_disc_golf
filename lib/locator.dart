@@ -12,12 +12,14 @@ import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.da
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
+import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
 final locator = GetIt.instance;
 void setUpLocator() {
   // Register core services first
 
   // Round analysis
+  locator.registerSingleton<VoiceRecordingService>(VoiceRecordingService());
   locator.registerSingleton<DiscAnalysisService>(DiscAnalysisService());
   locator.registerSingleton<MistakesAnalysisService>(MistakesAnalysisService());
   locator.registerSingleton<PsychAnalysisService>(PsychAnalysisService());
