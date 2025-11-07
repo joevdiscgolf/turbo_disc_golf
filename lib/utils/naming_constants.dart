@@ -32,3 +32,71 @@ const Map<LandingSpot, String> landingSpotToName = {
   LandingSpot.outOfBounds: 'Out of Bounds',
   LandingSpot.other: 'Other',
 };
+
+final Map<ThrowResultRating, String> throwResultRatingToName = {
+  ThrowResultRating.terrible: 'Terrible',
+  ThrowResultRating.poor: 'Poor',
+  ThrowResultRating.average: 'Average',
+  ThrowResultRating.good: 'Good',
+  ThrowResultRating.excellent: 'Excellent',
+};
+
+final Map<ShotShape, String> shotShapeToName = {
+  ShotShape.hyzer: 'Hyzer',
+  ShotShape.anhyzer: 'Anhyzer',
+  ShotShape.hyzerFlip: 'Hyzer Flip',
+  ShotShape.turnover: 'Turnover',
+  ShotShape.flat: 'Flat',
+  ShotShape.flexShot: 'Flex Shot',
+  ShotShape.spikeHyzer: 'Spike Hyzer',
+  ShotShape.skyAnhyzer: 'Sky Anhyzer',
+  ShotShape.roller: 'Roller',
+  ShotShape.pitch: 'Pitch',
+  ShotShape.other: 'Other',
+};
+
+final Map<ThrowPower, String> throwPowerToName = {
+  ThrowPower.putt: 'Putt',
+  ThrowPower.soft: 'Soft',
+  ThrowPower.controlled: 'Controlled',
+  ThrowPower.full: 'Full',
+  ThrowPower.max: 'Max',
+};
+
+final Map<StanceType, String> stanceTypeToName = {
+  StanceType.standstill: 'Standstill',
+  StanceType.xStep: 'X-Step',
+  StanceType.patentPending: 'Patent Pending',
+  StanceType.other: 'Other',
+};
+
+final Map<PuttStyle, String> puttStyleToName = {
+  PuttStyle.staggered: 'Staggered',
+  PuttStyle.straddle: 'Straddle',
+  PuttStyle.jumpPutt: 'Jump Putt',
+  PuttStyle.stepPutt: 'Step Putt',
+  PuttStyle.other: 'Other',
+};
+
+final Map<FairwayWidth, String> fairwayWidthToName = {
+  FairwayWidth.open: 'Open',
+  FairwayWidth.moderate: 'Moderate',
+  FairwayWidth.tight: 'Tight',
+  FairwayWidth.veryTight: 'Very Tight',
+};
+
+final Map<WindDirection, String> windDirectionToName = {
+  WindDirection.none: 'None',
+  WindDirection.headwind: 'Headwind',
+  WindDirection.tailwind: 'Tailwind',
+  WindDirection.leftToRight: 'Left to Right',
+  WindDirection.rightToLeft: 'Right to Left',
+};
+
+final Map<WindStrength, String> windStrengthToName = {
+  WindStrength.calm: 'Calm',
+  WindStrength.light: 'Light',
+  WindStrength.moderate: 'Moderate',
+  WindStrength.strong: 'Strong',
+  WindStrength.extreme: 'Extreme',
+};

@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
 class RoundParser extends ChangeNotifier {
   DGRound? _parsedRound;
@@ -153,6 +154,7 @@ class RoundParser extends ChangeNotifier {
           .generateRoundInsights(round: _parsedRound!, analysis: analysis);
 
       // Update round with analysis and insights
+      final String currentTimestamp = getCurrentISOString();
       _parsedRound = DGRound(
         id: _parsedRound!.id,
         courseName: _parsedRound!.courseName,
@@ -162,6 +164,8 @@ class RoundParser extends ChangeNotifier {
         aiSummary: insights['summary'],
         aiCoachSuggestion: insights['coaching'],
         versionId: 1, // Set initial version ID
+        createdAt: currentTimestamp,
+        playedRoundAt: currentTimestamp,
       );
 
       // Save to shared preferences for future use
@@ -339,6 +343,8 @@ class RoundParser extends ChangeNotifier {
         aiSummary: _parsedRound!.aiSummary,
         aiCoachSuggestion: _parsedRound!.aiCoachSuggestion,
         versionId: _parsedRound!.versionId + 1, // Increment version on edit
+        createdAt: _parsedRound!.createdAt,
+        playedRoundAt: _parsedRound!.playedRoundAt,
       );
 
       notifyListeners();

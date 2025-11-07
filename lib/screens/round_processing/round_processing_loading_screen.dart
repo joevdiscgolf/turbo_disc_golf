@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/explosion_effect.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/persistent_square.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/round_confirmation_widget.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
@@ -36,7 +37,14 @@ class RoundProcessingLoadingScreen extends StatefulWidget {
       _RoundProcessingLoadingScreenState();
 }
 
-enum _ProcessingState { loading, transitioning, exploding, zooming, revealing }
+enum _ProcessingState {
+  loading,
+  transitioning,
+  exploding,
+  zooming,
+  revealing,
+  confirming
+}
 
 class _RoundProcessingLoadingScreenState
     extends State<RoundProcessingLoadingScreen> {
@@ -84,7 +92,10 @@ class _RoundProcessingLoadingScreenState
       }
 
       if (_roundParser.parsedRound != null) {
-        _revealContent();
+        // Transition to confirmation screen
+        setState(() {
+          _state = _ProcessingState.confirming;
+        });
       } else {
         Navigator.of(context).pop();
       }
@@ -288,6 +299,14 @@ class _RoundProcessingLoadingScreenState
     );
   }
 
+  Widget _buildConfirmationContent() {
+    return RoundConfirmationWidget(
+      round: _roundParser.parsedRound!,
+      onBack: () => Navigator.of(context).pop(),
+      onConfirm: _revealContent,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -344,7 +363,7 @@ class _RoundProcessingLoadingScreenState
               },
               child: _buildZoomingContent(),
             )
-          else
+          else if (_state != _ProcessingState.confirming)
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               switchInCurve: Curves.easeInOut,
@@ -393,9 +412,13 @@ class _RoundProcessingLoadingScreenState
               child: _buildReviewContent(),
             ),
 
+          // Layer 3: Confirmation widget - shows after parsing completes
+          if (_state == _ProcessingState.confirming) _buildConfirmationContent(),
+
           // Layer 4: Persistent triangle overlay - visible through entire animation
-          // Only hide during revealing (when round overview appears)
-          if (_state != _ProcessingState.revealing)
+          // Only hide during revealing and confirming
+          if (_state != _ProcessingState.revealing &&
+              _state != _ProcessingState.confirming)
             IgnorePointer(child: _buildPersistentTriangle()),
         ],
       ),
@@ -422,7 +445,8 @@ class _RoundProcessingLoadingScreenState
         size = 140;
         break;
       case _ProcessingState.revealing:
-        // Hide triangle during reveal
+      case _ProcessingState.confirming:
+        // Hide triangle during reveal and confirmation
         return const SizedBox.shrink();
     }
 
