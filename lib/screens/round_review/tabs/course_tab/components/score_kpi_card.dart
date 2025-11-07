@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 class ScoreKPICard extends StatelessWidget {
   const ScoreKPICard({
@@ -11,11 +12,13 @@ class ScoreKPICard extends StatelessWidget {
     required this.round,
     required this.roundParser,
     required this.isDetailScreen,
+    this.onTap,
   });
 
   final DGRound round;
   final RoundParser roundParser;
   final bool isDetailScreen;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,12 +27,18 @@ class ScoreKPICard extends StatelessWidget {
         if (isDetailScreen) {
           return;
         }
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScoreDetailScreen(round: round),
-          ),
-        );
+
+        // Use provided onTap callback if available, otherwise use default navigation
+        if (onTap != null) {
+          onTap!();
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ScoreDetailScreen(round: round),
+            ),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -55,10 +64,21 @@ class ScoreKPICard extends StatelessWidget {
                   _buildCompactScorecard(),
                   const SizedBox(height: 16),
                 ],
-                ScoreDistributionBar(
-                  round: round,
-                  height: isDetailScreen ? 32 : 24,
-                ),
+                useHeroAnimationsForRoundReview
+                    ? Hero(
+                        tag: 'score_distribution_bar',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: ScoreDistributionBar(
+                            round: round,
+                            height: isDetailScreen ? 32 : 24,
+                          ),
+                        ),
+                      )
+                    : ScoreDistributionBar(
+                        round: round,
+                        height: isDetailScreen ? 32 : 24,
+                      ),
               ],
             ),
             if (!isDetailScreen) ...[
@@ -85,32 +105,73 @@ class ScoreKPICard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildScoreKPIStat(
-                      context,
-                      'Score',
-                      roundParser.getRelativeToPar() >= 0
-                          ? '+${roundParser.getRelativeToPar()}'
-                          : '${roundParser.getRelativeToPar()}',
-                      _getScoreColor(roundParser.getRelativeToPar()),
-                    ),
+                    child: useHeroAnimationsForRoundReview
+                        ? Hero(
+                            tag: 'score_kpi_score',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: _buildScoreKPIStat(
+                                context,
+                                'Score',
+                                roundParser.getRelativeToPar() >= 0
+                                    ? '+${roundParser.getRelativeToPar()}'
+                                    : '${roundParser.getRelativeToPar()}',
+                                _getScoreColor(roundParser.getRelativeToPar()),
+                              ),
+                            ),
+                          )
+                        : _buildScoreKPIStat(
+                            context,
+                            'Score',
+                            roundParser.getRelativeToPar() >= 0
+                                ? '+${roundParser.getRelativeToPar()}'
+                                : '${roundParser.getRelativeToPar()}',
+                            _getScoreColor(roundParser.getRelativeToPar()),
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildScoreKPIStat(
-                      context,
-                      'Throws',
-                      '${roundParser.getTotalScore()}',
-                      const Color(0xFF2196F3),
-                    ),
+                    child: useHeroAnimationsForRoundReview
+                        ? Hero(
+                            tag: 'score_kpi_throws',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: _buildScoreKPIStat(
+                                context,
+                                'Throws',
+                                '${roundParser.getTotalScore()}',
+                                const Color(0xFF2196F3),
+                              ),
+                            ),
+                          )
+                        : _buildScoreKPIStat(
+                            context,
+                            'Throws',
+                            '${roundParser.getTotalScore()}',
+                            const Color(0xFF2196F3),
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildScoreKPIStat(
-                      context,
-                      'Par',
-                      '${roundParser.getTotalPar()}',
-                      const Color(0xFFFFA726),
-                    ),
+                    child: useHeroAnimationsForRoundReview
+                        ? Hero(
+                            tag: 'score_kpi_par',
+                            child: Material(
+                              color: Colors.transparent,
+                              child: _buildScoreKPIStat(
+                                context,
+                                'Par',
+                                '${roundParser.getTotalPar()}',
+                                const Color(0xFFFFA726),
+                              ),
+                            ),
+                          )
+                        : _buildScoreKPIStat(
+                            context,
+                            'Par',
+                            '${roundParser.getTotalPar()}',
+                            const Color(0xFFFFA726),
+                          ),
                   ),
                 ],
               ),

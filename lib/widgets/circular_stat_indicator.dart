@@ -19,6 +19,8 @@ class CircularStatIndicator extends StatefulWidget {
   final double strokeWidth;
   final double? percentageFontSize;
   final double? internalLabelFontSize;
+  final double? labelFontSize;
+  final double? labelSpacing;
   final bool shouldAnimate;
   final bool shouldGlow;
   final bool shouldScale;
@@ -35,6 +37,8 @@ class CircularStatIndicator extends StatefulWidget {
     this.strokeWidth = 12,
     this.percentageFontSize,
     this.internalLabelFontSize,
+    this.labelFontSize,
+    this.labelSpacing,
     this.shouldAnimate = false,
     this.shouldGlow = false,
     this.shouldScale = false,
@@ -256,11 +260,12 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
               ),
             ),
             if (widget.label.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: widget.labelSpacing ?? 12),
               Text(
                 widget.label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: widget.labelFontSize,
                 ),
               ),
             ],

@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
@@ -153,6 +154,57 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
     }
   }
 
+  void _navigateToScoreDetail() {
+    if (!widget.isReviewV2Screen) {
+      // V1: Navigate to Course tab (index 2)
+      if (widget.tabController != null) {
+        widget.tabController!.animateTo(2);
+      }
+      return;
+    }
+
+    // V2: Push ScoreDetailScreen with custom animation
+    if (!mounted) return;
+
+    final Widget screen = ScoreDetailScreen(round: widget.round);
+
+    if (useCustomPageTransitionsForRoundReview) {
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => screen,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Fade + scale animation for card expansion effect
+            const begin = 0.92;
+            const end = 1.0;
+            const curve = Curves.easeInOut;
+
+            final tween = Tween(
+              begin: begin,
+              end: end,
+            ).chain(CurveTween(curve: curve));
+            final scaleAnimation = animation.drive(tween);
+
+            final fadeAnimation = animation.drive(
+              CurveTween(curve: curve),
+            );
+
+            return FadeTransition(
+              opacity: fadeAnimation,
+              child: ScaleTransition(scale: scaleAnimation, child: child),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 350),
+        ),
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => screen,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
@@ -165,16 +217,17 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
           round: widget.round,
           roundParser: _roundParser,
           isDetailScreen: false,
+          onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SkillsOverviewCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(1), // Skills tab
-          ),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: SkillsOverviewCard(
+        //     round: widget.round,
+        //     onTap: () => _navigateToDetailView(1), // Skills tab
+        //   ),
+        // ),
+        // const SizedBox(height: 8),
         // Scorecard now included in ScoreKPICard above
         // Padding(
         //   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -185,21 +238,26 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
         // ),
         // const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: DrivingStatsCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(4), // Drives tab
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _CompactDrivingStatsCard(
+                  round: widget.round,
+                  onTap: () => _navigateToDetailView(4), // Drives tab
+                ),
+              ),
+              Expanded(
+                child: _CompactPuttingStatsCard(
+                  round: widget.round,
+                  onTap: () => _navigateToDetailView(5), // Putting tab
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: PuttingStatsCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(5), // Putting tab
-          ),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _MistakesCard(
@@ -323,121 +381,131 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                 ],
               ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Column(
                 children: [
-                  useHeroAnimationsForRoundReview
-                      ? Hero(
-                          tag: 'driving_c1_in_reg',
-                          child: CircularStatIndicator(
-                            key: ValueKey(
-                              'driving_c1_in_reg_${widget.round.id}',
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_c1_in_reg',
+                              child: CircularStatIndicator(
+                                key: ValueKey(
+                                  'driving_c1_in_reg_${widget.round.id}',
+                                ),
+                                label: 'C1 in Reg',
+                                percentage: hasData
+                                    ? stats['c1InRegPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF137e66),
+                                size: 70,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_c1_in_reg_${widget.round.id}'),
+                              label: 'C1 in Reg',
+                              percentage: hasData
+                                  ? stats['c1InRegPct'] as double
+                                  : 0.0,
+                              color: const Color(0xFF137e66),
+                              size: 70,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
                             ),
-                            label: 'C1 in Reg',
-                            percentage: hasData
-                                ? stats['c1InRegPct'] as double
-                                : 0.0,
-                            color: const Color(0xFF137e66),
-                            size: 70,
-                            shouldAnimate: true,
-                            shouldGlow: true,
-                            roundId: widget.round.id,
-                          ),
-                        )
-                      : CircularStatIndicator(
-                          key: ValueKey('driving_c1_in_reg_${widget.round.id}'),
-                          label: 'C1 in Reg',
-                          percentage: hasData
-                              ? stats['c1InRegPct'] as double
-                              : 0.0,
-                          color: const Color(0xFF137e66),
-                          size: 70,
-                          shouldAnimate: true,
-                          shouldGlow: true,
-                          roundId: widget.round.id,
-                        ),
-                  useHeroAnimationsForRoundReview
-                      ? Hero(
-                          tag: 'driving_fairway',
-                          child: CircularStatIndicator(
-                            key: ValueKey('driving_fairway_${widget.round.id}'),
-                            label: 'Fairway',
-                            percentage: hasData
-                                ? stats['fairwayPct'] as double
-                                : 0.0,
-                            color: const Color(0xFF4CAF50),
-                            size: 70,
-                            shouldAnimate: true,
-                            shouldGlow: true,
-                            roundId: widget.round.id,
-                          ),
-                        )
-                      : CircularStatIndicator(
-                          key: ValueKey('driving_fairway_${widget.round.id}'),
-                          label: 'Fairway',
-                          percentage: hasData
-                              ? stats['fairwayPct'] as double
-                              : 0.0,
-                          color: const Color(0xFF4CAF50),
-                          size: 70,
-                          shouldAnimate: true,
-                          shouldGlow: true,
-                          roundId: widget.round.id,
-                        ),
-                  useHeroAnimationsForRoundReview
-                      ? Hero(
-                          tag: 'driving_ob',
-                          child: CircularStatIndicator(
-                            key: ValueKey('driving_ob_${widget.round.id}'),
-                            label: 'OB',
-                            percentage: hasData
-                                ? stats['obPct'] as double
-                                : 0.0,
-                            color: const Color(0xFFFF7A7A),
-                            size: 70,
-                            shouldAnimate: true,
-                            shouldGlow: true,
-                            roundId: widget.round.id,
-                          ),
-                        )
-                      : CircularStatIndicator(
-                          key: ValueKey('driving_ob_${widget.round.id}'),
-                          label: 'OB',
-                          percentage: hasData ? stats['obPct'] as double : 0.0,
-                          color: const Color(0xFFFF7A7A),
-                          size: 70,
-                          shouldAnimate: true,
-                          shouldGlow: true,
-                          roundId: widget.round.id,
-                        ),
-                  useHeroAnimationsForRoundReview
-                      ? Hero(
-                          tag: 'driving_parked',
-                          child: CircularStatIndicator(
-                            key: ValueKey('driving_parked_${widget.round.id}'),
-                            label: 'Parked',
-                            percentage: hasData
-                                ? stats['parkedPct'] as double
-                                : 0.0,
-                            color: const Color(0xFFFFA726),
-                            size: 70,
-                            shouldAnimate: true,
-                            shouldGlow: true,
-                            roundId: widget.round.id,
-                          ),
-                        )
-                      : CircularStatIndicator(
-                          key: ValueKey('driving_parked_${widget.round.id}'),
-                          label: 'Parked',
-                          percentage: hasData
-                              ? stats['parkedPct'] as double
-                              : 0.0,
-                          color: const Color(0xFFFFA726),
-                          size: 70,
-                          shouldAnimate: true,
-                          shouldGlow: true,
-                          roundId: widget.round.id,
-                        ),
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_fairway',
+                              child: CircularStatIndicator(
+                                key: ValueKey('driving_fairway_${widget.round.id}'),
+                                label: 'Fairway',
+                                percentage: hasData
+                                    ? stats['fairwayPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF4CAF50),
+                                size: 70,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_fairway_${widget.round.id}'),
+                              label: 'Fairway',
+                              percentage: hasData
+                                  ? stats['fairwayPct'] as double
+                                  : 0.0,
+                              color: const Color(0xFF4CAF50),
+                              size: 70,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_ob',
+                              child: CircularStatIndicator(
+                                key: ValueKey('driving_ob_${widget.round.id}'),
+                                label: 'OB',
+                                percentage: hasData
+                                    ? stats['obPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFFFF7A7A),
+                                size: 70,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_ob_${widget.round.id}'),
+                              label: 'OB',
+                              percentage: hasData ? stats['obPct'] as double : 0.0,
+                              color: const Color(0xFFFF7A7A),
+                              size: 70,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_parked',
+                              child: CircularStatIndicator(
+                                key: ValueKey('driving_parked_${widget.round.id}'),
+                                label: 'Parked',
+                                percentage: hasData
+                                    ? stats['parkedPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFFFFA726),
+                                size: 70,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_parked_${widget.round.id}'),
+                              label: 'Parked',
+                              percentage: hasData
+                                  ? stats['parkedPct'] as double
+                                  : 0.0,
+                              color: const Color(0xFFFFA726),
+                              size: 70,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
                 ],
               ),
               // C1 in Reg by Throw Type section hidden for cleaner overview
@@ -601,88 +669,98 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
                 ],
               ),
               const SizedBox(height: 16),
-              // Circular stat indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              // Circular stat indicators in triangle formation (2 on top, 1 centered below)
+              Column(
                 children: [
-                  useHeroAnimationsForRoundReview
-                      ? Hero(
-                          tag: 'putting_c1',
-                          child: CircularStatIndicator(
-                            key: ValueKey('putting_c1_${widget.round.id}'),
-                            label: 'C1',
-                            percentage: hasData
-                                ? stats['c1Pct'] as double
-                                : 0.0,
-                            color: const Color(0xFF137e66),
-                            size: 87.5,
-                            shouldAnimate: true,
-                            shouldGlow: true,
-                            roundId: widget.round.id,
-                          ),
-                        )
-                      : CircularStatIndicator(
-                          key: ValueKey('putting_c1_${widget.round.id}'),
-                          label: 'C1',
-                          percentage: hasData ? stats['c1Pct'] as double : 0.0,
-                          color: const Color(0xFF137e66),
-                          size: 87.5,
-                          shouldAnimate: true,
-                          shouldGlow: true,
-                          roundId: widget.round.id,
-                        ),
-                  useHeroAnimationsForRoundReview
-                      ? Hero(
-                          tag: 'putting_c1x',
-                          child: CircularStatIndicator(
-                            key: ValueKey('putting_c1x_${widget.round.id}'),
-                            label: 'C1X',
-                            percentage: hasData
-                                ? stats['c1xPct'] as double
-                                : 0.0,
-                            color: const Color(0xFF4CAF50),
-                            size: 87.5,
-                            shouldAnimate: true,
-                            shouldGlow: true,
-                            roundId: widget.round.id,
-                          ),
-                        )
-                      : CircularStatIndicator(
-                          key: ValueKey('putting_c1x_${widget.round.id}'),
-                          label: 'C1X',
-                          percentage: hasData ? stats['c1xPct'] as double : 0.0,
-                          color: const Color(0xFF4CAF50),
-                          size: 87.5,
-                          shouldAnimate: true,
-                          shouldGlow: true,
-                          roundId: widget.round.id,
-                        ),
-                  useHeroAnimationsForRoundReview
-                      ? Hero(
-                          tag: 'putting_c2',
-                          child: CircularStatIndicator(
-                            key: ValueKey('putting_c2_${widget.round.id}'),
-                            label: 'C2',
-                            percentage: hasData
-                                ? stats['c2Pct'] as double
-                                : 0.0,
-                            color: const Color(0xFF2196F3),
-                            size: 87.5,
-                            shouldAnimate: true,
-                            shouldGlow: true,
-                            roundId: widget.round.id,
-                          ),
-                        )
-                      : CircularStatIndicator(
-                          key: ValueKey('putting_c2_${widget.round.id}'),
-                          label: 'C2',
-                          percentage: hasData ? stats['c2Pct'] as double : 0.0,
-                          color: const Color(0xFF2196F3),
-                          size: 87.5,
-                          shouldAnimate: true,
-                          shouldGlow: true,
-                          roundId: widget.round.id,
-                        ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'putting_c1',
+                              child: CircularStatIndicator(
+                                key: ValueKey('putting_c1_${widget.round.id}'),
+                                label: 'C1',
+                                percentage: hasData
+                                    ? stats['c1Pct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF137e66),
+                                size: 70,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('putting_c1_${widget.round.id}'),
+                              label: 'C1',
+                              percentage: hasData ? stats['c1Pct'] as double : 0.0,
+                              color: const Color(0xFF137e66),
+                              size: 70,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'putting_c1x',
+                              child: CircularStatIndicator(
+                                key: ValueKey('putting_c1x_${widget.round.id}'),
+                                label: 'C1X',
+                                percentage: hasData
+                                    ? stats['c1xPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF4CAF50),
+                                size: 70,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('putting_c1x_${widget.round.id}'),
+                              label: 'C1X',
+                              percentage: hasData ? stats['c1xPct'] as double : 0.0,
+                              color: const Color(0xFF4CAF50),
+                              size: 70,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'putting_c2',
+                              child: CircularStatIndicator(
+                                key: ValueKey('putting_c2_${widget.round.id}'),
+                                label: 'C2',
+                                percentage: hasData
+                                    ? stats['c2Pct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF2196F3),
+                                size: 70,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('putting_c2_${widget.round.id}'),
+                              label: 'C2',
+                              percentage: hasData ? stats['c2Pct'] as double : 0.0,
+                              color: const Color(0xFF2196F3),
+                              size: 70,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
                 ],
               ),
               // Heat maps hidden for now
@@ -712,6 +790,419 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
               //     ),
               //   ),
               // ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Compact Driving Stats Card for side-by-side layout
+class _CompactDrivingStatsCard extends StatefulWidget {
+  final DGRound round;
+  final VoidCallback? onTap;
+
+  const _CompactDrivingStatsCard({required this.round, this.onTap});
+
+  @override
+  State<_CompactDrivingStatsCard> createState() =>
+      _CompactDrivingStatsCardState();
+}
+
+class _CompactDrivingStatsCardState extends State<_CompactDrivingStatsCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  Map<String, dynamic> _calculateDrivingStats() {
+    final RoundStatisticsService statsService = RoundStatisticsService(
+      widget.round,
+    );
+    final dynamic coreStats = statsService.getCoreStats();
+
+    return {
+      'fairwayPct': coreStats.fairwayHitPct,
+      'c1InRegPct': coreStats.c1InRegPct,
+      'obPct': coreStats.obPct,
+      'parkedPct': coreStats.parkedPct,
+      'hasData': widget.round.holes.isNotEmpty,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final Map<String, dynamic> stats = _calculateDrivingStats();
+    final bool hasData = stats['hasData'] as bool;
+
+    return Card(
+      child: InkWell(
+        onTap: widget.onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    '🎯 Driving',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.black, size: 18),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_c1_in_reg',
+                              child: CircularStatIndicator(
+                                key: ValueKey(
+                                  'driving_c1_in_reg_${widget.round.id}',
+                                ),
+                                label: 'C1 in Reg',
+                                percentage: hasData
+                                    ? stats['c1InRegPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF137e66),
+                                size: 68,
+                                labelFontSize: 9,
+                                labelSpacing: 4,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_c1_in_reg_${widget.round.id}'),
+                              label: 'C1 in Reg',
+                              percentage: hasData
+                                  ? stats['c1InRegPct'] as double
+                                  : 0.0,
+                              color: const Color(0xFF137e66),
+                              size: 68,
+                              labelFontSize: 9,
+                              labelSpacing: 4,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                      const SizedBox(width: 8),
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_fairway',
+                              child: CircularStatIndicator(
+                                key: ValueKey('driving_fairway_${widget.round.id}'),
+                                label: 'Fairway',
+                                percentage: hasData
+                                    ? stats['fairwayPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF4CAF50),
+                                size: 68,
+                                labelFontSize: 9,
+                                labelSpacing: 4,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_fairway_${widget.round.id}'),
+                              label: 'Fairway',
+                              percentage: hasData
+                                  ? stats['fairwayPct'] as double
+                                  : 0.0,
+                              color: const Color(0xFF4CAF50),
+                              size: 68,
+                              labelFontSize: 9,
+                              labelSpacing: 4,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_ob',
+                              child: CircularStatIndicator(
+                                key: ValueKey('driving_ob_${widget.round.id}'),
+                                label: 'OB',
+                                percentage: hasData
+                                    ? stats['obPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFFFF7A7A),
+                                size: 68,
+                                labelFontSize: 9,
+                                labelSpacing: 4,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_ob_${widget.round.id}'),
+                              label: 'OB',
+                              percentage: hasData ? stats['obPct'] as double : 0.0,
+                              color: const Color(0xFFFF7A7A),
+                              size: 68,
+                              labelFontSize: 9,
+                              labelSpacing: 4,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                      const SizedBox(width: 8),
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'driving_parked',
+                              child: CircularStatIndicator(
+                                key: ValueKey('driving_parked_${widget.round.id}'),
+                                label: 'Parked',
+                                percentage: hasData
+                                    ? stats['parkedPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFFFFA726),
+                                size: 68,
+                                labelFontSize: 9,
+                                labelSpacing: 4,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('driving_parked_${widget.round.id}'),
+                              label: 'Parked',
+                              percentage: hasData
+                                  ? stats['parkedPct'] as double
+                                  : 0.0,
+                              color: const Color(0xFFFFA726),
+                              size: 68,
+                              labelFontSize: 9,
+                              labelSpacing: 4,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Compact Putting Stats Card for side-by-side layout
+class _CompactPuttingStatsCard extends StatefulWidget {
+  final DGRound round;
+  final VoidCallback? onTap;
+
+  const _CompactPuttingStatsCard({required this.round, this.onTap});
+
+  @override
+  State<_CompactPuttingStatsCard> createState() =>
+      _CompactPuttingStatsCardState();
+}
+
+class _CompactPuttingStatsCardState extends State<_CompactPuttingStatsCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  Map<String, dynamic> _calculatePuttingStats() {
+    int c1Attempts = 0;
+    int c1Makes = 0;
+    int c1xAttempts = 0;
+    int c1xMakes = 0;
+    int c2Attempts = 0;
+    int c2Makes = 0;
+
+    for (final DGHole hole in widget.round.holes) {
+      for (final DiscThrow discThrow in hole.throws) {
+        if (discThrow.purpose == ThrowPurpose.putt) {
+          final double? distance = discThrow.distanceFeetBeforeThrow
+              ?.toDouble();
+          final bool made = discThrow.landingSpot == LandingSpot.inBasket;
+
+          if (distance != null) {
+            if (distance >= c1MinDistance && distance <= c1MaxDistance) {
+              c1Attempts++;
+              if (made) c1Makes++;
+            }
+
+            if (distance >= c1xMinDistance && distance <= c1xMaxDistance) {
+              c1xAttempts++;
+              if (made) c1xMakes++;
+            }
+
+            if (distance > c2MinDistance && distance <= c2MaxDistance) {
+              c2Attempts++;
+              if (made) c2Makes++;
+            }
+          }
+        }
+      }
+    }
+
+    final double c1Pct = c1Attempts > 0 ? (c1Makes / c1Attempts * 100) : 0;
+    final double c1xPct = c1xAttempts > 0 ? (c1xMakes / c1xAttempts * 100) : 0;
+    final double c2Pct = c2Attempts > 0 ? (c2Makes / c2Attempts * 100) : 0;
+
+    return {
+      'c1Pct': c1Pct,
+      'c1xPct': c1xPct,
+      'c2Pct': c2Pct,
+      'hasData': c1Attempts > 0 || c1xAttempts > 0 || c2Attempts > 0,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final Map<String, dynamic> stats = _calculatePuttingStats();
+    final bool hasData = stats['hasData'] as bool;
+
+    return Card(
+      child: InkWell(
+        onTap: widget.onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    '🥏 Putting',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.black, size: 18),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'putting_c1',
+                              child: CircularStatIndicator(
+                                key: ValueKey('putting_c1_${widget.round.id}'),
+                                label: 'C1',
+                                percentage: hasData
+                                    ? stats['c1Pct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF137e66),
+                                size: 68,
+                                labelFontSize: 9,
+                                labelSpacing: 4,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('putting_c1_${widget.round.id}'),
+                              label: 'C1',
+                              percentage: hasData ? stats['c1Pct'] as double : 0.0,
+                              color: const Color(0xFF137e66),
+                              size: 68,
+                              labelFontSize: 9,
+                              labelSpacing: 4,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                      const SizedBox(width: 8),
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'putting_c1x',
+                              child: CircularStatIndicator(
+                                key: ValueKey('putting_c1x_${widget.round.id}'),
+                                label: 'C1X',
+                                percentage: hasData
+                                    ? stats['c1xPct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF4CAF50),
+                                size: 68,
+                                labelFontSize: 9,
+                                labelSpacing: 4,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('putting_c1x_${widget.round.id}'),
+                              label: 'C1X',
+                              percentage: hasData ? stats['c1xPct'] as double : 0.0,
+                              color: const Color(0xFF4CAF50),
+                              size: 68,
+                              labelFontSize: 9,
+                              labelSpacing: 4,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      useHeroAnimationsForRoundReview
+                          ? Hero(
+                              tag: 'putting_c2',
+                              child: CircularStatIndicator(
+                                key: ValueKey('putting_c2_${widget.round.id}'),
+                                label: 'C2',
+                                percentage: hasData
+                                    ? stats['c2Pct'] as double
+                                    : 0.0,
+                                color: const Color(0xFF2196F3),
+                                size: 68,
+                                labelFontSize: 9,
+                                labelSpacing: 4,
+                                shouldAnimate: true,
+                                shouldGlow: true,
+                                roundId: widget.round.id,
+                              ),
+                            )
+                          : CircularStatIndicator(
+                              key: ValueKey('putting_c2_${widget.round.id}'),
+                              label: 'C2',
+                              percentage: hasData ? stats['c2Pct'] as double : 0.0,
+                              color: const Color(0xFF2196F3),
+                              size: 68,
+                              labelFontSize: 9,
+                              labelSpacing: 4,
+                              shouldAnimate: true,
+                              shouldGlow: true,
+                              roundId: widget.round.id,
+                            ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
         ),
