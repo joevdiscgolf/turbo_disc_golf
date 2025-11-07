@@ -21,6 +21,16 @@ class StatCardRegistry {
     final id = cardId.toUpperCase();
 
     switch (id) {
+      // ===== COMPOSITE STORY CARDS =====
+      case 'PUTTING_STATS':
+        return _buildPuttingStatsCard(analysis);
+      case 'DRIVING_STATS':
+        return _buildDrivingStatsCard(analysis);
+      case 'SCORE_BREAKDOWN':
+        return _buildScoreBreakdownCard(analysis);
+      case 'MISTAKES_CHART':
+        return _buildMistakesChartCard(analysis);
+
       // ===== PUTTING CARDS =====
       case 'C1X_PUTTING':
         return _buildC1xPuttingCard(analysis);
@@ -75,6 +85,222 @@ class StatCardRegistry {
         debugPrint('Unknown stat card ID: $cardId');
         return _buildUnknownCard(cardId);
     }
+  }
+
+  // ===== COMPOSITE STORY CARDS =====
+
+  /// Comprehensive putting stats card with C1, C1X, and C2
+  static Widget _buildPuttingStatsCard(RoundAnalysis analysis) {
+    final stats = analysis.puttingStats;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            '🥏 Putting Performance',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            CompactStatCards.buildFractionCard(
+              label: 'C1 Putts',
+              numerator: stats.c1Makes,
+              denominator: stats.c1Attempts,
+              color: const Color(0xFF137e66),
+            ),
+            CompactStatCards.buildFractionCard(
+              label: 'C1X Putts',
+              numerator: stats.c1xMakes,
+              denominator: stats.c1xAttempts,
+              color: const Color(0xFF4CAF50),
+            ),
+            CompactStatCards.buildFractionCard(
+              label: 'C2 Putts',
+              numerator: stats.c2Makes,
+              denominator: stats.c2Attempts,
+              color: const Color(0xFF2196F3),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Comprehensive driving stats card
+  static Widget _buildDrivingStatsCard(RoundAnalysis analysis) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            '🎯 Driving Performance',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            CompactStatCards.buildPercentageCard(
+              label: 'Fairway Hit',
+              percentage: analysis.coreStats.fairwayHitPct,
+              color: const Color(0xFF4CAF50),
+              subtitle: 'Off the tee',
+            ),
+            CompactStatCards.buildPercentageCard(
+              label: 'C1 in Reg',
+              percentage: analysis.coreStats.c1InRegPct,
+              color: const Color(0xFF137e66),
+              subtitle: 'Birdie chances',
+            ),
+            CompactStatCards.buildPercentageCard(
+              label: 'OB Rate',
+              percentage: analysis.coreStats.obPct,
+              color: const Color(0xFFFF7A7A),
+              subtitle: 'Out of bounds',
+            ),
+            CompactStatCards.buildPercentageCard(
+              label: 'Parked',
+              percentage: analysis.coreStats.parkedPct,
+              color: const Color(0xFFFFA726),
+              subtitle: 'Tap-in range',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Score breakdown card with birdies, pars, bogeys, doubles
+  static Widget _buildScoreBreakdownCard(RoundAnalysis analysis) {
+    final stats = analysis.scoringStats;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            '📊 Score Breakdown',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (stats.eagles > 0)
+              CompactStatCards.buildCountCard(
+                label: 'Eagles',
+                count: stats.eagles,
+                color: const Color(0xFF9C27B0),
+                icon: Icons.star,
+              ),
+            CompactStatCards.buildCountCard(
+              label: 'Birdies',
+              count: stats.birdies,
+              color: const Color(0xFF4CAF50),
+              icon: Icons.arrow_downward,
+            ),
+            CompactStatCards.buildCountCard(
+              label: 'Pars',
+              count: stats.pars,
+              color: const Color(0xFF2196F3),
+              icon: Icons.horizontal_rule,
+            ),
+            CompactStatCards.buildCountCard(
+              label: 'Bogeys',
+              count: stats.bogeys,
+              color: const Color(0xFFFFB800),
+              icon: Icons.arrow_upward,
+            ),
+            if (stats.doubleBogeyPlus > 0)
+              CompactStatCards.buildCountCard(
+                label: 'Double+',
+                count: stats.doubleBogeyPlus,
+                color: const Color(0xFFFF7A7A),
+                icon: Icons.double_arrow,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Mistakes breakdown chart
+  static Widget _buildMistakesChartCard(RoundAnalysis analysis) {
+    final mistakesByCategory = analysis.mistakesByCategory;
+    final List<MapEntry<String, int>> sortedMistakes = mistakesByCategory.entries
+        .where((entry) => entry.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    if (sortedMistakes.isEmpty) {
+      return CompactStatCards.buildHighlightCard(
+        title: 'Perfect Round!',
+        description: 'No mistakes detected',
+        accentColor: const Color(0xFF4CAF50),
+        icon: Icons.check_circle_outline,
+      );
+    }
+
+    // Map category names to friendly labels
+    String getCategoryLabel(String category) {
+      switch (category.toLowerCase()) {
+        case 'driving':
+          return 'Driving Mistakes';
+        case 'putting':
+          return 'Putting Mistakes';
+        case 'approach':
+          return 'Approach Mistakes';
+        case 'mental':
+          return 'Mental Mistakes';
+        default:
+          return category;
+      }
+    }
+
+    // Get colors for each category
+    Color getCategoryColor(int index) {
+      final colors = [
+        const Color(0xFFFF7A7A), // Red
+        const Color(0xFFFFB800), // Orange
+        const Color(0xFF9C27B0), // Purple
+        const Color(0xFF2196F3), // Blue
+      ];
+      return colors[index % colors.length];
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            '⚠️ Mistakes Breakdown',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: sortedMistakes.asMap().entries.map((entry) {
+            final index = entry.key;
+            final mistake = entry.value;
+            return CompactStatCards.buildCountCard(
+              label: getCategoryLabel(mistake.key),
+              count: mistake.value,
+              color: getCategoryColor(index),
+              icon: Icons.warning_amber_rounded,
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 
   // ===== PUTTING CARDS =====
@@ -329,6 +555,11 @@ class StatCardRegistry {
   /// Get list of all supported card IDs
   static List<String> getSupportedCardIds() {
     return [
+      // Composite story cards
+      'PUTTING_STATS',
+      'DRIVING_STATS',
+      'SCORE_BREAKDOWN',
+      'MISTAKES_CHART',
       // Putting
       'C1X_PUTTING',
       'C1_PUTTING',
@@ -360,6 +591,15 @@ class StatCardRegistry {
   /// Get description for a card ID (useful for AI prompts)
   static String getCardDescription(String cardId) {
     switch (cardId.toUpperCase()) {
+      // Composite story cards
+      case 'PUTTING_STATS':
+        return 'Comprehensive putting visualization with C1, C1X, and C2 stats';
+      case 'DRIVING_STATS':
+        return 'Complete driving breakdown: fairway hits, C1 in reg, OB rate, parked';
+      case 'SCORE_BREAKDOWN':
+        return 'Full scoring distribution: eagles, birdies, pars, bogeys, doubles';
+      case 'MISTAKES_CHART':
+        return 'Mistakes breakdown by category with counts';
       // Putting
       case 'C1X_PUTTING':
         return 'C1x putting (12-33ft outer ring): makes/attempts with percentage - THE KEY PUTTING STAT';

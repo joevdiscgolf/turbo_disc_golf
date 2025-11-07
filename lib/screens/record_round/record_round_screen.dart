@@ -526,10 +526,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                               _voiceService.updateText(
                                 getCorrectTestDescription,
                               );
-                            } else {
-                              _transcriptController.clear();
-                              _voiceService.clearText();
                             }
+                            // Don't auto-clear when disabled - user can use clear button
                           });
                         },
                       ),
@@ -563,6 +561,65 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                       const Tooltip(
                         message: 'Load from storage instead of calling AI',
                         child: Icon(Icons.info_outline, size: 16),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Round Description TextField with Clear Button
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _transcriptController,
+                          maxLines: 8,
+                          minLines: 5,
+                          decoration: InputDecoration(
+                            labelText: 'Round Description',
+                            hintText: 'Enter or paste your round description...',
+                            border: const OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.clear),
+                              tooltip: 'Clear transcript',
+                              onPressed: () async {
+                                // Show confirmation dialog
+                                final bool? confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Clear Transcript?'),
+                                    content: const Text(
+                                      'This will clear all text. This cannot be undone.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: const Color(0xFFFF7A7A),
+                                        ),
+                                        child: const Text('Clear'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  setState(() {
+                                    _transcriptController.clear();
+                                    _voiceService.clearText();
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          style: const TextStyle(fontSize: 14),
+                        ),
                       ),
                     ],
                   ),
