@@ -381,7 +381,7 @@ class _TestRoastScreenState extends State<TestRoastScreen> {
                           _shouldGlaze = value;
                         });
                       },
-                      activeColor: Colors.amber,
+                      activeThumbColor: Colors.amber,
                       inactiveThumbColor: const Color(0xFFFF6B6B),
                     ),
                   ],
