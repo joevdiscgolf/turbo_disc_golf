@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_reco
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Reusable component for displaying and fixing an incomplete hole.
-/// Used by both EditableHoleDetailDialog and IncompleteHoleWalkthroughDialog.
+/// Used by both EditableHoleDetailSheet and IncompleteHoleWalkthroughSheet.
 class IncompleteHoleDetailContent extends StatelessWidget {
   const IncompleteHoleDetailContent({
     super.key,
