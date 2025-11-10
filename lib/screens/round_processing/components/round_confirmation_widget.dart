@@ -168,48 +168,53 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
       color: const Color(0xFFEEE8F5), // Light purple-gray background
       child: Column(
         children: [
-          // Top padding for app bar
-          SizedBox(
-            height: MediaQuery.of(context).padding.top + kToolbarHeight,
-          ),
-
-          // Course metadata header
-          _buildMetadataCard(context, totalScore, totalPar, relativeScore),
-          const SizedBox(height: 16),
-
-          // Warning banner for missing data
-          _buildWarningBanner(
-            context,
-            validationIssues,
-            missingHoles,
-            hasRequiredFields,
-          ),
-          if (validationIssues.isNotEmpty) const SizedBox(height: 16),
-
-          // Instructions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Tap any hole to review and edit throws',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Scrollable holes grid
+          // Scrollable content (everything except bottom bar)
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: EditableHolesGrid(
-                potentialRound: _currentRound,
-                roundParser: _roundParser,
+              child: Column(
+                children: [
+                  // Top padding for app bar
+                  SizedBox(
+                    height: MediaQuery.of(context).padding.top + kToolbarHeight,
+                  ),
+
+                  // Course metadata header
+                  _buildMetadataCard(context, totalScore, totalPar, relativeScore),
+                  const SizedBox(height: 16),
+
+                  // Warning banner for missing data
+                  _buildWarningBanner(
+                    context,
+                    validationIssues,
+                    missingHoles,
+                    hasRequiredFields,
+                  ),
+                  if (validationIssues.isNotEmpty) const SizedBox(height: 16),
+
+                  // Instructions
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Tap any hole to review and edit throws',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Holes grid (no longer wrapped in Expanded)
+                  EditableHolesGrid(
+                    potentialRound: _currentRound,
+                    roundParser: _roundParser,
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
           ),
 
-          // Continue button at bottom
+          // Continue button at bottom (fixed, doesn't scroll)
           _buildBottomBar(context, hasRequiredFields),
         ],
       ),
