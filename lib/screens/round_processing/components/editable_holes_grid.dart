@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
@@ -140,27 +139,27 @@ class _HoleGridItem extends StatelessWidget {
     );
   }
 
-  void _showReRecordDialog(BuildContext context) {
-    // Don't allow re-record for completely missing holes
-    if (isCompletelyMissing) {
-      return;
-    }
+  // void _showReRecordDialog(BuildContext context) {
+  //   // Don't allow re-record for completely missing holes
+  //   if (isCompletelyMissing) {
+  //     return;
+  //   }
 
-    showDialog<void>(
-      context: context,
-      builder: (context) => HoleReRecordDialog(
-        holeNumber: potentialHole.number ?? holeIndex + 1,
-        holeIndex: holeIndex,
-        holePar: potentialHole.par,
-        holeFeet: potentialHole.feet,
-      ),
-    );
-  }
+  //   showDialog<void>(
+  //     context: context,
+  //     builder: (context) => HoleReRecordDialog(
+  //       holeNumber: potentialHole.number ?? holeIndex + 1,
+  //       holeIndex: holeIndex,
+  //       holePar: potentialHole.par,
+  //       holeFeet: potentialHole.feet,
+  //     ),
+  //   );
+  // }
 
-  bool _hasCriticalIssues() {
-    return (potentialHole.throws == null || potentialHole.throws!.isEmpty) ||
-        potentialHole.feet == null;
-  }
+  // bool _hasCriticalIssues() {
+  //   return (potentialHole.throws == null || potentialHole.throws!.isEmpty) ||
+  //       potentialHole.feet == null;
+  // }
 
   bool _isIncomplete() {
     // Completely missing holes are always incomplete
@@ -208,9 +207,9 @@ class _HoleGridItem extends StatelessWidget {
                     Text(
                       '${potentialHole.number ?? '?'}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: borderColor,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: borderColor,
+                      ),
                     ),
                     // Warning indicator in top right
                     Container(
@@ -235,10 +234,10 @@ class _HoleGridItem extends StatelessWidget {
                 Text(
                   'Missing',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: borderColor.withValues(alpha: 0.8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    color: borderColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const Spacer(),
                 // '+' icon in bottom right
@@ -294,9 +293,9 @@ class _HoleGridItem extends StatelessWidget {
                     Text(
                       '${potentialHole.number ?? '?'}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: borderColor,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: borderColor,
+                      ),
                     ),
                     // Warning badge
                     Container(
@@ -321,28 +320,24 @@ class _HoleGridItem extends StatelessWidget {
                 Text(
                   'Par ${potentialHole.par ?? '—'}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: borderColor.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
+                    color: borderColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
                 ),
                 Text(
                   potentialHole.feet != null
                       ? '${potentialHole.feet} ft'
                       : '— ft',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: borderColor.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
+                    color: borderColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
                 ),
                 const Spacer(),
                 // Edit icon in bottom right
                 Align(
                   alignment: Alignment.bottomRight,
-                  child: Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: borderColor,
-                  ),
+                  child: Icon(Icons.edit, size: 16, color: borderColor),
                 ),
               ],
             ),
