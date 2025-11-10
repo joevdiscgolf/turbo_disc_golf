@@ -217,32 +217,58 @@ class _HoleGridItem extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Hole number in top left
-                Text(
-                  '${potentialHole.number ?? '?'}',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                // Header row with hole number and warning indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Hole number in top left
+                    Text(
+                      '${potentialHole.number ?? '?'}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: borderColor,
+                          ),
+                    ),
+                    // Warning indicator in top right
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
                         color: borderColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.priority_high,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // "Missing" text
+                Text(
+                  'Missing',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: borderColor.withValues(alpha: 0.8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
                 ),
-                // Warning indicator in top right
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: const BoxDecoration(
+                const Spacer(),
+                // '+' icon in bottom right
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Icon(
+                    Icons.add_circle_outline,
+                    size: 20,
                     color: borderColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.priority_high,
-                      size: 14,
-                      color: Colors.white,
-                    ),
                   ),
                 ),
               ],
