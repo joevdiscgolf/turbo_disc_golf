@@ -136,6 +136,7 @@ class _HoleGridItem extends StatelessWidget {
             ),
           ),
           child: Container(
+            height: 96,
             decoration: BoxDecoration(
               color: backgroundColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
@@ -250,7 +251,7 @@ class _HoleGridItem extends StatelessWidget {
             ),
           ),
           child: Container(
-            height: 94,
+            height: 96,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.grey.withValues(alpha: 0.05),
@@ -386,6 +387,7 @@ class _HoleGridItem extends StatelessWidget {
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Container(
+          height: 96,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
