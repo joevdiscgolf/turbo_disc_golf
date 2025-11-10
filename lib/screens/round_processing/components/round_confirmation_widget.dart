@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
@@ -215,7 +216,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(bottom: 80),
-              child: Text('TODO: Update EditableHolesGrid to work with PotentialDGRound'),
+              child: EditableHolesGrid(
+                potentialRound: _currentRound,
+                roundParser: _roundParser,
+              ),
             ),
           ),
         ],
@@ -429,7 +433,16 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               if (missingHoles.isNotEmpty)
                 TextButton.icon(
                   onPressed: () {
+                    // Add the missing holes first
                     _roundParser.addMissingHoles(missingHoles);
+
+                    // Then open the walkthrough to guide user through filling them in
+                    // Add a small delay to allow state to update
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (mounted) {
+                        _openWalkthroughDialog();
+                      }
+                    });
                   },
                   icon: const Icon(Icons.add_circle_outline, size: 16),
                   label: const Text('Add Missing Holes'),
