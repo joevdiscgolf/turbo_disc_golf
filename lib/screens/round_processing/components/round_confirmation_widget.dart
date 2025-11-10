@@ -15,11 +15,13 @@ class RoundConfirmationWidget extends StatefulWidget {
     required this.potentialRound,
     required this.onBack,
     required this.onConfirm,
+    required this.topViewPadding,
   });
 
   final PotentialDGRound potentialRound;
   final VoidCallback onBack;
   final VoidCallback onConfirm;
+  final double topViewPadding;
 
   @override
   State<RoundConfirmationWidget> createState() =>
@@ -167,56 +169,56 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     final bool hasRequiredFields = validation['hasRequiredFields'] as bool;
 
     return Container(
-      padding: const EdgeInsets.only(top: 112),
       color: const Color(0xFFEEE8F5), // Light purple-gray background
       // color: Colors.blue,
       child: Column(
         children: [
           // Scrollable content (everything except bottom bar)
           Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 48),
-                child: Column(
-                  children: [
-                    // Course metadata header
-                    _buildMetadataCard(
-                      context,
-                      totalScore,
-                      totalPar,
-                      relativeScore,
-                    ),
-                    const SizedBox(height: 12),
-                    // Warning banner for missing data
-                    _buildWarningBanner(
-                      context,
-                      validationIssues,
-                      missingHoles,
-                      hasRequiredFields,
-                    ),
-                    if (validationIssues.isNotEmpty) const SizedBox(height: 16),
-
-                    // Instructions
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Tap any hole to review and edit throws',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Holes grid (no longer wrapped in Expanded)
-                    EditableHolesGrid(
-                      potentialRound: _currentRound,
-                      roundParser: _roundParser,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+            child: ListView(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: 48,
+                top: widget.topViewPadding + 72,
               ),
+              children: [
+                // Course metadata header
+                _buildMetadataCard(
+                  context,
+                  totalScore,
+                  totalPar,
+                  relativeScore,
+                ),
+                const SizedBox(height: 12),
+                // Warning banner for missing data
+                _buildWarningBanner(
+                  context,
+                  validationIssues,
+                  missingHoles,
+                  hasRequiredFields,
+                ),
+                if (validationIssues.isNotEmpty) const SizedBox(height: 16),
+
+                // Instructions
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'Tap any hole to review and edit throws',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Holes grid (no longer wrapped in Expanded)
+                EditableHolesGrid(
+                  potentialRound: _currentRound,
+                  roundParser: _roundParser,
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
           ),
 

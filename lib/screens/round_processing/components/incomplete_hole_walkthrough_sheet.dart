@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_throw_timeline.dart';
@@ -163,7 +162,7 @@ class _IncompleteHoleWalkthroughSheetState
 
   bool _hasBasketThrow(PotentialDGHole hole) {
     if (hole.throws == null || hole.throws!.isEmpty) return false;
-    return hole.throws!.any((t) => t.landingSpot == LandingSpot.basket);
+    return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
   }
 
   bool _canProceed() {
@@ -174,7 +173,8 @@ class _IncompleteHoleWalkthroughSheetState
         _roundParser.potentialRound!.holes![currentHoleIndex];
 
     // Check if hole has required metadata
-    final bool hasMetadata = currentHole.number != null &&
+    final bool hasMetadata =
+        currentHole.number != null &&
         currentHole.par != null &&
         currentHole.feet != null;
 
@@ -255,29 +255,31 @@ class _IncompleteHoleWalkthroughSheetState
         onSave: (savedThrow) {
           final List<PotentialDiscThrow> updatedThrows =
               List<PotentialDiscThrow>.from(currentHole.throws ?? []);
-          updatedThrows.add(PotentialDiscThrow(
-            index: savedThrow.index,
-            purpose: savedThrow.purpose,
-            technique: savedThrow.technique,
-            puttStyle: savedThrow.puttStyle,
-            shotShape: savedThrow.shotShape,
-            stance: savedThrow.stance,
-            power: savedThrow.power,
-            distanceFeetBeforeThrow: savedThrow.distanceFeetBeforeThrow,
-            distanceFeetAfterThrow: savedThrow.distanceFeetAfterThrow,
-            elevationChangeFeet: savedThrow.elevationChangeFeet,
-            windDirection: savedThrow.windDirection,
-            windStrength: savedThrow.windStrength,
-            resultRating: savedThrow.resultRating,
-            landingSpot: savedThrow.landingSpot,
-            fairwayWidth: savedThrow.fairwayWidth,
-            penaltyStrokes: savedThrow.penaltyStrokes,
-            notes: savedThrow.notes,
-            rawText: savedThrow.rawText,
-            parseConfidence: savedThrow.parseConfidence,
-            discName: savedThrow.discName,
-            disc: savedThrow.disc,
-          ));
+          updatedThrows.add(
+            PotentialDiscThrow(
+              index: savedThrow.index,
+              purpose: savedThrow.purpose,
+              technique: savedThrow.technique,
+              puttStyle: savedThrow.puttStyle,
+              shotShape: savedThrow.shotShape,
+              stance: savedThrow.stance,
+              power: savedThrow.power,
+              distanceFeetBeforeThrow: savedThrow.distanceFeetBeforeThrow,
+              distanceFeetAfterThrow: savedThrow.distanceFeetAfterThrow,
+              elevationChangeFeet: savedThrow.elevationChangeFeet,
+              windDirection: savedThrow.windDirection,
+              windStrength: savedThrow.windStrength,
+              resultRating: savedThrow.resultRating,
+              landingSpot: savedThrow.landingSpot,
+              fairwayWidth: savedThrow.fairwayWidth,
+              penaltyStrokes: savedThrow.penaltyStrokes,
+              notes: savedThrow.notes,
+              rawText: savedThrow.rawText,
+              parseConfidence: savedThrow.parseConfidence,
+              discName: savedThrow.discName,
+              disc: savedThrow.disc,
+            ),
+          );
 
           final PotentialDGHole updatedHole = PotentialDGHole(
             number: currentHole.number,
@@ -322,11 +324,7 @@ class _IncompleteHoleWalkthroughSheetState
         throwIndex: throwIndex,
         holeNumber: currentHole.number ?? currentHoleIndex + 1,
         onSave: (updatedThrow) {
-          _roundParser.updateThrow(
-            currentHoleIndex,
-            throwIndex,
-            updatedThrow,
-          );
+          _roundParser.updateThrow(currentHoleIndex, throwIndex, updatedThrow);
           Navigator.of(context).pop();
         },
         onDelete: () {
@@ -407,11 +405,7 @@ class _IncompleteHoleWalkthroughSheetState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.check_circle,
-              color: Color(0xFF137e66),
-              size: 64,
-            ),
+            const Icon(Icons.check_circle, color: Color(0xFF137e66), size: 64),
             const SizedBox(height: 16),
             Text(
               'All holes are complete!',
@@ -448,9 +442,7 @@ class _IncompleteHoleWalkthroughSheetState
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(20),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -485,20 +477,18 @@ class _IncompleteHoleWalkthroughSheetState
                         children: [
                           Text(
                             'Fix Holes',
-                            style:
-                                Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             'Hole $currentPosition of $totalIncomplete',
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: const Color(0xFF9D4EDD),
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: const Color(0xFF9D4EDD),
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                         ],
                       ),
@@ -534,10 +524,14 @@ class _IncompleteHoleWalkthroughSheetState
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF9D4EDD).withValues(alpha: 0.05),
+                          color: const Color(
+                            0xFF9D4EDD,
+                          ).withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF9D4EDD).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF9D4EDD,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Column(
@@ -553,12 +547,8 @@ class _IncompleteHoleWalkthroughSheetState
                                 const SizedBox(width: 8),
                                 Text(
                                   'Hole Information',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -601,12 +591,8 @@ class _IncompleteHoleWalkthroughSheetState
                         children: [
                           Text(
                             'Throws',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           if (!_hasBasketThrow(currentHole))
                             Container(
@@ -615,15 +601,14 @@ class _IncompleteHoleWalkthroughSheetState
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD32F2F)
-                                    .withValues(alpha: 0.1),
+                                color: const Color(
+                                  0xFFD32F2F,
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 'Need basket throw',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       color: const Color(0xFFD32F2F),
                                       fontWeight: FontWeight.w600,
@@ -639,10 +624,9 @@ class _IncompleteHoleWalkthroughSheetState
                           currentHole.throws!.isNotEmpty)
                         Container(
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surface
-                                .withValues(alpha: 0.5),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: Colors.grey.withValues(alpha: 0.3),
@@ -670,13 +654,11 @@ class _IncompleteHoleWalkthroughSheetState
                           child: Center(
                             child: Text(
                               'No throws recorded yet',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                     fontStyle: FontStyle.italic,
                                   ),
                             ),
@@ -784,10 +766,12 @@ class _IncompleteHoleWalkthroughSheetState
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF9D4EDD),
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              Colors.grey.withValues(alpha: 0.3),
-                          disabledForegroundColor:
-                              Colors.grey.withValues(alpha: 0.5),
+                          disabledBackgroundColor: Colors.grey.withValues(
+                            alpha: 0.3,
+                          ),
+                          disabledForegroundColor: Colors.grey.withValues(
+                            alpha: 0.5,
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -822,9 +806,7 @@ class _IncompleteHoleWalkthroughSheetState
         ),
       ),
       keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-      ],
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
     );
   }
 }
