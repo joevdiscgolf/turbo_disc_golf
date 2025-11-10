@@ -1,4 +1,3 @@
-
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -6,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
 class RecordRoundSheet extends StatefulWidget {
@@ -183,12 +181,13 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    final RoundStorageService storageService = locator
-                        .get<RoundStorageService>();
+                    // final RoundStorageService storageService = locator
+                    //     .get<RoundStorageService>();
 
                     // Check if there's a cached round available
-                    final bool useCached = await storageService
-                        .hasCachedRound();
+                    final bool useCached = false;
+                    // await storageService
+                    // .hasCachedRound();
                     debugPrint(
                       'Test Parse Constant: Using cached round: $useCached',
                     );
@@ -205,7 +204,7 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => RoundProcessingLoadingScreen(
-                            transcript: testRoundDescription,
+                            transcript: flingsGivingRound2MissingHoles1And2,
                             courseName: testCourseName,
                             useSharedPreferences: useCached,
                           ),

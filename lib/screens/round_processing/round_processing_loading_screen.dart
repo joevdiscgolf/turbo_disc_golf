@@ -91,11 +91,15 @@ class _RoundProcessingLoadingScreenState
         return;
       }
 
-      if (_roundParser.parsedRound != null) {
+      // Check for potential round (after initial parsing)
+      if (_roundParser.potentialRound != null) {
         // Transition to confirmation screen
         setState(() {
           _state = _ProcessingState.confirming;
         });
+      } else if (_roundParser.parsedRound != null) {
+        // For cached rounds, we skip confirmation and go straight to reveal
+        _revealContent();
       } else {
         Navigator.of(context).pop();
       }
@@ -111,6 +115,34 @@ class _RoundProcessingLoadingScreenState
   }
 
   void _revealContent() async {
+    // If we have a potential round, finalize it first
+    if (_roundParser.potentialRound != null && _roundParser.parsedRound == null) {
+      debugPrint('Finalizing potential round...');
+
+      // Show a brief loading state
+      setState(() {
+        _state = _ProcessingState.loading;
+      });
+
+      final bool success = await _roundParser.finalizeRound();
+
+      if (!success) {
+        debugPrint(
+          'RoundProcessingLoadingScreen: ERROR - Failed to finalize round: ${_roundParser.lastError}',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_roundParser.lastError)),
+          );
+          // Go back to confirmation screen
+          setState(() {
+            _state = _ProcessingState.confirming;
+          });
+        }
+        return;
+      }
+    }
+
     if (_roundParser.parsedRound == null) {
       debugPrint(
         'RoundProcessingLoadingScreen: ERROR - parsedRound is null, cannot reveal',
@@ -301,7 +333,7 @@ class _RoundProcessingLoadingScreenState
 
   Widget _buildConfirmationContent() {
     return RoundConfirmationWidget(
-      round: _roundParser.parsedRound!,
+      potentialRound: _roundParser.potentialRound!,
       onBack: () => Navigator.of(context).pop(),
       onConfirm: _revealContent,
     );
