@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
-import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_throw_timeline.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_detail_content.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
@@ -10,15 +11,16 @@ import 'package:turbo_disc_golf/services/round_parser.dart';
 ///
 /// Displays hole metadata and a timeline of throws with edit/delete buttons.
 /// Includes an "Add Throw" button to manually add new throws.
+/// If the hole is incomplete, shows the IncompleteHoleDetailContent instead.
 class EditableHoleDetailDialog extends StatefulWidget {
   const EditableHoleDetailDialog({
     super.key,
-    required this.hole,
+    required this.potentialHole,
     required this.holeIndex,
     required this.roundParser,
   });
 
-  final DGHole hole;
+  final PotentialDGHole potentialHole;
   final int holeIndex;
   final RoundParser roundParser;
 
@@ -28,12 +30,12 @@ class EditableHoleDetailDialog extends StatefulWidget {
 }
 
 class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
-  late DGHole _currentHole;
+  late PotentialDGHole _currentHole;
 
   @override
   void initState() {
     super.initState();
-    _currentHole = widget.hole;
+    _currentHole = widget.potentialHole;
     widget.roundParser.addListener(_onRoundUpdated);
   }
 
@@ -44,25 +46,30 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
   }
 
   void _onRoundUpdated() {
-    if (widget.roundParser.parsedRound != null) {
-      final DGRound round = widget.roundParser.parsedRound!;
-      if (widget.holeIndex < round.holes.length) {
+    if (widget.roundParser.potentialRound != null) {
+      final PotentialDGRound round = widget.roundParser.potentialRound!;
+      if (round.holes != null && widget.holeIndex < round.holes!.length) {
         setState(() {
-          _currentHole = round.holes[widget.holeIndex];
+          _currentHole = round.holes![widget.holeIndex];
         });
       }
     }
   }
 
   void _editThrow(int throwIndex) {
-    final DiscThrow currentThrow = _currentHole.throws[throwIndex];
+    // Convert to DiscThrow from PotentialDiscThrow if needed
+    final PotentialDiscThrow? potentialThrow = _currentHole.throws?[throwIndex];
+    if (potentialThrow == null || !potentialThrow.hasRequiredFields) {
+      return; // Can't edit incomplete throw
+    }
+    final DiscThrow currentThrow = potentialThrow.toDiscThrow();
 
     showDialog(
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: currentThrow,
         throwIndex: throwIndex,
-        holeNumber: _currentHole.number,
+        holeNumber: _currentHole.number!,
         onSave: (updatedThrow) {
           widget.roundParser.updateThrow(
             widget.holeIndex,
@@ -80,17 +87,17 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
   }
 
   void _deleteThrow(int throwIndex) {
-    final List<DiscThrow> updatedThrows =
-        List<DiscThrow>.from(_currentHole.throws);
+    final List<PotentialDiscThrow> updatedThrows =
+        List<PotentialDiscThrow>.from(_currentHole.throws ?? []);
     updatedThrows.removeAt(throwIndex);
 
     // Reindex remaining throws
-    final List<DiscThrow> reindexedThrows = updatedThrows
+    final List<PotentialDiscThrow> reindexedThrows = updatedThrows
         .asMap()
         .entries
         .map((entry) {
-          final DiscThrow throw_ = entry.value;
-          return DiscThrow(
+          final PotentialDiscThrow throw_ = entry.value;
+          return PotentialDiscThrow(
             index: entry.key,
             purpose: throw_.purpose,
             technique: throw_.technique,
@@ -116,20 +123,28 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
         })
         .toList();
 
-    final DGHole updatedHole = DGHole(
+    // Update as potential hole
+    final PotentialDGHole updatedHole = PotentialDGHole(
       number: _currentHole.number,
       par: _currentHole.par,
       feet: _currentHole.feet,
       throws: reindexedThrows,
       holeType: _currentHole.holeType,
     );
-    widget.roundParser.updateHole(widget.holeIndex, updatedHole);
+
+    // Update via metadata method which handles conversion if complete
+    widget.roundParser.updatePotentialHoleMetadata(
+      widget.holeIndex,
+      number: updatedHole.number,
+      par: updatedHole.par,
+      feet: updatedHole.feet,
+    );
   }
 
   void _addThrow() {
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
-      index: _currentHole.throws.length,
+      index: _currentHole.throws?.length ?? 0,
       purpose: ThrowPurpose.other,
       technique: ThrowTechnique.backhand,
     );
@@ -138,22 +153,51 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: newThrow,
-        throwIndex: _currentHole.throws.length,
-        holeNumber: _currentHole.number,
+        throwIndex: _currentHole.throws?.length ?? 0,
+        holeNumber: _currentHole.number!,
         isNewThrow: true,
         onSave: (savedThrow) {
-          final List<DiscThrow> updatedThrows =
-              List<DiscThrow>.from(_currentHole.throws);
-          updatedThrows.add(savedThrow);
+          final List<PotentialDiscThrow> updatedThrows =
+              List<PotentialDiscThrow>.from(_currentHole.throws ?? []);
+          updatedThrows.add(PotentialDiscThrow(
+            index: savedThrow.index,
+            purpose: savedThrow.purpose,
+            technique: savedThrow.technique,
+            puttStyle: savedThrow.puttStyle,
+            shotShape: savedThrow.shotShape,
+            stance: savedThrow.stance,
+            power: savedThrow.power,
+            distanceFeetBeforeThrow: savedThrow.distanceFeetBeforeThrow,
+            distanceFeetAfterThrow: savedThrow.distanceFeetAfterThrow,
+            elevationChangeFeet: savedThrow.elevationChangeFeet,
+            windDirection: savedThrow.windDirection,
+            windStrength: savedThrow.windStrength,
+            resultRating: savedThrow.resultRating,
+            landingSpot: savedThrow.landingSpot,
+            fairwayWidth: savedThrow.fairwayWidth,
+            penaltyStrokes: savedThrow.penaltyStrokes,
+            notes: savedThrow.notes,
+            rawText: savedThrow.rawText,
+            parseConfidence: savedThrow.parseConfidence,
+            discName: savedThrow.discName,
+            disc: savedThrow.disc,
+          ));
 
-          final DGHole updatedHole = DGHole(
+          final PotentialDGHole updatedHole = PotentialDGHole(
             number: _currentHole.number,
             par: _currentHole.par,
             feet: _currentHole.feet,
             throws: updatedThrows,
             holeType: _currentHole.holeType,
           );
-          widget.roundParser.updateHole(widget.holeIndex, updatedHole);
+
+          // Update via metadata method which handles conversion if complete
+          widget.roundParser.updatePotentialHoleMetadata(
+            widget.holeIndex,
+            number: updatedHole.number,
+            par: updatedHole.par,
+            feet: updatedHole.feet,
+          );
           Navigator.of(context).pop();
         },
         onDelete: null, // No delete for new throws
@@ -163,7 +207,82 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final int relativeScore = _currentHole.relativeHoleScore;
+    // Check if hole is incomplete
+    if (!_currentHole.hasRequiredFields) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: 500,
+                maxHeight: MediaQuery.of(context).size.height - 64,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD32F2F).withValues(alpha: 0.1),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Color(0xFFD32F2F),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Incomplete Hole ${_currentHole.number ?? '?'}',
+                            style:
+                                Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Scrollable content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: IncompleteHoleDetailContent(
+                        potentialHole: _currentHole,
+                        holeIndex: widget.holeIndex,
+                        roundParser: widget.roundParser,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Complete hole - convert to DGHole for display
+    final DGHole completeHole = _currentHole.toDGHole();
+    final int relativeScore = completeHole.relativeHoleScore;
 
     // Determine score color
     Color scoreColor;
@@ -205,7 +324,7 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
                     ),
                   ),
                   child: Hero(
-                    tag: 'editable_hole_${_currentHole.number}',
+                    tag: 'editable_hole_${completeHole.number}',
                     child: Material(
                       color: Colors.transparent,
                       child: Row(
@@ -220,7 +339,7 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Hole ${_currentHole.number}',
+                                'Hole ${completeHole.number}',
                                 style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(fontWeight: FontWeight.bold),
                               ),
@@ -235,7 +354,7 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
                             ),
                             child: Center(
                               child: Text(
-                                '${_currentHole.holeScore}',
+                                '${completeHole.holeScore}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -258,20 +377,20 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
                       _buildInfoItem(
                         context,
                         'Par',
-                        '${_currentHole.par}',
+                        '${completeHole.par}',
                         Icons.flag_outlined,
                       ),
-                      if (_currentHole.feet != null)
+                      if (completeHole.feet != null)
                         _buildInfoItem(
                           context,
                           'Distance',
-                          '${_currentHole.feet} ft',
+                          '${completeHole.feet} ft',
                           Icons.straighten,
                         ),
                       _buildInfoItem(
                         context,
                         'Throws',
-                        '${_currentHole.throws.length}',
+                        '${completeHole.throws.length}',
                         Icons.sports_golf,
                       ),
                     ],
@@ -281,7 +400,7 @@ class _EditableHoleDetailDialogState extends State<EditableHoleDetailDialog> {
                 // Editable throws timeline
                 Flexible(
                   child: EditableThrowTimeline(
-                    throws: _currentHole.throws,
+                    throws: completeHole.throws,
                     onEditThrow: _editThrow,
                   ),
                 ),

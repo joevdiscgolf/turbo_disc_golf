@@ -10,22 +10,21 @@ import 'package:turbo_disc_golf/utils/string_helpers.dart';
 class GeminiService {
   late final GenerativeModel _textModel; // For text parsing
   late final GenerativeModel _visionModel; // For image + text (multimodal)
-  static const String _defaultApiKey =
-      'AIzaSyDGTZoOaO_U76ysJ5dG8Ohdc7B-soUn3rE'; // Replace with actual key
 
   static const String twoPointFiveFlashLiteModel = 'gemini-2.5-flash-lite';
   static const String twoPointFiveFlashModel = 'gemini-2.5-flash';
 
+  late final String _apiKey;
+
   String? _lastRawResponse; // Store the last raw response
   String? get lastRawResponse => _lastRawResponse;
 
-  GeminiService({String? apiKey}) {
-    final apiKeyToUse = apiKey ?? _defaultApiKey;
-
+  GeminiService({required String apiKey}) {
+    _apiKey = apiKey;
     // Text model for voice transcript parsing
     _textModel = GenerativeModel(
       model: twoPointFiveFlashLiteModel,
-      apiKey: apiKey ?? _defaultApiKey,
+      apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.3, // Lower temperature for more consistent parsing
         topK: 20,
@@ -38,7 +37,7 @@ class GeminiService {
     // Vision model for scorecard image processing
     _visionModel = GenerativeModel(
       model: 'gemini-2.0-flash-exp',
-      apiKey: apiKeyToUse,
+      apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.1, // Very low temperature for accurate data extraction
         topK: 10,
@@ -57,7 +56,7 @@ class GeminiService {
       if (useFullModel) {
         final fullModel = GenerativeModel(
           model: twoPointFiveFlashModel,
-          apiKey: _defaultApiKey,
+          apiKey: _apiKey,
           generationConfig: GenerationConfig(
             temperature: 1.0, // Higher temperature for creative content
             topK: 40,
@@ -1321,7 +1320,8 @@ $schemaExample
         )
         .join('\n');
 
-    final schemaExample = '''
+    final schemaExample =
+        '''
 number: $holeNumber
 par: $holePar${holeFeet != null ? '\nfeet: $holeFeet' : ''}
 throws:

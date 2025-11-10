@@ -13,9 +13,12 @@ import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final locator = GetIt.instance;
-void setUpLocator() {
+Future<void> setUpLocator() async {
+  await dotenv.load();
+  final geminiApiKey = dotenv.env['GEMINI_API_KEY'];
   // Register core services first
 
   // Round analysis
@@ -28,7 +31,9 @@ void setUpLocator() {
   locator.registerSingleton<ShotAnalysisService>(ShotAnalysisService());
 
   locator.registerSingleton<AiParsingService>(AiParsingService());
-  locator.registerSingleton<GeminiService>(GeminiService());
+  locator.registerSingleton<GeminiService>(
+    GeminiService(apiKey: geminiApiKey ?? ''),
+  );
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<FirestoreRoundService>(FirestoreRoundService());

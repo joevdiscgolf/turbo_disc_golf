@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
-import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
+import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
@@ -66,7 +66,7 @@ class AiParsingService {
     return text;
   }
 
-  Future<DGRound?> parseRoundDescription({
+  Future<PotentialDGRound?> parseRoundDescription({
     required String voiceTranscript,
     required List<DGDisc> userBag,
     String? courseName,
@@ -144,8 +144,8 @@ class AiParsingService {
       jsonMap['id'] = _uuid.v4();
       jsonMap['courseName'] = courseName;
 
-      debugPrint('YAML parsed successfully, converting to DGRound...');
-      return DGRound.fromJson(jsonMap);
+      debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
+      return PotentialDGRound.fromJson(jsonMap);
     } catch (e, trace) {
       debugPrint('Error parsing round with Gemini: $e');
       debugPrint(trace.toString());
@@ -158,7 +158,7 @@ class AiParsingService {
 
   /// Parse a single hole description and return the updated hole
   /// Used for re-recording individual holes
-  Future<DGHole?> parseSingleHole({
+  Future<PotentialDGHole?> parseSingleHole({
     required String voiceTranscript,
     required List<DGDisc> userBag,
     required int holeNumber,
@@ -212,8 +212,8 @@ class AiParsingService {
       jsonMap['par'] = holePar;
       jsonMap['feet'] = holeFeet;
 
-      debugPrint('Single hole YAML parsed successfully, converting to DGHole...');
-      return DGHole.fromJson(jsonMap);
+      debugPrint('Single hole YAML parsed successfully, converting to PotentialDGHole...');
+      return PotentialDGHole.fromJson(jsonMap);
     } catch (e, trace) {
       debugPrint('Error parsing single hole with Gemini: $e');
       debugPrint(trace.toString());

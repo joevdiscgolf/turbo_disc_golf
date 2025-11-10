@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
+import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
@@ -12,12 +13,14 @@ import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
 class RoundParser extends ChangeNotifier {
+  PotentialDGRound? _potentialRound;
   DGRound? _parsedRound;
   bool _isProcessing = false;
   bool _isReadyToNavigate = false;
   String _lastError = '';
   bool _shouldNavigateToReview = false;
 
+  PotentialDGRound? get potentialRound => _potentialRound;
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
   bool get isReadyToNavigate => _isReadyToNavigate;
@@ -80,6 +83,8 @@ class RoundParser extends ChangeNotifier {
           // Add a 3-second delay to show the loading animation
           await Future.delayed(const Duration(seconds: 3));
 
+          // For cached rounds, we already have a complete DGRound
+          // So we skip the potential round stage
           _parsedRound = cachedRound;
           _isProcessing = false;
           _setReadyToNavigate(); // Signal that we're ready to navigate with a delay
@@ -123,8 +128,8 @@ class RoundParser extends ChangeNotifier {
         }
       }
 
-      // Parse with Gemini
-      _parsedRound = await locator
+      // Parse with Gemini - returns PotentialDGRound with optional fields
+      _potentialRound = await locator
           .get<AiParsingService>()
           .parseRoundDescription(
             voiceTranscript: transcript,
@@ -133,8 +138,53 @@ class RoundParser extends ChangeNotifier {
             preParsedHoles: preParsedHoles, // Pass through pre-parsed holes
           );
 
-      if (_parsedRound == null) {
+      if (_potentialRound == null) {
         _lastError = 'Failed to parse round. Check console for details.';
+        _isProcessing = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Don't validate, enhance, analyze, or save yet
+      // That happens after confirmation in finalizeRound()
+      _isProcessing = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _lastError = 'Error parsing round: $e';
+      _isProcessing = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Finalize the potential round after confirmation
+  /// Converts PotentialDGRound to DGRound, validates, enhances, and saves
+  Future<bool> finalizeRound() async {
+    if (_potentialRound == null) {
+      _lastError = 'No potential round to finalize';
+      return false;
+    }
+
+    try {
+      _isProcessing = true;
+      notifyListeners();
+
+      // Check if potential round has all required fields
+      if (!_potentialRound!.hasRequiredFields) {
+        _lastError = 'Round is missing required fields: ${_potentialRound!.getMissingFields().join(', ')}';
+        _isProcessing = false;
+        notifyListeners();
+        return false;
+      }
+
+      debugPrint('Converting PotentialDGRound to DGRound...');
+
+      // Convert to final DGRound
+      try {
+        _parsedRound = _potentialRound!.toDGRound();
+      } catch (e) {
+        _lastError = 'Failed to convert round: $e';
         _isProcessing = false;
         notifyListeners();
         return false;
@@ -194,7 +244,7 @@ class RoundParser extends ChangeNotifier {
       _setReadyToNavigate(); // Signal that we're ready to navigate with a delay
       return true;
     } catch (e) {
-      _lastError = 'Error parsing round: $e';
+      _lastError = 'Error finalizing round: $e';
       _isProcessing = false;
       notifyListeners();
       return false;
@@ -423,7 +473,13 @@ class RoundParser extends ChangeNotifier {
     required int holeIndex,
     required String voiceTranscript,
   }) async {
-    if (_parsedRound == null || holeIndex >= _parsedRound!.holes.length) {
+    // Can work with either parsed round or potential round
+    final bool hasParsedRound = _parsedRound != null && holeIndex < _parsedRound!.holes.length;
+    final bool hasPotentialRound = _potentialRound != null &&
+        _potentialRound!.holes != null &&
+        holeIndex < _potentialRound!.holes!.length;
+
+    if (!hasParsedRound && !hasPotentialRound) {
       _lastError = 'Invalid hole index or no round loaded';
       return false;
     }
@@ -443,41 +499,83 @@ class RoundParser extends ChangeNotifier {
         }
       }
 
-      final hole = _parsedRound!.holes[holeIndex];
+      // Get hole info from whichever round we have
+      final int holeNumber;
+      final int holePar;
+      final int? holeFeet;
+      final String courseName;
 
-      debugPrint('=== RE-PROCESSING HOLE ${hole.number} ===');
+      if (hasParsedRound) {
+        final hole = _parsedRound!.holes[holeIndex];
+        holeNumber = hole.number;
+        holePar = hole.par;
+        holeFeet = hole.feet;
+        courseName = _parsedRound!.courseName;
+      } else {
+        final hole = _potentialRound!.holes![holeIndex];
+        holeNumber = hole.number ?? (holeIndex + 1);
+        holePar = hole.par ?? 3;
+        holeFeet = hole.feet;
+        courseName = _potentialRound!.courseName ?? 'Unknown Course';
+      }
+
+      debugPrint('=== RE-PROCESSING HOLE $holeNumber ===');
       debugPrint('Voice transcript: $voiceTranscript');
 
-      // Parse the single hole with Gemini
-      final newHole = await locator
+      // Parse the single hole with Gemini - returns PotentialDGHole
+      final potentialHole = await locator
           .get<AiParsingService>()
           .parseSingleHole(
             voiceTranscript: voiceTranscript,
             userBag: bagService.userBag,
-            holeNumber: hole.number,
-            holePar: hole.par,
-            holeFeet: hole.feet,
-            courseName: _parsedRound!.courseName,
+            holeNumber: holeNumber,
+            holePar: holePar,
+            holeFeet: holeFeet,
+            courseName: courseName,
           );
 
-      if (newHole == null) {
+      if (potentialHole == null) {
         _lastError = 'Failed to re-parse hole. Check console for details.';
         _isProcessing = false;
         notifyListeners();
         return false;
       }
 
-      debugPrint('Successfully re-parsed hole ${hole.number}');
+      debugPrint('Successfully re-parsed hole $holeNumber');
 
-      // Update the hole in the round
-      updateHole(holeIndex, newHole);
+      // If we have a parsed round, convert and update it
+      if (hasParsedRound) {
+        // Check if potential hole has required fields
+        if (!potentialHole.hasRequiredFields) {
+          _lastError = 'Re-parsed hole is missing required fields: ${potentialHole.getMissingFields().join(', ')}';
+          _isProcessing = false;
+          notifyListeners();
+          return false;
+        }
 
-      // Re-validate and enhance the entire round
-      _parsedRound = _validateAndEnhanceRound(_parsedRound!);
+        // Convert to DGHole and update
+        final newHole = potentialHole.toDGHole();
+        updateHole(holeIndex, newHole);
 
-      // Save updated round to shared preferences
-      debugPrint('Saving updated round to shared preferences...');
-      await locator.get<RoundStorageService>().saveRound(_parsedRound!);
+        // Re-validate and enhance the entire round
+        _parsedRound = _validateAndEnhanceRound(_parsedRound!);
+
+        // Save updated round to shared preferences
+        debugPrint('Saving updated round to shared preferences...');
+        await locator.get<RoundStorageService>().saveRound(_parsedRound!);
+      } else {
+        // Update potential round
+        final updatedHoles = List<PotentialDGHole>.from(_potentialRound!.holes!);
+        updatedHoles[holeIndex] = potentialHole;
+
+        _potentialRound = PotentialDGRound(
+          id: _potentialRound!.id,
+          courseName: _potentialRound!.courseName,
+          courseId: _potentialRound!.courseId,
+          holes: updatedHoles,
+          versionId: _potentialRound!.versionId,
+        );
+      }
 
       _isProcessing = false;
       notifyListeners();
@@ -491,9 +589,214 @@ class RoundParser extends ChangeNotifier {
   }
 
   void clearParsedRound() {
+    _potentialRound = null;
     _parsedRound = null;
     _lastError = '';
     notifyListeners();
+  }
+
+  /// Update a potential hole's basic metadata (number, par, distance)
+  void updatePotentialHoleMetadata(
+    int holeIndex, {
+    int? number,
+    int? par,
+    int? feet,
+  }) {
+    if (_potentialRound == null || _potentialRound!.holes == null) {
+      debugPrint('Cannot update potential hole: no potential round exists');
+      return;
+    }
+
+    if (holeIndex >= _potentialRound!.holes!.length) {
+      debugPrint('Cannot update potential hole: invalid hole index');
+      return;
+    }
+
+    final PotentialDGHole currentHole = _potentialRound!.holes![holeIndex];
+
+    // Create updated hole with new metadata
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: number ?? currentHole.number,
+      par: par ?? currentHole.par,
+      feet: feet ?? currentHole.feet,
+      throws: currentHole.throws,
+      holeType: currentHole.holeType,
+    );
+
+    // Update the holes list
+    final List<PotentialDGHole> updatedHoles =
+        List<PotentialDGHole>.from(_potentialRound!.holes!);
+    updatedHoles[holeIndex] = updatedHole;
+
+    _potentialRound = PotentialDGRound(
+      id: _potentialRound!.id,
+      courseName: _potentialRound!.courseName,
+      courseId: _potentialRound!.courseId,
+      holes: updatedHoles,
+      versionId: _potentialRound!.versionId,
+      analysis: _potentialRound!.analysis,
+      aiSummary: _potentialRound!.aiSummary,
+      aiCoachSuggestion: _potentialRound!.aiCoachSuggestion,
+      createdAt: _potentialRound!.createdAt,
+      playedRoundAt: _potentialRound!.playedRoundAt,
+    );
+
+    // Check if hole is now complete, and if so, auto-convert
+    if (updatedHole.hasRequiredFields) {
+      debugPrint('Hole $holeIndex is now complete, auto-converting to DGHole');
+      _convertHoleToDGHole(holeIndex);
+    }
+
+    notifyListeners();
+  }
+
+  /// Convert a validated potential hole to final DGHole
+  void _convertHoleToDGHole(int holeIndex) {
+    if (_potentialRound == null || _potentialRound!.holes == null) {
+      return;
+    }
+
+    if (holeIndex >= _potentialRound!.holes!.length) {
+      return;
+    }
+
+    final PotentialDGHole potentialHole = _potentialRound!.holes![holeIndex];
+
+    if (!potentialHole.hasRequiredFields) {
+      debugPrint('Cannot convert hole $holeIndex: missing required fields');
+      return;
+    }
+
+    try {
+      // Convert to DGHole (validation check)
+      final DGHole validatedHole = potentialHole.toDGHole();
+
+      // Validate and enhance the hole (for validation only, result not used yet)
+      _validateAndEnhanceSingleHole(validatedHole);
+
+      debugPrint('Successfully converted hole $holeIndex to DGHole');
+
+      // Note: For now, we keep it in the potential round but mark it as validated
+      // The complete conversion to DGRound happens in finalizeRound()
+      // This is intentional to maintain the potential round state until final confirmation
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error converting hole $holeIndex to DGHole: $e');
+    }
+  }
+
+  /// Validate and enhance a single hole (extracted from _validateAndEnhanceRound)
+  DGHole _validateAndEnhanceSingleHole(DGHole hole) {
+    final bagService = locator.get<BagService>();
+
+    final enhancedThrows = hole.throws.map((discThrow) {
+      DiscThrow workingThrow = discThrow;
+
+      // If disc name is provided, try to match it to the user's bag
+      if (workingThrow.discName != null && workingThrow.disc == null) {
+        final matchedDisc = bagService.findDiscByName(workingThrow.discName!);
+        if (matchedDisc != null) {
+          workingThrow = DiscThrow(
+            index: workingThrow.index,
+            purpose: workingThrow.purpose,
+            technique: workingThrow.technique,
+            puttStyle: workingThrow.puttStyle,
+            shotShape: workingThrow.shotShape,
+            stance: workingThrow.stance,
+            power: workingThrow.power,
+            distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
+            distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
+            elevationChangeFeet: workingThrow.elevationChangeFeet,
+            windDirection: workingThrow.windDirection,
+            windStrength: workingThrow.windStrength,
+            resultRating: workingThrow.resultRating,
+            landingSpot: workingThrow.landingSpot,
+            fairwayWidth: workingThrow.fairwayWidth,
+            penaltyStrokes: workingThrow.penaltyStrokes,
+            notes: workingThrow.notes,
+            rawText: workingThrow.rawText,
+            parseConfidence: workingThrow.parseConfidence,
+            discName: workingThrow.discName,
+            disc: matchedDisc,
+          );
+        }
+      }
+
+      // Validate and correct landingSpot based on distanceFeetAfterThrow
+      if (workingThrow.distanceFeetAfterThrow != null) {
+        final distance = workingThrow.distanceFeetAfterThrow!;
+        final currentSpot = workingThrow.landingSpot;
+
+        // NEVER override OB or off_fairway
+        if (currentSpot == LandingSpot.outOfBounds ||
+            currentSpot == LandingSpot.offFairway) {
+          debugPrint(
+            '✓ Preserving ${currentSpot?.name} for throw ${workingThrow.index} in hole ${hole.number}',
+          );
+        } else {
+          // Correct other landing spots based on distance
+          LandingSpot? correctLandingSpot;
+
+          if (distance == 0) {
+            correctLandingSpot = LandingSpot.inBasket;
+          } else if (distance <= 10) {
+            correctLandingSpot = LandingSpot.parked;
+          } else if (distance <= 33) {
+            correctLandingSpot = LandingSpot.circle1;
+          } else if (distance <= 66) {
+            correctLandingSpot = LandingSpot.circle2;
+          } else {
+            if (currentSpot == LandingSpot.parked ||
+                currentSpot == LandingSpot.circle1 ||
+                currentSpot == LandingSpot.circle2) {
+              correctLandingSpot = LandingSpot.fairway;
+            }
+          }
+
+          if (correctLandingSpot != null && correctLandingSpot != currentSpot) {
+            debugPrint(
+              '⚠️ Correcting landingSpot for throw ${workingThrow.index} in hole ${hole.number}: '
+              '${currentSpot?.name} → ${correctLandingSpot.name}',
+            );
+
+            workingThrow = DiscThrow(
+              index: workingThrow.index,
+              purpose: workingThrow.purpose,
+              technique: workingThrow.technique,
+              puttStyle: workingThrow.puttStyle,
+              shotShape: workingThrow.shotShape,
+              stance: workingThrow.stance,
+              power: workingThrow.power,
+              distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
+              distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
+              elevationChangeFeet: workingThrow.elevationChangeFeet,
+              windDirection: workingThrow.windDirection,
+              windStrength: workingThrow.windStrength,
+              resultRating: workingThrow.resultRating,
+              landingSpot: correctLandingSpot,
+              fairwayWidth: workingThrow.fairwayWidth,
+              penaltyStrokes: workingThrow.penaltyStrokes,
+              notes: workingThrow.notes,
+              rawText: workingThrow.rawText,
+              parseConfidence: workingThrow.parseConfidence,
+              discName: workingThrow.discName,
+              disc: workingThrow.disc,
+            );
+          }
+        }
+      }
+
+      return workingThrow;
+    }).toList();
+
+    return DGHole(
+      number: hole.number,
+      par: hole.par,
+      feet: hole.feet,
+      throws: enhancedThrows,
+      holeType: hole.holeType,
+    );
   }
 
   String getScoreName(int score) {

@@ -7,7 +7,7 @@ import 'package:turbo_disc_golf/screens/main_wrapper.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  setUpLocator();
+  await setUpLocator();
 
   runApp(const MyApp());
 }

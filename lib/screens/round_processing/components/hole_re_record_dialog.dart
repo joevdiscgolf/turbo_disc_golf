@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/models/data/hole_data.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
 /// Dialog for re-recording voice description for a specific hole.
@@ -9,12 +10,18 @@ import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 class HoleReRecordDialog extends StatefulWidget {
   const HoleReRecordDialog({
     super.key,
-    required this.hole,
-    required this.onReProcess,
+    required this.holeNumber,
+    required this.holeIndex,
+    this.holePar,
+    this.holeFeet,
+    this.onReProcessed,
   });
 
-  final DGHole hole;
-  final Function(String transcript) onReProcess;
+  final int holeNumber;
+  final int holeIndex;
+  final int? holePar;
+  final int? holeFeet;
+  final VoidCallback? onReProcessed; // Called when re-processing completes
 
   @override
   State<HoleReRecordDialog> createState() => _HoleReRecordDialogState();
@@ -92,7 +99,7 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
     setState(() {});
   }
 
-  void _processTranscript() {
+  Future<void> _processTranscript() async {
     if (_transcriptController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -106,8 +113,45 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
       _isProcessing = true;
     });
 
-    // Call the callback with the transcript
-    widget.onReProcess(_transcriptController.text.trim());
+    // Show loading snackbar
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Re-processing hole with AI...')),
+      );
+    }
+
+    // Call RoundParser to re-process the hole
+    final RoundParser roundParser = locator.get<RoundParser>();
+    final bool success = await roundParser.reProcessHole(
+      holeIndex: widget.holeIndex,
+      voiceTranscript: _transcriptController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isProcessing = false;
+    });
+
+    // Show result
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hole re-processed successfully!'),
+          backgroundColor: Color(0xFF137e66),
+        ),
+      );
+      widget.onReProcessed?.call();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error: ${roundParser.lastError.isNotEmpty ? roundParser.lastError : 'Failed to re-process hole'}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
 
     // Close dialog
     Navigator.of(context).pop();
@@ -134,25 +178,29 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Re-record Hole ${widget.hole.number}',
+                        'Re-record Hole ${widget.holeNumber}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                       ),
-                      Text(
-                        'Par ${widget.hole.par}${widget.hole.feet != null ? ' • ${widget.hole.feet} ft' : ''}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                      ),
+                      if (widget.holePar != null)
+                        Text(
+                          'Par ${widget.holePar}${widget.holeFeet != null ? ' • ${widget.holeFeet} ft' : ''}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                        ),
                     ],
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
@@ -171,17 +219,6 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
               ),
             ),
             const SizedBox(height: 16),
-
-            // Current data summary (if any)
-            if (widget.hole.throws.isNotEmpty) ...[
-              Text(
-                'Current throws: ${widget.hole.throws.length}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 16),
-            ],
 
             // Error display
             if (_voiceService.lastError.isNotEmpty)
