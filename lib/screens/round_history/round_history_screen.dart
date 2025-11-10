@@ -127,11 +127,11 @@ class RoundHistoryScreen extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF64B5F6), Color(0xFF2196F3)],
+                  colors: [Color(0xFFBA68C8), Color(0xFF9C27B0)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2196F3).withValues(alpha: 0.5),
+                    color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
                     blurRadius: 20,
                     spreadRadius: 2,
                     offset: const Offset(0, 4),
