@@ -35,18 +35,9 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     super.initState();
     _roundParser = locator.get<RoundParser>();
     _currentRound = widget.potentialRound;
-
-    // Listen to round parser changes to update UI
-    _roundParser.addListener(_onRoundUpdated);
   }
 
-  @override
-  void dispose() {
-    _roundParser.removeListener(_onRoundUpdated);
-    super.dispose();
-  }
-
-  void _onRoundUpdated() {
+  void _refreshRoundData() {
     if (_roundParser.potentialRound != null) {
       setState(() {
         _currentRound = _roundParser.potentialRound!;
@@ -361,16 +352,25 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   int _getIncompleteHoleCount() {
     if (_currentRound.holes == null) return 0;
-    return _currentRound.holes!.where((hole) => !hole.hasRequiredFields).length;
+    // Count holes that are missing required fields OR have no throws
+    return _currentRound.holes!
+        .where((hole) =>
+            !hole.hasRequiredFields ||
+            hole.throws == null ||
+            hole.throws!.isEmpty)
+        .length;
   }
 
-  void _openWalkthroughDialog() {
-    showDialog<void>(
+  Future<void> _openWalkthroughDialog() async {
+    await showDialog<void>(
       context: context,
       builder: (context) => IncompleteHoleWalkthroughDialog(
         potentialRound: _currentRound,
       ),
     );
+
+    // Refresh the UI after dialog closes
+    _refreshRoundData();
   }
 
   Widget _buildWarningBanner(
@@ -383,27 +383,19 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
     final int incompleteHoleCount = _getIncompleteHoleCount();
 
-    // Determine severity based on whether required fields are missing
-    final Color backgroundColor =
-        hasRequiredFields ? const Color(0xFFFFF3CD) : const Color(0xFFFFEBEE);
-    final Color borderColor = hasRequiredFields
-        ? const Color(0xFFFFA726).withValues(alpha: 0.4)
-        : const Color(0xFFEF5350).withValues(alpha: 0.4);
-    final Color iconColor =
-        hasRequiredFields ? const Color(0xFFFF8F00) : const Color(0xFFD32F2F);
-    final Color textColor =
-        hasRequiredFields ? const Color(0xFF664D03) : const Color(0xFFB71C1C);
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: borderColor,
-          width: 1,
-        ),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,100 +404,107 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
             children: [
               Icon(
                 hasRequiredFields
-                    ? Icons.warning_amber_rounded
-                    : Icons.error_outline,
-                color: iconColor,
-                size: 20,
+                    ? Icons.info_outline
+                    : Icons.warning_amber_rounded,
+                color: hasRequiredFields
+                    ? const Color(0xFF2196F3)
+                    : const Color(0xFFFFA726),
+                size: 24,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   hasRequiredFields
-                      ? 'Missing Information'
-                      : 'Required Fields Missing',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      ? 'Review Round Data'
+                      : 'Action Required',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: iconColor,
                       ),
                 ),
               ),
-              // Add missing holes button
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Issues summary
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: hasRequiredFields
+                  ? const Color(0xFF2196F3).withValues(alpha: 0.1)
+                  : const Color(0xFFFFA726).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (missingHoles.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      '${missingHoles.length} ${missingHoles.length == 1 ? 'hole' : 'holes'} missing from sequence',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                if (incompleteHoleCount > 0)
+                  Text(
+                    '$incompleteHoleCount ${incompleteHoleCount == 1 ? 'hole needs' : 'holes need'} additional information',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Action buttons
+          Row(
+            children: [
               if (missingHoles.isNotEmpty)
-                TextButton.icon(
-                  onPressed: () {
-                    // Add the missing holes first
-                    _roundParser.addMissingHoles(missingHoles);
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      // Add the missing holes to potential round
+                      _roundParser.addEmptyHolesToPotentialRound(missingHoles);
 
-                    // Then open the walkthrough to guide user through filling them in
-                    // Add a small delay to allow state to update
-                    Future.delayed(const Duration(milliseconds: 100), () {
-                      if (mounted) {
-                        _openWalkthroughDialog();
-                      }
-                    });
-                  },
-                  icon: const Icon(Icons.add_circle_outline, size: 16),
-                  label: const Text('Add Missing Holes'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF137e66),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      // Refresh the UI
+                      _refreshRoundData();
+
+                      // Then open the walkthrough to guide user through filling them in
+                      await _openWalkthroughDialog();
+                    },
+                    icon: const Icon(Icons.add_circle_outline, size: 18),
+                    label: const Text('Add Holes'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF137e66),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              if (missingHoles.isNotEmpty && incompleteHoleCount > 0)
+                const SizedBox(width: 12),
+              if (incompleteHoleCount > 0)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _openWalkthroughDialog,
+                    icon: const Icon(Icons.edit_note, size: 18),
+                    label: const Text('Fix Info'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF9D4EDD),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
             ],
-          ),
-          // Fix Missing Information button (below header for better layout)
-          if (incompleteHoleCount > 0) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _openWalkthroughDialog,
-                icon: const Icon(Icons.fact_check, size: 18),
-                label: Text(
-                  'Fix Missing Information ($incompleteHoleCount ${incompleteHoleCount == 1 ? 'hole' : 'holes'})',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9D4EDD),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
-          ...issues.map(
-            (issue) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '• ',
-                    style: TextStyle(
-                      color: iconColor,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      issue,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: textColor,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),

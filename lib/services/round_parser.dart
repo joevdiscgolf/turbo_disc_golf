@@ -468,6 +468,54 @@ class RoundParser extends ChangeNotifier {
     }
   }
 
+  /// Adds empty holes to the potential round (for round confirmation workflow)
+  void addEmptyHolesToPotentialRound(Set<int> holeNumbers, {int? defaultPar}) {
+    if (_potentialRound == null || _potentialRound!.holes == null) {
+      debugPrint('Cannot add empty holes: no potential round exists');
+      return;
+    }
+
+    final List<PotentialDGHole> updatedHoles =
+        List<PotentialDGHole>.from(_potentialRound!.holes!);
+
+    for (final holeNumber in holeNumbers) {
+      // Create empty potential hole
+      final PotentialDGHole emptyHole = PotentialDGHole(
+        number: holeNumber,
+        par: defaultPar ?? 3, // Default to par 3
+        feet: null, // No distance yet
+        throws: [], // Empty throws list
+      );
+
+      // Find correct insertion position (maintain hole number order)
+      int insertIndex = updatedHoles.length;
+      for (int i = 0; i < updatedHoles.length; i++) {
+        if (updatedHoles[i].number != null &&
+            updatedHoles[i].number! > holeNumber) {
+          insertIndex = i;
+          break;
+        }
+      }
+
+      updatedHoles.insert(insertIndex, emptyHole);
+    }
+
+    _potentialRound = PotentialDGRound(
+      id: _potentialRound!.id,
+      courseName: _potentialRound!.courseName,
+      courseId: _potentialRound!.courseId,
+      holes: updatedHoles,
+      versionId: _potentialRound!.versionId,
+      analysis: _potentialRound!.analysis,
+      aiSummary: _potentialRound!.aiSummary,
+      aiCoachSuggestion: _potentialRound!.aiCoachSuggestion,
+      createdAt: _potentialRound!.createdAt,
+      playedRoundAt: _potentialRound!.playedRoundAt,
+    );
+
+    notifyListeners();
+  }
+
   /// Re-process a single hole with new voice description
   Future<bool> reProcessHole({
     required int holeIndex,
