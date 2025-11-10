@@ -183,7 +183,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 top: widget.topViewPadding + 72,
               ),
               children: [
-                // Course metadata header
+                // // Course metadata header
                 _buildMetadataCard(
                   context,
                   totalScore,
