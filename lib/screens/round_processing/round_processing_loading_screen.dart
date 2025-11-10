@@ -370,7 +370,7 @@ class _RoundProcessingLoadingScreenState
               )
             : _state == _ProcessingState.confirming
                 ? AppBar(
-                    backgroundColor: Colors.transparent,
+                    backgroundColor: const Color(0xFFEEE8F5), // Match scaffold background
                     surfaceTintColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     elevation: 0,

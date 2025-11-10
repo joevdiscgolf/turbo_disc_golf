@@ -34,25 +34,22 @@ class EditableHolesGrid extends StatelessWidget {
         MediaQuery.of(context).size.width - 32; // minus horizontal margin
     final double itemWidth = screenWidth / 3;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 0,
-        runSpacing: 0,
-        children: potentialRound.holes!.asMap().entries.map((entry) {
-          final int holeIndex = entry.key;
-          final PotentialDGHole hole = entry.value;
+    return Wrap(
+      spacing: 0,
+      runSpacing: 0,
+      children: potentialRound.holes!.asMap().entries.map((entry) {
+        final int holeIndex = entry.key;
+        final PotentialDGHole hole = entry.value;
 
-          return SizedBox(
-            width: itemWidth,
-            child: _HoleGridItem(
-              potentialHole: hole,
-              holeIndex: holeIndex,
-              roundParser: roundParser,
-            ),
-          );
-        }).toList(),
-      ),
+        return SizedBox(
+          width: itemWidth,
+          child: _HoleGridItem(
+            potentialHole: hole,
+            holeIndex: holeIndex,
+            roundParser: roundParser,
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -113,7 +110,8 @@ class _HoleGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isEmpty = potentialHole.throws == null || potentialHole.throws!.isEmpty;
+    final bool isEmpty =
+        potentialHole.throws == null || potentialHole.throws!.isEmpty;
     final bool isIncomplete = _isIncomplete();
 
     // Incomplete hole (missing required fields) - RED/AMBER WARNING STATE
@@ -122,9 +120,8 @@ class _HoleGridItem extends StatelessWidget {
       final Color borderColor = const Color(0xFFD32F2F); // Red for required
       final Color backgroundColor = const Color(0xFFFFEBEE); // Light red
 
-      return InkWell(
+      return GestureDetector(
         onTap: () => _showEditableHoleDialog(context),
-        borderRadius: BorderRadius.circular(8),
         child: Card(
           elevation: 1,
           shape: RoundedRectangleBorder(
@@ -161,10 +158,11 @@ class _HoleGridItem extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             '${potentialHole.number ?? '?'}',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: borderColor,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: borderColor,
+                                ),
                           ),
                         ],
                       ),
@@ -196,7 +194,9 @@ class _HoleGridItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    potentialHole.feet != null ? '${potentialHole.feet} ft' : '— ft',
+                    potentialHole.feet != null
+                        ? '${potentialHole.feet} ft'
+                        : '— ft',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: borderColor.withValues(alpha: 0.8),
                       fontSize: 11,
@@ -233,9 +233,9 @@ class _HoleGridItem extends StatelessWidget {
 
     // Empty hole styling (has structure but no throws)
     if (isEmpty) {
-      return InkWell(
+      return GestureDetector(
         onTap: () => _showEditableHoleDialog(context),
-        borderRadius: BorderRadius.circular(8),
+
         child: Card(
           elevation: 1,
           shape: RoundedRectangleBorder(
@@ -247,87 +247,83 @@ class _HoleGridItem extends StatelessWidget {
             ),
           ),
           child: Container(
+            height: 94,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.grey.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header row with hole icon/number and add icon
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.add_circle_outline,
-                            size: 16,
-                            color: Colors.grey.withValues(alpha: 0.7),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${potentialHole.number ?? '?'}',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Empty indicator
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.grey.withValues(alpha: 0.5),
-                            width: 1.5,
-                          ),
-                          shape: BoxShape.circle,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row with hole icon/number and add icon
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline,
+                          size: 16,
+                          color: Colors.grey.withValues(alpha: 0.7),
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.add,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${potentialHole.number ?? '?'}',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.withValues(alpha: 0.7),
+                              ),
                         ),
+                      ],
+                    ),
+                    // Empty indicator
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.grey.withValues(alpha: 0.5),
+                          width: 1.5,
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                    ],
+                      child: const Center(
+                        child: Icon(Icons.add, size: 14, color: Colors.grey),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Par and distance
+                Text(
+                  'Par ${potentialHole.par ?? '?'}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.grey.withValues(alpha: 0.7),
+                    fontSize: 11,
                   ),
-                  const SizedBox(height: 6),
-                  // Par and distance
+                ),
+                if (potentialHole.feet != null)
                   Text(
-                    'Par ${potentialHole.par ?? '?'}',
+                    '${potentialHole.feet} ft',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Colors.grey.withValues(alpha: 0.7),
                       fontSize: 11,
                     ),
-                  ),
-                  if (potentialHole.feet != null)
-                    Text(
-                      '${potentialHole.feet} ft',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.grey.withValues(alpha: 0.7),
-                        fontSize: 11,
-                      ),
-                    )
-                  else
-                    Text(
-                      'Tap to add',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFF137e66),
-                        fontSize: 10,
-                        fontStyle: FontStyle.italic,
-                      ),
+                  )
+                else
+                  Text(
+                    'Tap to add',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: const Color(0xFF137e66),
+                      fontSize: 10,
+                      fontStyle: FontStyle.italic,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -337,7 +333,8 @@ class _HoleGridItem extends StatelessWidget {
     // Regular/Complete hole styling
     // Calculate score manually since PotentialDGHole doesn't have computed properties
     final int throwsCount = potentialHole.throws?.length ?? 0;
-    final int penaltyStrokes = potentialHole.throws?.fold<int>(
+    final int penaltyStrokes =
+        potentialHole.throws?.fold<int>(
           0,
           (prev, t) => prev + (t.penaltyStrokes ?? 0),
         ) ??

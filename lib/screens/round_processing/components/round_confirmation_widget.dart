@@ -51,7 +51,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     return _currentRound.holes!.fold<int>(0, (sum, hole) {
       // Calculate hole score: throws count + penalty strokes
       final int throwsCount = hole.throws?.length ?? 0;
-      final int penaltyStrokes = hole.throws?.fold<int>(
+      final int penaltyStrokes =
+          hole.throws?.fold<int>(
             0,
             (prev, discThrow) => prev + (discThrow.penaltyStrokes ?? 0),
           ) ??
@@ -109,11 +110,12 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
     // Check for missing holes in sequence
     if (_currentRound.holes != null && _currentRound.holes!.isNotEmpty) {
-      final List<int> holeNumbers = _currentRound.holes!
-          .where((h) => h.number != null)
-          .map((h) => h.number!)
-          .toList()
-        ..sort();
+      final List<int> holeNumbers =
+          _currentRound.holes!
+              .where((h) => h.number != null)
+              .map((h) => h.number!)
+              .toList()
+            ..sort();
 
       if (holeNumbers.isNotEmpty) {
         final int expectedHoles = holeNumbers.last;
@@ -165,51 +167,55 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     final bool hasRequiredFields = validation['hasRequiredFields'] as bool;
 
     return Container(
+      padding: const EdgeInsets.only(top: 112),
       color: const Color(0xFFEEE8F5), // Light purple-gray background
+      // color: Colors.blue,
       child: Column(
         children: [
           // Scrollable content (everything except bottom bar)
           Expanded(
             child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Top padding for app bar
-                  SizedBox(
-                    height: MediaQuery.of(context).padding.top + kToolbarHeight,
-                  ),
-
-                  // Course metadata header
-                  _buildMetadataCard(context, totalScore, totalPar, relativeScore),
-                  const SizedBox(height: 16),
-
-                  // Warning banner for missing data
-                  _buildWarningBanner(
-                    context,
-                    validationIssues,
-                    missingHoles,
-                    hasRequiredFields,
-                  ),
-                  if (validationIssues.isNotEmpty) const SizedBox(height: 16),
-
-                  // Instructions
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Tap any hole to review and edit throws',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 48),
+                child: Column(
+                  children: [
+                    // Course metadata header
+                    _buildMetadataCard(
+                      context,
+                      totalScore,
+                      totalPar,
+                      relativeScore,
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    // Warning banner for missing data
+                    _buildWarningBanner(
+                      context,
+                      validationIssues,
+                      missingHoles,
+                      hasRequiredFields,
+                    ),
+                    if (validationIssues.isNotEmpty) const SizedBox(height: 16),
 
-                  // Holes grid (no longer wrapped in Expanded)
-                  EditableHolesGrid(
-                    potentialRound: _currentRound,
-                    roundParser: _roundParser,
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    // Instructions
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'Tap any hole to review and edit throws',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Holes grid (no longer wrapped in Expanded)
+                    EditableHolesGrid(
+                      potentialRound: _currentRound,
+                      roundParser: _roundParser,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
           ),
@@ -228,7 +234,6 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     int relativeScore,
   ) {
     return Container(
-      margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -256,9 +261,9 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               Expanded(
                 child: Text(
                   _currentRound.courseName ?? 'Unknown Course',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -291,12 +296,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 height: 40,
                 color: Theme.of(context).dividerColor,
               ),
-              _buildStatItem(
-                context,
-                'Par',
-                '$totalPar',
-                Icons.flag_outlined,
-              ),
+              _buildStatItem(context, 'Par', '$totalPar', Icons.flag_outlined),
               Container(
                 width: 1,
                 height: 40,
@@ -310,8 +310,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 color: relativeScore < 0
                     ? const Color(0xFF137e66)
                     : relativeScore == 0
-                        ? Colors.grey
-                        : const Color(0xFFFF7A7A),
+                    ? Colors.grey
+                    : const Color(0xFFFF7A7A),
               ),
             ],
           ),
@@ -337,15 +337,15 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: displayColor,
-              ),
+            fontWeight: FontWeight.bold,
+            color: displayColor,
+          ),
         ),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -355,19 +355,20 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     if (_currentRound.holes == null) return 0;
     // Count holes that are missing required fields OR have no throws
     return _currentRound.holes!
-        .where((hole) =>
-            !hole.hasRequiredFields ||
-            hole.throws == null ||
-            hole.throws!.isEmpty)
+        .where(
+          (hole) =>
+              !hole.hasRequiredFields ||
+              hole.throws == null ||
+              hole.throws!.isEmpty,
+        )
         .length;
   }
 
   Future<void> _openWalkthroughDialog() async {
     await showDialog<void>(
       context: context,
-      builder: (context) => IncompleteHoleWalkthroughDialog(
-        potentialRound: _currentRound,
-      ),
+      builder: (context) =>
+          IncompleteHoleWalkthroughDialog(potentialRound: _currentRound),
     );
 
     // Refresh the UI after dialog closes
@@ -385,7 +386,6 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     final int incompleteHoleCount = _getIncompleteHoleCount();
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -415,12 +415,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  hasRequiredFields
-                      ? 'Review Round Data'
-                      : 'Action Required',
+                  hasRequiredFields ? 'Review Round Data' : 'Action Required',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -444,16 +442,16 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                     child: Text(
                       '${missingHoles.length} ${missingHoles.length == 1 ? 'hole' : 'holes'} missing from sequence',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 if (incompleteHoleCount > 0)
                   Text(
                     '$incompleteHoleCount ${incompleteHoleCount == 1 ? 'hole needs' : 'holes need'} additional information',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
               ],
             ),
@@ -514,7 +512,12 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   Widget _buildBottomBar(BuildContext context, bool hasRequiredFields) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: 16 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
@@ -525,65 +528,60 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           ),
         ],
       ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Warning text if required fields missing
-            if (!hasRequiredFields)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Color(0xFFD32F2F),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Please fix missing required fields before continuing',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFFD32F2F),
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: hasRequiredFields ? widget.onConfirm : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF9D4EDD), // Purple accent
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  disabledForegroundColor: Colors.grey.shade600,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Warning text if required fields missing
+          if (!hasRequiredFields)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Color(0xFFD32F2F),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Continue to Results',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Please fix missing required fields before continuing',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFFD32F2F),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward, size: 20),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: hasRequiredFields ? widget.onConfirm : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9D4EDD), // Purple accent
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade300,
+                disabledForegroundColor: Colors.grey.shade600,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Continue to Results',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 20),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
