@@ -57,7 +57,8 @@ class EditableHolesGrid extends StatelessWidget {
       final int? holeIndex = holeIndexMap[holeNum];
 
       // If hole doesn't exist in the round, create a minimal placeholder
-      final PotentialDGHole hole = existingHole ??
+      final PotentialDGHole hole =
+          existingHole ??
           PotentialDGHole(
             number: holeNum,
             par: null, // Missing
@@ -78,11 +79,7 @@ class EditableHolesGrid extends StatelessWidget {
       );
     }
 
-    return Wrap(
-      spacing: 0,
-      runSpacing: 0,
-      children: holeTiles,
-    );
+    return Wrap(spacing: 0, runSpacing: 0, children: holeTiles);
   }
 }
 
@@ -113,7 +110,7 @@ class _HoleGridItem extends StatelessWidget {
             (h) => h.number == potentialHole.number,
           );
 
-          if (newHoleIndex != -1) {
+          if (newHoleIndex != -1 && context.mounted) {
             Navigator.of(context).push(
               PageRouteBuilder(
                 opaque: false,
@@ -123,7 +120,10 @@ class _HoleGridItem extends StatelessWidget {
                 reverseTransitionDuration: const Duration(milliseconds: 300),
                 pageBuilder: (context, animation, secondaryAnimation) {
                   return FadeTransition(
-                    opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                    opacity: CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOut,
+                    ),
                     child: EditableHoleDetailDialog(
                       potentialHole: updatedRound.holes![newHoleIndex],
                       holeIndex: newHoleIndex,
