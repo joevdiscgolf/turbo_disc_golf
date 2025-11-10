@@ -30,24 +30,11 @@ class _IncompleteHoleWalkthroughDialogState
     super.initState();
     _roundParser = locator.get<RoundParser>();
     _incompleteHoleIndices = _getIncompleteHoleIndices();
-
-    // Listen to round parser changes
-    _roundParser.addListener(_onRoundUpdated);
   }
 
-  @override
-  void dispose() {
-    _roundParser.removeListener(_onRoundUpdated);
-    super.dispose();
-  }
-
-  void _onRoundUpdated() {
-    if (!mounted) return;
-
-    // Refresh list of incomplete holes
-    final newIncompleteIndices = _getIncompleteHoleIndices();
-
+  void _refreshIncompleteHoles() {
     setState(() {
+      final newIncompleteIndices = _getIncompleteHoleIndices();
       _incompleteHoleIndices = newIncompleteIndices;
 
       // If current hole is now complete, don't advance (let user see success)
@@ -56,18 +43,22 @@ class _IncompleteHoleWalkthroughDialogState
           _incompleteHoleIndices.isNotEmpty) {
         _currentIndex = _incompleteHoleIndices.length - 1;
       }
-    });
 
-    // If all holes are now complete, close dialog
-    if (_incompleteHoleIndices.isEmpty) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('All holes fixed! ✓'),
-          backgroundColor: Color(0xFF137e66),
-        ),
-      );
-    }
+      // If all holes are now complete, close dialog
+      if (_incompleteHoleIndices.isEmpty) {
+        Future.microtask(() {
+          if (mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('All holes fixed! ✓'),
+                backgroundColor: Color(0xFF137e66),
+              ),
+            );
+          }
+        });
+      }
+    });
   }
 
   List<int> _getIncompleteHoleIndices() {
@@ -76,7 +67,8 @@ class _IncompleteHoleWalkthroughDialogState
     final List<int> indices = [];
     for (int i = 0; i < _roundParser.potentialRound!.holes!.length; i++) {
       final hole = _roundParser.potentialRound!.holes![i];
-      if (!hole.hasRequiredFields) {
+      // Consider a hole incomplete if it's missing required fields OR has no throws
+      if (!hole.hasRequiredFields || hole.throws == null || hole.throws!.isEmpty) {
         indices.add(i);
       }
     }
@@ -107,6 +99,9 @@ class _IncompleteHoleWalkthroughDialogState
   }
 
   void _handleHoleFixed() {
+    // Refresh the list of incomplete holes
+    _refreshIncompleteHoles();
+
     // When a hole is fixed, auto-advance to next after a brief delay
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
@@ -117,14 +112,41 @@ class _IncompleteHoleWalkthroughDialogState
 
   @override
   Widget build(BuildContext context) {
+    // If no incomplete holes, show a message
     if (_incompleteHoleIndices.isEmpty) {
-      // All holes are complete, close dialog
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      });
-      return const SizedBox.shrink();
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xFF137e66),
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'All holes are complete!',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9D4EDD),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
@@ -157,6 +179,7 @@ class _IncompleteHoleWalkthroughDialogState
                   const Icon(
                     Icons.fact_check,
                     color: Color(0xFF9D4EDD),
+                    size: 22,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -164,11 +187,13 @@ class _IncompleteHoleWalkthroughDialogState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Fixing Incomplete Holes',
+                          'Fix Holes',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           'Hole $currentPosition of $totalIncomplete',

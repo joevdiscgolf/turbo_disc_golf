@@ -34,26 +34,52 @@ class EditableHolesGrid extends StatelessWidget {
         MediaQuery.of(context).size.width - 32; // minus horizontal margin
     final double itemWidth = screenWidth / 3;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 0,
-        runSpacing: 0,
-        children: potentialRound.holes!.asMap().entries.map((entry) {
-          final int holeIndex = entry.key;
-          final PotentialDGHole hole = entry.value;
+    // Determine the full range of holes (1 to max hole number)
+    final int maxHoleNumber = potentialRound.holes!
+        .map((h) => h.number ?? 0)
+        .reduce((a, b) => a > b ? a : b);
 
-          return SizedBox(
-            width: itemWidth,
-            child: _HoleGridItem(
-              potentialHole: hole,
-              holeIndex: holeIndex,
-              roundParser: roundParser,
-            ),
+    // Create a map of hole number to hole data and index for quick lookup
+    final Map<int, PotentialDGHole> holeMap = {};
+    final Map<int, int> holeIndexMap = {};
+    for (int i = 0; i < potentialRound.holes!.length; i++) {
+      final hole = potentialRound.holes![i];
+      if (hole.number != null) {
+        holeMap[hole.number!] = hole;
+        holeIndexMap[hole.number!] = i;
+      }
+    }
+
+    // Generate tiles for all holes from 1 to maxHoleNumber
+    final List<Widget> holeTiles = [];
+    for (int holeNum = 1; holeNum <= maxHoleNumber; holeNum++) {
+      final PotentialDGHole? existingHole = holeMap[holeNum];
+      final int? holeIndex = holeIndexMap[holeNum];
+
+      // If hole doesn't exist in the round, create a minimal placeholder
+      final PotentialDGHole hole =
+          existingHole ??
+          PotentialDGHole(
+            number: holeNum,
+            par: null, // Missing
+            feet: null, // Missing
+            throws: null, // Completely missing
           );
-        }).toList(),
-      ),
-    );
+
+      holeTiles.add(
+        SizedBox(
+          width: itemWidth,
+          child: _HoleGridItem(
+            potentialHole: hole,
+            holeIndex: holeIndex ?? -1, // -1 indicates hole doesn't exist yet
+            roundParser: roundParser,
+            isCompletelyMissing: existingHole == null,
+          ),
+        ),
+      );
+    }
+
+    return Wrap(spacing: 0, runSpacing: 0, children: holeTiles);
   }
 }
 
@@ -62,13 +88,58 @@ class _HoleGridItem extends StatelessWidget {
     required this.potentialHole,
     required this.holeIndex,
     required this.roundParser,
+    this.isCompletelyMissing = false,
   });
 
   final PotentialDGHole potentialHole;
   final int holeIndex;
   final RoundParser roundParser;
+  final bool isCompletelyMissing;
 
   void _showEditableHoleDialog(BuildContext context) {
+    // If hole is completely missing, add it to the round first
+    if (isCompletelyMissing && potentialHole.number != null) {
+      roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
+
+      // Wait for the state to update, then find the new hole index and open dialog
+      Future.delayed(const Duration(milliseconds: 100), () {
+        // Find the newly added hole's index
+        final updatedRound = roundParser.potentialRound;
+        if (updatedRound?.holes != null) {
+          final newHoleIndex = updatedRound!.holes!.indexWhere(
+            (h) => h.number == potentialHole.number,
+          );
+
+          if (newHoleIndex != -1 && context.mounted) {
+            Navigator.of(context).push(
+              PageRouteBuilder(
+                opaque: false,
+                barrierDismissible: true,
+                barrierColor: Colors.black54,
+                transitionDuration: const Duration(milliseconds: 300),
+                reverseTransitionDuration: const Duration(milliseconds: 300),
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return FadeTransition(
+                    opacity: CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOut,
+                    ),
+                    child: EditableHoleDetailDialog(
+                      potentialHole: updatedRound.holes![newHoleIndex],
+                      holeIndex: newHoleIndex,
+                      roundParser: roundParser,
+                    ),
+                  );
+                },
+              ),
+            );
+          }
+        }
+      });
+      return;
+    }
+
+    // Normal case: hole exists in the round
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -91,6 +162,11 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   void _showReRecordDialog(BuildContext context) {
+    // Don't allow re-record for completely missing holes
+    if (isCompletelyMissing) {
+      return;
+    }
+
     showDialog<void>(
       context: context,
       builder: (context) => HoleReRecordDialog(
@@ -108,12 +184,19 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   bool _isIncomplete() {
-    return !potentialHole.hasRequiredFields;
+    // Completely missing holes are always incomplete
+    if (isCompletelyMissing) return true;
+
+    // Consider incomplete if missing required fields OR has no throws
+    return !potentialHole.hasRequiredFields ||
+        potentialHole.throws == null ||
+        potentialHole.throws!.isEmpty;
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isEmpty = potentialHole.throws == null || potentialHole.throws!.isEmpty;
+    final bool isEmpty =
+        potentialHole.throws == null || potentialHole.throws!.isEmpty;
     final bool isIncomplete = _isIncomplete();
 
     // Incomplete hole (missing required fields) - RED/AMBER WARNING STATE
@@ -122,9 +205,8 @@ class _HoleGridItem extends StatelessWidget {
       final Color borderColor = const Color(0xFFD32F2F); // Red for required
       final Color backgroundColor = const Color(0xFFFFEBEE); // Light red
 
-      return InkWell(
+      return GestureDetector(
         onTap: () => _showEditableHoleDialog(context),
-        borderRadius: BorderRadius.circular(8),
         child: Card(
           elevation: 1,
           shape: RoundedRectangleBorder(
@@ -136,6 +218,7 @@ class _HoleGridItem extends StatelessWidget {
             ),
           ),
           child: Container(
+            height: 96,
             decoration: BoxDecoration(
               color: backgroundColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
@@ -161,10 +244,11 @@ class _HoleGridItem extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             '${potentialHole.number ?? '?'}',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: borderColor,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: borderColor,
+                                ),
                           ),
                         ],
                       ),
@@ -196,7 +280,9 @@ class _HoleGridItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    potentialHole.feet != null ? '${potentialHole.feet} ft' : '— ft',
+                    potentialHole.feet != null
+                        ? '${potentialHole.feet} ft'
+                        : '— ft',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: borderColor.withValues(alpha: 0.8),
                       fontSize: 11,
@@ -205,7 +291,9 @@ class _HoleGridItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   // Missing info label
                   Text(
-                    'Missing: ${missingFields.take(2).join(', ')}${missingFields.length > 2 ? '...' : ''}',
+                    isCompletelyMissing
+                        ? 'Hole not recorded'
+                        : 'Missing: ${missingFields.take(2).join(', ')}${missingFields.length > 2 ? '...' : ''}',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: borderColor,
                       fontSize: 9,
@@ -216,7 +304,7 @@ class _HoleGridItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Tap to fix',
+                    isCompletelyMissing ? 'Tap to add' : 'Tap to fix',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: borderColor,
                       fontSize: 10,
@@ -233,9 +321,9 @@ class _HoleGridItem extends StatelessWidget {
 
     // Empty hole styling (has structure but no throws)
     if (isEmpty) {
-      return InkWell(
+      return GestureDetector(
         onTap: () => _showEditableHoleDialog(context),
-        borderRadius: BorderRadius.circular(8),
+
         child: Card(
           elevation: 1,
           shape: RoundedRectangleBorder(
@@ -247,87 +335,83 @@ class _HoleGridItem extends StatelessWidget {
             ),
           ),
           child: Container(
+            height: 96,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.grey.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header row with hole icon/number and add icon
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.add_circle_outline,
-                            size: 16,
-                            color: Colors.grey.withValues(alpha: 0.7),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${potentialHole.number ?? '?'}',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Empty indicator
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.grey.withValues(alpha: 0.5),
-                            width: 1.5,
-                          ),
-                          shape: BoxShape.circle,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row with hole icon/number and add icon
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline,
+                          size: 16,
+                          color: Colors.grey.withValues(alpha: 0.7),
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.add,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${potentialHole.number ?? '?'}',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.withValues(alpha: 0.7),
+                              ),
                         ),
+                      ],
+                    ),
+                    // Empty indicator
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.grey.withValues(alpha: 0.5),
+                          width: 1.5,
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                    ],
+                      child: const Center(
+                        child: Icon(Icons.add, size: 14, color: Colors.grey),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Par and distance
+                Text(
+                  'Par ${potentialHole.par ?? '?'}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.grey.withValues(alpha: 0.7),
+                    fontSize: 11,
                   ),
-                  const SizedBox(height: 6),
-                  // Par and distance
+                ),
+                if (potentialHole.feet != null)
                   Text(
-                    'Par ${potentialHole.par ?? '?'}',
+                    '${potentialHole.feet} ft',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Colors.grey.withValues(alpha: 0.7),
                       fontSize: 11,
                     ),
-                  ),
-                  if (potentialHole.feet != null)
-                    Text(
-                      '${potentialHole.feet} ft',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.grey.withValues(alpha: 0.7),
-                        fontSize: 11,
-                      ),
-                    )
-                  else
-                    Text(
-                      'Tap to add',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFF137e66),
-                        fontSize: 10,
-                        fontStyle: FontStyle.italic,
-                      ),
+                  )
+                else
+                  Text(
+                    'Tap to add',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: const Color(0xFF137e66),
+                      fontSize: 10,
+                      fontStyle: FontStyle.italic,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -337,7 +421,8 @@ class _HoleGridItem extends StatelessWidget {
     // Regular/Complete hole styling
     // Calculate score manually since PotentialDGHole doesn't have computed properties
     final int throwsCount = potentialHole.throws?.length ?? 0;
-    final int penaltyStrokes = potentialHole.throws?.fold<int>(
+    final int penaltyStrokes =
+        potentialHole.throws?.fold<int>(
           0,
           (prev, t) => prev + (t.penaltyStrokes ?? 0),
         ) ??
@@ -386,6 +471,7 @@ class _HoleGridItem extends StatelessWidget {
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Container(
+          height: 96,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,

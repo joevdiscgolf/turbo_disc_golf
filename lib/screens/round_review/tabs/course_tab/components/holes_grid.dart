@@ -100,6 +100,7 @@ class _HoleGridItem extends StatelessWidget {
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Container(
+          height: 96,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
