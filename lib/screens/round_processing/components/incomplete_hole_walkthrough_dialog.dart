@@ -179,6 +179,7 @@ class _IncompleteHoleWalkthroughDialogState
                   const Icon(
                     Icons.fact_check,
                     color: Color(0xFF9D4EDD),
+                    size: 22,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -186,11 +187,13 @@ class _IncompleteHoleWalkthroughDialogState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Fixing Incomplete Holes',
+                          'Fix Holes',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           'Hole $currentPosition of $totalIncomplete',

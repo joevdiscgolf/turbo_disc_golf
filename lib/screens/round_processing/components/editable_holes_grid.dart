@@ -105,7 +105,10 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   bool _isIncomplete() {
-    return !potentialHole.hasRequiredFields;
+    // Consider incomplete if missing required fields OR has no throws
+    return !potentialHole.hasRequiredFields ||
+        potentialHole.throws == null ||
+        potentialHole.throws!.isEmpty;
   }
 
   @override

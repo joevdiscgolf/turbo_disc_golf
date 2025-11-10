@@ -87,8 +87,29 @@ class IncompleteHoleDetailContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool hasRequiredFields = potentialHole.hasRequiredFields;
     final List<String> missingFields = potentialHole.getMissingFields();
-    final Color severityColor = _getSeverityColor(hasRequiredFields);
-    final Color backgroundColor = _getSeverityBackgroundColor(hasRequiredFields);
+
+    // Check if the hole just needs throws recorded
+    final bool needsThrows = (potentialHole.throws == null ||
+                              potentialHole.throws!.isEmpty) &&
+                             missingFields.isEmpty;
+
+    final Color severityColor = _getSeverityColor(hasRequiredFields && !needsThrows);
+    final Color backgroundColor = _getSeverityBackgroundColor(hasRequiredFields && !needsThrows);
+
+    // Use darker text colors for better contrast
+    final Color textColor = hasRequiredFields && !needsThrows
+        ? const Color(0xFF7A5A00) // Darker amber text
+        : const Color(0xFF8B1C1C); // Darker red text
+
+    // Build the missing items message
+    String missingMessage;
+    if (needsThrows) {
+      missingMessage = 'This hole needs throws recorded';
+    } else if (missingFields.isNotEmpty) {
+      missingMessage = 'This hole is missing: ${missingFields.join(', ')}';
+    } else {
+      missingMessage = 'This hole needs additional information';
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +131,7 @@ class IncompleteHoleDetailContent extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    hasRequiredFields
+                    hasRequiredFields && !needsThrows
                         ? Icons.warning_amber_rounded
                         : Icons.error_outline,
                     color: severityColor,
@@ -119,32 +140,35 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      hasRequiredFields
-                          ? 'Missing Optional Information'
-                          : 'Missing Required Information',
+                      hasRequiredFields && !needsThrows
+                          ? 'Missing Optional Info'
+                          : 'Missing Required Info',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: severityColor,
                           ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
-                'This hole is missing: ${missingFields.join(', ')}',
+                missingMessage,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: severityColor.withValues(alpha: 0.8),
+                      color: textColor,
+                      fontWeight: FontWeight.w500,
                     ),
               ),
               const SizedBox(height: 16),
 
               // Action Buttons
               Text(
-                'Choose how to fix this hole:',
+                'Choose how to fix:',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: severityColor.withValues(alpha: 0.9),
+                      color: textColor,
                     ),
               ),
               const SizedBox(height: 12),
@@ -153,12 +177,15 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _handleManualEdit(context),
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('Edit Manually'),
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      label: const Text('Edit', maxLines: 1),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF137e66),
                         side: const BorderSide(color: Color(0xFF137e66)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 8,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -169,12 +196,15 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _handleVoiceReRecord(context),
-                      icon: const Icon(Icons.mic, size: 18),
-                      label: const Text('Re-record'),
+                      icon: const Icon(Icons.mic, size: 16),
+                      label: const Text('Re-record', maxLines: 1),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF9D4EDD),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 8,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
