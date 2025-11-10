@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_sheet.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Confirmation widget that shows parsed round data for review and editing.
@@ -365,13 +365,15 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
   }
 
   Future<void> _openWalkthroughDialog() async {
-    await showDialog<void>(
+    await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) =>
-          IncompleteHoleWalkthroughDialog(potentialRound: _currentRound),
+          IncompleteHoleWalkthroughSheet(potentialRound: _currentRound),
     );
 
-    // Refresh the UI after dialog closes
+    // Refresh the UI after bottom sheet closes
     _refreshRoundData();
   }
 
