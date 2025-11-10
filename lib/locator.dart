@@ -18,7 +18,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 final locator = GetIt.instance;
 Future<void> setUpLocator() async {
   await dotenv.load();
-  final geminiApiKey = dotenv.env['GEMINI_API_KEY'];
+  final String? geminiApiKey = dotenv.env['GEMINI_API_KEY'];
   // Register core services first
 
   // Round analysis
