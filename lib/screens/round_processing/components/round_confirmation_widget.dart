@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_sheet.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Confirmation widget that shows parsed round data for review and editing.
@@ -183,12 +184,12 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 top: widget.topViewPadding + 72,
               ),
               children: [
-                // // Course metadata header
-                _buildMetadataCard(
-                  context,
-                  totalScore,
-                  totalPar,
-                  relativeScore,
+                // Course metadata header
+                RoundMetadataCard(
+                  potentialRound: _currentRound,
+                  totalScore: totalScore,
+                  totalPar: totalPar,
+                  relativeScore: relativeScore,
                 ),
                 const SizedBox(height: 12),
                 // Warning banner for missing data
@@ -226,130 +227,6 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           _buildBottomBar(context, hasRequiredFields),
         ],
       ),
-    );
-  }
-
-  Widget _buildMetadataCard(
-    BuildContext context,
-    int totalScore,
-    int totalPar,
-    int relativeScore,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Course name
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _currentRound.courseName ?? 'Unknown Course',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Stats row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                context,
-                'Holes',
-                '${_currentRound.holes?.length ?? 0}',
-                Icons.golf_course,
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).dividerColor,
-              ),
-              _buildStatItem(
-                context,
-                'Score',
-                '$totalScore',
-                Icons.sports_score,
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).dividerColor,
-              ),
-              _buildStatItem(context, 'Par', '$totalPar', Icons.flag_outlined),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).dividerColor,
-              ),
-              _buildStatItem(
-                context,
-                'Total',
-                relativeScore >= 0 ? '+$relativeScore' : '$relativeScore',
-                Icons.trending_up,
-                color: relativeScore < 0
-                    ? const Color(0xFF137e66)
-                    : relativeScore == 0
-                    ? Colors.grey
-                    : const Color(0xFFFF7A7A),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon, {
-    Color? color,
-  }) {
-    final Color displayColor =
-        color ?? Theme.of(context).colorScheme.onSurfaceVariant;
-
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: displayColor),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: displayColor,
-          ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 
