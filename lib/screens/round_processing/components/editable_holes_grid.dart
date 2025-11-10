@@ -195,7 +195,7 @@ class _HoleGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isEmpty =
+    final bool throwsEmpty =
         potentialHole.throws == null || potentialHole.throws!.isEmpty;
     final bool isIncomplete = _isIncomplete();
 
@@ -320,7 +320,7 @@ class _HoleGridItem extends StatelessWidget {
     }
 
     // Empty hole styling (has structure but no throws)
-    if (isEmpty) {
+    if (throwsEmpty) {
       return GestureDetector(
         onTap: () => _showEditableHoleDialog(context),
 

@@ -15,11 +15,13 @@ class RoundConfirmationWidget extends StatefulWidget {
     required this.potentialRound,
     required this.onBack,
     required this.onConfirm,
+    required this.topViewPadding,
   });
 
   final PotentialDGRound potentialRound;
   final VoidCallback onBack;
   final VoidCallback onConfirm;
+  final double topViewPadding;
 
   @override
   State<RoundConfirmationWidget> createState() =>
@@ -167,7 +169,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     final bool hasRequiredFields = validation['hasRequiredFields'] as bool;
 
     return Container(
-      padding: const EdgeInsets.only(top: 112),
+      padding: EdgeInsets.only(top: widget.topViewPadding + 64),
       color: const Color(0xFFEEE8F5), // Light purple-gray background
       // color: Colors.blue,
       child: Column(
