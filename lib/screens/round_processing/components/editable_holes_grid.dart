@@ -34,22 +34,54 @@ class EditableHolesGrid extends StatelessWidget {
         MediaQuery.of(context).size.width - 32; // minus horizontal margin
     final double itemWidth = screenWidth / 3;
 
-    return Wrap(
-      spacing: 0,
-      runSpacing: 0,
-      children: potentialRound.holes!.asMap().entries.map((entry) {
-        final int holeIndex = entry.key;
-        final PotentialDGHole hole = entry.value;
+    // Determine the full range of holes (1 to max hole number)
+    final int maxHoleNumber = potentialRound.holes!
+        .map((h) => h.number ?? 0)
+        .reduce((a, b) => a > b ? a : b);
 
-        return SizedBox(
+    // Create a map of hole number to hole data and index for quick lookup
+    final Map<int, PotentialDGHole> holeMap = {};
+    final Map<int, int> holeIndexMap = {};
+    for (int i = 0; i < potentialRound.holes!.length; i++) {
+      final hole = potentialRound.holes![i];
+      if (hole.number != null) {
+        holeMap[hole.number!] = hole;
+        holeIndexMap[hole.number!] = i;
+      }
+    }
+
+    // Generate tiles for all holes from 1 to maxHoleNumber
+    final List<Widget> holeTiles = [];
+    for (int holeNum = 1; holeNum <= maxHoleNumber; holeNum++) {
+      final PotentialDGHole? existingHole = holeMap[holeNum];
+      final int? holeIndex = holeIndexMap[holeNum];
+
+      // If hole doesn't exist in the round, create a minimal placeholder
+      final PotentialDGHole hole = existingHole ??
+          PotentialDGHole(
+            number: holeNum,
+            par: null, // Missing
+            feet: null, // Missing
+            throws: null, // Completely missing
+          );
+
+      holeTiles.add(
+        SizedBox(
           width: itemWidth,
           child: _HoleGridItem(
             potentialHole: hole,
-            holeIndex: holeIndex,
+            holeIndex: holeIndex ?? -1, // -1 indicates hole doesn't exist yet
             roundParser: roundParser,
+            isCompletelyMissing: existingHole == null,
           ),
-        );
-      }).toList(),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 0,
+      runSpacing: 0,
+      children: holeTiles,
     );
   }
 }
@@ -59,13 +91,55 @@ class _HoleGridItem extends StatelessWidget {
     required this.potentialHole,
     required this.holeIndex,
     required this.roundParser,
+    this.isCompletelyMissing = false,
   });
 
   final PotentialDGHole potentialHole;
   final int holeIndex;
   final RoundParser roundParser;
+  final bool isCompletelyMissing;
 
   void _showEditableHoleDialog(BuildContext context) {
+    // If hole is completely missing, add it to the round first
+    if (isCompletelyMissing && potentialHole.number != null) {
+      roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
+
+      // Wait for the state to update, then find the new hole index and open dialog
+      Future.delayed(const Duration(milliseconds: 100), () {
+        // Find the newly added hole's index
+        final updatedRound = roundParser.potentialRound;
+        if (updatedRound?.holes != null) {
+          final newHoleIndex = updatedRound!.holes!.indexWhere(
+            (h) => h.number == potentialHole.number,
+          );
+
+          if (newHoleIndex != -1) {
+            Navigator.of(context).push(
+              PageRouteBuilder(
+                opaque: false,
+                barrierDismissible: true,
+                barrierColor: Colors.black54,
+                transitionDuration: const Duration(milliseconds: 300),
+                reverseTransitionDuration: const Duration(milliseconds: 300),
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return FadeTransition(
+                    opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                    child: EditableHoleDetailDialog(
+                      potentialHole: updatedRound.holes![newHoleIndex],
+                      holeIndex: newHoleIndex,
+                      roundParser: roundParser,
+                    ),
+                  );
+                },
+              ),
+            );
+          }
+        }
+      });
+      return;
+    }
+
+    // Normal case: hole exists in the round
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -88,6 +162,11 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   void _showReRecordDialog(BuildContext context) {
+    // Don't allow re-record for completely missing holes
+    if (isCompletelyMissing) {
+      return;
+    }
+
     showDialog<void>(
       context: context,
       builder: (context) => HoleReRecordDialog(
@@ -105,6 +184,9 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   bool _isIncomplete() {
+    // Completely missing holes are always incomplete
+    if (isCompletelyMissing) return true;
+
     // Consider incomplete if missing required fields OR has no throws
     return !potentialHole.hasRequiredFields ||
         potentialHole.throws == null ||
@@ -209,7 +291,9 @@ class _HoleGridItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   // Missing info label
                   Text(
-                    'Missing: ${missingFields.take(2).join(', ')}${missingFields.length > 2 ? '...' : ''}',
+                    isCompletelyMissing
+                        ? 'Hole not recorded'
+                        : 'Missing: ${missingFields.take(2).join(', ')}${missingFields.length > 2 ? '...' : ''}',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: borderColor,
                       fontSize: 9,
@@ -220,7 +304,7 @@ class _HoleGridItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Tap to fix',
+                    isCompletelyMissing ? 'Tap to add' : 'Tap to fix',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: borderColor,
                       fontSize: 10,
