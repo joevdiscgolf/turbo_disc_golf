@@ -3,6 +3,7 @@ import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
@@ -81,8 +82,179 @@ class _HoleGridItem extends StatelessWidget {
     );
   }
 
+  void _showReRecordDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => HoleReRecordDialog(
+        hole: hole,
+        onReProcess: (String transcript) async {
+          // Show loading indicator
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Text('Re-processing hole with AI...'),
+                ],
+              ),
+              duration: Duration(seconds: 30),
+            ),
+          );
+
+          // Re-process the hole with Gemini
+          final success = await roundParser.reProcessHole(
+            holeIndex: holeIndex,
+            voiceTranscript: transcript,
+          );
+
+          // Hide loading snackbar
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Hole ${hole.number} successfully re-processed!'),
+                  backgroundColor: const Color(0xFF137e66),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Failed to re-process hole: ${roundParser.lastError}',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  bool _hasCriticalIssues() {
+    return hole.throws.isEmpty || hole.feet == null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool isEmpty = hole.throws.isEmpty;
+
+    // Empty hole styling
+    if (isEmpty) {
+      return InkWell(
+        onTap: () => _showEditableHoleDialog(context),
+        borderRadius: BorderRadius.circular(8),
+        child: Card(
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(
+              color: Colors.grey.withValues(alpha: 0.5),
+              width: 1.5,
+              strokeAlign: BorderSide.strokeAlignInside,
+            ),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row with hole icon/number and add icon
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.add_circle_outline,
+                            size: 16,
+                            color: Colors.grey.withValues(alpha: 0.7),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${hole.number}',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Empty indicator
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.grey.withValues(alpha: 0.5),
+                            width: 1.5,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.add,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // Par and distance
+                  Text(
+                    'Par ${hole.par}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Colors.grey.withValues(alpha: 0.7),
+                      fontSize: 11,
+                    ),
+                  ),
+                  if (hole.feet != null)
+                    Text(
+                      '${hole.feet} ft',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Colors.grey.withValues(alpha: 0.7),
+                        fontSize: 11,
+                      ),
+                    )
+                  else
+                    Text(
+                      'Tap to add',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: const Color(0xFF137e66),
+                        fontSize: 10,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Regular hole styling
     final int score = hole.holeScore;
     final int relativeScore = hole.relativeHoleScore;
 
@@ -166,24 +338,47 @@ class _HoleGridItem extends StatelessWidget {
                             ),
                           ],
                         ),
-                        // Score circle (smaller, in top right)
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: scoreColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$score',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                        Row(
+                          children: [
+                            // Re-record button for holes with critical issues
+                            if (_hasCriticalIssues())
+                              GestureDetector(
+                                onTap: () => _showReRecordDialog(context),
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF9D4EDD),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.mic,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            // Score circle (smaller, in top right)
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: scoreColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$score',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),

@@ -67,11 +67,53 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     );
   }
 
+  Map<String, dynamic> _validateRound() {
+    final List<String> issues = [];
+    final Set<int> missingHoles = {};
+
+    // Check for missing holes in sequence
+    final List<int> holeNumbers = _currentRound.holes.map((h) => h.number).toList()..sort();
+    if (holeNumbers.isNotEmpty) {
+      final int expectedHoles = holeNumbers.last;
+
+      for (int i = 1; i <= expectedHoles; i++) {
+        if (!holeNumbers.contains(i)) {
+          missingHoles.add(i);
+        }
+      }
+
+      if (missingHoles.isNotEmpty) {
+        issues.add('Missing holes: ${missingHoles.join(', ')}');
+      }
+    }
+
+    // Check each hole for critical issues
+    for (final hole in _currentRound.holes) {
+      // No throws recorded
+      if (hole.throws.isEmpty) {
+        issues.add('Hole ${hole.number}: No throws recorded');
+      }
+
+      // Missing distance
+      if (hole.feet == null) {
+        issues.add('Hole ${hole.number}: Missing distance');
+      }
+    }
+
+    return {
+      'issues': issues,
+      'missingHoles': missingHoles,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final int totalScore = _calculateTotalScore();
     final int totalPar = _calculateTotalPar();
     final int relativeScore = totalScore - totalPar;
+    final Map<String, dynamic> validation = _validateRound();
+    final List<String> validationIssues = validation['issues'] as List<String>;
+    final Set<int> missingHoles = validation['missingHoles'] as Set<int>;
 
     return Scaffold(
       backgroundColor: const Color(0xFFEEE8F5), // Light purple-gray background
@@ -90,6 +132,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           // Course metadata header
           _buildMetadataCard(context, totalScore, totalPar, relativeScore),
           const SizedBox(height: 16),
+
+          // Warning banner for missing data
+          _buildWarningBanner(context, validationIssues, missingHoles),
+          if (validationIssues.isNotEmpty) const SizedBox(height: 16),
 
           // Instructions
           Padding(
@@ -247,6 +293,93 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWarningBanner(
+    BuildContext context,
+    List<String> issues,
+    Set<int> missingHoles,
+  ) {
+    if (issues.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3CD), // Light amber background
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFFFFA726).withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFFF8F00),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Missing Information',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFF8F00),
+                      ),
+                ),
+              ),
+              // Add missing holes button
+              if (missingHoles.isNotEmpty)
+                TextButton.icon(
+                  onPressed: () {
+                    _roundParser.addMissingHoles(missingHoles);
+                  },
+                  icon: const Icon(Icons.add_circle_outline, size: 16),
+                  label: const Text('Add Missing Holes'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF137e66),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...issues.map(
+            (issue) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '• ',
+                    style: TextStyle(
+                      color: Color(0xFFFF8F00),
+                      fontSize: 14,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      issue,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF664D03),
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

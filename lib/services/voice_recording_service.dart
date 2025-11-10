@@ -108,7 +108,7 @@ class VoiceRecordingService extends ChangeNotifier {
             notifyListeners();
           },
           listenFor: const Duration(minutes: 10),
-          pauseFor: const Duration(seconds: 3),
+          pauseFor: const Duration(minutes: 10),
           listenOptions: SpeechListenOptions(
             listenMode: ListenMode.dictation,
             partialResults: true,

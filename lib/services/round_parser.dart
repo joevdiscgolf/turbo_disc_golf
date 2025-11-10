@@ -370,6 +370,126 @@ class RoundParser extends ChangeNotifier {
     }
   }
 
+  /// Adds an empty hole to the round at the correct position based on hole number
+  void addEmptyHole(int holeNumber, {int? par, int? feet}) {
+    if (_parsedRound == null) return;
+
+    // Create empty hole
+    final DGHole emptyHole = DGHole(
+      number: holeNumber,
+      par: par ?? 3, // Default to par 3
+      feet: feet,
+      throws: [], // Empty throws list
+    );
+
+    // Find correct insertion position (maintain hole number order)
+    final List<DGHole> updatedHoles = List<DGHole>.from(_parsedRound!.holes);
+
+    // Find index where this hole should be inserted
+    int insertIndex = updatedHoles.length;
+    for (int i = 0; i < updatedHoles.length; i++) {
+      if (updatedHoles[i].number > holeNumber) {
+        insertIndex = i;
+        break;
+      }
+    }
+
+    updatedHoles.insert(insertIndex, emptyHole);
+
+    _parsedRound = DGRound(
+      courseName: _parsedRound!.courseName,
+      holes: updatedHoles,
+      id: _parsedRound!.id,
+      analysis: _parsedRound!.analysis,
+      aiSummary: _parsedRound!.aiSummary,
+      aiCoachSuggestion: _parsedRound!.aiCoachSuggestion,
+      versionId: _parsedRound!.versionId + 1, // Increment version on edit
+      createdAt: _parsedRound!.createdAt,
+      playedRoundAt: _parsedRound!.playedRoundAt,
+    );
+
+    notifyListeners();
+  }
+
+  /// Adds multiple empty holes at once
+  void addMissingHoles(Set<int> holeNumbers, {int? defaultPar}) {
+    for (final holeNumber in holeNumbers) {
+      addEmptyHole(holeNumber, par: defaultPar);
+    }
+  }
+
+  /// Re-process a single hole with new voice description
+  Future<bool> reProcessHole({
+    required int holeIndex,
+    required String voiceTranscript,
+  }) async {
+    if (_parsedRound == null || holeIndex >= _parsedRound!.holes.length) {
+      _lastError = 'Invalid hole index or no round loaded';
+      return false;
+    }
+
+    final BagService bagService = locator.get<BagService>();
+
+    try {
+      _isProcessing = true;
+      _lastError = '';
+      notifyListeners();
+
+      // Load user's bag if not already loaded
+      if (bagService.userBag.isEmpty) {
+        await bagService.loadBag();
+        if (bagService.userBag.isEmpty) {
+          bagService.loadSampleBag();
+        }
+      }
+
+      final hole = _parsedRound!.holes[holeIndex];
+
+      debugPrint('=== RE-PROCESSING HOLE ${hole.number} ===');
+      debugPrint('Voice transcript: $voiceTranscript');
+
+      // Parse the single hole with Gemini
+      final newHole = await locator
+          .get<AiParsingService>()
+          .parseSingleHole(
+            voiceTranscript: voiceTranscript,
+            userBag: bagService.userBag,
+            holeNumber: hole.number,
+            holePar: hole.par,
+            holeFeet: hole.feet,
+            courseName: _parsedRound!.courseName,
+          );
+
+      if (newHole == null) {
+        _lastError = 'Failed to re-parse hole. Check console for details.';
+        _isProcessing = false;
+        notifyListeners();
+        return false;
+      }
+
+      debugPrint('Successfully re-parsed hole ${hole.number}');
+
+      // Update the hole in the round
+      updateHole(holeIndex, newHole);
+
+      // Re-validate and enhance the entire round
+      _parsedRound = _validateAndEnhanceRound(_parsedRound!);
+
+      // Save updated round to shared preferences
+      debugPrint('Saving updated round to shared preferences...');
+      await locator.get<RoundStorageService>().saveRound(_parsedRound!);
+
+      _isProcessing = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _lastError = 'Error re-processing hole: $e';
+      _isProcessing = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearParsedRound() {
     _parsedRound = null;
     _lastError = '';

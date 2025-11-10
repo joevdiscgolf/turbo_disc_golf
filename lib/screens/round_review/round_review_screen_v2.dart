@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 
 class RoundReviewScreenV2 extends StatefulWidget {
   final DGRound round;
@@ -17,27 +18,31 @@ class RoundReviewScreenV2 extends StatefulWidget {
   State<RoundReviewScreenV2> createState() => _RoundReviewScreenV2State();
 }
 
-class _RoundReviewScreenV2State extends State<RoundReviewScreenV2> {
+class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
+    with SingleTickerProviderStateMixin {
   late DGRound _round;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _round = widget.round;
+    _tabController = TabController(length: 2, vsync: this);
 
-    // Show story view if requested
+    // Show story view if requested - navigate to Story tab instead
     if (widget.showStoryOnLoad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => RoundStoryView(round: _round),
-              fullscreenDialog: true,
-            ),
-          );
+          _tabController.animateTo(1); // Navigate to Story tab
         }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -64,7 +69,7 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2> {
           actions: [
             IconButton(
               icon: const Icon(Icons.auto_stories),
-              tooltip: 'View as Story',
+              tooltip: 'View Fullscreen Story',
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -75,10 +80,38 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2> {
               },
             ),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            labelColor: Colors.black,
+            unselectedLabelColor: Colors.black54,
+            indicatorColor: Colors.black,
+            indicatorWeight: 2,
+            labelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+            ),
+            labelPadding: const EdgeInsets.symmetric(vertical: 8),
+            tabs: const [
+              Tab(text: 'Stats'),
+              Tab(text: 'Story'),
+            ],
+          ),
         ),
-        body: RoundOverviewBody(
-          round: _round,
-          isReviewV2Screen: true,
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            RoundOverviewBody(
+              round: _round,
+              isReviewV2Screen: true,
+            ),
+            RoundStoryTab(round: _round),
+          ],
         ),
       ),
     );

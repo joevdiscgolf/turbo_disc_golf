@@ -1295,6 +1295,140 @@ $schemaExample
 ''';
   }
 
+  /// Builds a simplified prompt for re-parsing a single hole
+  String buildGeminiSingleHoleParsingPrompt(
+    String voiceTranscript,
+    List<DGDisc> userBag,
+    int holeNumber,
+    int holePar,
+    int? holeFeet,
+    String courseName,
+  ) {
+    // Get enum values dynamically
+    final throwPurposeValues = getEnumValuesAsString(ThrowPurpose.values);
+    final techniqueValues = getEnumValuesAsString(ThrowTechnique.values);
+    final puttStyleValues = getEnumValuesAsString(PuttStyle.values);
+    final shotShapeValues = getEnumValuesAsString(ShotShape.values);
+    final stanceValues = getEnumValuesAsString(StanceType.values);
+    final throwPowerValues = getEnumValuesAsString(ThrowPower.values);
+    final landingSpotValues = getEnumValuesAsString(LandingSpot.values);
+
+    // Create disc list string
+    final discListString = userBag
+        .map(
+          (disc) =>
+              '- ${disc.name} (${disc.moldName ?? "Unknown mold"} by ${disc.brand ?? "Unknown brand"})',
+        )
+        .join('\n');
+
+    final schemaExample = '''
+number: $holeNumber
+par: $holePar${holeFeet != null ? '\nfeet: $holeFeet' : ''}
+throws:
+  - index: 0
+    discName: Destroyer
+    purpose: tee_drive
+    technique: backhand
+    distanceFeetAfterThrow: 25
+    landingSpot: circle_1
+    notes: threw it close
+  - index: 1
+    distanceFeetBeforeThrow: 25
+    distanceFeetAfterThrow: 0
+    discName: Aviar
+    purpose: putt
+    notes: made the putt
+    landingSpot: in_basket''';
+
+    return '''
+You are a disc golf scorecard parser. Parse the following voice description of hole $holeNumber into structured YAML data.
+
+CONTEXT:
+- Course: $courseName
+- Hole Number: $holeNumber
+- Par: $holePar${holeFeet != null ? '\n- Distance: $holeFeet feet' : ''}
+
+VOICE DESCRIPTION:
+"$voiceTranscript"
+
+USER'S DISC BAG:
+$discListString
+
+INSTRUCTIONS:
+1. Parse the hole description into structured throws
+2. For each throw, assign index starting from 0 (0=tee shot, 1=second throw, etc.)
+3. Include discName when a disc is mentioned (match from the bag list)
+4. MANDATORY: Include distanceFeetAfterThrow whenever possible for stats calculations
+5. Always include the purpose field (tee_drive, approach, putt)
+6. Map landing positions to landingSpot enum based on distance from basket
+
+CRITICAL RULES:
+- Index 0 (tee shot) → ALWAYS `purpose: tee_drive`
+- Any throw attempting to go in the basket from C1/C2 → ALWAYS `purpose: putt`
+- "tap in" / "tapped in" → ALWAYS `purpose: putt`
+- Descriptions with "putt" / "putted" → ALWAYS `purpose: putt`
+- Throw with `landingSpot: in_basket` → ALWAYS `purpose: putt` (except index 0)
+
+LANDING SPOT MAPPING (based on distance from basket):
+- Made it / in basket = in_basket (0 ft)
+- Within 10 feet or "parked" = parked (≤10 ft)
+- 11-33 feet or "C1" = circle_1 (11-33 ft)
+- 34-66 feet or "C2" = circle_2 (34-66 ft)
+- Beyond 66 feet on fairway = fairway (>66 ft)
+- Out of bounds = out_of_bounds (add penaltyStrokes: 1)
+
+⚠️ CRITICAL: landingSpot MUST MATCH distanceFeetAfterThrow:
+- distanceFeetAfterThrow: 0 → landingSpot: in_basket
+- distanceFeetAfterThrow: ≤10 → landingSpot: parked
+- distanceFeetAfterThrow: 11-33 → landingSpot: circle_1
+- distanceFeetAfterThrow: 34-66 → landingSpot: circle_2
+- distanceFeetAfterThrow: >66 → landingSpot: fairway
+
+DISTANCE TRACKING (MANDATORY):
+- distanceFeetBeforeThrow: How far from basket BEFORE the throw
+- distanceFeetAfterThrow: How far from basket AFTER the throw (REQUIRED for stats!)
+
+INFERRING DISTANCES:
+- If next throw starts at X feet, current throw MUST have distanceFeetAfterThrow: X
+- "parked" without specific distance = distanceFeetAfterThrow: 8
+- "made the putt" = distanceFeetAfterThrow: 0
+- "tap in" = distanceFeetBeforeThrow: 8, distanceFeetAfterThrow: 0
+
+THROW COUNTING:
+- Count carefully - don't combine multiple throws into one
+- "laid up and tapped in" = 2 SEPARATE throws
+- "missed the putt" = separate throw, not a note on previous throw
+- Every hole MUST end with landingSpot: in_basket
+- If they mention a score (birdie/par/bogey), verify throw count matches
+
+ALLOWED ENUM VALUES:
+- purpose: $throwPurposeValues
+- technique: $techniqueValues
+- puttStyle: $puttStyleValues
+- shotShape: $shotShapeValues
+- stance: $stanceValues
+- power: $throwPowerValues
+- landingSpot: $landingSpotValues
+
+YAML OUTPUT RULES:
+- Return ONLY raw YAML content - no markdown, no code blocks
+- Do NOT include "yaml" or ``` wrappers
+- Start directly with "number: $holeNumber"
+- Only include fields that are mentioned in the description
+- Never include null values or fields without data
+
+⚠️⚠️⚠️ FINAL VALIDATION BEFORE RETURNING ⚠️⚠️⚠️
+1. Every putt has `purpose: putt`
+2. Every throw (except last) has `distanceFeetAfterThrow` OR it can be inferred from next throw
+3. landingSpot matches distanceFeetAfterThrow distance
+4. Hole ends with `landingSpot: in_basket`
+5. Throw count matches any mentioned score
+
+Example output format:
+$schemaExample
+''';
+  }
+
   String buildGeminiInsightsPrompt(DGRound round, dynamic analysis) {
     // Format disc performance data
     final discPerf = (analysis.discPerformances as List)

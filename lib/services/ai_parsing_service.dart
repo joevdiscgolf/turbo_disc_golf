@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
@@ -155,6 +156,71 @@ class AiParsingService {
     }
   }
 
+  /// Parse a single hole description and return the updated hole
+  /// Used for re-recording individual holes
+  Future<DGHole?> parseSingleHole({
+    required String voiceTranscript,
+    required List<DGDisc> userBag,
+    required int holeNumber,
+    required int holePar,
+    required int? holeFeet,
+    required String courseName,
+  }) async {
+    try {
+      final prompt = _buildSingleHoleParsingPrompt(
+        voiceTranscript,
+        userBag,
+        holeNumber,
+        holePar,
+        holeFeet,
+        courseName,
+      );
+      debugPrint('Sending single-hole request to Gemini for hole $holeNumber...');
+      String? responseText = await _getContentFromModel(prompt: prompt);
+
+      if (responseText == null) {
+        throw Exception('No response from Gemini');
+      }
+
+      // Detect and handle repetitive output
+      responseText = _removeRepetitiveText(responseText);
+
+      debugPrint('Gemini response received for hole $holeNumber, parsing YAML...');
+
+      // Clean up the response - remove markdown code blocks if present
+      responseText = responseText.trim();
+      if (responseText.startsWith('```yaml') ||
+          responseText.startsWith('```YAML')) {
+        responseText = responseText.substring(responseText.indexOf('\n') + 1);
+      }
+      if (responseText.startsWith('yaml\n') ||
+          responseText.startsWith('YAML\n')) {
+        responseText = responseText.substring(5);
+      }
+      if (responseText.endsWith('```')) {
+        responseText = responseText
+            .substring(0, responseText.length - 3)
+            .trim();
+      }
+
+      // Parse the YAML response
+      final yamlDoc = loadYaml(responseText);
+      final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
+
+      // Ensure hole number, par, and feet match the context
+      jsonMap['number'] = holeNumber;
+      jsonMap['par'] = holePar;
+      jsonMap['feet'] = holeFeet;
+
+      debugPrint('Single hole YAML parsed successfully, converting to DGHole...');
+      return DGHole.fromJson(jsonMap);
+    } catch (e, trace) {
+      debugPrint('Error parsing single hole with Gemini: $e');
+      debugPrint(trace.toString());
+      return null;
+    }
+  }
+
   /// Parse a scorecard image to extract hole metadata
   /// Returns list of HoleMetadata (hole number, par, distance, score)
   Future<List<HoleMetadata>> parseScorecard({
@@ -295,6 +361,27 @@ class AiParsingService {
           userBag,
           courseName,
           preParsedHoles: preParsedHoles,
+        );
+    }
+  }
+
+  String _buildSingleHoleParsingPrompt(
+    String voiceTranscript,
+    List<DGDisc> userBag,
+    int holeNumber,
+    int holePar,
+    int? holeFeet,
+    String courseName,
+  ) {
+    switch (_selectedModel) {
+      case AiParsingModel.gemini:
+        return locator.get<GeminiService>().buildGeminiSingleHoleParsingPrompt(
+          voiceTranscript,
+          userBag,
+          holeNumber,
+          holePar,
+          holeFeet,
+          courseName,
         );
     }
   }
