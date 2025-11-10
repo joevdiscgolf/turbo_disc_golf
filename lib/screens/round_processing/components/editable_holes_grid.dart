@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
@@ -111,26 +111,14 @@ class _HoleGridItem extends StatelessWidget {
           );
 
           if (newHoleIndex != -1 && context.mounted) {
-            Navigator.of(context).push(
-              PageRouteBuilder(
-                opaque: false,
-                barrierDismissible: true,
-                barrierColor: Colors.black54,
-                transitionDuration: const Duration(milliseconds: 300),
-                reverseTransitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOut,
-                    ),
-                    child: EditableHoleDetailDialog(
-                      potentialHole: updatedRound.holes![newHoleIndex],
-                      holeIndex: newHoleIndex,
-                      roundParser: roundParser,
-                    ),
-                  );
-                },
+            showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => EditableHoleDetailSheet(
+                potentialHole: updatedRound.holes![newHoleIndex],
+                holeIndex: newHoleIndex,
+                roundParser: roundParser,
               ),
             );
           }
@@ -140,23 +128,14 @@ class _HoleGridItem extends StatelessWidget {
     }
 
     // Normal case: hole exists in the round
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        barrierDismissible: true,
-        barrierColor: Colors.black54,
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 300),
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            child: EditableHoleDetailDialog(
-              potentialHole: potentialHole,
-              holeIndex: holeIndex,
-              roundParser: roundParser,
-            ),
-          );
-        },
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => EditableHoleDetailSheet(
+        potentialHole: potentialHole,
+        holeIndex: holeIndex,
+        roundParser: roundParser,
       ),
     );
   }
@@ -582,47 +561,24 @@ class _HoleGridItem extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Row(
-                          children: [
-                            // Re-record button for holes with critical issues
-                            if (_hasCriticalIssues())
-                              GestureDetector(
-                                onTap: () => _showReRecordDialog(context),
-                                child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  margin: const EdgeInsets.only(right: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF9D4EDD),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.mic,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            // Score circle (smaller, in top right)
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: scoreColor,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$score',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                        // Score circle (smaller, in top right)
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: scoreColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$score',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),

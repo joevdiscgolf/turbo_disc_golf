@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_throw_timeline.dart';
@@ -9,8 +10,8 @@ import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_d
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Bottom sheet that guides user through fixing each incomplete hole sequentially.
-/// Shows progress and allows navigation between incomplete holes.
-/// Includes direct editing of hole metadata and throw management.
+/// Shows progress with tabs and horizontal checklist, allows inline editing.
+/// Design matches _HoleDetailDialog from holes_grid.dart.
 class IncompleteHoleWalkthroughSheet extends StatefulWidget {
   const IncompleteHoleWalkthroughSheet({
     super.key,
@@ -25,15 +26,16 @@ class IncompleteHoleWalkthroughSheet extends StatefulWidget {
 }
 
 class _IncompleteHoleWalkthroughSheetState
-    extends State<IncompleteHoleWalkthroughSheet> {
+    extends State<IncompleteHoleWalkthroughSheet>
+    with SingleTickerProviderStateMixin {
   late RoundParser _roundParser;
   late List<int> _incompleteHoleIndices;
-  int _currentIndex = 0;
+  late TabController _tabController;
 
   // Controllers for inline editing
-  late TextEditingController _holeNumberController;
-  late TextEditingController _parController;
-  late TextEditingController _distanceController;
+  late List<TextEditingController> _holeNumberControllers;
+  late List<TextEditingController> _parControllers;
+  late List<TextEditingController> _distanceControllers;
 
   @override
   void initState() {
@@ -41,60 +43,125 @@ class _IncompleteHoleWalkthroughSheetState
     _roundParser = locator.get<RoundParser>();
     _roundParser.addListener(_onRoundUpdated);
     _incompleteHoleIndices = _getIncompleteHoleIndices();
-    _initializeControllers();
+
+    if (_incompleteHoleIndices.isNotEmpty) {
+      _tabController = TabController(
+        length: _incompleteHoleIndices.length,
+        vsync: this,
+      );
+      _initializeControllers();
+    }
   }
 
   @override
   void dispose() {
     _roundParser.removeListener(_onRoundUpdated);
-    _holeNumberController.dispose();
-    _parController.dispose();
-    _distanceController.dispose();
+    if (_incompleteHoleIndices.isNotEmpty) {
+      _tabController.dispose();
+      for (var controller in _holeNumberControllers) {
+        controller.dispose();
+      }
+      for (var controller in _parControllers) {
+        controller.dispose();
+      }
+      for (var controller in _distanceControllers) {
+        controller.dispose();
+      }
+    }
     super.dispose();
   }
 
   void _initializeControllers() {
-    if (_incompleteHoleIndices.isEmpty) return;
+    _holeNumberControllers = [];
+    _parControllers = [];
+    _distanceControllers = [];
 
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
+    for (int i = 0; i < _incompleteHoleIndices.length; i++) {
+      final int holeIndex = _incompleteHoleIndices[i];
+      final PotentialDGHole hole =
+          _roundParser.potentialRound!.holes![holeIndex];
 
-    _holeNumberController = TextEditingController(
-      text: currentHole.number?.toString() ?? '',
-    );
-    _parController = TextEditingController(
-      text: currentHole.par?.toString() ?? '',
-    );
-    _distanceController = TextEditingController(
-      text: currentHole.feet?.toString() ?? '',
-    );
+      final holeNumController = TextEditingController(
+        text: hole.number?.toString() ?? '',
+      );
+      final parController = TextEditingController(
+        text: hole.par?.toString() ?? '',
+      );
+      final distController = TextEditingController(
+        text: hole.feet?.toString() ?? '',
+      );
 
-    // Add listeners to save changes on edit
-    _holeNumberController.addListener(_saveMetadata);
-    _parController.addListener(_saveMetadata);
-    _distanceController.addListener(_saveMetadata);
+      // Add listeners to save changes
+      holeNumController.addListener(() => _saveMetadata(i));
+      parController.addListener(() => _saveMetadata(i));
+      distController.addListener(() => _saveMetadata(i));
+
+      _holeNumberControllers.add(holeNumController);
+      _parControllers.add(parController);
+      _distanceControllers.add(distController);
+    }
   }
 
   void _onRoundUpdated() {
     if (mounted) {
       setState(() {
+        final previousLength = _incompleteHoleIndices.length;
         _refreshIncompleteHoles();
+
+        // If the number of incomplete holes changed, reinitialize
+        if (_incompleteHoleIndices.length != previousLength) {
+          if (_incompleteHoleIndices.isEmpty) {
+            return; // Will be handled by _refreshIncompleteHoles
+          }
+
+          // Dispose old controllers
+          _tabController.dispose();
+          for (var controller in _holeNumberControllers) {
+            controller.dispose();
+          }
+          for (var controller in _parControllers) {
+            controller.dispose();
+          }
+          for (var controller in _distanceControllers) {
+            controller.dispose();
+          }
+
+          // Reinitialize
+          _tabController = TabController(
+            length: _incompleteHoleIndices.length,
+            vsync: this,
+          );
+          _initializeControllers();
+        } else {
+          // Just update the controller values
+          _updateControllers();
+        }
       });
     }
   }
 
-  void _saveMetadata() {
-    if (_incompleteHoleIndices.isEmpty) return;
+  void _updateControllers() {
+    for (int i = 0; i < _incompleteHoleIndices.length; i++) {
+      final int holeIndex = _incompleteHoleIndices[i];
+      final PotentialDGHole hole =
+          _roundParser.potentialRound!.holes![holeIndex];
 
-    final int? holeNumber = int.tryParse(_holeNumberController.text);
-    final int? par = int.tryParse(_parController.text);
-    final int? distance = int.tryParse(_distanceController.text);
+      _holeNumberControllers[i].text = hole.number?.toString() ?? '';
+      _parControllers[i].text = hole.par?.toString() ?? '';
+      _distanceControllers[i].text = hole.feet?.toString() ?? '';
+    }
+  }
 
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
+  void _saveMetadata(int tabIndex) {
+    if (tabIndex >= _incompleteHoleIndices.length) return;
+
+    final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final int? holeNumber = int.tryParse(_holeNumberControllers[tabIndex].text);
+    final int? par = int.tryParse(_parControllers[tabIndex].text);
+    final int? distance = int.tryParse(_distanceControllers[tabIndex].text);
 
     _roundParser.updatePotentialHoleMetadata(
-      currentHoleIndex,
+      holeIndex,
       number: holeNumber,
       par: par,
       feet: distance,
@@ -104,18 +171,6 @@ class _IncompleteHoleWalkthroughSheetState
   void _refreshIncompleteHoles() {
     final newIncompleteIndices = _getIncompleteHoleIndices();
     _incompleteHoleIndices = newIncompleteIndices;
-
-    // If current hole is now complete, don't advance (let user see success)
-    // But if they navigate, adjust the index
-    if (_currentIndex >= _incompleteHoleIndices.length &&
-        _incompleteHoleIndices.isNotEmpty) {
-      _currentIndex = _incompleteHoleIndices.length - 1;
-    }
-
-    // Update controllers for new current hole
-    if (_incompleteHoleIndices.isNotEmpty) {
-      _updateControllersForCurrentHole();
-    }
 
     // If all holes are now complete, close bottom sheet
     if (_incompleteHoleIndices.isEmpty) {
@@ -133,23 +188,13 @@ class _IncompleteHoleWalkthroughSheetState
     }
   }
 
-  void _updateControllersForCurrentHole() {
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
-
-    _holeNumberController.text = currentHole.number?.toString() ?? '';
-    _parController.text = currentHole.par?.toString() ?? '';
-    _distanceController.text = currentHole.feet?.toString() ?? '';
-  }
-
   List<int> _getIncompleteHoleIndices() {
     if (_roundParser.potentialRound?.holes == null) return [];
 
     final List<int> indices = [];
     for (int i = 0; i < _roundParser.potentialRound!.holes!.length; i++) {
       final hole = _roundParser.potentialRound!.holes![i];
-      // Consider a hole incomplete if it's missing required fields OR has no throws
+      // Consider a hole incomplete if it's missing required fields OR has no throws OR no basket throw
       if (!hole.hasRequiredFields ||
           hole.throws == null ||
           hole.throws!.isEmpty ||
@@ -165,64 +210,35 @@ class _IncompleteHoleWalkthroughSheetState
     return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
   }
 
-  bool _canProceed() {
-    if (_incompleteHoleIndices.isEmpty) return true;
+  bool _isHoleComplete(int tabIndex) {
+    if (tabIndex >= _incompleteHoleIndices.length) return false;
 
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
+    final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
 
     // Check if hole has required metadata
     final bool hasMetadata =
-        currentHole.number != null &&
-        currentHole.par != null &&
-        currentHole.feet != null;
+        hole.number != null && hole.par != null && hole.feet != null;
 
     // Check if hole has at least one basket throw
-    final bool hasBasketThrow = _hasBasketThrow(currentHole);
+    final bool hasBasketThrow = _hasBasketThrow(hole);
 
     return hasMetadata && hasBasketThrow;
   }
 
-  void _handleNext() {
-    if (_currentIndex < _incompleteHoleIndices.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _updateControllersForCurrentHole();
-      });
-    } else {
-      // At the end, close bottom sheet
-      Navigator.of(context).pop();
-    }
-  }
+  void _handleReRecord(int tabIndex) {
+    if (tabIndex >= _incompleteHoleIndices.length) return;
 
-  void _handlePrevious() {
-    if (_currentIndex > 0) {
-      setState(() {
-        _currentIndex--;
-        _updateControllersForCurrentHole();
-      });
-    }
-  }
-
-  void _handleSkip() {
-    _handleNext(); // Same as next for now
-  }
-
-  void _handleReRecord() {
-    if (_incompleteHoleIndices.isEmpty) return;
-
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
+    final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
 
     showDialog<void>(
       context: context,
       builder: (context) => HoleReRecordDialog(
-        holeNumber: currentHole.number ?? currentHoleIndex + 1,
-        holePar: currentHole.par,
-        holeFeet: currentHole.feet,
-        holeIndex: currentHoleIndex,
+        holeNumber: hole.number ?? holeIndex + 1,
+        holePar: hole.par,
+        holeFeet: hole.feet,
+        holeIndex: holeIndex,
         onReProcessed: () {
           // Refresh after re-recording
           _refreshIncompleteHoles();
@@ -231,16 +247,15 @@ class _IncompleteHoleWalkthroughSheetState
     );
   }
 
-  void _addThrow() {
-    if (_incompleteHoleIndices.isEmpty) return;
+  void _addThrow(int tabIndex) {
+    if (tabIndex >= _incompleteHoleIndices.length) return;
 
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
+    final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
 
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
-      index: currentHole.throws?.length ?? 0,
+      index: hole.throws?.length ?? 0,
       purpose: ThrowPurpose.other,
       technique: ThrowTechnique.backhand,
     );
@@ -249,12 +264,12 @@ class _IncompleteHoleWalkthroughSheetState
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: newThrow,
-        throwIndex: currentHole.throws?.length ?? 0,
-        holeNumber: currentHole.number ?? currentHoleIndex + 1,
+        throwIndex: hole.throws?.length ?? 0,
+        holeNumber: hole.number ?? holeIndex + 1,
         isNewThrow: true,
         onSave: (savedThrow) {
           final List<PotentialDiscThrow> updatedThrows =
-              List<PotentialDiscThrow>.from(currentHole.throws ?? []);
+              List<PotentialDiscThrow>.from(hole.throws ?? []);
           updatedThrows.add(
             PotentialDiscThrow(
               index: savedThrow.index,
@@ -282,16 +297,16 @@ class _IncompleteHoleWalkthroughSheetState
           );
 
           final PotentialDGHole updatedHole = PotentialDGHole(
-            number: currentHole.number,
-            par: currentHole.par,
-            feet: currentHole.feet,
+            number: hole.number,
+            par: hole.par,
+            feet: hole.feet,
             throws: updatedThrows,
-            holeType: currentHole.holeType,
+            holeType: hole.holeType,
           );
 
           // Update via metadata method which handles conversion if complete
           _roundParser.updatePotentialHoleMetadata(
-            currentHoleIndex,
+            holeIndex,
             number: updatedHole.number,
             par: updatedHole.par,
             feet: updatedHole.feet,
@@ -303,15 +318,14 @@ class _IncompleteHoleWalkthroughSheetState
     );
   }
 
-  void _editThrow(int throwIndex) {
-    if (_incompleteHoleIndices.isEmpty) return;
+  void _editThrow(int tabIndex, int throwIndex) {
+    if (tabIndex >= _incompleteHoleIndices.length) return;
 
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
+    final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
 
     // Convert to DiscThrow from PotentialDiscThrow if needed
-    final PotentialDiscThrow? potentialThrow = currentHole.throws?[throwIndex];
+    final PotentialDiscThrow? potentialThrow = hole.throws?[throwIndex];
     if (potentialThrow == null || !potentialThrow.hasRequiredFields) {
       return; // Can't edit incomplete throw
     }
@@ -322,28 +336,24 @@ class _IncompleteHoleWalkthroughSheetState
       builder: (context) => ThrowEditDialog(
         throw_: currentThrow,
         throwIndex: throwIndex,
-        holeNumber: currentHole.number ?? currentHoleIndex + 1,
+        holeNumber: hole.number ?? holeIndex + 1,
         onSave: (updatedThrow) {
-          _roundParser.updateThrow(currentHoleIndex, throwIndex, updatedThrow);
+          _roundParser.updateThrow(holeIndex, throwIndex, updatedThrow);
           Navigator.of(context).pop();
         },
         onDelete: () {
-          _deleteThrow(throwIndex);
+          _deleteThrow(holeIndex, throwIndex);
           Navigator.of(context).pop();
         },
       ),
     );
   }
 
-  void _deleteThrow(int throwIndex) {
-    if (_incompleteHoleIndices.isEmpty) return;
-
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
+  void _deleteThrow(int holeIndex, int throwIndex) {
+    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
 
     final List<PotentialDiscThrow> updatedThrows =
-        List<PotentialDiscThrow>.from(currentHole.throws ?? []);
+        List<PotentialDiscThrow>.from(hole.throws ?? []);
     updatedThrows.removeAt(throwIndex);
 
     // Reindex remaining throws
@@ -380,20 +390,41 @@ class _IncompleteHoleWalkthroughSheetState
 
     // Update as potential hole
     final PotentialDGHole updatedHole = PotentialDGHole(
-      number: currentHole.number,
-      par: currentHole.par,
-      feet: currentHole.feet,
+      number: hole.number,
+      par: hole.par,
+      feet: hole.feet,
       throws: reindexedThrows,
-      holeType: currentHole.holeType,
+      holeType: hole.holeType,
     );
 
     // Update via metadata method which handles conversion if complete
     _roundParser.updatePotentialHoleMetadata(
-      currentHoleIndex,
+      holeIndex,
       number: updatedHole.number,
       par: updatedHole.par,
       feet: updatedHole.feet,
     );
+  }
+
+  Color _getScoreColor(PotentialDGHole hole) {
+    if (!hole.hasRequiredFields ||
+        hole.throws == null ||
+        hole.throws!.isEmpty) {
+      return const Color(0xFF9D4EDD); // Purple for incomplete
+    }
+
+    final DGHole completeHole = hole.toDGHole();
+    final int relativeScore = completeHole.relativeHoleScore;
+
+    if (relativeScore < 0) {
+      return const Color(0xFF137e66); // Birdie - green
+    } else if (relativeScore == 0) {
+      return Colors.grey; // Par - grey
+    } else if (relativeScore == 1) {
+      return const Color(0xFFFF7A7A); // Bogey - light red
+    } else {
+      return const Color(0xFFD32F2F); // Double bogey+ - dark red
+    }
   }
 
   @override
@@ -402,6 +433,10 @@ class _IncompleteHoleWalkthroughSheetState
     if (_incompleteHoleIndices.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -426,13 +461,6 @@ class _IncompleteHoleWalkthroughSheetState
       );
     }
 
-    final int currentHoleIndex = _incompleteHoleIndices[_currentIndex];
-    final PotentialDGHole currentHole =
-        _roundParser.potentialRound!.holes![currentHoleIndex];
-    final int totalIncomplete = _incompleteHoleIndices.length;
-    final int currentPosition = _currentIndex + 1;
-    final bool canProceed = _canProceed();
-
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       minChildSize: 0.5,
@@ -442,7 +470,7 @@ class _IncompleteHoleWalkthroughSheetState
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: Column(
             children: [
@@ -457,11 +485,11 @@ class _IncompleteHoleWalkthroughSheetState
                 ),
               ),
 
-              // Header with progress
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
                 child: Row(
                   children: [
@@ -471,315 +499,121 @@ class _IncompleteHoleWalkthroughSheetState
                       size: 22,
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Fix Holes',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            'Hole $currentPosition of $totalIncomplete',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: const Color(0xFF9D4EDD),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ],
+                    Text(
+                      'Fix Incomplete Holes',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
               ),
 
-              // Progress bar
-              LinearProgressIndicator(
-                value: currentPosition / totalIncomplete,
-                backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF9D4EDD),
-                ),
-              ),
+              // Horizontal checklist
+              Container(
+                height: 60,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _incompleteHoleIndices.length,
+                  itemBuilder: (context, index) {
+                    final holeIndex = _incompleteHoleIndices[index];
+                    final hole = _roundParser.potentialRound!.holes![holeIndex];
+                    final isComplete = _isHoleComplete(index);
+                    final isSelected = _tabController.index == index;
 
-              // Scrollable content
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Hole metadata section with inline editing
-                      Container(
-                        padding: const EdgeInsets.all(16),
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _tabController.animateTo(index);
+                        });
+                      },
+                      child: Container(
+                        width: 48,
+                        margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF9D4EDD,
-                          ).withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
+                          color: isComplete
+                              ? const Color(0xFF137e66).withValues(alpha: 0.1)
+                              : isSelected
+                              ? const Color(0xFF9D4EDD).withValues(alpha: 0.2)
+                              : Colors.grey.withValues(alpha: 0.1),
                           border: Border.all(
-                            color: const Color(
-                              0xFF9D4EDD,
-                            ).withValues(alpha: 0.3),
+                            color: isComplete
+                                ? const Color(0xFF137e66)
+                                : isSelected
+                                ? const Color(0xFF9D4EDD)
+                                : Colors.grey.withValues(alpha: 0.3),
+                            width: isSelected ? 2 : 1,
                           ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.golf_course,
-                                  color: Color(0xFF9D4EDD),
-                                  size: 24,
+                            if (isComplete)
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF137e66),
+                                size: 20,
+                              )
+                            else
+                              Text(
+                                '${hole.number ?? '?'}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? const Color(0xFF9D4EDD)
+                                      : Colors.grey,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Hole Information',
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildNumberField(
-                                    label: 'Hole #',
-                                    controller: _holeNumberController,
-                                    icon: Icons.golf_course,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildNumberField(
-                                    label: 'Par',
-                                    controller: _parController,
-                                    icon: Icons.flag_outlined,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildNumberField(
-                                    label: 'Distance (ft)',
-                                    controller: _distanceController,
-                                    icon: Icons.straighten,
-                                  ),
-                                ),
-                              ],
+                              ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'H${hole.number ?? '?'}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isComplete
+                                    ? const Color(0xFF137e66)
+                                    : isSelected
+                                    ? const Color(0xFF9D4EDD)
+                                    : Colors.grey,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-
-                      // Throws section header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Throws',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          if (!_hasBasketThrow(currentHole))
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFFD32F2F,
-                                ).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Need basket throw',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: const Color(0xFFD32F2F),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Throws timeline (if any)
-                      if (currentHole.throws != null &&
-                          currentHole.throws!.isNotEmpty)
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surface.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.grey.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: EditableThrowTimeline(
-                            throws: currentHole.throws!
-                                .where((t) => t.hasRequiredFields)
-                                .map((t) => t.toDiscThrow())
-                                .toList(),
-                            onEditThrow: _editThrow,
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.grey.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'No throws recorded yet',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-
-                      // Add throw button
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _addThrow,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Throw'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Re-record button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _handleReRecord,
-                          icon: const Icon(Icons.mic, size: 18),
-                          label: const Text('Re-record Hole'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF9D4EDD),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
 
-              // Navigation buttons
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Previous button
-                    if (_currentIndex > 0)
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _handlePrevious,
-                          icon: const Icon(Icons.arrow_back, size: 18),
-                          label: const Text('Previous'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (_currentIndex > 0) const SizedBox(width: 8),
+              const SizedBox(height: 8),
 
-                    // Skip button
-                    Expanded(
-                      child: TextButton.icon(
-                        onPressed: _handleSkip,
-                        icon: const Icon(Icons.skip_next, size: 18),
-                        label: const Text('Skip'),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
+              // Tab bar
+              TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                labelColor: const Color(0xFF9D4EDD),
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: const Color(0xFF9D4EDD),
+                tabs: _incompleteHoleIndices.map((holeIndex) {
+                  final hole = _roundParser.potentialRound!.holes![holeIndex];
+                  return Tab(text: 'Hole ${hole.number ?? '?'}');
+                }).toList(),
+              ),
 
-                    // Next/Done button
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: canProceed ? _handleNext : null,
-                        icon: Icon(
-                          _currentIndex < _incompleteHoleIndices.length - 1
-                              ? Icons.arrow_forward
-                              : Icons.check,
-                          size: 18,
-                        ),
-                        label: Text(
-                          _currentIndex < _incompleteHoleIndices.length - 1
-                              ? 'Next'
-                              : 'Done',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9D4EDD),
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey.withValues(
-                            alpha: 0.3,
-                          ),
-                          disabledForegroundColor: Colors.grey.withValues(
-                            alpha: 0.5,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              // Tab content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: List.generate(
+                    _incompleteHoleIndices.length,
+                    (tabIndex) => _buildHoleContent(tabIndex, scrollController),
+                  ),
                 ),
               ),
             ],
@@ -789,24 +623,279 @@ class _IncompleteHoleWalkthroughSheetState
     );
   }
 
-  Widget _buildNumberField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-  }) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, size: 18),
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
+  Widget _buildHoleContent(int tabIndex, ScrollController scrollController) {
+    final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
+    final Color scoreColor = _getScoreColor(hole);
+    final int? score =
+        hole.hasRequiredFields && hole.throws != null && hole.throws!.isNotEmpty
+        ? hole.toDGHole().holeScore
+        : null;
+
+    return Column(
+      children: [
+        // Header (matching _HoleDetailDialog design)
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: scoreColor.withValues(alpha: 0.1)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.golf_course, size: 24, color: scoreColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Hole ${hole.number ?? '?'}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              if (score != null)
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: scoreColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$score',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: scoreColor.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(Icons.edit, color: scoreColor, size: 20),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+
+        // Hole info with editable fields (matching _HoleDetailDialog layout)
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildEditableInfoItem(
+                context,
+                'Par',
+                _parControllers[tabIndex],
+                Icons.flag_outlined,
+              ),
+              _buildEditableInfoItem(
+                context,
+                'Distance',
+                _distanceControllers[tabIndex],
+                Icons.straighten,
+                suffix: 'ft',
+              ),
+              _buildInfoItem(
+                context,
+                'Throws',
+                '${hole.throws?.length ?? 0}',
+                Icons.sports_golf,
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1),
+
+        // Throws timeline
+        Expanded(
+          child: hole.throws != null && hole.throws!.isNotEmpty
+              ? EditableThrowTimeline(
+                  throws: hole.throws!
+                      .where((t) => t.hasRequiredFields)
+                      .map((t) => t.toDiscThrow())
+                      .toList(),
+                  onEditThrow: (throwIndex) => _editThrow(tabIndex, throwIndex),
+                )
+              : SingleChildScrollView(
+                  controller: scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'No throws recorded',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                          ),
+                          if (!_hasBasketThrow(hole))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFD32F2F,
+                                  ).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Need at least one basket throw',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: const Color(0xFFD32F2F),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+
+        // Action buttons
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Add throw button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _addThrow(tabIndex),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Throw'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Re-record button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleReRecord(tabIndex),
+                  icon: const Icon(Icons.mic, size: 18),
+                  label: const Text('Re-record Hole'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9D4EDD),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditableInfoItem(
+    BuildContext context,
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    String? suffix,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 4),
+        IntrinsicWidth(
+          child: TextField(
+            controller: controller,
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+              suffix: suffix != null
+                  ? Text(suffix, style: Theme.of(context).textTheme.bodySmall)
+                  : null,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }
