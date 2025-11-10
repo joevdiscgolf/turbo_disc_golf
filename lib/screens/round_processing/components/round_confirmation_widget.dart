@@ -164,20 +164,15 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     final Set<int> missingHoles = validation['missingHoles'] as Set<int>;
     final bool hasRequiredFields = validation['hasRequiredFields'] as bool;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFEEE8F5), // Light purple-gray background
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: widget.onBack,
-        ),
-        title: const Text('Confirm Round'),
-      ),
-      body: Column(
+    return Container(
+      color: const Color(0xFFEEE8F5), // Light purple-gray background
+      child: Column(
         children: [
+          // Top padding for app bar
+          SizedBox(
+            height: MediaQuery.of(context).padding.top + kToolbarHeight,
+          ),
+
           // Course metadata header
           _buildMetadataCard(context, totalScore, totalPar, relativeScore),
           const SizedBox(height: 16),
@@ -206,17 +201,18 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           // Scrollable holes grid
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 80),
+              padding: const EdgeInsets.only(bottom: 16),
               child: EditableHolesGrid(
                 potentialRound: _currentRound,
                 roundParser: _roundParser,
               ),
             ),
           ),
+
+          // Continue button at bottom
+          _buildBottomBar(context, hasRequiredFields),
         ],
       ),
-      // Continue button at bottom
-      bottomSheet: _buildBottomBar(context, hasRequiredFields),
     );
   }
 

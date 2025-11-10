@@ -368,9 +368,22 @@ class _RoundProcessingLoadingScreenState
                   );
                 },
               )
-            : Container(
-                color: Colors.transparent, // Just reserve space, no AppBar widget
-              ),
+            : _state == _ProcessingState.confirming
+                ? AppBar(
+                    backgroundColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    elevation: 0,
+                    foregroundColor: Colors.black87,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    title: const Text('Confirm Round'),
+                  )
+                : Container(
+                    color: Colors.transparent, // Just reserve space, no AppBar widget
+                  ),
       ),
 
       body: Stack(
