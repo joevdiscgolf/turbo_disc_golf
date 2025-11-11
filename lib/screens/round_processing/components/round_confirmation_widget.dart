@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_sheet.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Confirmation widget that shows parsed round data for review and editing.
@@ -15,11 +16,13 @@ class RoundConfirmationWidget extends StatefulWidget {
     required this.potentialRound,
     required this.onBack,
     required this.onConfirm,
+    required this.topViewPadding,
   });
 
   final PotentialDGRound potentialRound;
   final VoidCallback onBack;
   final VoidCallback onConfirm;
+  final double topViewPadding;
 
   @override
   State<RoundConfirmationWidget> createState() =>
@@ -167,56 +170,58 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     final bool hasRequiredFields = validation['hasRequiredFields'] as bool;
 
     return Container(
-      padding: const EdgeInsets.only(top: 112),
       color: const Color(0xFFEEE8F5), // Light purple-gray background
       // color: Colors.blue,
       child: Column(
         children: [
           // Scrollable content (everything except bottom bar)
           Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 48),
-                child: Column(
-                  children: [
-                    // Course metadata header
-                    _buildMetadataCard(
-                      context,
-                      totalScore,
-                      totalPar,
-                      relativeScore,
-                    ),
-                    const SizedBox(height: 12),
-                    // Warning banner for missing data
-                    _buildWarningBanner(
-                      context,
-                      validationIssues,
-                      missingHoles,
-                      hasRequiredFields,
-                    ),
-                    if (validationIssues.isNotEmpty) const SizedBox(height: 16),
-
-                    // Instructions
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Tap any hole to review and edit throws',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Holes grid (no longer wrapped in Expanded)
-                    EditableHolesGrid(
-                      potentialRound: _currentRound,
-                      roundParser: _roundParser,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+            child: ListView(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: 48,
+                top: widget.topViewPadding + 72,
               ),
+              children: [
+                // Course metadata header
+                RoundMetadataCard(
+                  potentialRound: _currentRound,
+                  totalScore: totalScore,
+                  totalPar: totalPar,
+                  relativeScore: relativeScore,
+                ),
+                const SizedBox(height: 12),
+                // Warning banner for missing data
+                if (validationIssues.isNotEmpty)
+                  _buildWarningBanner(
+                    context,
+                    validationIssues,
+                    missingHoles,
+                    hasRequiredFields,
+                  ),
+                if (validationIssues.isNotEmpty) const SizedBox(height: 16),
+
+                // Instructions
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    'Review holes',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Holes grid (no longer wrapped in Expanded)
+                EditableHolesGrid(
+                  potentialRound: _currentRound,
+                  roundParser: _roundParser,
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
           ),
 
@@ -224,130 +229,6 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           _buildBottomBar(context, hasRequiredFields),
         ],
       ),
-    );
-  }
-
-  Widget _buildMetadataCard(
-    BuildContext context,
-    int totalScore,
-    int totalPar,
-    int relativeScore,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Course name
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _currentRound.courseName ?? 'Unknown Course',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Stats row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                context,
-                'Holes',
-                '${_currentRound.holes?.length ?? 0}',
-                Icons.golf_course,
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).dividerColor,
-              ),
-              _buildStatItem(
-                context,
-                'Score',
-                '$totalScore',
-                Icons.sports_score,
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).dividerColor,
-              ),
-              _buildStatItem(context, 'Par', '$totalPar', Icons.flag_outlined),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).dividerColor,
-              ),
-              _buildStatItem(
-                context,
-                'Total',
-                relativeScore >= 0 ? '+$relativeScore' : '$relativeScore',
-                Icons.trending_up,
-                color: relativeScore < 0
-                    ? const Color(0xFF137e66)
-                    : relativeScore == 0
-                    ? Colors.grey
-                    : const Color(0xFFFF7A7A),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon, {
-    Color? color,
-  }) {
-    final Color displayColor =
-        color ?? Theme.of(context).colorScheme.onSurfaceVariant;
-
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: displayColor),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: displayColor,
-          ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 
@@ -365,13 +246,15 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
   }
 
   Future<void> _openWalkthroughDialog() async {
-    await showDialog<void>(
+    await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) =>
-          IncompleteHoleWalkthroughDialog(potentialRound: _currentRound),
+          IncompleteHoleWalkthroughSheet(potentialRound: _currentRound),
     );
 
-    // Refresh the UI after dialog closes
+    // Refresh the UI after bottom sheet closes
     _refreshRoundData();
   }
 
@@ -381,132 +264,41 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     Set<int> missingHoles,
     bool hasRequiredFields,
   ) {
-    if (issues.isEmpty) return const SizedBox.shrink();
-
     final int incompleteHoleCount = _getIncompleteHoleCount();
+    final int holesToAddress = incompleteHoleCount + missingHoles.length;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                hasRequiredFields
-                    ? Icons.info_outline
-                    : Icons.warning_amber_rounded,
-                color: hasRequiredFields
-                    ? const Color(0xFF2196F3)
-                    : const Color(0xFFFFA726),
-                size: 24,
+    return Row(
+      children: [
+        if (holesToAddress > 0)
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                // Add the missing holes to potential round
+                // if (missingHoles.isNotEmpty) {
+                //   _roundParser.addEmptyHolesToPotentialRound(missingHoles);
+                // }
+
+                // Refresh the UI
+                _refreshRoundData();
+
+                // Then open the walkthrough to guide user through filling them in
+                await _openWalkthroughDialog();
+              },
+              icon: const Icon(Icons.warning, size: 18),
+              label: Text(
+                '$holesToAddress holes ${holesToAddress == 1 ? 'needs' : 'need'} attention',
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  hasRequiredFields ? 'Review Round Data' : 'Action Required',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Issues summary
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: hasRequiredFields
-                  ? const Color(0xFF2196F3).withValues(alpha: 0.1)
-                  : const Color(0xFFFFA726).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (missingHoles.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      '${missingHoles.length} ${missingHoles.length == 1 ? 'hole' : 'holes'} missing from sequence',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                if (incompleteHoleCount > 0)
-                  Text(
-                    '$incompleteHoleCount ${incompleteHoleCount == 1 ? 'hole needs' : 'holes need'} additional information',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
             ),
           ),
-          const SizedBox(height: 16),
-          // Action buttons
-          Row(
-            children: [
-              if (missingHoles.isNotEmpty)
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      // Add the missing holes to potential round
-                      _roundParser.addEmptyHolesToPotentialRound(missingHoles);
-
-                      // Refresh the UI
-                      _refreshRoundData();
-
-                      // Then open the walkthrough to guide user through filling them in
-                      await _openWalkthroughDialog();
-                    },
-                    icon: const Icon(Icons.add_circle_outline, size: 18),
-                    label: const Text('Add Holes'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF137e66),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-              if (missingHoles.isNotEmpty && incompleteHoleCount > 0)
-                const SizedBox(width: 12),
-              if (incompleteHoleCount > 0)
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _openWalkthroughDialog,
-                    icon: const Icon(Icons.edit_note, size: 18),
-                    label: const Text('Fix Info'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF9D4EDD),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -532,28 +324,28 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Warning text if required fields missing
-          if (!hasRequiredFields)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Color(0xFFD32F2F),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Please fix missing required fields before continuing',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFFD32F2F),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // if (!hasRequiredFields)
+          //   Padding(
+          //     padding: const EdgeInsets.only(bottom: 12),
+          //     child: Row(
+          //       children: [
+          //         const Icon(
+          //           Icons.info_outline,
+          //           size: 16,
+          //           color: Color(0xFFD32F2F),
+          //         ),
+          //         const SizedBox(width: 8),
+          //         Expanded(
+          //           child: Text(
+          //             'Please fix missing required fields before continuing',
+          //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          //               color: const Color(0xFFD32F2F),
+          //             ),
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -572,7 +364,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    'Continue to Results',
+                    'Looks good!',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),

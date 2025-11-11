@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_dialog.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
@@ -96,10 +95,10 @@ class _HoleGridItem extends StatelessWidget {
   final RoundParser roundParser;
   final bool isCompletelyMissing;
 
-  void _showEditableHoleDialog(BuildContext context) {
+  void _showEditableHoleSheet(BuildContext context) {
     // If hole is completely missing, add it to the round first
     if (isCompletelyMissing && potentialHole.number != null) {
-      roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
+      // roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
 
       // Wait for the state to update, then find the new hole index and open dialog
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -111,26 +110,14 @@ class _HoleGridItem extends StatelessWidget {
           );
 
           if (newHoleIndex != -1 && context.mounted) {
-            Navigator.of(context).push(
-              PageRouteBuilder(
-                opaque: false,
-                barrierDismissible: true,
-                barrierColor: Colors.black54,
-                transitionDuration: const Duration(milliseconds: 300),
-                reverseTransitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOut,
-                    ),
-                    child: EditableHoleDetailDialog(
-                      potentialHole: updatedRound.holes![newHoleIndex],
-                      holeIndex: newHoleIndex,
-                      roundParser: roundParser,
-                    ),
-                  );
-                },
+            showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => EditableHoleDetailSheet(
+                potentialHole: updatedRound.holes![newHoleIndex],
+                holeIndex: newHoleIndex,
+                roundParser: roundParser,
               ),
             );
           }
@@ -140,48 +127,39 @@ class _HoleGridItem extends StatelessWidget {
     }
 
     // Normal case: hole exists in the round
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        barrierDismissible: true,
-        barrierColor: Colors.black54,
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 300),
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            child: EditableHoleDetailDialog(
-              potentialHole: potentialHole,
-              holeIndex: holeIndex,
-              roundParser: roundParser,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showReRecordDialog(BuildContext context) {
-    // Don't allow re-record for completely missing holes
-    if (isCompletelyMissing) {
-      return;
-    }
-
-    showDialog<void>(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) => HoleReRecordDialog(
-        holeNumber: potentialHole.number ?? holeIndex + 1,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => EditableHoleDetailSheet(
+        potentialHole: potentialHole,
         holeIndex: holeIndex,
-        holePar: potentialHole.par,
-        holeFeet: potentialHole.feet,
+        roundParser: roundParser,
       ),
     );
   }
 
-  bool _hasCriticalIssues() {
-    return (potentialHole.throws == null || potentialHole.throws!.isEmpty) ||
-        potentialHole.feet == null;
-  }
+  // void _showReRecordDialog(BuildContext context) {
+  //   // Don't allow re-record for completely missing holes
+  //   if (isCompletelyMissing) {
+  //     return;
+  //   }
+
+  //   showDialog<void>(
+  //     context: context,
+  //     builder: (context) => HoleReRecordDialog(
+  //       holeNumber: potentialHole.number ?? holeIndex + 1,
+  //       holeIndex: holeIndex,
+  //       holePar: potentialHole.par,
+  //       holeFeet: potentialHole.feet,
+  //     ),
+  //   );
+  // }
+
+  // bool _hasCriticalIssues() {
+  //   return (potentialHole.throws == null || potentialHole.throws!.isEmpty) ||
+  //       potentialHole.feet == null;
+  // }
 
   bool _isIncomplete() {
     // Completely missing holes are always incomplete
@@ -198,7 +176,7 @@ class _HoleGridItem extends StatelessWidget {
     const Color backgroundColor = Color(0xFFFFEBEE);
 
     return GestureDetector(
-      onTap: () => _showEditableHoleDialog(context),
+      onTap: () => _showEditableHoleSheet(context),
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(
@@ -229,9 +207,9 @@ class _HoleGridItem extends StatelessWidget {
                     Text(
                       '${potentialHole.number ?? '?'}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: borderColor,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: borderColor,
+                      ),
                     ),
                     // Warning indicator in top right
                     Container(
@@ -256,10 +234,10 @@ class _HoleGridItem extends StatelessWidget {
                 Text(
                   'Missing',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: borderColor.withValues(alpha: 0.8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    color: borderColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const Spacer(),
                 // '+' icon in bottom right
@@ -284,7 +262,7 @@ class _HoleGridItem extends StatelessWidget {
     const Color backgroundColor = Color(0xFFFFEBEE);
 
     return GestureDetector(
-      onTap: () => _showEditableHoleDialog(context),
+      onTap: () => _showEditableHoleSheet(context),
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(
@@ -315,9 +293,9 @@ class _HoleGridItem extends StatelessWidget {
                     Text(
                       '${potentialHole.number ?? '?'}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: borderColor,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: borderColor,
+                      ),
                     ),
                     // Warning badge
                     Container(
@@ -342,28 +320,24 @@ class _HoleGridItem extends StatelessWidget {
                 Text(
                   'Par ${potentialHole.par ?? '—'}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: borderColor.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
+                    color: borderColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
                 ),
                 Text(
                   potentialHole.feet != null
                       ? '${potentialHole.feet} ft'
                       : '— ft',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: borderColor.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
+                    color: borderColor.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
                 ),
                 const Spacer(),
                 // Edit icon in bottom right
                 Align(
                   alignment: Alignment.bottomRight,
-                  child: Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: borderColor,
-                  ),
+                  child: Icon(Icons.edit, size: 16, color: borderColor),
                 ),
               ],
             ),
@@ -392,7 +366,7 @@ class _HoleGridItem extends StatelessWidget {
     // Empty hole styling (has structure but no throws)
     if (isEmpty) {
       return GestureDetector(
-        onTap: () => _showEditableHoleDialog(context),
+        onTap: () => _showEditableHoleSheet(context),
 
         child: Card(
           elevation: 1,
@@ -535,7 +509,7 @@ class _HoleGridItem extends StatelessWidget {
     }
 
     return InkWell(
-      onTap: () => _showEditableHoleDialog(context),
+      onTap: () => _showEditableHoleSheet(context),
       borderRadius: BorderRadius.circular(8),
       child: Card(
         elevation: 2,
@@ -582,47 +556,24 @@ class _HoleGridItem extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Row(
-                          children: [
-                            // Re-record button for holes with critical issues
-                            if (_hasCriticalIssues())
-                              GestureDetector(
-                                onTap: () => _showReRecordDialog(context),
-                                child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  margin: const EdgeInsets.only(right: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF9D4EDD),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.mic,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            // Score circle (smaller, in top right)
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: scoreColor,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$score',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                        // Score circle (smaller, in top right)
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: scoreColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$score',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),

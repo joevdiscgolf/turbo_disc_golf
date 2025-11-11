@@ -43,7 +43,7 @@ enum _ProcessingState {
   exploding,
   zooming,
   revealing,
-  confirming
+  confirming,
 }
 
 class _RoundProcessingLoadingScreenState
@@ -116,7 +116,8 @@ class _RoundProcessingLoadingScreenState
 
   void _revealContent() async {
     // If we have a potential round, finalize it first
-    if (_roundParser.potentialRound != null && _roundParser.parsedRound == null) {
+    if (_roundParser.potentialRound != null &&
+        _roundParser.parsedRound == null) {
       debugPrint('Finalizing potential round...');
 
       // Show a brief loading state
@@ -131,9 +132,9 @@ class _RoundProcessingLoadingScreenState
           'RoundProcessingLoadingScreen: ERROR - Failed to finalize round: ${_roundParser.lastError}',
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(_roundParser.lastError)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
           // Go back to confirmation screen
           setState(() {
             _state = _ProcessingState.confirming;
@@ -210,7 +211,9 @@ class _RoundProcessingLoadingScreenState
             children: [
               // Empty space where triangle would be (it's in the overlay)
               const SizedBox(height: 120),
-              const SizedBox(height: 100), // Increased to 100 (52px total down from original)
+              const SizedBox(
+                height: 100,
+              ), // Increased to 100 (52px total down from original)
               // Text with loading indicator to match transitioning layout
               Text(
                 'Processing your round...',
@@ -251,8 +254,9 @@ class _RoundProcessingLoadingScreenState
             children: [
               // Empty space where triangle is (it's in the overlay)
               const SizedBox(height: 120),
-              const SizedBox(height: 52), // Match the increased spacing (24px + 16px + 12px)
-
+              const SizedBox(
+                height: 52,
+              ), // Match the increased spacing (24px + 16px + 12px)
               // Text elements fade out
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
@@ -336,20 +340,24 @@ class _RoundProcessingLoadingScreenState
       potentialRound: _roundParser.potentialRound!,
       onBack: () => Navigator.of(context).pop(),
       onConfirm: _revealContent,
+      topViewPadding: MediaQuery.of(context).viewPadding.top,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent, // Transparent to show body background
+      backgroundColor:
+          Colors.transparent, // Transparent to show body background
       extendBodyBehindAppBar: true, // Body extends behind app bar
       // App bar always present to reserve space, fades in with content
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: _state == _ProcessingState.revealing
             ? TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 1000), // Same as content fade
+                duration: const Duration(
+                  milliseconds: 1000,
+                ), // Same as content fade
                 tween: Tween<double>(begin: 0.0, end: 1.0),
                 curve: Curves.easeOut, // Same curve as content
                 builder: (context, progress, child) {
@@ -360,7 +368,8 @@ class _RoundProcessingLoadingScreenState
                       surfaceTintColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                       elevation: 0,
-                      foregroundColor: Colors.black87, // Dark text for light background
+                      foregroundColor:
+                          Colors.black87, // Dark text for light background
                       title: Text(
                         _roundParser.parsedRound?.courseName ?? 'Round Review',
                       ),
@@ -369,21 +378,24 @@ class _RoundProcessingLoadingScreenState
                 },
               )
             : _state == _ProcessingState.confirming
-                ? AppBar(
-                    backgroundColor: const Color(0xFFEEE8F5), // Match scaffold background
-                    surfaceTintColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    elevation: 0,
-                    foregroundColor: Colors.black87,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    title: const Text('Confirm Round'),
-                  )
-                : Container(
-                    color: Colors.transparent, // Just reserve space, no AppBar widget
-                  ),
+            ? AppBar(
+                backgroundColor: const Color(
+                  0xFFEEE8F5,
+                ), // Match scaffold background
+                surfaceTintColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                elevation: 0,
+                foregroundColor: Colors.black87,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                title: const Text('Confirm Round'),
+              )
+            : Container(
+                color:
+                    Colors.transparent, // Just reserve space, no AppBar widget
+              ),
       ),
 
       body: Stack(
@@ -401,10 +413,7 @@ class _RoundProcessingLoadingScreenState
               tween: Tween<double>(begin: 1.0, end: 0.0),
               curve: Curves.easeInOut,
               builder: (context, hyperspaceOpacity, child) {
-                return Opacity(
-                  opacity: hyperspaceOpacity,
-                  child: child,
-                );
+                return Opacity(opacity: hyperspaceOpacity, child: child);
               },
               child: _buildZoomingContent(),
             )
@@ -420,12 +429,12 @@ class _RoundProcessingLoadingScreenState
               child: _state == _ProcessingState.loading
                   ? _buildLoadingContent()
                   : _state == _ProcessingState.transitioning
-                      ? _buildTransitioningContent()
-                      : _state == _ProcessingState.exploding
-                          ? _buildExplodingContent()
-                          : _state == _ProcessingState.zooming
-                              ? _buildZoomingContent()
-                              : const SizedBox.shrink(),
+                  ? _buildTransitioningContent()
+                  : _state == _ProcessingState.exploding
+                  ? _buildExplodingContent()
+                  : _state == _ProcessingState.zooming
+                  ? _buildZoomingContent()
+                  : const SizedBox.shrink(),
             ),
 
           // Layer 2: Round review content that fades in with blur
@@ -448,17 +457,15 @@ class _RoundProcessingLoadingScreenState
                     sigmaY: blur,
                     tileMode: TileMode.decal,
                   ),
-                  child: Opacity(
-                    opacity: contentOpacity,
-                    child: child,
-                  ),
+                  child: Opacity(opacity: contentOpacity, child: child),
                 );
               },
               child: _buildReviewContent(),
             ),
 
           // Layer 3: Confirmation widget - shows after parsing completes
-          if (_state == _ProcessingState.confirming) _buildConfirmationContent(),
+          if (_state == _ProcessingState.confirming)
+            _buildConfirmationContent(),
 
           // Layer 4: Persistent triangle overlay - visible through entire animation
           // Only hide during revealing and confirming
