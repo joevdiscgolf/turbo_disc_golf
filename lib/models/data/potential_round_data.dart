@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
@@ -133,7 +134,7 @@ class PotentialDGHole {
 
   /// Check if this hole has all required fields for conversion to DGHole
   bool get hasRequiredFields {
-    if (number == null || par == null || throws?.isNotEmpty != true) {
+    if (number == null || par == null || !hasThrowInBasket) {
       return false;
     }
 
@@ -144,6 +145,12 @@ class PotentialDGHole {
 
     return true;
   }
+
+  bool get hasThrowInBasket =>
+      throws?.firstWhereOrNull(
+        (discThrow) => discThrow.landingSpot == LandingSpot.inBasket,
+      ) !=
+      null;
 
   /// Get list of missing required field names
   List<String> getMissingFields() {
