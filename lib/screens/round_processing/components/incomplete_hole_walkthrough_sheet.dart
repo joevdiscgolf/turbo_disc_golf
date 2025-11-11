@@ -38,6 +38,9 @@ class _IncompleteHoleWalkthroughSheetState
   late List<TextEditingController> _holeNumberControllers;
   late List<TextEditingController> _parControllers;
   late List<TextEditingController> _distanceControllers;
+  late List<FocusNode> _holeNumberFocusNodes;
+  late List<FocusNode> _parFocusNodes;
+  late List<FocusNode> _distanceFocusNodes;
   int _currentHoleIndex = 0;
 
   @override
@@ -65,6 +68,15 @@ class _IncompleteHoleWalkthroughSheetState
       for (var controller in _distanceControllers) {
         controller.dispose();
       }
+      for (var focusNode in _holeNumberFocusNodes) {
+        focusNode.dispose();
+      }
+      for (var focusNode in _parFocusNodes) {
+        focusNode.dispose();
+      }
+      for (var focusNode in _distanceFocusNodes) {
+        focusNode.dispose();
+      }
     }
     super.dispose();
   }
@@ -73,6 +85,9 @@ class _IncompleteHoleWalkthroughSheetState
     _holeNumberControllers = [];
     _parControllers = [];
     _distanceControllers = [];
+    _holeNumberFocusNodes = [];
+    _parFocusNodes = [];
+    _distanceFocusNodes = [];
 
     for (int i = 0; i < _incompleteHoleIndices.length; i++) {
       final int holeIndex = _incompleteHoleIndices[i];
@@ -89,14 +104,12 @@ class _IncompleteHoleWalkthroughSheetState
         text: hole.feet?.toString() ?? '',
       );
 
-      // Add listeners to save changes
-      holeNumController.addListener(() => _saveMetadata(i));
-      parController.addListener(() => _saveMetadata(i));
-      distController.addListener(() => _saveMetadata(i));
-
       _holeNumberControllers.add(holeNumController);
       _parControllers.add(parController);
       _distanceControllers.add(distController);
+      _holeNumberFocusNodes.add(FocusNode());
+      _parFocusNodes.add(FocusNode());
+      _distanceFocusNodes.add(FocusNode());
     }
   }
 
@@ -121,6 +134,15 @@ class _IncompleteHoleWalkthroughSheetState
           for (var controller in _distanceControllers) {
             controller.dispose();
           }
+          for (var focusNode in _holeNumberFocusNodes) {
+            focusNode.dispose();
+          }
+          for (var focusNode in _parFocusNodes) {
+            focusNode.dispose();
+          }
+          for (var focusNode in _distanceFocusNodes) {
+            focusNode.dispose();
+          }
 
           // Reinitialize
 
@@ -139,9 +161,16 @@ class _IncompleteHoleWalkthroughSheetState
       final PotentialDGHole hole =
           _roundParser.potentialRound!.holes![holeIndex];
 
-      _holeNumberControllers[i].text = hole.number?.toString() ?? '';
-      _parControllers[i].text = hole.par?.toString() ?? '';
-      _distanceControllers[i].text = hole.feet?.toString() ?? '';
+      // Only update controllers if they don't have focus (user not editing)
+      if (!_holeNumberFocusNodes[i].hasFocus) {
+        _holeNumberControllers[i].text = hole.number?.toString() ?? '';
+      }
+      if (!_parFocusNodes[i].hasFocus) {
+        _parControllers[i].text = hole.par?.toString() ?? '';
+      }
+      if (!_distanceFocusNodes[i].hasFocus) {
+        _distanceControllers[i].text = hole.feet?.toString() ?? '';
+      }
     }
   }
 
@@ -652,12 +681,16 @@ class _IncompleteHoleWalkthroughSheetState
                 context,
                 'Par',
                 _parControllers[tabIndex],
+                _parFocusNodes[tabIndex],
+                tabIndex,
                 Icons.flag_outlined,
               ),
               _buildEditableInfoItem(
                 context,
                 'Distance',
                 _distanceControllers[tabIndex],
+                _distanceFocusNodes[tabIndex],
+                tabIndex,
                 Icons.straighten,
                 suffix: 'ft',
               ),
@@ -786,6 +819,8 @@ class _IncompleteHoleWalkthroughSheetState
     BuildContext context,
     String label,
     TextEditingController controller,
+    FocusNode focusNode,
+    int tabIndex,
     IconData icon, {
     String? suffix,
   }) {
@@ -800,6 +835,7 @@ class _IncompleteHoleWalkthroughSheetState
         IntrinsicWidth(
           child: TextField(
             controller: controller,
+            focusNode: focusNode,
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -819,6 +855,7 @@ class _IncompleteHoleWalkthroughSheetState
             ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (_) => _saveMetadata(tabIndex),
           ),
         ),
         const SizedBox(height: 4),

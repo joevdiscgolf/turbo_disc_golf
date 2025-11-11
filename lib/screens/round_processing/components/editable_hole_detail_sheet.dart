@@ -34,6 +34,9 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
   late TextEditingController _holeNumberController;
   late TextEditingController _parController;
   late TextEditingController _distanceController;
+  late FocusNode _holeNumberFocus;
+  late FocusNode _parFocus;
+  late FocusNode _distanceFocus;
 
   @override
   void initState() {
@@ -51,10 +54,9 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
       text: _currentHole.feet?.toString() ?? '',
     );
 
-    // Add listeners to save changes on edit
-    _holeNumberController.addListener(_saveMetadata);
-    _parController.addListener(_saveMetadata);
-    _distanceController.addListener(_saveMetadata);
+    _holeNumberFocus = FocusNode();
+    _parFocus = FocusNode();
+    _distanceFocus = FocusNode();
   }
 
   @override
@@ -63,6 +65,9 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     _holeNumberController.dispose();
     _parController.dispose();
     _distanceController.dispose();
+    _holeNumberFocus.dispose();
+    _parFocus.dispose();
+    _distanceFocus.dispose();
     super.dispose();
   }
 
@@ -72,18 +77,16 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
       if (round.holes != null && widget.holeIndex < round.holes!.length) {
         setState(() {
           _currentHole = round.holes![widget.holeIndex];
-          // Update controllers without triggering listeners
-          _holeNumberController.removeListener(_saveMetadata);
-          _parController.removeListener(_saveMetadata);
-          _distanceController.removeListener(_saveMetadata);
-
-          _holeNumberController.text = _currentHole.number?.toString() ?? '';
-          _parController.text = _currentHole.par?.toString() ?? '';
-          _distanceController.text = _currentHole.feet?.toString() ?? '';
-
-          _holeNumberController.addListener(_saveMetadata);
-          _parController.addListener(_saveMetadata);
-          _distanceController.addListener(_saveMetadata);
+          // Only update controllers if they don't have focus (user not editing)
+          if (!_holeNumberFocus.hasFocus) {
+            _holeNumberController.text = _currentHole.number?.toString() ?? '';
+          }
+          if (!_parFocus.hasFocus) {
+            _parController.text = _currentHole.par?.toString() ?? '';
+          }
+          if (!_distanceFocus.hasFocus) {
+            _distanceController.text = _currentHole.feet?.toString() ?? '';
+          }
         });
       }
     }
@@ -357,12 +360,14 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                       context,
                       'Par',
                       _parController,
+                      _parFocus,
                       Icons.flag_outlined,
                     ),
                     _buildEditableInfoItem(
                       context,
                       'Distance',
                       _distanceController,
+                      _distanceFocus,
                       Icons.straighten,
                       suffix: 'ft',
                     ),
@@ -452,6 +457,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     BuildContext context,
     String label,
     TextEditingController controller,
+    FocusNode focusNode,
     IconData icon, {
     String? suffix,
   }) {
@@ -466,6 +472,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
         IntrinsicWidth(
           child: TextField(
             controller: controller,
+            focusNode: focusNode,
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -485,6 +492,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
             ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (_) => _saveMetadata(),
           ),
         ),
         const SizedBox(height: 4),
