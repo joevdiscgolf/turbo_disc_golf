@@ -31,6 +31,9 @@ class RoundConfirmationWidget extends StatefulWidget {
 }
 
 class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
+  List<PotentialDGHole> get _validHoles =>
+      _currentRound.holes!.where((hole) => hole.hasRequiredFields).toList();
+
   late RoundParser _roundParser;
   late PotentialDGRound _currentRound;
 
@@ -56,10 +59,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     }
   }
 
-  int _calculateTotalScore() {
+  int _calculateTotalScoreForValidHoles() {
     if (_currentRound.holes == null) return 0;
 
-    return _currentRound.holes!.fold<int>(0, (sum, hole) {
+    return _validHoles.fold<int>(0, (sum, hole) {
       // Calculate hole score: throws count + penalty strokes
       final int throwsCount = hole.throws?.length ?? 0;
       final int penaltyStrokes =
@@ -72,10 +75,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     });
   }
 
-  int _calculateTotalPar() {
+  int _calculateTotalParForValidHoles() {
     if (_currentRound.holes == null) return 0;
 
-    return _currentRound.holes!.fold(
+    return _validHoles.fold(
       0,
       (sum, hole) => sum + (hole.par ?? 3), // Default to par 3 if missing
     );
@@ -185,8 +188,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final int totalScore = _calculateTotalScore();
-    final int totalPar = _calculateTotalPar();
+    final int totalScore = _calculateTotalScoreForValidHoles();
+    final int totalPar = _calculateTotalParForValidHoles();
     final int relativeScore = totalScore - totalPar;
     final Map<String, dynamic> validation = _validateRound();
     final List<String> validationIssues = validation['issues'] as List<String>;
