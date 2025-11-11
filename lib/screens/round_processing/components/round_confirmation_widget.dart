@@ -250,8 +250,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) =>
-          IncompleteHoleWalkthroughSheet(potentialRound: _currentRound),
+      builder: (context) => IncompleteHoleWalkthroughSheet(
+        potentialRound: _currentRound,
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+      ),
     );
 
     // Refresh the UI after bottom sheet closes

@@ -17,9 +17,11 @@ class IncompleteHoleWalkthroughSheet extends StatefulWidget {
   const IncompleteHoleWalkthroughSheet({
     super.key,
     required this.potentialRound,
+    required this.bottomViewPadding,
   });
 
   final PotentialDGRound potentialRound;
+  final double bottomViewPadding;
 
   @override
   State<IncompleteHoleWalkthroughSheet> createState() =>
@@ -31,12 +33,12 @@ class _IncompleteHoleWalkthroughSheetState
     with SingleTickerProviderStateMixin {
   late RoundParser _roundParser;
   late List<int> _incompleteHoleIndices;
-  late TabController _tabController;
 
   // Controllers for inline editing
   late List<TextEditingController> _holeNumberControllers;
   late List<TextEditingController> _parControllers;
   late List<TextEditingController> _distanceControllers;
+  int _currentHoleIndex = 0;
 
   @override
   void initState() {
@@ -46,11 +48,7 @@ class _IncompleteHoleWalkthroughSheetState
     _incompleteHoleIndices = _getIncompleteHoleIndices();
 
     if (_incompleteHoleIndices.isNotEmpty) {
-      _tabController = TabController(
-        length: _incompleteHoleIndices.length,
-        vsync: this,
-      );
-      _initializeControllers();
+      _initializeTextControllers();
     }
   }
 
@@ -58,7 +56,6 @@ class _IncompleteHoleWalkthroughSheetState
   void dispose() {
     _roundParser.removeListener(_onRoundUpdated);
     if (_incompleteHoleIndices.isNotEmpty) {
-      _tabController.dispose();
       for (var controller in _holeNumberControllers) {
         controller.dispose();
       }
@@ -72,7 +69,7 @@ class _IncompleteHoleWalkthroughSheetState
     super.dispose();
   }
 
-  void _initializeControllers() {
+  void _initializeTextControllers() {
     _holeNumberControllers = [];
     _parControllers = [];
     _distanceControllers = [];
@@ -115,8 +112,6 @@ class _IncompleteHoleWalkthroughSheetState
             return; // Will be handled by _refreshIncompleteHoles
           }
 
-          // Dispose old controllers
-          _tabController.dispose();
           for (var controller in _holeNumberControllers) {
             controller.dispose();
           }
@@ -128,11 +123,8 @@ class _IncompleteHoleWalkthroughSheetState
           }
 
           // Reinitialize
-          _tabController = TabController(
-            length: _incompleteHoleIndices.length,
-            vsync: this,
-          );
-          _initializeControllers();
+
+          _initializeTextControllers();
         } else {
           // Just update the controller values
           _updateControllers();
@@ -433,7 +425,12 @@ class _IncompleteHoleWalkthroughSheetState
     // If no incomplete holes, show completion message
     if (_incompleteHoleIndices.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: widget.bottomViewPadding,
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -500,7 +497,7 @@ class _IncompleteHoleWalkthroughSheetState
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Fix Incomplete Holes',
+                        'Add missing data',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -526,12 +523,14 @@ class _IncompleteHoleWalkthroughSheetState
                       final hole =
                           _roundParser.potentialRound!.holes![holeIndex];
                       final isComplete = _isHoleComplete(index);
-                      final isSelected = _tabController.index == index;
+                      final isSelected = _currentHoleIndex == index;
 
                       return GestureDetector(
                         onTap: () {
                           setState(() {
-                            _tabController.animateTo(index);
+                            setState(() {
+                              _currentHoleIndex = index;
+                            });
                           });
                         },
                         child: Container(
@@ -590,31 +589,9 @@ class _IncompleteHoleWalkthroughSheetState
 
                 const SizedBox(height: 8),
 
-                // Tab bar
-                TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  labelColor: const Color(0xFF9D4EDD),
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: const Color(0xFF9D4EDD),
-                  tabs: _incompleteHoleIndices.asMap().entries.map((entry) {
-                    final int index = entry.key;
-                    final int holeIndex = entry.value;
-                    final hole = _roundParser.potentialRound!.holes![holeIndex];
-                    return Tab(text: 'Hole ${hole.number ?? (index + 1)}');
-                  }).toList(),
-                ),
-
                 // Tab content
                 Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: List.generate(
-                      _incompleteHoleIndices.length,
-                      (tabIndex) =>
-                          _buildHoleContent(tabIndex, scrollController),
-                    ),
-                  ),
+                  child: _buildHoleContent(_currentHoleIndex, scrollController),
                 ),
               ],
             ),
@@ -747,7 +724,8 @@ class _IncompleteHoleWalkthroughSheetState
                                   fontStyle: FontStyle.italic,
                                 ),
                           ),
-                          if (!_hasBasketThrow(hole))
+                          if (!_hasBasketThrow(hole) &&
+                              hole.throws?.isEmpty != true)
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Container(
@@ -762,7 +740,7 @@ class _IncompleteHoleWalkthroughSheetState
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'Need at least one basket throw',
+                                  'Hole must be completed.',
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: const Color(0xFFD32F2F),
@@ -780,21 +758,28 @@ class _IncompleteHoleWalkthroughSheetState
 
         // Action buttons
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: widget.bottomViewPadding,
+          ),
           child: Column(
             children: [
               // Add throw button
               SizedBox(
                 width: double.infinity,
+                height: 56,
                 child: OutlinedButton.icon(
                   onPressed: () => _addThrow(tabIndex),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Throw'),
+                  icon: const Icon(Icons.add, color: Colors.black),
+                  label: Text(
+                    'Add Throw',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    side: BorderSide(color: Colors.black),
                   ),
                 ),
               ),
@@ -802,6 +787,7 @@ class _IncompleteHoleWalkthroughSheetState
               // Re-record button
               SizedBox(
                 width: double.infinity,
+                height: 56,
                 child: ElevatedButton.icon(
                   onPressed: () => _handleReRecord(tabIndex),
                   icon: const Icon(Icons.mic, size: 18),
