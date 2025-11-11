@@ -403,7 +403,7 @@ class _IncompleteHoleWalkthroughSheetState
     if (!hole.hasRequiredFields ||
         hole.throws == null ||
         hole.throws!.isEmpty) {
-      return const Color(0xFF9D4EDD); // Purple for incomplete
+      return const Color(0xFF137e66); // Green for incomplete
     }
 
     final DGHole completeHole = hole.toDGHole();
@@ -449,7 +449,7 @@ class _IncompleteHoleWalkthroughSheetState
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9D4EDD),
+                backgroundColor: const Color(0xFF137e66),
                 foregroundColor: Colors.white,
               ),
               child: const Text('Close'),
@@ -471,17 +471,6 @@ class _IncompleteHoleWalkthroughSheetState
             color: Theme.of(context).colorScheme.surface,
             child: Column(
               children: [
-                // Drag handle
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-
                 // Title
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -492,7 +481,7 @@ class _IncompleteHoleWalkthroughSheetState
                     children: [
                       const Icon(
                         Icons.fact_check,
-                        color: Color(0xFF9D4EDD),
+                        color: Color(0xFF137e66),
                         size: 22,
                       ),
                       const SizedBox(width: 12),
@@ -513,7 +502,7 @@ class _IncompleteHoleWalkthroughSheetState
 
                 // Horizontal checklist
                 Container(
-                  height: 60,
+                  height: 48,
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
@@ -535,20 +524,19 @@ class _IncompleteHoleWalkthroughSheetState
                         },
                         child: Container(
                           width: 48,
+                          height: 48,
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             color: isComplete
-                                ? const Color(0xFF137e66).withValues(alpha: 0.1)
-                                : isSelected
-                                ? const Color(0xFF9D4EDD).withValues(alpha: 0.2)
-                                : Colors.grey.withValues(alpha: 0.1),
+                                ? const Color(0xFF137e66).withValues(alpha: 0.15)
+                                : const Color(0xFFD32F2F).withValues(alpha: 0.15),
                             border: Border.all(
-                              color: isComplete
-                                  ? const Color(0xFF137e66)
-                                  : isSelected
-                                  ? const Color(0xFF9D4EDD)
-                                  : Colors.grey.withValues(alpha: 0.3),
-                              width: isSelected ? 2 : 1,
+                              color: isSelected
+                                  ? (isComplete
+                                      ? const Color(0xFF137e66)
+                                      : const Color(0xFFD32F2F))
+                                  : Colors.transparent,
+                              width: isSelected ? 2 : 0,
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -559,24 +547,22 @@ class _IncompleteHoleWalkthroughSheetState
                                 const Icon(
                                   Icons.check_circle,
                                   color: Color(0xFF137e66),
-                                  size: 20,
+                                  size: 18,
                                 )
                               else
                                 const Icon(
                                   FlutterRemix.close_line,
                                   color: Color(0xFFD32F2F),
-                                  size: 20,
+                                  size: 18,
                                 ),
                               const SizedBox(height: 2),
                               Text(
                                 'H${hole.number ?? '?'}',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 9,
                                   color: isComplete
                                       ? const Color(0xFF137e66)
-                                      : isSelected
-                                      ? const Color(0xFF9D4EDD)
-                                      : Colors.grey,
+                                      : const Color(0xFFD32F2F),
                                 ),
                               ),
                             ],
@@ -793,7 +779,7 @@ class _IncompleteHoleWalkthroughSheetState
                   icon: const Icon(Icons.mic, size: 18),
                   label: const Text('Re-record Hole'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9D4EDD),
+                    backgroundColor: const Color(0xFF137e66),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),

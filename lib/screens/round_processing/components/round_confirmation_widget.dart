@@ -38,6 +38,13 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     super.initState();
     _roundParser = locator.get<RoundParser>();
     _currentRound = widget.potentialRound;
+    _roundParser.addListener(_refreshRoundData);
+  }
+
+  @override
+  void dispose() {
+    _roundParser.removeListener(_refreshRoundData);
+    super.dispose();
   }
 
   void _refreshRoundData() {

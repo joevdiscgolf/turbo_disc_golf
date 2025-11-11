@@ -898,6 +898,8 @@ class RoundParser extends ChangeNotifier {
     if (_parsedRound == null) return 0;
 
     return _parsedRound!.holes.fold(0, (total, hole) {
+      // Only count holes that have throws
+      if (hole.throws.isEmpty) return total;
       return total + hole.holeScore;
     });
   }
@@ -906,6 +908,8 @@ class RoundParser extends ChangeNotifier {
     if (_parsedRound == null) return 0;
 
     return _parsedRound!.holes.fold(0, (total, hole) {
+      // Only count holes that have throws
+      if (hole.throws.isEmpty) return total;
       return total + hole.par;
     });
   }
