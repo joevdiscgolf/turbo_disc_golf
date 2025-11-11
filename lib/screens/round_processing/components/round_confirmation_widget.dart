@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -332,77 +334,39 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
   }
 
   Widget _buildBottomBar(BuildContext context, bool hasRequiredFields) {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: 16 + MediaQuery.of(context).padding.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 16 + MediaQuery.of(context).padding.bottom,
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Warning text if required fields missing
-          // if (!hasRequiredFields)
-          //   Padding(
-          //     padding: const EdgeInsets.only(bottom: 12),
-          //     child: Row(
-          //       children: [
-          //         const Icon(
-          //           Icons.info_outline,
-          //           size: 16,
-          //           color: Color(0xFFD32F2F),
-          //         ),
-          //         const SizedBox(width: 8),
-          //         Expanded(
-          //           child: Text(
-          //             'Please fix missing required fields before continuing',
-          //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          //               color: const Color(0xFFD32F2F),
-          //             ),
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //   ),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: hasRequiredFields ? widget.onConfirm : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9D4EDD), // Purple accent
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey.shade300,
-                disabledForegroundColor: Colors.grey.shade600,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Looks good!',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, size: 20),
-                ],
-              ),
+            ],
+          ),
+          child: Center(
+            child: PrimaryButton(
+              label: 'Looks good!',
+              backgroundColor: Colors.blue,
+              icon: Icons.arrow_forward,
+              width: double.infinity,
+              height: 56,
+              fontSize: 16,
+              disabled: !hasRequiredFields,
+              onPressed: widget.onConfirm,
             ),
           ),
-        ],
+        ),
       ),
     );
   }

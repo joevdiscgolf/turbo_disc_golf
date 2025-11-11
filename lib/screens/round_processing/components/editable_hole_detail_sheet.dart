@@ -178,13 +178,8 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
       holeType: _currentHole.holeType,
     );
 
-    // Update via metadata method which handles conversion if complete
-    widget.roundParser.updatePotentialHoleMetadata(
-      widget.holeIndex,
-      number: updatedHole.number,
-      par: updatedHole.par,
-      feet: updatedHole.feet,
-    );
+    // Update the entire hole including throws
+    widget.roundParser.updatePotentialHole(widget.holeIndex, updatedHole);
   }
 
   void _addThrow() {
@@ -239,13 +234,8 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
             holeType: _currentHole.holeType,
           );
 
-          // Update via metadata method which handles conversion if complete
-          widget.roundParser.updatePotentialHoleMetadata(
-            widget.holeIndex,
-            number: updatedHole.number,
-            par: updatedHole.par,
-            feet: updatedHole.feet,
-          );
+          // Update the entire hole including throws
+          widget.roundParser.updatePotentialHole(widget.holeIndex, updatedHole);
           Navigator.of(context).pop();
         },
         onDelete: null, // No delete for new throws

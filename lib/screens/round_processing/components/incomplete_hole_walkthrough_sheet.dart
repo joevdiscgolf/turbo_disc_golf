@@ -297,13 +297,8 @@ class _IncompleteHoleWalkthroughSheetState
             holeType: hole.holeType,
           );
 
-          // Update via metadata method which handles conversion if complete
-          _roundParser.updatePotentialHoleMetadata(
-            holeIndex,
-            number: updatedHole.number,
-            par: updatedHole.par,
-            feet: updatedHole.feet,
-          );
+          // Update the entire hole including throws
+          _roundParser.updatePotentialHole(holeIndex, updatedHole);
           Navigator.of(context).pop();
         },
         onDelete: null, // No delete for new throws
@@ -390,13 +385,8 @@ class _IncompleteHoleWalkthroughSheetState
       holeType: hole.holeType,
     );
 
-    // Update via metadata method which handles conversion if complete
-    _roundParser.updatePotentialHoleMetadata(
-      holeIndex,
-      number: updatedHole.number,
-      par: updatedHole.par,
-      feet: updatedHole.feet,
-    );
+    // Update the entire hole including throws
+    _roundParser.updatePotentialHole(holeIndex, updatedHole);
   }
 
   Color _getScoreColor(PotentialDGHole hole) {

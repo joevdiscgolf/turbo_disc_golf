@@ -228,13 +228,14 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Landing spot
+                    // Landing spot (required)
                     _buildDropdown<LandingSpot>(
                       label: 'Landing Spot',
                       value: _landingSpot,
                       items: LandingSpot.values,
                       nameMap: landingSpotToName,
                       onChanged: (value) => setState(() => _landingSpot = value),
+                      isRequired: true,
                     ),
                     const SizedBox(height: 16),
 
@@ -422,12 +423,25 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
     required List<T> items,
     required Map<T, String> nameMap,
     required void Function(T?) onChanged,
+    bool isRequired = false,
   }) {
     return DropdownButtonFormField<T>(
       initialValue: value,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
+        label: isRequired
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label),
+                  const Text(
+                    ' *',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ],
+              )
+            : null,
       ),
       items: items.map((item) {
         return DropdownMenuItem<T>(
