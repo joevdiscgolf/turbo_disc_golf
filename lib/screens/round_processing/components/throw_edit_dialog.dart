@@ -428,7 +428,6 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
     return DropdownButtonFormField<T>(
       initialValue: value,
       decoration: InputDecoration(
-        labelText: label,
         border: const OutlineInputBorder(),
         label: isRequired
             ? Row(
@@ -441,7 +440,7 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                   ),
                 ],
               )
-            : null,
+            : Text(label),
       ),
       items: items.map((item) {
         return DropdownMenuItem<T>(
