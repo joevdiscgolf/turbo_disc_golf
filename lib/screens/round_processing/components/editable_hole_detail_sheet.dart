@@ -103,12 +103,16 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
         ? null
         : int.tryParse(_distanceController.text);
 
-    widget.roundParser.updatePotentialHoleMetadata(
-      widget.holeIndex,
+    // Create updated hole with new metadata
+    final PotentialDGHole updatedHole = PotentialDGHole(
       number: holeNumber,
       par: par,
       feet: distance,
+      throws: _currentHole.throws,
+      holeType: _currentHole.holeType,
     );
+
+    widget.roundParser.updatePotentialHole(widget.holeIndex, updatedHole);
   }
 
   void _editThrow(int throwIndex) {

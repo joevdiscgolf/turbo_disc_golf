@@ -178,6 +178,9 @@ class _IncompleteHoleWalkthroughSheetState
     if (tabIndex >= _incompleteHoleIndices.length) return;
 
     final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final PotentialDGHole currentHole =
+        _roundParser.potentialRound!.holes![holeIndex];
+
     final int? holeNumber = _holeNumberControllers[tabIndex].text.isEmpty
         ? null
         : int.tryParse(_holeNumberControllers[tabIndex].text);
@@ -188,12 +191,16 @@ class _IncompleteHoleWalkthroughSheetState
         ? null
         : int.tryParse(_distanceControllers[tabIndex].text);
 
-    _roundParser.updatePotentialHoleMetadata(
-      holeIndex,
+    // Create updated hole with new metadata
+    final PotentialDGHole updatedHole = PotentialDGHole(
       number: holeNumber,
       par: par,
       feet: distance,
+      throws: currentHole.throws,
+      holeType: currentHole.holeType,
     );
+
+    _roundParser.updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _refreshIncompleteHoles() {
