@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
@@ -30,6 +31,9 @@ class RoundConfirmationWidget extends StatefulWidget {
 }
 
 class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
+  List<PotentialDGHole> get _validHoles =>
+      _currentRound.holes!.where((hole) => hole.hasRequiredFields).toList();
+
   late RoundParser _roundParser;
   late PotentialDGRound _currentRound;
 
@@ -38,6 +42,13 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     super.initState();
     _roundParser = locator.get<RoundParser>();
     _currentRound = widget.potentialRound;
+    _roundParser.addListener(_refreshRoundData);
+  }
+
+  @override
+  void dispose() {
+    _roundParser.removeListener(_refreshRoundData);
+    super.dispose();
   }
 
   void _refreshRoundData() {
@@ -48,10 +59,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     }
   }
 
-  int _calculateTotalScore() {
+  int _calculateTotalScoreForValidHoles() {
     if (_currentRound.holes == null) return 0;
 
-    return _currentRound.holes!.fold<int>(0, (sum, hole) {
+    return _validHoles.fold<int>(0, (sum, hole) {
       // Calculate hole score: throws count + penalty strokes
       final int throwsCount = hole.throws?.length ?? 0;
       final int penaltyStrokes =
@@ -64,10 +75,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     });
   }
 
-  int _calculateTotalPar() {
+  int _calculateTotalParForValidHoles() {
     if (_currentRound.holes == null) return 0;
 
-    return _currentRound.holes!.fold(
+    return _validHoles.fold(
       0,
       (sum, hole) => sum + (hole.par ?? 3), // Default to par 3 if missing
     );
@@ -97,6 +108,11 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
         // Hole doesn't even have a number
         issues.add('A hole is missing its number: ${missingFields.join(', ')}');
       }
+    }
+
+    // If there are any invalid holes, the round doesn't have all required fields
+    if (invalidHoles.isNotEmpty) {
+      hasRequiredFields = false;
     }
 
     // Check if round itself is missing required fields
@@ -131,6 +147,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
         if (missingHoles.isNotEmpty) {
           issues.add('Missing holes in sequence: ${missingHoles.join(', ')}');
+          hasRequiredFields = false;
         }
       }
     }
@@ -143,6 +160,16 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
         // No throws recorded
         if (hole.throws == null || hole.throws!.isEmpty) {
           issues.add('Hole $holeName: No throws recorded');
+          hasRequiredFields = false;
+        } else {
+          // Check if hole has a basket throw (required for completion)
+          final bool hasBasketThrow = hole.throws!.any(
+            (t) => t.landingSpot == LandingSpot.inBasket,
+          );
+          if (!hasBasketThrow) {
+            issues.add('Hole $holeName: No basket throw recorded');
+            hasRequiredFields = false;
+          }
         }
 
         // Missing distance (optional but recommended)
@@ -161,8 +188,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final int totalScore = _calculateTotalScore();
-    final int totalPar = _calculateTotalPar();
+    final int totalScore = _calculateTotalScoreForValidHoles();
+    final int totalPar = _calculateTotalParForValidHoles();
     final int relativeScore = totalScore - totalPar;
     final Map<String, dynamic> validation = _validateRound();
     final List<String> validationIssues = validation['issues'] as List<String>;

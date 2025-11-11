@@ -257,7 +257,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     if (!_currentHole.hasRequiredFields ||
         _currentHole.throws == null ||
         _currentHole.throws!.isEmpty) {
-      return const Color(0xFF9D4EDD); // Purple for incomplete
+      return const Color(0xFF137e66); // Green for incomplete
     }
 
     final DGHole completeHole = _currentHole.toDGHole();
@@ -298,17 +298,6 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Drag handle
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 4),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-
                 // Header (matching _HoleDetailDialog design)
               Container(
                 padding: const EdgeInsets.all(20),
