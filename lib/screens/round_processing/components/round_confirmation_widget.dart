@@ -357,8 +357,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           child: Center(
             child: PrimaryButton(
               label: 'Looks good!',
-              backgroundColor: Colors.blue,
-              icon: Icons.arrow_forward,
+              backgroundColor: Colors.green,
+              icon: Icons.check,
               width: double.infinity,
               height: 56,
               fontSize: 16,
