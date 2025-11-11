@@ -723,6 +723,46 @@ class RoundParser extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update an entire potential hole including its throws
+  void updatePotentialHole(int holeIndex, PotentialDGHole updatedHole) {
+    if (_potentialRound == null || _potentialRound!.holes == null) {
+      debugPrint('Cannot update potential hole: no potential round exists');
+      return;
+    }
+
+    if (holeIndex >= _potentialRound!.holes!.length) {
+      debugPrint('Cannot update potential hole: invalid hole index');
+      return;
+    }
+
+    // Update the holes list
+    final List<PotentialDGHole> updatedHoles = List<PotentialDGHole>.from(
+      _potentialRound!.holes!,
+    );
+    updatedHoles[holeIndex] = updatedHole;
+
+    _potentialRound = PotentialDGRound(
+      id: _potentialRound!.id,
+      courseName: _potentialRound!.courseName,
+      courseId: _potentialRound!.courseId,
+      holes: updatedHoles,
+      versionId: _potentialRound!.versionId,
+      analysis: _potentialRound!.analysis,
+      aiSummary: _potentialRound!.aiSummary,
+      aiCoachSuggestion: _potentialRound!.aiCoachSuggestion,
+      createdAt: _potentialRound!.createdAt,
+      playedRoundAt: _potentialRound!.playedRoundAt,
+    );
+
+    // Check if hole is now complete, and if so, auto-convert
+    if (updatedHole.hasRequiredFields) {
+      debugPrint('Hole $holeIndex is now complete, auto-converting to DGHole');
+      _convertHoleToDGHole(holeIndex);
+    }
+
+    notifyListeners();
+  }
+
   /// Convert a validated potential hole to final DGHole
   void _convertHoleToDGHole(int holeIndex) {
     if (_potentialRound == null || _potentialRound!.holes == null) {
