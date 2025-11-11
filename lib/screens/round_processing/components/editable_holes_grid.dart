@@ -95,10 +95,10 @@ class _HoleGridItem extends StatelessWidget {
   final RoundParser roundParser;
   final bool isCompletelyMissing;
 
-  void _showEditableHoleDialog(BuildContext context) {
+  void _showEditableHoleSheet(BuildContext context) {
     // If hole is completely missing, add it to the round first
     if (isCompletelyMissing && potentialHole.number != null) {
-      roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
+      // roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
 
       // Wait for the state to update, then find the new hole index and open dialog
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -176,7 +176,7 @@ class _HoleGridItem extends StatelessWidget {
     const Color backgroundColor = Color(0xFFFFEBEE);
 
     return GestureDetector(
-      onTap: () => _showEditableHoleDialog(context),
+      onTap: () => _showEditableHoleSheet(context),
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(
@@ -262,7 +262,7 @@ class _HoleGridItem extends StatelessWidget {
     const Color backgroundColor = Color(0xFFFFEBEE);
 
     return GestureDetector(
-      onTap: () => _showEditableHoleDialog(context),
+      onTap: () => _showEditableHoleSheet(context),
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(
@@ -366,7 +366,7 @@ class _HoleGridItem extends StatelessWidget {
     // Empty hole styling (has structure but no throws)
     if (isEmpty) {
       return GestureDetector(
-        onTap: () => _showEditableHoleDialog(context),
+        onTap: () => _showEditableHoleSheet(context),
 
         child: Card(
           elevation: 1,
@@ -509,7 +509,7 @@ class _HoleGridItem extends StatelessWidget {
     }
 
     return InkWell(
-      onTap: () => _showEditableHoleDialog(context),
+      onTap: () => _showEditableHoleSheet(context),
       borderRadius: BorderRadius.circular(8),
       child: Card(
         elevation: 2,

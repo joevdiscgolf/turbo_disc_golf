@@ -1320,10 +1320,11 @@ $schemaExample
         )
         .join('\n');
 
+    final String parLine = holePar > 0 ? 'par: $holePar' : '# par: (infer from description or omit)';
     final schemaExample =
         '''
 number: $holeNumber
-par: $holePar${holeFeet != null ? '\nfeet: $holeFeet' : ''}
+$parLine${holeFeet != null ? '\nfeet: $holeFeet' : ''}
 throws:
   - index: 0
     discName: Destroyer
@@ -1340,13 +1341,13 @@ throws:
     notes: made the putt
     landingSpot: in_basket''';
 
+    final String contextPar = holePar > 0 ? '\n- Par: $holePar' : '\n- Par: Unknown (please infer if mentioned)';
     return '''
 You are a disc golf scorecard parser. Parse the following voice description of hole $holeNumber into structured YAML data.
 
 CONTEXT:
 - Course: $courseName
-- Hole Number: $holeNumber
-- Par: $holePar${holeFeet != null ? '\n- Distance: $holeFeet feet' : ''}
+- Hole Number: $holeNumber$contextPar${holeFeet != null ? '\n- Distance: $holeFeet feet' : ''}
 
 VOICE DESCRIPTION:
 "$voiceTranscript"

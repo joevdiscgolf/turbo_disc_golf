@@ -274,9 +274,9 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
             child: ElevatedButton.icon(
               onPressed: () async {
                 // Add the missing holes to potential round
-                if (missingHoles.isNotEmpty) {
-                  _roundParser.addEmptyHolesToPotentialRound(missingHoles);
-                }
+                // if (missingHoles.isNotEmpty) {
+                //   _roundParser.addEmptyHolesToPotentialRound(missingHoles);
+                // }
 
                 // Refresh the UI
                 _refreshRoundData();
@@ -324,28 +324,28 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Warning text if required fields missing
-          if (!hasRequiredFields)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Color(0xFFD32F2F),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Please fix missing required fields before continuing',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFFD32F2F),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // if (!hasRequiredFields)
+          //   Padding(
+          //     padding: const EdgeInsets.only(bottom: 12),
+          //     child: Row(
+          //       children: [
+          //         const Icon(
+          //           Icons.info_outline,
+          //           size: 16,
+          //           color: Color(0xFFD32F2F),
+          //         ),
+          //         const SizedBox(width: 8),
+          //         Expanded(
+          //           child: Text(
+          //             'Please fix missing required fields before continuing',
+          //             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          //               color: const Color(0xFFD32F2F),
+          //             ),
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(

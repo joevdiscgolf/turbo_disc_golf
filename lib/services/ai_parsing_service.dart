@@ -145,7 +145,8 @@ class AiParsingService {
       jsonMap['courseName'] = courseName;
 
       debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
-      return PotentialDGRound.fromJson(jsonMap);
+      final PotentialDGRound potentialRound = PotentialDGRound.fromJson(jsonMap);
+      return _fillMissingHoles(potentialRound);
     } catch (e, trace) {
       debugPrint('Error parsing round with Gemini: $e');
       debugPrint(trace.toString());
@@ -154,6 +155,82 @@ class AiParsingService {
       }
       rethrow;
     }
+  }
+
+  /// Fills in missing holes in the sequence from 1 to max hole number.
+  /// Creates empty PotentialDGHole objects with null par values.
+  PotentialDGRound _fillMissingHoles(PotentialDGRound round) {
+    if (round.holes == null || round.holes!.isEmpty) {
+      return round;
+    }
+
+    // Find the maximum hole number
+    final int maxHoleNumber = round.holes!
+        .where((h) => h.number != null)
+        .map((h) => h.number!)
+        .fold(0, (max, n) => n > max ? n : max);
+
+    if (maxHoleNumber <= 1) {
+      return round; // No gaps possible with 0 or 1 hole
+    }
+
+    // Create a set of existing hole numbers
+    final Set<int> existingHoles = round.holes!
+        .where((h) => h.number != null)
+        .map((h) => h.number!)
+        .toSet();
+
+    // Find missing holes in the sequence
+    final Set<int> missingHoles = {};
+    for (int i = 1; i <= maxHoleNumber; i++) {
+      if (!existingHoles.contains(i)) {
+        missingHoles.add(i);
+      }
+    }
+
+    if (missingHoles.isEmpty) {
+      return round; // No gaps
+    }
+
+    debugPrint('Filling ${missingHoles.length} missing holes: $missingHoles');
+
+    // Create complete holes list with empty holes inserted
+    final List<PotentialDGHole> completeHoles = List.from(round.holes!);
+
+    for (final int holeNumber in missingHoles) {
+      final PotentialDGHole emptyHole = PotentialDGHole(
+        number: holeNumber,
+        par: null, // Keep null - user must fill in
+        feet: null,
+        throws: [], // Empty throws
+        holeType: null,
+      );
+
+      // Find insertion position (maintain order)
+      int insertIndex = completeHoles.length;
+      for (int i = 0; i < completeHoles.length; i++) {
+        if (completeHoles[i].number != null &&
+            completeHoles[i].number! > holeNumber) {
+          insertIndex = i;
+          break;
+        }
+      }
+
+      completeHoles.insert(insertIndex, emptyHole);
+    }
+
+    return PotentialDGRound(
+      id: round.id,
+      courseId: round.courseId,
+      courseName: round.courseName,
+      holes: completeHoles,
+      analysis: round.analysis,
+      aiSummary: round.aiSummary,
+      aiCoachSuggestion: round.aiCoachSuggestion,
+      versionId: round.versionId,
+      createdAt: round.createdAt,
+      playedRoundAt: round.playedRoundAt,
+    );
   }
 
   /// Parse a single hole description and return the updated hole

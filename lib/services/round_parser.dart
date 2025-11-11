@@ -172,7 +172,8 @@ class RoundParser extends ChangeNotifier {
 
       // Check if potential round has all required fields
       if (!_potentialRound!.hasRequiredFields) {
-        _lastError = 'Round is missing required fields: ${_potentialRound!.getMissingFields().join(', ')}';
+        _lastError =
+            'Round is missing required fields: ${_potentialRound!.getMissingFields().join(', ')}';
         _isProcessing = false;
         notifyListeners();
         return false;
@@ -424,10 +425,21 @@ class RoundParser extends ChangeNotifier {
   void addEmptyHole(int holeNumber, {int? par, int? feet}) {
     if (_parsedRound == null) return;
 
+    // Check if hole already exists
+    final bool holeExists = _parsedRound!.holes.any(
+      (h) => h.number == holeNumber,
+    );
+    if (holeExists) {
+      debugPrint('Hole $holeNumber already exists, skipping...');
+      return;
+    }
+
     // Create empty hole
     final DGHole emptyHole = DGHole(
       number: holeNumber,
-      par: par ?? 3, // Default to par 3
+      par:
+          par ??
+          0, // Use 0 as sentinel for unknown par (DGHole requires non-null)
       feet: feet,
       throws: [], // Empty throws list
     );
@@ -461,13 +473,6 @@ class RoundParser extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Adds multiple empty holes at once
-  void addMissingHoles(Set<int> holeNumbers, {int? defaultPar}) {
-    for (final holeNumber in holeNumbers) {
-      addEmptyHole(holeNumber, par: defaultPar);
-    }
-  }
-
   /// Adds empty holes to the potential round (for round confirmation workflow)
   void addEmptyHolesToPotentialRound(Set<int> holeNumbers, {int? defaultPar}) {
     if (_potentialRound == null || _potentialRound!.holes == null) {
@@ -475,14 +480,27 @@ class RoundParser extends ChangeNotifier {
       return;
     }
 
-    final List<PotentialDGHole> updatedHoles =
-        List<PotentialDGHole>.from(_potentialRound!.holes!);
+    final List<PotentialDGHole> updatedHoles = List<PotentialDGHole>.from(
+      _potentialRound!.holes!,
+    );
 
-    for (final holeNumber in holeNumbers) {
+    // Get existing hole numbers to check for duplicates
+    final Set<int> existingHoleNumbers = updatedHoles
+        .where((h) => h.number != null)
+        .map((h) => h.number!)
+        .toSet();
+
+    for (final int holeNumber in holeNumbers) {
+      // Check if hole already exists
+      if (existingHoleNumbers.contains(holeNumber)) {
+        debugPrint('Hole $holeNumber already exists, skipping...');
+        continue;
+      }
+
       // Create empty potential hole
       final PotentialDGHole emptyHole = PotentialDGHole(
         number: holeNumber,
-        par: defaultPar ?? 3, // Default to par 3
+        par: defaultPar, // Keep null if not provided
         feet: null, // No distance yet
         throws: [], // Empty throws list
       );
@@ -498,6 +516,7 @@ class RoundParser extends ChangeNotifier {
       }
 
       updatedHoles.insert(insertIndex, emptyHole);
+      existingHoleNumbers.add(holeNumber); // Track newly added hole
     }
 
     _potentialRound = PotentialDGRound(
@@ -522,8 +541,10 @@ class RoundParser extends ChangeNotifier {
     required String voiceTranscript,
   }) async {
     // Can work with either parsed round or potential round
-    final bool hasParsedRound = _parsedRound != null && holeIndex < _parsedRound!.holes.length;
-    final bool hasPotentialRound = _potentialRound != null &&
+    final bool hasParsedRound =
+        _parsedRound != null && holeIndex < _parsedRound!.holes.length;
+    final bool hasPotentialRound =
+        _potentialRound != null &&
         _potentialRound!.holes != null &&
         holeIndex < _potentialRound!.holes!.length;
 
@@ -562,7 +583,7 @@ class RoundParser extends ChangeNotifier {
       } else {
         final hole = _potentialRound!.holes![holeIndex];
         holeNumber = hole.number ?? (holeIndex + 1);
-        holePar = hole.par ?? 3;
+        holePar = hole.par ?? 0; // Use 0 as sentinel for unknown par
         holeFeet = hole.feet;
         courseName = _potentialRound!.courseName ?? 'Unknown Course';
       }
@@ -595,7 +616,8 @@ class RoundParser extends ChangeNotifier {
       if (hasParsedRound) {
         // Check if potential hole has required fields
         if (!potentialHole.hasRequiredFields) {
-          _lastError = 'Re-parsed hole is missing required fields: ${potentialHole.getMissingFields().join(', ')}';
+          _lastError =
+              'Re-parsed hole is missing required fields: ${potentialHole.getMissingFields().join(', ')}';
           _isProcessing = false;
           notifyListeners();
           return false;
@@ -613,7 +635,9 @@ class RoundParser extends ChangeNotifier {
         await locator.get<RoundStorageService>().saveRound(_parsedRound!);
       } else {
         // Update potential round
-        final updatedHoles = List<PotentialDGHole>.from(_potentialRound!.holes!);
+        final updatedHoles = List<PotentialDGHole>.from(
+          _potentialRound!.holes!,
+        );
         updatedHoles[holeIndex] = potentialHole;
 
         _potentialRound = PotentialDGRound(
@@ -672,8 +696,9 @@ class RoundParser extends ChangeNotifier {
     );
 
     // Update the holes list
-    final List<PotentialDGHole> updatedHoles =
-        List<PotentialDGHole>.from(_potentialRound!.holes!);
+    final List<PotentialDGHole> updatedHoles = List<PotentialDGHole>.from(
+      _potentialRound!.holes!,
+    );
     updatedHoles[holeIndex] = updatedHole;
 
     _potentialRound = PotentialDGRound(

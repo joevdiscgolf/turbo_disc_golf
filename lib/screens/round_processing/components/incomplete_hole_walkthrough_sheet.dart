@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
@@ -467,156 +468,156 @@ class _IncompleteHoleWalkthroughSheetState
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          child: Container(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Column(
-            children: [
-              // Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+            child: Column(
+              children: [
+                // Drag handle
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
 
-              // Title
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.fact_check,
-                      color: Color(0xFF9D4EDD),
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Fix Incomplete Holes',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                // Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.fact_check,
+                        color: Color(0xFF9D4EDD),
+                        size: 22,
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Horizontal checklist
-              Container(
-                height: 60,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _incompleteHoleIndices.length,
-                  itemBuilder: (context, index) {
-                    final holeIndex = _incompleteHoleIndices[index];
-                    final hole = _roundParser.potentialRound!.holes![holeIndex];
-                    final isComplete = _isHoleComplete(index);
-                    final isSelected = _tabController.index == index;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _tabController.animateTo(index);
-                        });
-                      },
-                      child: Container(
-                        width: 48,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          color: isComplete
-                              ? const Color(0xFF137e66).withValues(alpha: 0.1)
-                              : isSelected
-                              ? const Color(0xFF9D4EDD).withValues(alpha: 0.2)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          border: Border.all(
-                            color: isComplete
-                                ? const Color(0xFF137e66)
-                                : isSelected
-                                ? const Color(0xFF9D4EDD)
-                                : Colors.grey.withValues(alpha: 0.3),
-                            width: isSelected ? 2 : 1,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Fix Incomplete Holes',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (isComplete)
-                              const Icon(
-                                Icons.check_circle,
-                                color: Color(0xFF137e66),
-                                size: 20,
-                              )
-                            else
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Horizontal checklist
+                Container(
+                  height: 60,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _incompleteHoleIndices.length,
+                    itemBuilder: (context, index) {
+                      final holeIndex = _incompleteHoleIndices[index];
+                      final hole =
+                          _roundParser.potentialRound!.holes![holeIndex];
+                      final isComplete = _isHoleComplete(index);
+                      final isSelected = _tabController.index == index;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _tabController.animateTo(index);
+                          });
+                        },
+                        child: Container(
+                          width: 48,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: isComplete
+                                ? const Color(0xFF137e66).withValues(alpha: 0.1)
+                                : isSelected
+                                ? const Color(0xFF9D4EDD).withValues(alpha: 0.2)
+                                : Colors.grey.withValues(alpha: 0.1),
+                            border: Border.all(
+                              color: isComplete
+                                  ? const Color(0xFF137e66)
+                                  : isSelected
+                                  ? const Color(0xFF9D4EDD)
+                                  : Colors.grey.withValues(alpha: 0.3),
+                              width: isSelected ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (isComplete)
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Color(0xFF137e66),
+                                  size: 20,
+                                )
+                              else
+                                const Icon(
+                                  FlutterRemix.close_line,
+                                  color: Color(0xFFD32F2F),
+                                  size: 20,
+                                ),
+                              const SizedBox(height: 2),
                               Text(
-                                '${hole.number ?? '?'}',
+                                'H${hole.number ?? '?'}',
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected
+                                  fontSize: 10,
+                                  color: isComplete
+                                      ? const Color(0xFF137e66)
+                                      : isSelected
                                       ? const Color(0xFF9D4EDD)
                                       : Colors.grey,
                                 ),
                               ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'H${hole.number ?? '?'}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: isComplete
-                                    ? const Color(0xFF137e66)
-                                    : isSelected
-                                    ? const Color(0xFF9D4EDD)
-                                    : Colors.grey,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Tab bar
-              TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                labelColor: const Color(0xFF9D4EDD),
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: const Color(0xFF9D4EDD),
-                tabs: _incompleteHoleIndices.map((holeIndex) {
-                  final hole = _roundParser.potentialRound!.holes![holeIndex];
-                  return Tab(text: 'Hole ${hole.number ?? '?'}');
-                }).toList(),
-              ),
-
-              // Tab content
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: List.generate(
-                    _incompleteHoleIndices.length,
-                    (tabIndex) => _buildHoleContent(tabIndex, scrollController),
+                      );
+                    },
                   ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 8),
+
+                // Tab bar
+                TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  labelColor: const Color(0xFF9D4EDD),
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: const Color(0xFF9D4EDD),
+                  tabs: _incompleteHoleIndices.asMap().entries.map((entry) {
+                    final int index = entry.key;
+                    final int holeIndex = entry.value;
+                    final hole = _roundParser.potentialRound!.holes![holeIndex];
+                    return Tab(text: 'Hole ${hole.number ?? (index + 1)}');
+                  }).toList(),
+                ),
+
+                // Tab content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: List.generate(
+                      _incompleteHoleIndices.length,
+                      (tabIndex) =>
+                          _buildHoleContent(tabIndex, scrollController),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
