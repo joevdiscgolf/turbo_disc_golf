@@ -320,8 +320,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 '$holesToAddress holes ${holesToAddress == 1 ? 'needs' : 'need'} attention',
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD32F2F),
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFFFEB3B),
+                foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

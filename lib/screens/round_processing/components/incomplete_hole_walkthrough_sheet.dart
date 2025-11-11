@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
@@ -31,6 +32,14 @@ class IncompleteHoleWalkthroughSheet extends StatefulWidget {
 class _IncompleteHoleWalkthroughSheetState
     extends State<IncompleteHoleWalkthroughSheet>
     with SingleTickerProviderStateMixin {
+  PotentialDGHole? get _selectedPotentialHole {
+    try {
+      return widget.potentialRound.holes![_currentHoleIndex];
+    } catch (e) {
+      return null;
+    }
+  }
+
   late RoundParser _roundParser;
   late List<int> _incompleteHoleIndices;
 
@@ -79,6 +88,468 @@ class _IncompleteHoleWalkthroughSheetState
       }
     }
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If no incomplete holes, show completion message
+    if (_incompleteHoleIndices.isEmpty) {
+      return Container(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: widget.bottomViewPadding,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Color(0xFF137e66), size: 64),
+            const SizedBox(height: 16),
+            Text(
+              'All holes are complete!',
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF137e66),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        final PotentialDGHole? potentialHole = _selectedPotentialHole;
+        if (potentialHole == null) {
+          return const SizedBox();
+        }
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              _headerRow(),
+              _buildHorizontalChecklist(),
+              const SizedBox(height: 8),
+              EditableHoleBody(
+                potentialHole: potentialHole,
+                holeIndex: _currentHoleIndex,
+                roundParser: _roundParser,
+                inWalkthroughSheet: true,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _headerRow() {
+    return // Title
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.fact_check, color: Color(0xFF137e66), size: 22),
+          const SizedBox(width: 12),
+          Text(
+            'Add missing data',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHoleContent(int tabIndex, ScrollController scrollController) {
+    final int holeIndex = _incompleteHoleIndices[tabIndex];
+    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
+    final Color scoreColor = _getScoreColor(hole);
+    final int? score =
+        hole.hasRequiredFields && hole.throws != null && hole.throws!.isNotEmpty
+        ? hole.toDGHole().holeScore
+        : null;
+
+    return Column(
+      children: [
+        // Header (matching _HoleDetailDialog design)
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: scoreColor.withValues(alpha: 0.1)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.golf_course, size: 24, color: scoreColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Hole ${hole.number ?? '?'}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              if (score != null)
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: scoreColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$score',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: scoreColor.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(Icons.edit, color: scoreColor, size: 20),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        // Hole info with editable fields (matching _HoleDetailDialog layout)
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildEditableInfoItem(
+                context,
+                'Par',
+                _parControllers[tabIndex],
+                _parFocusNodes[tabIndex],
+                tabIndex,
+                Icons.flag_outlined,
+              ),
+              _buildEditableInfoItem(
+                context,
+                'Distance',
+                _distanceControllers[tabIndex],
+                _distanceFocusNodes[tabIndex],
+                tabIndex,
+                Icons.straighten,
+                suffix: 'ft',
+              ),
+              _buildInfoItem(
+                context,
+                'Throws',
+                '${hole.throws?.length ?? 0}',
+                Icons.sports_golf,
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1),
+
+        // Throws timeline
+        Expanded(
+          child: hole.throws != null && hole.throws!.isNotEmpty
+              ? EditableThrowTimeline(
+                  throws: hole.throws!
+                      .where((t) => t.hasRequiredFields)
+                      .map((t) => t.toDiscThrow())
+                      .toList(),
+                  onEditThrow: (throwIndex) => _editThrow(tabIndex, throwIndex),
+                )
+              : SingleChildScrollView(
+                  controller: scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'No throws recorded',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                          ),
+                          if (!_hasBasketThrow(hole) &&
+                              hole.throws?.isEmpty != true)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFD32F2F,
+                                  ).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Hole must be completed.',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: const Color(0xFFD32F2F),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+
+        // Action buttons
+        Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: widget.bottomViewPadding,
+          ),
+          child: Column(
+            children: [
+              // Add throw button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  onPressed: () => _addThrow(tabIndex),
+                  icon: const Icon(Icons.add, color: Colors.black),
+                  label: Text(
+                    'Add Throw',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: Colors.black),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Re-record button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleReRecord(tabIndex),
+                  icon: const Icon(Icons.mic, size: 18),
+                  label: const Text('Re-record Hole'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF137e66),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHorizontalChecklist() {
+    return Container(
+      height: 48,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _incompleteHoleIndices.length,
+        itemBuilder: (context, index) {
+          final holeIndex = _incompleteHoleIndices[index];
+          final hole = _roundParser.potentialRound!.holes![holeIndex];
+          final isComplete = _isHoleComplete(index);
+          final isSelected = _currentHoleIndex == index;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                setState(() {
+                  _currentHoleIndex = index;
+                });
+              });
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: isComplete
+                    ? const Color(0xFF137e66).withValues(alpha: 0.15)
+                    : const Color(0xFFFFEB3B).withValues(alpha: 0.15),
+                border: Border.all(
+                  color: isSelected
+                      ? (isComplete
+                            ? const Color(0xFF137e66)
+                            : const Color(0xFFFFEB3B))
+                      : Colors.transparent,
+                  width: isSelected ? 2 : 0,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isComplete)
+                    const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF137e66),
+                      size: 18,
+                    )
+                  else
+                    const Icon(
+                      FlutterRemix.close_line,
+                      color: Colors.black,
+                      size: 18,
+                    ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'H${hole.number ?? '?'}',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: isComplete
+                          ? const Color(0xFF137e66)
+                          : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEditableInfoItem(
+    BuildContext context,
+    String label,
+    TextEditingController controller,
+    FocusNode focusNode,
+    int tabIndex,
+    IconData icon, {
+    String? suffix,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 4),
+        IntrinsicWidth(
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+              suffix: suffix != null
+                  ? Text(suffix, style: Theme.of(context).textTheme.bodySmall)
+                  : null,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (_) => _saveMetadata(tabIndex),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
   }
 
   void _initializeTextControllers() {
@@ -435,7 +906,7 @@ class _IncompleteHoleWalkthroughSheetState
     if (!hole.hasRequiredFields ||
         hole.throws == null ||
         hole.throws!.isEmpty) {
-      return const Color(0xFF137e66); // Green for incomplete
+      return const Color(0xFFFFEB3B); // Bright yellow for incomplete
     }
 
     final DGHole completeHole = hole.toDGHole();
@@ -450,471 +921,5 @@ class _IncompleteHoleWalkthroughSheetState
     } else {
       return const Color(0xFFD32F2F); // Double bogey+ - dark red
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // If no incomplete holes, show completion message
-    if (_incompleteHoleIndices.isEmpty) {
-      return Container(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: widget.bottomViewPadding,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Color(0xFF137e66), size: 64),
-            const SizedBox(height: 16),
-            Text(
-              'All holes are complete!',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF137e66),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return GestureDetector(
-          onTap: () {
-            // Dismiss keyboard when tapping outside text fields
-            FocusScope.of(context).unfocus();
-          },
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Container(
-              color: Theme.of(context).colorScheme.surface,
-              child: Column(
-                children: [
-                // Title
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.fact_check,
-                        color: Color(0xFF137e66),
-                        size: 22,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Add missing data',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Horizontal checklist
-                Container(
-                  height: 48,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _incompleteHoleIndices.length,
-                    itemBuilder: (context, index) {
-                      final holeIndex = _incompleteHoleIndices[index];
-                      final hole =
-                          _roundParser.potentialRound!.holes![holeIndex];
-                      final isComplete = _isHoleComplete(index);
-                      final isSelected = _currentHoleIndex == index;
-
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            setState(() {
-                              _currentHoleIndex = index;
-                            });
-                          });
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: isComplete
-                                ? const Color(0xFF137e66).withValues(alpha: 0.15)
-                                : const Color(0xFFD32F2F).withValues(alpha: 0.15),
-                            border: Border.all(
-                              color: isSelected
-                                  ? (isComplete
-                                      ? const Color(0xFF137e66)
-                                      : const Color(0xFFD32F2F))
-                                  : Colors.transparent,
-                              width: isSelected ? 2 : 0,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (isComplete)
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Color(0xFF137e66),
-                                  size: 18,
-                                )
-                              else
-                                const Icon(
-                                  FlutterRemix.close_line,
-                                  color: Color(0xFFD32F2F),
-                                  size: 18,
-                                ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'H${hole.number ?? '?'}',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: isComplete
-                                      ? const Color(0xFF137e66)
-                                      : const Color(0xFFD32F2F),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Tab content
-                Expanded(
-                  child: _buildHoleContent(_currentHoleIndex, scrollController),
-                ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHoleContent(int tabIndex, ScrollController scrollController) {
-    final int holeIndex = _incompleteHoleIndices[tabIndex];
-    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
-    final Color scoreColor = _getScoreColor(hole);
-    final int? score =
-        hole.hasRequiredFields && hole.throws != null && hole.throws!.isNotEmpty
-        ? hole.toDGHole().holeScore
-        : null;
-
-    return Column(
-      children: [
-        // Header (matching _HoleDetailDialog design)
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: scoreColor.withValues(alpha: 0.1)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.golf_course, size: 24, color: scoreColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Hole ${hole.number ?? '?'}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              if (score != null)
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: scoreColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$score',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: scoreColor.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(Icons.edit, color: scoreColor, size: 20),
-                  ),
-                ),
-            ],
-          ),
-        ),
-
-        // Hole info with editable fields (matching _HoleDetailDialog layout)
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildEditableInfoItem(
-                context,
-                'Par',
-                _parControllers[tabIndex],
-                _parFocusNodes[tabIndex],
-                tabIndex,
-                Icons.flag_outlined,
-              ),
-              _buildEditableInfoItem(
-                context,
-                'Distance',
-                _distanceControllers[tabIndex],
-                _distanceFocusNodes[tabIndex],
-                tabIndex,
-                Icons.straighten,
-                suffix: 'ft',
-              ),
-              _buildInfoItem(
-                context,
-                'Throws',
-                '${hole.throws?.length ?? 0}',
-                Icons.sports_golf,
-              ),
-            ],
-          ),
-        ),
-
-        const Divider(height: 1),
-
-        // Throws timeline
-        Expanded(
-          child: hole.throws != null && hole.throws!.isNotEmpty
-              ? EditableThrowTimeline(
-                  throws: hole.throws!
-                      .where((t) => t.hasRequiredFields)
-                      .map((t) => t.toDiscThrow())
-                      .toList(),
-                  onEditThrow: (throwIndex) => _editThrow(tabIndex, throwIndex),
-                )
-              : SingleChildScrollView(
-                  controller: scrollController,
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            'No throws recorded',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                          ),
-                          if (!_hasBasketThrow(hole) &&
-                              hole.throws?.isEmpty != true)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFD32F2F,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'Hole must be completed.',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: const Color(0xFFD32F2F),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-        ),
-
-        // Action buttons
-        Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: widget.bottomViewPadding,
-          ),
-          child: Column(
-            children: [
-              // Add throw button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: OutlinedButton.icon(
-                  onPressed: () => _addThrow(tabIndex),
-                  icon: const Icon(Icons.add, color: Colors.black),
-                  label: Text(
-                    'Add Throw',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(color: Colors.black),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Re-record button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleReRecord(tabIndex),
-                  icon: const Icon(Icons.mic, size: 18),
-                  label: const Text('Re-record Hole'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF137e66),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEditableInfoItem(
-    BuildContext context,
-    String label,
-    TextEditingController controller,
-    FocusNode focusNode,
-    int tabIndex,
-    IconData icon, {
-    String? suffix,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 4),
-        IntrinsicWidth(
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              suffix: suffix != null
-                  ? Text(suffix, style: Theme.of(context).textTheme.bodySmall)
-                  : null,
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (_) => _saveMetadata(tabIndex),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
   }
 }

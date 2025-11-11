@@ -630,6 +630,9 @@ onPressed: () {
    }
    ```
 
+3. **Methods Inside Widget Classes**: Always put helper or Widget functions below the build() method. initState() and dispose() stay above the build method, as well as variable initialization.
+
+
 ## Summary Checklist
 
 Before submitting code, verify:
