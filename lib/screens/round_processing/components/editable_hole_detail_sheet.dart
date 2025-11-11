@@ -93,9 +93,15 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
   }
 
   void _saveMetadata() {
-    final int? holeNumber = int.tryParse(_holeNumberController.text);
-    final int? par = int.tryParse(_parController.text);
-    final int? distance = int.tryParse(_distanceController.text);
+    final int? holeNumber = _holeNumberController.text.isEmpty
+        ? null
+        : int.tryParse(_holeNumberController.text);
+    final int? par = _parController.text.isEmpty
+        ? null
+        : int.tryParse(_parController.text);
+    final int? distance = _distanceController.text.isEmpty
+        ? null
+        : int.tryParse(_distanceController.text);
 
     widget.roundParser.updatePotentialHoleMetadata(
       widget.holeIndex,
@@ -284,13 +290,18 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
       expand: false,
 
       builder: (context, scrollController) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          child: Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+        return GestureDetector(
+          onTap: () {
+            // Dismiss keyboard when tapping outside text fields
+            FocusScope.of(context).unfocus();
+          },
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Container(
+              color: Theme.of(context).colorScheme.surface,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 // Header (matching _HoleDetailDialog design)
               Container(
                 padding: const EdgeInsets.all(20),
@@ -445,7 +456,8 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                   child: const Text('Close'),
                 ),
               ),
-            ],
+              ],
+              ),
             ),
           ),
         );

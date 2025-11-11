@@ -178,9 +178,15 @@ class _IncompleteHoleWalkthroughSheetState
     if (tabIndex >= _incompleteHoleIndices.length) return;
 
     final int holeIndex = _incompleteHoleIndices[tabIndex];
-    final int? holeNumber = int.tryParse(_holeNumberControllers[tabIndex].text);
-    final int? par = int.tryParse(_parControllers[tabIndex].text);
-    final int? distance = int.tryParse(_distanceControllers[tabIndex].text);
+    final int? holeNumber = _holeNumberControllers[tabIndex].text.isEmpty
+        ? null
+        : int.tryParse(_holeNumberControllers[tabIndex].text);
+    final int? par = _parControllers[tabIndex].text.isEmpty
+        ? null
+        : int.tryParse(_parControllers[tabIndex].text);
+    final int? distance = _distanceControllers[tabIndex].text.isEmpty
+        ? null
+        : int.tryParse(_distanceControllers[tabIndex].text);
 
     _roundParser.updatePotentialHoleMetadata(
       holeIndex,
@@ -484,12 +490,17 @@ class _IncompleteHoleWalkthroughSheetState
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          child: Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: Column(
-              children: [
+        return GestureDetector(
+          onTap: () {
+            // Dismiss keyboard when tapping outside text fields
+            FocusScope.of(context).unfocus();
+          },
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Container(
+              color: Theme.of(context).colorScheme.surface,
+              child: Column(
+                children: [
                 // Title
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -598,7 +609,8 @@ class _IncompleteHoleWalkthroughSheetState
                 Expanded(
                   child: _buildHoleContent(_currentHoleIndex, scrollController),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         );
