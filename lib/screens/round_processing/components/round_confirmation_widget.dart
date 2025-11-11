@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
@@ -106,6 +107,11 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
       }
     }
 
+    // If there are any invalid holes, the round doesn't have all required fields
+    if (invalidHoles.isNotEmpty) {
+      hasRequiredFields = false;
+    }
+
     // Check if round itself is missing required fields
     if (!_currentRound.hasRequiredFields) {
       hasRequiredFields = false;
@@ -138,6 +144,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
         if (missingHoles.isNotEmpty) {
           issues.add('Missing holes in sequence: ${missingHoles.join(', ')}');
+          hasRequiredFields = false;
         }
       }
     }
@@ -150,6 +157,16 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
         // No throws recorded
         if (hole.throws == null || hole.throws!.isEmpty) {
           issues.add('Hole $holeName: No throws recorded');
+          hasRequiredFields = false;
+        } else {
+          // Check if hole has a basket throw (required for completion)
+          final bool hasBasketThrow = hole.throws!.any(
+            (t) => t.landingSpot == LandingSpot.inBasket,
+          );
+          if (!hasBasketThrow) {
+            issues.add('Hole $holeName: No basket throw recorded');
+            hasRequiredFields = false;
+          }
         }
 
         // Missing distance (optional but recommended)
