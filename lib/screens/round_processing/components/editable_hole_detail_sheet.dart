@@ -205,29 +205,31 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
         onSave: (savedThrow) {
           final List<PotentialDiscThrow> updatedThrows =
               List<PotentialDiscThrow>.from(_currentHole.throws ?? []);
-          updatedThrows.add(PotentialDiscThrow(
-            index: savedThrow.index,
-            purpose: savedThrow.purpose,
-            technique: savedThrow.technique,
-            puttStyle: savedThrow.puttStyle,
-            shotShape: savedThrow.shotShape,
-            stance: savedThrow.stance,
-            power: savedThrow.power,
-            distanceFeetBeforeThrow: savedThrow.distanceFeetBeforeThrow,
-            distanceFeetAfterThrow: savedThrow.distanceFeetAfterThrow,
-            elevationChangeFeet: savedThrow.elevationChangeFeet,
-            windDirection: savedThrow.windDirection,
-            windStrength: savedThrow.windStrength,
-            resultRating: savedThrow.resultRating,
-            landingSpot: savedThrow.landingSpot,
-            fairwayWidth: savedThrow.fairwayWidth,
-            penaltyStrokes: savedThrow.penaltyStrokes,
-            notes: savedThrow.notes,
-            rawText: savedThrow.rawText,
-            parseConfidence: savedThrow.parseConfidence,
-            discName: savedThrow.discName,
-            disc: savedThrow.disc,
-          ));
+          updatedThrows.add(
+            PotentialDiscThrow(
+              index: savedThrow.index,
+              purpose: savedThrow.purpose,
+              technique: savedThrow.technique,
+              puttStyle: savedThrow.puttStyle,
+              shotShape: savedThrow.shotShape,
+              stance: savedThrow.stance,
+              power: savedThrow.power,
+              distanceFeetBeforeThrow: savedThrow.distanceFeetBeforeThrow,
+              distanceFeetAfterThrow: savedThrow.distanceFeetAfterThrow,
+              elevationChangeFeet: savedThrow.elevationChangeFeet,
+              windDirection: savedThrow.windDirection,
+              windStrength: savedThrow.windStrength,
+              resultRating: savedThrow.resultRating,
+              landingSpot: savedThrow.landingSpot,
+              fairwayWidth: savedThrow.fairwayWidth,
+              penaltyStrokes: savedThrow.penaltyStrokes,
+              notes: savedThrow.notes,
+              rawText: savedThrow.rawText,
+              parseConfidence: savedThrow.parseConfidence,
+              discName: savedThrow.discName,
+              disc: savedThrow.disc,
+            ),
+          );
 
           final PotentialDGHole updatedHole = PotentialDGHole(
             number: _currentHole.number,
@@ -275,7 +277,8 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final Color scoreColor = _getScoreColor();
-    final int? score = _currentHole.hasRequiredFields &&
+    final int? score =
+        _currentHole.hasRequiredFields &&
             _currentHole.throws != null &&
             _currentHole.throws!.isNotEmpty
         ? _currentHole.toDGHole().holeScore
@@ -286,13 +289,12 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
+
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(16),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -323,17 +325,11 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.golf_course,
-                          size: 24,
-                          color: scoreColor,
-                        ),
+                        Icon(Icons.golf_course, size: 24, color: scoreColor),
                         const SizedBox(width: 8),
                         Text(
                           'Hole ${_currentHole.number ?? '?'}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
+                          style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -366,11 +362,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                           shape: BoxShape.circle,
                         ),
                         child: Center(
-                          child: Icon(
-                            Icons.edit,
-                            color: scoreColor,
-                            size: 20,
-                          ),
+                          child: Icon(Icons.edit, color: scoreColor, size: 20),
                         ),
                       ),
                   ],
@@ -410,7 +402,8 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
 
               // Throws timeline
               Flexible(
-                child: _currentHole.throws != null &&
+                child:
+                    _currentHole.throws != null &&
                         _currentHole.throws!.isNotEmpty
                     ? EditableThrowTimeline(
                         throws: _currentHole.throws!
@@ -426,13 +419,11 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                           child: Center(
                             child: Text(
                               'No throws recorded',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                     fontStyle: FontStyle.italic,
                                   ),
                             ),
@@ -465,11 +456,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
 
               // Close button
               Padding(
-                padding: const EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                ),
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Close'),
@@ -501,10 +488,9 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
           child: TextField(
             controller: controller,
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(
@@ -515,24 +501,19 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                 borderRadius: BorderRadius.circular(4),
               ),
               suffix: suffix != null
-                  ? Text(
-                      suffix,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    )
+                  ? Text(suffix, style: Theme.of(context).textTheme.bodySmall)
                   : null,
             ),
             keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -554,16 +535,15 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

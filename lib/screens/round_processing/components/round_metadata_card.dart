@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 
 /// Card displaying round metadata with KPI stats.
 /// Design matches ScoreKPICard with isDetailScreen: false (without scorecard).
@@ -21,7 +20,6 @@ class RoundMetadataCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -49,9 +47,9 @@ class RoundMetadataCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   potentialRound.courseName ?? 'Unknown Course',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -89,27 +87,9 @@ class RoundMetadataCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Score distribution bar (if we have a valid round)
-          if (potentialRound.holes != null &&
-              potentialRound.holes!.isNotEmpty &&
-              _hasCompleteHoles())
-            ScoreDistributionBar(
-              round: potentialRound.toDGRound(),
-              height: 24,
-            ),
         ],
       ),
     );
-  }
-
-  bool _hasCompleteHoles() {
-    // Check if we have at least some complete holes to show distribution
-    return potentialRound.holes!.any((h) =>
-        h.hasRequiredFields &&
-        h.throws != null &&
-        h.throws!.isNotEmpty);
   }
 
   Widget _buildScoreKPIStat(
@@ -119,24 +99,22 @@ class RoundMetadataCard extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
       child: Column(
         children: [
           Text(
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
