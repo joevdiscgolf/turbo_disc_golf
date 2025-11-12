@@ -81,17 +81,17 @@ class _IncompleteHoleWalkthroughSheetState
             Text(
               'All holes complete!',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF137e66),
-                  ),
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF137e66),
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               'All holes now have the required information.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -144,16 +144,17 @@ class _IncompleteHoleWalkthroughSheetState
                     create: (_) => HoleEditingState(initialHole: potentialHole),
                     child: Consumer<HoleEditingState>(
                       builder: (context, holeState, _) {
-                        final PotentialDGHole currentHole = holeState.currentHole;
+                        final PotentialDGHole currentHole =
+                            holeState.currentHole;
                         final int actualHoleIndex =
                             _incompleteHoleIndices[_incompleteHolesListIndex];
 
                         return EditableHoleBody(
-                          holeNumber:
-                              currentHole.number ?? actualHoleIndex + 1,
+                          holeNumber: currentHole.number ?? actualHoleIndex + 1,
                           par: currentHole.par ?? 0,
                           distance: currentHole.feet ?? 0,
-                          throws: currentHole.throws
+                          throws:
+                              currentHole.throws
                                   ?.where((t) => t.hasRequiredFields)
                                   .map((t) => t.toDiscThrow())
                                   .toList() ??
@@ -162,18 +163,30 @@ class _IncompleteHoleWalkthroughSheetState
                           distanceController: holeState.distanceController,
                           parFocusNode: holeState.parFocus,
                           distanceFocusNode: holeState.distanceFocus,
-                          bottomViewPadding:
-                              MediaQuery.of(context).viewPadding.bottom,
+                          bottomViewPadding: MediaQuery.of(
+                            context,
+                          ).viewPadding.bottom,
                           inWalkthroughSheet: true,
                           hasRequiredFields: currentHole.hasRequiredFields,
-                          onParChanged: () =>
-                              _handleMetadataChanged(holeState, actualHoleIndex),
-                          onDistanceChanged: () =>
-                              _handleMetadataChanged(holeState, actualHoleIndex),
-                          onThrowAdded: () =>
-                              _handleAddThrow(currentHole, actualHoleIndex),
+                          onParChanged: () => _handleMetadataChanged(
+                            holeState,
+                            actualHoleIndex,
+                          ),
+                          onDistanceChanged: () => _handleMetadataChanged(
+                            holeState,
+                            actualHoleIndex,
+                          ),
+                          onThrowAdded: ({int? addThrowAtIndex}) =>
+                              _handleAddThrow(
+                                currentHole,
+                                actualHoleIndex,
+                                addThrowAtIndex: addThrowAtIndex,
+                              ),
                           onThrowEdited: (throwIndex) => _handleEditThrow(
-                              currentHole, actualHoleIndex, throwIndex),
+                            currentHole,
+                            actualHoleIndex,
+                            throwIndex,
+                          ),
                           onVoiceRecord: () =>
                               _handleVoiceRecord(currentHole, actualHoleIndex),
                           onDone: () => Navigator.of(context).pop(),
@@ -197,10 +210,9 @@ class _IncompleteHoleWalkthroughSheetState
         children: [
           Text(
             'Add missing data',
-            style: Theme.of(context)
-                .textTheme
-                .headlineMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const Spacer(),
           IconButton(
@@ -243,8 +255,8 @@ class _IncompleteHoleWalkthroughSheetState
                 border: Border.all(
                   color: isSelected
                       ? (isComplete
-                          ? const Color(0xFF137e66)
-                          : const Color(0xFFFFEB3B))
+                            ? const Color(0xFF137e66)
+                            : const Color(0xFFFFEB3B))
                       : Colors.transparent,
                   width: isSelected ? 2 : 0,
                 ),
@@ -311,7 +323,11 @@ class _IncompleteHoleWalkthroughSheetState
     _roundParser.updatePotentialHole(holeIndex, updatedHole);
   }
 
-  void _handleAddThrow(PotentialDGHole currentHole, int holeIndex) {
+  void _handleAddThrow(
+    PotentialDGHole currentHole,
+    int holeIndex, {
+    required int? addThrowAtIndex,
+  }) {
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
       index: currentHole.throws?.length ?? 0,
@@ -373,7 +389,10 @@ class _IncompleteHoleWalkthroughSheetState
   }
 
   void _handleEditThrow(
-      PotentialDGHole currentHole, int holeIndex, int throwIndex) {
+    PotentialDGHole currentHole,
+    int holeIndex,
+    int throwIndex,
+  ) {
     // Convert to DiscThrow from PotentialDiscThrow if needed
     final PotentialDiscThrow? potentialThrow = currentHole.throws?[throwIndex];
     if (potentialThrow == null || !potentialThrow.hasRequiredFields) {
@@ -400,7 +419,10 @@ class _IncompleteHoleWalkthroughSheetState
   }
 
   void _handleDeleteThrow(
-      PotentialDGHole currentHole, int holeIndex, int throwIndex) {
+    PotentialDGHole currentHole,
+    int holeIndex,
+    int throwIndex,
+  ) {
     final List<PotentialDiscThrow> updatedThrows =
         List<PotentialDiscThrow>.from(currentHole.throws ?? []);
     updatedThrows.removeAt(throwIndex);

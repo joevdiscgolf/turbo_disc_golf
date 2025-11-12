@@ -47,7 +47,7 @@ class EditableHoleBody extends StatelessWidget {
   // Callbacks
   final VoidCallback onParChanged;
   final VoidCallback onDistanceChanged;
-  final VoidCallback onThrowAdded;
+  final Function({int? addThrowAtIndex}) onThrowAdded;
   final void Function(int throwIndex) onThrowEdited;
   final VoidCallback onVoiceRecord;
   final VoidCallback onDone;
@@ -90,13 +90,14 @@ class EditableHoleBody extends StatelessWidget {
                   ? EditableThrowTimeline(
                       throws: throws,
                       onEditThrow: onThrowEdited,
+                      onAddThrowAt: (int addThrowAtIndex) {
+                        onThrowAdded(addThrowAtIndex: addThrowAtIndex);
+                      },
                     )
                   : Center(
                       child: Text(
                         'No throws',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
+                        style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -160,9 +161,7 @@ class EditableHoleBody extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: scoreColor.withValues(
-          alpha: !hasRequiredFields ? 0.2 : 0.1,
-        ),
+        color: scoreColor.withValues(alpha: !hasRequiredFields ? 0.2 : 0.1),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(borderRadius),
           topRight: Radius.circular(borderRadius),
@@ -182,8 +181,8 @@ class EditableHoleBody extends StatelessWidget {
               Text(
                 'Hole ${holeNumber ?? '?'}',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),

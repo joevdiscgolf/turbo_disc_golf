@@ -1,48 +1,120 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/naming_constants.dart';
 
-/// Timeline of throws with edit buttons.
-///
-/// Similar to ThrowTimeline but includes edit buttons on each throw card.
+/// Timeline of throws with add/edit buttons and connector line adjustments.
 class EditableThrowTimeline extends StatelessWidget {
   const EditableThrowTimeline({
     super.key,
     required this.throws,
     required this.onEditThrow,
+    required this.onAddThrowAt,
   });
 
   final List<DiscThrow> throws;
   final void Function(int throwIndex) onEditThrow;
+  final void Function(int addThrowAtIndex) onAddThrowAt;
 
   @override
   Widget build(BuildContext context) {
     if (throws.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Text('No throws recorded'),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: ElevatedButton.icon(
+            onPressed: () => onAddThrowAt(0),
+            icon: const Icon(Icons.add),
+            label: const Text('Add first throw'),
+          ),
+        ),
       );
     }
+
+    // One "add" button after each throw -> total items = throws.length * 2
+    final int itemCount = throws.length * 2;
 
     return ListView.builder(
       shrinkWrap: true,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: throws.length,
+      itemCount: itemCount,
       itemBuilder: (context, index) {
-        final DiscThrow discThrow = throws[index];
-        final bool isLast = index == throws.length - 1;
-        final int animationDelay = index * 100;
+        // Even indexes => throw item (0 -> throw0, 2 -> throw1, ...)
+        // Odd indexes => add button after previous throw (1 -> after throw0, 3 -> after throw1, ...)
+        if (index.isEven) {
+          final throwIndex = index ~/ 2;
+          final DiscThrow discThrow = throws[throwIndex];
+          final bool isLast = throwIndex == throws.length - 1;
+          final int animationDelay = throwIndex * 100;
 
-        return EditableThrowTimelineItem(
-          discThrow: discThrow,
-          throwIndex: index,
-          isLast: isLast,
-          animationDelay: animationDelay,
-          onEdit: () => onEditThrow(index),
-        );
+          return EditableThrowTimelineItem(
+            discThrow: discThrow,
+            throwIndex: throwIndex,
+            isLast: isLast,
+            animationDelay: animationDelay,
+            onEdit: () => onEditThrow(throwIndex),
+          );
+        } else {
+          // Add button after the throw at index ~/2
+          final insertIndex = index ~/ 2 + 1;
+          return Center(
+            child: _AddThrowButton(onAdd: () => onAddThrowAt(insertIndex)),
+          );
+        }
       },
+    );
+  }
+}
+
+/// Small circular + button between throw items.
+class _AddThrowButton extends StatelessWidget {
+  const _AddThrowButton({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Bounceable(
+      onTap: () {
+        onAdd();
+      },
+      child:
+          Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: TurbColors.blue,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.15),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.add,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 16,
+                  ),
+                ),
+              )
+              .animate()
+              .fadeIn(duration: 250.ms, curve: Curves.easeOut)
+              .scale(
+                begin: const Offset(0.8, 0.8),
+                end: const Offset(1.0, 1.0),
+                duration: 250.ms,
+                curve: Curves.easeOutBack,
+              ),
     );
   }
 }
@@ -152,22 +224,19 @@ class EditableThrowTimelineItem extends StatelessWidget {
               children: [
                 // Icon
                 Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: techniqueColor.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: techniqueColor,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    techniqueIcon,
-                    size: 16,
-                    color: techniqueColor,
-                  ),
-                )
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: techniqueColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: techniqueColor, width: 2),
+                      ),
+                      child: Icon(
+                        techniqueIcon,
+                        size: 16,
+                        color: techniqueColor,
+                      ),
+                    )
                     .animate(delay: Duration(milliseconds: animationDelay))
                     .fadeIn(duration: 300.ms, curve: Curves.easeOut)
                     .scale(
@@ -175,25 +244,15 @@ class EditableThrowTimelineItem extends StatelessWidget {
                       end: const Offset(1.0, 1.0),
                       duration: 300.ms,
                       curve: Curves.easeOutBack,
-                    )
-                    .then()
-                    .scale(
-                      begin: const Offset(1.0, 1.0),
-                      end: const Offset(1.1, 1.1),
-                      duration: 150.ms,
-                    )
-                    .then()
-                    .scale(
-                      begin: const Offset(1.1, 1.1),
-                      end: const Offset(1.0, 1.0),
-                      duration: 150.ms,
                     ),
-                // Connecting line
+
+                // Adjusted connecting line to leave room for + buttons
                 if (!isLast)
                   Expanded(
                     child: _TimelineConnector(
                       color: techniqueColor,
                       animationDelay: animationDelay + 200,
+                      extraSpace: 24, // extra height between throws
                     ),
                   ),
               ],
@@ -223,26 +282,29 @@ class _TimelineConnector extends StatelessWidget {
   const _TimelineConnector({
     required this.color,
     required this.animationDelay,
+    this.extraSpace = 0,
   });
 
   final Color color;
   final int animationDelay;
+  final double extraSpace;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 2,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.5),
-            color.withValues(alpha: 0.2),
-          ],
-        ),
-      ),
-    )
+          margin: EdgeInsets.only(bottom: extraSpace / 2),
+          width: 2,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                color.withValues(alpha: 0.5),
+                color.withValues(alpha: 0.2),
+              ],
+            ),
+          ),
+        )
         .animate(delay: Duration(milliseconds: animationDelay))
         .scaleY(
           begin: 0.0,
@@ -275,65 +337,69 @@ class _EditableThrowDetailCard extends StatelessWidget {
     return InkWell(
       onTap: onEdit,
       borderRadius: BorderRadius.circular(10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: accentColor.withValues(alpha: 0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withValues(alpha: 0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: accentColor,
-                        ),
+      child:
+          Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: accentColor.withValues(alpha: 0.3),
+                    width: 1,
                   ),
-                  if (details.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      details.join(' • '),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withValues(alpha: 0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
                   ],
-                ],
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: accentColor,
+                                ),
+                          ),
+                          if (details.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              details.join(' • '),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.edit_outlined, size: 18, color: accentColor),
+                  ],
+                ),
+              )
+              .animate(delay: Duration(milliseconds: animationDelay))
+              .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+              .slideY(
+                begin: 0.3,
+                end: 0.0,
+                duration: 300.ms,
+                curve: Curves.easeOut,
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.edit_outlined,
-              size: 18,
-              color: accentColor,
-            ),
-          ],
-        ),
-      )
-          .animate(delay: Duration(milliseconds: animationDelay))
-          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-          .slideY(
-            begin: 0.3,
-            end: 0.0,
-            duration: 300.ms,
-            curve: Curves.easeOut,
-          ),
     );
   }
 }

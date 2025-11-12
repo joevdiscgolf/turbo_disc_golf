@@ -73,7 +73,8 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
               holeNumber: currentHole.number ?? widget.holeIndex + 1,
               par: currentHole.par ?? 0,
               distance: currentHole.feet ?? 0,
-              throws: currentHole.throws
+              throws:
+                  currentHole.throws
                       ?.where((t) => t.hasRequiredFields)
                       .map((t) => t.toDiscThrow())
                       .toList() ??
@@ -86,7 +87,8 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
               hasRequiredFields: currentHole.hasRequiredFields,
               onParChanged: () => _handleMetadataChanged(holeState),
               onDistanceChanged: () => _handleMetadataChanged(holeState),
-              onThrowAdded: () => _handleAddThrow(currentHole),
+              onThrowAdded: ({int? addThrowAtIndex}) =>
+                  _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
               onThrowEdited: (throwIndex) =>
                   _handleEditThrow(currentHole, throwIndex),
               onVoiceRecord: () => _handleVoiceRecord(currentHole),
@@ -103,7 +105,10 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     widget.onMetadataChanged(metadata['par'], metadata['distance']);
   }
 
-  void _handleAddThrow(PotentialDGHole currentHole) {
+  void _handleAddThrow(
+    PotentialDGHole currentHole, {
+    required int? addAtIndex,
+  }) {
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
       index: currentHole.throws?.length ?? 0,
