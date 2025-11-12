@@ -162,6 +162,9 @@ class _EditableHoleBodyState extends State<EditableHoleBody> {
                       ),
                     ],
                   ),
+
+                  // Only show Done button when NOT in walkthrough sheet
+                  // In walkthrough, user navigates via the horizontal checklist
                   SizedBox(height: 8),
                   PrimaryButton(
                     height: 56,

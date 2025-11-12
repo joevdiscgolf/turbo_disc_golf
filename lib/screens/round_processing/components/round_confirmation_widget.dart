@@ -263,15 +263,21 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   int _getIncompleteHoleCount() {
     if (_currentRound.holes == null) return 0;
-    // Count holes that are missing required fields OR have no throws
+    // Count holes that are missing required fields OR have no throws OR no basket throw
     return _currentRound.holes!
         .where(
           (hole) =>
               !hole.hasRequiredFields ||
               hole.throws == null ||
-              hole.throws!.isEmpty,
+              hole.throws!.isEmpty ||
+              !_hasBasketThrow(hole),
         )
         .length;
+  }
+
+  bool _hasBasketThrow(PotentialDGHole hole) {
+    if (hole.throws == null || hole.throws!.isEmpty) return false;
+    return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
   }
 
   Future<void> _openWalkthroughDialog() async {

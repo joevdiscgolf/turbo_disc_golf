@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
@@ -98,8 +96,8 @@ class _IncompleteHoleWalkthroughSheetState
         padding: EdgeInsets.only(
           left: 24,
           right: 24,
-          top: 24,
-          bottom: widget.bottomViewPadding,
+          top: 32,
+          bottom: widget.bottomViewPadding + 24,
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -108,21 +106,42 @@ class _IncompleteHoleWalkthroughSheetState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, color: Color(0xFF137e66), size: 64),
-            const SizedBox(height: 16),
+            const Icon(Icons.check_circle, color: Color(0xFF137e66), size: 80),
+            const SizedBox(height: 20),
             Text(
-              'All holes are complete!',
-              style: Theme.of(context).textTheme.titleLarge,
+              'All holes complete!',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF137e66),
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF137e66),
-                foregroundColor: Colors.white,
+            const SizedBox(height: 12),
+            Text(
+              'All holes now have the required information.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              child: const Text('Close'),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF137e66),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
             ),
           ],
         ),
@@ -152,7 +171,8 @@ class _IncompleteHoleWalkthroughSheetState
                 Expanded(
                   child: EditableHoleBody(
                     potentialHole: potentialHole,
-                    holeIndex: _incompleteHolesListIndex,
+                    holeIndex:
+                        _incompleteHoleIndices[_incompleteHolesListIndex],
                     roundParser: _roundParser,
                     inWalkthroughSheet: true,
                     bottomViewPadding: MediaQuery.of(
@@ -171,16 +191,14 @@ class _IncompleteHoleWalkthroughSheetState
   Widget _headerRow() {
     return // Title
     Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.fact_check, color: Color(0xFF137e66), size: 22),
-          const SizedBox(width: 12),
           Text(
             'Add missing data',
             style: Theme.of(
               context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const Spacer(),
           IconButton(
@@ -208,7 +226,6 @@ class _IncompleteHoleWalkthroughSheetState
           return GestureDetector(
             onTap: () {
               setState(() {
-                print('changing index to $index');
                 _incompleteHolesListIndex = index;
               });
             },
@@ -261,90 +278,6 @@ class _IncompleteHoleWalkthroughSheetState
           );
         },
       ),
-    );
-  }
-
-  Widget _buildEditableInfoItem(
-    BuildContext context,
-    String label,
-    TextEditingController controller,
-    FocusNode focusNode,
-    int tabIndex,
-    IconData icon, {
-    String? suffix,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 4),
-        IntrinsicWidth(
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              suffix: suffix != null
-                  ? Text(suffix, style: Theme.of(context).textTheme.bodySmall)
-                  : null,
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (_) => _saveMetadata(tabIndex),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 
@@ -474,20 +407,14 @@ class _IncompleteHoleWalkthroughSheetState
     final newIncompleteIndices = _getIncompleteHoleIndices();
     _incompleteHoleIndices = newIncompleteIndices;
 
-    // If all holes are now complete, close bottom sheet
-    if (_incompleteHoleIndices.isEmpty) {
-      Future.microtask(() {
-        if (mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('All holes fixed! ✓'),
-              backgroundColor: Color(0xFF137e66),
-            ),
-          );
-        }
-      });
+    // Clamp the current index to be within bounds
+    if (_incompleteHoleIndices.isNotEmpty &&
+        _incompleteHolesListIndex >= _incompleteHoleIndices.length) {
+      _incompleteHolesListIndex = _incompleteHoleIndices.length - 1;
     }
+
+    // Don't auto-close when all holes are complete - let user manually close
+    // The completion UI will be shown with a Close button
   }
 
   List<int> _getIncompleteHoleIndices() {
@@ -696,26 +623,5 @@ class _IncompleteHoleWalkthroughSheetState
 
     // Update the entire hole including throws
     _roundParser.updatePotentialHole(holeIndex, updatedHole);
-  }
-
-  Color _getScoreColor(PotentialDGHole hole) {
-    if (!hole.hasRequiredFields ||
-        hole.throws == null ||
-        hole.throws!.isEmpty) {
-      return const Color(0xFFFFEB3B); // Bright yellow for incomplete
-    }
-
-    final DGHole completeHole = hole.toDGHole();
-    final int relativeScore = completeHole.relativeHoleScore;
-
-    if (relativeScore < 0) {
-      return const Color(0xFF137e66); // Birdie - green
-    } else if (relativeScore == 0) {
-      return Colors.grey; // Par - grey
-    } else if (relativeScore == 1) {
-      return const Color(0xFFFF7A7A); // Bogey - light red
-    } else {
-      return const Color(0xFFD32F2F); // Double bogey+ - dark red
-    }
   }
 }

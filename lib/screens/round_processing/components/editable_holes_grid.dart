@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -227,10 +228,22 @@ class _HoleGridItem extends StatelessWidget {
     );
   }
 
+  bool _hasBasketThrow() {
+    if (potentialHole.throws == null || potentialHole.throws!.isEmpty) {
+      return false;
+    }
+    return potentialHole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Incomplete hole (missing required fields) - show more details
-    if (!potentialHole.hasRequiredFields) {
+    // Incomplete hole (missing required fields OR no throws OR no basket throw) - show more details
+    final bool isIncomplete = !potentialHole.hasRequiredFields ||
+        potentialHole.throws == null ||
+        potentialHole.throws!.isEmpty ||
+        !_hasBasketThrow();
+
+    if (isIncomplete) {
       return _incompleteHoleItem(context);
     }
 
