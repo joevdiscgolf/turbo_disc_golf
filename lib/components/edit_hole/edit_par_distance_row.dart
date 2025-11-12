@@ -19,8 +19,8 @@ class EditParDistanceRow extends StatelessWidget {
   final int par;
   final int distance;
   final int strokes;
-  final Function(int) onParChanged;
-  final Function(int) onDistanceChanged;
+  final Function(int newPar) onParChanged;
+  final Function(int newDistance) onDistanceChanged;
   final FocusNode parFocusNode;
   final FocusNode distanceFocusNode;
   final TextEditingController parController;
@@ -144,9 +144,9 @@ class EditParDistanceRow extends StatelessWidget {
                     controller: controller,
                     focusNode: focusNode,
                     textAlign: TextAlign.center,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
@@ -157,7 +157,10 @@ class EditParDistanceRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       suffix: suffix != null
-                          ? Text(suffix, style: Theme.of(context).textTheme.bodySmall)
+                          ? Text(
+                              suffix,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            )
                           : null,
                     ),
                     keyboardType: TextInputType.number,

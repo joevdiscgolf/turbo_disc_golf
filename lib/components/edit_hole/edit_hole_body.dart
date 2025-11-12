@@ -45,8 +45,8 @@ class EditableHoleBody extends StatelessWidget {
   final bool hasRequiredFields;
 
   // Callbacks
-  final VoidCallback onParChanged;
-  final VoidCallback onDistanceChanged;
+  final Function(int) onParChanged;
+  final Function(int) onDistanceChanged;
   final Function({int? addThrowAtIndex}) onThrowAdded;
   final void Function(int throwIndex) onThrowEdited;
   final VoidCallback onVoiceRecord;
@@ -76,8 +76,9 @@ class EditableHoleBody extends StatelessWidget {
               par: par,
               distance: distance,
               strokes: throws.length,
-              onParChanged: (_) => onParChanged(),
-              onDistanceChanged: (_) => onDistanceChanged(),
+              onParChanged: (int newPar) => onParChanged(newPar),
+              onDistanceChanged: (int newDistance) =>
+                  onDistanceChanged(newDistance),
               parFocusNode: parFocusNode,
               distanceFocusNode: distanceFocusNode,
               parController: parController,
@@ -91,6 +92,7 @@ class EditableHoleBody extends StatelessWidget {
                       throws: throws,
                       onEditThrow: onThrowEdited,
                       onAddThrowAt: (int addThrowAtIndex) {
+                        print('on throw added from editable throws timeline.');
                         onThrowAdded(addThrowAtIndex: addThrowAtIndex);
                       },
                     )

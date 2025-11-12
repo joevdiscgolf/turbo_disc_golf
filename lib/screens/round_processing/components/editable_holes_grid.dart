@@ -118,19 +118,20 @@ class _HoleGridItem extends StatelessWidget {
             EditableHoleDetailSheet(
               potentialHole: updatedRound.holes![newHoleIndex],
               holeIndex: newHoleIndex,
-              onMetadataChanged: (par, distance) => _handleMetadataChanged(
-                newHoleIndex,
-                updatedRound.holes![newHoleIndex],
-                par,
-                distance,
-              ),
+              onMetadataChanged: ({int? newPar, int? newDistance}) =>
+                  _handleMetadataChanged(
+                    newHoleIndex,
+                    updatedRound.holes![newHoleIndex],
+                    newPar: newPar,
+                    newDistance: newDistance,
+                  ),
               onThrowAdded: (throw_) => _handleThrowAdded(
                 newHoleIndex,
                 updatedRound.holes![newHoleIndex],
                 throw_,
               ),
-              onThrowEdited: (throwIndex, updatedThrow) =>
-                  roundParser.updateThrow(newHoleIndex, throwIndex, updatedThrow),
+              onThrowEdited: (throwIndex, updatedThrow) => roundParser
+                  .updateThrow(newHoleIndex, throwIndex, updatedThrow),
               onThrowDeleted: (throwIndex) => _handleThrowDeleted(
                 newHoleIndex,
                 updatedRound.holes![newHoleIndex],
@@ -157,29 +158,21 @@ class _HoleGridItem extends StatelessWidget {
       builder: (context) => EditableHoleDetailSheet(
         potentialHole: potentialHole,
         holeIndex: holeIndex,
-        onMetadataChanged: (par, distance) => _handleMetadataChanged(
-          holeIndex,
-          potentialHole,
-          par,
-          distance,
-        ),
-        onThrowAdded: (throw_) => _handleThrowAdded(
-          holeIndex,
-          potentialHole,
-          throw_,
-        ),
+        onMetadataChanged: ({int? newPar, int? newDistance}) =>
+            _handleMetadataChanged(
+              holeIndex,
+              potentialHole,
+              newPar: newPar,
+              newDistance: newDistance,
+            ),
+        onThrowAdded: (throw_) =>
+            _handleThrowAdded(holeIndex, potentialHole, throw_),
         onThrowEdited: (throwIndex, updatedThrow) =>
             roundParser.updateThrow(holeIndex, throwIndex, updatedThrow),
-        onThrowDeleted: (throwIndex) => _handleThrowDeleted(
-          holeIndex,
-          potentialHole,
-          throwIndex,
-        ),
-        onVoiceRecord: () => _handleVoiceRecord(
-          context,
-          potentialHole,
-          holeIndex,
-        ),
+        onThrowDeleted: (throwIndex) =>
+            _handleThrowDeleted(holeIndex, potentialHole, throwIndex),
+        onVoiceRecord: () =>
+            _handleVoiceRecord(context, potentialHole, holeIndex),
       ),
     );
   }
@@ -285,14 +278,14 @@ class _HoleGridItem extends StatelessWidget {
   // Handler methods for EditableHoleDetailSheet callbacks
   void _handleMetadataChanged(
     int holeIndex,
-    PotentialDGHole currentHole,
-    int? par,
-    int? distance,
-  ) {
+    PotentialDGHole currentHole, {
+    int? newPar,
+    int? newDistance,
+  }) {
     final PotentialDGHole updatedHole = PotentialDGHole(
       number: currentHole.number,
-      par: par,
-      feet: distance,
+      par: newPar,
+      feet: newDistance,
       throws: currentHole.throws,
       holeType: currentHole.holeType,
     );

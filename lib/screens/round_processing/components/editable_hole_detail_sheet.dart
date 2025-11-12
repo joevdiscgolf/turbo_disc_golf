@@ -32,7 +32,8 @@ class EditableHoleDetailSheet extends StatefulWidget {
   final int holeIndex;
 
   // Callbacks for handling edits (parent handles the business logic)
-  final void Function(int? par, int? distance) onMetadataChanged;
+  final void Function({required int? newPar, required int? newDistance})
+  onMetadataChanged;
   final void Function(DiscThrow throw_) onThrowAdded;
   final void Function(int throwIndex, DiscThrow updatedThrow) onThrowEdited;
   final void Function(int throwIndex) onThrowDeleted;
@@ -85,8 +86,12 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
               distanceFocusNode: holeState.distanceFocus,
               bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
               hasRequiredFields: currentHole.hasRequiredFields,
-              onParChanged: () => _handleMetadataChanged(holeState),
-              onDistanceChanged: () => _handleMetadataChanged(holeState),
+              onParChanged: (int newPar) =>
+                  _handleMetadataChanged(newPar: newPar, newDistance: null),
+              onDistanceChanged: (int newDistance) => _handleMetadataChanged(
+                newPar: null,
+                newDistance: newDistance,
+              ),
               onThrowAdded: ({int? addThrowAtIndex}) =>
                   _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
               onThrowEdited: (throwIndex) =>
@@ -100,9 +105,11 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     );
   }
 
-  void _handleMetadataChanged(HoleEditingState holeState) {
-    final Map<String, int?> metadata = holeState.getMetadataValues();
-    widget.onMetadataChanged(metadata['par'], metadata['distance']);
+  void _handleMetadataChanged({
+    required int? newPar,
+    required int? newDistance,
+  }) {
+    widget.onMetadataChanged(newPar: newPar, newDistance: newDistance);
   }
 
   void _handleAddThrow(

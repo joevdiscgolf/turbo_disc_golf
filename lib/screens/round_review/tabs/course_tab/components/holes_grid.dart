@@ -102,15 +102,11 @@ class _HoleGridItem extends StatelessWidget {
       builder: (context) => EditableHoleDetailSheet(
         potentialHole: potentialHole,
         holeIndex: holeIndex,
-        onMetadataChanged: (par, distance) => _handleMetadataChanged(
-          par,
-          distance,
-        ),
+        onMetadataChanged: ({int? newPar, int? newDistance}) =>
+            _handleMetadataChanged(newPar: newPar, newDistance: newDistance),
         onThrowAdded: (throw_) => _handleThrowAdded(throw_),
-        onThrowEdited: (throwIndex, updatedThrow) => _handleThrowEdited(
-          throwIndex,
-          updatedThrow,
-        ),
+        onThrowEdited: (throwIndex, updatedThrow) =>
+            _handleThrowEdited(throwIndex, updatedThrow),
         onThrowDeleted: (throwIndex) => _handleThrowDeleted(throwIndex),
         onVoiceRecord: () => _handleVoiceRecord(),
       ),
@@ -118,11 +114,11 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   // Handler methods for EditableHoleDetailSheet callbacks
-  void _handleMetadataChanged(int? par, int? distance) {
+  void _handleMetadataChanged({int? newPar, int? newDistance}) {
     final DGHole updatedHole = DGHole(
       number: hole.number,
-      par: par ?? hole.par,
-      feet: distance ?? hole.feet,
+      par: newPar ?? hole.par,
+      feet: newDistance ?? hole.feet,
       throws: hole.throws,
       holeType: hole.holeType,
     );
@@ -189,36 +185,34 @@ class _HoleGridItem extends StatelessWidget {
     updatedThrows.removeAt(throwIndex);
 
     // Reindex remaining throws
-    final List<DiscThrow> reindexedThrows = updatedThrows
-        .asMap()
-        .entries
-        .map((entry) {
-          final DiscThrow throw_ = entry.value;
-          return DiscThrow(
-            index: entry.key,
-            purpose: throw_.purpose,
-            technique: throw_.technique,
-            puttStyle: throw_.puttStyle,
-            shotShape: throw_.shotShape,
-            stance: throw_.stance,
-            power: throw_.power,
-            distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
-            distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
-            elevationChangeFeet: throw_.elevationChangeFeet,
-            windDirection: throw_.windDirection,
-            windStrength: throw_.windStrength,
-            resultRating: throw_.resultRating,
-            landingSpot: throw_.landingSpot,
-            fairwayWidth: throw_.fairwayWidth,
-            penaltyStrokes: throw_.penaltyStrokes,
-            notes: throw_.notes,
-            rawText: throw_.rawText,
-            parseConfidence: throw_.parseConfidence,
-            discName: throw_.discName,
-            disc: throw_.disc,
-          );
-        })
-        .toList();
+    final List<DiscThrow> reindexedThrows = updatedThrows.asMap().entries.map((
+      entry,
+    ) {
+      final DiscThrow throw_ = entry.value;
+      return DiscThrow(
+        index: entry.key,
+        purpose: throw_.purpose,
+        technique: throw_.technique,
+        puttStyle: throw_.puttStyle,
+        shotShape: throw_.shotShape,
+        stance: throw_.stance,
+        power: throw_.power,
+        distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
+        distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
+        elevationChangeFeet: throw_.elevationChangeFeet,
+        windDirection: throw_.windDirection,
+        windStrength: throw_.windStrength,
+        resultRating: throw_.resultRating,
+        landingSpot: throw_.landingSpot,
+        fairwayWidth: throw_.fairwayWidth,
+        penaltyStrokes: throw_.penaltyStrokes,
+        notes: throw_.notes,
+        rawText: throw_.rawText,
+        parseConfidence: throw_.parseConfidence,
+        discName: throw_.discName,
+        disc: throw_.disc,
+      );
+    }).toList();
 
     final DGHole updatedHole = DGHole(
       number: hole.number,

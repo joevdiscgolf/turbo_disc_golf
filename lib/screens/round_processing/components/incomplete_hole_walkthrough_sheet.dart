@@ -187,14 +187,19 @@ class _IncompleteHoleWalkthroughSheetState
                           ).viewPadding.bottom,
                           inWalkthroughSheet: true,
                           hasRequiredFields: currentHole.hasRequiredFields,
-                          onParChanged: () => _handleMetadataChanged(
+                          onParChanged: (int newPar) => _updateHoleMetadata(
                             holeState,
                             actualHoleIndex,
+                            newPar: newPar,
+                            newDistance: null,
                           ),
-                          onDistanceChanged: () => _handleMetadataChanged(
-                            holeState,
-                            actualHoleIndex,
-                          ),
+                          onDistanceChanged: (int newDistance) =>
+                              _updateHoleMetadata(
+                                holeState,
+                                actualHoleIndex,
+                                newPar: null,
+                                newDistance: newDistance,
+                              ),
                           onThrowAdded: ({int? addThrowAtIndex}) =>
                               _handleAddThrow(
                                 currentHole,
@@ -338,15 +343,19 @@ class _IncompleteHoleWalkthroughSheetState
     }
   }
 
-  void _handleMetadataChanged(HoleEditingState holeState, int holeIndex) {
-    final Map<String, int?> metadata = holeState.getMetadataValues();
+  void _updateHoleMetadata(
+    HoleEditingState holeState,
+    int holeIndex, {
+    required int? newPar,
+    required int? newDistance,
+  }) {
     final PotentialDGHole currentHole = holeState.currentHole;
 
     // Create updated hole with new metadata
     final PotentialDGHole updatedHole = PotentialDGHole(
       number: currentHole.number,
-      par: metadata['par'],
-      feet: metadata['distance'],
+      par: newPar ?? currentHole.par,
+      feet: newDistance ?? currentHole.feet,
       throws: currentHole.throws,
       holeType: currentHole.holeType,
     );
@@ -359,6 +368,7 @@ class _IncompleteHoleWalkthroughSheetState
     int holeIndex, {
     required int? addThrowAtIndex,
   }) {
+    print('on throw added, hole index: $holeIndex');
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
       index: currentHole.throws?.length ?? 0,
