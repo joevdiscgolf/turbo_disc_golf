@@ -263,15 +263,21 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   int _getIncompleteHoleCount() {
     if (_currentRound.holes == null) return 0;
-    // Count holes that are missing required fields OR have no throws
+    // Count holes that are missing required fields OR have no throws OR no basket throw
     return _currentRound.holes!
         .where(
           (hole) =>
               !hole.hasRequiredFields ||
               hole.throws == null ||
-              hole.throws!.isEmpty,
+              hole.throws!.isEmpty ||
+              !_hasBasketThrow(hole),
         )
         .length;
+  }
+
+  bool _hasBasketThrow(PotentialDGHole hole) {
+    if (hole.throws == null || hole.throws!.isEmpty) return false;
+    return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
   }
 
   Future<void> _openWalkthroughDialog() async {
@@ -317,11 +323,11 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               },
               icon: const Icon(Icons.warning, size: 18),
               label: Text(
-                '$holesToAddress holes ${holesToAddress == 1 ? 'needs' : 'need'} attention',
+                '$holesToAddress ${holesToAddress == 1 ? 'hole needs' : 'holes need'} attention',
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD32F2F),
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFFFEB3B),
+                foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

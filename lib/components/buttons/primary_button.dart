@@ -8,6 +8,7 @@ class PrimaryButton extends StatelessWidget {
     this.backgroundColor = Colors.blue,
     this.labelColor = Colors.white,
     this.iconColor = Colors.white,
+    this.borderColor,
     this.height = 48,
     required this.width,
     this.fontSize = 16,
@@ -24,6 +25,7 @@ class PrimaryButton extends StatelessWidget {
   final List<Color>? gradientBackground;
   final Color labelColor;
   final Color iconColor;
+  final Color? borderColor;
   final String label;
   final double fontSize;
   final FontWeight fontWeight;
@@ -41,7 +43,12 @@ class PrimaryButton extends StatelessWidget {
           ? Colors.transparent
           : backgroundColor,
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: borderColor != null
+            ? BorderSide(color: borderColor!, width: 2)
+            : BorderSide.none,
+      ),
       enableFeedback: true,
       shadowColor: Colors.transparent,
       elevation: 0,
