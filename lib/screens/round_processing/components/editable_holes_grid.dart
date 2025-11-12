@@ -3,6 +3,7 @@ import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
@@ -117,7 +118,30 @@ class _HoleGridItem extends StatelessWidget {
             EditableHoleDetailSheet(
               potentialHole: updatedRound.holes![newHoleIndex],
               holeIndex: newHoleIndex,
-              roundParser: roundParser,
+              onMetadataChanged: ({int? newPar, int? newDistance}) =>
+                  _handleMetadataChanged(
+                    newHoleIndex,
+                    updatedRound.holes![newHoleIndex],
+                    newPar: newPar,
+                    newDistance: newDistance,
+                  ),
+              onThrowAdded: (throw_) => _handleThrowAdded(
+                newHoleIndex,
+                updatedRound.holes![newHoleIndex],
+                throw_,
+              ),
+              onThrowEdited: (throwIndex, updatedThrow) => roundParser
+                  .updateThrow(newHoleIndex, throwIndex, updatedThrow),
+              onThrowDeleted: (throwIndex) => _handleThrowDeleted(
+                newHoleIndex,
+                updatedRound.holes![newHoleIndex],
+                throwIndex,
+              ),
+              onVoiceRecord: () => _handleVoiceRecord(
+                context,
+                updatedRound.holes![newHoleIndex],
+                newHoleIndex,
+              ),
             ),
           );
         }
@@ -134,7 +158,21 @@ class _HoleGridItem extends StatelessWidget {
       builder: (context) => EditableHoleDetailSheet(
         potentialHole: potentialHole,
         holeIndex: holeIndex,
-        roundParser: roundParser,
+        onMetadataChanged: ({int? newPar, int? newDistance}) =>
+            _handleMetadataChanged(
+              holeIndex,
+              potentialHole,
+              newPar: newPar,
+              newDistance: newDistance,
+            ),
+        onThrowAdded: (throw_) =>
+            _handleThrowAdded(holeIndex, potentialHole, throw_),
+        onThrowEdited: (throwIndex, updatedThrow) =>
+            roundParser.updateThrow(holeIndex, throwIndex, updatedThrow),
+        onThrowDeleted: (throwIndex) =>
+            _handleThrowDeleted(holeIndex, potentialHole, throwIndex),
+        onVoiceRecord: () =>
+            _handleVoiceRecord(context, potentialHole, holeIndex),
       ),
     );
   }
@@ -234,6 +272,138 @@ class _HoleGridItem extends StatelessWidget {
     }
     return potentialHole.throws!.any(
       (t) => t.landingSpot == LandingSpot.inBasket,
+    );
+  }
+
+  // Handler methods for EditableHoleDetailSheet callbacks
+  void _handleMetadataChanged(
+    int holeIndex,
+    PotentialDGHole currentHole, {
+    int? newPar,
+    int? newDistance,
+  }) {
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: newPar,
+      feet: newDistance,
+      throws: currentHole.throws,
+      holeType: currentHole.holeType,
+    );
+    roundParser.updatePotentialHole(holeIndex, updatedHole);
+  }
+
+  void _handleThrowAdded(
+    int holeIndex,
+    PotentialDGHole currentHole,
+    DiscThrow newThrow,
+  ) {
+    final List<PotentialDiscThrow> updatedThrows =
+        List<PotentialDiscThrow>.from(currentHole.throws ?? []);
+    updatedThrows.add(
+      PotentialDiscThrow(
+        index: newThrow.index,
+        purpose: newThrow.purpose,
+        technique: newThrow.technique,
+        puttStyle: newThrow.puttStyle,
+        shotShape: newThrow.shotShape,
+        stance: newThrow.stance,
+        power: newThrow.power,
+        distanceFeetBeforeThrow: newThrow.distanceFeetBeforeThrow,
+        distanceFeetAfterThrow: newThrow.distanceFeetAfterThrow,
+        elevationChangeFeet: newThrow.elevationChangeFeet,
+        windDirection: newThrow.windDirection,
+        windStrength: newThrow.windStrength,
+        resultRating: newThrow.resultRating,
+        landingSpot: newThrow.landingSpot,
+        fairwayWidth: newThrow.fairwayWidth,
+        penaltyStrokes: newThrow.penaltyStrokes,
+        notes: newThrow.notes,
+        rawText: newThrow.rawText,
+        parseConfidence: newThrow.parseConfidence,
+        discName: newThrow.discName,
+        disc: newThrow.disc,
+      ),
+    );
+
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: currentHole.par,
+      feet: currentHole.feet,
+      throws: updatedThrows,
+      holeType: currentHole.holeType,
+    );
+
+    roundParser.updatePotentialHole(holeIndex, updatedHole);
+  }
+
+  void _handleThrowDeleted(
+    int holeIndex,
+    PotentialDGHole currentHole,
+    int throwIndex,
+  ) {
+    final List<PotentialDiscThrow> updatedThrows =
+        List<PotentialDiscThrow>.from(currentHole.throws ?? []);
+    updatedThrows.removeAt(throwIndex);
+
+    // Reindex remaining throws
+    final List<PotentialDiscThrow> reindexedThrows = updatedThrows
+        .asMap()
+        .entries
+        .map((entry) {
+          final PotentialDiscThrow throw_ = entry.value;
+          return PotentialDiscThrow(
+            index: entry.key,
+            purpose: throw_.purpose,
+            technique: throw_.technique,
+            puttStyle: throw_.puttStyle,
+            shotShape: throw_.shotShape,
+            stance: throw_.stance,
+            power: throw_.power,
+            distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
+            distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
+            elevationChangeFeet: throw_.elevationChangeFeet,
+            windDirection: throw_.windDirection,
+            windStrength: throw_.windStrength,
+            resultRating: throw_.resultRating,
+            landingSpot: throw_.landingSpot,
+            fairwayWidth: throw_.fairwayWidth,
+            penaltyStrokes: throw_.penaltyStrokes,
+            notes: throw_.notes,
+            rawText: throw_.rawText,
+            parseConfidence: throw_.parseConfidence,
+            discName: throw_.discName,
+            disc: throw_.disc,
+          );
+        })
+        .toList();
+
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: currentHole.par,
+      feet: currentHole.feet,
+      throws: reindexedThrows,
+      holeType: currentHole.holeType,
+    );
+
+    roundParser.updatePotentialHole(holeIndex, updatedHole);
+  }
+
+  void _handleVoiceRecord(
+    BuildContext context,
+    PotentialDGHole currentHole,
+    int holeIndex,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => HoleReRecordDialog(
+        holeNumber: currentHole.number ?? holeIndex + 1,
+        holeIndex: holeIndex,
+        holePar: currentHole.par,
+        holeFeet: currentHole.feet,
+        onReProcessed: () {
+          // The hole data will be automatically updated via the roundParser listener
+        },
+      ),
     );
   }
 
