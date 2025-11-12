@@ -1,8 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/firebase_options.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
+import 'package:turbo_disc_golf/services/round_parser.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +19,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    // Provide RoundParser at app level so components can listen to round changes
+    return ChangeNotifierProvider<RoundParser>.value(
+      value: locator.get<RoundParser>(),
+      child: MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Turbo Disc Golf',
       theme: ThemeData(
@@ -96,6 +101,7 @@ class MyApp extends StatelessWidget {
         iconTheme: const IconThemeData(color: Color(0xFF2C2C2C)),
       ),
       home: const MainWrapper(),
+      ),
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/locator.dart';
+import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_kpi_card.dart';
@@ -22,14 +22,12 @@ class CourseTab extends StatefulWidget {
 
 class _CourseTabState extends State<CourseTab> {
   late DGRound _round;
-  late RoundParser _roundParser;
   late RoundStorageService _roundStorageService;
 
   @override
   void initState() {
     super.initState();
     _round = widget.round;
-    _roundParser = locator.get<RoundParser>();
     _roundStorageService = RoundStorageService();
   }
 
@@ -47,7 +45,7 @@ class _CourseTabState extends State<CourseTab> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> children = _getListViewChildren();
+    final List<Widget> children = _getListViewChildren(context);
     return ListView.builder(
       padding: const EdgeInsets.only(top: 12, bottom: 80),
       itemCount: children.length,
@@ -55,11 +53,14 @@ class _CourseTabState extends State<CourseTab> {
     );
   }
 
-  List<Widget> _getListViewChildren() {
+  List<Widget> _getListViewChildren(BuildContext context) {
+    // Access RoundParser from Provider
+    final roundParser = Provider.of<RoundParser>(context, listen: false);
+
     return [
       ScoreKPICard(
         round: _round,
-        roundParser: _roundParser,
+        roundParser: roundParser,
         isDetailScreen: true,
       ),
       const SizedBox(height: 8),
