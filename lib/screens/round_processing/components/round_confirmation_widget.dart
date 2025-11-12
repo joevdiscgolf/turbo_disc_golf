@@ -1,19 +1,19 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 
 /// Confirmation widget that shows parsed round data for review and editing.
 ///
 /// Displays course metadata and a grid of holes that can be tapped to view
 /// and edit individual throws. User can go back or continue to the animation.
-class RoundConfirmationWidget extends StatefulWidget {
+class RoundConfirmationWidget extends StatelessWidget {
   const RoundConfirmationWidget({
     super.key,
     required this.potentialRound,
@@ -28,43 +28,42 @@ class RoundConfirmationWidget extends StatefulWidget {
   final double topViewPadding;
 
   @override
-  State<RoundConfirmationWidget> createState() =>
-      _RoundConfirmationWidgetState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => RoundConfirmationCubit(potentialRound),
+      child: _RoundConfirmationContent(
+        onBack: onBack,
+        onConfirm: onConfirm,
+        topViewPadding: topViewPadding,
+      ),
+    );
+  }
 }
 
-class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
-  List<PotentialDGHole> get _validHoles =>
-      _currentRound.holes!.where((hole) => hole.hasRequiredFields).toList();
+class _RoundConfirmationContent extends StatefulWidget {
+  const _RoundConfirmationContent({
+    required this.onBack,
+    required this.onConfirm,
+    required this.topViewPadding,
+  });
 
-  late RoundParser _roundParser;
-  late PotentialDGRound _currentRound;
-
-  @override
-  void initState() {
-    super.initState();
-    _roundParser = locator.get<RoundParser>();
-    _currentRound = widget.potentialRound;
-    _roundParser.addListener(_refreshRoundData);
-  }
+  final VoidCallback onBack;
+  final VoidCallback onConfirm;
+  final double topViewPadding;
 
   @override
-  void dispose() {
-    _roundParser.removeListener(_refreshRoundData);
-    super.dispose();
-  }
+  State<_RoundConfirmationContent> createState() =>
+      _RoundConfirmationContentState();
+}
 
-  void _refreshRoundData() {
-    if (_roundParser.potentialRound != null) {
-      setState(() {
-        _currentRound = _roundParser.potentialRound!;
-      });
-    }
-  }
+class _RoundConfirmationContentState extends State<_RoundConfirmationContent> {
+  List<PotentialDGHole> _validHoles(PotentialDGRound round) =>
+      round.holes!.where((hole) => hole.hasRequiredFields).toList();
 
-  int _calculateTotalScoreForValidHoles() {
-    if (_currentRound.holes == null) return 0;
+  int _calculateTotalScoreForValidHoles(PotentialDGRound round) {
+    if (round.holes == null) return 0;
 
-    return _validHoles.fold<int>(0, (sum, hole) {
+    return _validHoles(round).fold<int>(0, (sum, hole) {
       // Calculate hole score: throws count + penalty strokes
       final int throwsCount = hole.throws?.length ?? 0;
       final int penaltyStrokes =
@@ -77,22 +76,22 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     });
   }
 
-  int _calculateTotalParForValidHoles() {
-    if (_currentRound.holes == null) return 0;
+  int _calculateTotalParForValidHoles(PotentialDGRound round) {
+    if (round.holes == null) return 0;
 
-    return _validHoles.fold(
+    return _validHoles(round).fold(
       0,
       (sum, hole) => sum + (hole.par ?? 3), // Default to par 3 if missing
     );
   }
 
-  Map<String, dynamic> _validateRound() {
+  Map<String, dynamic> _validateRound(PotentialDGRound round) {
     final List<String> issues = [];
     final Set<int> missingHoles = {};
     bool hasRequiredFields = true;
 
     // Use the built-in validation from PotentialDGRound
-    final validationSummary = _currentRound.getValidationSummary();
+    final validationSummary = round.getValidationSummary();
     final List<dynamic> invalidHoles =
         validationSummary['invalidHoles'] as List<dynamic>;
 
@@ -118,9 +117,9 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     }
 
     // Check if round itself is missing required fields
-    if (!_currentRound.hasRequiredFields) {
+    if (!round.hasRequiredFields) {
       hasRequiredFields = false;
-      final roundMissing = _currentRound.getMissingFields();
+      final roundMissing = round.getMissingFields();
       for (final field in roundMissing) {
         if (!field.contains('hole')) {
           // Only show non-hole-specific issues (courseName, etc.)
@@ -130,9 +129,9 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     }
 
     // Check for missing holes in sequence
-    if (_currentRound.holes != null && _currentRound.holes!.isNotEmpty) {
+    if (round.holes != null && round.holes!.isNotEmpty) {
       final List<int> holeNumbers =
-          _currentRound.holes!
+          round.holes!
               .where((h) => h.number != null)
               .map((h) => h.number!)
               .toList()
@@ -155,8 +154,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     }
 
     // Check each hole for additional issues
-    if (_currentRound.holes != null) {
-      for (final hole in _currentRound.holes!) {
+    if (round.holes != null) {
+      for (final hole in round.holes!) {
         final String holeName = hole.number?.toString() ?? 'Unknown';
 
         // No throws recorded
@@ -190,14 +189,43 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final int totalScore = _calculateTotalScoreForValidHoles();
-    final int totalPar = _calculateTotalParForValidHoles();
-    final int relativeScore = totalScore - totalPar;
-    final Map<String, dynamic> validation = _validateRound();
-    final List<String> validationIssues = validation['issues'] as List<String>;
-    final Set<int> missingHoles = validation['missingHoles'] as Set<int>;
-    final bool hasRequiredFields = validation['hasRequiredFields'] as bool;
+    return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+      builder: (context, state) {
+        final currentRound = state.potentialRound;
+        final int totalScore = _calculateTotalScoreForValidHoles(currentRound);
+        final int totalPar = _calculateTotalParForValidHoles(currentRound);
+        final int relativeScore = totalScore - totalPar;
+        final Map<String, dynamic> validation = _validateRound(currentRound);
+        final List<String> validationIssues =
+            validation['issues'] as List<String>;
+        final Set<int> missingHoles = validation['missingHoles'] as Set<int>;
+        final bool hasRequiredFields =
+            validation['hasRequiredFields'] as bool;
 
+        return _buildContent(
+          context,
+          currentRound,
+          totalScore,
+          totalPar,
+          relativeScore,
+          validationIssues,
+          missingHoles,
+          hasRequiredFields,
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    PotentialDGRound currentRound,
+    int totalScore,
+    int totalPar,
+    int relativeScore,
+    List<String> validationIssues,
+    Set<int> missingHoles,
+    bool hasRequiredFields,
+  ) {
     return Container(
       color: const Color(0xFFEEE8F5), // Light purple-gray background
       // color: Colors.blue,
@@ -215,7 +243,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               children: [
                 // Course metadata header
                 RoundMetadataCard(
-                  potentialRound: _currentRound,
+                  potentialRound: currentRound,
                   totalScore: totalScore,
                   totalPar: totalPar,
                   relativeScore: relativeScore,
@@ -225,6 +253,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 if (validationIssues.isNotEmpty)
                   _buildWarningBanner(
                     context,
+                    currentRound,
                     validationIssues,
                     missingHoles,
                     hasRequiredFields,
@@ -246,8 +275,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
                 // Holes grid (no longer wrapped in Expanded)
                 EditableHolesGrid(
-                  potentialRound: _currentRound,
-                  roundParser: _roundParser,
+                  potentialRound: currentRound,
                 ),
                 const SizedBox(height: 16),
               ],
@@ -261,10 +289,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     );
   }
 
-  int _getIncompleteHoleCount() {
-    if (_currentRound.holes == null) return 0;
+  int _getIncompleteHoleCount(PotentialDGRound round) {
+    if (round.holes == null) return 0;
     // Count holes that are missing required fields OR have no throws OR no basket throw
-    return _currentRound.holes!
+    return round.holes!
         .where(
           (hole) =>
               !hole.hasRequiredFields ||
@@ -280,28 +308,32 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
   }
 
-  Future<void> _openWalkthroughDialog() async {
+  Future<void> _openWalkthroughDialog(
+    BuildContext context,
+    PotentialDGRound currentRound,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => IncompleteHoleWalkthroughSheet(
-        potentialRound: _currentRound,
-        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+      builder: (builderContext) => BlocProvider.value(
+        value: context.read<RoundConfirmationCubit>(),
+        child: IncompleteHoleWalkthroughSheet(
+          potentialRound: currentRound,
+          bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        ),
       ),
     );
-
-    // Refresh the UI after bottom sheet closes
-    _refreshRoundData();
   }
 
   Widget _buildWarningBanner(
     BuildContext context,
+    PotentialDGRound currentRound,
     List<String> issues,
     Set<int> missingHoles,
     bool hasRequiredFields,
   ) {
-    final int incompleteHoleCount = _getIncompleteHoleCount();
+    final int incompleteHoleCount = _getIncompleteHoleCount(currentRound);
     final int holesToAddress = incompleteHoleCount + missingHoles.length;
 
     return Row(
@@ -310,16 +342,8 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () async {
-                // Add the missing holes to potential round
-                // if (missingHoles.isNotEmpty) {
-                //   _roundParser.addEmptyHolesToPotentialRound(missingHoles);
-                // }
-
-                // Refresh the UI
-                _refreshRoundData();
-
-                // Then open the walkthrough to guide user through filling them in
-                await _openWalkthroughDialog();
+                // Open the walkthrough to guide user through filling in incomplete holes
+                await _openWalkthroughDialog(context, currentRound);
               },
               icon: const Icon(Icons.warning, size: 18),
               label: Text(

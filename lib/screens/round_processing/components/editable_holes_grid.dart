@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
@@ -14,11 +15,9 @@ class EditableHolesGrid extends StatelessWidget {
   const EditableHolesGrid({
     super.key,
     required this.potentialRound,
-    required this.roundParser,
   });
 
   final PotentialDGRound potentialRound;
-  final RoundParser roundParser;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +73,6 @@ class EditableHolesGrid extends StatelessWidget {
           child: _HoleGridItem(
             potentialHole: hole,
             holeIndex: holeIndex ?? -1, // -1 indicates hole doesn't exist yet
-            roundParser: roundParser,
             isCompletelyMissing: existingHole == null,
           ),
         ),
@@ -89,64 +87,16 @@ class _HoleGridItem extends StatelessWidget {
   const _HoleGridItem({
     required this.potentialHole,
     required this.holeIndex,
-    required this.roundParser,
     this.isCompletelyMissing = false,
   });
 
   final PotentialDGHole potentialHole;
   final int holeIndex;
-  final RoundParser roundParser;
   final bool isCompletelyMissing;
 
   void _showEditableHoleSheet(BuildContext context) {
-    // If hole is completely missing, add it to the round first
-    if (isCompletelyMissing && potentialHole.number != null) {
-      // roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
-
-      // Wait for the state to update, then find the new hole index and open dialog
-
-      // Find the newly added hole's index
-      final updatedRound = roundParser.potentialRound;
-      if (updatedRound?.holes != null) {
-        final newHoleIndex = updatedRound!.holes!.indexWhere(
-          (h) => h.number == potentialHole.number,
-        );
-
-        if (newHoleIndex != -1 && context.mounted) {
-          displayBottomSheet(
-            context,
-            EditableHoleDetailSheet(
-              potentialHole: updatedRound.holes![newHoleIndex],
-              holeIndex: newHoleIndex,
-              onMetadataChanged: ({int? newPar, int? newDistance}) =>
-                  _handleMetadataChanged(
-                    newHoleIndex,
-                    updatedRound.holes![newHoleIndex],
-                    newPar: newPar,
-                    newDistance: newDistance,
-                  ),
-              onThrowAdded: (throw_) => _handleThrowAdded(
-                newHoleIndex,
-                updatedRound.holes![newHoleIndex],
-                throw_,
-              ),
-              onThrowEdited: (throwIndex, updatedThrow) => roundParser
-                  .updateThrow(newHoleIndex, throwIndex, updatedThrow),
-              onThrowDeleted: (throwIndex) => _handleThrowDeleted(
-                newHoleIndex,
-                updatedRound.holes![newHoleIndex],
-                throwIndex,
-              ),
-              onVoiceRecord: () => _handleVoiceRecord(
-                context,
-                updatedRound.holes![newHoleIndex],
-                newHoleIndex,
-              ),
-            ),
-          );
-        }
-      }
-
+    // If hole is completely missing, we can't edit it yet
+    if (isCompletelyMissing) {
       return;
     }
 
@@ -155,24 +105,29 @@ class _HoleGridItem extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => EditableHoleDetailSheet(
-        potentialHole: potentialHole,
-        holeIndex: holeIndex,
-        onMetadataChanged: ({int? newPar, int? newDistance}) =>
-            _handleMetadataChanged(
-              holeIndex,
-              potentialHole,
-              newPar: newPar,
-              newDistance: newDistance,
-            ),
-        onThrowAdded: (throw_) =>
-            _handleThrowAdded(holeIndex, potentialHole, throw_),
-        onThrowEdited: (throwIndex, updatedThrow) =>
-            roundParser.updateThrow(holeIndex, throwIndex, updatedThrow),
-        onThrowDeleted: (throwIndex) =>
-            _handleThrowDeleted(holeIndex, potentialHole, throwIndex),
-        onVoiceRecord: () =>
-            _handleVoiceRecord(context, potentialHole, holeIndex),
+      builder: (builderContext) => BlocProvider.value(
+        value: context.read<RoundConfirmationCubit>(),
+        child: EditableHoleDetailSheet(
+          potentialHole: potentialHole,
+          holeIndex: holeIndex,
+          onMetadataChanged: ({int? newPar, int? newDistance}) =>
+              _handleMetadataChanged(
+                context,
+                holeIndex,
+                potentialHole,
+                newPar: newPar,
+                newDistance: newDistance,
+              ),
+          onThrowAdded: (throw_) =>
+              _handleThrowAdded(context, holeIndex, potentialHole, throw_),
+          onThrowEdited: (throwIndex, updatedThrow) => context
+              .read<RoundConfirmationCubit>()
+              .updateThrow(holeIndex, throwIndex, updatedThrow),
+          onThrowDeleted: (throwIndex) =>
+              _handleThrowDeleted(context, holeIndex, potentialHole, throwIndex),
+          onVoiceRecord: () =>
+              _handleVoiceRecord(context, potentialHole, holeIndex),
+        ),
       ),
     );
   }
@@ -277,6 +232,7 @@ class _HoleGridItem extends StatelessWidget {
 
   // Handler methods for EditableHoleDetailSheet callbacks
   void _handleMetadataChanged(
+    BuildContext context,
     int holeIndex,
     PotentialDGHole currentHole, {
     int? newPar,
@@ -289,10 +245,11 @@ class _HoleGridItem extends StatelessWidget {
       throws: currentHole.throws,
       holeType: currentHole.holeType,
     );
-    roundParser.updatePotentialHole(holeIndex, updatedHole);
+    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleThrowAdded(
+    BuildContext context,
     int holeIndex,
     PotentialDGHole currentHole,
     DiscThrow newThrow,
@@ -333,10 +290,11 @@ class _HoleGridItem extends StatelessWidget {
       holeType: currentHole.holeType,
     );
 
-    roundParser.updatePotentialHole(holeIndex, updatedHole);
+    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleThrowDeleted(
+    BuildContext context,
     int holeIndex,
     PotentialDGHole currentHole,
     int throwIndex,
@@ -385,7 +343,7 @@ class _HoleGridItem extends StatelessWidget {
       holeType: currentHole.holeType,
     );
 
-    roundParser.updatePotentialHole(holeIndex, updatedHole);
+    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleVoiceRecord(

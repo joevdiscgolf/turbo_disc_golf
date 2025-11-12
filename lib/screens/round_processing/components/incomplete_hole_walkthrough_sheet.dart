@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
-import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 
 /// Bottom sheet that guides user through fixing each incomplete hole sequentially.
 /// Shows progress with tabs and horizontal checklist, allows inline editing.
@@ -28,59 +28,56 @@ class IncompleteHoleWalkthroughSheet extends StatefulWidget {
 
 class _IncompleteHoleWalkthroughSheetState
     extends State<IncompleteHoleWalkthroughSheet> {
-  PotentialDGHole? get _selectedPotentialHole {
+  PotentialDGHole? _selectedPotentialHole(PotentialDGRound round) {
     try {
-      if (_roundParser == null) return null;
       final int actualHoleIndex =
           _incompleteHoleIndices[_incompleteHolesListIndex];
-      return _roundParser!.potentialRound!.holes![actualHoleIndex];
+      return round.holes![actualHoleIndex];
     } catch (e) {
       return null;
     }
   }
 
-  RoundParser? _roundParser;
   late List<int> _incompleteHoleIndices;
   int _incompleteHolesListIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    // RoundParser will be accessed via Provider in didChangeDependencies
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Access RoundParser from Provider (only do this once)
-    if (_roundParser == null) {
-      _roundParser = Provider.of<RoundParser>(context, listen: false);
-      _incompleteHoleIndices = _getIncompleteHoleIndices();
-      // Set the current editing hole to the first incomplete hole
-      if (_incompleteHoleIndices.isNotEmpty) {
-        _setCurrentEditingHole(_incompleteHoleIndices[_incompleteHolesListIndex]);
-      }
+    _incompleteHoleIndices = _getIncompleteHoleIndices();
+    // Set the current editing hole to the first incomplete hole
+    if (_incompleteHoleIndices.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<RoundConfirmationCubit>().setCurrentEditingHole(
+                _incompleteHoleIndices[_incompleteHolesListIndex],
+              );
+        }
+      });
     }
   }
 
   @override
   void dispose() {
     // Clear the current editing hole when disposing
-    _roundParser?.clearCurrentEditingHole();
+    context.read<RoundConfirmationCubit>().clearCurrentEditingHole();
     super.dispose();
   }
 
   void _setCurrentEditingHole(int holeIndex) {
-    _roundParser?.setCurrentEditingHole(holeIndex);
+    context.read<RoundConfirmationCubit>().setCurrentEditingHole(holeIndex);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Wait for RoundParser to be initialized
-    if (_roundParser == null) {
-      return const SizedBox();
-    }
+    return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+      builder: (context, state) {
+        return _buildContent(context, state);
+      },
+    );
+  }
 
+  Widget _buildContent(BuildContext context, RoundConfirmationState state) {
     // If no incomplete holes, show completion message
     if (_incompleteHoleIndices.isEmpty) {
       return Container(
@@ -139,80 +136,80 @@ class _IncompleteHoleWalkthroughSheetState
       );
     }
 
+    final PotentialDGHole? potentialHole = _selectedPotentialHole(state.potentialRound);
+    if (potentialHole == null) {
+      return const SizedBox();
+    }
+
+    final int actualHoleIndex =
+        _incompleteHoleIndices[_incompleteHolesListIndex];
+
+    if (state.parController == null || state.distanceController == null) {
+      return const SizedBox();
+    }
+
     return SizedBox(
       height: MediaQuery.of(context).size.height - 64,
-      child: Consumer<RoundParser>(
-        builder: (context, roundParser, _) {
-          final PotentialDGHole? potentialHole = _selectedPotentialHole;
-          if (potentialHole == null) {
-            return const SizedBox();
-          }
-
-          final int actualHoleIndex =
-              _incompleteHoleIndices[_incompleteHolesListIndex];
-
-          return Container(
-            height: MediaQuery.of(context).size.height - 64,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                _headerRow(),
-                _buildHorizontalChecklist(),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: EditableHoleBody(
-                    holeNumber: potentialHole.number ?? actualHoleIndex + 1,
-                    par: potentialHole.par ?? 0,
-                    distance: potentialHole.feet ?? 0,
-                    throws:
-                        potentialHole.throws
-                            ?.where((t) => t.hasRequiredFields)
-                            .map((t) => t.toDiscThrow())
-                            .toList() ??
-                        [],
-                    parController: roundParser.parController!,
-                    distanceController: roundParser.distanceController!,
-                    parFocusNode: roundParser.parFocus!,
-                    distanceFocusNode: roundParser.distanceFocus!,
-                    bottomViewPadding: MediaQuery.of(
-                      context,
-                    ).viewPadding.bottom,
-                    inWalkthroughSheet: true,
-                    hasRequiredFields: potentialHole.hasRequiredFields,
-                    onParChanged: (int newPar) => _updateHoleMetadata(
+      child: Container(
+        height: MediaQuery.of(context).size.height - 64,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            _headerRow(),
+            _buildHorizontalChecklist(state),
+            const SizedBox(height: 8),
+            Expanded(
+              child: EditableHoleBody(
+                holeNumber: potentialHole.number ?? actualHoleIndex + 1,
+                par: potentialHole.par ?? 0,
+                distance: potentialHole.feet ?? 0,
+                throws:
+                    potentialHole.throws
+                        ?.where((t) => t.hasRequiredFields)
+                        .map((t) => t.toDiscThrow())
+                        .toList() ??
+                    [],
+                parController: state.parController!,
+                distanceController: state.distanceController!,
+                parFocusNode: state.parFocus!,
+                distanceFocusNode: state.distanceFocus!,
+                bottomViewPadding: MediaQuery.of(
+                  context,
+                ).viewPadding.bottom,
+                inWalkthroughSheet: true,
+                hasRequiredFields: potentialHole.hasRequiredFields,
+                onParChanged: (int newPar) => _updateHoleMetadata(
+                  actualHoleIndex,
+                  newPar: newPar,
+                  newDistance: null,
+                ),
+                onDistanceChanged: (int newDistance) =>
+                    _updateHoleMetadata(
                       actualHoleIndex,
-                      newPar: newPar,
-                      newDistance: null,
+                      newPar: null,
+                      newDistance: newDistance,
                     ),
-                    onDistanceChanged: (int newDistance) =>
-                        _updateHoleMetadata(
-                          actualHoleIndex,
-                          newPar: null,
-                          newDistance: newDistance,
-                        ),
-                    onThrowAdded: ({int? addThrowAtIndex}) =>
-                        _handleAddThrow(
-                          potentialHole,
-                          actualHoleIndex,
-                          addThrowAtIndex: addThrowAtIndex,
-                        ),
-                    onThrowEdited: (throwIndex) => _handleEditThrow(
+                onThrowAdded: ({int? addThrowAtIndex}) =>
+                    _handleAddThrow(
                       potentialHole,
                       actualHoleIndex,
-                      throwIndex,
+                      addThrowAtIndex: addThrowAtIndex,
                     ),
-                    onVoiceRecord: () =>
-                        _handleVoiceRecord(potentialHole, actualHoleIndex),
-                    onDone: () => Navigator.of(context).pop(),
-                  ),
+                onThrowEdited: (throwIndex) => _handleEditThrow(
+                  potentialHole,
+                  actualHoleIndex,
+                  throwIndex,
                 ),
-              ],
+                onVoiceRecord: () =>
+                    _handleVoiceRecord(potentialHole, actualHoleIndex),
+                onDone: () => Navigator.of(context).pop(),
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -238,7 +235,7 @@ class _IncompleteHoleWalkthroughSheetState
     );
   }
 
-  Widget _buildHorizontalChecklist() {
+  Widget _buildHorizontalChecklist(RoundConfirmationState state) {
     return Container(
       height: 48,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -248,7 +245,7 @@ class _IncompleteHoleWalkthroughSheetState
         itemBuilder: (context, index) {
           final int holeIndex = _incompleteHoleIndices[index];
           final PotentialDGHole hole =
-              _roundParser!.potentialRound!.holes![holeIndex];
+              state.potentialRound.holes![holeIndex];
           final bool isComplete = _isHoleComplete(index);
           final bool isSelected = _incompleteHolesListIndex == index;
 
@@ -318,7 +315,7 @@ class _IncompleteHoleWalkthroughSheetState
     required int? newPar,
     required int? newDistance,
   }) {
-    _roundParser!.updatePotentialHoleMetadata(
+    context.read<RoundConfirmationCubit>().updatePotentialHoleMetadata(
       holeIndex,
       par: newPar,
       feet: newDistance,
@@ -383,7 +380,7 @@ class _IncompleteHoleWalkthroughSheetState
           );
 
           // Update the entire hole including throws
-          _roundParser!.updatePotentialHole(holeIndex, updatedHole);
+          context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
           Navigator.of(context).pop();
         },
         onDelete: null, // No delete for new throws
@@ -410,7 +407,7 @@ class _IncompleteHoleWalkthroughSheetState
         throwIndex: throwIndex,
         holeNumber: currentHole.number ?? holeIndex + 1,
         onSave: (updatedThrow) {
-          _roundParser!.updateThrow(holeIndex, throwIndex, updatedThrow);
+          context.read<RoundConfirmationCubit>().updateThrow(holeIndex, throwIndex, updatedThrow);
           Navigator.of(context).pop();
         },
         onDelete: () {
@@ -472,7 +469,7 @@ class _IncompleteHoleWalkthroughSheetState
     );
 
     // Update the entire hole including throws
-    _roundParser!.updatePotentialHole(holeIndex, updatedHole);
+    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleVoiceRecord(PotentialDGHole currentHole, int holeIndex) {
@@ -512,11 +509,11 @@ class _IncompleteHoleWalkthroughSheetState
   }
 
   List<int> _getIncompleteHoleIndices() {
-    if (_roundParser?.potentialRound?.holes == null) return [];
+    if (widget.potentialRound.holes == null) return [];
 
     final List<int> indices = [];
-    for (int i = 0; i < _roundParser!.potentialRound!.holes!.length; i++) {
-      final PotentialDGHole hole = _roundParser!.potentialRound!.holes![i];
+    for (int i = 0; i < widget.potentialRound.holes!.length; i++) {
+      final PotentialDGHole hole = widget.potentialRound.holes![i];
       // Consider a hole incomplete if it's missing required fields OR has no throws OR no basket throw
       if (!hole.hasRequiredFields ||
           hole.throws == null ||
@@ -536,9 +533,10 @@ class _IncompleteHoleWalkthroughSheetState
   bool _isHoleComplete(int tabIndex) {
     if (tabIndex >= _incompleteHoleIndices.length) return false;
 
+    final cubit = context.read<RoundConfirmationCubit>();
     final int holeIndex = _incompleteHoleIndices[tabIndex];
     final PotentialDGHole hole =
-        _roundParser!.potentialRound!.holes![holeIndex];
+        cubit.state.potentialRound.holes![holeIndex];
 
     // Check if hole has required metadata
     final bool hasMetadata =

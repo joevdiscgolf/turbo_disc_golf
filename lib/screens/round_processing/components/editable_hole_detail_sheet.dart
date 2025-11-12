@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
 ///
@@ -46,45 +46,39 @@ class EditableHoleDetailSheet extends StatefulWidget {
 }
 
 class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
-  RoundParser? _roundParser;
-
   @override
   void initState() {
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Access RoundParser from Provider and set current editing hole
-    if (_roundParser == null) {
-      _roundParser = Provider.of<RoundParser>(context, listen: false);
-      _roundParser!.setCurrentEditingHole(widget.holeIndex);
-    }
+    // Set current editing hole in post frame callback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<RoundConfirmationCubit>().setCurrentEditingHole(widget.holeIndex);
+      }
+    });
   }
 
   @override
   void dispose() {
     // Clear the current editing hole when disposing
-    _roundParser?.clearCurrentEditingHole();
+    context.read<RoundConfirmationCubit>().clearCurrentEditingHole();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height - 64,
-      child: Consumer<RoundParser>(
-        builder: (context, roundParser, _) {
-          final PotentialDGHole? currentHole = roundParser.currentEditingHole;
+    return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+      builder: (context, state) {
+        final PotentialDGHole? currentHole = state.currentEditingHole;
 
-          if (currentHole == null ||
-              roundParser.parController == null ||
-              roundParser.distanceController == null) {
-            return const SizedBox();
-          }
+        if (currentHole == null ||
+            state.parController == null ||
+            state.distanceController == null) {
+          return const SizedBox();
+        }
 
-          return EditableHoleBody(
+        return SizedBox(
+          height: MediaQuery.of(context).size.height - 64,
+          child: EditableHoleBody(
             holeNumber: currentHole.number ?? widget.holeIndex + 1,
             par: currentHole.par ?? 0,
             distance: currentHole.feet ?? 0,
@@ -94,10 +88,10 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                     .map((t) => t.toDiscThrow())
                     .toList() ??
                 [],
-            parController: roundParser.parController!,
-            distanceController: roundParser.distanceController!,
-            parFocusNode: roundParser.parFocus!,
-            distanceFocusNode: roundParser.distanceFocus!,
+            parController: state.parController!,
+            distanceController: state.distanceController!,
+            parFocusNode: state.parFocus!,
+            distanceFocusNode: state.distanceFocus!,
             bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             hasRequiredFields: currentHole.hasRequiredFields,
             onParChanged: (int newPar) =>
@@ -112,9 +106,9 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
                 _handleEditThrow(currentHole, throwIndex),
             onVoiceRecord: () => _handleVoiceRecord(currentHole),
             onDone: () => Navigator.of(context).pop(),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

@@ -20,41 +20,12 @@ class RoundParser extends ChangeNotifier {
   String _lastError = '';
   bool _shouldNavigateToReview = false;
 
-  // Hole editing state - tracks the current hole being edited
-  int? _currentEditingHoleIndex;
-  TextEditingController? _parController;
-  TextEditingController? _distanceController;
-  FocusNode? _parFocus;
-  FocusNode? _distanceFocus;
-
   PotentialDGRound? get potentialRound => _potentialRound;
   DGRound? get parsedRound => _parsedRound;
   bool get isProcessing => _isProcessing;
   bool get isReadyToNavigate => _isReadyToNavigate;
   String get lastError => _lastError;
   bool get shouldNavigateToReview => _shouldNavigateToReview;
-
-  // Getters for hole editing state
-  int? get currentEditingHoleIndex => _currentEditingHoleIndex;
-  PotentialDGHole? get currentEditingHole {
-    if (_currentEditingHoleIndex == null ||
-        _potentialRound == null ||
-        _potentialRound!.holes == null ||
-        _currentEditingHoleIndex! >= _potentialRound!.holes!.length) {
-      return null;
-    }
-    return _potentialRound!.holes![_currentEditingHoleIndex!];
-  }
-
-  TextEditingController? get parController => _parController;
-  TextEditingController? get distanceController => _distanceController;
-  FocusNode? get parFocus => _parFocus;
-  FocusNode? get distanceFocus => _distanceFocus;
-
-  int get par => currentEditingHole?.par ?? 0;
-  int get distance => currentEditingHole?.feet ?? 0;
-  int get strokes => currentEditingHole?.throws?.length ?? 0;
-  bool get hasRequiredFields => currentEditingHole?.hasRequiredFields ?? false;
 
   /// Set an existing round (e.g., when loading from history)
   /// This does NOT trigger navigation to review screen
@@ -68,89 +39,6 @@ class RoundParser extends ChangeNotifier {
   void clearNavigationFlag() {
     _shouldNavigateToReview = false;
     _isReadyToNavigate = false;
-  }
-
-  /// Set the current hole being edited and initialize text controllers
-  void setCurrentEditingHole(int holeIndex) {
-    if (_potentialRound == null ||
-        _potentialRound!.holes == null ||
-        holeIndex >= _potentialRound!.holes!.length) {
-      return;
-    }
-
-    // Dispose old controllers if they exist
-    _disposeEditingControllers();
-
-    _currentEditingHoleIndex = holeIndex;
-    final PotentialDGHole hole = _potentialRound!.holes![holeIndex];
-
-    // Initialize new controllers with current hole data
-    _parController = TextEditingController(
-      text: hole.par?.toString() ?? '',
-    );
-    _distanceController = TextEditingController(
-      text: hole.feet?.toString() ?? '',
-    );
-    _parFocus = FocusNode();
-    _distanceFocus = FocusNode();
-
-    notifyListeners();
-  }
-
-  /// Clear the current editing hole
-  void clearCurrentEditingHole() {
-    _disposeEditingControllers();
-    _currentEditingHoleIndex = null;
-    notifyListeners();
-  }
-
-  /// Update text controllers when hole data changes externally
-  /// Only updates controllers if they don't have focus (user not editing)
-  void updateEditingControllersFromHole() {
-    if (_currentEditingHoleIndex == null || currentEditingHole == null) {
-      return;
-    }
-
-    final PotentialDGHole hole = currentEditingHole!;
-
-    // Only update controllers if they don't have focus
-    if (_parFocus != null && !_parFocus!.hasFocus && _parController != null) {
-      _parController!.text = hole.par?.toString() ?? '';
-    }
-    if (_distanceFocus != null &&
-        !_distanceFocus!.hasFocus &&
-        _distanceController != null) {
-      _distanceController!.text = hole.feet?.toString() ?? '';
-    }
-  }
-
-  /// Gets the current metadata values from the text controllers.
-  /// Returns a map with par and distance keys.
-  Map<String, int?> getMetadataValues() {
-    if (_parController == null || _distanceController == null) {
-      return {'par': null, 'distance': null};
-    }
-
-    final int? par = _parController!.text.isEmpty
-        ? null
-        : int.tryParse(_parController!.text);
-    final int? distance = _distanceController!.text.isEmpty
-        ? null
-        : int.tryParse(_distanceController!.text);
-
-    return {'par': par, 'distance': distance};
-  }
-
-  /// Dispose text controllers and focus nodes
-  void _disposeEditingControllers() {
-    _parController?.dispose();
-    _distanceController?.dispose();
-    _parFocus?.dispose();
-    _distanceFocus?.dispose();
-    _parController = null;
-    _distanceController = null;
-    _parFocus = null;
-    _distanceFocus = null;
   }
 
   /// Signals that processing is complete and ready to navigate
@@ -776,14 +664,7 @@ class RoundParser extends ChangeNotifier {
     _potentialRound = null;
     _parsedRound = null;
     _lastError = '';
-    clearCurrentEditingHole();
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _disposeEditingControllers();
-    super.dispose();
   }
 
   /// Update a potential hole's basic metadata (number, par, distance)
@@ -833,11 +714,6 @@ class RoundParser extends ChangeNotifier {
       playedRoundAt: _potentialRound!.playedRoundAt,
     );
 
-    // Update text controllers if this is the current editing hole
-    if (_currentEditingHoleIndex == holeIndex) {
-      updateEditingControllersFromHole();
-    }
-
     // Check if hole is now complete, and if so, auto-convert
     if (updatedHole.hasRequiredFields) {
       debugPrint('Hole $holeIndex is now complete, auto-converting to DGHole');
@@ -877,11 +753,6 @@ class RoundParser extends ChangeNotifier {
       createdAt: _potentialRound!.createdAt,
       playedRoundAt: _potentialRound!.playedRoundAt,
     );
-
-    // Update text controllers if this is the current editing hole
-    if (_currentEditingHoleIndex == holeIndex) {
-      updateEditingControllersFromHole();
-    }
 
     // Check if hole is now complete, and if so, auto-convert
     if (updatedHole.hasRequiredFields) {
