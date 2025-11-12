@@ -49,7 +49,7 @@ enum _ProcessingState {
 class _RoundProcessingLoadingScreenState
     extends State<RoundProcessingLoadingScreen> {
   late RoundParser _roundParser;
-  _ProcessingState _state = _ProcessingState.loading;
+  _ProcessingState _processingState = _ProcessingState.loading;
 
   // GlobalKey to ensure ExplosionEffect persists across state changes
   final GlobalKey _explosionEffectKey = GlobalKey();
@@ -57,6 +57,7 @@ class _RoundProcessingLoadingScreenState
   @override
   void initState() {
     super.initState();
+
     _roundParser = locator.get<RoundParser>();
 
     // Start processing immediately
@@ -95,7 +96,7 @@ class _RoundProcessingLoadingScreenState
       if (_roundParser.potentialRound != null) {
         // Transition to confirmation screen
         setState(() {
-          _state = _ProcessingState.confirming;
+          _processingState = _ProcessingState.confirming;
         });
       } else if (_roundParser.parsedRound != null) {
         // For cached rounds, we skip confirmation and go straight to reveal
@@ -122,7 +123,7 @@ class _RoundProcessingLoadingScreenState
 
       // Show a brief loading state
       setState(() {
-        _state = _ProcessingState.loading;
+        _processingState = _ProcessingState.loading;
       });
 
       final bool success = await _roundParser.finalizeRound();
@@ -137,7 +138,7 @@ class _RoundProcessingLoadingScreenState
           ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
           // Go back to confirmation screen
           setState(() {
-            _state = _ProcessingState.confirming;
+            _processingState = _ProcessingState.confirming;
           });
         }
         return;
@@ -156,7 +157,7 @@ class _RoundProcessingLoadingScreenState
 
     // First, transition: fade out text and move icon to center
     setState(() {
-      _state = _ProcessingState.transitioning;
+      _processingState = _ProcessingState.transitioning;
     });
 
     // Wait 800ms for text fade and icon movement to complete
@@ -164,7 +165,7 @@ class _RoundProcessingLoadingScreenState
 
     // Then trigger explosion effect
     setState(() {
-      _state = _ProcessingState.exploding;
+      _processingState = _ProcessingState.exploding;
     });
 
     // Wait 2.8 seconds for explosion to complete
@@ -174,7 +175,7 @@ class _RoundProcessingLoadingScreenState
     // Trigger zoom transition into the center disc (hyperspace starts immediately)
     if (mounted) {
       setState(() {
-        _state = _ProcessingState.zooming;
+        _processingState = _ProcessingState.zooming;
       });
     }
 
@@ -184,7 +185,7 @@ class _RoundProcessingLoadingScreenState
     // Then transition to revealing state
     if (mounted) {
       setState(() {
-        _state = _ProcessingState.revealing;
+        _processingState = _ProcessingState.revealing;
       });
     }
   }
@@ -353,7 +354,7 @@ class _RoundProcessingLoadingScreenState
       // App bar always present to reserve space, fades in with content
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: _state == _ProcessingState.revealing
+        child: _processingState == _ProcessingState.revealing
             ? TweenAnimationBuilder<double>(
                 duration: const Duration(
                   milliseconds: 1000,
@@ -377,7 +378,7 @@ class _RoundProcessingLoadingScreenState
                   );
                 },
               )
-            : _state == _ProcessingState.confirming
+            : _processingState == _ProcessingState.confirming
             ? AppBar(
                 backgroundColor: const Color(
                   0xFFEEE8F5,
@@ -407,7 +408,7 @@ class _RoundProcessingLoadingScreenState
 
           // Layer 1: Background animations with smooth 300ms crossfades
           // During revealing, hyperspace fades out as content fades in
-          if (_state == _ProcessingState.revealing)
+          if (_processingState == _ProcessingState.revealing)
             TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 2500),
               tween: Tween<double>(begin: 1.0, end: 0.0),
@@ -417,7 +418,7 @@ class _RoundProcessingLoadingScreenState
               },
               child: _buildZoomingContent(),
             )
-          else if (_state != _ProcessingState.confirming)
+          else if (_processingState != _ProcessingState.confirming)
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               switchInCurve: Curves.easeInOut,
@@ -426,20 +427,20 @@ class _RoundProcessingLoadingScreenState
                 // Smooth fade transition between states
                 return FadeTransition(opacity: animation, child: child);
               },
-              child: _state == _ProcessingState.loading
+              child: _processingState == _ProcessingState.loading
                   ? _buildLoadingContent()
-                  : _state == _ProcessingState.transitioning
+                  : _processingState == _ProcessingState.transitioning
                   ? _buildTransitioningContent()
-                  : _state == _ProcessingState.exploding
+                  : _processingState == _ProcessingState.exploding
                   ? _buildExplodingContent()
-                  : _state == _ProcessingState.zooming
+                  : _processingState == _ProcessingState.zooming
                   ? _buildZoomingContent()
                   : const SizedBox.shrink(),
             ),
 
           // Layer 2: Round review content that fades in with blur
           // Much faster unblur for snappy reveal (1000ms)
-          if (_state == _ProcessingState.revealing)
+          if (_processingState == _ProcessingState.revealing)
             TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 1000),
               tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -464,13 +465,13 @@ class _RoundProcessingLoadingScreenState
             ),
 
           // Layer 3: Confirmation widget - shows after parsing completes
-          if (_state == _ProcessingState.confirming)
+          if (_processingState == _ProcessingState.confirming)
             _buildConfirmationContent(),
 
           // Layer 4: Persistent triangle overlay - visible through entire animation
           // Only hide during revealing and confirming
-          if (_state != _ProcessingState.revealing &&
-              _state != _ProcessingState.confirming)
+          if (_processingState != _ProcessingState.revealing &&
+              _processingState != _ProcessingState.confirming)
             IgnorePointer(child: _buildPersistentTriangle()),
         ],
       ),
@@ -482,7 +483,7 @@ class _RoundProcessingLoadingScreenState
     SquareMode mode;
     double size;
 
-    switch (_state) {
+    switch (_processingState) {
       case _ProcessingState.loading:
       case _ProcessingState.transitioning:
         mode = SquareMode.pulsing;

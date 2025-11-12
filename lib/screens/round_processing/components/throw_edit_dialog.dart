@@ -104,6 +104,9 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
   }
 
   void _save() {
+    // Unfocus any text fields to dismiss keyboard
+    FocusScope.of(context).unfocus();
+
     // Parse distances
     final int? distanceBefore = int.tryParse(_distanceBeforeController.text);
     final int? distanceAfter = int.tryParse(_distanceAfterController.text);
@@ -181,7 +184,10 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      FocusScope.of(context).unfocus();
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ],
               ),
@@ -384,7 +390,10 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                   // Delete button (only for existing throws)
                   if (widget.onDelete != null)
                     TextButton.icon(
-                      onPressed: widget.onDelete,
+                      onPressed: () {
+                        FocusScope.of(context).unfocus();
+                        widget.onDelete!();
+                      },
                       icon: const Icon(Icons.delete, color: Colors.red),
                       label: const Text(
                         'Delete',
@@ -398,7 +407,10 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                   Row(
                     children: [
                       TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          FocusScope.of(context).unfocus();
+                          Navigator.of(context).pop();
+                        },
                         child: const Text('Cancel'),
                       ),
                       const SizedBox(width: 8),
