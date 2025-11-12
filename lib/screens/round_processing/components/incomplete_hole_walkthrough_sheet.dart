@@ -43,6 +43,7 @@ class _IncompleteHoleWalkthroughSheetState
   late RoundParser _roundParser;
   late List<int> _incompleteHoleIndices;
   int _incompleteHolesListIndex = 0;
+  HoleEditingState? _currentHoleEditingState; // Store reference to sync on updates
 
   @override
   void initState() {
@@ -144,6 +145,9 @@ class _IncompleteHoleWalkthroughSheetState
                     create: (_) => HoleEditingState(initialHole: potentialHole),
                     child: Consumer<HoleEditingState>(
                       builder: (context, holeState, _) {
+                        // Store reference so we can sync it with round updates
+                        _currentHoleEditingState = holeState;
+
                         final PotentialDGHole currentHole = holeState.currentHole;
                         final int actualHoleIndex =
                             _incompleteHoleIndices[_incompleteHolesListIndex];
@@ -289,8 +293,20 @@ class _IncompleteHoleWalkthroughSheetState
       setState(() {
         _refreshIncompleteHoles();
 
-        // If all holes are now complete, the UI will automatically show the completion message
-        // No need to manually update the provider state as it will be recreated when switching holes
+        // Sync the current HoleEditingState with the updated hole data from RoundParser
+        // This ensures the UI reflects changes when editing the current hole
+        if (_currentHoleEditingState != null &&
+            _incompleteHoleIndices.isNotEmpty &&
+            _incompleteHolesListIndex < _incompleteHoleIndices.length) {
+          final int actualHoleIndex =
+              _incompleteHoleIndices[_incompleteHolesListIndex];
+          if (_roundParser.potentialRound?.holes != null &&
+              actualHoleIndex < _roundParser.potentialRound!.holes!.length) {
+            final PotentialDGHole updatedHole =
+                _roundParser.potentialRound!.holes![actualHoleIndex];
+            _currentHoleEditingState!.updateFromHole(updatedHole);
+          }
+        }
       });
     }
   }
