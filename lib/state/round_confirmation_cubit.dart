@@ -2,144 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-
-/// State for the round confirmation workflow
-class RoundConfirmationState {
-  const RoundConfirmationState({
-    required this.potentialRound,
-    this.currentEditingHoleIndex,
-    this.parController,
-    this.distanceController,
-    this.parFocus,
-    this.distanceFocus,
-  });
-
-  final PotentialDGRound potentialRound;
-  final int? currentEditingHoleIndex;
-  final TextEditingController? parController;
-  final TextEditingController? distanceController;
-  final FocusNode? parFocus;
-  final FocusNode? distanceFocus;
-
-  /// Get the current hole being edited
-  PotentialDGHole? get currentEditingHole {
-    if (currentEditingHoleIndex == null ||
-        potentialRound.holes == null ||
-        currentEditingHoleIndex! >= potentialRound.holes!.length) {
-      return null;
-    }
-    return potentialRound.holes![currentEditingHoleIndex!];
-  }
-
-  /// Getters for convenience
-  int get par => currentEditingHole?.par ?? 0;
-  int get distance => currentEditingHole?.feet ?? 0;
-  int get strokes => currentEditingHole?.throws?.length ?? 0;
-  bool get hasRequiredFields => currentEditingHole?.hasRequiredFields ?? false;
-
-  RoundConfirmationState copyWith({
-    PotentialDGRound? potentialRound,
-    int? currentEditingHoleIndex,
-    bool clearCurrentEditingHole = false,
-    TextEditingController? parController,
-    TextEditingController? distanceController,
-    FocusNode? parFocus,
-    FocusNode? distanceFocus,
-  }) {
-    return RoundConfirmationState(
-      potentialRound: potentialRound ?? this.potentialRound,
-      currentEditingHoleIndex: clearCurrentEditingHole
-          ? null
-          : (currentEditingHoleIndex ?? this.currentEditingHoleIndex),
-      parController: parController ?? this.parController,
-      distanceController: distanceController ?? this.distanceController,
-      parFocus: parFocus ?? this.parFocus,
-      distanceFocus: distanceFocus ?? this.distanceFocus,
-    );
-  }
-}
+import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
 /// Cubit for managing round confirmation workflow state
 /// Tracks the potential round being edited and the current hole being edited
 class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
-  RoundConfirmationCubit(PotentialDGRound initialRound)
-      : super(RoundConfirmationState(potentialRound: initialRound));
+  RoundConfirmationCubit() : super(const ConfirmingRoundInactive());
 
-  /// Set the current hole being edited and initialize text controllers
+  void startRoundConfirmation(
+    BuildContext context,
+    PotentialDGRound potentialRound,
+  ) {
+    emit(
+      ConfirmingRoundActive(
+        potentialRound: potentialRound,
+        currentEditingHoleIndex: null,
+      ),
+    );
+  }
+
+  void clearRoundConfirmation() {
+    emit(ConfirmingRoundInactive());
+  }
+
   void setCurrentEditingHole(int holeIndex) {
-    if (state.potentialRound.holes == null ||
-        holeIndex >= state.potentialRound.holes!.length) {
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    if (activeState.potentialRound.holes == null ||
+        holeIndex >= activeState.potentialRound.holes!.length) {
       return;
     }
 
-    // Dispose old controllers if they exist
-    _disposeEditingControllers();
-
-    final PotentialDGHole hole = state.potentialRound.holes![holeIndex];
-
-    // Initialize new controllers with current hole data
-    final parController = TextEditingController(
-      text: hole.par?.toString() ?? '',
-    );
-    final distanceController = TextEditingController(
-      text: hole.feet?.toString() ?? '',
-    );
-    final parFocus = FocusNode();
-    final distanceFocus = FocusNode();
-
-    emit(state.copyWith(
-      currentEditingHoleIndex: holeIndex,
-      parController: parController,
-      distanceController: distanceController,
-      parFocus: parFocus,
-      distanceFocus: distanceFocus,
-    ));
+    emit(activeState.copyWith(currentEditingHoleIndex: holeIndex));
   }
 
   /// Clear the current editing hole
   void clearCurrentEditingHole() {
-    _disposeEditingControllers();
-    emit(state.copyWith(clearCurrentEditingHole: true));
-  }
-
-  /// Update text controllers when hole data changes externally
-  /// Only updates controllers if they don't have focus (user not editing)
-  void updateEditingControllersFromHole() {
-    if (state.currentEditingHoleIndex == null ||
-        state.currentEditingHole == null) {
+    if (state is! ConfirmingRoundActive) {
       return;
     }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
 
-    final PotentialDGHole hole = state.currentEditingHole!;
-
-    // Only update controllers if they don't have focus
-    if (state.parFocus != null &&
-        !state.parFocus!.hasFocus &&
-        state.parController != null) {
-      state.parController!.text = hole.par?.toString() ?? '';
-    }
-    if (state.distanceFocus != null &&
-        !state.distanceFocus!.hasFocus &&
-        state.distanceController != null) {
-      state.distanceController!.text = hole.feet?.toString() ?? '';
-    }
-  }
-
-  /// Gets the current metadata values from the text controllers.
-  /// Returns a map with par and distance keys.
-  Map<String, int?> getMetadataValues() {
-    if (state.parController == null || state.distanceController == null) {
-      return {'par': null, 'distance': null};
-    }
-
-    final int? par = state.parController!.text.isEmpty
-        ? null
-        : int.tryParse(state.parController!.text);
-    final int? distance = state.distanceController!.text.isEmpty
-        ? null
-        : int.tryParse(state.distanceController!.text);
-
-    return {'par': par, 'distance': distance};
+    emit(activeState.copyWith(clearCurrentEditingHole: true));
   }
 
   /// Update a potential hole's basic metadata (number, par, distance)
@@ -149,12 +56,18 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     int? par,
     int? feet,
   }) {
-    if (state.potentialRound.holes == null ||
-        holeIndex >= state.potentialRound.holes!.length) {
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    if (activeState.potentialRound.holes == null ||
+        holeIndex >= activeState.potentialRound.holes!.length) {
       return;
     }
 
-    final PotentialDGHole currentHole = state.potentialRound.holes![holeIndex];
+    final PotentialDGHole currentHole =
+        activeState.potentialRound.holes![holeIndex];
 
     // Create updated hole with new metadata
     final PotentialDGHole updatedHole = PotentialDGHole(
@@ -167,73 +80,73 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
 
     // Update the holes list
     final List<PotentialDGHole> updatedHoles = List<PotentialDGHole>.from(
-      state.potentialRound.holes!,
+      activeState.potentialRound.holes!,
     );
     updatedHoles[holeIndex] = updatedHole;
 
     final updatedRound = PotentialDGRound(
-      id: state.potentialRound.id,
-      courseName: state.potentialRound.courseName,
-      courseId: state.potentialRound.courseId,
+      id: activeState.potentialRound.id,
+      courseName: activeState.potentialRound.courseName,
+      courseId: activeState.potentialRound.courseId,
       holes: updatedHoles,
-      versionId: state.potentialRound.versionId,
-      analysis: state.potentialRound.analysis,
-      aiSummary: state.potentialRound.aiSummary,
-      aiCoachSuggestion: state.potentialRound.aiCoachSuggestion,
-      createdAt: state.potentialRound.createdAt,
-      playedRoundAt: state.potentialRound.playedRoundAt,
+      versionId: activeState.potentialRound.versionId,
+      analysis: activeState.potentialRound.analysis,
+      aiSummary: activeState.potentialRound.aiSummary,
+      aiCoachSuggestion: activeState.potentialRound.aiCoachSuggestion,
+      createdAt: activeState.potentialRound.createdAt,
+      playedRoundAt: activeState.potentialRound.playedRoundAt,
     );
 
-    emit(state.copyWith(potentialRound: updatedRound));
-
-    // Update text controllers if this is the current editing hole
-    if (state.currentEditingHoleIndex == holeIndex) {
-      updateEditingControllersFromHole();
-    }
+    emit(activeState.copyWith(potentialRound: updatedRound));
   }
 
   /// Update an entire potential hole including its throws
   void updatePotentialHole(int holeIndex, PotentialDGHole updatedHole) {
-    if (state.potentialRound.holes == null ||
-        holeIndex >= state.potentialRound.holes!.length) {
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    if (activeState.potentialRound.holes == null ||
+        holeIndex >= activeState.potentialRound.holes!.length) {
       return;
     }
 
     // Update the holes list
     final List<PotentialDGHole> updatedHoles = List<PotentialDGHole>.from(
-      state.potentialRound.holes!,
+      activeState.potentialRound.holes!,
     );
     updatedHoles[holeIndex] = updatedHole;
 
     final updatedRound = PotentialDGRound(
-      id: state.potentialRound.id,
-      courseName: state.potentialRound.courseName,
-      courseId: state.potentialRound.courseId,
+      id: activeState.potentialRound.id,
+      courseName: activeState.potentialRound.courseName,
+      courseId: activeState.potentialRound.courseId,
       holes: updatedHoles,
-      versionId: state.potentialRound.versionId,
-      analysis: state.potentialRound.analysis,
-      aiSummary: state.potentialRound.aiSummary,
-      aiCoachSuggestion: state.potentialRound.aiCoachSuggestion,
-      createdAt: state.potentialRound.createdAt,
-      playedRoundAt: state.potentialRound.playedRoundAt,
+      versionId: activeState.potentialRound.versionId,
+      analysis: activeState.potentialRound.analysis,
+      aiSummary: activeState.potentialRound.aiSummary,
+      aiCoachSuggestion: activeState.potentialRound.aiCoachSuggestion,
+      createdAt: activeState.potentialRound.createdAt,
+      playedRoundAt: activeState.potentialRound.playedRoundAt,
     );
 
-    emit(state.copyWith(potentialRound: updatedRound));
-
-    // Update text controllers if this is the current editing hole
-    if (state.currentEditingHoleIndex == holeIndex) {
-      updateEditingControllersFromHole();
-    }
+    emit(activeState.copyWith(potentialRound: updatedRound));
   }
 
   /// Update a throw within a hole
   void updateThrow(int holeIndex, int throwIndex, DiscThrow updatedThrow) {
-    if (state.potentialRound.holes == null ||
-        holeIndex >= state.potentialRound.holes!.length) {
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    if (activeState.potentialRound.holes == null ||
+        holeIndex >= activeState.potentialRound.holes!.length) {
       return;
     }
 
-    final hole = state.potentialRound.holes![holeIndex];
+    final hole = activeState.potentialRound.holes![holeIndex];
     if (hole.throws == null || throwIndex >= hole.throws!.length) {
       return;
     }
@@ -272,19 +185,5 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     );
 
     updatePotentialHole(holeIndex, updatedHole);
-  }
-
-  /// Dispose text controllers and focus nodes
-  void _disposeEditingControllers() {
-    state.parController?.dispose();
-    state.distanceController?.dispose();
-    state.parFocus?.dispose();
-    state.distanceFocus?.dispose();
-  }
-
-  @override
-  Future<void> close() {
-    _disposeEditingControllers();
-    return super.close();
   }
 }

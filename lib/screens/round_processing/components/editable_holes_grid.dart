@@ -6,16 +6,12 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
-import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
 ///
 /// Supports both complete holes (DGHole) and incomplete holes (PotentialDGHole).
 class EditableHolesGrid extends StatelessWidget {
-  const EditableHolesGrid({
-    super.key,
-    required this.potentialRound,
-  });
+  const EditableHolesGrid({super.key, required this.potentialRound});
 
   final PotentialDGRound potentialRound;
 
@@ -105,29 +101,26 @@ class _HoleGridItem extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (builderContext) => BlocProvider.value(
-        value: context.read<RoundConfirmationCubit>(),
-        child: EditableHoleDetailSheet(
-          potentialHole: potentialHole,
-          holeIndex: holeIndex,
-          onMetadataChanged: ({int? newPar, int? newDistance}) =>
-              _handleMetadataChanged(
-                context,
-                holeIndex,
-                potentialHole,
-                newPar: newPar,
-                newDistance: newDistance,
-              ),
-          onThrowAdded: (throw_) =>
-              _handleThrowAdded(context, holeIndex, potentialHole, throw_),
-          onThrowEdited: (throwIndex, updatedThrow) => context
-              .read<RoundConfirmationCubit>()
-              .updateThrow(holeIndex, throwIndex, updatedThrow),
-          onThrowDeleted: (throwIndex) =>
-              _handleThrowDeleted(context, holeIndex, potentialHole, throwIndex),
-          onVoiceRecord: () =>
-              _handleVoiceRecord(context, potentialHole, holeIndex),
-        ),
+      builder: (builderContext) => EditableHoleDetailSheet(
+        potentialHole: potentialHole,
+        holeIndex: holeIndex,
+        onMetadataChanged: ({int? newPar, int? newDistance}) =>
+            _handleMetadataChanged(
+              context,
+              holeIndex,
+              potentialHole,
+              newPar: newPar,
+              newDistance: newDistance,
+            ),
+        onThrowAdded: (throw_) =>
+            _handleThrowAdded(context, holeIndex, potentialHole, throw_),
+        onThrowEdited: (throwIndex, updatedThrow) => context
+            .read<RoundConfirmationCubit>()
+            .updateThrow(holeIndex, throwIndex, updatedThrow),
+        onThrowDeleted: (throwIndex) =>
+            _handleThrowDeleted(context, holeIndex, potentialHole, throwIndex),
+        onVoiceRecord: () =>
+            _handleVoiceRecord(context, potentialHole, holeIndex),
       ),
     );
   }
@@ -245,7 +238,9 @@ class _HoleGridItem extends StatelessWidget {
       throws: currentHole.throws,
       holeType: currentHole.holeType,
     );
-    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
+    BlocProvider.of<RoundConfirmationCubit>(
+      context,
+    ).updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleThrowAdded(
@@ -290,7 +285,9 @@ class _HoleGridItem extends StatelessWidget {
       holeType: currentHole.holeType,
     );
 
-    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
+    BlocProvider.of<RoundConfirmationCubit>(
+      context,
+    ).updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleThrowDeleted(
@@ -343,7 +340,9 @@ class _HoleGridItem extends StatelessWidget {
       holeType: currentHole.holeType,
     );
 
-    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
+    BlocProvider.of<RoundConfirmationCubit>(
+      context,
+    ).updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleVoiceRecord(

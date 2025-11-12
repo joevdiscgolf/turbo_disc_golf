@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
 ///
@@ -46,21 +47,31 @@ class EditableHoleDetailSheet extends StatefulWidget {
 }
 
 class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
+  late final FocusNode _parFocusNode;
+  late final FocusNode _distanceFocusNode;
+  late final RoundConfirmationCubit _roundConfirmationCubit;
+
   @override
   void initState() {
     super.initState();
+    _roundConfirmationCubit = BlocProvider.of<RoundConfirmationCubit>(context);
+    _parFocusNode = FocusNode();
+    _distanceFocusNode = FocusNode();
+
     // Set current editing hole in post frame callback
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<RoundConfirmationCubit>().setCurrentEditingHole(widget.holeIndex);
+        _roundConfirmationCubit.setCurrentEditingHole(widget.holeIndex);
       }
     });
   }
 
   @override
   void dispose() {
+    _parFocusNode.dispose();
+    _distanceFocusNode.dispose();
     // Clear the current editing hole when disposing
-    context.read<RoundConfirmationCubit>().clearCurrentEditingHole();
+    _roundConfirmationCubit.clearCurrentEditingHole();
     super.dispose();
   }
 
@@ -68,38 +79,35 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
   Widget build(BuildContext context) {
     return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
       builder: (context, state) {
+        if (state is! ConfirmingRoundActive) {
+          return const SizedBox();
+        }
         final PotentialDGHole? currentHole = state.currentEditingHole;
 
-        if (currentHole == null ||
-            state.parController == null ||
-            state.distanceController == null) {
+        if (currentHole == null) {
           return const SizedBox();
         }
 
         return SizedBox(
           height: MediaQuery.of(context).size.height - 64,
-          child: EditableHoleBody(
+          child: EditHoleBody(
             holeNumber: currentHole.number ?? widget.holeIndex + 1,
-            par: currentHole.par ?? 0,
-            distance: currentHole.feet ?? 0,
+            par: currentHole.par,
+            distance: currentHole.feet,
             throws:
                 currentHole.throws
                     ?.where((t) => t.hasRequiredFields)
                     .map((t) => t.toDiscThrow())
                     .toList() ??
                 [],
-            parController: state.parController!,
-            distanceController: state.distanceController!,
-            parFocusNode: state.parFocus!,
-            distanceFocusNode: state.distanceFocus!,
+            parFocusNode: _parFocusNode,
+            distanceFocusNode: _distanceFocusNode,
             bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             hasRequiredFields: currentHole.hasRequiredFields,
             onParChanged: (int newPar) =>
                 _handleMetadataChanged(newPar: newPar, newDistance: null),
-            onDistanceChanged: (int newDistance) => _handleMetadataChanged(
-              newPar: null,
-              newDistance: newDistance,
-            ),
+            onDistanceChanged: (int newDistance) =>
+                _handleMetadataChanged(newPar: null, newDistance: newDistance),
             onThrowAdded: ({int? addThrowAtIndex}) =>
                 _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
             onThrowEdited: (throwIndex) =>
@@ -119,10 +127,14 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     widget.onMetadataChanged(newPar: newPar, newDistance: newDistance);
   }
 
-  void _handleAddThrow(
+  Future<void> _handleAddThrow(
     PotentialDGHole currentHole, {
     required int? addAtIndex,
-  }) {
+  }) async {
+    // Unfocus any active fields before showing dialog
+    _parFocusNode.unfocus();
+    _distanceFocusNode.unfocus();
+
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
       index: currentHole.throws?.length ?? 0,
@@ -130,7 +142,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
       technique: ThrowTechnique.backhand,
     );
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: newThrow,
@@ -144,9 +156,22 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
         onDelete: null, // No delete for new throws
       ),
     );
+
+    // Unfocus again after dialog closes to prevent keyboard from popping up
+    if (mounted) {
+      _parFocusNode.unfocus();
+      _distanceFocusNode.unfocus();
+    }
   }
 
-  void _handleEditThrow(PotentialDGHole currentHole, int throwIndex) {
+  Future<void> _handleEditThrow(
+    PotentialDGHole currentHole,
+    int throwIndex,
+  ) async {
+    // Unfocus any active fields before showing dialog
+    _parFocusNode.unfocus();
+    _distanceFocusNode.unfocus();
+
     // Convert to DiscThrow from PotentialDiscThrow if needed
     final PotentialDiscThrow? potentialThrow = currentHole.throws?[throwIndex];
     if (potentialThrow == null || !potentialThrow.hasRequiredFields) {
@@ -154,7 +179,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     }
     final DiscThrow currentThrow = potentialThrow.toDiscThrow();
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: currentThrow,
@@ -170,6 +195,12 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
         },
       ),
     );
+
+    // Unfocus again after dialog closes to prevent keyboard from popping up
+    if (mounted) {
+      _parFocusNode.unfocus();
+      _distanceFocusNode.unfocus();
+    }
   }
 
   void _handleVoiceRecord(PotentialDGHole currentHole) {

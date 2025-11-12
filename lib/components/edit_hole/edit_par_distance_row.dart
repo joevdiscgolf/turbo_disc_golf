@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-class EditParDistanceRow extends StatelessWidget {
+class EditParDistanceRow extends StatefulWidget {
   const EditParDistanceRow({
     super.key,
     required this.par,
@@ -12,19 +12,48 @@ class EditParDistanceRow extends StatelessWidget {
     required this.onDistanceChanged,
     required this.parFocusNode,
     required this.distanceFocusNode,
-    required this.parController,
-    required this.distanceController,
   });
 
-  final int par;
-  final int distance;
+  final int? par;
+  final int? distance;
   final int strokes;
   final Function(int newPar) onParChanged;
   final Function(int newDistance) onDistanceChanged;
   final FocusNode parFocusNode;
   final FocusNode distanceFocusNode;
-  final TextEditingController parController;
-  final TextEditingController distanceController;
+
+  @override
+  State<EditParDistanceRow> createState() => _EditParDistanceRowState();
+}
+
+class _EditParDistanceRowState extends State<EditParDistanceRow> {
+  late final TextEditingController _parController;
+  late final TextEditingController _distanceController;
+
+  @override
+  void dispose() {
+    super.dispose();
+    _parController.dispose();
+    _distanceController.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.par != null) {
+      _parController = TextEditingController(text: widget.par?.toString());
+    } else {
+      _parController = TextEditingController();
+    }
+
+    if (widget.distance != null) {
+      _distanceController = TextEditingController(
+        text: widget.distance?.toString(),
+      );
+    } else {
+      _distanceController = TextEditingController();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +65,10 @@ class EditParDistanceRow extends StatelessWidget {
             child: _editableInfoCard(
               context,
               'Par',
-              parFocusNode,
+              widget.parFocusNode,
               Icons.flag_outlined,
-              onChanged: onParChanged,
-              controller: parController,
+              onChanged: widget.onParChanged,
+              controller: _parController,
             ),
           ),
           const SizedBox(width: 8),
@@ -47,15 +76,17 @@ class EditParDistanceRow extends StatelessWidget {
             child: _editableInfoCard(
               context,
               'Distance',
-              distanceFocusNode,
+              widget.distanceFocusNode,
               Icons.straighten,
               suffix: 'ft',
-              onChanged: onDistanceChanged,
-              controller: distanceController,
+              onChanged: widget.onDistanceChanged,
+              controller: _distanceController,
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(child: _staticInfoCard(context, 'Throws', '$strokes')),
+          Expanded(
+            child: _staticInfoCard(context, 'Throws', '${widget.strokes}'),
+          ),
         ],
       ),
     );

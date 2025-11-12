@@ -7,10 +7,10 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
 /// Bottom sheet that guides user through fixing each incomplete hole sequentially.
 /// Shows progress with tabs and horizontal checklist, allows inline editing.
-/// Uses Provider for state management.
 class IncompleteHoleWalkthroughSheet extends StatefulWidget {
   const IncompleteHoleWalkthroughSheet({
     super.key,
@@ -28,6 +28,10 @@ class IncompleteHoleWalkthroughSheet extends StatefulWidget {
 
 class _IncompleteHoleWalkthroughSheetState
     extends State<IncompleteHoleWalkthroughSheet> {
+  late final FocusNode _parFocusNode;
+  late final FocusNode _distanceFocusNode;
+  late final RoundConfirmationCubit _roundConfirmationCubit;
+
   PotentialDGHole? _selectedPotentialHole(PotentialDGRound round) {
     try {
       final int actualHoleIndex =
@@ -44,14 +48,17 @@ class _IncompleteHoleWalkthroughSheetState
   @override
   void initState() {
     super.initState();
+    _roundConfirmationCubit = BlocProvider.of<RoundConfirmationCubit>(context);
+    _parFocusNode = FocusNode();
+    _distanceFocusNode = FocusNode();
     _incompleteHoleIndices = _getIncompleteHoleIndices();
     // Set the current editing hole to the first incomplete hole
     if (_incompleteHoleIndices.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          context.read<RoundConfirmationCubit>().setCurrentEditingHole(
-                _incompleteHoleIndices[_incompleteHolesListIndex],
-              );
+          _roundConfirmationCubit.setCurrentEditingHole(
+            _incompleteHoleIndices[_incompleteHolesListIndex],
+          );
         }
       });
     }
@@ -59,25 +66,33 @@ class _IncompleteHoleWalkthroughSheetState
 
   @override
   void dispose() {
+    _parFocusNode.dispose();
+    _distanceFocusNode.dispose();
     // Clear the current editing hole when disposing
-    context.read<RoundConfirmationCubit>().clearCurrentEditingHole();
+    _roundConfirmationCubit.clearCurrentEditingHole();
     super.dispose();
   }
 
   void _setCurrentEditingHole(int holeIndex) {
-    context.read<RoundConfirmationCubit>().setCurrentEditingHole(holeIndex);
+    _roundConfirmationCubit.setCurrentEditingHole(holeIndex);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
       builder: (context, state) {
+        if (state is! ConfirmingRoundActive) {
+          return const SizedBox();
+        }
         return _buildContent(context, state);
       },
     );
   }
 
-  Widget _buildContent(BuildContext context, RoundConfirmationState state) {
+  Widget _buildContent(
+    BuildContext context,
+    ConfirmingRoundActive confirmingActiveState,
+  ) {
     // If no incomplete holes, show completion message
     if (_incompleteHoleIndices.isEmpty) {
       return Container(
@@ -136,17 +151,15 @@ class _IncompleteHoleWalkthroughSheetState
       );
     }
 
-    final PotentialDGHole? potentialHole = _selectedPotentialHole(state.potentialRound);
+    final PotentialDGHole? potentialHole = _selectedPotentialHole(
+      confirmingActiveState.potentialRound,
+    );
     if (potentialHole == null) {
       return const SizedBox();
     }
 
     final int actualHoleIndex =
         _incompleteHoleIndices[_incompleteHolesListIndex];
-
-    if (state.parController == null || state.distanceController == null) {
-      return const SizedBox();
-    }
 
     return SizedBox(
       height: MediaQuery.of(context).size.height - 64,
@@ -159,26 +172,23 @@ class _IncompleteHoleWalkthroughSheetState
         child: Column(
           children: [
             _headerRow(),
-            _buildHorizontalChecklist(state),
+            _buildHorizontalChecklist(confirmingActiveState),
             const SizedBox(height: 8),
             Expanded(
-              child: EditableHoleBody(
+              child: EditHoleBody(
+                key: ValueKey(potentialHole.number),
                 holeNumber: potentialHole.number ?? actualHoleIndex + 1,
-                par: potentialHole.par ?? 0,
-                distance: potentialHole.feet ?? 0,
+                par: potentialHole.par,
+                distance: potentialHole.feet,
                 throws:
                     potentialHole.throws
                         ?.where((t) => t.hasRequiredFields)
                         .map((t) => t.toDiscThrow())
                         .toList() ??
                     [],
-                parController: state.parController!,
-                distanceController: state.distanceController!,
-                parFocusNode: state.parFocus!,
-                distanceFocusNode: state.distanceFocus!,
-                bottomViewPadding: MediaQuery.of(
-                  context,
-                ).viewPadding.bottom,
+                parFocusNode: _parFocusNode,
+                distanceFocusNode: _distanceFocusNode,
+                bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
                 inWalkthroughSheet: true,
                 hasRequiredFields: potentialHole.hasRequiredFields,
                 onParChanged: (int newPar) => _updateHoleMetadata(
@@ -186,18 +196,16 @@ class _IncompleteHoleWalkthroughSheetState
                   newPar: newPar,
                   newDistance: null,
                 ),
-                onDistanceChanged: (int newDistance) =>
-                    _updateHoleMetadata(
-                      actualHoleIndex,
-                      newPar: null,
-                      newDistance: newDistance,
-                    ),
-                onThrowAdded: ({int? addThrowAtIndex}) =>
-                    _handleAddThrow(
-                      potentialHole,
-                      actualHoleIndex,
-                      addThrowAtIndex: addThrowAtIndex,
-                    ),
+                onDistanceChanged: (int newDistance) => _updateHoleMetadata(
+                  actualHoleIndex,
+                  newPar: null,
+                  newDistance: newDistance,
+                ),
+                onThrowAdded: ({int? addThrowAtIndex}) => _handleAddThrow(
+                  potentialHole,
+                  actualHoleIndex,
+                  addThrowAtIndex: addThrowAtIndex,
+                ),
                 onThrowEdited: (throwIndex) => _handleEditThrow(
                   potentialHole,
                   actualHoleIndex,
@@ -235,7 +243,9 @@ class _IncompleteHoleWalkthroughSheetState
     );
   }
 
-  Widget _buildHorizontalChecklist(RoundConfirmationState state) {
+  Widget _buildHorizontalChecklist(
+    ConfirmingRoundActive confirmingActiveState,
+  ) {
     return Container(
       height: 48,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -245,8 +255,8 @@ class _IncompleteHoleWalkthroughSheetState
         itemBuilder: (context, index) {
           final int holeIndex = _incompleteHoleIndices[index];
           final PotentialDGHole hole =
-              state.potentialRound.holes![holeIndex];
-          final bool isComplete = _isHoleComplete(index);
+              confirmingActiveState.potentialRound.holes![holeIndex];
+          final bool isComplete = _isHoleComplete(index, confirmingActiveState);
           final bool isSelected = _incompleteHolesListIndex == index;
 
           return GestureDetector(
@@ -315,19 +325,22 @@ class _IncompleteHoleWalkthroughSheetState
     required int? newPar,
     required int? newDistance,
   }) {
-    context.read<RoundConfirmationCubit>().updatePotentialHoleMetadata(
+    _roundConfirmationCubit.updatePotentialHoleMetadata(
       holeIndex,
       par: newPar,
       feet: newDistance,
     );
   }
 
-  void _handleAddThrow(
+  Future<void> _handleAddThrow(
     PotentialDGHole currentHole,
     int holeIndex, {
     required int? addThrowAtIndex,
-  }) {
-    print('on throw added, hole index: $holeIndex');
+  }) async {
+    // Unfocus any active fields before showing dialog
+    _parFocusNode.unfocus();
+    _distanceFocusNode.unfocus();
+
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
       index: currentHole.throws?.length ?? 0,
@@ -335,7 +348,7 @@ class _IncompleteHoleWalkthroughSheetState
       technique: ThrowTechnique.backhand,
     );
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: newThrow,
@@ -380,19 +393,29 @@ class _IncompleteHoleWalkthroughSheetState
           );
 
           // Update the entire hole including throws
-          context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
+          _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
           Navigator.of(context).pop();
         },
         onDelete: null, // No delete for new throws
       ),
     );
+
+    // Unfocus again after dialog closes to prevent keyboard from popping up
+    if (mounted) {
+      _parFocusNode.unfocus();
+      _distanceFocusNode.unfocus();
+    }
   }
 
-  void _handleEditThrow(
+  Future<void> _handleEditThrow(
     PotentialDGHole currentHole,
     int holeIndex,
     int throwIndex,
-  ) {
+  ) async {
+    // Unfocus any active fields before showing dialog
+    _parFocusNode.unfocus();
+    _distanceFocusNode.unfocus();
+
     // Convert to DiscThrow from PotentialDiscThrow if needed
     final PotentialDiscThrow? potentialThrow = currentHole.throws?[throwIndex];
     if (potentialThrow == null || !potentialThrow.hasRequiredFields) {
@@ -400,14 +423,18 @@ class _IncompleteHoleWalkthroughSheetState
     }
     final DiscThrow currentThrow = potentialThrow.toDiscThrow();
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: currentThrow,
         throwIndex: throwIndex,
         holeNumber: currentHole.number ?? holeIndex + 1,
         onSave: (updatedThrow) {
-          context.read<RoundConfirmationCubit>().updateThrow(holeIndex, throwIndex, updatedThrow);
+          _roundConfirmationCubit.updateThrow(
+            holeIndex,
+            throwIndex,
+            updatedThrow,
+          );
           Navigator.of(context).pop();
         },
         onDelete: () {
@@ -416,6 +443,12 @@ class _IncompleteHoleWalkthroughSheetState
         },
       ),
     );
+
+    // Unfocus again after dialog closes to prevent keyboard from popping up
+    if (mounted) {
+      _parFocusNode.unfocus();
+      _distanceFocusNode.unfocus();
+    }
   }
 
   void _handleDeleteThrow(
@@ -469,7 +502,7 @@ class _IncompleteHoleWalkthroughSheetState
     );
 
     // Update the entire hole including throws
-    context.read<RoundConfirmationCubit>().updatePotentialHole(holeIndex, updatedHole);
+    _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
   }
 
   void _handleVoiceRecord(PotentialDGHole currentHole, int holeIndex) {
@@ -500,7 +533,8 @@ class _IncompleteHoleWalkthroughSheetState
 
     // Update the current editing hole after refreshing
     if (_incompleteHoleIndices.isNotEmpty) {
-      final int newHoleIndex = _incompleteHoleIndices[_incompleteHolesListIndex];
+      final int newHoleIndex =
+          _incompleteHoleIndices[_incompleteHolesListIndex];
       _setCurrentEditingHole(newHoleIndex);
     }
 
@@ -530,13 +564,15 @@ class _IncompleteHoleWalkthroughSheetState
     return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
   }
 
-  bool _isHoleComplete(int tabIndex) {
+  bool _isHoleComplete(
+    int tabIndex,
+    ConfirmingRoundActive confirmingActiveState,
+  ) {
     if (tabIndex >= _incompleteHoleIndices.length) return false;
 
-    final cubit = context.read<RoundConfirmationCubit>();
     final int holeIndex = _incompleteHoleIndices[tabIndex];
     final PotentialDGHole hole =
-        cubit.state.potentialRound.holes![holeIndex];
+        confirmingActiveState.potentialRound.holes![holeIndex];
 
     // Check if hole has required metadata
     final bool hasMetadata =

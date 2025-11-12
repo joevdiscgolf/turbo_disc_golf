@@ -10,15 +10,13 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 ///
 /// This component is purely presentational and accepts all data via props.
 /// Parent components are responsible for managing state and responding to callbacks.
-class EditableHoleBody extends StatelessWidget {
-  const EditableHoleBody({
+class EditHoleBody extends StatelessWidget {
+  const EditHoleBody({
     super.key,
     required this.holeNumber,
     required this.par,
     required this.distance,
     required this.throws,
-    required this.parController,
-    required this.distanceController,
     required this.parFocusNode,
     required this.distanceFocusNode,
     required this.bottomViewPadding,
@@ -33,11 +31,9 @@ class EditableHoleBody extends StatelessWidget {
   });
 
   final int? holeNumber;
-  final int par;
-  final int distance;
+  final int? par;
+  final int? distance;
   final List<DiscThrow> throws;
-  final TextEditingController parController;
-  final TextEditingController distanceController;
   final FocusNode parFocusNode;
   final FocusNode distanceFocusNode;
   final double bottomViewPadding;
@@ -81,8 +77,6 @@ class EditableHoleBody extends StatelessWidget {
                   onDistanceChanged(newDistance),
               parFocusNode: parFocusNode,
               distanceFocusNode: distanceFocusNode,
-              parController: parController,
-              distanceController: distanceController,
             ),
 
             // Throws timeline
@@ -92,7 +86,6 @@ class EditableHoleBody extends StatelessWidget {
                       throws: throws,
                       onEditThrow: onThrowEdited,
                       onAddThrowAt: (int addThrowAtIndex) {
-                        print('on throw added from editable throws timeline.');
                         onThrowAdded(addThrowAtIndex: addThrowAtIndex);
                       },
                     )
@@ -242,11 +235,11 @@ class EditableHoleBody extends StatelessWidget {
       return const Color(0xFFFFEB3B); // Bright yellow for incomplete
     }
 
-    if (par == 0 || throws.isEmpty) {
+    if (par == null || par == 0 || throws.isEmpty) {
       return Colors.grey;
     }
 
-    final int relativeScore = throws.length - par;
+    final int relativeScore = throws.length - par!;
 
     if (relativeScore < 0) {
       return const Color(0xFF137e66); // Birdie - green
