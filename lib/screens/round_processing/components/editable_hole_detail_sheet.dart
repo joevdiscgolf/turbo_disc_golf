@@ -4,7 +4,7 @@ import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
-import 'package:turbo_disc_golf/state/hole_editing_state.dart';
+import 'package:turbo_disc_golf/services/round_parser.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
 ///
@@ -46,61 +46,74 @@ class EditableHoleDetailSheet extends StatefulWidget {
 }
 
 class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
+  RoundParser? _roundParser;
+
   @override
   void initState() {
     super.initState();
-    // Call the optional callback if provided (parent may listen to round updates)
-    if (widget.onRoundUpdated != null) {
-      // Parent will handle round updates
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Access RoundParser from Provider and set current editing hole
+    if (_roundParser == null) {
+      _roundParser = Provider.of<RoundParser>(context, listen: false);
+      _roundParser!.setCurrentEditingHole(widget.holeIndex);
     }
   }
 
   @override
   void dispose() {
+    // Clear the current editing hole when disposing
+    _roundParser?.clearCurrentEditingHole();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => HoleEditingState(initialHole: widget.potentialHole),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height - 64,
-        child: Consumer<HoleEditingState>(
-          builder: (context, holeState, _) {
-            final PotentialDGHole currentHole = holeState.currentHole;
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - 64,
+      child: Consumer<RoundParser>(
+        builder: (context, roundParser, _) {
+          final PotentialDGHole? currentHole = roundParser.currentEditingHole;
 
-            return EditableHoleBody(
-              holeNumber: currentHole.number ?? widget.holeIndex + 1,
-              par: currentHole.par ?? 0,
-              distance: currentHole.feet ?? 0,
-              throws:
-                  currentHole.throws
-                      ?.where((t) => t.hasRequiredFields)
-                      .map((t) => t.toDiscThrow())
-                      .toList() ??
-                  [],
-              parController: holeState.parController,
-              distanceController: holeState.distanceController,
-              parFocusNode: holeState.parFocus,
-              distanceFocusNode: holeState.distanceFocus,
-              bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
-              hasRequiredFields: currentHole.hasRequiredFields,
-              onParChanged: (int newPar) =>
-                  _handleMetadataChanged(newPar: newPar, newDistance: null),
-              onDistanceChanged: (int newDistance) => _handleMetadataChanged(
-                newPar: null,
-                newDistance: newDistance,
-              ),
-              onThrowAdded: ({int? addThrowAtIndex}) =>
-                  _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
-              onThrowEdited: (throwIndex) =>
-                  _handleEditThrow(currentHole, throwIndex),
-              onVoiceRecord: () => _handleVoiceRecord(currentHole),
-              onDone: () => Navigator.of(context).pop(),
-            );
-          },
-        ),
+          if (currentHole == null ||
+              roundParser.parController == null ||
+              roundParser.distanceController == null) {
+            return const SizedBox();
+          }
+
+          return EditableHoleBody(
+            holeNumber: currentHole.number ?? widget.holeIndex + 1,
+            par: currentHole.par ?? 0,
+            distance: currentHole.feet ?? 0,
+            throws:
+                currentHole.throws
+                    ?.where((t) => t.hasRequiredFields)
+                    .map((t) => t.toDiscThrow())
+                    .toList() ??
+                [],
+            parController: roundParser.parController!,
+            distanceController: roundParser.distanceController!,
+            parFocusNode: roundParser.parFocus!,
+            distanceFocusNode: roundParser.distanceFocus!,
+            bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+            hasRequiredFields: currentHole.hasRequiredFields,
+            onParChanged: (int newPar) =>
+                _handleMetadataChanged(newPar: newPar, newDistance: null),
+            onDistanceChanged: (int newDistance) => _handleMetadataChanged(
+              newPar: null,
+              newDistance: newDistance,
+            ),
+            onThrowAdded: ({int? addThrowAtIndex}) =>
+                _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
+            onThrowEdited: (throwIndex) =>
+                _handleEditThrow(currentHole, throwIndex),
+            onVoiceRecord: () => _handleVoiceRecord(currentHole),
+            onDone: () => Navigator.of(context).pop(),
+          );
+        },
       ),
     );
   }
