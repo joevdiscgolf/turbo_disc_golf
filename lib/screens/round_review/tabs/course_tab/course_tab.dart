@@ -4,11 +4,17 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_kpi_card.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/services/round_storage_service.dart';
 
 class CourseTab extends StatefulWidget {
   final DGRound round;
+  final void Function(DGRound updatedRound)? onRoundUpdated;
 
-  const CourseTab({super.key, required this.round});
+  const CourseTab({
+    super.key,
+    required this.round,
+    this.onRoundUpdated,
+  });
 
   @override
   State<CourseTab> createState() => _CourseTabState();
@@ -17,12 +23,26 @@ class CourseTab extends StatefulWidget {
 class _CourseTabState extends State<CourseTab> {
   late DGRound _round;
   late RoundParser _roundParser;
+  late RoundStorageService _roundStorageService;
 
   @override
   void initState() {
     super.initState();
     _round = widget.round;
     _roundParser = locator.get<RoundParser>();
+    _roundStorageService = RoundStorageService();
+  }
+
+  void _handleRoundUpdated(DGRound updatedRound) {
+    setState(() {
+      _round = updatedRound;
+    });
+
+    // Save to storage
+    _roundStorageService.saveRound(updatedRound);
+
+    // Notify parent if callback is provided
+    widget.onRoundUpdated?.call(updatedRound);
   }
 
   @override
@@ -43,7 +63,10 @@ class _CourseTabState extends State<CourseTab> {
         isDetailScreen: true,
       ),
       const SizedBox(height: 8),
-      HolesGrid(round: _round),
+      HolesGrid(
+        round: _round,
+        onRoundUpdated: _handleRoundUpdated,
+      ),
       // HolesList(round: _round, showAddThrowDialog: _showAddThrowDialog),
     ];
   }

@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
+import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/throw_timeline.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 
 class HolesGrid extends StatelessWidget {
-  const HolesGrid({super.key, required this.round});
+  const HolesGrid({
+    super.key,
+    required this.round,
+    required this.onRoundUpdated,
+  });
 
   final DGRound round;
+  final void Function(DGRound updatedRound) onRoundUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +28,17 @@ class HolesGrid extends StatelessWidget {
       child: Wrap(
         spacing: 0,
         runSpacing: 0,
-        children: round.holes.map((hole) {
+        children: round.holes.asMap().entries.map((entry) {
+          final int holeIndex = entry.key;
+          final DGHole hole = entry.value;
           return SizedBox(
             width: itemWidth,
-            child: _HoleGridItem(hole: hole),
+            child: _HoleGridItem(
+              hole: hole,
+              holeIndex: holeIndex,
+              round: round,
+              onRoundUpdated: onRoundUpdated,
+            ),
           );
         }).toList(),
       ),
@@ -33,26 +47,201 @@ class HolesGrid extends StatelessWidget {
 }
 
 class _HoleGridItem extends StatelessWidget {
-  const _HoleGridItem({required this.hole});
+  const _HoleGridItem({
+    required this.hole,
+    required this.holeIndex,
+    required this.round,
+    required this.onRoundUpdated,
+  });
 
   final DGHole hole;
+  final int holeIndex;
+  final DGRound round;
+  final void Function(DGRound updatedRound) onRoundUpdated;
 
   void _showHoleDetailSheet(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        barrierDismissible: true,
-        barrierColor: Colors.black54,
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 300),
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            child: _HoleDetailDialog(hole: hole),
-          );
-        },
+    // Convert DGHole to PotentialDGHole for editing
+    final PotentialDGHole potentialHole = PotentialDGHole(
+      number: hole.number,
+      par: hole.par,
+      feet: hole.feet,
+      throws: hole.throws
+          .map(
+            (t) => PotentialDiscThrow(
+              index: t.index,
+              purpose: t.purpose,
+              technique: t.technique,
+              puttStyle: t.puttStyle,
+              shotShape: t.shotShape,
+              stance: t.stance,
+              power: t.power,
+              distanceFeetBeforeThrow: t.distanceFeetBeforeThrow,
+              distanceFeetAfterThrow: t.distanceFeetAfterThrow,
+              elevationChangeFeet: t.elevationChangeFeet,
+              windDirection: t.windDirection,
+              windStrength: t.windStrength,
+              resultRating: t.resultRating,
+              landingSpot: t.landingSpot,
+              fairwayWidth: t.fairwayWidth,
+              penaltyStrokes: t.penaltyStrokes,
+              notes: t.notes,
+              rawText: t.rawText,
+              parseConfidence: t.parseConfidence,
+              discName: t.discName,
+              disc: t.disc,
+            ),
+          )
+          .toList(),
+      holeType: hole.holeType,
+    );
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => EditableHoleDetailSheet(
+        potentialHole: potentialHole,
+        holeIndex: holeIndex,
+        onMetadataChanged: (par, distance) => _handleMetadataChanged(
+          par,
+          distance,
+        ),
+        onThrowAdded: (throw_) => _handleThrowAdded(throw_),
+        onThrowEdited: (throwIndex, updatedThrow) => _handleThrowEdited(
+          throwIndex,
+          updatedThrow,
+        ),
+        onThrowDeleted: (throwIndex) => _handleThrowDeleted(throwIndex),
+        onVoiceRecord: () => _handleVoiceRecord(),
       ),
     );
+  }
+
+  // Handler methods for EditableHoleDetailSheet callbacks
+  void _handleMetadataChanged(int? par, int? distance) {
+    final DGHole updatedHole = DGHole(
+      number: hole.number,
+      par: par ?? hole.par,
+      feet: distance ?? hole.feet,
+      throws: hole.throws,
+      holeType: hole.holeType,
+    );
+
+    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
+    updatedHoles[holeIndex] = updatedHole;
+
+    final DGRound updatedRound = round.copyWith(
+      holes: updatedHoles,
+      versionId: round.versionId + 1,
+    );
+
+    onRoundUpdated(updatedRound);
+  }
+
+  void _handleThrowAdded(DiscThrow newThrow) {
+    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(hole.throws);
+    updatedThrows.add(newThrow);
+
+    final DGHole updatedHole = DGHole(
+      number: hole.number,
+      par: hole.par,
+      feet: hole.feet,
+      throws: updatedThrows,
+      holeType: hole.holeType,
+    );
+
+    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
+    updatedHoles[holeIndex] = updatedHole;
+
+    final DGRound updatedRound = round.copyWith(
+      holes: updatedHoles,
+      versionId: round.versionId + 1,
+    );
+
+    onRoundUpdated(updatedRound);
+  }
+
+  void _handleThrowEdited(int throwIndex, DiscThrow updatedThrow) {
+    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(hole.throws);
+    updatedThrows[throwIndex] = updatedThrow;
+
+    final DGHole updatedHole = DGHole(
+      number: hole.number,
+      par: hole.par,
+      feet: hole.feet,
+      throws: updatedThrows,
+      holeType: hole.holeType,
+    );
+
+    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
+    updatedHoles[holeIndex] = updatedHole;
+
+    final DGRound updatedRound = round.copyWith(
+      holes: updatedHoles,
+      versionId: round.versionId + 1,
+    );
+
+    onRoundUpdated(updatedRound);
+  }
+
+  void _handleThrowDeleted(int throwIndex) {
+    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(hole.throws);
+    updatedThrows.removeAt(throwIndex);
+
+    // Reindex remaining throws
+    final List<DiscThrow> reindexedThrows = updatedThrows
+        .asMap()
+        .entries
+        .map((entry) {
+          final DiscThrow throw_ = entry.value;
+          return DiscThrow(
+            index: entry.key,
+            purpose: throw_.purpose,
+            technique: throw_.technique,
+            puttStyle: throw_.puttStyle,
+            shotShape: throw_.shotShape,
+            stance: throw_.stance,
+            power: throw_.power,
+            distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
+            distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
+            elevationChangeFeet: throw_.elevationChangeFeet,
+            windDirection: throw_.windDirection,
+            windStrength: throw_.windStrength,
+            resultRating: throw_.resultRating,
+            landingSpot: throw_.landingSpot,
+            fairwayWidth: throw_.fairwayWidth,
+            penaltyStrokes: throw_.penaltyStrokes,
+            notes: throw_.notes,
+            rawText: throw_.rawText,
+            parseConfidence: throw_.parseConfidence,
+            discName: throw_.discName,
+            disc: throw_.disc,
+          );
+        })
+        .toList();
+
+    final DGHole updatedHole = DGHole(
+      number: hole.number,
+      par: hole.par,
+      feet: hole.feet,
+      throws: reindexedThrows,
+      holeType: hole.holeType,
+    );
+
+    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
+    updatedHoles[holeIndex] = updatedHole;
+
+    final DGRound updatedRound = round.copyWith(
+      holes: updatedHoles,
+      versionId: round.versionId + 1,
+    );
+
+    onRoundUpdated(updatedRound);
+  }
+
+  void _handleVoiceRecord() {
+    // Voice recording is not supported for completed rounds
+    // Could be implemented in the future
   }
 
   @override
@@ -194,177 +383,6 @@ class _HoleGridItem extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _HoleDetailDialog extends StatelessWidget {
-  const _HoleDetailDialog({required this.hole});
-
-  final DGHole hole;
-
-  @override
-  Widget build(BuildContext context) {
-    final int relativeScore = hole.relativeHoleScore;
-
-    // Determine score color
-    Color scoreColor;
-    if (relativeScore < 0) {
-      scoreColor = const Color(0xFF137e66); // Birdie - green
-    } else if (relativeScore == 0) {
-      scoreColor = Colors.grey; // Par - grey
-    } else if (relativeScore == 1) {
-      scoreColor = const Color(0xFFFF7A7A); // Bogey - light red
-    } else {
-      scoreColor = const Color(0xFFD32F2F); // Double bogey+ - dark red
-    }
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: 500,
-              maxHeight: MediaQuery.of(context).size.height - 64,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: scoreColor.withValues(alpha: 0.1),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Hero(
-                    tag: 'hole_${hole.number}',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.golf_course,
-                                size: 24,
-                                color: scoreColor,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Hole ${hole.number}',
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: scoreColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${hole.holeScore}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Hole info
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildInfoItem(
-                        context,
-                        'Par',
-                        '${hole.par}',
-                        Icons.flag_outlined,
-                      ),
-                      if (hole.feet != null)
-                        _buildInfoItem(
-                          context,
-                          'Distance',
-                          '${hole.feet} ft',
-                          Icons.straighten,
-                        ),
-                      _buildInfoItem(
-                        context,
-                        'Throws',
-                        '${hole.throws.length}',
-                        Icons.sports_golf,
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                // Throws timeline
-                Flexible(child: ThrowTimeline(throws: hole.throws)),
-                // Close button
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }
