@@ -6,7 +6,6 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/editable_throw_timeline.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -34,7 +33,8 @@ class _IncompleteHoleWalkthroughSheetState
     with SingleTickerProviderStateMixin {
   PotentialDGHole? get _selectedPotentialHole {
     try {
-      return widget.potentialRound.holes![_currentHoleIndex];
+      final actualHoleIndex = _incompleteHoleIndices[_incompleteHolesListIndex];
+      return _roundParser.potentialRound!.holes![actualHoleIndex];
     } catch (e) {
       return null;
     }
@@ -50,7 +50,7 @@ class _IncompleteHoleWalkthroughSheetState
   late List<FocusNode> _holeNumberFocusNodes;
   late List<FocusNode> _parFocusNodes;
   late List<FocusNode> _distanceFocusNodes;
-  int _currentHoleIndex = 0;
+  int _incompleteHolesListIndex = 0;
 
   @override
   void initState() {
@@ -129,36 +129,42 @@ class _IncompleteHoleWalkthroughSheetState
       );
     }
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        final PotentialDGHole? potentialHole = _selectedPotentialHole;
-        if (potentialHole == null) {
-          return const SizedBox();
-        }
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              _headerRow(),
-              _buildHorizontalChecklist(),
-              const SizedBox(height: 8),
-              EditableHoleBody(
-                potentialHole: potentialHole,
-                holeIndex: _currentHoleIndex,
-                roundParser: _roundParser,
-                inWalkthroughSheet: true,
-              ),
-            ],
-          ),
-        );
-      },
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - 64,
+      child: Builder(
+        builder: (context) {
+          final PotentialDGHole? potentialHole = _selectedPotentialHole;
+          if (potentialHole == null) {
+            return const SizedBox();
+          }
+
+          return Container(
+            height: MediaQuery.of(context).size.height - 64,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                _headerRow(),
+                _buildHorizontalChecklist(),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: EditableHoleBody(
+                    potentialHole: potentialHole,
+                    holeIndex: _incompleteHolesListIndex,
+                    roundParser: _roundParser,
+                    inWalkthroughSheet: true,
+                    bottomViewPadding: MediaQuery.of(
+                      context,
+                    ).viewPadding.bottom,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -186,215 +192,6 @@ class _IncompleteHoleWalkthroughSheetState
     );
   }
 
-  Widget _buildHoleContent(int tabIndex, ScrollController scrollController) {
-    final int holeIndex = _incompleteHoleIndices[tabIndex];
-    final PotentialDGHole hole = _roundParser.potentialRound!.holes![holeIndex];
-    final Color scoreColor = _getScoreColor(hole);
-    final int? score =
-        hole.hasRequiredFields && hole.throws != null && hole.throws!.isNotEmpty
-        ? hole.toDGHole().holeScore
-        : null;
-
-    return Column(
-      children: [
-        // Header (matching _HoleDetailDialog design)
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: scoreColor.withValues(alpha: 0.1)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.golf_course, size: 24, color: scoreColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Hole ${hole.number ?? '?'}',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              if (score != null)
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: scoreColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$score',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: scoreColor.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(Icons.edit, color: scoreColor, size: 20),
-                  ),
-                ),
-            ],
-          ),
-        ),
-
-        // Hole info with editable fields (matching _HoleDetailDialog layout)
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildEditableInfoItem(
-                context,
-                'Par',
-                _parControllers[tabIndex],
-                _parFocusNodes[tabIndex],
-                tabIndex,
-                Icons.flag_outlined,
-              ),
-              _buildEditableInfoItem(
-                context,
-                'Distance',
-                _distanceControllers[tabIndex],
-                _distanceFocusNodes[tabIndex],
-                tabIndex,
-                Icons.straighten,
-                suffix: 'ft',
-              ),
-              _buildInfoItem(
-                context,
-                'Throws',
-                '${hole.throws?.length ?? 0}',
-                Icons.sports_golf,
-              ),
-            ],
-          ),
-        ),
-
-        const Divider(height: 1),
-
-        // Throws timeline
-        Expanded(
-          child: hole.throws != null && hole.throws!.isNotEmpty
-              ? EditableThrowTimeline(
-                  throws: hole.throws!
-                      .where((t) => t.hasRequiredFields)
-                      .map((t) => t.toDiscThrow())
-                      .toList(),
-                  onEditThrow: (throwIndex) => _editThrow(tabIndex, throwIndex),
-                )
-              : SingleChildScrollView(
-                  controller: scrollController,
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            'No throws recorded',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                          ),
-                          if (!_hasBasketThrow(hole) &&
-                              hole.throws?.isEmpty != true)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFD32F2F,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'Hole must be completed.',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: const Color(0xFFD32F2F),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-        ),
-
-        // Action buttons
-        Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: widget.bottomViewPadding,
-          ),
-          child: Column(
-            children: [
-              // Add throw button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: OutlinedButton.icon(
-                  onPressed: () => _addThrow(tabIndex),
-                  icon: const Icon(Icons.add, color: Colors.black),
-                  label: Text(
-                    'Add Throw',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(color: Colors.black),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Re-record button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleReRecord(tabIndex),
-                  icon: const Icon(Icons.mic, size: 18),
-                  label: const Text('Re-record Hole'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF137e66),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildHorizontalChecklist() {
     return Container(
       height: 48,
@@ -406,14 +203,13 @@ class _IncompleteHoleWalkthroughSheetState
           final holeIndex = _incompleteHoleIndices[index];
           final hole = _roundParser.potentialRound!.holes![holeIndex];
           final isComplete = _isHoleComplete(index);
-          final isSelected = _currentHoleIndex == index;
+          final isSelected = _incompleteHolesListIndex == index;
 
           return GestureDetector(
             onTap: () {
               setState(() {
-                setState(() {
-                  _currentHoleIndex = index;
-                });
+                print('changing index to $index');
+                _incompleteHolesListIndex = index;
               });
             },
             child: Container(

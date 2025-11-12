@@ -75,4 +75,6 @@ abstract class TurbColors {
     800: Color(0xff111111),
     900: Color(0xff000000),
   });
+
+  static const Color blue = Colors.blue;
 }

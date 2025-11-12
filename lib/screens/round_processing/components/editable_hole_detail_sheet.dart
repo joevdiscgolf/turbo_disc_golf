@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
@@ -69,6 +68,19 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     _parFocus.dispose();
     _distanceFocus.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - 64,
+      child: EditableHoleBody(
+        holeIndex: widget.holeIndex,
+        potentialHole: widget.potentialHole,
+        roundParser: widget.roundParser,
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+      ),
+    );
   }
 
   void _onRoundUpdated() {
@@ -275,114 +287,5 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     } else {
       return const Color(0xFFD32F2F); // Double bogey+ - dark red
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Color scoreColor = _getScoreColor();
-    final int? score =
-        _currentHole.hasRequiredFields &&
-            _currentHole.throws != null &&
-            _currentHole.throws!.isNotEmpty
-        ? _currentHole.toDGHole().holeScore
-        : null;
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-
-      builder: (context, scrollController) {
-        return EditableHoleBody(
-          holeIndex: widget.holeIndex,
-          potentialHole: widget.potentialHole,
-          roundParser: widget.roundParser,
-        );
-      },
-    );
-  }
-
-  Widget _buildEditableInfoItem(
-    BuildContext context,
-    String label,
-    TextEditingController controller,
-    FocusNode focusNode,
-    IconData icon, {
-    String? suffix,
-  }) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 4),
-        IntrinsicWidth(
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              suffix: suffix != null
-                  ? Text(suffix, style: Theme.of(context).textTheme.bodySmall)
-                  : null,
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (_) => _saveMetadata(),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
   }
 }

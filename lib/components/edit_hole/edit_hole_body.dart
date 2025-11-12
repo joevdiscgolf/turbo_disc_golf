@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/editable_thr
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class EditableHoleBody extends StatefulWidget {
   const EditableHoleBody({
@@ -16,12 +17,15 @@ class EditableHoleBody extends StatefulWidget {
     required this.potentialHole,
     required this.holeIndex,
     required this.roundParser,
+    required this.bottomViewPadding,
+
     this.inWalkthroughSheet = false,
   });
 
   final PotentialDGHole potentialHole;
   final int holeIndex;
   final RoundParser roundParser;
+  final double bottomViewPadding;
   final bool inWalkthroughSheet;
 
   @override
@@ -81,87 +85,99 @@ class _EditableHoleBodyState extends State<EditableHoleBody> {
         // Dismiss keyboard when tapping outside text fields
         FocusScope.of(context).unfocus();
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadius)),
-        child: Container(
+      child: Container(
+        padding: EdgeInsets.only(bottom: widget.bottomViewPadding),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
           color: Theme.of(context).colorScheme.surface,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header (matching _HoleDetailDialog design)
-              _holeNumberBanner(borderRadius),
-              EditParDistanceRow(
-                par: _currentHole.par ?? 0,
-                distance: _currentHole.feet ?? 0,
-                strokes: _currentHole.throws?.length ?? 0,
-                onParChanged: (int newPar) {
-                  _updatePotentialHoleMetadata();
-                },
-                onDistanceChanged: (int newDistance) {
-                  _updatePotentialHoleMetadata();
-                },
-                parFocusNode: _parFocus,
-                distanceFocusNode: _distanceFocus,
-                parController: _parController,
-                distanceController: _distanceController,
-              ),
+        ),
 
-              // Throws timeline
-              Flexible(
-                child:
-                    _currentHole.throws != null &&
-                        _currentHole.throws!.isNotEmpty
-                    ? EditableThrowTimeline(
-                        throws: _currentHole.throws!
-                            .where((t) => t.hasRequiredFields)
-                            .map((t) => t.toDiscThrow())
-                            .toList(),
-                        onEditThrow: _editThrow,
-                      )
-                    : SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Center(
-                            child: Text(
-                              'No throws recorded',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                            ),
-                          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header (matching _HoleDetailDialog design)
+            _holeNumberBanner(borderRadius),
+            EditParDistanceRow(
+              par: _currentHole.par ?? 0,
+              distance: _currentHole.feet ?? 0,
+              strokes: _currentHole.throws?.length ?? 0,
+              onParChanged: (int newPar) {
+                _updatePotentialHoleMetadata();
+              },
+              onDistanceChanged: (int newDistance) {
+                _updatePotentialHoleMetadata();
+              },
+              parFocusNode: _parFocus,
+              distanceFocusNode: _distanceFocus,
+              parController: _parController,
+              distanceController: _distanceController,
+            ),
+
+            // Throws timeline
+            Expanded(
+              child:
+                  _currentHole.throws != null && _currentHole.throws!.isNotEmpty
+                  ? EditableThrowTimeline(
+                      throws: _currentHole.throws!
+                          .where((t) => t.hasRequiredFields)
+                          .map((t) => t.toDiscThrow())
+                          .toList(),
+                      onEditThrow: _editThrow,
+                    )
+                  : Center(
+                      child: Text(
+                        'No throws',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      // Add throw button
+                      Expanded(
+                        child: PrimaryButton(
+                          icon: FlutterRemix.add_line,
+                          height: 56,
+                          width: double.infinity,
+                          label: 'Add throw',
+                          onPressed: _addThrow,
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: PrimaryButton(
+                          height: 56,
+                          width: double.infinity,
+                          label: 'Voice',
+                          onPressed: _reRecordWithVoice,
+                          backgroundColor: const Color(0xFF9D4EDD),
+                          icon: Icons.mic,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  PrimaryButton(
+                    height: 56,
+                    width: double.infinity,
+                    label: 'Done',
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    labelColor: TurbColors.blue,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    borderColor: TurbColors.blue.withValues(alpha: 0.1),
+                  ),
+                ],
               ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    // Add throw button
-                    PrimaryButton(
-                      height: 56,
-                      width: double.infinity,
-                      label: 'Add throw',
-                      onPressed: _addThrow,
-                    ),
-                    const SizedBox(height: 8),
-                    PrimaryButton(
-                      height: 56,
-                      width: double.infinity,
-                      label: 'Re-record with voice',
-                      onPressed: _reRecordWithVoice,
-                      backgroundColor: const Color(0xFF9D4EDD),
-                      icon: Icons.mic,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

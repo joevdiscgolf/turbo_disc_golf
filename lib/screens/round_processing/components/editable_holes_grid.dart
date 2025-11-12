@@ -3,6 +3,7 @@ import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
 ///
@@ -110,11 +111,9 @@ class _HoleGridItem extends StatelessWidget {
           );
 
           if (newHoleIndex != -1 && context.mounted) {
-            showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => EditableHoleDetailSheet(
+            displayBottomSheet(
+              context,
+              EditableHoleDetailSheet(
                 potentialHole: updatedRound.holes![newHoleIndex],
                 holeIndex: newHoleIndex,
                 roundParser: roundParser,

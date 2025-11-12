@@ -317,7 +317,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               },
               icon: const Icon(Icons.warning, size: 18),
               label: Text(
-                '$holesToAddress holes ${holesToAddress == 1 ? 'needs' : 'need'} attention',
+                '$holesToAddress ${holesToAddress == 1 ? 'hole needs' : 'holes need'} attention',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFEB3B),
