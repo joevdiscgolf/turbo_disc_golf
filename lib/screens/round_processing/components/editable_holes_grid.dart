@@ -103,26 +103,26 @@ class _HoleGridItem extends StatelessWidget {
       // roundParser.addEmptyHolesToPotentialRound({potentialHole.number!});
 
       // Wait for the state to update, then find the new hole index and open dialog
-      Future.delayed(const Duration(milliseconds: 100), () {
-        // Find the newly added hole's index
-        final updatedRound = roundParser.potentialRound;
-        if (updatedRound?.holes != null) {
-          final newHoleIndex = updatedRound!.holes!.indexWhere(
-            (h) => h.number == potentialHole.number,
-          );
 
-          if (newHoleIndex != -1 && context.mounted) {
-            displayBottomSheet(
-              context,
-              EditableHoleDetailSheet(
-                potentialHole: updatedRound.holes![newHoleIndex],
-                holeIndex: newHoleIndex,
-                roundParser: roundParser,
-              ),
-            );
-          }
+      // Find the newly added hole's index
+      final updatedRound = roundParser.potentialRound;
+      if (updatedRound?.holes != null) {
+        final newHoleIndex = updatedRound!.holes!.indexWhere(
+          (h) => h.number == potentialHole.number,
+        );
+
+        if (newHoleIndex != -1 && context.mounted) {
+          displayBottomSheet(
+            context,
+            EditableHoleDetailSheet(
+              potentialHole: updatedRound.holes![newHoleIndex],
+              holeIndex: newHoleIndex,
+              roundParser: roundParser,
+            ),
+          );
         }
-      });
+      }
+
       return;
     }
 
@@ -232,13 +232,16 @@ class _HoleGridItem extends StatelessWidget {
     if (potentialHole.throws == null || potentialHole.throws!.isEmpty) {
       return false;
     }
-    return potentialHole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
+    return potentialHole.throws!.any(
+      (t) => t.landingSpot == LandingSpot.inBasket,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     // Incomplete hole (missing required fields OR no throws OR no basket throw) - show more details
-    final bool isIncomplete = !potentialHole.hasRequiredFields ||
+    final bool isIncomplete =
+        !potentialHole.hasRequiredFields ||
         potentialHole.throws == null ||
         potentialHole.throws!.isEmpty ||
         !_hasBasketThrow();

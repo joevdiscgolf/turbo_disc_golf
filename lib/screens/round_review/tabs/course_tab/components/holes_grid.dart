@@ -37,7 +37,7 @@ class _HoleGridItem extends StatelessWidget {
 
   final DGHole hole;
 
-  void _showHoleDetailDialog(BuildContext context) {
+  void _showHoleDetailSheet(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -94,7 +94,7 @@ class _HoleGridItem extends StatelessWidget {
     }
 
     return InkWell(
-      onTap: () => _showHoleDetailDialog(context),
+      onTap: () => _showHoleDetailSheet(context),
       borderRadius: BorderRadius.circular(8),
       child: Card(
         elevation: 2,
