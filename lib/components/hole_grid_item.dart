@@ -92,8 +92,8 @@ class HoleGridItem extends StatelessWidget {
                     Text(
                       '$holeNumber',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     // Warning badge
                     Container(
@@ -118,16 +118,16 @@ class HoleGridItem extends StatelessWidget {
                 Text(
                   holePar != null ? 'Par $holePar' : 'Par —',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
                 Text(
                   holeFeet != null ? '$holeFeet ft' : '— ft',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
                 const Spacer(),
                 // Edit icon in bottom right
@@ -149,10 +149,12 @@ class HoleGridItem extends StatelessWidget {
     final int displayRelativeScore = relativeScore ?? 0;
 
     // Get colors from utility class
-    final List<Color> gradientColors =
-        HoleScoreColors.getGradientColors(displayRelativeScore);
-    final Color scoreColor =
-        HoleScoreColors.getScoreColor(displayRelativeScore);
+    final List<Color> gradientColors = HoleScoreColors.getGradientColors(
+      displayRelativeScore,
+    );
+    final Color scoreColor = HoleScoreColors.getScoreColor(
+      displayRelativeScore,
+    );
 
     return InkWell(
       onTap: onTap,
@@ -190,15 +192,14 @@ class HoleGridItem extends StatelessWidget {
                             Icon(
                               Icons.golf_course,
                               size: 16,
-                              color:
-                                  Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '$holeNumber',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
+                              style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -231,18 +232,18 @@ class HoleGridItem extends StatelessWidget {
                 Text(
                   holePar != null ? 'Par $holePar' : 'Par —',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
                 if (holeFeet != null)
                   Text(
                     '$holeFeet ft',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 11,
-                        ),
-                      ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
+                  ),
                 Align(
                   alignment: Alignment.bottomRight,
                   child: Icon(

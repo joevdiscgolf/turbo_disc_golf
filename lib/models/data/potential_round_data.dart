@@ -33,7 +33,11 @@ class PotentialDGHole {
 
   /// Check if this hole has all required fields for conversion to DGHole
   bool get hasRequiredFields {
-    if (number == null || par == null || !hasThrowInBasket) {
+    if (number == null ||
+        (number ?? 0) < 1 ||
+        par == null ||
+        par == 0 ||
+        !hasThrowInBasket) {
       return false;
     }
 

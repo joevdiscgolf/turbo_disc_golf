@@ -43,7 +43,11 @@ class AiParsingService {
             int count = 0;
 
             // Count consecutive repetitions
-            for (int j = i; j < words.length - phraseLength; j += phraseLength) {
+            for (
+              int j = i;
+              j < words.length - phraseLength;
+              j += phraseLength
+            ) {
               final testPhrase = words.sublist(j, j + phraseLength).join(' ');
               if (testPhrase == phrase) {
                 count++;
@@ -55,7 +59,9 @@ class AiParsingService {
             // If we found 5+ repetitions, truncate there
             if (count >= 5) {
               final truncatedText = words.sublist(0, i).join(' ');
-              debugPrint('✂️ Truncated at position $i (found "$phrase" repeated $count times)');
+              debugPrint(
+                '✂️ Truncated at position $i (found "$phrase" repeated $count times)',
+              );
               return truncatedText;
             }
           }
@@ -70,7 +76,8 @@ class AiParsingService {
     required String voiceTranscript,
     required List<DGDisc> userBag,
     String? courseName,
-    List<HoleMetadata>? preParsedHoles, // NEW: Pre-parsed hole metadata from image
+    List<HoleMetadata>?
+    preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
     try {
       final prompt = _buildParsingPrompt(
@@ -145,7 +152,9 @@ class AiParsingService {
       jsonMap['courseName'] = courseName;
 
       debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
-      final PotentialDGRound potentialRound = PotentialDGRound.fromJson(jsonMap);
+      final PotentialDGRound potentialRound = PotentialDGRound.fromJson(
+        jsonMap,
+      );
       return _fillMissingHoles(potentialRound);
     } catch (e, trace) {
       debugPrint('Error parsing round with Gemini: $e');
@@ -252,8 +261,13 @@ class AiParsingService {
         holeFeet,
         courseName,
       );
-      debugPrint('Sending single-hole request to Gemini for hole $holeNumber...');
+      debugPrint(
+        'Sending single-hole request to Gemini for hole $holeNumber...',
+      );
       String? responseText = await _getContentFromModel(prompt: prompt);
+
+      print('raw response for single hole: ');
+      print(responseText);
 
       if (responseText == null) {
         throw Exception('No response from Gemini');
@@ -262,7 +276,9 @@ class AiParsingService {
       // Detect and handle repetitive output
       responseText = _removeRepetitiveText(responseText);
 
-      debugPrint('Gemini response received for hole $holeNumber, parsing YAML...');
+      debugPrint(
+        'Gemini response received for hole $holeNumber, parsing YAML...',
+      );
 
       // Clean up the response - remove markdown code blocks if present
       responseText = responseText.trim();
@@ -286,10 +302,10 @@ class AiParsingService {
 
       // Ensure hole number, par, and feet match the context
       jsonMap['number'] = holeNumber;
-      jsonMap['par'] = holePar;
-      jsonMap['feet'] = holeFeet;
 
-      debugPrint('Single hole YAML parsed successfully, converting to PotentialDGHole...');
+      debugPrint(
+        'Single hole YAML parsed successfully, converting to PotentialDGHole...',
+      );
       return PotentialDGHole.fromJson(jsonMap);
     } catch (e, trace) {
       debugPrint('Error parsing single hole with Gemini: $e');
@@ -300,9 +316,7 @@ class AiParsingService {
 
   /// Parse a scorecard image to extract hole metadata
   /// Returns list of HoleMetadata (hole number, par, distance, score)
-  Future<List<HoleMetadata>> parseScorecard({
-    required String imagePath,
-  }) async {
+  Future<List<HoleMetadata>> parseScorecard({required String imagePath}) async {
     try {
       debugPrint('Parsing scorecard image: $imagePath');
 
@@ -326,14 +340,17 @@ class AiParsingService {
 
       // Clean up response - remove markdown if present
       responseText = responseText.trim();
-      if (responseText.startsWith('```json') || responseText.startsWith('```JSON')) {
+      if (responseText.startsWith('```json') ||
+          responseText.startsWith('```JSON')) {
         responseText = responseText.substring(responseText.indexOf('\n') + 1);
       }
       if (responseText.startsWith('```')) {
         responseText = responseText.substring(3);
       }
       if (responseText.endsWith('```')) {
-        responseText = responseText.substring(0, responseText.length - 3).trim();
+        responseText = responseText
+            .substring(0, responseText.length - 3)
+            .trim();
       }
 
       // Parse JSON response

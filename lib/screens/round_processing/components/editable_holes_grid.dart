@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -129,15 +128,6 @@ class _HoleGridItem extends StatelessWidget {
     );
   }
 
-  bool _hasBasketThrow() {
-    if (potentialHole.throws == null || potentialHole.throws!.isEmpty) {
-      return false;
-    }
-    return potentialHole.throws!.any(
-      (t) => t.landingSpot == LandingSpot.inBasket,
-    );
-  }
-
   // Handler methods for EditableHoleDetailSheet callbacks
   void _handleMetadataChanged(
     BuildContext context,
@@ -191,11 +181,7 @@ class _HoleGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine if hole is incomplete
-    final bool isIncomplete =
-        !potentialHole.hasRequiredFields ||
-        potentialHole.throws == null ||
-        potentialHole.throws!.isEmpty ||
-        !_hasBasketThrow();
+    final bool isIncomplete = !potentialHole.hasRequiredFields;
 
     // Calculate score for complete holes
     int? score;
@@ -274,6 +260,17 @@ class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
 
     // Show result
     if (success) {
+      // Sync the updated hole from RoundParser to RoundConfirmationCubit
+      final PotentialDGHole? updatedHole =
+          roundParser.potentialRound?.holes?[widget.holeIndex];
+      print('updated potential DG hole: ');
+      print(updatedHole?.toJson());
+      if (updatedHole != null) {
+        BlocProvider.of<RoundConfirmationCubit>(
+          context,
+        ).updatePotentialHole(widget.holeIndex, updatedHole);
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Hole re-processed successfully!'),
