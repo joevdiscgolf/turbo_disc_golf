@@ -134,6 +134,117 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     emit(activeState.copyWith(potentialRound: updatedRound));
   }
 
+  /// Add a throw to a hole
+  /// [addAfterThrowIndex] indicates which throw to insert after (null = append to end)
+  /// Semantic convention: addAfterThrowIndex=0 means insert after throw 0 (becomes throw 1)
+  void addThrow(int holeIndex, DiscThrow newThrow, {int? addAfterThrowIndex}) {
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    if (activeState.potentialRound.holes == null ||
+        holeIndex >= activeState.potentialRound.holes!.length) {
+      return;
+    }
+
+    final PotentialDGHole currentHole =
+        activeState.potentialRound.holes![holeIndex];
+    final List<PotentialDiscThrow> updatedThrows =
+        List<PotentialDiscThrow>.from(currentHole.throws ?? []);
+
+    // Calculate insertion position
+    // Semantic convention: addAfterThrowIndex means "insert AFTER throw at this index"
+    // - If addAfterThrowIndex=0: insert after throw 0 → insertIndex=1
+    // - If addAfterThrowIndex=1: insert after throw 1 → insertIndex=2
+    // - If addAfterThrowIndex=null: append to end → insertIndex=length
+    // Clamp to safely handle edge cases where index might exceed list bounds
+    final int insertIndex = addAfterThrowIndex != null
+        ? (addAfterThrowIndex + 1).clamp(0, updatedThrows.length)
+        : updatedThrows.length;
+
+    // Insert the new throw
+    updatedThrows.insert(
+      insertIndex,
+      PotentialDiscThrow(
+        index: insertIndex, // Will be re-indexed below
+        purpose: newThrow.purpose,
+        technique: newThrow.technique,
+        puttStyle: newThrow.puttStyle,
+        shotShape: newThrow.shotShape,
+        stance: newThrow.stance,
+        power: newThrow.power,
+        distanceFeetBeforeThrow: newThrow.distanceFeetBeforeThrow,
+        distanceFeetAfterThrow: newThrow.distanceFeetAfterThrow,
+        elevationChangeFeet: newThrow.elevationChangeFeet,
+        windDirection: newThrow.windDirection,
+        windStrength: newThrow.windStrength,
+        resultRating: newThrow.resultRating,
+        landingSpot: newThrow.landingSpot,
+        fairwayWidth: newThrow.fairwayWidth,
+        penaltyStrokes: newThrow.penaltyStrokes,
+        notes: newThrow.notes,
+        rawText: newThrow.rawText,
+        parseConfidence: newThrow.parseConfidence,
+        discName: newThrow.discName,
+        disc: newThrow.disc,
+      ),
+    );
+
+    // Reindex all throws after insertion to ensure sequential indices
+    // This ensures throw indices are 0, 1, 2, ... regardless of insertion order
+    final List<PotentialDiscThrow> reindexedThrows =
+        _reindexThrows(updatedThrows);
+
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: currentHole.par,
+      feet: currentHole.feet,
+      throws: reindexedThrows,
+      holeType: currentHole.holeType,
+    );
+
+    updatePotentialHole(holeIndex, updatedHole);
+  }
+
+  /// Delete a throw from a hole
+  void deleteThrow(int holeIndex, int throwIndex) {
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    if (activeState.potentialRound.holes == null ||
+        holeIndex >= activeState.potentialRound.holes!.length) {
+      return;
+    }
+
+    final PotentialDGHole currentHole =
+        activeState.potentialRound.holes![holeIndex];
+    if (currentHole.throws == null ||
+        throwIndex >= currentHole.throws!.length) {
+      return;
+    }
+
+    final List<PotentialDiscThrow> updatedThrows =
+        List<PotentialDiscThrow>.from(currentHole.throws!);
+    updatedThrows.removeAt(throwIndex);
+
+    // Reindex remaining throws to ensure sequential indices
+    final List<PotentialDiscThrow> reindexedThrows =
+        _reindexThrows(updatedThrows);
+
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: currentHole.par,
+      feet: currentHole.feet,
+      throws: reindexedThrows,
+      holeType: currentHole.holeType,
+    );
+
+    updatePotentialHole(holeIndex, updatedHole);
+  }
+
   /// Update a throw within a hole
   void updateThrow(int holeIndex, int throwIndex, DiscThrow updatedThrow) {
     if (state is! ConfirmingRoundActive) {
@@ -185,5 +296,39 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     );
 
     updatePotentialHole(holeIndex, updatedHole);
+  }
+
+  /// Helper method to reindex throws to ensure sequential indices (0, 1, 2, ...)
+  List<PotentialDiscThrow> _reindexThrows(List<PotentialDiscThrow> throws) {
+    return throws
+        .asMap()
+        .entries
+        .map((entry) {
+          final PotentialDiscThrow throw_ = entry.value;
+          return PotentialDiscThrow(
+            index: entry.key,
+            purpose: throw_.purpose,
+            technique: throw_.technique,
+            puttStyle: throw_.puttStyle,
+            shotShape: throw_.shotShape,
+            stance: throw_.stance,
+            power: throw_.power,
+            distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
+            distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
+            elevationChangeFeet: throw_.elevationChangeFeet,
+            windDirection: throw_.windDirection,
+            windStrength: throw_.windStrength,
+            resultRating: throw_.resultRating,
+            landingSpot: throw_.landingSpot,
+            fairwayWidth: throw_.fairwayWidth,
+            penaltyStrokes: throw_.penaltyStrokes,
+            notes: throw_.notes,
+            rawText: throw_.rawText,
+            parseConfidence: throw_.parseConfidence,
+            discName: throw_.discName,
+            disc: throw_.disc,
+          );
+        })
+        .toList();
   }
 }

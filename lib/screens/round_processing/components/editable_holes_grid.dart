@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
 ///
@@ -96,6 +97,9 @@ class _HoleGridItem extends StatelessWidget {
       return;
     }
 
+    final RoundConfirmationCubit roundConfirmationCubit =
+        BlocProvider.of<RoundConfirmationCubit>(context);
+
     // Normal case: hole exists in the round
     showModalBottomSheet<void>(
       context: context,
@@ -108,17 +112,15 @@ class _HoleGridItem extends StatelessWidget {
             _handleMetadataChanged(
               context,
               holeIndex,
-              potentialHole,
               newPar: newPar,
               newDistance: newDistance,
             ),
-        onThrowAdded: (throw_) =>
-            _handleThrowAdded(context, holeIndex, potentialHole, throw_),
-        onThrowEdited: (throwIndex, updatedThrow) => context
-            .read<RoundConfirmationCubit>()
+        onThrowAdded: (throw_, {int? addThrowAtIndex}) => roundConfirmationCubit
+            .addThrow(holeIndex, throw_, addAfterThrowIndex: addThrowAtIndex),
+        onThrowEdited: (throwIndex, updatedThrow) => roundConfirmationCubit
             .updateThrow(holeIndex, throwIndex, updatedThrow),
         onThrowDeleted: (throwIndex) =>
-            _handleThrowDeleted(context, holeIndex, potentialHole, throwIndex),
+            roundConfirmationCubit.deleteThrow(holeIndex, throwIndex),
         onVoiceRecord: () =>
             _handleVoiceRecord(context, potentialHole, holeIndex),
       ),
@@ -226,11 +228,23 @@ class _HoleGridItem extends StatelessWidget {
   // Handler methods for EditableHoleDetailSheet callbacks
   void _handleMetadataChanged(
     BuildContext context,
-    int holeIndex,
-    PotentialDGHole currentHole, {
+    int holeIndex, {
     int? newPar,
     int? newDistance,
   }) {
+    // Get the current hole from the cubit state to ensure we have the latest data
+    final RoundConfirmationState state = context
+        .read<RoundConfirmationCubit>()
+        .state;
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+
+    final PotentialDGHole? currentHole = state.potentialRound.holes?[holeIndex];
+    if (currentHole == null) {
+      return;
+    }
+
     final PotentialDGHole updatedHole = PotentialDGHole(
       number: currentHole.number,
       par: newPar,
@@ -238,108 +252,6 @@ class _HoleGridItem extends StatelessWidget {
       throws: currentHole.throws,
       holeType: currentHole.holeType,
     );
-    BlocProvider.of<RoundConfirmationCubit>(
-      context,
-    ).updatePotentialHole(holeIndex, updatedHole);
-  }
-
-  void _handleThrowAdded(
-    BuildContext context,
-    int holeIndex,
-    PotentialDGHole currentHole,
-    DiscThrow newThrow,
-  ) {
-    final List<PotentialDiscThrow> updatedThrows =
-        List<PotentialDiscThrow>.from(currentHole.throws ?? []);
-    updatedThrows.add(
-      PotentialDiscThrow(
-        index: newThrow.index,
-        purpose: newThrow.purpose,
-        technique: newThrow.technique,
-        puttStyle: newThrow.puttStyle,
-        shotShape: newThrow.shotShape,
-        stance: newThrow.stance,
-        power: newThrow.power,
-        distanceFeetBeforeThrow: newThrow.distanceFeetBeforeThrow,
-        distanceFeetAfterThrow: newThrow.distanceFeetAfterThrow,
-        elevationChangeFeet: newThrow.elevationChangeFeet,
-        windDirection: newThrow.windDirection,
-        windStrength: newThrow.windStrength,
-        resultRating: newThrow.resultRating,
-        landingSpot: newThrow.landingSpot,
-        fairwayWidth: newThrow.fairwayWidth,
-        penaltyStrokes: newThrow.penaltyStrokes,
-        notes: newThrow.notes,
-        rawText: newThrow.rawText,
-        parseConfidence: newThrow.parseConfidence,
-        discName: newThrow.discName,
-        disc: newThrow.disc,
-      ),
-    );
-
-    final PotentialDGHole updatedHole = PotentialDGHole(
-      number: currentHole.number,
-      par: currentHole.par,
-      feet: currentHole.feet,
-      throws: updatedThrows,
-      holeType: currentHole.holeType,
-    );
-
-    BlocProvider.of<RoundConfirmationCubit>(
-      context,
-    ).updatePotentialHole(holeIndex, updatedHole);
-  }
-
-  void _handleThrowDeleted(
-    BuildContext context,
-    int holeIndex,
-    PotentialDGHole currentHole,
-    int throwIndex,
-  ) {
-    final List<PotentialDiscThrow> updatedThrows =
-        List<PotentialDiscThrow>.from(currentHole.throws ?? []);
-    updatedThrows.removeAt(throwIndex);
-
-    // Reindex remaining throws
-    final List<PotentialDiscThrow> reindexedThrows = updatedThrows
-        .asMap()
-        .entries
-        .map((entry) {
-          final PotentialDiscThrow throw_ = entry.value;
-          return PotentialDiscThrow(
-            index: entry.key,
-            purpose: throw_.purpose,
-            technique: throw_.technique,
-            puttStyle: throw_.puttStyle,
-            shotShape: throw_.shotShape,
-            stance: throw_.stance,
-            power: throw_.power,
-            distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
-            distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
-            elevationChangeFeet: throw_.elevationChangeFeet,
-            windDirection: throw_.windDirection,
-            windStrength: throw_.windStrength,
-            resultRating: throw_.resultRating,
-            landingSpot: throw_.landingSpot,
-            fairwayWidth: throw_.fairwayWidth,
-            penaltyStrokes: throw_.penaltyStrokes,
-            notes: throw_.notes,
-            rawText: throw_.rawText,
-            parseConfidence: throw_.parseConfidence,
-            discName: throw_.discName,
-            disc: throw_.disc,
-          );
-        })
-        .toList();
-
-    final PotentialDGHole updatedHole = PotentialDGHole(
-      number: currentHole.number,
-      par: currentHole.par,
-      feet: currentHole.feet,
-      throws: reindexedThrows,
-      holeType: currentHole.holeType,
-    );
-
     BlocProvider.of<RoundConfirmationCubit>(
       context,
     ).updatePotentialHole(holeIndex, updatedHole);

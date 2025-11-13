@@ -341,9 +341,13 @@ class _IncompleteHoleWalkthroughSheetState
     _parFocusNode.unfocus();
     _distanceFocusNode.unfocus();
 
+    // Calculate the insertion index for the new throw
+    final int currentThrowCount = currentHole.throws?.length ?? 0;
+    final int insertionIndex = addThrowAtIndex != null ? addThrowAtIndex + 1 : currentThrowCount;
+
     // Create a new throw with default values
     final DiscThrow newThrow = DiscThrow(
-      index: currentHole.throws?.length ?? 0,
+      index: insertionIndex,
       purpose: ThrowPurpose.other,
       technique: ThrowTechnique.backhand,
     );
@@ -352,15 +356,20 @@ class _IncompleteHoleWalkthroughSheetState
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: newThrow,
-        throwIndex: currentHole.throws?.length ?? 0,
+        throwIndex: insertionIndex,
         holeNumber: currentHole.number ?? holeIndex + 1,
         isNewThrow: true,
         onSave: (savedThrow) {
           final List<PotentialDiscThrow> updatedThrows =
               List<PotentialDiscThrow>.from(currentHole.throws ?? []);
-          updatedThrows.add(
+
+          // Determine insertion index: if null, append at end; otherwise insert after the specified index
+          final int insertIndex = addThrowAtIndex != null ? addThrowAtIndex + 1 : updatedThrows.length;
+
+          updatedThrows.insert(
+            insertIndex,
             PotentialDiscThrow(
-              index: savedThrow.index,
+              index: insertIndex, // Will be re-indexed below
               purpose: savedThrow.purpose,
               technique: savedThrow.technique,
               puttStyle: savedThrow.puttStyle,
@@ -384,11 +393,42 @@ class _IncompleteHoleWalkthroughSheetState
             ),
           );
 
+          // Reindex all throws after insertion
+          final List<PotentialDiscThrow> reindexedThrows = updatedThrows
+              .asMap()
+              .entries
+              .map((entry) {
+                final PotentialDiscThrow throw_ = entry.value;
+                return PotentialDiscThrow(
+                  index: entry.key,
+                  purpose: throw_.purpose,
+                  technique: throw_.technique,
+                  puttStyle: throw_.puttStyle,
+                  shotShape: throw_.shotShape,
+                  stance: throw_.stance,
+                  power: throw_.power,
+                  distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
+                  distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
+                  elevationChangeFeet: throw_.elevationChangeFeet,
+                  windDirection: throw_.windDirection,
+                  windStrength: throw_.windStrength,
+                  resultRating: throw_.resultRating,
+                  landingSpot: throw_.landingSpot,
+                  fairwayWidth: throw_.fairwayWidth,
+                  penaltyStrokes: throw_.penaltyStrokes,
+                  notes: throw_.notes,
+                  rawText: throw_.rawText,
+                  parseConfidence: throw_.parseConfidence,
+                  discName: throw_.discName,
+                  disc: throw_.disc,
+                );
+              }).toList();
+
           final PotentialDGHole updatedHole = PotentialDGHole(
             number: currentHole.number,
             par: currentHole.par,
             feet: currentHole.feet,
-            throws: updatedThrows,
+            throws: reindexedThrows,
             holeType: currentHole.holeType,
           );
 

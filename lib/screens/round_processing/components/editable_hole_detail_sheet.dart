@@ -35,7 +35,7 @@ class EditableHoleDetailSheet extends StatefulWidget {
   // Callbacks for handling edits (parent handles the business logic)
   final void Function({required int? newPar, required int? newDistance})
   onMetadataChanged;
-  final void Function(DiscThrow throw_) onThrowAdded;
+  final void Function(DiscThrow throw_, {int? addThrowAtIndex}) onThrowAdded;
   final void Function(int throwIndex, DiscThrow updatedThrow) onThrowEdited;
   final void Function(int throwIndex) onThrowDeleted;
   final VoidCallback onVoiceRecord;
@@ -104,10 +104,16 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
             distanceFocusNode: _distanceFocusNode,
             bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             hasRequiredFields: currentHole.hasRequiredFields,
-            onParChanged: (int newPar) =>
-                _handleMetadataChanged(newPar: newPar, newDistance: null),
-            onDistanceChanged: (int newDistance) =>
-                _handleMetadataChanged(newPar: null, newDistance: newDistance),
+            onParChanged: (int newPar) => _handleMetadataChanged(
+              currentHole: currentHole,
+              newPar: newPar,
+              newDistance: null,
+            ),
+            onDistanceChanged: (int newDistance) => _handleMetadataChanged(
+              currentHole: currentHole,
+              newPar: null,
+              newDistance: newDistance,
+            ),
             onThrowAdded: ({int? addThrowAtIndex}) =>
                 _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
             onThrowEdited: (throwIndex) =>
@@ -121,10 +127,15 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
   }
 
   void _handleMetadataChanged({
+    required PotentialDGHole currentHole,
     required int? newPar,
     required int? newDistance,
   }) {
-    widget.onMetadataChanged(newPar: newPar, newDistance: newDistance);
+    // Preserve the current value of whichever field isn't being changed
+    widget.onMetadataChanged(
+      newPar: newPar ?? currentHole.par,
+      newDistance: newDistance ?? currentHole.feet,
+    );
   }
 
   Future<void> _handleAddThrow(
@@ -135,9 +146,18 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     _parFocusNode.unfocus();
     _distanceFocusNode.unfocus();
 
+    // Calculate the display throw number for the dialog
+    // Semantic convention: addAtIndex represents "insert AFTER throw at this index"
+    // - addAtIndex=0 means insert after throw 0, so new throw will be throw 1
+    // - addAtIndex=null means append to end
+    // The actual insertion logic is handled by the parent component
+    final int currentThrowCount = currentHole.throws?.length ?? 0;
+    final int displayThrowNumber = addAtIndex != null ? addAtIndex + 1 : currentThrowCount;
+
     // Create a new throw with default values
+    // The index is only for dialog display; parent will recalculate during insertion
     final DiscThrow newThrow = DiscThrow(
-      index: currentHole.throws?.length ?? 0,
+      index: displayThrowNumber,
       purpose: ThrowPurpose.other,
       technique: ThrowTechnique.backhand,
     );
@@ -146,11 +166,12 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
       context: context,
       builder: (context) => ThrowEditDialog(
         throw_: newThrow,
-        throwIndex: currentHole.throws?.length ?? 0,
+        throwIndex: displayThrowNumber,
         holeNumber: currentHole.number ?? widget.holeIndex + 1,
         isNewThrow: true,
         onSave: (savedThrow) {
-          widget.onThrowAdded(savedThrow);
+          // Pass the original addAtIndex to parent - it handles actual insertion
+          widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
           Navigator.of(context).pop();
         },
         onDelete: null, // No delete for new throws
