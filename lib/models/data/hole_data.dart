@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 part 'hole_data.g.dart';
 
@@ -19,13 +20,7 @@ class DGHole {
   final List<DiscThrow> throws;
   final HoleType? holeType;
 
-  int get holeScore =>
-      (throws.length +
-              throws.fold(
-                0,
-                (prev, current) => prev + (current.penaltyStrokes ?? 0),
-              ))
-          .toInt();
+  int get holeScore => getScoreFromThrows(throws);
 
   int get relativeHoleScore => holeScore - par;
 

@@ -89,12 +89,16 @@ class IncompleteHoleDetailContent extends StatelessWidget {
     final List<String> missingFields = potentialHole.getMissingFields();
 
     // Check if the hole just needs throws recorded
-    final bool needsThrows = (potentialHole.throws == null ||
-                              potentialHole.throws!.isEmpty) &&
-                             missingFields.isEmpty;
+    final bool needsThrows =
+        (potentialHole.throws == null || potentialHole.throws!.isEmpty) &&
+        missingFields.isEmpty;
 
-    final Color severityColor = _getSeverityColor(hasRequiredFields && !needsThrows);
-    final Color backgroundColor = _getSeverityBackgroundColor(hasRequiredFields && !needsThrows);
+    final Color severityColor = _getSeverityColor(
+      hasRequiredFields && !needsThrows,
+    );
+    final Color backgroundColor = _getSeverityBackgroundColor(
+      hasRequiredFields && !needsThrows,
+    );
 
     // Use darker text colors for better contrast
     final Color textColor = hasRequiredFields && !needsThrows
@@ -144,9 +148,9 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                           ? 'Missing Optional Info'
                           : 'Missing Required Info',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: severityColor,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: severityColor,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -157,9 +161,9 @@ class IncompleteHoleDetailContent extends StatelessWidget {
               Text(
                 missingMessage,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  color: textColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -167,9 +171,9 @@ class IncompleteHoleDetailContent extends StatelessWidget {
               Text(
                 'Choose how to fix:',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: textColor,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -224,9 +228,7 @@ class IncompleteHoleDetailContent extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.grey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,8 +244,8 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                   Text(
                     'Hole ${potentialHole.number ?? '?'}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Spacer(),
                   if (potentialHole.hasRequiredFields)
@@ -259,8 +261,8 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                       child: Text(
                         '?',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                 ],
@@ -279,7 +281,9 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                     context,
                     Icons.straighten,
                     'Distance',
-                    potentialHole.feet != null ? '${potentialHole.feet} ft' : '—',
+                    potentialHole.feet != null
+                        ? '${potentialHole.feet} ft'
+                        : '—',
                   ),
                   const SizedBox(width: 16),
                   _buildInfoItem(
@@ -301,18 +305,16 @@ class IncompleteHoleDetailContent extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Throws',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               if (potentialHole.throws == null || potentialHole.throws!.isEmpty)
@@ -322,9 +324,9 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                     child: Text(
                       'No throws recorded',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontStyle: FontStyle.italic,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 )
@@ -345,7 +347,9 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF4A90E2).withValues(alpha: 0.2),
+                                color: const Color(
+                                  0xFF4A90E2,
+                                ).withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: const Center(
@@ -362,13 +366,11 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Throw ${(throwData.index ?? 0) + 1}',
+                                    'Throw ${(throwData.index) + 1}',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
                                   if (throwData.discName != null)
                                     Text(
@@ -377,9 +379,9 @@ class IncompleteHoleDetailContent extends StatelessWidget {
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
                                     ),
                                 ],
@@ -417,15 +419,15 @@ class IncompleteHoleDetailContent extends StatelessWidget {
           children: [
             Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

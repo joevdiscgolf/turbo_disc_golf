@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/components/edit_hole/edit_par_distance_row.dart'
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_throw_timeline.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 /// A reusable, stateless component for editing hole data.
 ///
@@ -227,7 +228,9 @@ class EditHoleBody extends StatelessWidget {
   }
 
   int? _getScore() {
-    return hasRequiredFields && throws.isNotEmpty ? throws.length : null;
+    return hasRequiredFields && throws.isNotEmpty
+        ? getScoreFromThrows(throws)
+        : null;
   }
 
   Color _getScoreColor() {

@@ -19,6 +19,28 @@ class EditableThrowTimeline extends StatelessWidget {
   final void Function(int throwIndex) onEditThrow;
   final void Function(int addThrowAtIndex) onAddThrowAt;
 
+  Color _getTechniqueColorForThrow(DiscThrow discThrow) {
+    switch (discThrow.technique) {
+      case ThrowTechnique.backhand:
+      case ThrowTechnique.backhandRoller:
+        return const Color(0xFF4A90E2); // Blue
+      case ThrowTechnique.forehand:
+      case ThrowTechnique.forehandRoller:
+        return const Color(0xFF50C878); // Green
+      case ThrowTechnique.tomahawk:
+      case ThrowTechnique.thumber:
+      case ThrowTechnique.overhand:
+      case ThrowTechnique.grenade:
+      case ThrowTechnique.other:
+      default:
+        // Fall back to purpose-based color for putts
+        if (discThrow.purpose == ThrowPurpose.putt) {
+          return const Color(0xFFFDB927); // Yellow/Gold
+        }
+        return const Color(0xFF9E9E9E); // Grey for unknown
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (throws.isEmpty) {
@@ -59,9 +81,20 @@ class EditableThrowTimeline extends StatelessWidget {
           );
         } else {
           // Add button after the throw at index ~/2
-          final insertIndex = index ~/ 2 + 1;
-          return Center(
-            child: _AddThrowButton(onAdd: () => onAddThrowAt(insertIndex)),
+          // Semantic convention: insertAfterThrowIndex means "insert new throw AFTER the throw at this index"
+          // Example: if insertAfterThrowIndex=0, the new throw will be inserted after throw 0 (at position 1)
+          final int insertAfterThrowIndex = index ~/ 2;
+          final DiscThrow previousThrow = throws[insertAfterThrowIndex];
+          final Color connectorColor = _getTechniqueColorForThrow(
+            previousThrow,
+          );
+          final bool isAfterLastThrow =
+              insertAfterThrowIndex == throws.length - 1;
+
+          return _AddThrowButton(
+            onAdd: () => onAddThrowAt(insertAfterThrowIndex),
+            connectorColor: connectorColor,
+            showConnector: !isAfterLastThrow,
           );
         }
       },
@@ -69,52 +102,86 @@ class EditableThrowTimeline extends StatelessWidget {
   }
 }
 
-/// Small circular + button between throw items.
+/// Small circular + button between throw items with connector line.
 class _AddThrowButton extends StatelessWidget {
-  const _AddThrowButton({required this.onAdd});
+  const _AddThrowButton({
+    required this.onAdd,
+    required this.connectorColor,
+    required this.showConnector,
+  });
 
   final VoidCallback onAdd;
+  final Color connectorColor;
+  final bool showConnector;
 
   @override
   Widget build(BuildContext context) {
-    return Bounceable(
-      onTap: () {
-        onAdd();
-      },
-      child:
-          Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 24,
-                height: 24,
+    return SizedBox(
+      height: 32, // 4px top + 24px button + 4px bottom
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Connector line behind the button (only if not after last throw)
+          if (showConnector)
+            Positioned(
+              left: 15, // Center of icon position (32px / 2 - 2px / 2)
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 2,
                 decoration: BoxDecoration(
-                  color: TurbColors.blue,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.15),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.add,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 16,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      connectorColor.withValues(alpha: 0.2),
+                      connectorColor.withValues(alpha: 0.1),
+                    ],
                   ),
                 ),
-              )
-              .animate()
-              .fadeIn(duration: 250.ms, curve: Curves.easeOut)
-              .scale(
-                begin: const Offset(0.8, 0.8),
-                end: const Offset(1.0, 1.0),
-                duration: 250.ms,
-                curve: Curves.easeOutBack,
               ),
+            ),
+          // Add button
+          Bounceable(
+            onTap: () {
+              onAdd();
+            },
+            child:
+                Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: TurbColors.blue,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.15),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.add,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 16,
+                        ),
+                      ),
+                    )
+                    .animate()
+                    .fadeIn(duration: 250.ms, curve: Curves.easeOut)
+                    .scale(
+                      begin: const Offset(0.8, 0.8),
+                      end: const Offset(1.0, 1.0),
+                      duration: 250.ms,
+                      curve: Curves.easeOutBack,
+                    ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -246,13 +313,12 @@ class EditableThrowTimelineItem extends StatelessWidget {
                       curve: Curves.easeOutBack,
                     ),
 
-                // Adjusted connecting line to leave room for + buttons
+                // Connecting line that fills the throw card height
                 if (!isLast)
                   Expanded(
                     child: _TimelineConnector(
                       color: techniqueColor,
                       animationDelay: animationDelay + 200,
-                      extraSpace: 24, // extra height between throws
                     ),
                   ),
               ],
@@ -261,15 +327,12 @@ class EditableThrowTimelineItem extends StatelessWidget {
           const SizedBox(width: 12),
           // Right side: Throw details card with edit button
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-              child: _EditableThrowDetailCard(
-                title: _getThrowTitle(),
-                details: details,
-                accentColor: techniqueColor,
-                animationDelay: animationDelay,
-                onEdit: onEdit,
-              ),
+            child: _EditableThrowDetailCard(
+              title: _getThrowTitle(),
+              details: details,
+              accentColor: techniqueColor,
+              animationDelay: animationDelay,
+              onEdit: onEdit,
             ),
           ),
         ],
@@ -279,20 +342,14 @@ class EditableThrowTimelineItem extends StatelessWidget {
 }
 
 class _TimelineConnector extends StatelessWidget {
-  const _TimelineConnector({
-    required this.color,
-    required this.animationDelay,
-    this.extraSpace = 0,
-  });
+  const _TimelineConnector({required this.color, required this.animationDelay});
 
   final Color color;
   final int animationDelay;
-  final double extraSpace;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-          margin: EdgeInsets.only(bottom: extraSpace / 2),
           width: 2,
           decoration: BoxDecoration(
             gradient: LinearGradient(
