@@ -56,6 +56,21 @@ class _EditParDistanceRowState extends State<EditParDistanceRow> {
   }
 
   @override
+  void didUpdateWidget(EditParDistanceRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Update par controller if par value changed
+    if (widget.par != oldWidget.par) {
+      _parController.text = widget.par?.toString() ?? '';
+    }
+
+    // Update distance controller if distance value changed
+    if (widget.distance != oldWidget.distance) {
+      _distanceController.text = widget.distance?.toString() ?? '';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
