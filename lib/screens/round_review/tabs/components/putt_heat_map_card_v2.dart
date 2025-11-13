@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
-import 'package:turbo_disc_golf/utils/putting_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 
 class PuttHeatMapCardV2 extends StatefulWidget {
   const PuttHeatMapCardV2({
@@ -113,7 +113,9 @@ class _PuttHeatMapCardV2State extends State<PuttHeatMapCardV2>
                         return _PuttingCirclePainter(
                           putts: displayPutts,
                           showCircle1: _showCircle1,
-                          animationValue: widget.shouldAnimate ? _animation.value : 1.0,
+                          animationValue: widget.shouldAnimate
+                              ? _animation.value
+                              : 1.0,
                         );
                       },
                     ),

@@ -4,7 +4,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/round_review_stat_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/screens/generic_stats_screen.dart';
-import 'package:turbo_disc_golf/utils/naming_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
 class ShotTypeBirdieRatesCard extends StatefulWidget {
   const ShotTypeBirdieRatesCard({

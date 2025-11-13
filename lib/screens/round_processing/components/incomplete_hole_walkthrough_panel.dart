@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
+import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 /// Bottom sheet that guides user through fixing each incomplete hole sequentially.
 /// Shows progress with tabs and horizontal checklist, allows inline editing.
-class IncompleteHoleWalkthroughSheet extends StatefulWidget {
-  const IncompleteHoleWalkthroughSheet({
+class IncompleteHoleWalkthroughPanel extends StatefulWidget {
+  const IncompleteHoleWalkthroughPanel({
     super.key,
     required this.potentialRound,
     required this.bottomViewPadding,
@@ -22,15 +25,16 @@ class IncompleteHoleWalkthroughSheet extends StatefulWidget {
   final double bottomViewPadding;
 
   @override
-  State<IncompleteHoleWalkthroughSheet> createState() =>
-      _IncompleteHoleWalkthroughSheetState();
+  State<IncompleteHoleWalkthroughPanel> createState() =>
+      _IncompleteHoleWalkthroughPanelState();
 }
 
-class _IncompleteHoleWalkthroughSheetState
-    extends State<IncompleteHoleWalkthroughSheet> {
+class _IncompleteHoleWalkthroughPanelState
+    extends State<IncompleteHoleWalkthroughPanel> {
   late final FocusNode _parFocusNode;
   late final FocusNode _distanceFocusNode;
   late final RoundConfirmationCubit _roundConfirmationCubit;
+  bool _isProcessingVoiceRecord = false;
 
   PotentialDGHole? _selectedPotentialHole(PotentialDGRound round) {
     try {
@@ -544,18 +548,70 @@ class _IncompleteHoleWalkthroughSheetState
     _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
   }
 
+  Future<void> _handleVoiceRecordContinue(
+    String transcript,
+    int holeIndex,
+  ) async {
+    setState(() {
+      _isProcessingVoiceRecord = true;
+    });
+
+    // Show loading snackbar
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Re-processing hole with AI...')),
+      );
+    }
+
+    // Call RoundParser to re-process the hole
+    final RoundParser roundParser = locator.get<RoundParser>();
+    final bool success = await roundParser.reProcessHole(
+      holeIndex: holeIndex,
+      voiceTranscript: transcript,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isProcessingVoiceRecord = false;
+    });
+
+    // Show result
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hole re-processed successfully!'),
+          backgroundColor: Color(0xFF137e66),
+        ),
+      );
+      Navigator.of(context).pop();
+      // Refresh after re-recording
+      _refreshIncompleteHoles();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error: ${roundParser.lastError.isNotEmpty ? roundParser.lastError : 'Failed to re-process hole'}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _handleVoiceRecord(PotentialDGHole currentHole, int holeIndex) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => HoleReRecordDialog(
+    displayBottomSheet(
+      context,
+      RecordSingleHolePanel(
         holeNumber: currentHole.number ?? holeIndex + 1,
         holePar: currentHole.par,
         holeFeet: currentHole.feet,
-        holeIndex: holeIndex,
-        onReProcessed: () {
-          // Refresh after re-recording
-          _refreshIncompleteHoles();
-        },
+        isProcessing: _isProcessingVoiceRecord,
+        showTestButton: true,
+        onContinuePressed: (transcript) =>
+            _handleVoiceRecordContinue(transcript, holeIndex),
+        onTestingPressed: (transcript) =>
+            _handleVoiceRecordContinue(transcript, holeIndex),
       ),
     );
   }

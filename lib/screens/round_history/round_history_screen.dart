@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/record_round_sheet.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 
@@ -13,7 +13,7 @@ class RoundHistoryScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const RecordRoundSheet(),
+      builder: (context) => const RecordRoundPanel(),
     );
   }
 
@@ -289,4 +289,3 @@ class RoundHistoryScreen extends StatelessWidget {
 //     }
 //   }
 // }
-

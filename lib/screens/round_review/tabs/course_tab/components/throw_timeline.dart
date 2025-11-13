@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/utils/naming_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
 class ThrowTimeline extends StatelessWidget {
-  const ThrowTimeline({
-    super.key,
-    required this.throws,
-  });
+  const ThrowTimeline({super.key, required this.throws});
 
   final List<DiscThrow> throws;
 
@@ -144,22 +141,19 @@ class ThrowTimelineItem extends StatelessWidget {
               children: [
                 // Icon
                 Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: techniqueColor.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: techniqueColor,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    techniqueIcon,
-                    size: 16,
-                    color: techniqueColor,
-                  ),
-                )
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: techniqueColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: techniqueColor, width: 2),
+                      ),
+                      child: Icon(
+                        techniqueIcon,
+                        size: 16,
+                        color: techniqueColor,
+                      ),
+                    )
                     .animate(delay: Duration(milliseconds: animationDelay))
                     .fadeIn(duration: 300.ms, curve: Curves.easeOut)
                     .scale(
@@ -223,18 +217,18 @@ class TimelineConnector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 2,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.5),
-            color.withValues(alpha: 0.2),
-          ],
-        ),
-      ),
-    )
+          width: 2,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                color.withValues(alpha: 0.5),
+                color.withValues(alpha: 0.2),
+              ],
+            ),
+          ),
+        )
         .animate(delay: Duration(milliseconds: animationDelay))
         .scaleY(
           begin: 0.0,
@@ -264,51 +258,46 @@ class ThrowDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withValues(alpha: 0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withValues(alpha: 0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: accentColor,
                 ),
-          ),
-          if (details.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              details.join(' • '),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              ),
+              if (details.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  details.join(' • '),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-            ),
-          ],
-        ],
-      ),
-    )
+                ),
+              ],
+            ],
+          ),
+        )
         .animate(delay: Duration(milliseconds: animationDelay))
         .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-        .slideY(
-          begin: 0.3,
-          end: 0.0,
-          duration: 300.ms,
-          curve: Curves.easeOut,
-        );
+        .slideY(begin: 0.3, end: 0.0, duration: 300.ms, curve: Curves.easeOut);
   }
 }

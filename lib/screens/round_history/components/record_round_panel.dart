@@ -3,21 +3,41 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
-class RecordRoundSheet extends StatefulWidget {
-  const RecordRoundSheet({super.key});
+const String testCourseName = 'Foxwood';
+
+class RecordRoundPanel extends StatefulWidget {
+  const RecordRoundPanel({super.key});
 
   @override
-  State<RecordRoundSheet> createState() => _RecordRoundSheetState();
+  State<RecordRoundPanel> createState() => _RecordRoundPanelState();
 }
 
-class _RecordRoundSheetState extends State<RecordRoundSheet> {
+class _RecordRoundPanelState extends State<RecordRoundPanel> {
   final VoiceRecordingService _voiceService = locator
       .get<VoiceRecordingService>();
   final ScrollController _scrollController = ScrollController();
+  int _selectedTestIndex = 0;
+
+  // Get keys (constant names) from fullRoundConstants
+  final List<String> _testRoundDescriptionNames = DescriptionConstants
+      .fullRoundConstants
+      .keys
+      .toList();
+
+  // Get values (transcripts) from fullRoundConstants
+  final List<String> _testRoundConstants = DescriptionConstants
+      .fullRoundConstants
+      .values
+      .toList();
+
+  // Get the transcript value directly from the list
+  String get _selectedTranscript {
+    return _testRoundConstants[_selectedTestIndex];
+  }
 
   @override
   void initState() {
@@ -55,6 +75,87 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
     } else {
       await _voiceService.startListening();
     }
+  }
+
+  void _showTestConstantSelector() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Select Test Constant',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...List.generate(
+                  _testRoundDescriptionNames.length,
+                  (index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      selected: _selectedTestIndex == index,
+                      selectedTileColor: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      title: Text(
+                        _testRoundDescriptionNames[index],
+                        style: TextStyle(
+                          fontWeight: _selectedTestIndex == index
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _selectedTestIndex == index
+                              ? const Color(0xFF9D4EDD)
+                              : null,
+                        ),
+                      ),
+                      trailing: _selectedTestIndex == index
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Color(0xFF9D4EDD),
+                            )
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          _selectedTestIndex = index;
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _handleContinue() {
@@ -179,53 +280,75 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
               ),
               if (kDebugMode) ...[
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    // final RoundStorageService storageService = locator
-                    //     .get<RoundStorageService>();
+                Row(
+                  children: [
+                    // Change button
+                    ElevatedButton(
+                      onPressed: _showTestConstantSelector,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9D4EDD).withValues(alpha: 0.2),
+                        foregroundColor: const Color(0xFF9D4EDD),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Change',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Parse button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final bool useCached = false;
+                          debugPrint(
+                            'Test Parse Constant: Using cached round: $useCached',
+                          );
 
-                    // Check if there's a cached round available
-                    final bool useCached = false;
-                    // await storageService
-                    // .hasCachedRound();
-                    debugPrint(
-                      'Test Parse Constant: Using cached round: $useCached',
-                    );
-
-                    // Replace the bottom sheet with the loading screen
-
-                    // if (context.mounted) {
-                    //   Navigator.of(context).pop();
-                    //   // return;
-                    // }
-
-                    if (context.mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RoundProcessingLoadingScreen(
-                            transcript: flingsGivingRound2MissingHoles1And2,
-                            courseName: testCourseName,
-                            useSharedPreferences: useCached,
+                          if (context.mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    RoundProcessingLoadingScreen(
+                                      transcript: _selectedTranscript,
+                                      courseName: testCourseName,
+                                      useSharedPreferences: useCached,
+                                    ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.science),
+                        label: const Text(
+                          'Parse',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.science),
-                  label: const Text(
-                    'Test Parse Constant',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9D4EDD),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF9D4EDD),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
                     ),
-                    elevation: 0,
-                  ),
+                  ],
                 ),
               ],
               if (hasTranscript && !isListening) ...[

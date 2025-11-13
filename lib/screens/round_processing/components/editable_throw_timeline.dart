@@ -4,7 +4,7 @@ import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/naming_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
 /// Timeline of throws with add/edit buttons and connector line adjustments.
 class EditableThrowTimeline extends StatelessWidget {

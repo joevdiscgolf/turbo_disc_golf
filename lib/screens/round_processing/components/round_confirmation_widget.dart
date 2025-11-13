@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_sheet.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
@@ -171,7 +171,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (builderContext) => IncompleteHoleWalkthroughSheet(
+      builder: (builderContext) => IncompleteHoleWalkthroughPanel(
         potentialRound: currentRound,
         bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
       ),

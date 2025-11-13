@@ -4,7 +4,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/utils/naming_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
 /// Dialog for editing or adding a throw with all available fields.
 ///
@@ -88,9 +88,7 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
     _penaltyController = TextEditingController(
       text: widget._throw.penaltyStrokes?.toString() ?? '',
     );
-    _notesController = TextEditingController(
-      text: widget._throw.notes ?? '',
-    );
+    _notesController = TextEditingController(text: widget._throw.notes ?? '');
   }
 
   @override
@@ -179,8 +177,8 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                         ? 'Add Throw'
                         : 'Edit Throw ${widget.throwIndex + 1}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -240,7 +238,8 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                       value: _landingSpot,
                       items: LandingSpot.values,
                       nameMap: landingSpotToName,
-                      onChanged: (value) => setState(() => _landingSpot = value),
+                      onChanged: (value) =>
+                          setState(() => _landingSpot = value),
                       isRequired: true,
                     ),
                     const SizedBox(height: 16),
@@ -251,7 +250,8 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                       value: _resultRating,
                       items: ThrowResultRating.values,
                       nameMap: throwResultRatingToName,
-                      onChanged: (value) => setState(() => _resultRating = value),
+                      onChanged: (value) =>
+                          setState(() => _resultRating = value),
                     ),
                     const SizedBox(height: 16),
 
@@ -303,7 +303,8 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                           value: _puttStyle,
                           items: PuttStyle.values,
                           nameMap: puttStyleToName,
-                          onChanged: (value) => setState(() => _puttStyle = value),
+                          onChanged: (value) =>
+                              setState(() => _puttStyle = value),
                         ),
                         const SizedBox(height: 16),
 
@@ -446,10 +447,7 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(label),
-                  const Text(
-                    ' *',
-                    style: TextStyle(color: Colors.red),
-                  ),
+                  const Text(' *', style: TextStyle(color: Colors.red)),
                 ],
               )
             : Text(label),
@@ -483,10 +481,7 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
         border: OutlineInputBorder(),
       ),
       items: [
-        const DropdownMenuItem<String>(
-          value: null,
-          child: Text('None'),
-        ),
+        const DropdownMenuItem<String>(value: null, child: Text('None')),
         ..._userDiscs.map((disc) {
           return DropdownMenuItem<String>(
             value: disc.id,
