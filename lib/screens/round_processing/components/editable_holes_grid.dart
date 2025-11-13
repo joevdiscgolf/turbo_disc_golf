@@ -274,6 +274,15 @@ class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
 
     // Show result
     if (success) {
+      // Sync the updated hole from RoundParser to RoundConfirmationCubit
+      final PotentialDGHole? updatedHole = roundParser.potentialRound?.holes?[widget.holeIndex];
+      if (updatedHole != null) {
+        BlocProvider.of<RoundConfirmationCubit>(context).updatePotentialHole(
+          widget.holeIndex,
+          updatedHole,
+        );
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Hole re-processed successfully!'),
