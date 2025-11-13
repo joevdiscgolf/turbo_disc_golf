@@ -4,6 +4,29 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
+// Test constants for debugging hole re-processing
+const String testHoleDescription1 = 'Test hole description 1';
+const String testHoleDescription2 = 'Test hole description 2';
+const String testHoleDescription3 = 'Test hole description 3';
+const String testHoleDescription4 = 'Test hole description 4';
+const String testHoleDescription5 = 'Test hole description 5';
+
+const List<String> testHoleDescriptions = [
+  testHoleDescription1,
+  testHoleDescription2,
+  testHoleDescription3,
+  testHoleDescription4,
+  testHoleDescription5,
+];
+
+const List<String> testHoleDescriptionNames = [
+  'Test 1',
+  'Test 2',
+  'Test 3',
+  'Test 4',
+  'Test 5',
+];
+
 /// A reusable panel for recording a single hole via voice input.
 ///
 /// This panel provides voice recording UI without baked-in business logic,
@@ -58,7 +81,8 @@ class RecordSingleHolePanel extends StatefulWidget {
 
   /// Optional callback for the testing button (debug mode).
   /// Should be provided when showTestButton is true.
-  final VoidCallback? onTestingPressed;
+  /// Receives the selected test constant string.
+  final void Function(String testConstant)? onTestingPressed;
 
   /// Optional callback when the user cancels/closes the panel.
   final VoidCallback? onCancel;
@@ -70,6 +94,7 @@ class RecordSingleHolePanel extends StatefulWidget {
 class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   late VoiceRecordingService _voiceService;
   final ScrollController _scrollController = ScrollController();
+  int _selectedTestIndex = 0;
 
   @override
   void initState() {
@@ -316,22 +341,77 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
               // Testing button (debug mode only)
               if (widget.showTestButton && kDebugMode) ...[
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: widget.onTestingPressed,
-                  icon: const Icon(Icons.science),
-                  label: const Text(
-                    'Test Parse Constant',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9D4EDD),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    // Dropdown for test constant selection
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF9D4EDD).withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: DropdownButton<int>(
+                        value: _selectedTestIndex,
+                        underline: const SizedBox(),
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: Color(0xFF9D4EDD),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: List.generate(
+                          testHoleDescriptionNames.length,
+                          (index) => DropdownMenuItem<int>(
+                            value: index,
+                            child: Text(
+                              testHoleDescriptionNames[index],
+                              style: const TextStyle(
+                                color: Color(0xFF9D4EDD),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        onChanged: (int? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedTestIndex = newValue;
+                            });
+                          }
+                        },
+                      ),
                     ),
-                    elevation: 0,
-                  ),
+                    const SizedBox(width: 12),
+                    // Test button with dynamic label
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: widget.onTestingPressed != null
+                            ? () => widget.onTestingPressed!(
+                                  testHoleDescriptions[_selectedTestIndex],
+                                )
+                            : null,
+                        icon: const Icon(Icons.science),
+                        label: Text(
+                          'Parse ${testHoleDescriptionNames[_selectedTestIndex]}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF9D4EDD),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
 

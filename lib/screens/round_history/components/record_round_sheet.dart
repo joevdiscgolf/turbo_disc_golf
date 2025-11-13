@@ -7,6 +7,16 @@ import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
+// Names for test round descriptions dropdown
+const List<String> testRoundDescriptionNames = [
+  'Test 1',
+  'Test 2',
+  'Test 3',
+  'Test 4',
+  'FlingsGiving 2',
+  '11 Under Whites',
+];
+
 class RecordRoundSheet extends StatefulWidget {
   const RecordRoundSheet({super.key});
 
@@ -18,6 +28,7 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
   final VoiceRecordingService _voiceService = locator
       .get<VoiceRecordingService>();
   final ScrollController _scrollController = ScrollController();
+  int _selectedTestIndex = 0;
 
   @override
   void initState() {
@@ -179,53 +190,104 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
               ),
               if (kDebugMode) ...[
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    // final RoundStorageService storageService = locator
-                    //     .get<RoundStorageService>();
-
-                    // Check if there's a cached round available
-                    final bool useCached = false;
-                    // await storageService
-                    // .hasCachedRound();
-                    debugPrint(
-                      'Test Parse Constant: Using cached round: $useCached',
-                    );
-
-                    // Replace the bottom sheet with the loading screen
-
-                    // if (context.mounted) {
-                    //   Navigator.of(context).pop();
-                    //   // return;
-                    // }
-
-                    if (context.mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RoundProcessingLoadingScreen(
-                            transcript: flingsGivingRound2MissingHoles1And2,
-                            courseName: testCourseName,
-                            useSharedPreferences: useCached,
+                Row(
+                  children: [
+                    // Dropdown for test constant selection
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF9D4EDD).withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: DropdownButton<int>(
+                        value: _selectedTestIndex,
+                        underline: const SizedBox(),
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: Color(0xFF9D4EDD),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: List.generate(
+                          testRoundDescriptionNames.length,
+                          (index) => DropdownMenuItem<int>(
+                            value: index,
+                            child: Text(
+                              testRoundDescriptionNames[index],
+                              style: const TextStyle(
+                                color: Color(0xFF9D4EDD),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.science),
-                  label: const Text(
-                    'Test Parse Constant',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9D4EDD),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        onChanged: (int? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedTestIndex = newValue;
+                            });
+                          }
+                        },
+                      ),
                     ),
-                    elevation: 0,
-                  ),
+                    const SizedBox(width: 12),
+                    // Test button with dynamic label
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          // final RoundStorageService storageService = locator
+                          //     .get<RoundStorageService>();
+
+                          // Check if there's a cached round available
+                          final bool useCached = false;
+                          // await storageService
+                          // .hasCachedRound();
+                          debugPrint(
+                            'Test Parse Constant: Using cached round: $useCached',
+                          );
+
+                          // Replace the bottom sheet with the loading screen
+
+                          // if (context.mounted) {
+                          //   Navigator.of(context).pop();
+                          //   // return;
+                          // }
+
+                          if (context.mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RoundProcessingLoadingScreen(
+                                  transcript: testRoundDescriptions[_selectedTestIndex],
+                                  courseName: testCourseName,
+                                  useSharedPreferences: useCached,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.science),
+                        label: Text(
+                          'Parse ${testRoundDescriptionNames[_selectedTestIndex]}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF9D4EDD),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
               if (hasTranscript && !isListening) ...[

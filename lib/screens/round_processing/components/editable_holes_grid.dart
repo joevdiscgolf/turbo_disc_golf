@@ -519,9 +519,9 @@ class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
       isProcessing: _isProcessing,
       showTestButton: kDebugMode,
       onContinuePressed: _handleContinue,
-      onTestingPressed: () {
-        // Use test constant for debugging
-        _handleContinue(flingsGivingRound2MissingHoles1And2);
+      onTestingPressed: (String testConstant) {
+        // Use selected test constant for debugging
+        _handleContinue(testConstant);
       },
     );
   }
