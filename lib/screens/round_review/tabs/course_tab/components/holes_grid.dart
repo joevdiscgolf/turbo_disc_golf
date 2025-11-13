@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/components/hole_grid_item.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -276,143 +276,15 @@ class _HoleGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int score = hole.holeScore;
-    final int relativeScore = hole.relativeHoleScore;
-
-    // Determine gradient colors based on relative score
-    List<Color> gradientColors;
-    Color scoreColor;
-    if (relativeScore < 0) {
-      // Birdie - green gradient
-      gradientColors = [
-        const Color(0xFF137e66).withValues(alpha: 0.25),
-        const Color(0xFF137e66).withValues(alpha: 0.15),
-      ];
-      scoreColor = const Color(0xFF137e66);
-    } else if (relativeScore == 0) {
-      // Par - darker grey gradient
-      gradientColors = [
-        Colors.grey.withValues(alpha: 0.35),
-        Colors.grey.withValues(alpha: 0.25),
-      ];
-      scoreColor = Colors.grey;
-    } else if (relativeScore == 1) {
-      // Bogey - light red gradient
-      gradientColors = [
-        const Color(0xFFFF7A7A).withValues(alpha: 0.25),
-        const Color(0xFFFF7A7A).withValues(alpha: 0.15),
-      ];
-      scoreColor = const Color(0xFFFF7A7A);
-    } else {
-      // Double bogey+ - dark red gradient
-      gradientColors = [
-        const Color(0xFFD32F2F).withValues(alpha: 0.25),
-        const Color(0xFFD32F2F).withValues(alpha: 0.15),
-      ];
-      scoreColor = const Color(0xFFD32F2F);
-    }
-
-    return InkWell(
+    return HoleGridItem(
+      holeNumber: hole.number,
+      holePar: hole.par,
+      holeFeet: hole.feet,
+      score: hole.holeScore,
+      relativeScore: hole.relativeHoleScore,
+      isIncomplete: false, // Completed rounds are never incomplete
       onTap: () => _showHoleDetailSheet(context),
-      borderRadius: BorderRadius.circular(8),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: Container(
-          height: 96,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: gradientColors,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header row with hole icon/number and score circle
-                Hero(
-                  tag: 'hole_${hole.number}',
-                  child: Material(
-                    color: Colors.transparent,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.golf_course,
-                              size: 16,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${hole.number}',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        // Score circle (smaller, in top right)
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: scoreColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$score',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Par and distance
-                Text(
-                  'Par ${hole.par}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
-                if (hole.feet != null)
-                  Text(
-                    '${hole.feet} ft',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 11,
-                    ),
-                  ),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Icon(
-                    size: 12,
-                    FlutterRemix.arrow_right_s_line,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      heroTag: 'hole_${hole.number}',
     );
   }
 }
