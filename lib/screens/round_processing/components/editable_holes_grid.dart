@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/hole_re_record_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
+import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
@@ -262,16 +264,15 @@ class _HoleGridItem extends StatelessWidget {
     PotentialDGHole currentHole,
     int holeIndex,
   ) {
-    showDialog<void>(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) => HoleReRecordDialog(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _VoiceRecordSheet(
         holeNumber: currentHole.number ?? holeIndex + 1,
         holeIndex: holeIndex,
         holePar: currentHole.par,
         holeFeet: currentHole.feet,
-        onReProcessed: () {
-          // The hole data will be automatically updated via the roundParser listener
-        },
       ),
     );
   }
@@ -436,6 +437,85 @@ class _HoleGridItem extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Stateful wrapper for RecordSingleHolePanel that handles processing state.
+class _VoiceRecordSheet extends StatefulWidget {
+  const _VoiceRecordSheet({
+    required this.holeNumber,
+    required this.holeIndex,
+    this.holePar,
+    this.holeFeet,
+  });
+
+  final int holeNumber;
+  final int holeIndex;
+  final int? holePar;
+  final int? holeFeet;
+
+  @override
+  State<_VoiceRecordSheet> createState() => _VoiceRecordSheetState();
+}
+
+class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
+  bool _isProcessing = false;
+
+  Future<void> _handleContinue(String transcript) async {
+    setState(() {
+      _isProcessing = true;
+    });
+
+    // Show loading snackbar
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Re-processing hole with AI...')),
+      );
+    }
+
+    // Call RoundParser to re-process the hole
+    final RoundParser roundParser = locator.get<RoundParser>();
+    final bool success = await roundParser.reProcessHole(
+      holeIndex: widget.holeIndex,
+      voiceTranscript: transcript,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isProcessing = false;
+    });
+
+    // Show result
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hole re-processed successfully!'),
+          backgroundColor: Color(0xFF137e66),
+        ),
+      );
+      Navigator.of(context).pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Error: ${roundParser.lastError.isNotEmpty ? roundParser.lastError : 'Failed to re-process hole'}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RecordSingleHolePanel(
+      holeNumber: widget.holeNumber,
+      holePar: widget.holePar,
+      holeFeet: widget.holeFeet,
+      isProcessing: _isProcessing,
+      onContinuePressed: _handleContinue,
     );
   }
 }
