@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -515,7 +517,12 @@ class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
       holePar: widget.holePar,
       holeFeet: widget.holeFeet,
       isProcessing: _isProcessing,
+      showTestButton: kDebugMode,
       onContinuePressed: _handleContinue,
+      onTestingPressed: () {
+        // Use test constant for debugging
+        _handleContinue(flingsGivingRound2MissingHoles1And2);
+      },
     );
   }
 }
