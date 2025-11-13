@@ -53,14 +53,6 @@ class PotentialDGHole {
     if (par == null) missing.add('par');
     if (throws == null) {
       missing.add('throws');
-    } else {
-      // // Check throws for missing fields
-      // for (int i = 0; i < throws!.length; i++) {
-      //   final throwMissing = throws![i].getMissingFields();
-      //   if (throwMissing.isNotEmpty) {
-      //     missing.add('throw $i: ${throwMissing.join(', ')}');
-      //   }
-      // }
     }
     return missing;
   }
