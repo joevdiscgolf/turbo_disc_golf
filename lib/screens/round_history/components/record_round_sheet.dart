@@ -4,11 +4,27 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
-import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 
 class RecordRoundSheet extends StatefulWidget {
-  const RecordRoundSheet({super.key});
+  const RecordRoundSheet({
+    super.key,
+    required this.onContinuePressed,
+    required this.onTestPressed,
+  });
+
+  final Function(
+    BuildContext context, {
+    required String transcript,
+    String? courseName,
+  })
+  onContinuePressed;
+  final Function(
+    BuildContext context, {
+    required String testTranscript,
+    String? courseName,
+  })
+  onTestPressed;
 
   @override
   State<RecordRoundSheet> createState() => _RecordRoundSheetState();
@@ -31,52 +47,6 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
     _voiceService.removeListener(_onVoiceServiceUpdate);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onVoiceServiceUpdate() {
-    if (mounted) {
-      setState(() {});
-      // Auto-scroll to bottom when new text arrives
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    }
-  }
-
-  Future<void> _toggleListening() async {
-    if (_voiceService.isListening) {
-      await _voiceService.stopListening();
-    } else {
-      await _voiceService.startListening();
-    }
-  }
-
-  void _handleContinue() {
-    final String transcript = _voiceService.transcribedText;
-
-    if (transcript.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No transcript available')));
-      return;
-    }
-
-    // Replace the bottom sheet with the loading screen
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RoundProcessingLoadingScreen(
-          transcript: transcript,
-          useSharedPreferences: false,
-        ),
-      ),
-    );
   }
 
   @override
@@ -181,36 +151,7 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    // final RoundStorageService storageService = locator
-                    //     .get<RoundStorageService>();
-
-                    // Check if there's a cached round available
-                    final bool useCached = false;
-                    // await storageService
-                    // .hasCachedRound();
-                    debugPrint(
-                      'Test Parse Constant: Using cached round: $useCached',
-                    );
-
-                    // Replace the bottom sheet with the loading screen
-
-                    // if (context.mounted) {
-                    //   Navigator.of(context).pop();
-                    //   // return;
-                    // }
-
-                    if (context.mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RoundProcessingLoadingScreen(
-                            transcript: flingsGivingRound2MissingHoles1And2,
-                            courseName: testCourseName,
-                            useSharedPreferences: useCached,
-                          ),
-                        ),
-                      );
-                    }
+                    _handleTestButton();
                   },
                   icon: const Icon(Icons.science),
                   label: const Text(
@@ -252,6 +193,60 @@ class _RecordRoundSheetState extends State<RecordRoundSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  void _onVoiceServiceUpdate() {
+    if (mounted) {
+      setState(() {});
+      // Auto-scroll to bottom when new text arrives
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _toggleListening() async {
+    if (_voiceService.isListening) {
+      await _voiceService.stopListening();
+    } else {
+      await _voiceService.startListening();
+    }
+  }
+
+  void _handleContinue() {
+    final String transcript = _voiceService.transcribedText;
+
+    if (transcript.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No transcript available')));
+      return;
+    }
+
+    widget.onContinuePressed(context, transcript: transcript, courseName: null);
+  }
+
+  void _handleTestButton() {
+    // final RoundStorageService storageService = locator
+    //     .get<RoundStorageService>();
+
+    // Check if there's a cached round available
+    final bool useCached = false;
+    // await storageService
+    // .hasCachedRound();
+    debugPrint('Test Parse Constant: Using cached round: $useCached');
+
+    widget.onTestPressed(
+      context,
+      testTranscript: flingsGivingRound2MissingHoles1And2,
+      courseName: 'Foxwood Reds',
     );
   }
 }

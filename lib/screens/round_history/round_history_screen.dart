@@ -3,19 +3,12 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_sheet.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
+import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundHistoryScreen extends StatelessWidget {
   const RoundHistoryScreen({super.key});
-
-  void _showRecordRoundSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const RecordRoundSheet(),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +134,15 @@ class RoundHistoryScreen extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => _showRecordRoundSheet(context),
+                  onTap: () {
+                    displayBottomSheet(
+                      context,
+                      RecordRoundSheet(
+                        onContinuePressed: _onContinuePressed,
+                        onTestPressed: _onTestPressed,
+                      ),
+                    );
+                  },
                   customBorder: const CircleBorder(),
                   child: const Center(
                     child: Text(
@@ -161,132 +162,61 @@ class RoundHistoryScreen extends StatelessWidget {
       ],
     );
   }
+
+  void _onContinuePressed(
+    BuildContext context, {
+    required String transcript,
+    String? courseName,
+  }) {
+    // Replace the bottom sheet with the loading screen
+    _pushProcessingScreenWithTranscript(
+      context,
+      transcript,
+      null,
+      useSharedPreferences: false,
+    );
+  }
+
+  void _onTestPressed(
+    BuildContext context, {
+    required String testTranscript,
+    String? courseName,
+  }) {
+    // final RoundStorageService storageService = locator
+    //     .get<RoundStorageService>();
+
+    // Check if there's a cached round available
+    final bool useCached = false;
+    // await storageService
+    // .hasCachedRound();
+    debugPrint('Test Parse Constant: Using cached round: $useCached');
+
+    if (context.mounted) {
+      _pushProcessingScreenWithTranscript(
+        context,
+        testTranscript,
+        'Foxwood Reds',
+        useSharedPreferences: useCached,
+      );
+    }
+  }
+
+  void _pushProcessingScreenWithTranscript(
+    BuildContext context,
+    String transcript,
+    String? courseName, {
+    required bool useSharedPreferences,
+  }) {
+    // Replace the bottom sheet with the loading screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RoundProcessingLoadingScreen(
+          transcript: transcript,
+          courseName: courseName,
+          useSharedPreferences: useSharedPreferences,
+        ),
+      ),
+    );
+  }
 }
-
-// OLD IMPLEMENTATION - Preserved for reference
-// Use RoundHistoryRow from components/round_history_row.dart instead
-// class _RoundHistoryRowOld extends StatelessWidget {
-//   const _RoundHistoryRowOld({required this.round});
-
-//   final DGRound round;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final totalScore = round.holes.fold<int>(
-//       0,
-//       (sum, hole) => sum + hole.holeScore,
-//     );
-//     final totalPar = round.holes.fold<int>(0, (sum, hole) => sum + hole.par);
-//     final relativeToPar = totalScore - totalPar;
-//     final relativeToParText = relativeToPar == 0
-//         ? 'E'
-//         : relativeToPar > 0
-//         ? '+$relativeToPar'
-//         : '$relativeToPar';
-
-//     return Card(
-//       margin: const EdgeInsets.only(bottom: 12),
-//       child: InkWell(
-//         onTap: () {
-//           // Set the existing round so the parser can calculate stats
-//           locator.get<RoundParser>().setRound(round);
-
-//           Navigator.push(
-//             context,
-//             MaterialPageRoute(
-//               builder: (context) => useRoundReviewScreenV2
-//                   ? RoundReviewScreenV2(round: round)
-//                   : RoundReviewScreen(round: round),
-//             ),
-//           );
-//         },
-//         borderRadius: BorderRadius.circular(12),
-//         child: Padding(
-//           padding: const EdgeInsets.all(16),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                 children: [
-//                   Expanded(
-//                     child: Text(
-//                       round.courseName,
-//                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-//                         fontWeight: FontWeight.bold,
-//                       ),
-//                     ),
-//                   ),
-//                   Container(
-//                     padding: const EdgeInsets.symmetric(
-//                       horizontal: 12,
-//                       vertical: 6,
-//                     ),
-//                     decoration: BoxDecoration(
-//                       color: _getScoreColor(relativeToPar),
-//                       borderRadius: BorderRadius.circular(12),
-//                     ),
-//                     child: Text(
-//                       relativeToParText,
-//                       style: const TextStyle(
-//                         fontSize: 18,
-//                         fontWeight: FontWeight.bold,
-//                         color: Colors.white,
-//                       ),
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//               const SizedBox(height: 8),
-//               Row(
-//                 children: [
-//                   Icon(
-//                     Icons.pin_drop,
-//                     size: 16,
-//                     color: Theme.of(context).textTheme.bodySmall?.color,
-//                   ),
-//                   const SizedBox(width: 4),
-//                   Text(
-//                     '${round.holes.length} holes',
-//                     style: Theme.of(context).textTheme.bodyMedium,
-//                   ),
-//                   const SizedBox(width: 16),
-//                   Icon(
-//                     Icons.sports_golf,
-//                     size: 16,
-//                     color: Theme.of(context).textTheme.bodySmall?.color,
-//                   ),
-//                   const SizedBox(width: 4),
-//                   Text(
-//                     'Score: $totalScore',
-//                     style: Theme.of(context).textTheme.bodyMedium,
-//                   ),
-//                   const SizedBox(width: 8),
-//                   Text(
-//                     '(Par: $totalPar)',
-//                     style: Theme.of(context).textTheme.bodySmall,
-//                   ),
-//                 ],
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Color _getScoreColor(int relativeToPar) {
-//     if (relativeToPar <= -3) {
-//       return Colors.purple; // Eagle or better
-//     } else if (relativeToPar < 0) {
-//       return Colors.blue; // Under par
-//     } else if (relativeToPar == 0) {
-//       return Colors.green; // Even par
-//     } else if (relativeToPar <= 3) {
-//       return Colors.orange; // Slightly over par
-//     } else {
-//       return Colors.red; // Way over par
-//     }
-//   }
-// }
-
