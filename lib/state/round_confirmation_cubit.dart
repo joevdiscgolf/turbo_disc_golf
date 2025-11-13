@@ -150,8 +150,9 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
 
     final PotentialDGHole currentHole =
         activeState.potentialRound.holes![holeIndex];
-    final List<PotentialDiscThrow> updatedThrows =
-        List<PotentialDiscThrow>.from(currentHole.throws ?? []);
+    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
+      currentHole.throws ?? [],
+    );
 
     // Calculate insertion position
     // Semantic convention: addAfterThrowIndex means "insert AFTER throw at this index"
@@ -166,7 +167,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     // Insert the new throw
     updatedThrows.insert(
       insertIndex,
-      PotentialDiscThrow(
+      DiscThrow(
         index: insertIndex, // Will be re-indexed below
         purpose: newThrow.purpose,
         technique: newThrow.technique,
@@ -193,8 +194,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
 
     // Reindex all throws after insertion to ensure sequential indices
     // This ensures throw indices are 0, 1, 2, ... regardless of insertion order
-    final List<PotentialDiscThrow> reindexedThrows =
-        _reindexThrows(updatedThrows);
+    final List<DiscThrow> reindexedThrows = _reindexThrows(updatedThrows);
 
     final PotentialDGHole updatedHole = PotentialDGHole(
       number: currentHole.number,
@@ -226,13 +226,13 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
       return;
     }
 
-    final List<PotentialDiscThrow> updatedThrows =
-        List<PotentialDiscThrow>.from(currentHole.throws!);
+    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
+      currentHole.throws!,
+    );
     updatedThrows.removeAt(throwIndex);
 
     // Reindex remaining throws to ensure sequential indices
-    final List<PotentialDiscThrow> reindexedThrows =
-        _reindexThrows(updatedThrows);
+    final List<DiscThrow> reindexedThrows = _reindexThrows(updatedThrows);
 
     final PotentialDGHole updatedHole = PotentialDGHole(
       number: currentHole.number,
@@ -262,8 +262,8 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
       return;
     }
 
-    final updatedThrows = List<PotentialDiscThrow>.from(hole.throws!);
-    updatedThrows[throwIndex] = PotentialDiscThrow(
+    final updatedThrows = List<DiscThrow>.from(hole.throws!);
+    updatedThrows[throwIndex] = DiscThrow(
       index: updatedThrow.index,
       purpose: updatedThrow.purpose,
       technique: updatedThrow.technique,
@@ -299,36 +299,32 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
   }
 
   /// Helper method to reindex throws to ensure sequential indices (0, 1, 2, ...)
-  List<PotentialDiscThrow> _reindexThrows(List<PotentialDiscThrow> throws) {
-    return throws
-        .asMap()
-        .entries
-        .map((entry) {
-          final PotentialDiscThrow throw_ = entry.value;
-          return PotentialDiscThrow(
-            index: entry.key,
-            purpose: throw_.purpose,
-            technique: throw_.technique,
-            puttStyle: throw_.puttStyle,
-            shotShape: throw_.shotShape,
-            stance: throw_.stance,
-            power: throw_.power,
-            distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
-            distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
-            elevationChangeFeet: throw_.elevationChangeFeet,
-            windDirection: throw_.windDirection,
-            windStrength: throw_.windStrength,
-            resultRating: throw_.resultRating,
-            landingSpot: throw_.landingSpot,
-            fairwayWidth: throw_.fairwayWidth,
-            penaltyStrokes: throw_.penaltyStrokes,
-            notes: throw_.notes,
-            rawText: throw_.rawText,
-            parseConfidence: throw_.parseConfidence,
-            discName: throw_.discName,
-            disc: throw_.disc,
-          );
-        })
-        .toList();
+  List<DiscThrow> _reindexThrows(List<DiscThrow> throws) {
+    return throws.asMap().entries.map((entry) {
+      final DiscThrow throw_ = entry.value;
+      return DiscThrow(
+        index: entry.key,
+        purpose: throw_.purpose,
+        technique: throw_.technique,
+        puttStyle: throw_.puttStyle,
+        shotShape: throw_.shotShape,
+        stance: throw_.stance,
+        power: throw_.power,
+        distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
+        distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
+        elevationChangeFeet: throw_.elevationChangeFeet,
+        windDirection: throw_.windDirection,
+        windStrength: throw_.windStrength,
+        resultRating: throw_.resultRating,
+        landingSpot: throw_.landingSpot,
+        fairwayWidth: throw_.fairwayWidth,
+        penaltyStrokes: throw_.penaltyStrokes,
+        notes: throw_.notes,
+        rawText: throw_.rawText,
+        parseConfidence: throw_.parseConfidence,
+        discName: throw_.discName,
+        disc: throw_.disc,
+      );
+    }).toList();
   }
 }

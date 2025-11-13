@@ -1,113 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:turbo_disc_golf/models/data/disc_data.dart';
+import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 
 part 'potential_round_data.g.dart';
-
-/// Intermediate representation of a throw with all optional fields.
-/// Used during parsing to handle incomplete data from Gemini without exceptions.
-@JsonSerializable(explicitToJson: true, anyMap: true)
-class PotentialDiscThrow {
-  const PotentialDiscThrow({
-    this.index,
-    this.purpose,
-    this.technique,
-    this.puttStyle,
-    this.shotShape,
-    this.stance,
-    this.power,
-    this.distanceFeetBeforeThrow,
-    this.distanceFeetAfterThrow,
-    this.elevationChangeFeet,
-    this.windDirection,
-    this.windStrength,
-    this.resultRating,
-    this.landingSpot,
-    this.fairwayWidth,
-    this.penaltyStrokes,
-    this.notes,
-    this.rawText,
-    this.parseConfidence,
-    this.discName,
-    this.disc,
-  });
-
-  final int? index;
-  final ThrowPurpose? purpose;
-  final ThrowTechnique? technique;
-  final PuttStyle? puttStyle;
-  final ShotShape? shotShape;
-  final StanceType? stance;
-  final ThrowPower? power;
-  final int? distanceFeetBeforeThrow;
-  final int? distanceFeetAfterThrow;
-  final double? elevationChangeFeet;
-  final WindDirection? windDirection;
-  final WindStrength? windStrength;
-  final ThrowResultRating? resultRating;
-  final LandingSpot? landingSpot;
-  final FairwayWidth? fairwayWidth;
-  final int? penaltyStrokes;
-  final String? notes;
-  final String? rawText;
-  final double? parseConfidence;
-  final String? discName;
-  final DGDisc? disc;
-
-  factory PotentialDiscThrow.fromJson(Map<String, dynamic> json) =>
-      _$PotentialDiscThrowFromJson(json);
-
-  Map<String, dynamic> toJson() => _$PotentialDiscThrowToJson(this);
-
-  /// Check if this throw has all required fields for conversion to DiscThrow
-  bool get hasRequiredFields => index != null;
-
-  /// Get list of missing required field names
-  List<String> getMissingFields() {
-    final List<String> missing = [];
-    if (index == null) missing.add('index');
-    return missing;
-  }
-
-  /// Convert to final DiscThrow if all required fields are present
-  /// Throws ArgumentError if required fields are missing
-  DiscThrow toDiscThrow() {
-    if (!hasRequiredFields) {
-      throw ArgumentError(
-        'Cannot convert to DiscThrow: missing required fields: ${getMissingFields().join(', ')}',
-      );
-    }
-
-    return DiscThrow(
-      index: index!,
-      purpose: purpose,
-      technique: technique,
-      puttStyle: puttStyle,
-      shotShape: shotShape,
-      stance: stance,
-      power: power,
-      distanceFeetBeforeThrow: distanceFeetBeforeThrow,
-      distanceFeetAfterThrow: distanceFeetAfterThrow,
-      elevationChangeFeet: elevationChangeFeet,
-      windDirection: windDirection,
-      windStrength: windStrength,
-      resultRating: resultRating,
-      landingSpot: landingSpot,
-      fairwayWidth: fairwayWidth,
-      penaltyStrokes: penaltyStrokes,
-      notes: notes,
-      rawText: rawText,
-      parseConfidence: parseConfidence,
-      discName: discName,
-      disc: disc,
-    );
-  }
-}
 
 /// Intermediate representation of a hole with all optional fields.
 /// Used during parsing to handle incomplete data from Gemini without exceptions.
@@ -124,7 +23,7 @@ class PotentialDGHole {
   final int? number;
   final int? par;
   final int? feet;
-  final List<PotentialDiscThrow>? throws;
+  final List<DiscThrow>? throws;
   final HoleType? holeType;
 
   factory PotentialDGHole.fromJson(Map<String, dynamic> json) =>
@@ -136,11 +35,6 @@ class PotentialDGHole {
   bool get hasRequiredFields {
     if (number == null || par == null || !hasThrowInBasket) {
       return false;
-    }
-
-    // Also check that all throws have required fields
-    for (final potentialThrow in throws!) {
-      if (!potentialThrow.hasRequiredFields) return false;
     }
 
     return true;
@@ -160,13 +54,13 @@ class PotentialDGHole {
     if (throws == null) {
       missing.add('throws');
     } else {
-      // Check throws for missing fields
-      for (int i = 0; i < throws!.length; i++) {
-        final throwMissing = throws![i].getMissingFields();
-        if (throwMissing.isNotEmpty) {
-          missing.add('throw $i: ${throwMissing.join(', ')}');
-        }
-      }
+      // // Check throws for missing fields
+      // for (int i = 0; i < throws!.length; i++) {
+      //   final throwMissing = throws![i].getMissingFields();
+      //   if (throwMissing.isNotEmpty) {
+      //     missing.add('throw $i: ${throwMissing.join(', ')}');
+      //   }
+      // }
     }
     return missing;
   }
@@ -184,7 +78,7 @@ class PotentialDGHole {
       number: number!,
       par: par!,
       feet: feet,
-      throws: throws!.map((t) => t.toDiscThrow()).toList(),
+      throws: throws!,
       holeType: holeType,
     );
   }

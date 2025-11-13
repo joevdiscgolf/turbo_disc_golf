@@ -94,12 +94,7 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
             holeNumber: currentHole.number ?? widget.holeIndex + 1,
             par: currentHole.par,
             distance: currentHole.feet,
-            throws:
-                currentHole.throws
-                    ?.where((t) => t.hasRequiredFields)
-                    .map((t) => t.toDiscThrow())
-                    .toList() ??
-                [],
+            throws: currentHole.throws ?? [],
             parFocusNode: _parFocusNode,
             distanceFocusNode: _distanceFocusNode,
             bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
@@ -152,7 +147,9 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     // - addAtIndex=null means append to end
     // The actual insertion logic is handled by the parent component
     final int currentThrowCount = currentHole.throws?.length ?? 0;
-    final int displayThrowNumber = addAtIndex != null ? addAtIndex + 1 : currentThrowCount;
+    final int displayThrowNumber = addAtIndex != null
+        ? addAtIndex + 1
+        : currentThrowCount;
 
     // Create a new throw with default values
     // The index is only for dialog display; parent will recalculate during insertion
@@ -193,12 +190,11 @@ class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
     _parFocusNode.unfocus();
     _distanceFocusNode.unfocus();
 
-    // Convert to DiscThrow from PotentialDiscThrow if needed
-    final PotentialDiscThrow? potentialThrow = currentHole.throws?[throwIndex];
-    if (potentialThrow == null || !potentialThrow.hasRequiredFields) {
+    // Convert to DiscThrow from DiscThrow if needed
+    final DiscThrow? currentThrow = currentHole.throws?[throwIndex];
+    if (currentThrow == null) {
       return; // Can't edit incomplete throw
     }
-    final DiscThrow currentThrow = potentialThrow.toDiscThrow();
 
     await showDialog(
       context: context,

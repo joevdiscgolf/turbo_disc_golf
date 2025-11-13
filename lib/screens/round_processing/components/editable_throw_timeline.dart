@@ -85,8 +85,11 @@ class EditableThrowTimeline extends StatelessWidget {
           // Example: if insertAfterThrowIndex=0, the new throw will be inserted after throw 0 (at position 1)
           final int insertAfterThrowIndex = index ~/ 2;
           final DiscThrow previousThrow = throws[insertAfterThrowIndex];
-          final Color connectorColor = _getTechniqueColorForThrow(previousThrow);
-          final bool isAfterLastThrow = insertAfterThrowIndex == throws.length - 1;
+          final Color connectorColor = _getTechniqueColorForThrow(
+            previousThrow,
+          );
+          final bool isAfterLastThrow =
+              insertAfterThrowIndex == throws.length - 1;
 
           return _AddThrowButton(
             onAdd: () => onAddThrowAt(insertAfterThrowIndex),
@@ -143,39 +146,39 @@ class _AddThrowButton extends StatelessWidget {
             onTap: () {
               onAdd();
             },
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: TurbColors.blue,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.15),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.add,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 16,
-                ),
-              ),
-            )
-                .animate()
-                .fadeIn(duration: 250.ms, curve: Curves.easeOut)
-                .scale(
-                  begin: const Offset(0.8, 0.8),
-                  end: const Offset(1.0, 1.0),
-                  duration: 250.ms,
-                  curve: Curves.easeOutBack,
-                ),
+            child:
+                Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: TurbColors.blue,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.15),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.add,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 16,
+                        ),
+                      ),
+                    )
+                    .animate()
+                    .fadeIn(duration: 250.ms, curve: Curves.easeOut)
+                    .scale(
+                      begin: const Offset(0.8, 0.8),
+                      end: const Offset(1.0, 1.0),
+                      duration: 250.ms,
+                      curve: Curves.easeOutBack,
+                    ),
           ),
         ],
       ),
@@ -339,10 +342,7 @@ class EditableThrowTimelineItem extends StatelessWidget {
 }
 
 class _TimelineConnector extends StatelessWidget {
-  const _TimelineConnector({
-    required this.color,
-    required this.animationDelay,
-  });
+  const _TimelineConnector({required this.color, required this.animationDelay});
 
   final Color color;
   final int animationDelay;
