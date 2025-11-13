@@ -578,6 +578,13 @@ class _IncompleteHoleWalkthroughPanelState
 
     // Show result
     if (success) {
+      // Sync the parsed hole data from RoundParser to RoundConfirmationCubit
+      final PotentialDGHole? updatedHole =
+          roundParser.potentialRound?.holes?[holeIndex];
+      if (updatedHole != null) {
+        _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Hole re-processed successfully!'),
