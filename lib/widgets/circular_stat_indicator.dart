@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class CircularStatIndicator extends StatefulWidget {
   static const Duration _scalePauseDuration = Duration(milliseconds: 300);
@@ -116,7 +116,8 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
     ]).animate(_scaleAnimationController);
 
     // Check if animation should play
-    bool shouldPlayAnimation = widget.shouldAnimate && shouldAnimateProgressIndicators;
+    bool shouldPlayAnimation =
+        widget.shouldAnimate && shouldAnimateProgressIndicators;
 
     // If roundId is provided, check animation state service
     if (shouldPlayAnimation && widget.roundId != null) {

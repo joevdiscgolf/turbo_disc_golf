@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 
-class ShotShapeBreakdownSheet extends StatelessWidget {
-  const ShotShapeBreakdownSheet({
+class ShotShapeBreakdownPanel extends StatelessWidget {
+  const ShotShapeBreakdownPanel({
     super.key,
     required this.throwType,
     required this.overallStats,
@@ -23,7 +23,7 @@ class ShotShapeBreakdownSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ShotShapeBreakdownSheet(
+      builder: (context) => ShotShapeBreakdownPanel(
         throwType: throwType,
         overallStats: overallStats,
         shotShapeStats: shotShapeStats,
@@ -68,7 +68,9 @@ class ShotShapeBreakdownSheet extends StatelessWidget {
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -81,15 +83,15 @@ class ShotShapeBreakdownSheet extends StatelessWidget {
                     Text(
                       '${overallStats.displayName.toUpperCase()} BREAKDOWN',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Overall: ${overallStats.birdieRate.toStringAsFixed(0)}% Birdie Rate (${overallStats.birdieCount}/${overallStats.totalHoles} holes)',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -101,7 +103,8 @@ class ShotShapeBreakdownSheet extends StatelessWidget {
                   controller: scrollController,
                   padding: const EdgeInsets.all(20),
                   itemCount: shotShapeStats.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final ShotShapeStats shape = shotShapeStats[index];
                     String? badge;
@@ -113,10 +116,7 @@ class ShotShapeBreakdownSheet extends StatelessWidget {
                       }
                     }
 
-                    return _ShotShapeCard(
-                      shape: shape,
-                      badge: badge,
-                    );
+                    return _ShotShapeCard(shape: shape, badge: badge);
                   },
                 ),
               ),
@@ -129,10 +129,7 @@ class ShotShapeBreakdownSheet extends StatelessWidget {
 }
 
 class _ShotShapeCard extends StatelessWidget {
-  const _ShotShapeCard({
-    required this.shape,
-    this.badge,
-  });
+  const _ShotShapeCard({required this.shape, this.badge});
 
   final ShotShapeStats shape;
   final String? badge;
@@ -171,13 +168,16 @@ class _ShotShapeCard extends StatelessWidget {
                 child: Text(
                   '${shape.throwType} ${shape.displayName}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               if (badge != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: badge == 'BEST'
                         ? const Color(0xFF137e66).withValues(alpha: 0.15)
@@ -187,11 +187,11 @@ class _ShotShapeCard extends StatelessWidget {
                   child: Text(
                     badge!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: badge == 'BEST'
-                              ? const Color(0xFF137e66)
-                              : const Color(0xFFFF7A7A),
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: badge == 'BEST'
+                          ? const Color(0xFF137e66)
+                          : const Color(0xFFFF7A7A),
+                    ),
                   ),
                 ),
             ],
@@ -251,15 +251,15 @@ class _StatRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             Text(
               '${percentage.toStringAsFixed(0)}% ($count/$total)',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),

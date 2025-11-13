@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class DiscsTab extends StatelessWidget {
   final DGRound round;

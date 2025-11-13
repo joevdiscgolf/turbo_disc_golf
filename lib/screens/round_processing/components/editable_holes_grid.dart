@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
@@ -108,7 +107,7 @@ class _HoleGridItem extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (builderContext) => EditableHoleDetailSheet(
+      builder: (builderContext) => EditableHoleDetailPanel(
         potentialHole: potentialHole,
         holeIndex: holeIndex,
         onMetadataChanged: ({int? newPar, int? newDistance}) =>
@@ -301,12 +300,9 @@ class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
       holePar: widget.holePar,
       holeFeet: widget.holeFeet,
       isProcessing: _isProcessing,
-      showTestButton: kDebugMode,
+      showTestButton: true,
       onContinuePressed: _handleContinue,
-      onTestingPressed: (String testConstant) {
-        // Use selected test constant for debugging
-        _handleContinue(testConstant);
-      },
+      onTestingPressed: _handleContinue,
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 class CoreDriveStatsCard extends StatefulWidget {

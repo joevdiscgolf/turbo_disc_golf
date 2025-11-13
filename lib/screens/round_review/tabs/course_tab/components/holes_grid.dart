@@ -4,7 +4,8 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_sheet.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class HolesGrid extends StatelessWidget {
   const HolesGrid({
@@ -95,11 +96,9 @@ class _HoleGridItem extends StatelessWidget {
       holeType: hole.holeType,
     );
 
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => EditableHoleDetailSheet(
+    displayBottomSheet(
+      context,
+      EditableHoleDetailPanel(
         potentialHole: potentialHole,
         holeIndex: holeIndex,
         onMetadataChanged: ({int? newPar, int? newDistance}) =>

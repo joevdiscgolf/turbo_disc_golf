@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class MistakesBarChartCard extends StatefulWidget {
   final int totalMistakes;

@@ -3,29 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
-
-// Test constants for debugging hole re-processing
-const String testHoleDescription1 = 'Test hole description 1';
-const String testHoleDescription2 = 'Test hole description 2';
-const String testHoleDescription3 = 'Test hole description 3';
-const String testHoleDescription4 = 'Test hole description 4';
-const String testHoleDescription5 = 'Test hole description 5';
-
-const List<String> testHoleDescriptions = [
-  testHoleDescription1,
-  testHoleDescription2,
-  testHoleDescription3,
-  testHoleDescription4,
-  testHoleDescription5,
-];
-
-const List<String> testHoleDescriptionNames = [
-  'Test 1',
-  'Test 2',
-  'Test 3',
-  'Test 4',
-  'Test 5',
-];
+import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
 /// A reusable panel for recording a single hole via voice input.
 ///
@@ -96,6 +74,12 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   final ScrollController _scrollController = ScrollController();
   int _selectedTestIndex = 0;
 
+  // Get list of test constant keys and values
+  List<String> get _testConstantKeys =>
+      DescriptionConstants.singleHoleDescriptionConstants.keys.toList();
+  List<String> get _testConstantValues =>
+      DescriptionConstants.singleHoleDescriptionConstants.values.toList();
+
   @override
   void initState() {
     super.initState();
@@ -159,6 +143,87 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
     }
   }
 
+  void _showTestConstantSelector() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Select Test Constant',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ...List.generate(
+                  _testConstantKeys.length,
+                  (index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      selected: _selectedTestIndex == index,
+                      selectedTileColor: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      title: Text(
+                        _testConstantKeys[index],
+                        style: TextStyle(
+                          fontWeight: _selectedTestIndex == index
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _selectedTestIndex == index
+                              ? const Color(0xFF9D4EDD)
+                              : null,
+                        ),
+                      ),
+                      trailing: _selectedTestIndex == index
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Color(0xFF9D4EDD),
+                            )
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          _selectedTestIndex = index;
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _handleContinue() {
     final String transcript = _voiceService.transcribedText.trim();
 
@@ -185,8 +250,9 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   String get _defaultSubtitle {
     if (widget.holePar != null) {
       final String parText = 'Par ${widget.holePar}';
-      final String feetText =
-          widget.holeFeet != null ? ' • ${widget.holeFeet} ft' : '';
+      final String feetText = widget.holeFeet != null
+          ? ' • ${widget.holeFeet} ft'
+          : '';
       return '$parText$feetText';
     }
     return 'Describe your throws, disc choices, distances, and results';
@@ -226,16 +292,13 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                       children: [
                         Text(
                           widget.title ?? _defaultTitle,
-                          style:
-                              Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           widget.subtitle ?? _defaultSubtitle,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -271,9 +334,8 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                       Expanded(
                         child: Text(
                           _voiceService.lastError,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF664D03),
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: const Color(0xFF664D03)),
                         ),
                       ),
                     ],
@@ -300,21 +362,20 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                           isListening
                               ? 'Listening...'
                               : 'Tap the microphone to start',
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Colors.grey[400],
-                                    fontStyle: FontStyle.italic,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Colors.grey[400],
+                                fontStyle: FontStyle.italic,
+                              ),
                         ),
                       )
                     : SingleChildScrollView(
                         controller: _scrollController,
                         child: Text(
                           transcript,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(height: 1.5),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge?.copyWith(height: 1.5),
                         ),
                       ),
               ),
@@ -331,10 +392,9 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
               Center(
                 child: Text(
                   isListening ? 'Tap to stop' : 'Tap to start',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 ),
               ),
 
@@ -343,59 +403,42 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    // Dropdown for test constant selection
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF9D4EDD).withValues(alpha: 0.3),
+                    // Change button
+                    ElevatedButton(
+                      onPressed: _showTestConstantSelector,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9D4EDD).withValues(alpha: 0.2),
+                        foregroundColor: const Color(0xFF9D4EDD),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
                       ),
-                      child: DropdownButton<int>(
-                        value: _selectedTestIndex,
-                        underline: const SizedBox(),
-                        icon: const Icon(
-                          Icons.arrow_drop_down,
-                          color: Color(0xFF9D4EDD),
+                      child: const Text(
+                        'Change',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
-                        dropdownColor: Colors.white,
-                        items: List.generate(
-                          testHoleDescriptionNames.length,
-                          (index) => DropdownMenuItem<int>(
-                            value: index,
-                            child: Text(
-                              testHoleDescriptionNames[index],
-                              style: const TextStyle(
-                                color: Color(0xFF9D4EDD),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        onChanged: (int? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              _selectedTestIndex = newValue;
-                            });
-                          }
-                        },
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Test button with dynamic label
+                    // Parse button
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: widget.onTestingPressed != null
                             ? () => widget.onTestingPressed!(
-                                  testHoleDescriptions[_selectedTestIndex],
-                                )
+                                _testConstantValues[_selectedTestIndex],
+                              )
                             : null,
                         icon: const Icon(Icons.science),
-                        label: Text(
-                          'Parse ${testHoleDescriptionNames[_selectedTestIndex]}',
-                          style: const TextStyle(
+                        label: const Text(
+                          'Parse',
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -435,8 +478,9 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -485,10 +529,11 @@ class _AnimatedMicrophoneButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isListening
-                      ? const Color(0xFFEF5350)
-                      : const Color(0xFF2196F3))
-                  .withValues(alpha: 0.4),
+              color:
+                  (isListening
+                          ? const Color(0xFFEF5350)
+                          : const Color(0xFF2196F3))
+                      .withValues(alpha: 0.4),
               blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 4),

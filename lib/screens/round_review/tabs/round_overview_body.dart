@@ -23,8 +23,8 @@ import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
-import 'package:turbo_disc_golf/utils/putting_constants.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 class RoundOverviewBody extends StatefulWidget {
@@ -184,9 +184,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
             ).chain(CurveTween(curve: curve));
             final scaleAnimation = animation.drive(tween);
 
-            final fadeAnimation = animation.drive(
-              CurveTween(curve: curve),
-            );
+            final fadeAnimation = animation.drive(CurveTween(curve: curve));
 
             return FadeTransition(
               opacity: fadeAnimation,
@@ -197,11 +195,9 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
         ),
       );
     } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => screen,
-        ),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => screen));
     }
   }
 
@@ -213,91 +209,91 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
       child: ListView(
         padding: const EdgeInsets.only(top: 16, bottom: 80),
         children: [
-        ScoreKPICard(
-          round: widget.round,
-          roundParser: _roundParser,
-          isDetailScreen: false,
-          onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
-        ),
-        const SizedBox(height: 4),
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   child: SkillsOverviewCard(
-        //     round: widget.round,
-        //     onTap: () => _navigateToDetailView(1), // Skills tab
-        //   ),
-        // ),
-        // const SizedBox(height: 8),
-        // Scorecard now included in ScoreKPICard above
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   child: _ScorecardCard(
-        //     round: widget.round,
-        //     onTap: () => _navigateToTab(2), // Course tab (moved down)
-        //   ),
-        // ),
-        // const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _CompactDrivingStatsCard(
-                  round: widget.round,
-                  onTap: () => _navigateToDetailView(4), // Drives tab
+          ScoreKPICard(
+            round: widget.round,
+            roundParser: _roundParser,
+            isDetailScreen: false,
+            onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
+          ),
+          const SizedBox(height: 4),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: SkillsOverviewCard(
+          //     round: widget.round,
+          //     onTap: () => _navigateToDetailView(1), // Skills tab
+          //   ),
+          // ),
+          // const SizedBox(height: 8),
+          // Scorecard now included in ScoreKPICard above
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 16),
+          //   child: _ScorecardCard(
+          //     round: widget.round,
+          //     onTap: () => _navigateToTab(2), // Course tab (moved down)
+          //   ),
+          // ),
+          // const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _CompactDrivingStatsCard(
+                    round: widget.round,
+                    onTap: () => _navigateToDetailView(4), // Drives tab
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _CompactPuttingStatsCard(
-                  round: widget.round,
-                  onTap: () => _navigateToDetailView(5), // Putting tab
+                Expanded(
+                  child: _CompactPuttingStatsCard(
+                    round: widget.round,
+                    onTap: () => _navigateToDetailView(5), // Putting tab
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _MistakesCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(7), // Mistakes tab
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _MistakesCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(7), // Mistakes tab
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _MentalGameCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(8), // Psych tab
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _MentalGameCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(8), // Psych tab
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _DiscUsageCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(6), // Discs tab
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _DiscUsageCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(6), // Discs tab
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _AICoachCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(9), // Summary tab
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _AICoachCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(9), // Summary tab
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _AIRoastCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(11), // Roast tab
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _AIRoastCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(11), // Roast tab
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -405,7 +401,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                               ),
                             )
                           : CircularStatIndicator(
-                              key: ValueKey('driving_c1_in_reg_${widget.round.id}'),
+                              key: ValueKey(
+                                'driving_c1_in_reg_${widget.round.id}',
+                              ),
                               label: 'C1 in Reg',
                               percentage: hasData
                                   ? stats['c1InRegPct'] as double
@@ -420,7 +418,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                           ? Hero(
                               tag: 'driving_fairway',
                               child: CircularStatIndicator(
-                                key: ValueKey('driving_fairway_${widget.round.id}'),
+                                key: ValueKey(
+                                  'driving_fairway_${widget.round.id}',
+                                ),
                                 label: 'Fairway',
                                 percentage: hasData
                                     ? stats['fairwayPct'] as double
@@ -433,7 +433,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                               ),
                             )
                           : CircularStatIndicator(
-                              key: ValueKey('driving_fairway_${widget.round.id}'),
+                              key: ValueKey(
+                                'driving_fairway_${widget.round.id}',
+                              ),
                               label: 'Fairway',
                               percentage: hasData
                                   ? stats['fairwayPct'] as double
@@ -469,7 +471,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('driving_ob_${widget.round.id}'),
                               label: 'OB',
-                              percentage: hasData ? stats['obPct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['obPct'] as double
+                                  : 0.0,
                               color: const Color(0xFFFF7A7A),
                               size: 70,
                               shouldAnimate: true,
@@ -480,7 +484,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                           ? Hero(
                               tag: 'driving_parked',
                               child: CircularStatIndicator(
-                                key: ValueKey('driving_parked_${widget.round.id}'),
+                                key: ValueKey(
+                                  'driving_parked_${widget.round.id}',
+                                ),
                                 label: 'Parked',
                                 percentage: hasData
                                     ? stats['parkedPct'] as double
@@ -493,7 +499,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                               ),
                             )
                           : CircularStatIndicator(
-                              key: ValueKey('driving_parked_${widget.round.id}'),
+                              key: ValueKey(
+                                'driving_parked_${widget.round.id}',
+                              ),
                               label: 'Parked',
                               percentage: hasData
                                   ? stats['parkedPct'] as double
@@ -694,7 +702,9 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('putting_c1_${widget.round.id}'),
                               label: 'C1',
-                              percentage: hasData ? stats['c1Pct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['c1Pct'] as double
+                                  : 0.0,
                               color: const Color(0xFF137e66),
                               size: 70,
                               shouldAnimate: true,
@@ -720,7 +730,9 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('putting_c1x_${widget.round.id}'),
                               label: 'C1X',
-                              percentage: hasData ? stats['c1xPct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['c1xPct'] as double
+                                  : 0.0,
                               color: const Color(0xFF4CAF50),
                               size: 70,
                               shouldAnimate: true,
@@ -752,7 +764,9 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('putting_c2_${widget.round.id}'),
                               label: 'C2',
-                              percentage: hasData ? stats['c2Pct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['c2Pct'] as double
+                                  : 0.0,
                               color: const Color(0xFF2196F3),
                               size: 70,
                               shouldAnimate: true,
@@ -881,7 +895,9 @@ class _CompactDrivingStatsCardState extends State<_CompactDrivingStatsCard>
                               ),
                             )
                           : CircularStatIndicator(
-                              key: ValueKey('driving_c1_in_reg_${widget.round.id}'),
+                              key: ValueKey(
+                                'driving_c1_in_reg_${widget.round.id}',
+                              ),
                               label: 'C1 in Reg',
                               percentage: hasData
                                   ? stats['c1InRegPct'] as double
@@ -899,7 +915,9 @@ class _CompactDrivingStatsCardState extends State<_CompactDrivingStatsCard>
                           ? Hero(
                               tag: 'driving_fairway',
                               child: CircularStatIndicator(
-                                key: ValueKey('driving_fairway_${widget.round.id}'),
+                                key: ValueKey(
+                                  'driving_fairway_${widget.round.id}',
+                                ),
                                 label: 'Fairway',
                                 percentage: hasData
                                     ? stats['fairwayPct'] as double
@@ -914,7 +932,9 @@ class _CompactDrivingStatsCardState extends State<_CompactDrivingStatsCard>
                               ),
                             )
                           : CircularStatIndicator(
-                              key: ValueKey('driving_fairway_${widget.round.id}'),
+                              key: ValueKey(
+                                'driving_fairway_${widget.round.id}',
+                              ),
                               label: 'Fairway',
                               percentage: hasData
                                   ? stats['fairwayPct'] as double
@@ -954,7 +974,9 @@ class _CompactDrivingStatsCardState extends State<_CompactDrivingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('driving_ob_${widget.round.id}'),
                               label: 'OB',
-                              percentage: hasData ? stats['obPct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['obPct'] as double
+                                  : 0.0,
                               color: const Color(0xFFFF7A7A),
                               size: 68,
                               labelFontSize: 9,
@@ -968,7 +990,9 @@ class _CompactDrivingStatsCardState extends State<_CompactDrivingStatsCard>
                           ? Hero(
                               tag: 'driving_parked',
                               child: CircularStatIndicator(
-                                key: ValueKey('driving_parked_${widget.round.id}'),
+                                key: ValueKey(
+                                  'driving_parked_${widget.round.id}',
+                                ),
                                 label: 'Parked',
                                 percentage: hasData
                                     ? stats['parkedPct'] as double
@@ -983,7 +1007,9 @@ class _CompactDrivingStatsCardState extends State<_CompactDrivingStatsCard>
                               ),
                             )
                           : CircularStatIndicator(
-                              key: ValueKey('driving_parked_${widget.round.id}'),
+                              key: ValueKey(
+                                'driving_parked_${widget.round.id}',
+                              ),
                               label: 'Parked',
                               percentage: hasData
                                   ? stats['parkedPct'] as double
@@ -1123,7 +1149,9 @@ class _CompactPuttingStatsCardState extends State<_CompactPuttingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('putting_c1_${widget.round.id}'),
                               label: 'C1',
-                              percentage: hasData ? stats['c1Pct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['c1Pct'] as double
+                                  : 0.0,
                               color: const Color(0xFF137e66),
                               size: 68,
                               labelFontSize: 9,
@@ -1154,7 +1182,9 @@ class _CompactPuttingStatsCardState extends State<_CompactPuttingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('putting_c1x_${widget.round.id}'),
                               label: 'C1X',
-                              percentage: hasData ? stats['c1xPct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['c1xPct'] as double
+                                  : 0.0,
                               color: const Color(0xFF4CAF50),
                               size: 68,
                               labelFontSize: 9,
@@ -1190,7 +1220,9 @@ class _CompactPuttingStatsCardState extends State<_CompactPuttingStatsCard>
                           : CircularStatIndicator(
                               key: ValueKey('putting_c2_${widget.round.id}'),
                               label: 'C2',
-                              percentage: hasData ? stats['c2Pct'] as double : 0.0,
+                              percentage: hasData
+                                  ? stats['c2Pct'] as double
+                                  : 0.0,
                               color: const Color(0xFF2196F3),
                               size: 68,
                               labelFontSize: 9,

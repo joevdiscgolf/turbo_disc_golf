@@ -1,7 +1,7 @@
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/utils/putting_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 
 /// Data model for individual skill scores
 class SkillScore {
@@ -37,12 +37,12 @@ class SkillsAnalysis {
   final double overallScore; // Average of all skills
 
   List<SkillScore> get allSkills => [
-        backhandDriving,
-        forehandDriving,
-        approaching,
-        putting,
-        mentalFocus,
-      ];
+    backhandDriving,
+    forehandDriving,
+    approaching,
+    putting,
+    mentalFocus,
+  ];
 }
 
 /// Service to analyze and calculate skill scores from round data
@@ -74,8 +74,9 @@ class SkillsAnalysisService {
       }
     }
 
-    final double percentage =
-        backhandAttempts > 0 ? (backhandC1InReg / backhandAttempts * 100) : 0;
+    final double percentage = backhandAttempts > 0
+        ? (backhandC1InReg / backhandAttempts * 100)
+        : 0;
 
     return SkillScore(
       skillName: 'Backhand Driving',
@@ -112,8 +113,9 @@ class SkillsAnalysisService {
       }
     }
 
-    final double percentage =
-        forehandAttempts > 0 ? (forehandC1InReg / forehandAttempts * 100) : 0;
+    final double percentage = forehandAttempts > 0
+        ? (forehandC1InReg / forehandAttempts * 100)
+        : 0;
 
     return SkillScore(
       skillName: 'Forehand Driving',
@@ -172,8 +174,8 @@ class SkillsAnalysisService {
     for (final DGHole hole in round.holes) {
       for (final DiscThrow discThrow in hole.throws) {
         if (discThrow.purpose == ThrowPurpose.putt) {
-          final double? distance =
-              discThrow.distanceFeetBeforeThrow?.toDouble();
+          final double? distance = discThrow.distanceFeetBeforeThrow
+              ?.toDouble();
           final bool made = discThrow.landingSpot == LandingSpot.inBasket;
 
           if (distance != null) {
@@ -258,7 +260,8 @@ class SkillsAnalysisService {
     final SkillScore mentalFocus = calculateMentalFocus(round);
 
     // Calculate overall score as average
-    final double overallScore = (backhandDriving.percentage +
+    final double overallScore =
+        (backhandDriving.percentage +
             forehandDriving.percentage +
             approaching.percentage +
             putting.percentage +

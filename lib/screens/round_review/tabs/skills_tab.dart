@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class SkillsTab extends StatelessWidget {
   const SkillsTab({super.key, required this.round});

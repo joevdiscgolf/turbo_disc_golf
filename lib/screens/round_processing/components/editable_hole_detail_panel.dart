@@ -16,8 +16,8 @@ import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 /// Displays hole metadata with inline editing and a timeline of throws with edit/delete buttons.
 /// Includes an "Add Throw" button to manually add new throws and a "Voice" button for voice recording.
 /// Uses Provider for state management.
-class EditableHoleDetailSheet extends StatefulWidget {
-  const EditableHoleDetailSheet({
+class EditableHoleDetailPanel extends StatefulWidget {
+  const EditableHoleDetailPanel({
     super.key,
     required this.potentialHole,
     required this.holeIndex,
@@ -42,11 +42,11 @@ class EditableHoleDetailSheet extends StatefulWidget {
   final VoidCallback? onRoundUpdated;
 
   @override
-  State<EditableHoleDetailSheet> createState() =>
-      _EditableHoleDetailSheetState();
+  State<EditableHoleDetailPanel> createState() =>
+      _EditableHoleDetailPanelState();
 }
 
-class _EditableHoleDetailSheetState extends State<EditableHoleDetailSheet> {
+class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
   late final FocusNode _parFocusNode;
   late final FocusNode _distanceFocusNode;
   late final RoundConfirmationCubit _roundConfirmationCubit;

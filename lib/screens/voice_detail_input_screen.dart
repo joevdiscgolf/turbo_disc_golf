@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
-import 'package:turbo_disc_golf/utils/testing_constants.dart';
 
 // Test constant for image + voice mode (no hole distance/par info)
 
@@ -75,7 +75,9 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
       return;
     }
 
-    debugPrint('🔔 VoiceDetailInputScreen _onParserChange called - isProcessing: ${_roundParser.isProcessing}, shouldNavigate: ${_roundParser.shouldNavigateToReview}, parsedRound: ${_roundParser.parsedRound?.id}');
+    debugPrint(
+      '🔔 VoiceDetailInputScreen _onParserChange called - isProcessing: ${_roundParser.isProcessing}, shouldNavigate: ${_roundParser.shouldNavigateToReview}, parsedRound: ${_roundParser.parsedRound?.id}',
+    );
 
     // Show loading screen when processing starts
     if (_roundParser.isProcessing && !_isShowingLoadingScreen) {
@@ -87,9 +89,12 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
     // Navigate to review when round is parsed
     if (_roundParser.parsedRound != null &&
         _roundParser.shouldNavigateToReview &&
-        _isShowingLoadingScreen) { // Only navigate if WE showed the loading screen
+        _isShowingLoadingScreen) {
+      // Only navigate if WE showed the loading screen
       final roundId = _roundParser.parsedRound!.id;
-      debugPrint('🚀 VoiceDetailInputScreen: Navigation requested for round: $roundId, lastNavigated: $_lastNavigatedRoundId');
+      debugPrint(
+        '🚀 VoiceDetailInputScreen: Navigation requested for round: $roundId, lastNavigated: $_lastNavigatedRoundId',
+      );
 
       // Only navigate if this is a new round (not already navigated to)
       if (roundId != _lastNavigatedRoundId) {
@@ -98,7 +103,9 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
 
         final round = _roundParser.parsedRound!;
 
-        debugPrint('✅ VoiceDetailInputScreen: Navigating to round review screen');
+        debugPrint(
+          '✅ VoiceDetailInputScreen: Navigating to round review screen',
+        );
         _isShowingLoadingScreen = false;
 
         // Pop loading screen first to get back to VoiceDetailInputScreen
@@ -113,7 +120,9 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
           ),
         );
       } else {
-        debugPrint('⏭️ VoiceDetailInputScreen: Skipping navigation - already navigated to this round');
+        debugPrint(
+          '⏭️ VoiceDetailInputScreen: Skipping navigation - already navigated to this round',
+        );
       }
     }
   }
@@ -126,10 +135,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
         barrierDismissible: false,
         pageBuilder: (context, _, __) => const RoundProcessingLoadingScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
@@ -527,10 +533,11 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                       ElevatedButton.icon(
                         onPressed: () {
                           setState(() {
-                            _transcriptController.text =
-                                flingsGivingRound2DescriptionNoHoleDistance;
+                            _transcriptController.text = DescriptionConstants
+                                .flingsGivingRound2DescriptionNoHoleDistance;
                             _voiceService.updateText(
-                              flingsGivingRound2DescriptionNoHoleDistance,
+                              DescriptionConstants
+                                  .flingsGivingRound2DescriptionNoHoleDistance,
                             );
                           });
                         },
