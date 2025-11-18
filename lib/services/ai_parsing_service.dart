@@ -266,9 +266,6 @@ class AiParsingService {
       );
       String? responseText = await _getContentFromModel(prompt: prompt);
 
-      print('raw response for single hole: ');
-      print(responseText);
-
       if (responseText == null) {
         throw Exception('No response from Gemini');
       }
