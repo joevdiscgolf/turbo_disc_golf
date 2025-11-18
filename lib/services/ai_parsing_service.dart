@@ -300,6 +300,17 @@ class AiParsingService {
       // Ensure hole number, par, and feet match the context
       jsonMap['number'] = holeNumber;
 
+      // Preserve par and feet from context if Gemini didn't return them
+      // This ensures we don't lose user-entered or existing data
+      if (!jsonMap.containsKey('par') || jsonMap['par'] == null) {
+        jsonMap['par'] = holePar;
+      }
+      if (!jsonMap.containsKey('feet') || jsonMap['feet'] == null) {
+        if (holeFeet != null) {
+          jsonMap['feet'] = holeFeet;
+        }
+      }
+
       debugPrint(
         'Single hole YAML parsed successfully, converting to PotentialDGHole...',
       );

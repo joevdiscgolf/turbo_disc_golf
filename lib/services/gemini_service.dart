@@ -1321,10 +1321,12 @@ $schemaExample
         .join('\n');
 
     final String parLine = holePar > 0 ? 'par: $holePar' : '# par: (infer from description or omit)';
+    final String feetLine = holeFeet != null ? 'feet: $holeFeet' : '# feet: (extract from description or omit if not mentioned)';
     final schemaExample =
         '''
 number: $holeNumber
-$parLine${holeFeet != null ? '\nfeet: $holeFeet' : ''}
+$parLine
+$feetLine
 throws:
   - index: 0
     discName: Destroyer
@@ -1362,6 +1364,7 @@ INSTRUCTIONS:
 4. MANDATORY: Include distanceFeetAfterThrow whenever possible for stats calculations
 5. Always include the purpose field (tee_drive, approach, putt)
 6. Map landing positions to landingSpot enum based on distance from basket
+7. CRITICAL: Extract and include the hole distance (feet field) from the voice description when mentioned (e.g., "170 foot hole", "300 feet", etc.)
 
 CRITICAL RULES:
 - Index 0 (tee shot) → ALWAYS `purpose: tee_drive`
@@ -1415,7 +1418,8 @@ YAML OUTPUT RULES:
 - Return ONLY raw YAML content - no markdown, no code blocks
 - Do NOT include "yaml" or ``` wrappers
 - Start directly with "number: $holeNumber"
-- Only include fields that are mentioned in the description
+- ALWAYS include the 'feet' field if the hole distance is mentioned in the description
+- Only include other optional fields that are mentioned in the description
 - Never include null values or fields without data
 
 ⚠️⚠️⚠️ FINAL VALIDATION BEFORE RETURNING ⚠️⚠️⚠️
