@@ -263,8 +263,7 @@ class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
       // Sync the updated hole from RoundParser to RoundConfirmationCubit
       final PotentialDGHole? updatedHole =
           roundParser.potentialRound?.holes?[widget.holeIndex];
-      print('updated potential DG hole: ');
-      print(updatedHole?.toJson());
+
       if (updatedHole != null) {
         BlocProvider.of<RoundConfirmationCubit>(
           context,

@@ -603,9 +603,6 @@ class RoundParser extends ChangeNotifier {
             courseName: courseName,
           );
 
-      print('potential hole from AiParsingService:');
-      print(potentialHole?.toJson());
-
       if (potentialHole == null) {
         _lastError = 'Failed to re-parse hole. Check console for details.';
         _isProcessing = false;
