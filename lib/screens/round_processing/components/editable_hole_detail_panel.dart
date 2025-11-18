@@ -49,21 +49,30 @@ class EditableHoleDetailPanel extends StatefulWidget {
 class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
   late final FocusNode _parFocusNode;
   late final FocusNode _distanceFocusNode;
-  late final RoundConfirmationCubit _roundConfirmationCubit;
+  RoundConfirmationCubit? _roundConfirmationCubit;
+  late PotentialDGHole _localHole;
 
   @override
   void initState() {
     super.initState();
-    _roundConfirmationCubit = BlocProvider.of<RoundConfirmationCubit>(context);
     _parFocusNode = FocusNode();
     _distanceFocusNode = FocusNode();
+    _localHole = widget.potentialHole;
 
-    // Set current editing hole in post frame callback
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _roundConfirmationCubit.setCurrentEditingHole(widget.holeIndex);
-      }
-    });
+    // Try to get the cubit if it exists (for round confirmation flow)
+    try {
+      _roundConfirmationCubit = BlocProvider.of<RoundConfirmationCubit>(context);
+
+      // Set current editing hole in post frame callback
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _roundConfirmationCubit?.setCurrentEditingHole(widget.holeIndex);
+        }
+      });
+    } catch (e) {
+      // No cubit available - using local state (for completed rounds in course tab)
+      _roundConfirmationCubit = null;
+    }
   }
 
   @override
@@ -71,53 +80,63 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
     _parFocusNode.dispose();
     _distanceFocusNode.dispose();
     // Clear the current editing hole when disposing
-    _roundConfirmationCubit.clearCurrentEditingHole();
+    _roundConfirmationCubit?.clearCurrentEditingHole();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
-      builder: (context, state) {
-        if (state is! ConfirmingRoundActive) {
-          return const SizedBox();
-        }
-        final PotentialDGHole? currentHole = state.currentEditingHole;
+    // If we have a cubit, use it for state management
+    if (_roundConfirmationCubit != null) {
+      return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+        builder: (context, state) {
+          if (state is! ConfirmingRoundActive) {
+            return const SizedBox();
+          }
+          final PotentialDGHole? currentHole = state.currentEditingHole;
 
-        if (currentHole == null) {
-          return const SizedBox();
-        }
+          if (currentHole == null) {
+            return const SizedBox();
+          }
 
-        return SizedBox(
-          height: MediaQuery.of(context).size.height - 64,
-          child: EditHoleBody(
-            holeNumber: currentHole.number ?? widget.holeIndex + 1,
-            par: currentHole.par,
-            distance: currentHole.feet,
-            throws: currentHole.throws ?? [],
-            parFocusNode: _parFocusNode,
-            distanceFocusNode: _distanceFocusNode,
-            bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
-            hasRequiredFields: currentHole.hasRequiredFields,
-            onParChanged: (int newPar) => _handleMetadataChanged(
-              currentHole: currentHole,
-              newPar: newPar,
-              newDistance: null,
-            ),
-            onDistanceChanged: (int newDistance) => _handleMetadataChanged(
-              currentHole: currentHole,
-              newPar: null,
-              newDistance: newDistance,
-            ),
-            onThrowAdded: ({int? addThrowAtIndex}) =>
-                _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
-            onThrowEdited: (throwIndex) =>
-                _handleEditThrow(currentHole, throwIndex),
-            onVoiceRecord: () => _handleVoiceRecord(currentHole),
-            onDone: () => Navigator.of(context).pop(),
-          ),
-        );
-      },
+          return _buildEditHoleBody(currentHole);
+        },
+      );
+    }
+
+    // Otherwise, use local state
+    return _buildEditHoleBody(_localHole);
+  }
+
+  Widget _buildEditHoleBody(PotentialDGHole currentHole) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - 64,
+      child: EditHoleBody(
+        holeNumber: currentHole.number ?? widget.holeIndex + 1,
+        par: currentHole.par,
+        distance: currentHole.feet,
+        throws: currentHole.throws ?? [],
+        parFocusNode: _parFocusNode,
+        distanceFocusNode: _distanceFocusNode,
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        hasRequiredFields: currentHole.hasRequiredFields,
+        onParChanged: (int newPar) => _handleMetadataChanged(
+          currentHole: currentHole,
+          newPar: newPar,
+          newDistance: null,
+        ),
+        onDistanceChanged: (int newDistance) => _handleMetadataChanged(
+          currentHole: currentHole,
+          newPar: null,
+          newDistance: newDistance,
+        ),
+        onThrowAdded: ({int? addThrowAtIndex}) =>
+            _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
+        onThrowEdited: (throwIndex) =>
+            _handleEditThrow(currentHole, throwIndex),
+        onVoiceRecord: () => _handleVoiceRecord(currentHole),
+        onDone: () => _handleDone(currentHole),
+      ),
     );
   }
 
@@ -126,10 +145,70 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
     required int? newPar,
     required int? newDistance,
   }) {
-    // Preserve the current value of whichever field isn't being changed
+    // Update local state if not using cubit
+    if (_roundConfirmationCubit == null) {
+      setState(() {
+        _localHole = PotentialDGHole(
+          number: currentHole.number,
+          par: newPar ?? currentHole.par,
+          feet: newDistance ?? currentHole.feet,
+          throws: currentHole.throws,
+          holeType: currentHole.holeType,
+        );
+      });
+    }
+
+    // Call parent callback to update the source
     widget.onMetadataChanged(
       newPar: newPar ?? currentHole.par,
       newDistance: newDistance ?? currentHole.feet,
+    );
+  }
+
+  void _handleDone(PotentialDGHole currentHole) {
+    // For completed rounds (no cubit), validate before closing
+    if (_roundConfirmationCubit == null) {
+      // Check if hole has required fields
+      if (!_isValidForSave(_localHole)) {
+        _showValidationError(_localHole);
+        return;
+      }
+    }
+
+    // Close the panel
+    Navigator.of(context).pop();
+  }
+
+  bool _isValidForSave(PotentialDGHole hole) {
+    // Check all required fields for saving a completed round
+    return hole.number != null &&
+        hole.par != null &&
+        hole.par! > 0 &&
+        hole.feet != null && // Distance is required for completed rounds
+        hole.throws != null &&
+        hole.throws!.isNotEmpty &&
+        hole.hasThrowInBasket;
+  }
+
+  void _showValidationError(PotentialDGHole hole) {
+    final List<String> missingFields = [];
+    if (hole.number == null) missingFields.add('hole number');
+    if (hole.par == null || hole.par == 0) missingFields.add('par');
+    if (hole.feet == null) missingFields.add('distance');
+    if (hole.throws == null || hole.throws!.isEmpty) {
+      missingFields.add('throws');
+    } else if (!hole.hasThrowInBasket) {
+      missingFields.add('basket throw');
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Cannot save: Missing ${missingFields.join(', ')}',
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -167,6 +246,56 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         holeNumber: currentHole.number ?? widget.holeIndex + 1,
         isNewThrow: true,
         onSave: (savedThrow) {
+          // Update local state if not using cubit
+          if (_roundConfirmationCubit == null) {
+            setState(() {
+              final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
+                _localHole.throws ?? [],
+              );
+              final int insertIndex = addAtIndex != null
+                  ? addAtIndex + 1
+                  : updatedThrows.length;
+              updatedThrows.insert(insertIndex, savedThrow);
+
+              // Reindex throws
+              final List<DiscThrow> reindexedThrows = updatedThrows
+                  .asMap()
+                  .entries
+                  .map((entry) => DiscThrow(
+                        index: entry.key,
+                        purpose: entry.value.purpose,
+                        technique: entry.value.technique,
+                        puttStyle: entry.value.puttStyle,
+                        shotShape: entry.value.shotShape,
+                        stance: entry.value.stance,
+                        power: entry.value.power,
+                        distanceFeetBeforeThrow: entry.value.distanceFeetBeforeThrow,
+                        distanceFeetAfterThrow: entry.value.distanceFeetAfterThrow,
+                        elevationChangeFeet: entry.value.elevationChangeFeet,
+                        windDirection: entry.value.windDirection,
+                        windStrength: entry.value.windStrength,
+                        resultRating: entry.value.resultRating,
+                        landingSpot: entry.value.landingSpot,
+                        fairwayWidth: entry.value.fairwayWidth,
+                        penaltyStrokes: entry.value.penaltyStrokes,
+                        notes: entry.value.notes,
+                        rawText: entry.value.rawText,
+                        parseConfidence: entry.value.parseConfidence,
+                        discName: entry.value.discName,
+                        disc: entry.value.disc,
+                      ))
+                  .toList();
+
+              _localHole = PotentialDGHole(
+                number: _localHole.number,
+                par: _localHole.par,
+                feet: _localHole.feet,
+                throws: reindexedThrows,
+                holeType: _localHole.holeType,
+              );
+            });
+          }
+
           // Pass the original addAtIndex to parent - it handles actual insertion
           widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
           Navigator.of(context).pop();
@@ -203,10 +332,75 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         throwIndex: throwIndex,
         holeNumber: currentHole.number ?? widget.holeIndex + 1,
         onSave: (updatedThrow) {
+          // Update local state if not using cubit
+          if (_roundConfirmationCubit == null) {
+            setState(() {
+              final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
+                _localHole.throws ?? [],
+              );
+              updatedThrows[throwIndex] = updatedThrow;
+
+              _localHole = PotentialDGHole(
+                number: _localHole.number,
+                par: _localHole.par,
+                feet: _localHole.feet,
+                throws: updatedThrows,
+                holeType: _localHole.holeType,
+              );
+            });
+          }
+
           widget.onThrowEdited(throwIndex, updatedThrow);
           Navigator.of(context).pop();
         },
         onDelete: () {
+          // Update local state if not using cubit
+          if (_roundConfirmationCubit == null) {
+            setState(() {
+              final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
+                _localHole.throws ?? [],
+              );
+              updatedThrows.removeAt(throwIndex);
+
+              // Reindex remaining throws
+              final List<DiscThrow> reindexedThrows = updatedThrows
+                  .asMap()
+                  .entries
+                  .map((entry) => DiscThrow(
+                        index: entry.key,
+                        purpose: entry.value.purpose,
+                        technique: entry.value.technique,
+                        puttStyle: entry.value.puttStyle,
+                        shotShape: entry.value.shotShape,
+                        stance: entry.value.stance,
+                        power: entry.value.power,
+                        distanceFeetBeforeThrow: entry.value.distanceFeetBeforeThrow,
+                        distanceFeetAfterThrow: entry.value.distanceFeetAfterThrow,
+                        elevationChangeFeet: entry.value.elevationChangeFeet,
+                        windDirection: entry.value.windDirection,
+                        windStrength: entry.value.windStrength,
+                        resultRating: entry.value.resultRating,
+                        landingSpot: entry.value.landingSpot,
+                        fairwayWidth: entry.value.fairwayWidth,
+                        penaltyStrokes: entry.value.penaltyStrokes,
+                        notes: entry.value.notes,
+                        rawText: entry.value.rawText,
+                        parseConfidence: entry.value.parseConfidence,
+                        discName: entry.value.discName,
+                        disc: entry.value.disc,
+                      ))
+                  .toList();
+
+              _localHole = PotentialDGHole(
+                number: _localHole.number,
+                par: _localHole.par,
+                feet: _localHole.feet,
+                throws: reindexedThrows,
+                holeType: _localHole.holeType,
+              );
+            });
+          }
+
           widget.onThrowDeleted(throwIndex);
           Navigator.of(context).pop();
         },
