@@ -36,10 +36,20 @@ These definitions follow PDGA (Professional Disc Golf Association) standards.
 
 **CRITICAL: Always prefer independent, stateless widgets over nested widget trees.**
 
-- **Extract components early**: If a widget tree exceeds 2-3 levels of nesting, extract it into a separate widget
-- **Create reusable components**: Build generic, configurable widgets that can be used across multiple screens
+**🚨 MAXIMUM NESTING LIMIT: 6 LEVELS - NO EXCEPTIONS 🚨**
+
+The #1 rule of this codebase is: **Widget build methods must NEVER exceed 6 levels of nesting.** If you're approaching this limit, you MUST extract components immediately.
+
+#### Core Principles:
+
+- **Extract early and often**: Don't wait until nesting becomes a problem - extract proactively
+- **6-level nesting is the absolute maximum**: Approach 6 levels? Extract immediately, no exceptions
+- **Create widget functions**: Use `Widget _buildX(...)` for screen-specific sections
+- **Create widget classes**: Use `class _Widget extends StatelessWidget` for reused components in the same file
+- **Create separate files**: Move to `lib/components/` for cross-file reusability
 - **Stateless by default**: Use StatelessWidget unless state is absolutely necessary
 - **Single responsibility**: Each widget should have one clear purpose
+- **Prefer composition**: Build complex UIs from simple, focused widgets
 
 ### Widget Extraction Pattern
 
@@ -121,68 +131,111 @@ import 'package:turbo_disc_golf/services/analytics_service.dart';
 
 ### Widget Structure Guidelines
 
-**CRITICAL: Avoid Super Nested and Huge Widget Build Functions**
+**CRITICAL: ALWAYS Extract Widgets - Never Allow Deep Nesting**
 
-Build methods should be concise and readable. If your build method exceeds ~50 lines or has more than 3-4 levels of nesting, split it up.
+**ABSOLUTE RULE: Widget build methods must NEVER exceed 6 levels of nesting. Period.**
 
-#### When to Extract:
+This is NON-NEGOTIABLE. Deep nesting makes code unreadable, unmaintainable, and error-prone. The moment you approach 6 levels, you MUST extract components.
 
-1. **Extract to private Widget methods** (`Widget _buildX(...)`) when:
-   - The widget is only used in this screen/file
-   - It's a simple helper that doesn't need lifecycle management
-   - You want to keep related code together
+#### MANDATORY Widget Extraction Rules:
 
-2. **Extract to StatelessWidget** when:
-   - The widget might be reused elsewhere
-   - It has complex logic or multiple helper methods
-   - You want better performance (const constructors, less rebuilds)
-   - The component has a clear, single responsibility
+**YOU MUST extract widgets in these situations:**
 
-3. **Extract to StatefulWidget** when:
-   - The component needs to manage its own local state
-   - It has animations, controllers, or subscriptions
-   - The state is specific to this component and shouldn't be lifted up
-   - The component is complex enough to benefit from modular state management
+1. **Nesting Level Exceeds 5**: If you're about to create a 6th level of nesting, STOP and extract immediately
+2. **Build Method Over 50 Lines**: Split into smaller widget functions or widget classes
+3. **Complex Logic in Build**: Any non-trivial logic should be in its own widget
+4. **Repeated Patterns**: Any UI pattern used more than once must become a widget
+5. **Logical Grouping**: Related UI elements should be grouped into named widgets
+
+#### Widget Extraction Strategy - Choose the Right Approach:
+
+**1. Extract to Private Widget Methods (`Widget _buildX(...)`)**
+   - Use for: Screen-specific components used only once in this file
+   - Use for: Simple UI sections that don't need lifecycle management
+   - Use for: Keeping related code together within one screen
+   - Pattern: `Widget _buildHeader(BuildContext context) { ... }`
+
+**2. Extract to Private StatelessWidget Classes (`class _WidgetName extends StatelessWidget`)**
+   - Use for: Components reused multiple times within the SAME file
+   - Use for: Components with complex logic or multiple helper methods
+   - Use for: Better performance with const constructors
+   - Use for: Components with clear, single responsibility
+   - Pattern: Place at bottom of file with leading underscore
+   - Example: `class _StatRow extends StatelessWidget { ... }`
+
+**3. Extract to Public Widget Classes in Separate Files (`class WidgetName extends StatelessWidget`)**
+   - Use for: Components used across MULTIPLE files or screens
+   - Use for: Reusable UI components that form part of your design system
+   - Use for: Complex components that deserve their own file
+   - Location: `lib/components/` or `lib/widgets/`
+   - Pattern: Create `lib/components/widget_name.dart`
+
+**4. Extract to StatefulWidget**
+   - Use for: Components managing their own local state
+   - Use for: Components with animations, controllers, or subscriptions
+   - Use for: State specific to the component, not lifted to parent
+   - Can be private (`_WidgetName`) if only used in one file
+   - Can be public if reused across multiple files
+
+#### Decision Tree: How to Extract Your Widget
+
+```
+Is your build method approaching 6 levels of nesting OR over 50 lines?
+  ↓ YES
+Is this component used ONLY ONCE in this screen/file?
+  ↓ YES
+  → Extract to Private Widget Method: Widget _buildHeader(BuildContext context)
+
+  ↓ NO (used multiple times in same file)
+Is this component used in OTHER files/screens?
+  ↓ NO (only in this file)
+  → Extract to Private Widget Class: class _HeaderSection extends StatelessWidget
+
+  ↓ YES (used across multiple files)
+  → Extract to Public Widget in Separate File: lib/components/header_section.dart
+
+Does the widget need to manage its own state?
+  ↓ YES
+  → Use StatefulWidget instead (private or public based on reusability)
+```
 
 #### Example: Splitting a Large Build Function
 
-❌ **AVOID: Massive, deeply nested build method**
+❌ **NEVER DO THIS: Deeply nested build method (violates 6-level rule)**
 ```dart
 @override
 Widget build(BuildContext context) {
-  return Card(
-    child: Padding(
+  return Card(                                  // Level 1
+    child: Padding(                             // Level 2
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: Column(                            // Level 3
         children: [
-          Row(
+          Row(                                  // Level 4
             children: [
-              Container(
-                child: Column(
+              Container(                        // Level 5
+                child: Column(                  // Level 6 - AT THE LIMIT!
                   children: [
-                    Text('Title'),
-                    Text('Subtitle'),
-                    Row(
+                    Row(                        // Level 7 - VIOLATION! TOO DEEP!
                       children: [
-                        Icon(Icons.star),
+                        Icon(Icons.star),       // Level 8 - UNACCEPTABLE!
                         Text('4.5'),
                       ],
                     ),
                   ],
                 ),
               ),
-              // ... 50+ more lines
+              // ... This continues even deeper ...
             ],
           ),
-          // ... 100+ more lines
         ],
       ),
     ),
   );
 }
+// This is UNREADABLE and UNMAINTAINABLE - extract immediately!
 ```
 
-✅ **PREFER: Split into logical sections**
+✅ **GOOD: Split into private widget methods (for screen-specific, single-use sections)**
 ```dart
 @override
 Widget build(BuildContext context) {
@@ -191,27 +244,43 @@ Widget build(BuildContext context) {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _buildHeader(context),
-          _buildContent(context),
-          _buildFooter(context),
+          _buildHeader(context),      // Extract to method
+          _buildContent(context),     // Extract to method
+          _buildFooter(context),      // Extract to method
         ],
       ),
     ),
   );
 }
 
+// Screen-specific helper - used once
 Widget _buildHeader(BuildContext context) {
   return Row(
     children: [
-      const _HeaderIcon(),
-      _HeaderText(),
-      const _HeaderRating(),
+      const Icon(Icons.person),
+      Text('User Stats', style: Theme.of(context).textTheme.titleLarge),
     ],
   );
 }
 
+// Screen-specific helper - used once
 Widget _buildContent(BuildContext context) {
-  // Implementation
+  return Column(
+    children: [
+      _buildStatRow('Score', '42'),
+      _buildStatRow('Rating', '850'),
+    ],
+  );
+}
+
+Widget _buildStatRow(String label, String value) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label),
+      Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+    ],
+  );
 }
 
 Widget _buildFooter(BuildContext context) {
@@ -219,42 +288,120 @@ Widget _buildFooter(BuildContext context) {
 }
 ```
 
-✅ **EVEN BETTER: Extract reusable components**
+✅ **BETTER: Extract to private widget classes (for reuse within same file)**
 ```dart
+@override
+Widget build(BuildContext context) {
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const _HeaderSection(),
+          const _StatRow(label: 'Score', value: '42'),
+          const _StatRow(label: 'Rating', value: '850'),
+          const _StatRow(label: 'Rounds', value: '15'),
+        ],
+      ),
+    ),
+  );
+}
+
+// At bottom of file - used MULTIPLE TIMES in THIS file
+class _StatRow extends StatelessWidget {
+  const _StatRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+class _HeaderSection extends StatelessWidget {
+  const _HeaderSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.person),
+        Text('User Stats', style: Theme.of(context).textTheme.titleLarge),
+      ],
+    );
+  }
+}
+```
+
+✅ **BEST: Extract to separate file (for use across MULTIPLE files)**
+```dart
+// In current screen file
 @override
 Widget build(BuildContext context) {
   return InfoCard(
     header: const InfoCardHeader(
-      title: 'Title',
-      subtitle: 'Subtitle',
-      rating: 4.5,
+      title: 'User Stats',
+      icon: Icons.person,
     ),
-    content: const InfoCardContent(...),
-    footer: const InfoCardFooter(...),
+    children: const [
+      StatRow(label: 'Score', value: '42'),
+      StatRow(label: 'Rating', value: '850'),
+      StatRow(label: 'Rounds', value: '15'),
+    ],
   );
 }
 
-// In separate file: lib/components/info_card.dart
+// In lib/components/stat_row.dart - reusable across MULTIPLE screens
+class StatRow extends StatelessWidget {
+  const StatRow({
+    Key? key,
+    required this.label,
+    required this.value,
+  }) : super(key: key);
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+// In lib/components/info_card.dart
 class InfoCard extends StatelessWidget {
   const InfoCard({
     Key? key,
     required this.header,
-    required this.content,
-    required this.footer,
+    required this.children,
   }) : super(key: key);
 
   final Widget header;
-  final Widget content;
-  final Widget footer;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [header, content, footer],
-        ),
+        child: Column(children: [header, ...children]),
       ),
     );
   }
@@ -636,10 +783,12 @@ onPressed: () {
 ## Summary Checklist
 
 Before submitting code, verify:
-- [ ] Build methods are concise (<50 lines) and not deeply nested (≤3-4 levels)
-- [ ] Large build methods are split into smaller Widget methods or StatelessWidgets
-- [ ] Components are extracted from nested widget trees
-- [ ] Reusable widgets are in separate files under `lib/components/` or `lib/widgets/`
+- [ ] **Widget trees NEVER exceed 6 levels of nesting** (CRITICAL - this is mandatory)
+- [ ] Build methods are concise (<50 lines)
+- [ ] Large build methods are split into widget functions (`Widget _buildX(...)`) or widget classes
+- [ ] Components used once in a file are extracted to private widget methods
+- [ ] Components reused within the same file are extracted to private widget classes (`class _Widget`)
+- [ ] Components used across multiple files are in separate files under `lib/components/` or `lib/widgets/`
 - [ ] StatelessWidget is used unless state is required
 - [ ] StatefulWidget is used when component needs local state management
 - [ ] Const constructors are used where possible
@@ -649,4 +798,3 @@ Before submitting code, verify:
 - [ ] Theme values are used instead of hardcoded colors
 - [ ] Error states and empty states are handled
 - [ ] Analytics tracking is added for user interactions
-- [ ] Widget trees don't exceed 3-4 levels of nesting
