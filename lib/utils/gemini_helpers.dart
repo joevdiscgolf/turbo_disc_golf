@@ -53,100 +53,40 @@ throws:
     notes: made the putt
     landingSpot: in_basket''';
 
-    final String contextPar = holePar > 0
-        ? '\n- Par: $holePar'
-        : '\n- Par: Unknown (please infer if mentioned)';
     return '''
-You are a disc golf scorecard parser. Parse the following voice description of hole $holeNumber into structured YAML data.
+Parse disc golf hole description into YAML. Return ONLY raw YAML (no markdown/code blocks).
 
-CONTEXT:
-- Course: $courseName
-- Hole Number: $holeNumber$contextPar${holeFeet != null ? '\n- Distance: $holeFeet feet' : ''}
+CONTEXT: Hole $holeNumber, Par ${holePar > 0 ? holePar : '?'}${holeFeet != null ? ', Distance $holeFeet ft' : ''}, $courseName
+TRANSCRIPT: "$voiceTranscript"
+DISC BAG: $discListString
 
-⚠️⚠️⚠️ CRITICAL - DISTANCE FIELD IS MANDATORY ⚠️⚠️⚠️
-${holeFeet != null ? 'The distance ($holeFeet feet) is provided in the CONTEXT above.\nYou MUST include "feet: $holeFeet" in your YAML output.\nThis is NOT optional - it MUST be in the output even if not mentioned in the voice description.' : 'No distance provided in context, so omit the feet field.'}
+OUTPUT FIELDS:
+- number: $holeNumber (required)
+- par: ${holePar > 0 ? holePar : '?'} (required)${holeFeet != null ? '\n- feet: $holeFeet (required - use this value from context)' : '\n- feet: extract from transcript if mentioned (e.g., "620 foot" → feet: 620), otherwise omit entirely'}
+- throws: array of throw objects (required)
 
-VOICE DESCRIPTION:
-"$voiceTranscript"
-
-USER'S DISC BAG:
-$discListString
-
-INSTRUCTIONS:
-1. Parse the hole description into structured throws
-2. For each throw, assign index starting from 0 (0=tee shot, 1=second throw, etc.)
-3. Include discName when a disc is mentioned (match from the bag list)
-4. MANDATORY: Include distanceFeetAfterThrow whenever possible for stats calculations
-5. Always include the purpose field (tee_drive, approach, putt)
-6. Map landing positions to landingSpot enum based on distance from basket
-
-CRITICAL RULES:
-- Index 0 (tee shot) → ALWAYS `purpose: tee_drive`
-- Any throw attempting to go in the basket from C1/C2 → ALWAYS `purpose: putt`
-- "tap in" / "tapped in" → ALWAYS `purpose: putt`
-- Descriptions with "putt" / "putted" → ALWAYS `purpose: putt`
-- Throw with `landingSpot: in_basket` → ALWAYS `purpose: putt` (except index 0)
-
-LANDING SPOT MAPPING (based on distance from basket):
-- Made it / in basket = in_basket (0 ft)
-- Within 10 feet or "parked" = parked (≤10 ft)
-- 11-33 feet or "C1" = circle_1 (11-33 ft)
-- 34-66 feet or "C2" = circle_2 (34-66 ft)
-- Beyond 66 feet on fairway = fairway (>66 ft)
-- Out of bounds = out_of_bounds (add penaltyStrokes: 1)
-
-⚠️ CRITICAL: landingSpot MUST MATCH distanceFeetAfterThrow:
-- distanceFeetAfterThrow: 0 → landingSpot: in_basket
-- distanceFeetAfterThrow: ≤10 → landingSpot: parked
-- distanceFeetAfterThrow: 11-33 → landingSpot: circle_1
-- distanceFeetAfterThrow: 34-66 → landingSpot: circle_2
-- distanceFeetAfterThrow: >66 → landingSpot: fairway
-
-DISTANCE TRACKING (MANDATORY):
-- distanceFeetBeforeThrow: How far from basket BEFORE the throw
-- distanceFeetAfterThrow: How far from basket AFTER the throw (REQUIRED for stats!)
-
-INFERRING DISTANCES:
-- If next throw starts at X feet, current throw MUST have distanceFeetAfterThrow: X
-- "parked" without specific distance = distanceFeetAfterThrow: 8
-- "made the putt" = distanceFeetAfterThrow: 0
-- "tap in" = distanceFeetBeforeThrow: 8, distanceFeetAfterThrow: 0
-
-THROW COUNTING:
-- Count carefully - don't combine multiple throws into one
-- "laid up and tapped in" = 2 SEPARATE throws
-- "missed the putt" = separate throw, not a note on previous throw
-- Every hole MUST end with landingSpot: in_basket
-- If they mention a score (birdie/par/bogey), verify throw count matches
-
-ALLOWED ENUM VALUES:
-- purpose: $throwPurposeValues
+THROW STRUCTURE:
+- index: 0, 1, 2... (throw number, required)
+- purpose: $throwPurposeValues (required, index 0 = tee_drive)
 - technique: $techniqueValues
-- puttStyle: $puttStyleValues
-- shotShape: $shotShapeValues
-- stance: $stanceValues
-- power: $throwPowerValues
-- landingSpot: $landingSpotValues
+- discName: match from bag if mentioned
+- distanceFeetBeforeThrow: starting distance from basket
+- distanceFeetAfterThrow: ending distance from basket
+- landingSpot: $landingSpotValues (in_basket=0ft, parked=≤10ft, circle_1=11-33ft, circle_2=34-66ft, fairway=>66ft)
+- notes: brief description
 
-YAML OUTPUT RULES:
-- Return ONLY raw YAML content - no markdown, no code blocks
-- Do NOT include "yaml" or ``` wrappers
-- Start directly with "number: $holeNumber"
-- ALWAYS include fields provided in the CONTEXT section (number, par, feet)
-- Also include fields that are mentioned in the voice description (discName, technique, etc.)
-- Never include null values or fields without data
-- ⚠️ CRITICAL: If feet/distance is in CONTEXT, it MUST be in the output
+COMMON PATTERNS:
+"parked" → distanceFeetAfterThrow: 8, landingSpot: parked, THEN add final putt (in_basket)
+"made putt" → distanceFeetAfterThrow: 0, landingSpot: in_basket
+"tap in" → distanceFeetBeforeThrow: 8, distanceFeetAfterThrow: 0, purpose: putt, landingSpot: in_basket
+"laid up and tapped in" → 2 separate throws
+"birdied/parred/bogeyed" → hole is finished, last throw must have landingSpot: in_basket
 
-⚠️⚠️⚠️ FINAL VALIDATION BEFORE RETURNING ⚠️⚠️⚠️
-1. YAML includes `number: $holeNumber` (from CONTEXT - MANDATORY)
-2. YAML includes `par: $holePar` (from CONTEXT - MANDATORY)${holeFeet != null ? '\n3. YAML includes `feet: $holeFeet` (from CONTEXT - MANDATORY)' : ''}
-${holeFeet != null ? '4' : '3'}. Every putt has `purpose: putt`
-${holeFeet != null ? '5' : '4'}. Every throw (except last) has `distanceFeetAfterThrow` OR it can be inferred from next throw
-${holeFeet != null ? '6' : '5'}. landingSpot matches distanceFeetAfterThrow distance
-${holeFeet != null ? '7' : '6'}. Hole ends with `landingSpot: in_basket`
-${holeFeet != null ? '8' : '7'}. Throw count matches any mentioned score
+CRITICAL: Every hole MUST end with landingSpot: in_basket. If they finished the hole (any score mentioned), add a final throw with distanceFeetAfterThrow: 0 and landingSpot: in_basket.
 
-Example output format:
+IMPORTANT: Only include fields with actual values. Never include null values or empty fields.
+
+EXAMPLE:
 $schemaExample
 ''';
   }

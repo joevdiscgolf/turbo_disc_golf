@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
@@ -38,7 +42,7 @@ class EditableHoleDetailPanel extends StatefulWidget {
   final void Function(DiscThrow throw_, {int? addThrowAtIndex}) onThrowAdded;
   final void Function(int throwIndex, DiscThrow updatedThrow) onThrowEdited;
   final void Function(int throwIndex) onThrowDeleted;
-  final VoidCallback onVoiceRecord;
+  final Function(BuildContext, PotentialDGHole currentHole) onVoiceRecord;
   final VoidCallback? onRoundUpdated;
 
   @override
@@ -113,7 +117,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
                 _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
             onThrowEdited: (throwIndex) =>
                 _handleEditThrow(currentHole, throwIndex),
-            onVoiceRecord: () => _handleVoiceRecord(currentHole),
+            onVoiceRecord: () => _handleVoiceRecord(context, currentHole),
             onDone: () => Navigator.of(context).pop(),
             onReorder: (oldIndex, newIndex) =>
                 _handleReorder(oldIndex, newIndex),
@@ -238,8 +242,124 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
     }
   }
 
-  void _handleVoiceRecord(PotentialDGHole currentHole) {
-    widget.onVoiceRecord();
+  Future<void> _handleVoiceRecord(BuildContext context, PotentialDGHole currentHole) async {
+    // Unfocus any active fields before showing panel
+    _parFocusNode.unfocus();
+    _distanceFocusNode.unfocus();
+
+    // Track processing state outside the builder
+    bool isProcessing = false;
+
+    // Show voice recording panel
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return RecordSingleHolePanel(
+            holeNumber: currentHole.number ?? widget.holeIndex + 1,
+            holePar: currentHole.par,
+            holeFeet: currentHole.feet,
+            isProcessing: isProcessing,
+            showTestButton: true, // Enable test buttons in debug mode
+            onContinuePressed: (transcript) async {
+              setModalState(() {
+                isProcessing = true;
+              });
+              await _parseAndUpdateHole(context, transcript, currentHole);
+              if (context.mounted) {
+                setModalState(() {
+                  isProcessing = false;
+                });
+              }
+            },
+            onTestingPressed: (testConstant) async {
+              setModalState(() {
+                isProcessing = true;
+              });
+              await _parseAndUpdateHole(context, testConstant, currentHole);
+              if (context.mounted) {
+                setModalState(() {
+                  isProcessing = false;
+                });
+              }
+            },
+            onCancel: () {
+              Navigator.of(context).pop();
+            },
+          );
+        },
+      ),
+    );
+
+    // Unfocus again after panel closes
+    if (mounted) {
+      _parFocusNode.unfocus();
+      _distanceFocusNode.unfocus();
+    }
+  }
+
+  Future<void> _parseAndUpdateHole(
+    BuildContext context,
+    String transcript,
+    PotentialDGHole currentHole,
+  ) async {
+    try {
+      // Get services
+      final BagService bagService = locator.get<BagService>();
+      final AiParsingService aiService = locator.get<AiParsingService>();
+
+      // Load bag if needed
+      if (bagService.userBag.isEmpty) {
+        await bagService.loadBag();
+        if (bagService.userBag.isEmpty) {
+          bagService.loadSampleBag();
+        }
+      }
+
+      // Get course name from state
+      final state = _roundConfirmationCubit.state;
+      final String courseName = state is ConfirmingRoundActive
+          ? state.potentialRound.courseName ?? 'Unknown Course'
+          : 'Unknown Course';
+
+      // Parse the hole with AI
+      final PotentialDGHole? parsedHole = await aiService.parseSingleHole(
+        voiceTranscript: transcript,
+        userBag: bagService.userBag,
+        holeNumber: currentHole.number ?? widget.holeIndex + 1,
+        holePar: currentHole.par ?? 3,
+        holeFeet: currentHole.feet,
+        courseName: courseName,
+      );
+
+      if (parsedHole != null) {
+        // Update the hole in the cubit
+        _roundConfirmationCubit.updatePotentialHole(widget.holeIndex, parsedHole);
+
+        // Close the panel
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      } else {
+        // Parsing failed - show error and keep panel open
+        debugPrint('Failed to parse hole');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to parse hole description')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error parsing hole: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   void _handleReorder(int oldIndex, int newIndex) {

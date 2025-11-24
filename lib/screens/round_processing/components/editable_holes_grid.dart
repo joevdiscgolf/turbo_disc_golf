@@ -122,7 +122,7 @@ class _HoleGridItem extends StatelessWidget {
             .updateThrow(holeIndex, throwIndex, updatedThrow),
         onThrowDeleted: (throwIndex) =>
             roundConfirmationCubit.deleteThrow(holeIndex, throwIndex),
-        onVoiceRecord: () =>
+        onVoiceRecord: (context, currentHole) =>
             _handleVoiceRecord(context, potentialHole, holeIndex),
       ),
     );
@@ -161,12 +161,12 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   void _handleVoiceRecord(
-    BuildContext context,
+    BuildContext contextToUse,
     PotentialDGHole currentHole,
     int holeIndex,
   ) {
     showModalBottomSheet<void>(
-      context: context,
+      context: contextToUse,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _VoiceRecordSheet(
