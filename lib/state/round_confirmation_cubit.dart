@@ -298,6 +298,50 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     updatePotentialHole(holeIndex, updatedHole);
   }
 
+  /// Reorder throws within a hole
+  void reorderThrows(int holeIndex, int oldIndex, int newIndex) {
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    if (activeState.potentialRound.holes == null ||
+        holeIndex >= activeState.potentialRound.holes!.length) {
+      return;
+    }
+
+    final PotentialDGHole currentHole =
+        activeState.potentialRound.holes![holeIndex];
+    if (currentHole.throws == null ||
+        oldIndex >= currentHole.throws!.length ||
+        newIndex >= currentHole.throws!.length) {
+      return;
+    }
+
+    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
+      currentHole.throws!,
+    );
+
+    // Remove the throw from the old position
+    final DiscThrow movedThrow = updatedThrows.removeAt(oldIndex);
+
+    // Insert it at the new position
+    updatedThrows.insert(newIndex, movedThrow);
+
+    // Reindex all throws to ensure sequential indices
+    final List<DiscThrow> reindexedThrows = _reindexThrows(updatedThrows);
+
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: currentHole.par,
+      feet: currentHole.feet,
+      throws: reindexedThrows,
+      holeType: currentHole.holeType,
+    );
+
+    updatePotentialHole(holeIndex, updatedHole);
+  }
+
   /// Helper method to reindex throws to ensure sequential indices (0, 1, 2, ...)
   List<DiscThrow> _reindexThrows(List<DiscThrow> throws) {
     return throws.asMap().entries.map((entry) {

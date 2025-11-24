@@ -1,8 +1,13 @@
 // editable_throw_timeline.dart
+//
 // Editable timeline where only throw cards are reorderable.
-// Drag handle is inside the card on the right side. Add-buttons are shown
-// below each throw card but live inside the same reorderable item so they're
-// not individually draggable.
+// Add buttons are visually centered between cards (Option A), anchored
+// while dragging, and the throw cards move around them.
+// Drag handle is inside the card (right side). Card keeps rounded corners
+// while dragging but removes shadow while in drag state.
+// Uses flutter_animate for subtle entry animations and uses technique colors.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -12,16 +17,15 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
-/// Timeline of throws with add/edit buttons and connector line adjustments.
-class EditableThrowTimeline extends StatelessWidget {
+class EditableThrowTimeline extends StatefulWidget {
   const EditableThrowTimeline({
     super.key,
     required this.throws,
     required this.onEditThrow,
     required this.onAddThrowAt,
-    this.showAddButtons = false,
-    required this.enableReorder,
-    required this.onReorder,
+    this.showAddButtons = true,
+    this.enableReorder = true,
+    this.onReorder,
   });
 
   final List<DiscThrow> throws;
@@ -29,143 +33,243 @@ class EditableThrowTimeline extends StatelessWidget {
   final void Function(int addThrowAtIndex) onAddThrowAt;
   final bool showAddButtons;
   final bool enableReorder;
-  final void Function(int oldIndex, int newIndex) onReorder;
-
-  // Color _getTechniqueColorForThrow(DiscThrow discThrow) {
-  //   switch (discThrow.technique) {
-  //     case ThrowTechnique.backhand:
-  //     case ThrowTechnique.backhandRoller:
-  //       return const Color(0xFF4A90E2); // Blue
-  //     case ThrowTechnique.forehand:
-  //     case ThrowTechnique.forehandRoller:
-  //       return const Color(0xFF50C878); // Green
-  //     case ThrowTechnique.tomahawk:
-  //     case ThrowTechnique.thumber:
-  //     case ThrowTechnique.overhand:
-  //     case ThrowTechnique.grenade:
-  //     case ThrowTechnique.other:
-  //     default:
-  //       // Fall back to purpose-based color for putts
-  //       if (discThrow.purpose == ThrowPurpose.putt) {
-  //         return const Color(0xFFFDB927); // Yellow/Gold
-  //       }
-  //       return const Color(0xFF9E9E9E); // Grey for unknown
-  //   }
-  // }
+  final void Function(int oldIndex, int newIndex)? onReorder;
 
   @override
-  Widget build(BuildContext context) {
-    if (throws.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: ElevatedButton.icon(
-            onPressed: () => onAddThrowAt(0),
-            icon: const Icon(Icons.add),
-            label: const Text('Add first throw'),
-          ),
-        ),
-      );
-    }
-
-    // If reordering enabled and callback supplied, show ReorderableListView
-    if (enableReorder && onReorder != null) {
-      return ReorderableListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        buildDefaultDragHandles: false,
-        onReorder: (int oldIndex, int newIndex) {
-          // Handle Flutter behaviour: when moving down the incoming newIndex
-          // is one greater than expected, normalize it.
-          if (newIndex > oldIndex) newIndex -= 1;
-          onReorder!(oldIndex, newIndex);
-        },
-        children: [
-          for (int i = 0; i < throws.length; i++)
-            _ThrowListItemColumn(
-              key: ValueKey('throw_$i'),
-              throwIndex: i,
-              discThrow: throws[i],
-              isLast: i == throws.length - 1,
-              animationDelay: i * 100,
-              onEdit: () => onEditThrow(i),
-              onAddAfter: () => onAddThrowAt(i),
-              showAddButton: showAddButtons,
-            ),
-        ],
-      );
-    }
-
-    // Non-reorderable ListView
-    return ListView.builder(
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: throws.length,
-      itemBuilder: (context, i) {
-        final discThrow = throws[i];
-        return _ThrowListItemColumn(
-          key: ValueKey('throw_$i'),
-          throwIndex: i,
-          discThrow: discThrow,
-          isLast: i == throws.length - 1,
-          animationDelay: i * 100,
-          onEdit: () => onEditThrow(i),
-          onAddAfter: () => onAddThrowAt(i),
-          showAddButton: showAddButtons,
-        );
-      },
-    );
-  }
+  State<EditableThrowTimeline> createState() => _EditableThrowTimelineState();
 }
 
-/// Each Reorderable child is a Column that contains the throw row + the add button
-class _ThrowListItemColumn extends StatelessWidget {
-  const _ThrowListItemColumn({
-    required Key key,
-    required this.throwIndex,
-    required this.discThrow,
-    required this.isLast,
-    required this.animationDelay,
-    required this.onEdit,
-    required this.onAddAfter,
-    required this.showAddButton,
-  }) : super(key: key);
+class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
+  List<GlobalKey> _itemKeys = [];
+  List<double> _addButtonY = [];
+  List<double> _iconCenterY = [];
+  bool _isDragging = false;
+  Timer? _recomputeTimer;
 
-  final int throwIndex;
-  final DiscThrow discThrow;
-  final bool isLast;
-  final int animationDelay;
-  final VoidCallback onEdit;
-  final VoidCallback onAddAfter;
-  final bool showAddButton;
+  @override
+  void initState() {
+    super.initState();
+    _ensureKeys();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recomputePositions());
+  }
+
+  @override
+  void didUpdateWidget(covariant EditableThrowTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.throws.length != widget.throws.length) {
+      _ensureKeys();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recomputePositions());
+  }
+
+  @override
+  void dispose() {
+    _recomputeTimer?.cancel();
+    super.dispose();
+  }
+
+  void _ensureKeys() {
+    final List<GlobalKey> old = _itemKeys;
+    _itemKeys = List<GlobalKey>.generate(
+      widget.throws.length,
+      (i) => (i < old.length) ? old[i] : GlobalKey(),
+      growable: false,
+    );
+  }
+
+  void _recomputePositions() {
+    if (_isDragging) return;
+
+    _recomputeTimer?.cancel();
+    _recomputeTimer = Timer(const Duration(milliseconds: 40), () {
+      final RenderBox? listBox = context.findRenderObject() as RenderBox?;
+      if (listBox == null || !mounted) return;
+
+      final List<double> iconCenters = [];
+      final List<double> addCenters = [];
+
+      // Compute icon center positions for each card
+      for (int i = 0; i < _itemKeys.length; i++) {
+        final box = _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
+        if (box == null) {
+          iconCenters.add(0.0);
+        } else {
+          final globalTopLeft = box.localToGlobal(Offset.zero);
+          // Icon is positioned at top of row with some padding
+          // Icon center is approximately at top + 16px (icon radius)
+          final iconCenterGlobalY = globalTopLeft.dy + 16.0;
+          final iconCenterLocalY = listBox.globalToLocal(Offset(0, iconCenterGlobalY)).dy;
+          iconCenters.add(iconCenterLocalY);
+        }
+      }
+
+      // Compute add button positions (center between consecutive cards)
+      for (int i = 0; i < _itemKeys.length - 1; i++) {
+        final box1 = _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
+        final box2 = _itemKeys[i + 1].currentContext?.findRenderObject() as RenderBox?;
+
+        if (box1 != null && box2 != null) {
+          final pos1 = box1.localToGlobal(Offset.zero);
+          final pos2 = box2.localToGlobal(Offset.zero);
+
+          final local1 = listBox.globalToLocal(pos1);
+          final local2 = listBox.globalToLocal(pos2);
+
+          final bottom1 = local1.dy + box1.size.height;
+          final top2 = local2.dy;
+          final centerY = (bottom1 + top2) / 2.0;
+
+          addCenters.add(centerY);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _iconCenterY = iconCenters;
+          _addButtonY = addCenters;
+        });
+      }
+    });
+  }
+
+  void _setDragging(bool dragging) {
+    if (_isDragging == dragging) return;
+    setState(() => _isDragging = dragging);
+
+    if (!dragging) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _recomputePositions());
+    }
+  }
+
+  void _handleReorder(int oldIndex, int newIndex) {
+    if (widget.onReorder != null) {
+      widget.onReorder!(oldIndex, newIndex);
+    }
+    _setDragging(false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final Color techniqueColor = _getTechniqueColorForThrow(discThrow);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            // Reorderable list of throw cards
+            Positioned.fill(
+              child: ReorderableListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                buildDefaultDragHandles: false,
+                itemCount: widget.throws.length,
+                proxyDecorator: (child, index, animation) {
+                  // Customize the appearance of the dragged item
+                  return Material(
+                    elevation: 0,
+                    color: Colors.transparent,
+                    child: child,
+                  );
+                },
+                onReorder: (oldIndex, newIndex) {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  _handleReorder(oldIndex, newIndex);
+                },
+                itemBuilder: (context, index) {
+                  final discThrow = widget.throws[index];
+                  final techniqueColor = _getTechniqueColorForThrow(discThrow);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        EditableThrowTimelineItem(
-          key: ValueKey('item_card_$throwIndex'),
-          discThrow: discThrow,
-          throwIndex: throwIndex,
-          isLast: isLast && !showAddButton,
-          animationDelay: animationDelay,
-          onEdit: onEdit,
-          showDragHandle: true,
-        ),
-        if (showAddButton)
-          Padding(
-            padding: const EdgeInsets.only(left: 44.0),
-            child: _AddThrowButton(
-              key: ValueKey('add_after_$throwIndex'),
-              onAdd: onAddAfter,
-              connectorColor: techniqueColor,
-              showConnector: !isLast,
+                  return Container(
+                    key: ValueKey('throw_$index'),
+                    margin: EdgeInsets.only(
+                      bottom: widget.showAddButtons ? 48.0 : 6.0,
+                    ),
+                    child: _MeasuredThrowRow(
+                      measurementKey: _itemKeys[index],
+                      discThrow: discThrow,
+                      throwIndex: index,
+                      isLast: index == widget.throws.length - 1,
+                      animationDelay: index * 90,
+                      onEdit: () => widget.onEditThrow(index),
+                      onDragStateChange: _setDragging,
+                      showDragHandle: widget.enableReorder,
+                      accentColor: techniqueColor,
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        if (!showAddButton && !isLast) const SizedBox(height: 8),
-      ],
+
+            // Overlay connectors between icons
+            if (_iconCenterY.isNotEmpty)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Stack(
+                    children: [
+                      for (int i = 0; i < _iconCenterY.length - 1; i++)
+                        Builder(
+                          builder: (ctx) {
+                            const double iconRadius = 16.0; // Icon is 32px diameter
+                            // Start at bottom of top icon, end at top of bottom icon
+                            final startY = _iconCenterY[i] + iconRadius;
+                            final endY = _iconCenterY[i + 1] - iconRadius;
+                            final height = (endY - startY).clamp(0.0, double.infinity);
+                            final discThrow = widget.throws[i];
+                            final color = _getTechniqueColorForThrow(discThrow);
+
+                            return Positioned(
+                              left: 37, // Center line on icon (16px padding + 22px to icon center - 1px for 2px line width)
+                              top: startY,
+                              child: Container(
+                                width: 2,
+                                height: height,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      color.withValues(alpha: 0.5),
+                                      color.withValues(alpha: 0.18),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Add buttons positioned between cards using measured positions
+            if (widget.showAddButtons && _addButtonY.isNotEmpty)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: false,
+                  child: Stack(
+                    children: [
+                      for (int i = 0; i < _addButtonY.length; i++)
+                        Positioned(
+                          left: (constraints.maxWidth / 2) - 16, // Center horizontally (32px button / 2)
+                          top: _addButtonY[i] - 16, // Center vertically (32px button / 2)
+                          child: GestureDetector(
+                            onTap: () => widget.onAddThrowAt(i),
+                            child: _AnchoredAddButton(
+                              color: _getTechniqueColorForThrow(
+                                widget.throws[i],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -173,15 +277,10 @@ class _ThrowListItemColumn extends StatelessWidget {
     switch (discThrow.technique) {
       case ThrowTechnique.backhand:
       case ThrowTechnique.backhandRoller:
-        return const Color(0xFF4A90E2); // Blue
+        return const Color(0xFF4A90E2);
       case ThrowTechnique.forehand:
       case ThrowTechnique.forehandRoller:
-        return const Color(0xFF50C878); // Green
-      case ThrowTechnique.tomahawk:
-      case ThrowTechnique.thumber:
-      case ThrowTechnique.overhand:
-      case ThrowTechnique.grenade:
-      case ThrowTechnique.other:
+        return const Color(0xFF50C878);
       default:
         if (discThrow.purpose == ThrowPurpose.putt) {
           return const Color(0xFFFDB927);
@@ -191,128 +290,30 @@ class _ThrowListItemColumn extends StatelessWidget {
   }
 }
 
-/// Small circular + button between throw items with connector line.
-class _AddThrowButton extends StatelessWidget {
-  const _AddThrowButton({
-    super.key,
-    required this.onAdd,
-    required this.connectorColor,
-    required this.showConnector,
-  });
-
-  final VoidCallback onAdd;
-  final Color connectorColor;
-  final bool showConnector;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 32, // 4px top + 24px button + 4px bottom
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (showConnector)
-            Positioned(
-              left: 15,
-              top: 0,
-              bottom: 0,
-              child: Container(
-                width: 2,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      connectorColor.withValues(alpha: 0.2),
-                      connectorColor.withValues(alpha: 0.1),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          Bounceable(
-            onTap: () {
-              onAdd();
-            },
-            child:
-                Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: TurbColors.blue,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.15),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.add,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 16,
-                        ),
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(duration: 250.ms, curve: Curves.easeOut)
-                    .scale(
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1.0, 1.0),
-                      duration: 250.ms,
-                      curve: Curves.easeOutBack,
-                    ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class EditableThrowTimelineItem extends StatelessWidget {
-  const EditableThrowTimelineItem({
-    super.key,
+/// A single measured row that reports a key and contains the throw icon (left),
+/// the card (right) and exposes the drag-handle listener for drag-state.
+class _MeasuredThrowRow extends StatelessWidget {
+  const _MeasuredThrowRow({
+    required this.measurementKey,
     required this.discThrow,
     required this.throwIndex,
     required this.isLast,
     required this.animationDelay,
     required this.onEdit,
-    this.showDragHandle = false,
+    required this.onDragStateChange,
+    required this.showDragHandle,
+    required this.accentColor,
   });
 
+  final GlobalKey measurementKey;
   final DiscThrow discThrow;
   final int throwIndex;
   final bool isLast;
   final int animationDelay;
   final VoidCallback onEdit;
+  final void Function(bool isDragging) onDragStateChange;
   final bool showDragHandle;
-
-  Color _getTechniqueColor() {
-    switch (discThrow.technique) {
-      case ThrowTechnique.backhand:
-      case ThrowTechnique.backhandRoller:
-        return const Color(0xFF4A90E2); // Blue
-      case ThrowTechnique.forehand:
-      case ThrowTechnique.forehandRoller:
-        return const Color(0xFF50C878); // Green
-      case ThrowTechnique.tomahawk:
-      case ThrowTechnique.thumber:
-      case ThrowTechnique.overhand:
-      case ThrowTechnique.grenade:
-      case ThrowTechnique.other:
-      default:
-        // Fall back to purpose-based color for putts
-        if (discThrow.purpose == ThrowPurpose.putt) {
-          return const Color(0xFFFDB927); // Yellow/Gold
-        }
-        return const Color(0xFF9E9E9E); // Grey for unknown
-    }
-  }
+  final Color accentColor;
 
   IconData _getTechniqueIcon() {
     switch (discThrow.technique) {
@@ -347,132 +348,83 @@ class EditableThrowTimelineItem extends StatelessWidget {
 
   List<String> _getThrowDetails() {
     final List<String> details = [];
-
     if (discThrow.distanceFeetBeforeThrow != null) {
       details.add('${discThrow.distanceFeetBeforeThrow} ft');
     }
-
     if (discThrow.disc != null) {
       details.add(discThrow.disc!.name);
     }
-
     if (discThrow.landingSpot != null) {
       details.add(landingSpotToName[discThrow.landingSpot] ?? '');
     }
-
     return details;
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color techniqueColor = _getTechniqueColor();
-    final IconData techniqueIcon = _getTechniqueIcon();
-    final List<String> details = _getThrowDetails();
+    final techniqueColor = accentColor;
+    final techniqueIcon = _getTechniqueIcon();
+    final details = _getThrowDetails();
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left side: Icon and connecting line
-          SizedBox(
-            width: 32,
-            child: Column(
-              children: [
-                // Icon
-                Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: techniqueColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: techniqueColor, width: 2),
-                      ),
-                      child: Icon(
-                        techniqueIcon,
-                        size: 16,
-                        color: techniqueColor,
-                      ),
-                    )
-                    .animate(delay: Duration(milliseconds: animationDelay))
-                    .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                    .scale(
-                      begin: const Offset(0.5, 0.5),
-                      end: const Offset(1.0, 1.0),
-                      duration: 300.ms,
-                      curve: Curves.easeOutBack,
+    return Container(
+      key: measurementKey,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left: icon; connector no longer rendered here (overlay handles it)
+            SizedBox(
+              width: 44,
+              child: Column(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: techniqueColor.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: techniqueColor, width: 2),
                     ),
-
-                // Connecting line that fills the throw card height
-                if (!isLast)
-                  Expanded(
-                    child: _TimelineConnector(
-                      color: techniqueColor,
-                      animationDelay: animationDelay + 200,
-                    ),
+                    child: Icon(techniqueIcon, size: 16, color: techniqueColor),
                   ),
-              ],
+                  // Spacer to create space for the overlay connector
+                  if (!isLast) Expanded(child: Container()),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Right side: Throw details card with edit button
-          Expanded(
-            child: _EditableThrowDetailCard(
-              title: _getThrowTitle(),
-              details: details,
-              accentColor: techniqueColor,
-              animationDelay: animationDelay,
-              onEdit: onEdit,
-              showDragHandle: showDragHandle,
-              visualIndex: throwIndex,
+
+            const SizedBox(width: 12),
+
+            // Card
+            Expanded(
+              child: _ThrowCard(
+                title: _getThrowTitle(),
+                details: details,
+                accentColor: techniqueColor,
+                animationDelay: animationDelay,
+                onEdit: onEdit,
+                onDragStateChange: onDragStateChange,
+                showDragHandle: showDragHandle,
+                visualIndex: throwIndex,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _TimelineConnector extends StatelessWidget {
-  const _TimelineConnector({required this.color, required this.animationDelay});
-
-  final Color color;
-  final int animationDelay;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-          width: 2,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                color.withValues(alpha: 0.5),
-                color.withValues(alpha: 0.2),
-              ],
-            ),
-          ),
-        )
-        .animate(delay: Duration(milliseconds: animationDelay))
-        .scaleY(
-          begin: 0.0,
-          end: 1.0,
-          duration: 300.ms,
-          curve: Curves.easeOut,
-          alignment: Alignment.topCenter,
-        )
-        .fadeIn(duration: 300.ms);
-  }
-}
-
-class _EditableThrowDetailCard extends StatelessWidget {
-  const _EditableThrowDetailCard({
+/// Stateful throw card that removes shadow while being dragged (but keeps rounded corners).
+class _ThrowCard extends StatefulWidget {
+  const _ThrowCard({
     required this.title,
     required this.details,
     required this.accentColor,
     required this.animationDelay,
     required this.onEdit,
-    this.showDragHandle = false,
+    required this.onDragStateChange,
+    required this.showDragHandle,
     required this.visualIndex,
   });
 
@@ -481,91 +433,131 @@ class _EditableThrowDetailCard extends StatelessWidget {
   final Color accentColor;
   final int animationDelay;
   final VoidCallback onEdit;
+  final void Function(bool) onDragStateChange;
   final bool showDragHandle;
   final int visualIndex;
 
   @override
+  State<_ThrowCard> createState() => _ThrowCardState();
+}
+
+class _ThrowCardState extends State<_ThrowCard> {
+  bool _isDraggingLocal = false;
+
+  void _handleLocalDragState(bool dragging) {
+    if (_isDraggingLocal == dragging) return;
+    setState(() => _isDraggingLocal = dragging);
+    widget.onDragStateChange(dragging);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onEdit,
-      borderRadius: BorderRadius.circular(10),
-      child:
-          Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: accentColor.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accentColor.withValues(alpha: 0.1),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: accentColor,
-                                ),
-                          ),
-                          if (details.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              details.join(' • '),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.edit_outlined, size: 18, color: accentColor),
-                    // Drag handle (on the right side inside the card)
-                    if (showDragHandle) ...[
-                      ReorderableDragStartListener(
-                        index: visualIndex,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Icon(
-                            Icons.drag_handle,
-                            size: 20,
-                            color: accentColor.withValues(alpha: 0.7),
-                          ),
-                        ),
+    return GestureDetector(
+      onTap: widget.onEdit,
+      child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: widget.accentColor.withValues(alpha: 0.28),
+                width: 1,
+              ),
+              boxShadow: _isDraggingLocal
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: widget.accentColor.withValues(alpha: 0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ],
-                  ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                // Title + details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: widget.accentColor,
+                        ),
+                      ),
+                      if (widget.details.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.details.join(' • '),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              )
-              .animate(delay: Duration(milliseconds: animationDelay))
-              .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-              .slideY(
-                begin: 0.3,
-                end: 0.0,
-                duration: 300.ms,
-                curve: Curves.easeOut,
-              ),
+
+                const SizedBox(width: 8),
+
+                Icon(Icons.edit_outlined, size: 18, color: widget.accentColor),
+
+                if (widget.showDragHandle) ...[
+                  const SizedBox(width: 6),
+                  ReorderableDragStartListener(
+                    index: widget.visualIndex,
+                    child: Listener(
+                      onPointerDown: (_) => _handleLocalDragState(true),
+                      onPointerUp: (_) => _handleLocalDragState(false),
+                      onPointerCancel: (_) => _handleLocalDragState(false),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        child: Icon(
+                          Icons.drag_handle,
+                          size: 20,
+                          color: widget.accentColor.withValues(alpha: 0.84),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          )
+          .animate(delay: Duration(milliseconds: widget.animationDelay))
+          .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+          .slideY(begin: 0.08, end: 0.0, duration: 280.ms, curve: Curves.easeOut),
     );
+  }
+}
+
+/// Anchored add button UI (32x32 circular) — colorable if you want.
+class _AnchoredAddButton extends StatelessWidget {
+  const _AnchoredAddButton({this.color});
+
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = color ?? TurbColors.blue;
+    return Bounceable(
+      onTap: () {
+        // parent GestureDetector handles actual add callback
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+        child: const Center(
+          child: Icon(Icons.add, size: 18, color: Colors.white),
+        ),
+      ),
+    ).animate().fadeIn(duration: 200.ms);
   }
 }

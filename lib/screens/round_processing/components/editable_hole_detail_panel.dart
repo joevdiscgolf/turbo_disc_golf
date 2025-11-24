@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:turbo_disc_golf/components/dialogs/add_throw_walkthrough_dialog.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
@@ -115,6 +115,8 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
                 _handleEditThrow(currentHole, throwIndex),
             onVoiceRecord: () => _handleVoiceRecord(currentHole),
             onDone: () => Navigator.of(context).pop(),
+            onReorder: (oldIndex, newIndex) =>
+                _handleReorder(oldIndex, newIndex),
           ),
         );
       },
@@ -159,29 +161,29 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       technique: ThrowTechnique.backhand,
     );
 
-    await showDialog(
-      context: context,
-      builder: (context) => AddThrowWalkthroughDialog(
-        onComplete: (_, __) {},
-        throwIndex: displayThrowNumber,
-      ),
-    );
-
     // await showDialog(
     //   context: context,
-    //   builder: (context) => ThrowEditDialog(
-    //     throw_: newThrow,
+    //   builder: (context) => AddThrowWalkthroughDialog(
+    //     onComplete: (_, __) {},
     //     throwIndex: displayThrowNumber,
-    //     holeNumber: currentHole.number ?? widget.holeIndex + 1,
-    //     isNewThrow: true,
-    //     onSave: (savedThrow) {
-    //       // Pass the original addAtIndex to parent - it handles actual insertion
-    //       widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
-    //       Navigator.of(context).pop();
-    //     },
-    //     onDelete: null, // No delete for new throws
     //   ),
     // );
+
+    await showDialog(
+      context: context,
+      builder: (context) => ThrowEditDialog(
+        throw_: newThrow,
+        throwIndex: displayThrowNumber,
+        holeNumber: currentHole.number ?? widget.holeIndex + 1,
+        isNewThrow: true,
+        onSave: (savedThrow) {
+          // Pass the original addAtIndex to parent - it handles actual insertion
+          widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
+          Navigator.of(context).pop();
+        },
+        onDelete: null, // No delete for new throws
+      ),
+    );
 
     // Unfocus again after dialog closes to prevent keyboard from popping up
     if (mounted) {
@@ -204,30 +206,30 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       return; // Can't edit incomplete throw
     }
 
-    await showDialog(
-      context: context,
-      builder: (context) => AddThrowWalkthroughDialog(
-        onComplete: (_, __) {},
-        throwIndex: currentHole.number ?? widget.holeIndex + 1,
-      ),
-    );
-
     // await showDialog(
     //   context: context,
-    //   builder: (context) => ThrowEditDialog(
-    //     throw_: currentThrow,
-    //     throwIndex: throwIndex,
-    //     holeNumber: currentHole.number ?? widget.holeIndex + 1,
-    //     onSave: (updatedThrow) {
-    //       widget.onThrowEdited(throwIndex, updatedThrow);
-    //       Navigator.of(context).pop();
-    //     },
-    //     onDelete: () {
-    //       widget.onThrowDeleted(throwIndex);
-    //       Navigator.of(context).pop();
-    //     },
+    //   builder: (context) => AddThrowWalkthroughDialog(
+    //     onComplete: (_, __) {},
+    //     throwIndex: currentHole.number ?? widget.holeIndex + 1,
     //   ),
     // );
+
+    await showDialog(
+      context: context,
+      builder: (context) => ThrowEditDialog(
+        throw_: currentThrow,
+        throwIndex: throwIndex,
+        holeNumber: currentHole.number ?? widget.holeIndex + 1,
+        onSave: (updatedThrow) {
+          widget.onThrowEdited(throwIndex, updatedThrow);
+          Navigator.of(context).pop();
+        },
+        onDelete: () {
+          widget.onThrowDeleted(throwIndex);
+          Navigator.of(context).pop();
+        },
+      ),
+    );
 
     // Unfocus again after dialog closes to prevent keyboard from popping up
     if (mounted) {
@@ -238,5 +240,9 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
 
   void _handleVoiceRecord(PotentialDGHole currentHole) {
     widget.onVoiceRecord();
+  }
+
+  void _handleReorder(int oldIndex, int newIndex) {
+    _roundConfirmationCubit.reorderThrows(widget.holeIndex, oldIndex, newIndex);
   }
 }
