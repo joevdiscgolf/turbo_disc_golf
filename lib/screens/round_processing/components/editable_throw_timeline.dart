@@ -13,11 +13,17 @@ class EditableThrowTimeline extends StatelessWidget {
     required this.throws,
     required this.onEditThrow,
     required this.onAddThrowAt,
+    this.showAddButtons = false,
+    this.enableReorder = true,
+    this.onReorder,
   });
 
   final List<DiscThrow> throws;
   final void Function(int throwIndex) onEditThrow;
   final void Function(int addThrowAtIndex) onAddThrowAt;
+  final bool showAddButtons;
+  final bool enableReorder;
+  final void Function(int oldIndex, int newIndex)? onReorder;
 
   Color _getTechniqueColorForThrow(DiscThrow discThrow) {
     switch (discThrow.technique) {
@@ -56,55 +62,101 @@ class EditableThrowTimeline extends StatelessWidget {
       );
     }
 
-    // One "add" button after each throw -> total items = throws.length * 2
-    final int itemCount = throws.length * 2;
+    // Build list of children based on showAddButtons
+    final List<Widget> children = [];
 
-    return ListView.builder(
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: itemCount,
-      itemBuilder: (context, index) {
-        // Even indexes => throw item (0 -> throw0, 2 -> throw1, ...)
-        // Odd indexes => add button after previous throw (1 -> after throw0, 3 -> after throw1, ...)
-        if (index.isEven) {
-          final throwIndex = index ~/ 2;
-          final DiscThrow discThrow = throws[throwIndex];
-          final bool isLast = throwIndex == throws.length - 1;
-          final int animationDelay = throwIndex * 100;
+    for (int throwIndex = 0; throwIndex < throws.length; throwIndex++) {
+      final DiscThrow discThrow = throws[throwIndex];
+      final bool isLast = throwIndex == throws.length - 1;
+      final int animationDelay = throwIndex * 100;
 
-          return EditableThrowTimelineItem(
-            discThrow: discThrow,
-            throwIndex: throwIndex,
-            isLast: isLast,
-            animationDelay: animationDelay,
-            onEdit: () => onEditThrow(throwIndex),
-          );
-        } else {
-          // Add button after the throw at index ~/2
-          // Semantic convention: insertAfterThrowIndex means "insert new throw AFTER the throw at this index"
-          // Example: if insertAfterThrowIndex=0, the new throw will be inserted after throw 0 (at position 1)
-          final int insertAfterThrowIndex = index ~/ 2;
-          final DiscThrow previousThrow = throws[insertAfterThrowIndex];
-          final Color connectorColor = _getTechniqueColorForThrow(
-            previousThrow,
-          );
-          final bool isAfterLastThrow =
-              insertAfterThrowIndex == throws.length - 1;
+      // Calculate visual index for ReorderableListView
+      final int visualIndex = showAddButtons ? throwIndex * 2 : throwIndex;
 
-          return _AddThrowButton(
-            onAdd: () => onAddThrowAt(insertAfterThrowIndex),
+      // Add throw item
+      children.add(
+        EditableThrowTimelineItem(
+          key: ValueKey('throw_$throwIndex'),
+          discThrow: discThrow,
+          throwIndex: throwIndex,
+          visualIndex: visualIndex,
+          isLast: isLast && !showAddButtons,
+          animationDelay: animationDelay,
+          onEdit: () => onEditThrow(throwIndex),
+          showDragHandle: enableReorder,
+        ),
+      );
+
+      // Add spacing or button after each throw
+      if (showAddButtons) {
+        // Add button after each throw (if enabled)
+        final Color connectorColor = _getTechniqueColorForThrow(discThrow);
+        final bool isAfterLastThrow = throwIndex == throws.length - 1;
+
+        children.add(
+          _AddThrowButton(
+            key: ValueKey('add_after_$throwIndex'),
+            onAdd: () => onAddThrowAt(throwIndex),
             connectorColor: connectorColor,
             showConnector: !isAfterLastThrow,
-          );
-        }
-      },
-    );
+          ),
+        );
+      } else if (!isLast) {
+        // Add 8px spacing between throws when no add buttons
+        children.add(
+          SizedBox(
+            key: ValueKey('spacer_$throwIndex'),
+            height: 8,
+          ),
+        );
+      }
+    }
+
+    // Use ReorderableListView if reorder is enabled
+    if (enableReorder && onReorder != null) {
+      return ReorderableListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        buildDefaultDragHandles: false,
+        onReorder: (int oldIndex, int newIndex) {
+          // Convert visual indices to throw indices
+          int oldThrowIndex, newThrowIndex;
+
+          if (showAddButtons) {
+            // With add buttons: even indices are throws, odd are add buttons
+            // Only throws are draggable, so oldIndex is always even
+            oldThrowIndex = oldIndex ~/ 2;
+
+            // newIndex could be odd (dropping near an add button)
+            // Round to nearest throw position
+            if (newIndex.isOdd && newIndex > 0) {
+              newIndex = newIndex - 1;
+            }
+            newThrowIndex = newIndex ~/ 2;
+          } else {
+            // Without add buttons: direct mapping
+            oldThrowIndex = oldIndex;
+            newThrowIndex = newIndex;
+          }
+
+          onReorder!(oldThrowIndex, newThrowIndex);
+        },
+        children: children,
+      );
+    } else {
+      // Use regular ListView when reorder is disabled
+      return ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: children,
+      );
+    }
   }
 }
 
 /// Small circular + button between throw items with connector line.
 class _AddThrowButton extends StatelessWidget {
   const _AddThrowButton({
+    super.key,
     required this.onAdd,
     required this.connectorColor,
     required this.showConnector,
@@ -191,16 +243,20 @@ class EditableThrowTimelineItem extends StatelessWidget {
     super.key,
     required this.discThrow,
     required this.throwIndex,
+    required this.visualIndex,
     required this.isLast,
     required this.animationDelay,
     required this.onEdit,
+    this.showDragHandle = false,
   });
 
   final DiscThrow discThrow;
   final int throwIndex;
+  final int visualIndex;
   final bool isLast;
   final int animationDelay;
   final VoidCallback onEdit;
+  final bool showDragHandle;
 
   Color _getTechniqueColor() {
     switch (discThrow.technique) {
@@ -333,6 +389,8 @@ class EditableThrowTimelineItem extends StatelessWidget {
               accentColor: techniqueColor,
               animationDelay: animationDelay,
               onEdit: onEdit,
+              showDragHandle: showDragHandle,
+              visualIndex: visualIndex,
             ),
           ),
         ],
@@ -381,6 +439,8 @@ class _EditableThrowDetailCard extends StatelessWidget {
     required this.accentColor,
     required this.animationDelay,
     required this.onEdit,
+    this.showDragHandle = false,
+    required this.visualIndex,
   });
 
   final String title;
@@ -388,6 +448,8 @@ class _EditableThrowDetailCard extends StatelessWidget {
   final Color accentColor;
   final int animationDelay;
   final VoidCallback onEdit;
+  final bool showDragHandle;
+  final int visualIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -446,6 +508,20 @@ class _EditableThrowDetailCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Icon(Icons.edit_outlined, size: 18, color: accentColor),
+                    // Drag handle (if enabled) - on the right side
+                    if (showDragHandle) ...[
+                      ReorderableDragStartListener(
+                        index: visualIndex,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Icon(
+                            Icons.drag_handle,
+                            size: 20,
+                            color: accentColor.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               )
