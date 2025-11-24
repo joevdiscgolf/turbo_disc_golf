@@ -48,6 +48,26 @@ class DGRound {
     return aiCoachSuggestion!.roundVersionId != versionId;
   }
 
+  int getTotalScore() {
+    return holes.fold(0, (total, hole) {
+      // Only count holes that have throws
+      if (hole.throws.isEmpty) return total;
+      return total + hole.holeScore;
+    });
+  }
+
+  int getTotalPar() {
+    return holes.fold(0, (total, hole) {
+      // Only count holes that have throws
+      if (hole.throws.isEmpty) return total;
+      return total + hole.par;
+    });
+  }
+
+  int getRelativeToPar() {
+    return getTotalScore() - getTotalPar();
+  }
+
   /// Create a copy of this round with updated fields
   DGRound copyWith({
     String? id,

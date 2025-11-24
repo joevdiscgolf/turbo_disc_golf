@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
 /// Cubit for managing round confirmation workflow state
 /// Tracks the potential round being edited and the current hole being edited
@@ -370,5 +379,223 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
         disc: throw_.disc,
       );
     }).toList();
+  }
+
+  /// Finalize the potential round after confirmation
+  /// Converts PotentialDGRound to DGRound, validates, enhances, and saves
+  /// Returns the finalized DGRound or null if validation fails
+  Future<DGRound?> finalizeRound() async {
+    if (state is! ConfirmingRoundActive) {
+      debugPrint('Cannot finalize: no active round confirmation');
+      return null;
+    }
+
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+    final PotentialDGRound potentialRound = activeState.potentialRound;
+
+    // Check if potential round has all required fields
+    if (!potentialRound.hasRequiredFields) {
+      debugPrint(
+        'Round is missing required fields: ${potentialRound.getMissingFields().join(', ')}',
+      );
+      return null;
+    }
+
+    debugPrint('Converting PotentialDGRound to DGRound...');
+
+    // Convert to final DGRound
+    DGRound parsedRound;
+    try {
+      parsedRound = potentialRound.toDGRound();
+    } catch (e) {
+      debugPrint('Failed to convert round: $e');
+      return null;
+    }
+
+    // Validate and enhance the parsed data
+    parsedRound = _validateAndEnhanceRound(parsedRound);
+
+    // Generate analysis from round data
+    debugPrint('Generating round analysis...');
+    final analysis = RoundAnalysisGenerator.generateAnalysis(parsedRound);
+
+    // Generate AI insights (summary and coaching)
+    debugPrint('Generating AI summary and coaching...');
+    final insights = await locator
+        .get<AiParsingService>()
+        .generateRoundInsights(
+          round: parsedRound,
+          analysis: analysis,
+        );
+
+    // Update round with analysis and insights
+    final String currentTimestamp = getCurrentISOString();
+    parsedRound = DGRound(
+      id: parsedRound.id,
+      courseName: parsedRound.courseName,
+      courseId: parsedRound.courseId,
+      holes: parsedRound.holes,
+      analysis: analysis,
+      aiSummary: insights['summary'],
+      aiCoachSuggestion: insights['coaching'],
+      versionId: 1, // Set initial version ID
+      createdAt: currentTimestamp,
+      playedRoundAt: currentTimestamp,
+    );
+
+    // Save to shared preferences for future use
+    debugPrint('Saving parsed round to shared preferences...');
+    final savedLocally = await locator
+        .get<RoundStorageService>()
+        .saveRound(parsedRound);
+    if (savedLocally) {
+      debugPrint('Successfully saved round to shared preferences');
+    } else {
+      debugPrint('Failed to save round to shared preferences');
+    }
+
+    // Save to Firestore
+    debugPrint('Saving parsed round to Firestore...');
+    final firestoreSuccess = await locator
+        .get<FirestoreRoundService>()
+        .addRound(parsedRound);
+    if (firestoreSuccess) {
+      debugPrint('Successfully saved round to Firestore');
+    } else {
+      debugPrint('Failed to save round to Firestore');
+    }
+
+    return parsedRound;
+  }
+
+  /// Validate and enhance a round
+  /// Ensures all throws have valid disc references and correct landing spots
+  DGRound _validateAndEnhanceRound(DGRound round) {
+    final BagService bagService = locator.get<BagService>();
+
+    // Ensure all throws have valid disc references
+    final enhancedHoles = round.holes.map((hole) {
+      final enhancedThrows = hole.throws.map((discThrow) {
+        DiscThrow workingThrow = discThrow;
+
+        // If disc name is provided, try to match it to the user's bag
+        if (workingThrow.discName != null && workingThrow.disc == null) {
+          final matchedDisc = bagService.findDiscByName(workingThrow.discName!);
+          if (matchedDisc != null) {
+            workingThrow = DiscThrow(
+              index: workingThrow.index,
+              purpose: workingThrow.purpose,
+              technique: workingThrow.technique,
+              puttStyle: workingThrow.puttStyle,
+              shotShape: workingThrow.shotShape,
+              stance: workingThrow.stance,
+              power: workingThrow.power,
+              distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
+              distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
+              elevationChangeFeet: workingThrow.elevationChangeFeet,
+              windDirection: workingThrow.windDirection,
+              windStrength: workingThrow.windStrength,
+              resultRating: workingThrow.resultRating,
+              landingSpot: workingThrow.landingSpot,
+              fairwayWidth: workingThrow.fairwayWidth,
+              penaltyStrokes: workingThrow.penaltyStrokes,
+              notes: workingThrow.notes,
+              rawText: workingThrow.rawText,
+              parseConfidence: workingThrow.parseConfidence,
+              discName: workingThrow.discName,
+              disc: matchedDisc,
+            );
+          }
+        }
+
+        // Validate and correct landingSpot based on distanceFeetAfterThrow
+        // CRITICAL: NEVER override out_of_bounds or off_fairway - these are always correct
+        if (workingThrow.distanceFeetAfterThrow != null) {
+          final distance = workingThrow.distanceFeetAfterThrow!;
+          final currentSpot = workingThrow.landingSpot;
+
+          // NEVER override OB or off_fairway regardless of distance
+          if (currentSpot == LandingSpot.outOfBounds ||
+              currentSpot == LandingSpot.offFairway) {
+            // These are intentional and correct - do not modify
+            debugPrint(
+              '✓ Preserving ${currentSpot?.name} for throw ${workingThrow.index} in hole ${hole.number} '
+              '(distance: $distance ft) - not overriding intentional landing spot',
+            );
+          } else {
+            // Only correct other landing spots based on distance
+            LandingSpot? correctLandingSpot;
+
+            if (distance == 0) {
+              correctLandingSpot = LandingSpot.inBasket;
+            } else if (distance <= 10) {
+              correctLandingSpot = LandingSpot.parked;
+            } else if (distance <= 33) {
+              correctLandingSpot = LandingSpot.circle1;
+            } else if (distance <= 66) {
+              correctLandingSpot = LandingSpot.circle2;
+            } else {
+              // For distances > 66 feet, keep the AI's decision between fairway/other
+              // Only correct if it was incorrectly set to a circle
+              if (currentSpot == LandingSpot.parked ||
+                  currentSpot == LandingSpot.circle1 ||
+                  currentSpot == LandingSpot.circle2) {
+                correctLandingSpot = LandingSpot.fairway;
+              }
+            }
+
+            // If we determined a correction is needed, apply it
+            if (correctLandingSpot != null &&
+                correctLandingSpot != currentSpot) {
+              debugPrint(
+                '⚠️ Correcting landingSpot for throw ${workingThrow.index} in hole ${hole.number}: '
+                '${currentSpot?.name} → ${correctLandingSpot.name} '
+                '(distance: $distance ft)',
+              );
+
+              workingThrow = DiscThrow(
+                index: workingThrow.index,
+                purpose: workingThrow.purpose,
+                technique: workingThrow.technique,
+                puttStyle: workingThrow.puttStyle,
+                shotShape: workingThrow.shotShape,
+                stance: workingThrow.stance,
+                power: workingThrow.power,
+                distanceFeetBeforeThrow: workingThrow.distanceFeetBeforeThrow,
+                distanceFeetAfterThrow: workingThrow.distanceFeetAfterThrow,
+                elevationChangeFeet: workingThrow.elevationChangeFeet,
+                windDirection: workingThrow.windDirection,
+                windStrength: workingThrow.windStrength,
+                resultRating: workingThrow.resultRating,
+                landingSpot: correctLandingSpot,
+                fairwayWidth: workingThrow.fairwayWidth,
+                penaltyStrokes: workingThrow.penaltyStrokes,
+                notes: workingThrow.notes,
+                rawText: workingThrow.rawText,
+                parseConfidence: workingThrow.parseConfidence,
+                discName: workingThrow.discName,
+                disc: workingThrow.disc,
+              );
+            }
+          }
+        }
+
+        return workingThrow;
+      }).toList();
+
+      return DGHole(
+        number: hole.number,
+        par: hole.par,
+        feet: hole.feet,
+        throws: enhancedThrows,
+      );
+    }).toList();
+
+    return DGRound(
+      courseName: round.courseName,
+      holes: enhancedHoles,
+      id: round.id,
+      versionId: round.versionId,
+    );
   }
 }

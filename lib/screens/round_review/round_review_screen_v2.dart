@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
+import 'package:turbo_disc_golf/services/animation_state_service.dart';
 
 class RoundReviewScreenV2 extends StatefulWidget {
   final DGRound round;
@@ -42,6 +43,8 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
   @override
   void dispose() {
     _tabController.dispose();
+    // Clear animation state so animations play fresh when re-entering this screen
+    AnimationStateService.instance.clearRound(_round.id);
     super.dispose();
   }
 
