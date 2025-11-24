@@ -16,8 +16,8 @@ class DGRound {
     this.aiSummary,
     this.aiCoachSuggestion,
     this.versionId = 1,
-    this.createdAt,
-    this.playedRoundAt,
+    required this.createdAt,
+    required this.playedRoundAt,
   });
 
   final String id;
@@ -28,8 +28,8 @@ class DGRound {
   final AIContent? aiSummary;
   final AIContent? aiCoachSuggestion;
   final int versionId;
-  final String? createdAt;
-  final String? playedRoundAt;
+  final String createdAt;
+  final String playedRoundAt;
 
   factory DGRound.fromJson(Map<String, dynamic> json) =>
       _$DGRoundFromJson(json);

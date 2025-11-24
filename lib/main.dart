@@ -95,6 +95,13 @@ class MyApp extends StatelessWidget {
               labelStyle: const TextStyle(color: Color(0xFF6B7280)),
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
             ),
+            textSelectionTheme: TextSelectionThemeData(
+              cursorColor: const Color(0xFF5B7EFF), // Blue cursor
+              selectionColor: const Color(0xFF5B7EFF)
+                  .withValues(alpha: 0.3), // Light blue selection background
+              selectionHandleColor:
+                  const Color(0xFF5B7EFF), // Blue selection handles
+            ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB8E986), // Mint green

@@ -164,12 +164,12 @@ class _DrivesTabState extends State<DrivesTab> {
     final teeShots = allTeeShotsByType[throwType];
     if (teeShots != null && teeShots.isNotEmpty) {
       final holesWithDistance = teeShots
-          .where((entry) => entry.key.feet != null)
+          .where((entry) => entry.key.feet > 0)
           .toList();
       if (holesWithDistance.isNotEmpty) {
         final totalDistance = holesWithDistance.fold<double>(
           0,
-          (sum, entry) => sum + (entry.key.feet?.toDouble() ?? 0),
+          (sum, entry) => sum + (entry.key.feet.toDouble()),
         );
         averageDistance = totalDistance / holesWithDistance.length;
       }
@@ -258,11 +258,9 @@ class _DrivesTabState extends State<DrivesTab> {
         // Check if this throw matches the throw type
         if (discThrow.technique?.name == throwType) {
           final ShotOutcome outcome = _calculateShotOutcome(hole, i);
-          shotDetails.add(ShotDetail(
-            hole: hole,
-            throwIndex: i,
-            shotOutcome: outcome,
-          ));
+          shotDetails.add(
+            ShotDetail(hole: hole, throwIndex: i, shotOutcome: outcome),
+          );
         }
       }
     }
@@ -286,11 +284,9 @@ class _DrivesTabState extends State<DrivesTab> {
             final ShotOutcome outcome = _calculateShotOutcome(hole, i);
 
             shotDetailsByShape.putIfAbsent(shapeKey, () => []);
-            shotDetailsByShape[shapeKey]!.add(ShotDetail(
-              hole: hole,
-              throwIndex: i,
-              shotOutcome: outcome,
-            ));
+            shotDetailsByShape[shapeKey]!.add(
+              ShotDetail(hole: hole, throwIndex: i, shotOutcome: outcome),
+            );
           }
         }
       }
@@ -311,7 +307,8 @@ class _DrivesTabState extends State<DrivesTab> {
     bool wasC1InReg = false;
     if (isTeeShot) {
       final LandingSpot? landing = discThrow.landingSpot;
-      wasC1InReg = landing == LandingSpot.circle1 || landing == LandingSpot.parked;
+      wasC1InReg =
+          landing == LandingSpot.circle1 || landing == LandingSpot.parked;
     }
 
     // Determine if this was C2 in regulation (tee shot that landed in C2)
@@ -342,10 +339,13 @@ class _DrivesTabState extends State<DrivesTab> {
     );
 
     // Get shot details for overall performance
-    final List<ShotDetail> overallShotDetails = _getShotDetailsForThrowType(throwType);
+    final List<ShotDetail> overallShotDetails = _getShotDetailsForThrowType(
+      throwType,
+    );
 
     // Get shot details grouped by shot shape
-    final Map<String, List<ShotDetail>> shotShapeDetails = _getShotDetailsByShape(throwType);
+    final Map<String, List<ShotDetail>> shotShapeDetails =
+        _getShotDetailsByShape(throwType);
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -3147,7 +3147,7 @@ class _CombinedThrowTypeStatsCardState
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                      'Hole ${hole.number} - Par ${hole.par}${' • ${hole.feet} ft'}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -3218,7 +3218,7 @@ class _CombinedThrowTypeStatsCardState
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                      'Hole ${hole.number} - Par ${hole.par}${' • ${hole.feet} ft'}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -3335,7 +3335,7 @@ class _CombinedThrowTypeStatsCardState
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                      'Hole ${hole.number} - Par ${hole.par}${' • ${hole.feet} ft'}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -3405,7 +3405,7 @@ class _CombinedThrowTypeStatsCardState
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Hole ${hole.number} - Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                      'Hole ${hole.number} - Par ${hole.par}${' • ${hole.feet} ft'}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),

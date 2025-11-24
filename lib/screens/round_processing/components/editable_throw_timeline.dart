@@ -152,9 +152,12 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Stack(
-          clipBehavior: Clip.hardEdge,
-          children: [
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
+            children: [
             // Reorderable list of throw cards
             Positioned.fill(
               child: ReorderableListView.builder(
@@ -268,6 +271,7 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                 ),
               ),
           ],
+        ),
         );
       },
     );

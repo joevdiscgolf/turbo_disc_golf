@@ -27,8 +27,8 @@ DGRound _$DGRoundFromJson(Map json) => DGRound(
           Map<String, dynamic>.from(json['aiCoachSuggestion'] as Map),
         ),
   versionId: (json['versionId'] as num?)?.toInt() ?? 1,
-  createdAt: json['createdAt'] as String?,
-  playedRoundAt: json['playedRoundAt'] as String?,
+  createdAt: json['createdAt'] as String,
+  playedRoundAt: json['playedRoundAt'] as String,
 );
 
 Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{

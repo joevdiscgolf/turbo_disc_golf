@@ -1,7 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
+import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
@@ -19,7 +19,8 @@ class RecordRoundPanel extends StatefulWidget {
 class _RecordRoundPanelState extends State<RecordRoundPanel> {
   final VoiceRecordingService _voiceService = locator
       .get<VoiceRecordingService>();
-  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _transcriptController = TextEditingController();
+  final FocusNode _transcriptFocusNode = FocusNode();
   int _selectedTestIndex = 0;
 
   // Get keys (constant names) from fullRoundConstants
@@ -44,28 +45,36 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
     super.initState();
     _voiceService.initialize();
     _voiceService.addListener(_onVoiceServiceUpdate);
+    _transcriptFocusNode.addListener(_onTranscriptFocusChange);
+  }
+
+  void _onTranscriptFocusChange() {
+    // Stop listening when user starts editing
+    if (_transcriptFocusNode.hasFocus && _voiceService.isListening) {
+      _voiceService.stopListening();
+    }
   }
 
   @override
   void dispose() {
     _voiceService.removeListener(_onVoiceServiceUpdate);
-    _scrollController.dispose();
+    _transcriptFocusNode.removeListener(_onTranscriptFocusChange);
+    _transcriptController.dispose();
+    _transcriptFocusNode.dispose();
     super.dispose();
   }
 
   void _onVoiceServiceUpdate() {
     if (mounted) {
+      // Update text controller only if user isn't currently editing
+      if (!_transcriptFocusNode.hasFocus) {
+        _transcriptController.text = _voiceService.transcribedText;
+        // Move cursor to end
+        _transcriptController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _transcriptController.text.length),
+        );
+      }
       setState(() {});
-      // Auto-scroll to bottom when new text arrives
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
     }
   }
 
@@ -78,6 +87,8 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
   }
 
   void _showTestConstantSelector() {
+    // Unfocus text field to prevent keyboard from popping back up
+    FocusScope.of(context).unfocus();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -102,9 +113,8 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                   children: [
                     Text(
                       'Select Test Constant',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -119,7 +129,9 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       selected: _selectedTestIndex == index,
-                      selectedTileColor: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
+                      selectedTileColor: const Color(
+                        0xFF9D4EDD,
+                      ).withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -159,7 +171,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
   }
 
   void _handleContinue() {
-    final String transcript = _voiceService.transcribedText;
+    final String transcript = _transcriptController.text;
 
     if (transcript.trim().isEmpty) {
       ScaffoldMessenger.of(
@@ -182,23 +194,25 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final String transcript = _voiceService.transcribedText;
     final bool isListening = _voiceService.isListening;
-    final bool hasTranscript = transcript.isNotEmpty;
+    final bool hasTranscript = _transcriptController.text.isNotEmpty;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: MediaQuery.of(context).size.height - 64,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
         ),
-      ),
-      child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
@@ -216,55 +230,63 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
               Text(
                 'Describe your round and I\'ll track the details',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
-              const SizedBox(height: 24),
-              // Transcript container
-              Container(
-                height: 150,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isListening
-                        ? const Color(0xFF2196F3)
-                        : Colors.grey[300]!,
-                    width: 2,
+              const SizedBox(height: 12),
+              // Editable transcript text field
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isListening
+                          ? const Color(0xFF2196F3)
+                          : Colors.grey[300]!,
+                      width: 2,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _transcriptController,
+                    focusNode: _transcriptFocusNode,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    cursorColor: const Color(0xFF2196F3),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      height: 1.5,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Round description',
+                      hintStyle: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                      fillColor: Colors.transparent,
+                      filled: true,
+                    ),
                   ),
                 ),
-                child: transcript.isEmpty
-                    ? Center(
-                        child: Text(
-                          isListening
-                              ? 'Listening...'
-                              : 'Tap the microphone to start',
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                color: Colors.grey[400],
-                                fontStyle: FontStyle.italic,
-                              ),
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        controller: _scrollController,
-                        child: Text(
-                          transcript,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyLarge?.copyWith(height: 1.5),
-                        ),
-                      ),
               ),
               const SizedBox(height: 24),
               // Animated microphone button with sound wave indicator
               Center(
-                child: _AnimatedMicrophoneButton(
+                child: AnimatedMicrophoneButton(
                   isListening: isListening,
                   onTap: _toggleListening,
                 ),
@@ -283,32 +305,30 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                 Row(
                   children: [
                     // Change button
-                    ElevatedButton(
+                    PrimaryButton(
+                      label: 'Change',
+                      width: 100,
+                      height: 48,
+                      backgroundColor:
+                          const Color(0xFF9D4EDD).withValues(alpha: 0.2),
+                      labelColor: const Color(0xFF9D4EDD),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       onPressed: _showTestConstantSelector,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF9D4EDD).withValues(alpha: 0.2),
-                        foregroundColor: const Color(0xFF9D4EDD),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Change',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ),
                     const SizedBox(width: 12),
                     // Parse button
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: PrimaryButton(
+                        label: 'Parse',
+                        width: double.infinity,
+                        height: 48,
+                        backgroundColor: const Color(0xFF9D4EDD),
+                        labelColor: Colors.white,
+                        icon: Icons.science,
+                        iconColor: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                         onPressed: () async {
                           final bool useCached = false;
                           debugPrint(
@@ -321,179 +341,35 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                               MaterialPageRoute(
                                 builder: (context) =>
                                     RoundProcessingLoadingScreen(
-                                      transcript: _selectedTranscript,
-                                      courseName: testCourseName,
-                                      useSharedPreferences: useCached,
-                                    ),
+                                  transcript: _selectedTranscript,
+                                  courseName: testCourseName,
+                                  useSharedPreferences: useCached,
+                                ),
                               ),
                             );
                           }
                         },
-                        icon: const Icon(Icons.science),
-                        label: const Text(
-                          'Parse',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9D4EDD),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
                       ),
                     ),
                   ],
                 ),
               ],
-              if (hasTranscript && !isListening) ...[
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _handleContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
+              const SizedBox(height: 24),
+              PrimaryButton(
+                label: 'Continue',
+                backgroundColor: const Color(0xFF2196F3),
+                labelColor: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                width: double.infinity,
+                height: 56,
+                disabled: !hasTranscript || isListening,
+                onPressed: _handleContinue,
+              ),
               const SizedBox(height: 16),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _AnimatedMicrophoneButton extends StatelessWidget {
-  const _AnimatedMicrophoneButton({
-    required this.isListening,
-    required this.onTap,
-  });
-
-  final bool isListening;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isListening
-                ? [const Color(0xFFEF5350), const Color(0xFFD32F2F)]
-                : [const Color(0xFF64B5F6), const Color(0xFF2196F3)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color:
-                  (isListening
-                          ? const Color(0xFFEF5350)
-                          : const Color(0xFF2196F3))
-                      .withValues(alpha: 0.4),
-              blurRadius: 15,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          child: isListening
-              ? const _SoundWaveIndicator(key: ValueKey('soundwave'))
-              : const Icon(
-                  Icons.mic,
-                  color: Colors.white,
-                  size: 32,
-                  key: ValueKey('mic'),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SoundWaveIndicator extends StatefulWidget {
-  const _SoundWaveIndicator({super.key});
-
-  @override
-  State<_SoundWaveIndicator> createState() => _SoundWaveIndicatorState();
-}
-
-class _SoundWaveIndicatorState extends State<_SoundWaveIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 60,
-      height: 30,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: List.generate(5, (index) {
-          return AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              // Create staggered animation for each bar
-              final double delay = index * 0.1;
-              final double animationValue = (_controller.value + delay) % 1.0;
-
-              // Use sine wave for smooth up/down motion
-              final double height =
-                  6 + (18 * (0.5 + 0.5 * sin(animationValue * 2 * pi)));
-
-              return Container(
-                width: 3,
-                height: height,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              );
-            },
-          );
-        }),
       ),
     );
   }

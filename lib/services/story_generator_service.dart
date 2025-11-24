@@ -50,15 +50,12 @@ class StoryGeneratorService {
       0,
       (sum, hole) => sum + hole.holeScore,
     );
-    final int coursePar = round.holes.fold(
-      0,
-      (sum, hole) => sum + hole.par,
-    );
+    final int coursePar = round.holes.fold(0, (sum, hole) => sum + hole.par);
     final int scoreRelativeToPar = totalScore - coursePar;
     final String scoreRelativeStr = scoreRelativeToPar > 0
         ? '+$scoreRelativeToPar'
         : '$scoreRelativeToPar';
-    final String date = round.playedRoundAt ?? round.createdAt ?? 'Unknown';
+    final String date = round.playedRoundAt;
 
     buffer.writeln('''
 You are a friendly and insightful disc golf coach analyzing a player's round.
@@ -81,9 +78,7 @@ Holes Played: ${round.holes.length}
       final int par = hole.par;
       final int relative = score - par;
       final String relativeStr = relative > 0 ? '+$relative' : '$relative';
-      buffer.writeln(
-        'Hole ${hole.number}: $score ($relativeStr) - Par $par',
-      );
+      buffer.writeln('Hole ${hole.number}: $score ($relativeStr) - Par $par');
     }
 
     buffer.writeln('''
@@ -193,10 +188,7 @@ Based on this round, here's what would have the biggest impact...
         // Add stat card segment
         final cardId = trimmed.substring(2, trimmed.length - 2);
         segments.add(
-          AIContentSegment(
-            type: AISegmentType.statCard,
-            content: cardId,
-          ),
+          AIContentSegment(type: AISegmentType.statCard, content: cardId),
         );
       } else {
         // Accumulate markdown content
