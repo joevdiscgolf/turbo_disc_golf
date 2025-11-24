@@ -1,3 +1,9 @@
+// editable_throw_timeline.dart
+// Editable timeline where only throw cards are reorderable.
+// Drag handle is inside the card on the right side. Add-buttons are shown
+// below each throw card but live inside the same reorderable item so they're
+// not individually draggable.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
@@ -14,8 +20,8 @@ class EditableThrowTimeline extends StatelessWidget {
     required this.onEditThrow,
     required this.onAddThrowAt,
     this.showAddButtons = false,
-    this.enableReorder = true,
-    this.onReorder,
+    required this.enableReorder,
+    required this.onReorder,
   });
 
   final List<DiscThrow> throws;
@@ -23,29 +29,29 @@ class EditableThrowTimeline extends StatelessWidget {
   final void Function(int addThrowAtIndex) onAddThrowAt;
   final bool showAddButtons;
   final bool enableReorder;
-  final void Function(int oldIndex, int newIndex)? onReorder;
+  final void Function(int oldIndex, int newIndex) onReorder;
 
-  Color _getTechniqueColorForThrow(DiscThrow discThrow) {
-    switch (discThrow.technique) {
-      case ThrowTechnique.backhand:
-      case ThrowTechnique.backhandRoller:
-        return const Color(0xFF4A90E2); // Blue
-      case ThrowTechnique.forehand:
-      case ThrowTechnique.forehandRoller:
-        return const Color(0xFF50C878); // Green
-      case ThrowTechnique.tomahawk:
-      case ThrowTechnique.thumber:
-      case ThrowTechnique.overhand:
-      case ThrowTechnique.grenade:
-      case ThrowTechnique.other:
-      default:
-        // Fall back to purpose-based color for putts
-        if (discThrow.purpose == ThrowPurpose.putt) {
-          return const Color(0xFFFDB927); // Yellow/Gold
-        }
-        return const Color(0xFF9E9E9E); // Grey for unknown
-    }
-  }
+  // Color _getTechniqueColorForThrow(DiscThrow discThrow) {
+  //   switch (discThrow.technique) {
+  //     case ThrowTechnique.backhand:
+  //     case ThrowTechnique.backhandRoller:
+  //       return const Color(0xFF4A90E2); // Blue
+  //     case ThrowTechnique.forehand:
+  //     case ThrowTechnique.forehandRoller:
+  //       return const Color(0xFF50C878); // Green
+  //     case ThrowTechnique.tomahawk:
+  //     case ThrowTechnique.thumber:
+  //     case ThrowTechnique.overhand:
+  //     case ThrowTechnique.grenade:
+  //     case ThrowTechnique.other:
+  //     default:
+  //       // Fall back to purpose-based color for putts
+  //       if (discThrow.purpose == ThrowPurpose.putt) {
+  //         return const Color(0xFFFDB927); // Yellow/Gold
+  //       }
+  //       return const Color(0xFF9E9E9E); // Grey for unknown
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -62,93 +68,125 @@ class EditableThrowTimeline extends StatelessWidget {
       );
     }
 
-    // Build list of children based on showAddButtons
-    final List<Widget> children = [];
-
-    for (int throwIndex = 0; throwIndex < throws.length; throwIndex++) {
-      final DiscThrow discThrow = throws[throwIndex];
-      final bool isLast = throwIndex == throws.length - 1;
-      final int animationDelay = throwIndex * 100;
-
-      // Calculate visual index for ReorderableListView
-      final int visualIndex = showAddButtons ? throwIndex * 2 : throwIndex;
-
-      // Add throw item
-      children.add(
-        EditableThrowTimelineItem(
-          key: ValueKey('throw_$throwIndex'),
-          discThrow: discThrow,
-          throwIndex: throwIndex,
-          visualIndex: visualIndex,
-          isLast: isLast && !showAddButtons,
-          animationDelay: animationDelay,
-          onEdit: () => onEditThrow(throwIndex),
-          showDragHandle: enableReorder,
-        ),
-      );
-
-      // Add spacing or button after each throw
-      if (showAddButtons) {
-        // Add button after each throw (if enabled)
-        final Color connectorColor = _getTechniqueColorForThrow(discThrow);
-        final bool isAfterLastThrow = throwIndex == throws.length - 1;
-
-        children.add(
-          _AddThrowButton(
-            key: ValueKey('add_after_$throwIndex'),
-            onAdd: () => onAddThrowAt(throwIndex),
-            connectorColor: connectorColor,
-            showConnector: !isAfterLastThrow,
-          ),
-        );
-      } else if (!isLast) {
-        // Add 8px spacing between throws when no add buttons
-        children.add(
-          SizedBox(
-            key: ValueKey('spacer_$throwIndex'),
-            height: 8,
-          ),
-        );
-      }
-    }
-
-    // Use ReorderableListView if reorder is enabled
+    // If reordering enabled and callback supplied, show ReorderableListView
     if (enableReorder && onReorder != null) {
       return ReorderableListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         buildDefaultDragHandles: false,
         onReorder: (int oldIndex, int newIndex) {
-          // Convert visual indices to throw indices
-          int oldThrowIndex, newThrowIndex;
-
-          if (showAddButtons) {
-            // With add buttons: even indices are throws, odd are add buttons
-            // Only throws are draggable, so oldIndex is always even
-            oldThrowIndex = oldIndex ~/ 2;
-
-            // newIndex could be odd (dropping near an add button)
-            // Round to nearest throw position
-            if (newIndex.isOdd && newIndex > 0) {
-              newIndex = newIndex - 1;
-            }
-            newThrowIndex = newIndex ~/ 2;
-          } else {
-            // Without add buttons: direct mapping
-            oldThrowIndex = oldIndex;
-            newThrowIndex = newIndex;
-          }
-
-          onReorder!(oldThrowIndex, newThrowIndex);
+          // Handle Flutter behaviour: when moving down the incoming newIndex
+          // is one greater than expected, normalize it.
+          if (newIndex > oldIndex) newIndex -= 1;
+          onReorder!(oldIndex, newIndex);
         },
-        children: children,
+        children: [
+          for (int i = 0; i < throws.length; i++)
+            _ThrowListItemColumn(
+              key: ValueKey('throw_$i'),
+              throwIndex: i,
+              discThrow: throws[i],
+              isLast: i == throws.length - 1,
+              animationDelay: i * 100,
+              onEdit: () => onEditThrow(i),
+              onAddAfter: () => onAddThrowAt(i),
+              showAddButton: showAddButtons,
+            ),
+        ],
       );
-    } else {
-      // Use regular ListView when reorder is disabled
-      return ListView(
-        shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        children: children,
-      );
+    }
+
+    // Non-reorderable ListView
+    return ListView.builder(
+      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: throws.length,
+      itemBuilder: (context, i) {
+        final discThrow = throws[i];
+        return _ThrowListItemColumn(
+          key: ValueKey('throw_$i'),
+          throwIndex: i,
+          discThrow: discThrow,
+          isLast: i == throws.length - 1,
+          animationDelay: i * 100,
+          onEdit: () => onEditThrow(i),
+          onAddAfter: () => onAddThrowAt(i),
+          showAddButton: showAddButtons,
+        );
+      },
+    );
+  }
+}
+
+/// Each Reorderable child is a Column that contains the throw row + the add button
+class _ThrowListItemColumn extends StatelessWidget {
+  const _ThrowListItemColumn({
+    required Key key,
+    required this.throwIndex,
+    required this.discThrow,
+    required this.isLast,
+    required this.animationDelay,
+    required this.onEdit,
+    required this.onAddAfter,
+    required this.showAddButton,
+  }) : super(key: key);
+
+  final int throwIndex;
+  final DiscThrow discThrow;
+  final bool isLast;
+  final int animationDelay;
+  final VoidCallback onEdit;
+  final VoidCallback onAddAfter;
+  final bool showAddButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color techniqueColor = _getTechniqueColorForThrow(discThrow);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EditableThrowTimelineItem(
+          key: ValueKey('item_card_$throwIndex'),
+          discThrow: discThrow,
+          throwIndex: throwIndex,
+          isLast: isLast && !showAddButton,
+          animationDelay: animationDelay,
+          onEdit: onEdit,
+          showDragHandle: true,
+        ),
+        if (showAddButton)
+          Padding(
+            padding: const EdgeInsets.only(left: 44.0),
+            child: _AddThrowButton(
+              key: ValueKey('add_after_$throwIndex'),
+              onAdd: onAddAfter,
+              connectorColor: techniqueColor,
+              showConnector: !isLast,
+            ),
+          ),
+        if (!showAddButton && !isLast) const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Color _getTechniqueColorForThrow(DiscThrow discThrow) {
+    switch (discThrow.technique) {
+      case ThrowTechnique.backhand:
+      case ThrowTechnique.backhandRoller:
+        return const Color(0xFF4A90E2); // Blue
+      case ThrowTechnique.forehand:
+      case ThrowTechnique.forehandRoller:
+        return const Color(0xFF50C878); // Green
+      case ThrowTechnique.tomahawk:
+      case ThrowTechnique.thumber:
+      case ThrowTechnique.overhand:
+      case ThrowTechnique.grenade:
+      case ThrowTechnique.other:
+      default:
+        if (discThrow.purpose == ThrowPurpose.putt) {
+          return const Color(0xFFFDB927);
+        }
+        return const Color(0xFF9E9E9E);
     }
   }
 }
@@ -173,10 +211,9 @@ class _AddThrowButton extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Connector line behind the button (only if not after last throw)
           if (showConnector)
             Positioned(
-              left: 15, // Center of icon position (32px / 2 - 2px / 2)
+              left: 15,
               top: 0,
               bottom: 0,
               child: Container(
@@ -193,7 +230,6 @@ class _AddThrowButton extends StatelessWidget {
                 ),
               ),
             ),
-          // Add button
           Bounceable(
             onTap: () {
               onAdd();
@@ -243,7 +279,6 @@ class EditableThrowTimelineItem extends StatelessWidget {
     super.key,
     required this.discThrow,
     required this.throwIndex,
-    required this.visualIndex,
     required this.isLast,
     required this.animationDelay,
     required this.onEdit,
@@ -252,7 +287,6 @@ class EditableThrowTimelineItem extends StatelessWidget {
 
   final DiscThrow discThrow;
   final int throwIndex;
-  final int visualIndex;
   final bool isLast;
   final int animationDelay;
   final VoidCallback onEdit;
@@ -296,7 +330,6 @@ class EditableThrowTimelineItem extends StatelessWidget {
         return FlutterRemix.arrow_down_circle_line;
       case ThrowTechnique.other:
       default:
-        // Fall back to purpose-based icon
         if (discThrow.purpose == ThrowPurpose.putt) {
           return FlutterRemix.flag_line;
         }
@@ -390,7 +423,7 @@ class EditableThrowTimelineItem extends StatelessWidget {
               animationDelay: animationDelay,
               onEdit: onEdit,
               showDragHandle: showDragHandle,
-              visualIndex: visualIndex,
+              visualIndex: throwIndex,
             ),
           ),
         ],
@@ -508,7 +541,7 @@ class _EditableThrowDetailCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Icon(Icons.edit_outlined, size: 18, color: accentColor),
-                    // Drag handle (if enabled) - on the right side
+                    // Drag handle (on the right side inside the card)
                     if (showDragHandle) ...[
                       ReorderableDragStartListener(
                         index: visualIndex,

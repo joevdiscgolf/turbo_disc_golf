@@ -84,10 +84,17 @@ class EditHoleBody extends StatelessWidget {
             Expanded(
               child: throws.isNotEmpty
                   ? EditableThrowTimeline(
+                      showAddButtons: true,
                       throws: throws,
                       onEditThrow: onThrowEdited,
                       onAddThrowAt: (int addThrowAtIndex) {
                         onThrowAdded(addThrowAtIndex: addThrowAtIndex);
+                      },
+                      enableReorder: true,
+                      onReorder: (oldIndex, newIndex) {
+                        print(
+                          'reordering, oldIndex: $oldIndex, newIndex: $newIndex',
+                        );
                       },
                     )
                   : Center(
