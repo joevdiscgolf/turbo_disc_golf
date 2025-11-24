@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
+import 'package:turbo_disc_golf/utils/gemini_helpers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
 
@@ -277,6 +278,23 @@ class AiParsingService {
         'Gemini response received for hole $holeNumber, parsing YAML...',
       );
 
+      // Print raw YAML response for debugging
+      debugPrint(
+        '==================== RAW SINGLE HOLE YAML (Hole $holeNumber) ====================',
+      );
+      // debugPrint in chunks to avoid truncation
+      const chunkSize = 800;
+      for (int i = 0; i < responseText.length; i += chunkSize) {
+        final end = (i + chunkSize < responseText.length)
+            ? i + chunkSize
+            : responseText.length;
+        debugPrint(responseText.substring(i, end));
+      }
+      debugPrint(
+        '================================================================================',
+      );
+      debugPrint('Response length: ${responseText.length} characters');
+
       // Clean up the response - remove markdown code blocks if present
       responseText = responseText.trim();
       if (responseText.startsWith('```yaml') ||
@@ -466,7 +484,7 @@ class AiParsingService {
   ) {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
-        return locator.get<GeminiService>().buildGeminiSingleHoleParsingPrompt(
+        return GeminiHelpers.buildGeminiSingleHoleParsingPrompt(
           voiceTranscript,
           userBag,
           holeNumber,
@@ -480,17 +498,14 @@ class AiParsingService {
   String _buildInsightsPrompt(DGRound round, dynamic analysis) {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
-        return locator.get<GeminiService>().buildGeminiInsightsPrompt(
-          round,
-          analysis,
-        );
+        return GeminiHelpers.buildGeminiInsightsPrompt(round, analysis);
     }
   }
 
   String _buildScorecardExtractionPrompt() {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
-        return locator.get<GeminiService>().buildScorecardExtractionPrompt();
+        return GeminiHelpers.buildScorecardExtractionPrompt();
     }
   }
 }

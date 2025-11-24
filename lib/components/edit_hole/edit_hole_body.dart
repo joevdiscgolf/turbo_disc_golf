@@ -29,6 +29,7 @@ class EditHoleBody extends StatelessWidget {
     required this.onDone,
     this.inWalkthroughSheet = false,
     this.hasRequiredFields = true,
+    this.onReorder,
   });
 
   final int? holeNumber;
@@ -48,6 +49,7 @@ class EditHoleBody extends StatelessWidget {
   final void Function(int throwIndex) onThrowEdited;
   final VoidCallback onVoiceRecord;
   final VoidCallback onDone;
+  final void Function(int oldIndex, int newIndex)? onReorder;
 
   @override
   Widget build(BuildContext context) {
@@ -84,11 +86,14 @@ class EditHoleBody extends StatelessWidget {
             Expanded(
               child: throws.isNotEmpty
                   ? EditableThrowTimeline(
+                      showAddButtons: false,
                       throws: throws,
                       onEditThrow: onThrowEdited,
                       onAddThrowAt: (int addThrowAtIndex) {
                         onThrowAdded(addThrowAtIndex: addThrowAtIndex);
                       },
+                      enableReorder: true,
+                      onReorder: onReorder,
                     )
                   : Center(
                       child: Text(

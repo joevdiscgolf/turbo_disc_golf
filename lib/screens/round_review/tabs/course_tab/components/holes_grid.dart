@@ -108,7 +108,7 @@ class _HoleGridItem extends StatelessWidget {
         onThrowEdited: (throwIndex, updatedThrow) =>
             _handleThrowEdited(throwIndex, updatedThrow),
         onThrowDeleted: (throwIndex) => _handleThrowDeleted(throwIndex),
-        onVoiceRecord: () => _handleVoiceRecord(),
+        onVoiceRecord: (context, hole) => _handleVoiceRecord(),
       ),
     );
   }

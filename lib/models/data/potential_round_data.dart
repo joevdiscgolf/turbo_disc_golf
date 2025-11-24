@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
@@ -37,18 +36,22 @@ class PotentialDGHole {
         (number ?? 0) < 1 ||
         par == null ||
         par == 0 ||
-        !hasThrowInBasket) {
+        !lastThrowInBasket) {
       return false;
     }
 
     return true;
   }
 
-  bool get hasThrowInBasket =>
-      throws?.firstWhereOrNull(
-        (discThrow) => discThrow.landingSpot == LandingSpot.inBasket,
-      ) !=
-      null;
+  bool get lastThrowInBasket {
+    if (throws == null) {
+      return false;
+    } else if (throws!.isEmpty) {
+      return false;
+    } else {
+      return throws![throws!.length - 1].landingSpot == LandingSpot.inBasket;
+    }
+  }
 
   /// Get list of missing required field names
   List<String> getMissingFields() {
