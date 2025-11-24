@@ -36,10 +36,15 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
   void initState() {
     super.initState();
     _roundConfirmationCubit = BlocProvider.of<RoundConfirmationCubit>(context);
-    _roundConfirmationCubit.startRoundConfirmation(
-      context,
-      widget.potentialRound,
-    );
+
+    // Defer state change until after the first frame is built
+    // to avoid "setState() called during build" error
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _roundConfirmationCubit.startRoundConfirmation(
+        context,
+        widget.potentialRound,
+      );
+    });
   }
 
   @override

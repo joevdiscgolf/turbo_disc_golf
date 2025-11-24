@@ -63,7 +63,9 @@ class _RoundProcessingLoadingScreenState
     _roundParser = locator.get<RoundParser>();
 
     // Start processing immediately
-    _processRound();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processRound();
+    });
   }
 
   Future<void> _processRound() async {
@@ -140,7 +142,9 @@ class _RoundProcessingLoadingScreenState
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Round is missing required fields. Please complete all holes.'),
+              content: Text(
+                'Round is missing required fields. Please complete all holes.',
+              ),
             ),
           );
           // Go back to confirmation screen
