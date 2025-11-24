@@ -378,6 +378,8 @@ class RoundParser extends ChangeNotifier {
       holes: enhancedHoles,
       id: round.id,
       versionId: round.versionId,
+      createdAt: DateTime.now().toIso8601String(),
+      playedRoundAt: DateTime.now().toIso8601String(),
     );
   }
 
@@ -440,7 +442,7 @@ class RoundParser extends ChangeNotifier {
       par:
           par ??
           0, // Use 0 as sentinel for unknown par (DGHole requires non-null)
-      feet: feet,
+      feet: feet ?? 0,
       throws: [], // Empty throws list
     );
 

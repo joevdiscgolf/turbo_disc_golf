@@ -199,6 +199,83 @@ Does the widget need to manage its own state?
   → Use StatefulWidget instead (private or public based on reusability)
 ```
 
+#### CRITICAL: Avoid Duplicate Widget Components Across Files
+
+**MANDATORY RULE: Before creating a new private widget class, ALWAYS search the codebase for similar implementations.**
+
+If you find that the same or very similar private widget class (e.g., `_AnimatedMicrophoneButton`, `_SoundWaveIndicator`) exists in multiple files, this is a CODE SMELL that indicates the component should be extracted to a shared location.
+
+**Why This Matters:**
+- **DRY Principle**: Don't Repeat Yourself - duplicate code leads to maintenance nightmares
+- **Consistency**: Changes to one implementation won't be reflected in duplicates
+- **Bug Risk**: Fixing a bug in one place leaves the same bug in other copies
+- **Wasted Space**: Multiple copies of identical code bloat the codebase
+
+**How to Detect and Fix Duplicates:**
+
+1. **Before creating a private widget class**, search for similar implementations:
+   ```bash
+   # Search for potential duplicates
+   grep -r "class _AnimatedMicrophoneButton" lib/
+   grep -r "class _SoundWaveIndicator" lib/
+   ```
+
+2. **If you find duplicates across multiple files**, immediately extract to a shared component:
+
+❌ **WRONG: Duplicate private classes in multiple files**
+```dart
+// In lib/screens/round_history/components/record_round_panel.dart
+class _AnimatedMicrophoneButton extends StatelessWidget { ... }
+class _SoundWaveIndicator extends StatefulWidget { ... }
+
+// In lib/screens/round_processing/components/record_single_hole_panel.dart
+class _AnimatedMicrophoneButton extends StatelessWidget { ... }  // DUPLICATE!
+class _SoundWaveIndicator extends StatefulWidget { ... }  // DUPLICATE!
+```
+
+✅ **CORRECT: Extract to shared component file**
+```dart
+// Create lib/components/animated_microphone_button.dart
+class AnimatedMicrophoneButton extends StatelessWidget {
+  const AnimatedMicrophoneButton({
+    super.key,
+    required this.isListening,
+    required this.onTap,
+  });
+
+  final bool isListening;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) { ... }
+}
+
+class SoundWaveIndicator extends StatefulWidget { ... }
+
+// Now both files can import and use the shared component:
+// In lib/screens/round_history/components/record_round_panel.dart
+import 'package:turbo_disc_golf/components/animated_microphone_button.dart';
+
+// In lib/screens/round_processing/components/record_single_hole_panel.dart
+import 'package:turbo_disc_golf/components/animated_microphone_button.dart';
+```
+
+**Component Organization by Reusability:**
+- `lib/components/buttons.dart` - Shared button components (AnimatedMicrophoneButton, etc.)
+- `lib/components/indicators.dart` - Shared indicator components (LoadingIndicator, etc.)
+- `lib/components/cards.dart` - Shared card components
+- `lib/widgets/` - Complex, standalone widgets that deserve their own file
+
+**Action Items When You Spot Duplicates:**
+1. Search the codebase for the duplicate widget name
+2. Compare implementations - are they identical or nearly identical?
+3. If identical, extract to `lib/components/` immediately
+4. If similar with minor differences, consider parameterizing the shared component
+5. Update all files to import and use the shared component
+6. Delete the duplicate private classes
+
+This ensures a clean, maintainable codebase with single sources of truth for all reusable components.
+
 #### Example: Splitting a Large Build Function
 
 ❌ **NEVER DO THIS: Deeply nested build method (violates 6-level rule)**
@@ -789,6 +866,7 @@ Before submitting code, verify:
 - [ ] Components used once in a file are extracted to private widget methods
 - [ ] Components reused within the same file are extracted to private widget classes (`class _Widget`)
 - [ ] Components used across multiple files are in separate files under `lib/components/` or `lib/widgets/`
+- [ ] **No duplicate widget classes exist across multiple files** (search for duplicates first!)
 - [ ] StatelessWidget is used unless state is required
 - [ ] StatefulWidget is used when component needs local state management
 - [ ] Const constructors are used where possible

@@ -473,7 +473,7 @@ class RoundStatisticsService {
     };
 
     for (var hole in round.holes) {
-      final distance = hole.feet ?? 0;
+      final distance = hole.feet;
       String category;
       if (distance < 250) {
         category = '<250 ft';
@@ -503,7 +503,7 @@ class RoundStatisticsService {
 
     final totalDistance = birdieHoles.fold<int>(
       0,
-      (sum, hole) => sum + (hole.feet ?? 0),
+      (sum, hole) => sum + (hole.feet),
     );
 
     return totalDistance / birdieHoles.length;
@@ -640,7 +640,7 @@ class RoundStatisticsService {
 
     // Group holes by distance
     for (var hole in round.holes) {
-      final distance = hole.feet ?? 0;
+      final distance = hole.feet;
       String category;
       if (distance < 250) {
         category = '<250 ft';
@@ -906,7 +906,7 @@ class RoundStatisticsService {
     };
 
     for (var hole in round.holes) {
-      final distance = hole.feet ?? 0;
+      final distance = hole.feet;
       String category;
       if (distance < 250) {
         category = '<250 ft';

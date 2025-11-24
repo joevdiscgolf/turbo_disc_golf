@@ -60,6 +60,20 @@ class _HoleGridItem extends StatelessWidget {
   final DGRound round;
   final void Function(DGRound updatedRound) onRoundUpdated;
 
+  @override
+  Widget build(BuildContext context) {
+    return HoleGridItem(
+      holeNumber: hole.number,
+      holePar: hole.par,
+      holeFeet: hole.feet,
+      score: hole.holeScore,
+      relativeScore: hole.relativeHoleScore,
+      isIncomplete: false, // Completed rounds are never incomplete
+      onTap: () => _showHoleDetailSheet(context),
+      heroTag: 'hole_${hole.number}',
+    );
+  }
+
   void _showHoleDetailSheet(BuildContext context) {
     // Convert DGHole to PotentialDGHole for editing
     final PotentialDGHole potentialHole = PotentialDGHole(
@@ -271,19 +285,5 @@ class _HoleGridItem extends StatelessWidget {
   void _handleVoiceRecord() {
     // Voice recording is not supported for completed rounds
     // Could be implemented in the future
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return HoleGridItem(
-      holeNumber: hole.number,
-      holePar: hole.par,
-      holeFeet: hole.feet,
-      score: hole.holeScore,
-      relativeScore: hole.relativeHoleScore,
-      isIncomplete: false, // Completed rounds are never incomplete
-      onTap: () => _showHoleDetailSheet(context),
-      heroTag: 'hole_${hole.number}',
-    );
   }
 }

@@ -423,10 +423,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     debugPrint('Generating AI summary and coaching...');
     final insights = await locator
         .get<AiParsingService>()
-        .generateRoundInsights(
-          round: parsedRound,
-          analysis: analysis,
-        );
+        .generateRoundInsights(round: parsedRound, analysis: analysis);
 
     // Update round with analysis and insights
     final String currentTimestamp = getCurrentISOString();
@@ -445,9 +442,9 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
 
     // Save to shared preferences for future use
     debugPrint('Saving parsed round to shared preferences...');
-    final savedLocally = await locator
-        .get<RoundStorageService>()
-        .saveRound(parsedRound);
+    final savedLocally = await locator.get<RoundStorageService>().saveRound(
+      parsedRound,
+    );
     if (savedLocally) {
       debugPrint('Successfully saved round to shared preferences');
     } else {
@@ -596,6 +593,8 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
       holes: enhancedHoles,
       id: round.id,
       versionId: round.versionId,
+      createdAt: DateTime.now().toIso8601String(),
+      playedRoundAt: DateTime.now().toIso8601String(),
     );
   }
 }

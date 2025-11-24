@@ -90,7 +90,7 @@ class HoleBreakdownList extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                    'Par ${hole.par}${' • ${hole.feet} ft'}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),

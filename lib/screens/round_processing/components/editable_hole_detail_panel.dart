@@ -242,7 +242,10 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
     }
   }
 
-  Future<void> _handleVoiceRecord(BuildContext context, PotentialDGHole currentHole) async {
+  Future<void> _handleVoiceRecord(
+    BuildContext context,
+    PotentialDGHole currentHole,
+  ) async {
     // Unfocus any active fields before showing panel
     _parFocusNode.unfocus();
     _distanceFocusNode.unfocus();
@@ -337,7 +340,10 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
 
       if (parsedHole != null) {
         // Update the hole in the cubit
-        _roundConfirmationCubit.updatePotentialHole(widget.holeIndex, parsedHole);
+        _roundConfirmationCubit.updatePotentialHole(
+          widget.holeIndex,
+          parsedHole,
+        );
 
         // Close the panel
         if (context.mounted) {
@@ -355,9 +361,9 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
     } catch (e) {
       debugPrint('Error parsing hole: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }

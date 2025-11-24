@@ -122,11 +122,11 @@ class _HoleScoreScatterplotState extends State<HoleScoreScatterplot> {
     final List<HoleDataPoint> points = [];
 
     for (final hole in widget.round.holes) {
-      if (hole.feet != null && hole.feet! > 0) {
+      if (hole.feet > 0) {
         points.add(
           HoleDataPoint(
             holeNumber: hole.number,
-            distance: hole.feet!.toDouble(),
+            distance: hole.feet.toDouble(),
             relativeToPar: hole.relativeHoleScore,
             rawScore: hole.holeScore,
           ),

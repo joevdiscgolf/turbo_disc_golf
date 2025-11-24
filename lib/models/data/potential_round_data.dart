@@ -36,6 +36,8 @@ class PotentialDGHole {
         (number ?? 0) < 1 ||
         par == null ||
         par == 0 ||
+        feet == null ||
+        feet == 0 ||
         !lastThrowInBasket) {
       return false;
     }
@@ -76,7 +78,7 @@ class PotentialDGHole {
     return DGHole(
       number: number!,
       par: par!,
-      feet: feet,
+      feet: feet!,
       throws: throws!,
       holeType: holeType,
     );
@@ -189,8 +191,8 @@ class PotentialDGRound {
       aiSummary: aiSummary,
       aiCoachSuggestion: aiCoachSuggestion,
       versionId: versionId,
-      createdAt: createdAt,
-      playedRoundAt: playedRoundAt,
+      createdAt: DateTime.now().toIso8601String(),
+      playedRoundAt: DateTime.now().toIso8601String(),
     );
   }
 }

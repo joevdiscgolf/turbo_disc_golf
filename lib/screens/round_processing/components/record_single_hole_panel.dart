@@ -1,7 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
+import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
@@ -168,9 +168,8 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                   children: [
                     Text(
                       'Select Test Constant',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -185,7 +184,9 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       selected: _selectedTestIndex == index,
-                      selectedTileColor: const Color(0xFF9D4EDD).withValues(alpha: 0.1),
+                      selectedTileColor: const Color(
+                        0xFF9D4EDD,
+                      ).withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -277,227 +278,192 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
             ),
           ),
           child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Row(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.mic, color: Color(0xFF9D4EDD)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.title ?? _defaultTitle,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          widget.subtitle ?? _defaultSubtitle,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: _handleCancel,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Error display
-              if (_voiceService.lastError.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3CD),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFFFFA726).withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Row(
+                  // Header
+                  Row(
                     children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: Color(0xFFFF8F00),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
+                      const Icon(Icons.mic, color: Color(0xFF9D4EDD)),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          _voiceService.lastError,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: const Color(0xFF664D03)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.title ?? _defaultTitle,
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              widget.subtitle ?? _defaultSubtitle,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey[600]),
+                            ),
+                          ],
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: _handleCancel,
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 24),
 
-              // Transcript container
-              Container(
-                height: 150,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isListening
-                        ? const Color(0xFF2196F3)
-                        : Colors.grey[300]!,
-                    width: 2,
-                  ),
-                ),
-                child: transcript.isEmpty
-                    ? Center(
-                        child: Text(
-                          isListening
-                              ? 'Listening...'
-                              : 'Tap the microphone to start',
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                color: Colors.grey[400],
-                                fontStyle: FontStyle.italic,
-                              ),
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        controller: _scrollController,
-                        child: Text(
-                          transcript,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyLarge?.copyWith(height: 1.5),
+                  // Error display
+                  if (_voiceService.lastError.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3CD),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFFFA726).withValues(alpha: 0.4),
                         ),
                       ),
-              ),
-              const SizedBox(height: 24),
-
-              // Animated microphone button
-              Center(
-                child: _AnimatedMicrophoneButton(
-                  isListening: isListening,
-                  onTap: _toggleListening,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: Text(
-                  isListening ? 'Tap to stop' : 'Tap to start',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                ),
-              ),
-
-              // Testing button (debug mode only)
-              if (widget.showTestButton && kDebugMode) ...[
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    // Change button
-                    ElevatedButton(
-                      onPressed: _showTestConstantSelector,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF9D4EDD).withValues(alpha: 0.2),
-                        foregroundColor: const Color(0xFF9D4EDD),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Change',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Parse button
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: widget.onTestingPressed != null
-                            ? () => widget.onTestingPressed!(
-                                _testConstantValues[_selectedTestIndex],
-                              )
-                            : null,
-                        icon: const Icon(Icons.science),
-                        label: const Text(
-                          'Parse',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Color(0xFFFF8F00),
+                            size: 20,
                           ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9D4EDD),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              // Continue button
-              if (showContinueButton) ...[
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: widget.isProcessing ? null : _handleContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: widget.isProcessing
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _voiceService.lastError,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: const Color(0xFF664D03)),
                             ),
                           ),
-                        )
-                      : const Text(
-                          'Continue',
-                          style: TextStyle(
+                        ],
+                      ),
+                    ),
+
+                  // Transcript container
+                  Container(
+                    height: 150,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isListening
+                            ? const Color(0xFF2196F3)
+                            : Colors.grey[300]!,
+                        width: 2,
+                      ),
+                    ),
+                    child: transcript.isEmpty
+                        ? Center(
+                            child: Text(
+                              isListening
+                                  ? 'Listening...'
+                                  : 'Tap the microphone to start',
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color: Colors.grey[400],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                            ),
+                          )
+                        : SingleChildScrollView(
+                            controller: _scrollController,
+                            child: Text(
+                              transcript,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyLarge?.copyWith(height: 1.5),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Animated microphone button
+                  Center(
+                    child: AnimatedMicrophoneButton(
+                      isListening: isListening,
+                      onTap: _toggleListening,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      isListening ? 'Tap to stop' : 'Tap to start',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                    ),
+                  ),
+
+                  // Testing button (debug mode only)
+                  if (widget.showTestButton && kDebugMode) ...[
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        // Change button
+                        PrimaryButton(
+                          label: 'Change',
+                          width: 100,
+                          height: 48,
+                          backgroundColor:
+                              const Color(0xFF9D4EDD).withValues(alpha: 0.2),
+                          labelColor: const Color(0xFF9D4EDD),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          onPressed: _showTestConstantSelector,
+                        ),
+                        const SizedBox(width: 12),
+                        // Parse button
+                        Expanded(
+                          child: PrimaryButton(
+                            label: 'Parse',
+                            width: double.infinity,
+                            height: 48,
+                            backgroundColor: const Color(0xFF9D4EDD),
+                            labelColor: Colors.white,
+                            icon: Icons.science,
+                            iconColor: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            disabled: widget.onTestingPressed == null,
+                            onPressed: () {
+                              if (widget.onTestingPressed != null) {
+                                widget.onTestingPressed!(
+                                  _testConstantValues[_selectedTestIndex],
+                                );
+                              }
+                            },
                           ),
                         ),
-                ),
-              ],
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
+                      ],
+                    ),
+                  ],
+
+                  // Continue button
+                  if (showContinueButton) ...[
+                    const SizedBox(height: 24),
+                    PrimaryButton(
+                      label: 'Continue',
+                      width: double.infinity,
+                      height: 56,
+                      backgroundColor: const Color(0xFF2196F3),
+                      labelColor: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      loading: widget.isProcessing,
+                      disabled: widget.isProcessing,
+                      onPressed: _handleContinue,
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
           ),
         ),
 
@@ -542,9 +508,8 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                       const SizedBox(height: 16),
                       Text(
                         'Processing...',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -560,128 +525,6 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// Animated microphone button with gradient and shadow effects.
-class _AnimatedMicrophoneButton extends StatelessWidget {
-  const _AnimatedMicrophoneButton({
-    required this.isListening,
-    required this.onTap,
-  });
-
-  final bool isListening;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isListening
-                ? [const Color(0xFFEF5350), const Color(0xFFD32F2F)]
-                : [const Color(0xFF64B5F6), const Color(0xFF2196F3)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color:
-                  (isListening
-                          ? const Color(0xFFEF5350)
-                          : const Color(0xFF2196F3))
-                      .withValues(alpha: 0.4),
-              blurRadius: 15,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          child: isListening
-              ? const _SoundWaveIndicator(key: ValueKey('soundwave'))
-              : const Icon(
-                  Icons.mic,
-                  color: Colors.white,
-                  size: 32,
-                  key: ValueKey('mic'),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Animated sound wave indicator displayed while recording.
-class _SoundWaveIndicator extends StatefulWidget {
-  const _SoundWaveIndicator({super.key});
-
-  @override
-  State<_SoundWaveIndicator> createState() => _SoundWaveIndicatorState();
-}
-
-class _SoundWaveIndicatorState extends State<_SoundWaveIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 60,
-      height: 30,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: List.generate(5, (index) {
-          return AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              // Create staggered animation for each bar
-              final double delay = index * 0.1;
-              final double animationValue = (_controller.value + delay) % 1.0;
-
-              // Use sine wave for smooth up/down motion
-              final double height =
-                  6 + (18 * (0.5 + 0.5 * sin(animationValue * 2 * pi)));
-
-              return Container(
-                width: 3,
-                height: height,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              );
-            },
-          );
-        }),
-      ),
     );
   }
 }

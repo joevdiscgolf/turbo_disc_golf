@@ -9,14 +9,14 @@ class DGHole {
   const DGHole({
     required this.number,
     required this.par,
-    this.feet,
+    required this.feet,
     required this.throws,
     this.holeType,
   });
 
   final int number;
   final int par;
-  final int? feet;
+  final int feet;
   final List<DiscThrow> throws;
   final HoleType? holeType;
 

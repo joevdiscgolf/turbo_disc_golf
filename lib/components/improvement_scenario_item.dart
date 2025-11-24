@@ -49,15 +49,15 @@ class ImprovementScenarioItem extends StatelessWidget {
                   Text(
                     scenario.title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     scenario.category,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -68,15 +68,15 @@ class ImprovementScenarioItem extends StatelessWidget {
                 Text(
                   '-${scenario.strokesSaved}',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _getCategoryColor(context),
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: _getCategoryColor(context),
+                  ),
                 ),
                 Text(
                   'Target: $targetScoreStr',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -92,15 +92,15 @@ class ImprovementScenarioItem extends StatelessWidget {
                 Text(
                   scenario.description,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Affected Holes (${scenario.affectedHoles.length})',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 ...scenario.affectedHoles.map((hole) {
@@ -112,8 +112,9 @@ class ImprovementScenarioItem extends StatelessWidget {
                           width: 24,
                           height: 24,
                           decoration: BoxDecoration(
-                            color: _getCategoryColor(context)
-                                .withValues(alpha: 0.3),
+                            color: _getCategoryColor(
+                              context,
+                            ).withValues(alpha: 0.3),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -130,7 +131,7 @@ class ImprovementScenarioItem extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Par ${hole.par}${hole.feet != null ? ' • ${hole.feet} ft' : ''}',
+                            'Par ${hole.par}${' • ${hole.feet} ft'}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -140,17 +141,18 @@ class ImprovementScenarioItem extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: _getCategoryColor(context)
-                                .withValues(alpha: 0.15),
+                            color: _getCategoryColor(
+                              context,
+                            ).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             scenario.getImprovementLabel(hole),
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontSize: 10,
-                                      color: _getCategoryColor(context),
-                                    ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontSize: 10,
+                                  color: _getCategoryColor(context),
+                                ),
                           ),
                         ),
                       ],
