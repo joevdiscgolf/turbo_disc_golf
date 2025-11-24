@@ -75,6 +75,17 @@ THROW STRUCTURE:
 - landingSpot: $landingSpotValues (in_basket=0ft, parked=≤10ft, circle_1=11-33ft, circle_2=34-66ft, fairway=>66ft)
 - notes: brief description
 
+ALLOWED ENUM VALUES (use ONLY these exact values):
+- purpose (what the throw is for): $throwPurposeValues
+- technique (HOW it's thrown): $techniqueValues
+- puttStyle (putt-specific technique): $puttStyleValues
+- shotShape (flight path/curve): $shotShapeValues
+- stance (footwork): $stanceValues
+- power (effort level): $throwPowerValues
+- landingSpot (where it ended up): $landingSpotValues
+
+IMPORTANT: Only include enum fields if explicitly mentioned. Omit fields with no values.
+
 COMMON PATTERNS:
 "parked" → distanceFeetAfterThrow: 8, landingSpot: parked, THEN add final putt (in_basket)
 "made putt" → distanceFeetAfterThrow: 0, landingSpot: in_basket

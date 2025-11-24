@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_kpi_card.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 
 class CourseTab extends StatefulWidget {
   final DGRound round;
   final void Function(DGRound updatedRound)? onRoundUpdated;
 
-  const CourseTab({
-    super.key,
-    required this.round,
-    this.onRoundUpdated,
-  });
+  const CourseTab({super.key, required this.round, this.onRoundUpdated});
 
   @override
   State<CourseTab> createState() => _CourseTabState();
@@ -54,20 +48,10 @@ class _CourseTabState extends State<CourseTab> {
   }
 
   List<Widget> _getListViewChildren(BuildContext context) {
-    // Access RoundParser from Provider
-    final roundParser = Provider.of<RoundParser>(context, listen: false);
-
     return [
-      ScoreKPICard(
-        round: _round,
-        roundParser: roundParser,
-        isDetailScreen: true,
-      ),
+      ScoreKPICard(round: _round, isDetailScreen: true),
       const SizedBox(height: 8),
-      HolesGrid(
-        round: _round,
-        onRoundUpdated: _handleRoundUpdated,
-      ),
+      HolesGrid(round: _round, onRoundUpdated: _handleRoundUpdated),
       // HolesList(round: _round, showAddThrowDialog: _showAddThrowDialog),
     ];
   }

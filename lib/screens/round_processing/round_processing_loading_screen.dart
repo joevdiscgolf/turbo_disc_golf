@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/explosion_effect.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
@@ -9,6 +10,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/persistent_s
 import 'package:turbo_disc_golf/screens/round_processing/components/round_confirmation_widget.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 
 /// Full-screen loading experience shown while processing a round.
 ///
@@ -61,7 +63,9 @@ class _RoundProcessingLoadingScreenState
     _roundParser = locator.get<RoundParser>();
 
     // Start processing immediately
-    _processRound();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processRound();
+    });
   }
 
   Future<void> _processRound() async {
@@ -126,16 +130,23 @@ class _RoundProcessingLoadingScreenState
         _processingState = _ProcessingState.loading;
       });
 
-      final bool success = await _roundParser.finalizeRound();
+      // Get the updated round from the cubit and finalize it
+      final RoundConfirmationCubit cubit =
+          BlocProvider.of<RoundConfirmationCubit>(context);
+      final finalizedRound = await cubit.finalizeRound();
 
-      if (!success) {
+      if (finalizedRound == null) {
         debugPrint(
-          'RoundProcessingLoadingScreen: ERROR - Failed to finalize round: ${_roundParser.lastError}',
+          'RoundProcessingLoadingScreen: ERROR - Failed to finalize round',
         );
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Round is missing required fields. Please complete all holes.',
+              ),
+            ),
+          );
           // Go back to confirmation screen
           setState(() {
             _processingState = _ProcessingState.confirming;
@@ -143,6 +154,9 @@ class _RoundProcessingLoadingScreenState
         }
         return;
       }
+
+      // Set the finalized round on the parser for navigation and display
+      _roundParser.setRound(finalizedRound);
     }
 
     if (_roundParser.parsedRound == null) {

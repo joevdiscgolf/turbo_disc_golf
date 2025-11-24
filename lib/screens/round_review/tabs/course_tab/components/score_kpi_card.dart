@@ -3,20 +3,17 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class ScoreKPICard extends StatelessWidget {
   const ScoreKPICard({
     super.key,
     required this.round,
-    required this.roundParser,
     required this.isDetailScreen,
     this.onTap,
   });
 
   final DGRound round;
-  final RoundParser roundParser;
   final bool isDetailScreen;
   final VoidCallback? onTap;
 
@@ -96,6 +93,8 @@ class ScoreKPICard extends StatelessWidget {
   }
 
   Widget _kpiRow(BuildContext context) {
+    final int relativeScore = round.getRelativeToPar();
+
     return Row(
       children: [
         Expanded(
@@ -110,24 +109,10 @@ class ScoreKPICard extends StatelessWidget {
                             tag: 'score_kpi_score',
                             child: Material(
                               color: Colors.transparent,
-                              child: _buildScoreKPIStat(
-                                context,
-                                'Score',
-                                roundParser.getRelativeToPar() >= 0
-                                    ? '+${roundParser.getRelativeToPar()}'
-                                    : '${roundParser.getRelativeToPar()}',
-                                _getScoreColor(roundParser.getRelativeToPar()),
-                              ),
+                              child: _relativeScoreStat(context, relativeScore),
                             ),
                           )
-                        : _buildScoreKPIStat(
-                            context,
-                            'Score',
-                            roundParser.getRelativeToPar() >= 0
-                                ? '+${roundParser.getRelativeToPar()}'
-                                : '${roundParser.getRelativeToPar()}',
-                            _getScoreColor(roundParser.getRelativeToPar()),
-                          ),
+                        : _relativeScoreStat(context, relativeScore),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -136,20 +121,10 @@ class ScoreKPICard extends StatelessWidget {
                             tag: 'score_kpi_throws',
                             child: Material(
                               color: Colors.transparent,
-                              child: _buildScoreKPIStat(
-                                context,
-                                'Throws',
-                                '${roundParser.getTotalScore()}',
-                                const Color(0xFF2196F3),
-                              ),
+                              child: _totalScoreStat(context),
                             ),
                           )
-                        : _buildScoreKPIStat(
-                            context,
-                            'Throws',
-                            '${roundParser.getTotalScore()}',
-                            const Color(0xFF2196F3),
-                          ),
+                        : _totalScoreStat(context),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -158,20 +133,10 @@ class ScoreKPICard extends StatelessWidget {
                             tag: 'score_kpi_par',
                             child: Material(
                               color: Colors.transparent,
-                              child: _buildScoreKPIStat(
-                                context,
-                                'Par',
-                                '${roundParser.getTotalPar()}',
-                                const Color(0xFFFFA726),
-                              ),
+                              child: _totalParStat(context),
                             ),
                           )
-                        : _buildScoreKPIStat(
-                            context,
-                            'Par',
-                            '${roundParser.getTotalPar()}',
-                            const Color(0xFFFFA726),
-                          ),
+                        : _totalParStat(context),
                   ),
                 ],
               ),
@@ -179,6 +144,33 @@ class ScoreKPICard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _relativeScoreStat(BuildContext context, int relativeScore) {
+    return _buildScoreKPIStat(
+      context,
+      'Score',
+      relativeScore >= 0 ? '+$relativeScore' : '$relativeScore',
+      _getScoreColor(relativeScore),
+    );
+  }
+
+  Widget _totalScoreStat(BuildContext context) {
+    return _buildScoreKPIStat(
+      context,
+      'Throws',
+      '${round.getTotalScore()}',
+      const Color(0xFF2196F3),
+    );
+  }
+
+  Widget _totalParStat(BuildContext context) {
+    return _buildScoreKPIStat(
+      context,
+      'Par',
+      '${round.getTotalPar()}',
+      const Color(0xFFFFA726),
     );
   }
 

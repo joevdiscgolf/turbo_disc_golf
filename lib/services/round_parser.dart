@@ -933,28 +933,4 @@ class RoundParser extends ChangeNotifier {
         return '+$score';
     }
   }
-
-  int getTotalScore() {
-    if (_parsedRound == null) return 0;
-
-    return _parsedRound!.holes.fold(0, (total, hole) {
-      // Only count holes that have throws
-      if (hole.throws.isEmpty) return total;
-      return total + hole.holeScore;
-    });
-  }
-
-  int getTotalPar() {
-    if (_parsedRound == null) return 0;
-
-    return _parsedRound!.holes.fold(0, (total, hole) {
-      // Only count holes that have throws
-      if (hole.throws.isEmpty) return total;
-      return total + hole.par;
-    });
-  }
-
-  int getRelativeToPar() {
-    return getTotalScore() - getTotalPar();
-  }
 }

@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_kpi_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/discs_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
@@ -14,14 +15,12 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
@@ -45,17 +44,8 @@ class RoundOverviewBody extends StatefulWidget {
 
 class _RoundOverviewBodyState extends State<RoundOverviewBody>
     with AutomaticKeepAliveClientMixin {
-  late RoundParser _roundParser;
-
   @override
   bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    _roundParser = locator.get<RoundParser>();
-    _roundParser.setRound(widget.round);
-  }
 
   void _navigateToDetailView(int tabIndex) {
     if (widget.isReviewV2Screen) {
@@ -211,7 +201,6 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
         children: [
           ScoreKPICard(
             round: widget.round,
-            roundParser: _roundParser,
             isDetailScreen: false,
             onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
           ),
