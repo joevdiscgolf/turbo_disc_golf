@@ -27,6 +27,27 @@ class FirestoreRoundService {
     }
   }
 
+  Future<bool> updateRound(DGRound round) async {
+    try {
+      debugPrint('Updating round with id: ${round.id}');
+      await _firestore
+          .collection(kRoundsCollection)
+          .doc(round.id)
+          .update(round.toJson())
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('Timeout updating round to Firestore');
+              throw Exception('Timeout updating round');
+            },
+          );
+      return true;
+    } catch (e) {
+      debugPrint('Error updating round: $e');
+      return false;
+    }
+  }
+
   Future<DGRound?> getRound(String roundId) async {
     try {
       final snapshot = await _firestore

@@ -7,10 +7,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/scores_tab.
 class ScoreDetailScreen extends StatelessWidget {
   final DGRound round;
 
-  const ScoreDetailScreen({
-    super.key,
-    required this.round,
-  });
+  const ScoreDetailScreen({super.key, required this.round});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +40,9 @@ class ScoreDetailScreen extends StatelessWidget {
                 color: Colors.transparent,
                 child: TabBar(
                   labelColor: Colors.black,
-                  unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  unselectedLabelColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                   indicatorColor: Colors.black,
                   tabs: const [
                     Tab(text: 'Course'),

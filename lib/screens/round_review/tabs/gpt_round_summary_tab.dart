@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class GPTRoundSummaryTab extends StatefulWidget {
   final DGRound round;
@@ -266,45 +267,43 @@ class GPTRoundSummaryTabState extends State<GPTRoundSummaryTab> {
   }
 
   void _showThrowDetail(BuildContext ctx, ThrowAnalysis ta, HoleAnalysis hole) {
-    showModalBottomSheet(
-      context: ctx,
-      builder: (_) {
-        return Padding(
-          padding: EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Hole ${hole.hole.number} • Throw ${ta.discThrow.index + 1}',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Text('Exec: '),
-                  Text(
-                    describeExec(ta.execCategory),
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 12),
-                  Text('Weight: ${ta.weight}'),
-                ],
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Reason: ${GPTAnalysisService.describeLossReason(ta.lossReason)}',
-              ),
-              SizedBox(height: 10),
-              Text('Note: ${ta.note}'),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text('Close'),
-              ),
-            ],
-          ),
-        );
-      },
+    displayBottomSheet(
+      context,
+      Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Hole ${hole.hole.number} • Throw ${ta.discThrow.index + 1}',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Text('Exec: '),
+                Text(
+                  describeExec(ta.execCategory),
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(width: 12),
+                Text('Weight: ${ta.weight}'),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Reason: ${GPTAnalysisService.describeLossReason(ta.lossReason)}',
+            ),
+            SizedBox(height: 10),
+            Text('Note: ${ta.note}'),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

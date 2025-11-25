@@ -78,3 +78,17 @@ abstract class TurbColors {
 
   static const Color blue = Colors.blue;
 }
+
+Color flattenedOverWhite(Color color, double opacity) {
+  assert(opacity >= 0.0 && opacity <= 1.0);
+
+  int blendChannel(double channel) =>
+      (channel * 255 * opacity + 255 * (1 - opacity)).round();
+
+  return Color.fromARGB(
+    255,
+    blendChannel(color.r),
+    blendChannel(color.g),
+    blendChannel(color.b),
+  );
+}

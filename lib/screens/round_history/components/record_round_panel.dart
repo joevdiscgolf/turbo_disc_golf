@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String testCourseName = 'Foxwood';
 
@@ -89,81 +90,73 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
   void _showTestConstantSelector() {
     // Unfocus text field to prevent keyboard from popping back up
     FocusScope.of(context).unfocus();
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Select Test Constant',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ...List.generate(
-                  _testRoundDescriptionNames.length,
-                  (index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      selected: _selectedTestIndex == index,
-                      selectedTileColor: const Color(
-                        0xFF9D4EDD,
-                      ).withValues(alpha: 0.1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      title: Text(
-                        _testRoundDescriptionNames[index],
-                        style: TextStyle(
-                          fontWeight: _selectedTestIndex == index
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: _selectedTestIndex == index
-                              ? const Color(0xFF9D4EDD)
-                              : null,
-                        ),
-                      ),
-                      trailing: _selectedTestIndex == index
-                          ? const Icon(
-                              Icons.check_circle,
-                              color: Color(0xFF9D4EDD),
-                            )
-                          : null,
-                      onTap: () {
-                        setState(() {
-                          _selectedTestIndex = index;
-                        });
-                        Navigator.pop(context);
-                      },
+    displayBottomSheet(
+      context,
+      SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Select Test Constant',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...List.generate(
+                _testRoundDescriptionNames.length,
+                (index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    selected: _selectedTestIndex == index,
+                    selectedTileColor: const Color(
+                      0xFF9D4EDD,
+                    ).withValues(alpha: 0.1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    title: Text(
+                      _testRoundDescriptionNames[index],
+                      style: TextStyle(
+                        fontWeight: _selectedTestIndex == index
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _selectedTestIndex == index
+                            ? const Color(0xFF9D4EDD)
+                            : null,
+                      ),
+                    ),
+                    trailing: _selectedTestIndex == index
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF9D4EDD),
+                          )
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _selectedTestIndex = index;
+                      });
+                      Navigator.pop(context);
+                      // Prevent keyboard from popping up after modal closes
+                      _transcriptFocusNode.unfocus();
+                    },
+                  ),
                 ),
-                const SizedBox(height: 16),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),
@@ -309,8 +302,9 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                       label: 'Change',
                       width: 100,
                       height: 48,
-                      backgroundColor:
-                          const Color(0xFF9D4EDD).withValues(alpha: 0.2),
+                      backgroundColor: const Color(
+                        0xFF9D4EDD,
+                      ).withValues(alpha: 0.2),
                       labelColor: const Color(0xFF9D4EDD),
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -341,10 +335,10 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                               MaterialPageRoute(
                                 builder: (context) =>
                                     RoundProcessingLoadingScreen(
-                                  transcript: _selectedTranscript,
-                                  courseName: testCourseName,
-                                  useSharedPreferences: useCached,
-                                ),
+                                      transcript: _selectedTranscript,
+                                      courseName: testCourseName,
+                                      useSharedPreferences: useCached,
+                                    ),
                               ),
                             );
                           }

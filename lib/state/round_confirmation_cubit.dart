@@ -11,12 +11,16 @@ import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart'
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
 /// Cubit for managing round confirmation workflow state
 /// Tracks the potential round being edited and the current hole being edited
 class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
-  RoundConfirmationCubit() : super(const ConfirmingRoundInactive());
+  RoundConfirmationCubit({required this.roundHistoryCubit})
+      : super(const ConfirmingRoundInactive());
+
+  final RoundHistoryCubit roundHistoryCubit;
 
   void startRoundConfirmation(
     BuildContext context,
@@ -458,6 +462,9 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
         .addRound(parsedRound);
     if (firestoreSuccess) {
       debugPrint('Successfully saved round to Firestore');
+
+      // Add the new round to round history
+      roundHistoryCubit.addRound(parsedRound);
     } else {
       debugPrint('Failed to save round to Firestore');
     }

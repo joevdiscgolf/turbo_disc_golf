@@ -13,24 +13,6 @@ class ShotShapeBreakdownPanel extends StatelessWidget {
   final ThrowTypeStats overallStats;
   final List<ShotShapeStats> shotShapeStats;
 
-  static void show(
-    BuildContext context, {
-    required String throwType,
-    required ThrowTypeStats overallStats,
-    required List<ShotShapeStats> shotShapeStats,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ShotShapeBreakdownPanel(
-        throwType: throwType,
-        overallStats: overallStats,
-        shotShapeStats: shotShapeStats,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // Find best and worst performers

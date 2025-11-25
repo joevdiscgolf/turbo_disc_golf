@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
-import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
-import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
-import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
 ///
@@ -19,7 +12,8 @@ import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 ///
 /// Displays hole metadata with inline editing and a timeline of throws with edit/delete buttons.
 /// Includes an "Add Throw" button to manually add new throws and a "Voice" button for voice recording.
-/// Uses Provider for state management.
+/// This component is fully callback-driven and can be used in different contexts
+/// (round confirmation, round review, etc.) by providing appropriate callbacks.
 class EditableHoleDetailPanel extends StatefulWidget {
   const EditableHoleDetailPanel({
     super.key,
@@ -29,6 +23,7 @@ class EditableHoleDetailPanel extends StatefulWidget {
     required this.onThrowAdded,
     required this.onThrowEdited,
     required this.onThrowDeleted,
+    required this.onReorder,
     required this.onVoiceRecord,
     this.onRoundUpdated,
   });
@@ -42,7 +37,8 @@ class EditableHoleDetailPanel extends StatefulWidget {
   final void Function(DiscThrow throw_, {int? addThrowAtIndex}) onThrowAdded;
   final void Function(int throwIndex, DiscThrow updatedThrow) onThrowEdited;
   final void Function(int throwIndex) onThrowDeleted;
-  final Function(BuildContext, PotentialDGHole currentHole) onVoiceRecord;
+  final void Function(int oldIndex, int newIndex) onReorder;
+  final VoidCallback onVoiceRecord;
   final VoidCallback? onRoundUpdated;
 
   @override
@@ -53,77 +49,65 @@ class EditableHoleDetailPanel extends StatefulWidget {
 class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
   late final FocusNode _parFocusNode;
   late final FocusNode _distanceFocusNode;
-  late final RoundConfirmationCubit _roundConfirmationCubit;
 
   @override
   void initState() {
     super.initState();
-    _roundConfirmationCubit = BlocProvider.of<RoundConfirmationCubit>(context);
     _parFocusNode = FocusNode();
     _distanceFocusNode = FocusNode();
-
-    // Set current editing hole in post frame callback
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _roundConfirmationCubit.setCurrentEditingHole(widget.holeIndex);
-      }
-    });
   }
 
   @override
   void dispose() {
     _parFocusNode.dispose();
     _distanceFocusNode.dispose();
-    // Clear the current editing hole when disposing
-    _roundConfirmationCubit.clearCurrentEditingHole();
     super.dispose();
   }
 
   @override
+  void didUpdateWidget(EditableHoleDetailPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.potentialHole != widget.potentialHole) {
+      debugPrint('🔄 EditableHoleDetailPanel received new potentialHole');
+      debugPrint('   Old throws: ${oldWidget.potentialHole.throws?.length ?? 0}');
+      debugPrint('   New throws: ${widget.potentialHole.throws?.length ?? 0}');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
-      builder: (context, state) {
-        if (state is! ConfirmingRoundActive) {
-          return const SizedBox();
-        }
-        final PotentialDGHole? currentHole = state.currentEditingHole;
+    final PotentialDGHole currentHole = widget.potentialHole;
 
-        if (currentHole == null) {
-          return const SizedBox();
-        }
-
-        return SizedBox(
-          height: MediaQuery.of(context).size.height - 64,
-          child: EditHoleBody(
-            holeNumber: currentHole.number ?? widget.holeIndex + 1,
-            par: currentHole.par,
-            distance: currentHole.feet,
-            throws: currentHole.throws ?? [],
-            parFocusNode: _parFocusNode,
-            distanceFocusNode: _distanceFocusNode,
-            bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
-            hasRequiredFields: currentHole.hasRequiredFields,
-            onParChanged: (int newPar) => _handleMetadataChanged(
-              currentHole: currentHole,
-              newPar: newPar,
-              newDistance: null,
-            ),
-            onDistanceChanged: (int newDistance) => _handleMetadataChanged(
-              currentHole: currentHole,
-              newPar: null,
-              newDistance: newDistance,
-            ),
-            onThrowAdded: ({int? addThrowAtIndex}) =>
-                _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
-            onThrowEdited: (throwIndex) =>
-                _handleEditThrow(currentHole, throwIndex),
-            onVoiceRecord: () => _handleVoiceRecord(context, currentHole),
-            onDone: () => Navigator.of(context).pop(),
-            onReorder: (oldIndex, newIndex) =>
-                _handleReorder(oldIndex, newIndex),
-          ),
-        );
-      },
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - 64,
+      child: EditHoleBody(
+        holeNumber: currentHole.number ?? widget.holeIndex + 1,
+        par: currentHole.par,
+        distance: currentHole.feet,
+        throws: currentHole.throws ?? [],
+        parFocusNode: _parFocusNode,
+        distanceFocusNode: _distanceFocusNode,
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        hasRequiredFields: currentHole.hasRequiredFields,
+        onParChanged: (int newPar) => _handleMetadataChanged(
+          currentHole: currentHole,
+          newPar: newPar,
+          newDistance: null,
+        ),
+        onDistanceChanged: (int newDistance) => _handleMetadataChanged(
+          currentHole: currentHole,
+          newPar: null,
+          newDistance: newDistance,
+        ),
+        onThrowAdded: ({int? addThrowAtIndex}) =>
+            _handleAddThrow(currentHole, addAtIndex: addThrowAtIndex),
+        onThrowEdited: (throwIndex) =>
+            _handleEditThrow(currentHole, throwIndex),
+        onVoiceRecord: () => widget.onVoiceRecord(),
+        onDone: () => Navigator.of(context).pop(),
+        onReorder: (oldIndex, newIndex) => widget.onReorder(oldIndex, newIndex),
+      ),
     );
   }
 
@@ -240,135 +224,5 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       _parFocusNode.unfocus();
       _distanceFocusNode.unfocus();
     }
-  }
-
-  Future<void> _handleVoiceRecord(
-    BuildContext context,
-    PotentialDGHole currentHole,
-  ) async {
-    // Unfocus any active fields before showing panel
-    _parFocusNode.unfocus();
-    _distanceFocusNode.unfocus();
-
-    // Track processing state outside the builder
-    bool isProcessing = false;
-
-    // Show voice recording panel
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return RecordSingleHolePanel(
-            holeNumber: currentHole.number ?? widget.holeIndex + 1,
-            holePar: currentHole.par,
-            holeFeet: currentHole.feet,
-            isProcessing: isProcessing,
-            showTestButton: true, // Enable test buttons in debug mode
-            onContinuePressed: (transcript) async {
-              setModalState(() {
-                isProcessing = true;
-              });
-              await _parseAndUpdateHole(context, transcript, currentHole);
-              if (context.mounted) {
-                setModalState(() {
-                  isProcessing = false;
-                });
-              }
-            },
-            onTestingPressed: (testConstant) async {
-              setModalState(() {
-                isProcessing = true;
-              });
-              await _parseAndUpdateHole(context, testConstant, currentHole);
-              if (context.mounted) {
-                setModalState(() {
-                  isProcessing = false;
-                });
-              }
-            },
-            onCancel: () {
-              Navigator.of(context).pop();
-            },
-          );
-        },
-      ),
-    );
-
-    // Unfocus again after panel closes
-    if (mounted) {
-      _parFocusNode.unfocus();
-      _distanceFocusNode.unfocus();
-    }
-  }
-
-  Future<void> _parseAndUpdateHole(
-    BuildContext context,
-    String transcript,
-    PotentialDGHole currentHole,
-  ) async {
-    try {
-      // Get services
-      final BagService bagService = locator.get<BagService>();
-      final AiParsingService aiService = locator.get<AiParsingService>();
-
-      // Load bag if needed
-      if (bagService.userBag.isEmpty) {
-        await bagService.loadBag();
-        if (bagService.userBag.isEmpty) {
-          bagService.loadSampleBag();
-        }
-      }
-
-      // Get course name from state
-      final state = _roundConfirmationCubit.state;
-      final String courseName = state is ConfirmingRoundActive
-          ? state.potentialRound.courseName ?? 'Unknown Course'
-          : 'Unknown Course';
-
-      // Parse the hole with AI
-      final PotentialDGHole? parsedHole = await aiService.parseSingleHole(
-        voiceTranscript: transcript,
-        userBag: bagService.userBag,
-        holeNumber: currentHole.number ?? widget.holeIndex + 1,
-        holePar: currentHole.par ?? 3,
-        holeFeet: currentHole.feet,
-        courseName: courseName,
-      );
-
-      if (parsedHole != null) {
-        // Update the hole in the cubit
-        _roundConfirmationCubit.updatePotentialHole(
-          widget.holeIndex,
-          parsedHole,
-        );
-
-        // Close the panel
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
-      } else {
-        // Parsing failed - show error and keep panel open
-        debugPrint('Failed to parse hole');
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to parse hole description')),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Error parsing hole: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-
-  void _handleReorder(int oldIndex, int newIndex) {
-    _roundConfirmationCubit.reorderThrows(widget.holeIndex, oldIndex, newIndex);
   }
 }

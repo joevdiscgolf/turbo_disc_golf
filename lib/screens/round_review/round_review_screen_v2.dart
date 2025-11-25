@@ -109,10 +109,7 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
         body: TabBarView(
           controller: _tabController,
           children: [
-            RoundOverviewBody(
-              round: _round,
-              isReviewV2Screen: true,
-            ),
+            RoundOverviewBody(round: _round, isReviewV2Screen: true),
             RoundStoryTab(round: _round),
           ],
         ),
