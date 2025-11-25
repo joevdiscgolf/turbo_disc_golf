@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
@@ -17,23 +21,21 @@ class RecordSingleHolePanelV2 extends StatefulWidget {
     required this.holeNumber,
     this.holePar,
     this.holeFeet,
-    this.isProcessing = false,
+    required this.courseName,
     this.showTestButton = true,
     this.title,
     this.subtitle,
-    required this.onContinuePressed,
-    required this.onTestingPressed,
+    required this.onParseComplete,
   });
 
   final int holeNumber;
   final int? holePar;
   final int? holeFeet;
-  final bool isProcessing;
+  final String courseName;
   final bool showTestButton;
   final String? title;
   final String? subtitle;
-  final void Function(String transcript) onContinuePressed;
-  final void Function(String testConstant) onTestingPressed;
+  final void Function(PotentialDGHole? parsedHole) onParseComplete;
 
   @override
   State<RecordSingleHolePanelV2> createState() =>
@@ -49,6 +51,10 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
   late VoiceRecordingService _voiceService;
   final ScrollController _scrollController = ScrollController();
   int _selectedTestIndex = 0;
+
+  // Internal processing state
+  bool _isProcessing = false;
+  String _processingError = '';
 
   List<String> get _testConstantKeys =>
       DescriptionConstants.singleHoleDescriptionConstants.keys.toList();
@@ -129,6 +135,9 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
               // Error display
               if (_voiceService.lastError.isNotEmpty) _buildErrorBox(context),
 
+              // Parsing error display
+              if (_processingError.isNotEmpty) _buildParsingErrorBox(context),
+
               // --- REPLACED WITH UNIVERSAL COMPONENT ---
               Expanded(
                 child: VoiceDescriptionCard(
@@ -167,8 +176,8 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
                 labelColor: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                loading: widget.isProcessing,
-                disabled: widget.isProcessing,
+                loading: _isProcessing,
+                disabled: _isProcessing,
                 onPressed: _handleContinue,
               ),
 
@@ -176,7 +185,7 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
             ],
           ),
 
-          if (widget.isProcessing) _buildProcessingOverlay(context),
+          if (_isProcessing) _buildProcessingOverlay(context),
         ],
       ),
     );
@@ -214,6 +223,38 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
     );
   }
 
+  Widget _buildParsingErrorBox(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEBEE),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _processingError,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.red.shade900,
+                  ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => setState(() => _processingError = ''),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTestingRow() {
     return Column(
       children: [
@@ -241,12 +282,7 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
                 iconColor: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-
-                onPressed: () {
-                  widget.onTestingPressed(
-                    _testConstantValues[_selectedTestIndex],
-                  );
-                },
+                onPressed: _handleTestParse,
                 width: double.infinity,
               ),
             ),
@@ -423,6 +459,68 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
     );
   }
 
+  /// Parse transcript internally using AI service
+  Future<void> _parseTranscript(String transcript) async {
+    setState(() {
+      _isProcessing = true;
+      _processingError = '';
+    });
+
+    try {
+      final AiParsingService aiService = locator.get<AiParsingService>();
+      final BagService bagService = locator.get<BagService>();
+
+      // Ensure bag is loaded
+      if (bagService.userBag.isEmpty) {
+        await bagService.loadBag();
+        if (bagService.userBag.isEmpty) {
+          bagService.loadSampleBag();
+        }
+      }
+
+      debugPrint('🎤 Parsing hole ${widget.holeNumber}');
+
+      // Call AI parsing
+      final PotentialDGHole? parsed = await aiService.parseSingleHole(
+        voiceTranscript: transcript,
+        userBag: bagService.userBag,
+        holeNumber: widget.holeNumber,
+        holePar: widget.holePar ?? 3,
+        holeFeet: widget.holeFeet,
+        courseName: widget.courseName,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isProcessing = false;
+      });
+
+      if (parsed != null) {
+        debugPrint('✅ Successfully parsed hole ${widget.holeNumber}');
+
+        // Pop panel before calling callback
+        Navigator.of(context).pop();
+
+        // Return parsed hole to parent
+        widget.onParseComplete(parsed);
+      } else {
+        setState(() {
+          _processingError = 'Failed to parse hole. Please try again.';
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error parsing: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isProcessing = false;
+        _processingError = 'Error: ${e.toString()}';
+      });
+    }
+  }
+
   void _handleContinue() {
     final String transcript = _voiceService.transcribedText.trim();
     if (transcript.isEmpty) {
@@ -433,7 +531,12 @@ class _RecordSingleHolePanelV2State extends State<RecordSingleHolePanelV2> {
       );
       return;
     }
-    widget.onContinuePressed(transcript);
+    _parseTranscript(transcript);
+  }
+
+  void _handleTestParse() {
+    final String test = _testConstantValues[_selectedTestIndex];
+    _parseTranscript(test);
   }
 
   String get _defaultTitle => 'Record Hole ${widget.holeNumber}';

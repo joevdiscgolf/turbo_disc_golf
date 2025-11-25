@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -34,7 +32,6 @@ class _IncompleteHoleWalkthroughPanelState
   late final FocusNode _parFocusNode;
   late final FocusNode _distanceFocusNode;
   late final RoundConfirmationCubit _roundConfirmationCubit;
-  bool _isProcessingVoiceRecord = false;
 
   PotentialDGHole? _selectedPotentialHole(PotentialDGRound round) {
     try {
@@ -548,91 +545,54 @@ class _IncompleteHoleWalkthroughPanelState
     _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
   }
 
-  Future<void> _handleVoiceRecordContinue(
-    String transcript,
-    int holeIndex,
-  ) async {
-    setState(() {
-      _isProcessingVoiceRecord = true;
-    });
-
-    // Show loading snackbar
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Re-processing hole with AI...')),
-      );
-    }
-
-    // Call RoundParser to re-process the hole
-    final RoundParser roundParser = locator.get<RoundParser>();
-    final bool success = await roundParser.reProcessHole(
-      holeIndex: holeIndex,
-      voiceTranscript: transcript,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _isProcessingVoiceRecord = false;
-    });
-
-    // Show result
-    if (success) {
-      // Sync the updated hole from RoundParser to RoundConfirmationCubit
-      final PotentialDGHole? updatedHole =
-          roundParser.potentialRound?.holes?[holeIndex];
-      if (updatedHole != null) {
-        _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
-      }
-
+  /// Handle parsed hole from voice panel
+  /// Panel has already popped itself, we just sync the result
+  void _handleParseComplete(PotentialDGHole? parsedHole, int holeIndex) {
+    if (parsedHole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Hole re-processed successfully!'),
-          backgroundColor: Color(0xFF137e66),
-        ),
-      );
-      Navigator.of(context).pop();
-      // Refresh after re-recording
-      _refreshIncompleteHoles();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Error: ${roundParser.lastError.isNotEmpty ? roundParser.lastError : 'Failed to re-process hole'}',
-          ),
+          content: Text('Failed to parse hole'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
     }
+
+    debugPrint('✅ Received parsed hole from voice panel');
+    debugPrint(
+      '   Hole: ${parsedHole.number}, Throws: ${parsedHole.throws?.length ?? 0}',
+    );
+
+    // Sync to cubit
+    _roundConfirmationCubit.updatePotentialHole(holeIndex, parsedHole);
+
+    // Show success
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Hole updated successfully!'),
+        backgroundColor: Color(0xFF137e66),
+      ),
+    );
+
+    // Refresh after re-recording
+    _refreshIncompleteHoles();
   }
 
   void _handleVoiceRecord(PotentialDGHole currentHole, int holeIndex) {
-    // displayBottomSheet(
-    //   context,
-    //   RecordSingleHolePanel(
-    //     holeNumber: currentHole.number ?? holeIndex + 1,
-    //     holePar: currentHole.par,
-    //     holeFeet: currentHole.feet,
-    //     isProcessing: _isProcessingVoiceRecord,
-    //     showTestButton: true,
-    //     onContinuePressed: (transcript) =>
-    //         _handleVoiceRecordContinue(transcript, holeIndex),
-    //     onTestingPressed: (transcript) =>
-    //         _handleVoiceRecordContinue(transcript, holeIndex),
-    //   ),
-    // );
+    // Get course name from widget
+    final String courseName =
+        widget.potentialRound.courseName ?? 'Unknown Course';
+
     displayBottomSheet(
       context,
       RecordSingleHolePanelV2(
         holeNumber: currentHole.number ?? holeIndex + 1,
         holePar: currentHole.par,
         holeFeet: currentHole.feet,
-        isProcessing: _isProcessingVoiceRecord,
+        courseName: courseName,
         showTestButton: true,
-        onContinuePressed: (transcript) =>
-            _handleVoiceRecordContinue(transcript, holeIndex),
-        onTestingPressed: (transcript) =>
-            _handleVoiceRecordContinue(transcript, holeIndex),
+        onParseComplete: (parsedHole) =>
+            _handleParseComplete(parsedHole, holeIndex),
       ),
     );
   }

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -98,8 +96,6 @@ class _HoleGridItem extends StatefulWidget {
 }
 
 class _HoleGridItemState extends State<_HoleGridItem> {
-  bool _isProcessing = false;
-
   void _showEditableHoleSheet(BuildContext context) {
     // If hole is completely missing, we can't edit it yet
     if (widget.isCompletelyMissing) {
@@ -202,86 +198,56 @@ class _HoleGridItemState extends State<_HoleGridItem> {
     PotentialDGHole currentHole,
     int holeIndex,
   ) {
-    // displayBottomSheet(
-    //   contextToUse,
-    //   RecordSingleHolePanel(
-    //     holeNumber: currentHole.number ?? holeIndex + 1,
-    //     holePar: currentHole.par,
-    //     holeFeet: currentHole.feet,
-    //     isProcessing: _isProcessing,
-    //     showTestButton: true,
-    //     onContinuePressed: _handleContinueOnVoiceSheet,
-    //     onTestingPressed: _handleContinueOnVoiceSheet,
-    //   ),
-    // );
+    // Get course name from state
+    final RoundConfirmationState state =
+        context.read<RoundConfirmationCubit>().state;
+    final String courseName = (state is ConfirmingRoundActive)
+        ? (state.potentialRound.courseName ?? 'Unknown Course')
+        : 'Unknown Course';
+
     displayBottomSheet(
       contextToUse,
       RecordSingleHolePanelV2(
         holeNumber: currentHole.number ?? holeIndex + 1,
         holePar: currentHole.par,
         holeFeet: currentHole.feet,
-        isProcessing: _isProcessing,
+        courseName: courseName,
         showTestButton: true,
-        onContinuePressed: _handleContinueOnVoiceSheet,
-        onTestingPressed: _handleContinueOnVoiceSheet,
+        onParseComplete: (parsedHole) =>
+            _handleParseComplete(parsedHole, holeIndex),
       ),
     );
   }
 
-  Future<void> _handleContinueOnVoiceSheet(String transcript) async {
-    setState(() {
-      _isProcessing = true;
-    });
-
-    // Show loading snackbar
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Re-processing hole with AI...')),
-      );
-    }
-
-    // Call RoundParser to re-process the hole
-    final RoundParser roundParser = locator.get<RoundParser>();
-    final bool success = await roundParser.reProcessHole(
-      holeIndex: widget.holeIndex,
-      voiceTranscript: transcript,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      _isProcessing = false;
-    });
-
-    // Show result
-    if (success) {
-      // Sync the updated hole from RoundParser to RoundConfirmationCubit
-      final PotentialDGHole? updatedHole =
-          roundParser.potentialRound?.holes?[widget.holeIndex];
-
-      if (updatedHole != null) {
-        BlocProvider.of<RoundConfirmationCubit>(
-          context,
-        ).updatePotentialHole(widget.holeIndex, updatedHole);
-      }
-
+  /// Handle parsed hole from voice panel
+  /// Panel has already popped itself, we just sync the result
+  void _handleParseComplete(PotentialDGHole? parsedHole, int holeIndex) {
+    if (parsedHole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Hole re-processed successfully!'),
-          backgroundColor: Color(0xFF137e66),
-        ),
-      );
-      Navigator.of(context).pop();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Error: ${roundParser.lastError.isNotEmpty ? roundParser.lastError : 'Failed to re-process hole'}',
-          ),
+          content: Text('Failed to parse hole'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
     }
+
+    debugPrint('✅ Received parsed hole from voice panel');
+    debugPrint(
+      '   Hole: ${parsedHole.number}, Throws: ${parsedHole.throws?.length ?? 0}',
+    );
+
+    // Sync to cubit - BlocBuilder will rebuild EditableHoleDetailPanel
+    BlocProvider.of<RoundConfirmationCubit>(context)
+        .updatePotentialHole(holeIndex, parsedHole);
+
+    // Show success
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Hole updated successfully!'),
+        backgroundColor: Color(0xFF137e66),
+      ),
+    );
   }
 
   @override

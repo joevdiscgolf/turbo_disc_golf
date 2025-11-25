@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
-import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -149,28 +147,16 @@ class _HoleGridItem extends StatelessWidget {
             onReorder: (oldIndex, newIndex) =>
                 roundReviewCubit.reorderThrows(holeIndex, oldIndex, newIndex),
             onVoiceRecord: () {
-              // displayBottomSheet(
-              //   context,
-              //   RecordSingleHolePanel(
-              //     holeNumber: hole.number,
-              //     onContinuePressed: (transcript) {
-              //       debugPrint('transcript');
-              //     },
-              //   ),
-              // );
-
               displayBottomSheet(
                 context,
                 RecordSingleHolePanelV2(
                   holeNumber: currentHole.number,
                   holePar: currentHole.par,
                   holeFeet: currentHole.feet,
-                  isProcessing: false,
+                  courseName: round.courseName,
                   showTestButton: true,
-                  onContinuePressed: (transcript) =>
-                      _handleContinueOnVoiceSheet(context, transcript),
-                  onTestingPressed: (transcript) =>
-                      _handleContinueOnVoiceSheet(context, transcript),
+                  onParseComplete: (parsedHole) =>
+                      _handleParseComplete(context, parsedHole),
                 ),
               );
             },
@@ -184,39 +170,53 @@ class _HoleGridItem extends StatelessWidget {
     );
   }
 
-  Future<void> _handleContinueOnVoiceSheet(
+  /// Handle parsed hole from voice panel
+  /// Panel has already popped itself, we just convert and update
+  void _handleParseComplete(
     BuildContext context,
-    String transcript,
-  ) async {
+    PotentialDGHole? parsedHole,
+  ) {
     final RoundReviewCubit roundReviewCubit = BlocProvider.of<RoundReviewCubit>(
       context,
     );
-    final PotentialDGHole? potentialHole = await locator
-        .get<AiParsingService>()
-        .parseSingleHole(
-          voiceTranscript: transcript,
-          userBag: [],
-          holeNumber: hole.number,
-          holePar: hole.par,
-          holeFeet: hole.feet,
-          courseName: round.courseName,
-        );
+
+    if (parsedHole == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to parse hole'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     try {
-      if (!context.mounted) return;
-      if (potentialHole == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No transcript available')),
-        );
-        return;
-      }
-      final DGHole updatedHole = potentialHole.toDGHole();
+      debugPrint('✅ Received parsed hole from voice panel');
+      debugPrint(
+        '   Hole: ${parsedHole.number}, Throws: ${parsedHole.throws?.length ?? 0}',
+      );
 
+      // Convert to DGHole and update
+      final DGHole updatedHole = parsedHole.toDGHole();
       roundReviewCubit.updateHole(holeIndex, updatedHole);
-      Navigator.of(context).pop();
+
+      // Show success
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hole updated successfully!'),
+          backgroundColor: Color(0xFF137e66),
+        ),
+      );
     } catch (e, trace) {
-      debugPrint(e.toString());
+      debugPrint('❌ Error updating hole: $e');
       debugPrint(trace.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error updating hole'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

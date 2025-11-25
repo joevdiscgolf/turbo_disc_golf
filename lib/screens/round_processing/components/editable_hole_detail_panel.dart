@@ -65,6 +65,17 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
   }
 
   @override
+  void didUpdateWidget(EditableHoleDetailPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.potentialHole != widget.potentialHole) {
+      debugPrint('🔄 EditableHoleDetailPanel received new potentialHole');
+      debugPrint('   Old throws: ${oldWidget.potentialHole.throws?.length ?? 0}');
+      debugPrint('   New throws: ${widget.potentialHole.throws?.length ?? 0}');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final PotentialDGHole currentHole = widget.potentialHole;
 
