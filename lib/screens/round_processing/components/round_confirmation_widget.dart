@@ -4,11 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/editable_holes_grid.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/confirmation_holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundConfirmationWidget extends StatefulWidget {
   const RoundConfirmationWidget({
@@ -136,7 +137,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 const SizedBox(height: 8),
 
                 // Holes grid (no longer wrapped in Expanded)
-                EditableHolesGrid(potentialRound: currentRound),
+                ConfirmationHolesGrid(potentialRound: currentRound),
                 const SizedBox(height: 16),
               ],
             ),
@@ -172,11 +173,9 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     BuildContext context,
     PotentialDGRound currentRound,
   ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (builderContext) => IncompleteHoleWalkthroughPanel(
+    displayBottomSheet(
+      context,
+      IncompleteHoleWalkthroughPanel(
         potentialRound: currentRound,
         bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
       ),

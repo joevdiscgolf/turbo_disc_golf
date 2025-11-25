@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
+import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/state/round_review_cubit.dart';
+import 'package:turbo_disc_golf/state/round_review_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class HolesGrid extends StatelessWidget {
-  const HolesGrid({
-    super.key,
-    required this.round,
-    required this.onRoundUpdated,
-  });
+  const HolesGrid({super.key, required this.round});
 
   final DGRound round;
-  final void Function(DGRound updatedRound) onRoundUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +39,6 @@ class HolesGrid extends StatelessWidget {
               hole: hole,
               holeIndex: holeIndex,
               round: round,
-              onRoundUpdated: onRoundUpdated,
             ),
           );
         }).toList(),
@@ -52,13 +52,11 @@ class _HoleGridItem extends StatelessWidget {
     required this.hole,
     required this.holeIndex,
     required this.round,
-    required this.onRoundUpdated,
   });
 
   final DGHole hole;
   final int holeIndex;
   final DGRound round;
-  final void Function(DGRound updatedRound) onRoundUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -75,215 +73,150 @@ class _HoleGridItem extends StatelessWidget {
   }
 
   void _showHoleDetailSheet(BuildContext context) {
-    // Convert DGHole to PotentialDGHole for editing
-    final PotentialDGHole potentialHole = PotentialDGHole(
-      number: hole.number,
-      par: hole.par,
-      feet: hole.feet,
-      throws: hole.throws
-          .map(
-            (t) => DiscThrow(
-              index: t.index,
-              purpose: t.purpose,
-              technique: t.technique,
-              puttStyle: t.puttStyle,
-              shotShape: t.shotShape,
-              stance: t.stance,
-              power: t.power,
-              distanceFeetBeforeThrow: t.distanceFeetBeforeThrow,
-              distanceFeetAfterThrow: t.distanceFeetAfterThrow,
-              elevationChangeFeet: t.elevationChangeFeet,
-              windDirection: t.windDirection,
-              windStrength: t.windStrength,
-              resultRating: t.resultRating,
-              landingSpot: t.landingSpot,
-              fairwayWidth: t.fairwayWidth,
-              penaltyStrokes: t.penaltyStrokes,
-              notes: t.notes,
-              rawText: t.rawText,
-              parseConfidence: t.parseConfidence,
-              discName: t.discName,
-              disc: t.disc,
-            ),
-          )
-          .toList(),
-      holeType: hole.holeType,
+    final RoundReviewCubit roundReviewCubit = BlocProvider.of<RoundReviewCubit>(
+      context,
     );
+
+    // Set the current editing hole when opening the panel
+    roundReviewCubit.setCurrentEditingHole(holeIndex);
 
     displayBottomSheet(
       context,
-      EditableHoleDetailPanel(
-        potentialHole: potentialHole,
-        holeIndex: holeIndex,
-        onMetadataChanged: ({int? newPar, int? newDistance}) =>
-            _handleMetadataChanged(newPar: newPar, newDistance: newDistance),
-        onThrowAdded: (throw_, {int? addThrowAtIndex}) =>
-            _handleThrowAdded(throw_, addThrowAtIndex),
-        onThrowEdited: (throwIndex, updatedThrow) =>
-            _handleThrowEdited(throwIndex, updatedThrow),
-        onThrowDeleted: (throwIndex) => _handleThrowDeleted(throwIndex),
-        onVoiceRecord: (context, hole) => _handleVoiceRecord(),
+      BlocBuilder<RoundReviewCubit, RoundReviewState>(
+        builder: (context, state) {
+          if (state is! ReviewingRoundActive) {
+            return const SizedBox();
+          }
+          final DGHole? currentHole = state.currentEditingHole;
+          if (currentHole == null) {
+            return const SizedBox();
+          }
+
+          // Convert DGHole to PotentialDGHole for editing
+          final PotentialDGHole potentialHole = PotentialDGHole(
+            number: currentHole.number,
+            par: currentHole.par,
+            feet: currentHole.feet,
+            throws: currentHole.throws
+                .map(
+                  (t) => DiscThrow(
+                    index: t.index,
+                    purpose: t.purpose,
+                    technique: t.technique,
+                    puttStyle: t.puttStyle,
+                    shotShape: t.shotShape,
+                    stance: t.stance,
+                    power: t.power,
+                    distanceFeetBeforeThrow: t.distanceFeetBeforeThrow,
+                    distanceFeetAfterThrow: t.distanceFeetAfterThrow,
+                    elevationChangeFeet: t.elevationChangeFeet,
+                    windDirection: t.windDirection,
+                    windStrength: t.windStrength,
+                    resultRating: t.resultRating,
+                    landingSpot: t.landingSpot,
+                    fairwayWidth: t.fairwayWidth,
+                    penaltyStrokes: t.penaltyStrokes,
+                    notes: t.notes,
+                    rawText: t.rawText,
+                    parseConfidence: t.parseConfidence,
+                    discName: t.discName,
+                    disc: t.disc,
+                  ),
+                )
+                .toList(),
+            holeType: currentHole.holeType,
+          );
+
+          return EditableHoleDetailPanel(
+            potentialHole: potentialHole,
+            holeIndex: holeIndex,
+            onMetadataChanged: ({int? newPar, int? newDistance}) =>
+                roundReviewCubit.updateHoleMetadata(
+                  holeIndex,
+                  par: newPar,
+                  feet: newDistance,
+                ),
+            onThrowAdded: (throw_, {int? addThrowAtIndex}) =>
+                roundReviewCubit.addThrow(
+                  holeIndex,
+                  throw_,
+                  addAfterThrowIndex: addThrowAtIndex,
+                ),
+            onThrowEdited: (throwIndex, updatedThrow) => roundReviewCubit
+                .updateThrow(holeIndex, throwIndex, updatedThrow),
+            onThrowDeleted: (throwIndex) =>
+                roundReviewCubit.deleteThrow(holeIndex, throwIndex),
+            onReorder: (oldIndex, newIndex) =>
+                roundReviewCubit.reorderThrows(holeIndex, oldIndex, newIndex),
+            onVoiceRecord: () {
+              // displayBottomSheet(
+              //   context,
+              //   RecordSingleHolePanel(
+              //     holeNumber: hole.number,
+              //     onContinuePressed: (transcript) {
+              //       debugPrint('transcript');
+              //     },
+              //   ),
+              // );
+
+              displayBottomSheet(
+                context,
+                RecordSingleHolePanelV2(
+                  holeNumber: currentHole.number,
+                  holePar: currentHole.par,
+                  holeFeet: currentHole.feet,
+                  isProcessing: false,
+                  showTestButton: true,
+                  onContinuePressed: (transcript) =>
+                      _handleContinueOnVoiceSheet(context, transcript),
+                  onTestingPressed: (transcript) =>
+                      _handleContinueOnVoiceSheet(context, transcript),
+                ),
+              );
+            },
+          );
+        },
       ),
+      onDismiss: () {
+        // Clear the current editing hole when the panel is closed
+        roundReviewCubit.clearCurrentEditingHole();
+      },
     );
   }
 
-  // Handler methods for EditableHoleDetailSheet callbacks
-  void _handleMetadataChanged({int? newPar, int? newDistance}) {
-    final DGHole updatedHole = DGHole(
-      number: hole.number,
-      par: newPar ?? hole.par,
-      feet: newDistance ?? hole.feet,
-      throws: hole.throws,
-      holeType: hole.holeType,
+  Future<void> _handleContinueOnVoiceSheet(
+    BuildContext context,
+    String transcript,
+  ) async {
+    final RoundReviewCubit roundReviewCubit = BlocProvider.of<RoundReviewCubit>(
+      context,
     );
+    final PotentialDGHole? potentialHole = await locator
+        .get<AiParsingService>()
+        .parseSingleHole(
+          voiceTranscript: transcript,
+          userBag: [],
+          holeNumber: hole.number,
+          holePar: hole.par,
+          holeFeet: hole.feet,
+          courseName: round.courseName,
+        );
 
-    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
-    updatedHoles[holeIndex] = updatedHole;
+    try {
+      if (!context.mounted) return;
+      if (potentialHole == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No transcript available')),
+        );
+        return;
+      }
+      final DGHole updatedHole = potentialHole.toDGHole();
 
-    final DGRound updatedRound = round.copyWith(
-      holes: updatedHoles,
-      versionId: round.versionId + 1,
-    );
-
-    onRoundUpdated(updatedRound);
-  }
-
-  void _handleThrowAdded(DiscThrow newThrow, int? addThrowAtIndex) {
-    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(hole.throws);
-
-    // Determine insertion index: if null, append at end; otherwise insert after the specified index
-    final int insertIndex = addThrowAtIndex != null
-        ? addThrowAtIndex + 1
-        : updatedThrows.length;
-    updatedThrows.insert(insertIndex, newThrow);
-
-    // Reindex all throws after insertion
-    final List<DiscThrow> reindexedThrows = updatedThrows.asMap().entries.map((
-      entry,
-    ) {
-      final DiscThrow throw_ = entry.value;
-      return DiscThrow(
-        index: entry.key,
-        purpose: throw_.purpose,
-        technique: throw_.technique,
-        puttStyle: throw_.puttStyle,
-        shotShape: throw_.shotShape,
-        stance: throw_.stance,
-        power: throw_.power,
-        distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
-        distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
-        elevationChangeFeet: throw_.elevationChangeFeet,
-        windDirection: throw_.windDirection,
-        windStrength: throw_.windStrength,
-        resultRating: throw_.resultRating,
-        landingSpot: throw_.landingSpot,
-        fairwayWidth: throw_.fairwayWidth,
-        penaltyStrokes: throw_.penaltyStrokes,
-        notes: throw_.notes,
-        rawText: throw_.rawText,
-        parseConfidence: throw_.parseConfidence,
-        discName: throw_.discName,
-        disc: throw_.disc,
-      );
-    }).toList();
-
-    final DGHole updatedHole = DGHole(
-      number: hole.number,
-      par: hole.par,
-      feet: hole.feet,
-      throws: reindexedThrows,
-      holeType: hole.holeType,
-    );
-
-    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
-    updatedHoles[holeIndex] = updatedHole;
-
-    final DGRound updatedRound = round.copyWith(
-      holes: updatedHoles,
-      versionId: round.versionId + 1,
-    );
-
-    onRoundUpdated(updatedRound);
-  }
-
-  void _handleThrowEdited(int throwIndex, DiscThrow updatedThrow) {
-    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(hole.throws);
-    updatedThrows[throwIndex] = updatedThrow;
-
-    final DGHole updatedHole = DGHole(
-      number: hole.number,
-      par: hole.par,
-      feet: hole.feet,
-      throws: updatedThrows,
-      holeType: hole.holeType,
-    );
-
-    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
-    updatedHoles[holeIndex] = updatedHole;
-
-    final DGRound updatedRound = round.copyWith(
-      holes: updatedHoles,
-      versionId: round.versionId + 1,
-    );
-
-    onRoundUpdated(updatedRound);
-  }
-
-  void _handleThrowDeleted(int throwIndex) {
-    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(hole.throws);
-    updatedThrows.removeAt(throwIndex);
-
-    // Reindex remaining throws
-    final List<DiscThrow> reindexedThrows = updatedThrows.asMap().entries.map((
-      entry,
-    ) {
-      final DiscThrow throw_ = entry.value;
-      return DiscThrow(
-        index: entry.key,
-        purpose: throw_.purpose,
-        technique: throw_.technique,
-        puttStyle: throw_.puttStyle,
-        shotShape: throw_.shotShape,
-        stance: throw_.stance,
-        power: throw_.power,
-        distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
-        distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
-        elevationChangeFeet: throw_.elevationChangeFeet,
-        windDirection: throw_.windDirection,
-        windStrength: throw_.windStrength,
-        resultRating: throw_.resultRating,
-        landingSpot: throw_.landingSpot,
-        fairwayWidth: throw_.fairwayWidth,
-        penaltyStrokes: throw_.penaltyStrokes,
-        notes: throw_.notes,
-        rawText: throw_.rawText,
-        parseConfidence: throw_.parseConfidence,
-        discName: throw_.discName,
-        disc: throw_.disc,
-      );
-    }).toList();
-
-    final DGHole updatedHole = DGHole(
-      number: hole.number,
-      par: hole.par,
-      feet: hole.feet,
-      throws: reindexedThrows,
-      holeType: hole.holeType,
-    );
-
-    final List<DGHole> updatedHoles = List<DGHole>.from(round.holes);
-    updatedHoles[holeIndex] = updatedHole;
-
-    final DGRound updatedRound = round.copyWith(
-      holes: updatedHoles,
-      versionId: round.versionId + 1,
-    );
-
-    onRoundUpdated(updatedRound);
-  }
-
-  void _handleVoiceRecord() {
-    // Voice recording is not supported for completed rounds
-    // Could be implemented in the future
+      roundReviewCubit.updateHole(holeIndex, updatedHole);
+      Navigator.of(context).pop();
+    } catch (e, trace) {
+      debugPrint(e.toString());
+      debugPrint(trace.toString());
+    }
   }
 }

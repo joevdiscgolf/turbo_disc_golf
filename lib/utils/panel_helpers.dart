@@ -3,7 +3,7 @@ import 'package:modal_bottom_sheet/modal_bottom_sheet.dart'
     as modal_bottom_sheet;
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-void displayBottomSheet(
+Future<void> displayBottomSheet(
   BuildContext context,
   Widget panel, {
   bool backgroundBarrierColor = true,
@@ -11,7 +11,7 @@ void displayBottomSheet(
   Function? onDismiss,
   bool dismissibleOnTap = true,
   bool enableDrag = true,
-}) {
+}) async {
   modal_bottom_sheet
       .showBarModalBottomSheet(
         barrierColor: backgroundBarrierColor

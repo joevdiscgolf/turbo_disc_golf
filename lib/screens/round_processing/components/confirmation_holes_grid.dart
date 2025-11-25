@@ -4,16 +4,17 @@ import 'package:turbo_disc_golf/components/hole_grid_item.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
+import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
 ///
 /// Supports both complete holes (DGHole) and incomplete holes (PotentialDGHole).
-class EditableHolesGrid extends StatelessWidget {
-  const EditableHolesGrid({super.key, required this.potentialRound});
+class ConfirmationHolesGrid extends StatelessWidget {
+  const ConfirmationHolesGrid({super.key, required this.potentialRound});
 
   final PotentialDGRound potentialRound;
 
@@ -81,7 +82,7 @@ class EditableHolesGrid extends StatelessWidget {
   }
 }
 
-class _HoleGridItem extends StatelessWidget {
+class _HoleGridItem extends StatefulWidget {
   const _HoleGridItem({
     required this.potentialHole,
     required this.holeIndex,
@@ -92,40 +93,76 @@ class _HoleGridItem extends StatelessWidget {
   final int holeIndex;
   final bool isCompletelyMissing;
 
+  @override
+  State<_HoleGridItem> createState() => _HoleGridItemState();
+}
+
+class _HoleGridItemState extends State<_HoleGridItem> {
+  bool _isProcessing = false;
+
   void _showEditableHoleSheet(BuildContext context) {
     // If hole is completely missing, we can't edit it yet
-    if (isCompletelyMissing) {
+    if (widget.isCompletelyMissing) {
       return;
     }
 
     final RoundConfirmationCubit roundConfirmationCubit =
         BlocProvider.of<RoundConfirmationCubit>(context);
 
+    // Set the current editing hole when opening the panel
+    roundConfirmationCubit.setCurrentEditingHole(widget.holeIndex);
+
     // Normal case: hole exists in the round
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (builderContext) => EditableHoleDetailPanel(
-        potentialHole: potentialHole,
-        holeIndex: holeIndex,
-        onMetadataChanged: ({int? newPar, int? newDistance}) =>
-            _handleMetadataChanged(
-              context,
-              holeIndex,
-              newPar: newPar,
-              newDistance: newDistance,
-            ),
-        onThrowAdded: (throw_, {int? addThrowAtIndex}) => roundConfirmationCubit
-            .addThrow(holeIndex, throw_, addAfterThrowIndex: addThrowAtIndex),
-        onThrowEdited: (throwIndex, updatedThrow) => roundConfirmationCubit
-            .updateThrow(holeIndex, throwIndex, updatedThrow),
-        onThrowDeleted: (throwIndex) =>
-            roundConfirmationCubit.deleteThrow(holeIndex, throwIndex),
-        onVoiceRecord: (context, currentHole) =>
-            _handleVoiceRecord(context, potentialHole, holeIndex),
-      ),
-    );
+      builder: (builderContext) =>
+          BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+            builder: (context, state) {
+              if (state is! ConfirmingRoundActive) {
+                return const SizedBox();
+              }
+              final PotentialDGHole? currentHole = state.currentEditingHole;
+              if (currentHole == null) {
+                return const SizedBox();
+              }
+
+              return EditableHoleDetailPanel(
+                potentialHole: currentHole,
+                holeIndex: widget.holeIndex,
+                onMetadataChanged: ({int? newPar, int? newDistance}) =>
+                    _handleMetadataChanged(
+                      context,
+                      widget.holeIndex,
+                      newPar: newPar,
+                      newDistance: newDistance,
+                    ),
+                onThrowAdded: (throw_, {int? addThrowAtIndex}) =>
+                    roundConfirmationCubit.addThrow(
+                      widget.holeIndex,
+                      throw_,
+                      addAfterThrowIndex: addThrowAtIndex,
+                    ),
+                onThrowEdited: (throwIndex, updatedThrow) =>
+                    roundConfirmationCubit.updateThrow(
+                      widget.holeIndex,
+                      throwIndex,
+                      updatedThrow,
+                    ),
+                onThrowDeleted: (throwIndex) => roundConfirmationCubit
+                    .deleteThrow(widget.holeIndex, throwIndex),
+                onReorder: (oldIndex, newIndex) => roundConfirmationCubit
+                    .reorderThrows(widget.holeIndex, oldIndex, newIndex),
+                onVoiceRecord: () =>
+                    _handleVoiceRecord(context, currentHole, widget.holeIndex),
+              );
+            },
+          ),
+    ).then((_) {
+      // Clear the current editing hole when the panel is closed
+      roundConfirmationCubit.clearCurrentEditingHole();
+    });
   }
 
   // Handler methods for EditableHoleDetailSheet callbacks
@@ -165,75 +202,33 @@ class _HoleGridItem extends StatelessWidget {
     PotentialDGHole currentHole,
     int holeIndex,
   ) {
-    showModalBottomSheet<void>(
-      context: contextToUse,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _VoiceRecordSheet(
+    // displayBottomSheet(
+    //   contextToUse,
+    //   RecordSingleHolePanel(
+    //     holeNumber: currentHole.number ?? holeIndex + 1,
+    //     holePar: currentHole.par,
+    //     holeFeet: currentHole.feet,
+    //     isProcessing: _isProcessing,
+    //     showTestButton: true,
+    //     onContinuePressed: _handleContinueOnVoiceSheet,
+    //     onTestingPressed: _handleContinueOnVoiceSheet,
+    //   ),
+    // );
+    displayBottomSheet(
+      contextToUse,
+      RecordSingleHolePanelV2(
         holeNumber: currentHole.number ?? holeIndex + 1,
-        holeIndex: holeIndex,
         holePar: currentHole.par,
         holeFeet: currentHole.feet,
+        isProcessing: _isProcessing,
+        showTestButton: true,
+        onContinuePressed: _handleContinueOnVoiceSheet,
+        onTestingPressed: _handleContinueOnVoiceSheet,
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Determine if hole is incomplete
-    final bool isIncomplete = !potentialHole.hasRequiredFields;
-
-    // Calculate score for complete holes
-    int? score;
-    int? relativeScore;
-    if (!isIncomplete) {
-      final int throwsCount = potentialHole.throws?.length ?? 0;
-      final int penaltyStrokes =
-          potentialHole.throws?.fold<int>(
-            0,
-            (prev, t) => prev + (t.penaltyStrokes ?? 0),
-          ) ??
-          0;
-      score = throwsCount + penaltyStrokes;
-      final int par = potentialHole.par ?? 3;
-      relativeScore = score - par;
-    }
-
-    return HoleGridItem(
-      holeNumber: potentialHole.number ?? 0,
-      holePar: potentialHole.par,
-      holeFeet: potentialHole.feet,
-      score: score,
-      relativeScore: relativeScore,
-      isIncomplete: isIncomplete,
-      onTap: () => _showEditableHoleSheet(context),
-      heroTag: 'editable_hole_${potentialHole.number}',
-    );
-  }
-}
-
-/// Stateful wrapper for RecordSingleHolePanel that handles processing state.
-class _VoiceRecordSheet extends StatefulWidget {
-  const _VoiceRecordSheet({
-    required this.holeNumber,
-    required this.holeIndex,
-    this.holePar,
-    this.holeFeet,
-  });
-
-  final int holeNumber;
-  final int holeIndex;
-  final int? holePar;
-  final int? holeFeet;
-
-  @override
-  State<_VoiceRecordSheet> createState() => _VoiceRecordSheetState();
-}
-
-class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
-  bool _isProcessing = false;
-
-  Future<void> _handleContinue(String transcript) async {
+  Future<void> _handleContinueOnVoiceSheet(String transcript) async {
     setState(() {
       _isProcessing = true;
     });
@@ -291,14 +286,34 @@ class _VoiceRecordSheetState extends State<_VoiceRecordSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return RecordSingleHolePanel(
-      holeNumber: widget.holeNumber,
-      holePar: widget.holePar,
-      holeFeet: widget.holeFeet,
-      isProcessing: _isProcessing,
-      showTestButton: true,
-      onContinuePressed: _handleContinue,
-      onTestingPressed: _handleContinue,
+    // Determine if hole is incomplete
+    final bool isIncomplete = !widget.potentialHole.hasRequiredFields;
+
+    // Calculate score for complete holes
+    int? score;
+    int? relativeScore;
+    if (!isIncomplete) {
+      final int throwsCount = widget.potentialHole.throws?.length ?? 0;
+      final int penaltyStrokes =
+          widget.potentialHole.throws?.fold<int>(
+            0,
+            (prev, t) => prev + (t.penaltyStrokes ?? 0),
+          ) ??
+          0;
+      score = throwsCount + penaltyStrokes;
+      final int par = widget.potentialHole.par ?? 3;
+      relativeScore = score - par;
+    }
+
+    return HoleGridItem(
+      holeNumber: widget.potentialHole.number ?? 0,
+      holePar: widget.potentialHole.par,
+      holeFeet: widget.potentialHole.feet,
+      score: score,
+      relativeScore: relativeScore,
+      isIncomplete: isIncomplete,
+      onTap: () => _showEditableHoleSheet(context),
+      heroTag: 'editable_hole_${widget.potentialHole.number}',
     );
   }
 }

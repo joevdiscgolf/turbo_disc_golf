@@ -98,50 +98,39 @@ class ScoreKPICard extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: useHeroAnimationsForRoundReview
-                        ? Hero(
-                            tag: 'score_kpi_score',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: _relativeScoreStat(context, relativeScore),
-                            ),
-                          )
-                        : _relativeScoreStat(context, relativeScore),
+          child: useHeroAnimationsForRoundReview
+              ? Hero(
+                  tag: 'score_kpi_score',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: _relativeScoreStat(context, relativeScore),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: useHeroAnimationsForRoundReview
-                        ? Hero(
-                            tag: 'score_kpi_throws',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: _totalScoreStat(context),
-                            ),
-                          )
-                        : _totalScoreStat(context),
+                )
+              : _relativeScoreStat(context, relativeScore),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: useHeroAnimationsForRoundReview
+              ? Hero(
+                  tag: 'score_kpi_throws',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: _totalScoreStat(context),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: useHeroAnimationsForRoundReview
-                        ? Hero(
-                            tag: 'score_kpi_par',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: _totalParStat(context),
-                            ),
-                          )
-                        : _totalParStat(context),
+                )
+              : _totalScoreStat(context),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: useHeroAnimationsForRoundReview
+              ? Hero(
+                  tag: 'score_kpi_par',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: _totalParStat(context),
                   ),
-                ],
-              ),
-            ],
-          ),
+                )
+              : _totalParStat(context),
         ),
       ],
     );
@@ -180,30 +169,23 @@ class ScoreKPICard extends StatelessWidget {
     String value,
     Color color,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        // color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        // border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+    return Column(
+      children: [
+        Text(
+          value,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

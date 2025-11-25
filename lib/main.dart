@@ -7,6 +7,8 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
+import 'package:turbo_disc_golf/state/round_history_cubit.dart';
+import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +23,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Create RoundHistoryCubit first (no dependencies)
+    final RoundHistoryCubit roundHistoryCubit = RoundHistoryCubit();
+
     // Provide RoundParser at app level so components can listen to round changes
     return MultiBlocProvider(
-      providers: [BlocProvider(create: (_) => RoundConfirmationCubit())],
+      providers: [
+        BlocProvider<RoundHistoryCubit>.value(value: roundHistoryCubit),
+        BlocProvider<RoundConfirmationCubit>(
+          create: (_) => RoundConfirmationCubit(
+            roundHistoryCubit: roundHistoryCubit,
+          ),
+        ),
+        BlocProvider<RoundReviewCubit>(
+          create: (_) => RoundReviewCubit(
+            roundHistoryCubit: roundHistoryCubit,
+          ),
+        ),
+      ],
       child: ChangeNotifierProvider<RoundParser>.value(
         value: locator.get<RoundParser>(),
         child: MaterialApp(

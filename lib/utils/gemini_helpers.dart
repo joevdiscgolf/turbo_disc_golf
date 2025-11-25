@@ -9,7 +9,7 @@ abstract class GeminiHelpers {
     String voiceTranscript,
     List<DGDisc> userBag,
     int holeNumber,
-    int holePar,
+    int? holePar,
     int? holeFeet,
     String courseName,
   ) {
@@ -30,7 +30,7 @@ abstract class GeminiHelpers {
         )
         .join('\n');
 
-    final String parLine = holePar > 0
+    final String parLine = holePar != null && holePar > 0
         ? 'par: $holePar'
         : '# par: (infer from description or omit)';
     final schemaExample =
@@ -56,13 +56,13 @@ throws:
     return '''
 Parse disc golf hole description into YAML. Return ONLY raw YAML (no markdown/code blocks).
 
-CONTEXT: Hole $holeNumber, Par ${holePar > 0 ? holePar : '?'}${holeFeet != null ? ', Distance $holeFeet ft' : ''}, $courseName
+CONTEXT: Hole $holeNumber, Par ${(holePar ?? 0) > 0 ? holePar : '?'}${holeFeet != null ? ', Distance $holeFeet ft' : ''}, $courseName
 TRANSCRIPT: "$voiceTranscript"
 DISC BAG: $discListString
 
 OUTPUT FIELDS:
 - number: $holeNumber (required)
-- par: ${holePar > 0 ? holePar : '?'} (required)${holeFeet != null ? '\n- feet: $holeFeet (required - use this value from context)' : '\n- feet: extract from transcript if mentioned (e.g., "620 foot" → feet: 620), otherwise omit entirely'}
+- par: ${(holePar ?? 0) > 0 ? holePar : '?'} (required)${holeFeet != null ? '\n- feet: $holeFeet (required - use this value from context)' : '\n- feet: extract from transcript if mentioned (e.g., "620 foot" → feet: 620), otherwise omit entirely'}
 - throws: array of throw objects (required)
 
 THROW STRUCTURE:

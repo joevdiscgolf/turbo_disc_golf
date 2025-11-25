@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/locator.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel_v2.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
+import 'package:turbo_disc_golf/state/round_history_cubit.dart';
+import 'package:turbo_disc_golf/state/round_history_state.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
   const RoundHistoryScreen({super.key});
@@ -14,105 +16,93 @@ class RoundHistoryScreen extends StatefulWidget {
 }
 
 class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
-  List<DGRound>? _rounds;
-  bool _isLoading = true;
-  String? _error;
+  late RoundHistoryCubit _roundHistoryCubit;
 
   @override
   void initState() {
     super.initState();
-    _loadRounds();
-  }
-
-  Future<void> _loadRounds() async {
-    // Only show full-screen loading spinner on initial load
-    // During refresh, keep showing existing data with pull-to-refresh indicator
-    if (_rounds == null) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-    }
-
-    try {
-      final List<DGRound> rounds = await locator
-          .get<FirestoreRoundService>()
-          .getRounds();
-      if (mounted) {
-        setState(() {
-          _rounds = rounds;
-          _isLoading = false;
-          _error = null; // Clear any previous error on successful load
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _refreshRounds() async {
-    await _loadRounds();
-  }
-
-  List<DGRound> get _sortedRounds {
-    if (_rounds == null) return [];
-    final List<DGRound> sorted = List<DGRound>.from(_rounds!);
-    sorted.sort((a, b) {
-      final String aDate = a.playedRoundAt;
-      final String bDate = b.playedRoundAt;
-      return bDate.compareTo(aDate);
-    });
-    return sorted;
+    _roundHistoryCubit = BlocProvider.of<RoundHistoryCubit>(context);
+    // Load rounds on initial screen load
+    _roundHistoryCubit.loadRounds();
   }
 
   Future<void> _showRecordRoundSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const RecordRoundPanel(),
-    );
-
-    // Refresh rounds after closing the modal (in case a new round was added)
-    _loadRounds();
+    await displayBottomSheet(context, const RecordRoundPanelV2());
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            CupertinoSliverRefreshControl(onRefresh: _refreshRounds),
-            if (_isLoading)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_error != null)
-              SliverFillRemaining(child: _buildErrorState())
-            else if (_rounds == null || _rounds!.isEmpty)
-              SliverFillRemaining(child: _buildEmptyState())
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final DGRound round = _sortedRounds[index];
-                    return RoundHistoryRow(round: round);
-                  }, childCount: _sortedRounds.length),
+        BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
+          builder: (context, state) {
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                CupertinoSliverRefreshControl(
+                  onRefresh: () => _roundHistoryCubit.refreshRounds(),
                 ),
-              ),
-          ],
+                _buildContent(state),
+              ],
+            );
+          },
         ),
         _buildAddButton(),
       ],
     );
+  }
+
+  Widget _buildContent(RoundHistoryState state) {
+    if (state is RoundHistoryLoading) {
+      // Initial loading - show full-screen spinner
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (state is RoundHistoryError) {
+      // Error state
+      return SliverFillRemaining(child: _buildErrorState(state.error));
+    } else if (state is RoundHistoryLoaded) {
+      // Loaded state
+      final List<DGRound> sortedRounds = state.sortedRounds;
+      if (sortedRounds.isEmpty) {
+        return SliverFillRemaining(child: _buildEmptyState());
+      }
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final DGRound round = sortedRounds[index];
+              return RoundHistoryRow(round: round);
+            },
+            childCount: sortedRounds.length,
+          ),
+        ),
+      );
+    } else if (state is RoundHistoryRefreshing) {
+      // Refreshing state - show current data with refresh indicator
+      final List<DGRound> sortedRounds = state.sortedRounds;
+      if (sortedRounds.isEmpty) {
+        return SliverFillRemaining(child: _buildEmptyState());
+      }
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final DGRound round = sortedRounds[index];
+              return RoundHistoryRow(round: round);
+            },
+            childCount: sortedRounds.length,
+          ),
+        ),
+      );
+    } else {
+      // Initial state - trigger load
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
   }
 
   Widget _buildEmptyState() {
@@ -140,7 +130,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(String error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -153,9 +143,14 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _error!,
+            error,
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => _roundHistoryCubit.loadRounds(),
+            child: const Text('Retry'),
           ),
         ],
       ),

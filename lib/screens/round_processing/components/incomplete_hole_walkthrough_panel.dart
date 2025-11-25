@@ -5,8 +5,8 @@ import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
+import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
@@ -579,12 +579,10 @@ class _IncompleteHoleWalkthroughPanelState
     // Show result
     if (success) {
       // Sync the updated hole from RoundParser to RoundConfirmationCubit
-      final PotentialDGHole? updatedHole = roundParser.potentialRound?.holes?[holeIndex];
+      final PotentialDGHole? updatedHole =
+          roundParser.potentialRound?.holes?[holeIndex];
       if (updatedHole != null) {
-        _roundConfirmationCubit.updatePotentialHole(
-          holeIndex,
-          updatedHole,
-        );
+        _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -609,9 +607,23 @@ class _IncompleteHoleWalkthroughPanelState
   }
 
   void _handleVoiceRecord(PotentialDGHole currentHole, int holeIndex) {
+    // displayBottomSheet(
+    //   context,
+    //   RecordSingleHolePanel(
+    //     holeNumber: currentHole.number ?? holeIndex + 1,
+    //     holePar: currentHole.par,
+    //     holeFeet: currentHole.feet,
+    //     isProcessing: _isProcessingVoiceRecord,
+    //     showTestButton: true,
+    //     onContinuePressed: (transcript) =>
+    //         _handleVoiceRecordContinue(transcript, holeIndex),
+    //     onTestingPressed: (transcript) =>
+    //         _handleVoiceRecordContinue(transcript, holeIndex),
+    //   ),
+    // );
     displayBottomSheet(
       context,
-      RecordSingleHolePanel(
+      RecordSingleHolePanelV2(
         holeNumber: currentHole.number ?? holeIndex + 1,
         holePar: currentHole.par,
         holeFeet: currentHole.feet,
