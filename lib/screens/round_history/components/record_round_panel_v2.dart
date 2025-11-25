@@ -637,9 +637,7 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isClickable = onTap != null;
-    // light background + subtle gradient using accent color
     final Color baseColor = Colors.grey.shade50;
-    final Color border = Colors.grey.shade200;
 
     return GestureDetector(
       onTap: onTap,
@@ -649,7 +647,7 @@ class _InfoCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: baseColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: border),
+          border: Border.all(color: flattenedOverWhite(accent, 0.3)),
           gradient: LinearGradient(
             transform: GradientRotation(math.pi / 4),
             colors: [

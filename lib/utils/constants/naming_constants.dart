@@ -6,15 +6,15 @@ const Map<ThrowTechnique, String> throwTechniqueToName = {
   ThrowTechnique.tomahawk: 'Tomahawk',
   ThrowTechnique.thumber: 'Thumber',
   ThrowTechnique.overhand: 'Overhand',
-  ThrowTechnique.backhandRoller: 'Backhand Roller',
-  ThrowTechnique.forehandRoller: 'Forehand Roller',
+  ThrowTechnique.backhandRoller: 'Backhand roller',
+  ThrowTechnique.forehandRoller: 'Forehand roller',
   ThrowTechnique.grenade: 'Grenade',
   ThrowTechnique.other: 'Other',
 };
 
 const Map<ThrowPurpose, String> throwPurposeToName = {
-  ThrowPurpose.teeDrive: 'Tee Drive',
-  ThrowPurpose.fairwayDrive: 'Fairway Drive',
+  ThrowPurpose.teeDrive: 'Tee shot',
+  ThrowPurpose.fairwayDrive: 'Fairway drive',
   ThrowPurpose.approach: 'Approach',
   ThrowPurpose.putt: 'Putt',
   ThrowPurpose.scramble: 'Scramble',
@@ -23,13 +23,13 @@ const Map<ThrowPurpose, String> throwPurposeToName = {
 };
 
 const Map<LandingSpot, String> landingSpotToName = {
-  LandingSpot.inBasket: 'In Basket',
+  LandingSpot.inBasket: 'Basket',
   LandingSpot.parked: 'Parked',
   LandingSpot.circle1: 'Circle 1',
   LandingSpot.circle2: 'Circle 2',
   LandingSpot.fairway: 'Fairway',
-  LandingSpot.offFairway: 'Off Fairway',
-  LandingSpot.outOfBounds: 'Out of Bounds',
+  LandingSpot.offFairway: 'Off fairway',
+  LandingSpot.outOfBounds: 'Out of bounds',
   LandingSpot.other: 'Other',
 };
 
@@ -44,12 +44,12 @@ final Map<ThrowResultRating, String> throwResultRatingToName = {
 final Map<ShotShape, String> shotShapeToName = {
   ShotShape.hyzer: 'Hyzer',
   ShotShape.anhyzer: 'Anhyzer',
-  ShotShape.hyzerFlip: 'Hyzer Flip',
+  ShotShape.hyzerFlip: 'Hyzer flip',
   ShotShape.turnover: 'Turnover',
   ShotShape.flat: 'Flat',
-  ShotShape.flexShot: 'Flex Shot',
-  ShotShape.spikeHyzer: 'Spike Hyzer',
-  ShotShape.skyAnhyzer: 'Sky Anhyzer',
+  ShotShape.flexShot: 'Flex shot',
+  ShotShape.spikeHyzer: 'Spike hyzer',
+  ShotShape.skyAnhyzer: 'Sky anhyzer',
   ShotShape.roller: 'Roller',
   ShotShape.pitch: 'Pitch',
   ShotShape.other: 'Other',
@@ -66,15 +66,15 @@ final Map<ThrowPower, String> throwPowerToName = {
 final Map<StanceType, String> stanceTypeToName = {
   StanceType.standstill: 'Standstill',
   StanceType.xStep: 'X-Step',
-  StanceType.patentPending: 'Patent Pending',
+  StanceType.patentPending: 'Patent pending',
   StanceType.other: 'Other',
 };
 
 final Map<PuttStyle, String> puttStyleToName = {
   PuttStyle.staggered: 'Staggered',
   PuttStyle.straddle: 'Straddle',
-  PuttStyle.jumpPutt: 'Jump Putt',
-  PuttStyle.stepPutt: 'Step Putt',
+  PuttStyle.jumpPutt: 'Jump putt',
+  PuttStyle.stepPutt: 'Step putt',
   PuttStyle.other: 'Other',
 };
 
@@ -82,15 +82,15 @@ final Map<FairwayWidth, String> fairwayWidthToName = {
   FairwayWidth.open: 'Open',
   FairwayWidth.moderate: 'Moderate',
   FairwayWidth.tight: 'Tight',
-  FairwayWidth.veryTight: 'Very Tight',
+  FairwayWidth.veryTight: 'Very tight',
 };
 
 final Map<WindDirection, String> windDirectionToName = {
   WindDirection.none: 'None',
   WindDirection.headwind: 'Headwind',
   WindDirection.tailwind: 'Tailwind',
-  WindDirection.leftToRight: 'Left to Right',
-  WindDirection.rightToLeft: 'Right to Left',
+  WindDirection.leftToRight: 'Left to right',
+  WindDirection.rightToLeft: 'Right to left',
 };
 
 final Map<WindStrength, String> windStrengthToName = {
