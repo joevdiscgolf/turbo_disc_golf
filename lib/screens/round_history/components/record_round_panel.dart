@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
@@ -107,46 +106,46 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-              ...List.generate(
-                _testRoundDescriptionNames.length,
-                (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    selected: _selectedTestIndex == index,
-                    selectedTileColor: const Color(
-                      0xFF9D4EDD,
-                    ).withValues(alpha: 0.1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    title: Text(
-                      _testRoundDescriptionNames[index],
-                      style: TextStyle(
-                        fontWeight: _selectedTestIndex == index
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: _selectedTestIndex == index
-                            ? const Color(0xFF9D4EDD)
+                  ...List.generate(
+                    _testRoundDescriptionNames.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        selected: _selectedTestIndex == index,
+                        selectedTileColor: const Color(
+                          0xFF9D4EDD,
+                        ).withValues(alpha: 0.1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(
+                          _testRoundDescriptionNames[index],
+                          style: TextStyle(
+                            fontWeight: _selectedTestIndex == index
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: _selectedTestIndex == index
+                                ? const Color(0xFF9D4EDD)
+                                : null,
+                          ),
+                        ),
+                        trailing: _selectedTestIndex == index
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF9D4EDD),
+                              )
                             : null,
+                        onTap: () {
+                          setState(() {
+                            _selectedTestIndex = index;
+                          });
+                          Navigator.pop(context);
+                          // Prevent keyboard from popping up after modal closes
+                          _transcriptFocusNode.unfocus();
+                        },
                       ),
                     ),
-                    trailing: _selectedTestIndex == index
-                        ? const Icon(
-                            Icons.check_circle,
-                            color: Color(0xFF9D4EDD),
-                          )
-                        : null,
-                    onTap: () {
-                      setState(() {
-                        _selectedTestIndex = index;
-                      });
-                      Navigator.pop(context);
-                      // Prevent keyboard from popping up after modal closes
-                      _transcriptFocusNode.unfocus();
-                    },
                   ),
-                ),
-              ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -271,87 +270,87 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                   const SizedBox(height: 24),
                   // Animated microphone button with sound wave indicator
                   Center(
-                child: AnimatedMicrophoneButton(
-                  isListening: isListening,
-                  onTap: _toggleListening,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: Text(
-                  isListening ? 'Tap to stop' : 'Tap to start',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                ),
-              ),
-              if (kDebugMode) ...[
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    // Change button
-                    PrimaryButton(
-                      label: 'Change',
-                      width: 100,
-                      height: 48,
-                      backgroundColor: const Color(
-                        0xFF9D4EDD,
-                      ).withValues(alpha: 0.2),
-                      labelColor: const Color(0xFF9D4EDD),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      onPressed: _showTestConstantSelector,
+                    child: AnimatedMicrophoneButton(
+                      isListening: isListening,
+                      onTap: _toggleListening,
                     ),
-                    const SizedBox(width: 12),
-                    // Parse button
-                    Expanded(
-                      child: PrimaryButton(
-                        label: 'Parse',
-                        width: double.infinity,
-                        height: 48,
-                        backgroundColor: const Color(0xFF9D4EDD),
-                        labelColor: Colors.white,
-                        icon: Icons.science,
-                        iconColor: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        onPressed: () async {
-                          final bool useCached = false;
-                          debugPrint(
-                            'Test Parse Constant: Using cached round: $useCached',
-                          );
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      isListening ? 'Tap to stop' : 'Tap to start',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                    ),
+                  ),
+                  if (true) ...[
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        // Change button
+                        PrimaryButton(
+                          label: 'Change',
+                          width: 100,
+                          height: 48,
+                          backgroundColor: const Color(
+                            0xFF9D4EDD,
+                          ).withValues(alpha: 0.2),
+                          labelColor: const Color(0xFF9D4EDD),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          onPressed: _showTestConstantSelector,
+                        ),
+                        const SizedBox(width: 12),
+                        // Parse button
+                        Expanded(
+                          child: PrimaryButton(
+                            label: 'Parse',
+                            width: double.infinity,
+                            height: 48,
+                            backgroundColor: const Color(0xFF9D4EDD),
+                            labelColor: Colors.white,
+                            icon: Icons.science,
+                            iconColor: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            onPressed: () async {
+                              final bool useCached = false;
+                              debugPrint(
+                                'Test Parse Constant: Using cached round: $useCached',
+                              );
 
-                          if (context.mounted) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    RoundProcessingLoadingScreen(
-                                      transcript: _selectedTranscript,
-                                      courseName: testCourseName,
-                                      useSharedPreferences: useCached,
-                                    ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
+                              if (context.mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        RoundProcessingLoadingScreen(
+                                          transcript: _selectedTranscript,
+                                          courseName: testCourseName,
+                                          useSharedPreferences: useCached,
+                                        ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ],
-              const SizedBox(height: 24),
-              PrimaryButton(
-                label: 'Continue',
-                backgroundColor: const Color(0xFF2196F3),
-                labelColor: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                width: double.infinity,
-                height: 56,
-                disabled: !hasTranscript || isListening,
-                onPressed: _handleContinue,
-              ),
+                  const SizedBox(height: 24),
+                  PrimaryButton(
+                    label: 'Continue',
+                    backgroundColor: const Color(0xFF2196F3),
+                    labelColor: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    width: double.infinity,
+                    height: 56,
+                    disabled: !hasTranscript || isListening,
+                    onPressed: _handleContinue,
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),

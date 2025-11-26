@@ -27,6 +27,9 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize =>
       Size.fromHeight(56 + topViewPadding + (bottomWidgetHeight ?? 0));
 
+  static const double backButtonTouchTargetWidth = 60;
+  static const double rightPadding = 12;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -37,28 +40,33 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.only(left: 0, right: 12),
             child: Row(
               children: [
                 SizedBox(
                   height: 40,
-                  width: 40,
+                  width: backButtonTouchTargetWidth,
                   child: hasBackButton
-                      ? AppBarBackButton(size: 40, color: foregroundColor)
+                      ? AppBarBackButton(color: foregroundColor)
                       : null,
                 ),
                 Expanded(
-                  child: Center(
-                    child: Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: foregroundColor,
+                  child: SizedBox(
+                    child: Center(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: foregroundColor,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: 40, child: rightWidget),
+                SizedBox(
+                  width: backButtonTouchTargetWidth - rightPadding,
+                  child: rightWidget,
+                ),
               ],
             ),
           ),

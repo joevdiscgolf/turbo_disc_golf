@@ -1,7 +1,6 @@
 // Updated RecordSingleHolePanel using VoiceDescriptionCard and unified background
 // NOTE: Replace placeholders for VoiceDescriptionCard import if needed.
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
@@ -154,7 +153,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                     ),
                   ),
 
-                  if (widget.showTestButton && kDebugMode) _buildTestingRow(),
+                  if (widget.showTestButton && true) _buildTestingRow(),
 
                   const SizedBox(height: 24),
                   PrimaryButton(

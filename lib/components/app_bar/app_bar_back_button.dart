@@ -8,25 +8,30 @@ class AppBarBackButton extends StatelessWidget {
     super.key,
     this.onPressed,
     this.color,
-    this.size = 40,
+    this.height = 40,
+    this.width = 40,
   });
 
   final Function? onPressed;
   final Color? color;
-  final double size;
+  final double height;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
     return Bounceable(
       child: Container(
-        height: size,
-        width: size,
+        height: height,
+        width: width,
         color: Colors.transparent,
         child: Center(
-          child: Icon(
-            FlutterRemix.arrow_left_s_line,
-            color: color ?? Colors.black,
-            size: size * 0.6,
+          child: Transform.translate(
+            offset: Offset(-6, 0),
+            child: Icon(
+              FlutterRemix.arrow_left_s_line,
+              color: color ?? Colors.black,
+              size: 24,
+            ),
           ),
         ),
       ),
