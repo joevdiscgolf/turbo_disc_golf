@@ -90,7 +90,8 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
 
       // Compute icon center positions for each card
       for (int i = 0; i < _itemKeys.length; i++) {
-        final box = _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
+        final box =
+            _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
         if (box == null) {
           iconCenters.add(0.0);
         } else {
@@ -98,15 +99,19 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
           // Icon is positioned at top of row with some padding
           // Icon center is approximately at top + 16px (icon radius)
           final iconCenterGlobalY = globalTopLeft.dy + 16.0;
-          final iconCenterLocalY = listBox.globalToLocal(Offset(0, iconCenterGlobalY)).dy;
+          final iconCenterLocalY = listBox
+              .globalToLocal(Offset(0, iconCenterGlobalY))
+              .dy;
           iconCenters.add(iconCenterLocalY);
         }
       }
 
       // Compute add button positions (center between consecutive cards)
       for (int i = 0; i < _itemKeys.length - 1; i++) {
-        final box1 = _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
-        final box2 = _itemKeys[i + 1].currentContext?.findRenderObject() as RenderBox?;
+        final box1 =
+            _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
+        final box2 =
+            _itemKeys[i + 1].currentContext?.findRenderObject() as RenderBox?;
 
         if (box1 != null && box2 != null) {
           final pos1 = box1.localToGlobal(Offset.zero);
@@ -137,7 +142,9 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
     setState(() => _isDragging = dragging);
 
     if (!dragging) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _recomputePositions());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _recomputePositions(),
+      );
     }
   }
 
@@ -158,120 +165,133 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
           child: Stack(
             clipBehavior: Clip.hardEdge,
             children: [
-            // Reorderable list of throw cards
-            Positioned.fill(
-              child: ReorderableListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                buildDefaultDragHandles: false,
-                itemCount: widget.throws.length,
-                proxyDecorator: (child, index, animation) {
-                  // Customize the appearance of the dragged item
-                  return Material(
-                    elevation: 0,
-                    color: Colors.transparent,
-                    child: child,
-                  );
-                },
-                onReorder: (oldIndex, newIndex) {
-                  if (newIndex > oldIndex) newIndex -= 1;
-                  _handleReorder(oldIndex, newIndex);
-                },
-                itemBuilder: (context, index) {
-                  final discThrow = widget.throws[index];
-                  final techniqueColor = _getTechniqueColorForThrow(discThrow);
-
-                  return Container(
-                    key: ValueKey('throw_$index'),
-                    margin: EdgeInsets.only(
-                      bottom: widget.showAddButtons ? 48.0 : 6.0,
-                    ),
-                    child: _MeasuredThrowRow(
-                      measurementKey: _itemKeys[index],
-                      discThrow: discThrow,
-                      throwIndex: index,
-                      isLast: index == widget.throws.length - 1,
-                      animationDelay: index * 90,
-                      onEdit: () => widget.onEditThrow(index),
-                      onDragStateChange: _setDragging,
-                      showDragHandle: widget.enableReorder,
-                      accentColor: techniqueColor,
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // Overlay connectors between icons
-            if (_iconCenterY.isNotEmpty)
+              // Reorderable list of throw cards
               Positioned.fill(
-                child: IgnorePointer(
-                  child: Stack(
-                    children: [
-                      for (int i = 0; i < _iconCenterY.length - 1; i++)
-                        Builder(
-                          builder: (ctx) {
-                            const double iconRadius = 16.0; // Icon is 32px diameter
-                            // Start at bottom of top icon, end at top of bottom icon
-                            final startY = _iconCenterY[i] + iconRadius;
-                            final endY = _iconCenterY[i + 1] - iconRadius;
-                            final height = (endY - startY).clamp(0.0, double.infinity);
-                            final discThrow = widget.throws[i];
-                            final color = _getTechniqueColorForThrow(discThrow);
+                child: ReorderableListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  buildDefaultDragHandles: false,
+                  itemCount: widget.throws.length,
+                  proxyDecorator: (child, index, animation) {
+                    // Customize the appearance of the dragged item
+                    return Material(
+                      elevation: 0,
+                      color: Colors.transparent,
+                      child: child,
+                    );
+                  },
+                  onReorder: (oldIndex, newIndex) {
+                    if (newIndex > oldIndex) newIndex -= 1;
+                    _handleReorder(oldIndex, newIndex);
+                  },
+                  itemBuilder: (context, index) {
+                    final discThrow = widget.throws[index];
+                    final techniqueColor = _getTechniqueColorForThrow(
+                      discThrow,
+                    );
 
-                            return Positioned(
-                              left: 37, // Center line on icon (16px padding + 22px to icon center - 1px for 2px line width)
-                              top: startY,
-                              child: Container(
-                                width: 2,
-                                height: height,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      color.withValues(alpha: 0.5),
-                                      color.withValues(alpha: 0.18),
-                                    ],
+                    return Container(
+                      key: ValueKey('throw_$index'),
+                      margin: EdgeInsets.only(
+                        bottom: widget.showAddButtons ? 48.0 : 6.0,
+                      ),
+                      child: _MeasuredThrowRow(
+                        measurementKey: _itemKeys[index],
+                        discThrow: discThrow,
+                        throwIndex: index,
+                        isLast: index == widget.throws.length - 1,
+                        animationDelay: index * 90,
+                        onEdit: () => widget.onEditThrow(index),
+                        onDragStateChange: _setDragging,
+                        showDragHandle: widget.enableReorder,
+                        accentColor: techniqueColor,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Overlay connectors between icons
+              if (_iconCenterY.isNotEmpty)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Stack(
+                      children: [
+                        for (int i = 0; i < _iconCenterY.length - 1; i++)
+                          Builder(
+                            builder: (ctx) {
+                              const double iconRadius =
+                                  16.0; // Icon is 32px diameter
+                              // Start at bottom of top icon, end at top of bottom icon
+                              final startY = _iconCenterY[i] + iconRadius;
+                              final endY = _iconCenterY[i + 1] - iconRadius;
+                              final height = (endY - startY).clamp(
+                                0.0,
+                                double.infinity,
+                              );
+                              final discThrow = widget.throws[i];
+                              final color = _getTechniqueColorForThrow(
+                                discThrow,
+                              );
+
+                              return Positioned(
+                                left:
+                                    37, // Center line on icon (16px padding + 22px to icon center - 1px for 2px line width)
+                                top: startY,
+                                child: Container(
+                                  width: 2,
+                                  height: height,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        color.withValues(alpha: 0.5),
+                                        color.withValues(alpha: 0.18),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                    ],
+                              );
+                            },
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-            // Add buttons positioned between cards using measured positions
-            if (widget.showAddButtons && _addButtonY.isNotEmpty)
-              Positioned.fill(
-                child: IgnorePointer(
-                  ignoring: false,
-                  child: Stack(
-                    children: [
-                      for (int i = 0; i < _addButtonY.length; i++)
-                        Positioned(
-                          left: (constraints.maxWidth / 2) - 16, // Center horizontally (32px button / 2)
-                          top: _addButtonY[i] - 16, // Center vertically (32px button / 2)
-                          child: GestureDetector(
-                            onTap: () => widget.onAddThrowAt(i),
-                            child: _AnchoredAddButton(
-                              color: _getTechniqueColorForThrow(
-                                widget.throws[i],
+              // Add buttons positioned between cards using measured positions
+              if (widget.showAddButtons && _addButtonY.isNotEmpty)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    ignoring: false,
+                    child: Stack(
+                      children: [
+                        for (int i = 0; i < _addButtonY.length; i++)
+                          Positioned(
+                            left:
+                                (constraints.maxWidth / 2) -
+                                16, // Center horizontally (32px button / 2)
+                            top:
+                                _addButtonY[i] -
+                                16, // Center vertically (32px button / 2)
+                            child: GestureDetector(
+                              onTap: () => widget.onAddThrowAt(i),
+                              child: _AnchoredAddButton(
+                                color: _getTechniqueColorForThrow(
+                                  widget.throws[i],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
         );
       },
     );
@@ -458,85 +478,102 @@ class _ThrowCardState extends State<_ThrowCard> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.onEdit,
-      child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: widget.accentColor.withValues(alpha: 0.28),
-                width: 1,
-              ),
-              boxShadow: _isDraggingLocal
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: widget.accentColor.withValues(alpha: 0.08),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              children: [
-                // Title + details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: widget.accentColor,
-                        ),
-                      ),
-                      if (widget.details.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.details.join(' • '),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ],
+      child:
+          Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: widget.accentColor.withValues(alpha: 0.28),
+                    width: 1,
                   ),
+                  boxShadow: _isDraggingLocal
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: widget.accentColor.withValues(alpha: 0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
-
-                const SizedBox(width: 8),
-
-                Icon(Icons.edit_outlined, size: 18, color: widget.accentColor),
-
-                if (widget.showDragHandle) ...[
-                  const SizedBox(width: 6),
-                  ReorderableDragStartListener(
-                    index: widget.visualIndex,
-                    child: Listener(
-                      onPointerDown: (_) => _handleLocalDragState(true),
-                      onPointerUp: (_) => _handleLocalDragState(false),
-                      onPointerCancel: (_) => _handleLocalDragState(false),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                        child: Icon(
-                          Icons.drag_handle,
-                          size: 20,
-                          color: widget.accentColor.withValues(alpha: 0.84),
-                        ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    // Title + details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.title,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.accentColor,
+                                ),
+                          ),
+                          if (widget.details.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              widget.details.join(' • '),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ],
-            ),
-          )
-          .animate(delay: Duration(milliseconds: widget.animationDelay))
-          .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-          .slideY(begin: 0.08, end: 0.0, duration: 280.ms, curve: Curves.easeOut),
+
+                    const SizedBox(width: 8),
+
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 18,
+                      color: widget.accentColor,
+                    ),
+
+                    if (widget.showDragHandle) ...[
+                      const SizedBox(width: 6),
+                      ReorderableDragStartListener(
+                        index: widget.visualIndex,
+                        child: Listener(
+                          onPointerDown: (_) => _handleLocalDragState(true),
+                          onPointerUp: (_) => _handleLocalDragState(false),
+                          onPointerCancel: (_) => _handleLocalDragState(false),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                            child: Icon(
+                              Icons.drag_handle,
+                              size: 20,
+                              color: widget.accentColor.withValues(alpha: 0.84),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              )
+              .animate(delay: Duration(milliseconds: widget.animationDelay))
+              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+              .slideY(
+                begin: 0.08,
+                end: 0.0,
+                duration: 280.ms,
+                curve: Curves.easeOut,
+              ),
     );
   }
 }

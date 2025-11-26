@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/shot_detail.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 
@@ -31,11 +32,10 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: Text(widget.overallStats.displayName),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: GenericAppBar(
+        topViewPadding: MediaQuery.of(context).viewPadding.top,
+        title: widget.overallStats.displayName,
+        backgroundColor: Colors.transparent,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -45,20 +45,22 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
           if (widget.shotShapeStats.isNotEmpty) ...[
             _buildSectionTitle(context, 'Shot Shape Breakdown'),
             const SizedBox(height: 12),
-            ...widget.shotShapeStats.map((shape) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _ShotShapeCard(
-                    shape: shape,
-                    shotDetails: widget.shotShapeDetails[shape.shapeName] ?? [],
-                    isExpanded: _shotShapeExpanded[shape.shapeName] ?? false,
-                    onToggleExpand: () {
-                      setState(() {
-                        _shotShapeExpanded[shape.shapeName] =
-                            !(_shotShapeExpanded[shape.shapeName] ?? false);
-                      });
-                    },
-                  ),
-                )),
+            ...widget.shotShapeStats.map(
+              (shape) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ShotShapeCard(
+                  shape: shape,
+                  shotDetails: widget.shotShapeDetails[shape.shapeName] ?? [],
+                  isExpanded: _shotShapeExpanded[shape.shapeName] ?? false,
+                  onToggleExpand: () {
+                    setState(() {
+                      _shotShapeExpanded[shape.shapeName] =
+                          !(_shotShapeExpanded[shape.shapeName] ?? false);
+                    });
+                  },
+                ),
+              ),
+            ),
           ] else
             _buildEmptyState(context),
         ],
@@ -78,10 +80,7 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFE5E7EB),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -93,111 +92,118 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.disc_full,
-                  size: 28,
-                  color: Color(0xFF10B981),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Overall Performance',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: const Color(0xFF6B7280),
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.overallStats.displayName,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              if (widget.overallStats.averageDistance != null) ...[
+            Row(
+              children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
-                    borderRadius: BorderRadius.circular(6),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: const Icon(
+                    Icons.disc_full,
+                    size: 28,
+                    color: Color(0xFF10B981),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.straighten,
-                        size: 14,
-                        color: Color(0xFF6B7280),
-                      ),
-                      const SizedBox(width: 4),
                       Text(
-                        widget.overallStats.distanceDisplay,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                              color: const Color(0xFF111827),
+                        'Overall Performance',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: const Color(0xFF6B7280),
+                              fontWeight: FontWeight.w500,
                             ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.overallStats.displayName,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                if (widget.overallStats.averageDistance != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.straighten,
+                          size: 14,
+                          color: Color(0xFF6B7280),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.overallStats.distanceDisplay,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                color: const Color(0xFF111827),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Icon(
+                  _isOverallExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: const Color(0xFF6B7280),
+                ),
               ],
-              Icon(
-                _isOverallExpanded
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
-                color: const Color(0xFF6B7280),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _StatPill(
-            icon: Icons.emoji_events_outlined,
-            label: 'Birdie Rate',
-            value: '${widget.overallStats.birdieRate.toStringAsFixed(0)}%',
-            detail: '${widget.overallStats.birdieCount}/${widget.overallStats.totalHoles} holes',
-            color: const Color(0xFF10B981),
-          ),
-          const SizedBox(height: 12),
-          _StatPill(
-            icon: Icons.my_location_outlined,
-            label: 'C1 in Reg',
-            value: '${widget.overallStats.c1InRegPct.toStringAsFixed(0)}%',
-            detail: '${widget.overallStats.c1Count}/${widget.overallStats.c1Total} attempts',
-            color: const Color(0xFF3B82F6),
-          ),
-          const SizedBox(height: 12),
-          _StatPill(
-            icon: Icons.adjust,
-            label: 'C2 in Reg',
-            value: '${widget.overallStats.c2InRegPct.toStringAsFixed(0)}%',
-            detail: '${widget.overallStats.c2Count}/${widget.overallStats.c2Total} attempts',
-            color: const Color(0xFF8B5CF6),
-          ),
-          if (_isOverallExpanded) ...[
+            ),
             const SizedBox(height: 20),
-            const Divider(color: Color(0xFFE5E7EB)),
-            const SizedBox(height: 16),
-            _buildShotDetailsList(widget.overallShotDetails),
+            _StatPill(
+              icon: Icons.emoji_events_outlined,
+              label: 'Birdie Rate',
+              value: '${widget.overallStats.birdieRate.toStringAsFixed(0)}%',
+              detail:
+                  '${widget.overallStats.birdieCount}/${widget.overallStats.totalHoles} holes',
+              color: const Color(0xFF10B981),
+            ),
+            const SizedBox(height: 12),
+            _StatPill(
+              icon: Icons.my_location_outlined,
+              label: 'C1 in Reg',
+              value: '${widget.overallStats.c1InRegPct.toStringAsFixed(0)}%',
+              detail:
+                  '${widget.overallStats.c1Count}/${widget.overallStats.c1Total} attempts',
+              color: const Color(0xFF3B82F6),
+            ),
+            const SizedBox(height: 12),
+            _StatPill(
+              icon: Icons.adjust,
+              label: 'C2 in Reg',
+              value: '${widget.overallStats.c2InRegPct.toStringAsFixed(0)}%',
+              detail:
+                  '${widget.overallStats.c2Count}/${widget.overallStats.c2Total} attempts',
+              color: const Color(0xFF8B5CF6),
+            ),
+            if (_isOverallExpanded) ...[
+              const SizedBox(height: 20),
+              const Divider(color: Color(0xFFE5E7EB)),
+              const SizedBox(height: 16),
+              _buildShotDetailsList(widget.overallShotDetails),
+            ],
           ],
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -206,10 +212,7 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
     if (shotDetails.isEmpty) {
       return Text(
         'No shots found',
-        style: TextStyle(
-          fontSize: 13,
-          color: const Color(0xFF6B7280),
-        ),
+        style: TextStyle(fontSize: 13, color: const Color(0xFF6B7280)),
       );
     }
 
@@ -224,7 +227,9 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: _getScoreColor(detail.relativeScore).withValues(alpha: 0.15),
+                  color: _getScoreColor(
+                    detail.relativeScore,
+                  ).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -271,10 +276,18 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
   }
 
   Color _getScoreColor(int relativeScore) {
-    if (relativeScore < 0) return const Color(0xFF10B981); // Birdie/Eagle - Green
-    if (relativeScore == 0) return const Color(0xFF6B7280); // Par - Gray
-    if (relativeScore == 1) return const Color(0xFFFB923C); // Bogey - Orange
-    return const Color(0xFFEF4444); // Double+ - Red
+    if (relativeScore < 0) {
+      return const Color(0xFF10B981);
+    } // Birdie/Eagle - Green
+    else if (relativeScore == 0) {
+      return const Color(0xFF6B7280);
+    } // Par - Gray
+    else if (relativeScore == 1) {
+      return const Color(0xFFFB923C);
+    } // Bogey - Orange
+    else {
+      return const Color(0xFFEF4444);
+    } // Double+ - Red
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
@@ -282,9 +295,9 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -295,10 +308,7 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE5E7EB),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
       ),
       child: Center(
         child: Column(
@@ -306,14 +316,16 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
             Icon(
               Icons.insights_outlined,
               size: 48,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 12),
             Text(
               'No shot shape data available',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -354,11 +366,7 @@ class _StatPill extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: color,
-              ),
+              Icon(icon, size: 20, color: color),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -367,18 +375,18 @@ class _StatPill extends StatelessWidget {
                     Text(
                       label,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: const Color(0xFF374151),
-                          ),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: const Color(0xFF374151),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       detail,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: const Color(0xFF9CA3AF),
-                          ),
+                        fontSize: 11,
+                        color: const Color(0xFF9CA3AF),
+                      ),
                     ),
                   ],
                 ),
@@ -386,10 +394,10 @@ class _StatPill extends StatelessWidget {
               Text(
                 value,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22,
-                      color: color,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                  color: color,
+                ),
               ),
             ],
           ),
@@ -432,10 +440,7 @@ class _ShotShapeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFE5E7EB),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -466,9 +471,9 @@ class _ShotShapeCard extends StatelessWidget {
                   child: Text(
                     shape.displayName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
                 Icon(
@@ -479,41 +484,41 @@ class _ShotShapeCard extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 16),
-          _MetricRow(
-            icon: Icons.emoji_events_outlined,
-            label: 'Birdie Rate',
-            percentage: shape.birdieRate,
-            count: shape.birdieCount,
-            total: shape.totalAttempts,
-            color: const Color(0xFF10B981),
-          ),
-          const SizedBox(height: 12),
-          _MetricRow(
-            icon: Icons.my_location_outlined,
-            label: 'C1 in Reg',
-            percentage: shape.c1InRegPct,
-            count: shape.c1Count,
-            total: shape.c1Total,
-            color: const Color(0xFF3B82F6),
-          ),
-          const SizedBox(height: 12),
-          _MetricRow(
-            icon: Icons.adjust,
-            label: 'C2 in Reg',
-            percentage: shape.c2InRegPct,
-            count: shape.c2Count,
-            total: shape.c2Total,
-            color: const Color(0xFF8B5CF6),
-          ),
-          if (isExpanded) ...[
             const SizedBox(height: 16),
-            const Divider(color: Color(0xFFE5E7EB)),
-            const SizedBox(height: 16),
-            _ShotShapeDetailsList(shotDetails: shotDetails),
+            _MetricRow(
+              icon: Icons.emoji_events_outlined,
+              label: 'Birdie Rate',
+              percentage: shape.birdieRate,
+              count: shape.birdieCount,
+              total: shape.totalAttempts,
+              color: const Color(0xFF10B981),
+            ),
+            const SizedBox(height: 12),
+            _MetricRow(
+              icon: Icons.my_location_outlined,
+              label: 'C1 in Reg',
+              percentage: shape.c1InRegPct,
+              count: shape.c1Count,
+              total: shape.c1Total,
+              color: const Color(0xFF3B82F6),
+            ),
+            const SizedBox(height: 12),
+            _MetricRow(
+              icon: Icons.adjust,
+              label: 'C2 in Reg',
+              percentage: shape.c2InRegPct,
+              count: shape.c2Count,
+              total: shape.c2Total,
+              color: const Color(0xFF8B5CF6),
+            ),
+            if (isExpanded) ...[
+              const SizedBox(height: 16),
+              const Divider(color: Color(0xFFE5E7EB)),
+              const SizedBox(height: 16),
+              _ShotShapeDetailsList(shotDetails: shotDetails),
+            ],
           ],
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -544,27 +549,23 @@ class _MetricRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: color,
-            ),
+            Icon(icon, size: 16, color: color),
             const SizedBox(width: 8),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                    color: const Color(0xFF6B7280),
-                  ),
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: const Color(0xFF6B7280),
+              ),
             ),
             const Spacer(),
             Text(
               '${percentage.toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
             ),
           ],
         ),
@@ -586,9 +587,9 @@ class _MetricRow extends StatelessWidget {
             Text(
               '$count/$total',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
-                    color: const Color(0xFF9CA3AF),
-                  ),
+                fontSize: 12,
+                color: const Color(0xFF9CA3AF),
+              ),
             ),
           ],
         ),
@@ -608,10 +609,7 @@ class _ShotShapeDetailsList extends StatelessWidget {
     if (shotDetails.isEmpty) {
       return Text(
         'No shots found',
-        style: TextStyle(
-          fontSize: 13,
-          color: const Color(0xFF6B7280),
-        ),
+        style: TextStyle(fontSize: 13, color: const Color(0xFF6B7280)),
       );
     }
 
@@ -626,7 +624,9 @@ class _ShotShapeDetailsList extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: _getScoreColor(detail.relativeScore).withValues(alpha: 0.15),
+                  color: _getScoreColor(
+                    detail.relativeScore,
+                  ).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -673,19 +673,21 @@ class _ShotShapeDetailsList extends StatelessWidget {
   }
 
   Color _getScoreColor(int relativeScore) {
-    if (relativeScore < 0) return const Color(0xFF10B981); // Birdie/Eagle - Green
-    if (relativeScore == 0) return const Color(0xFF6B7280); // Par - Gray
-    if (relativeScore == 1) return const Color(0xFFFB923C); // Bogey - Orange
-    return const Color(0xFFEF4444); // Double+ - Red
+    if (relativeScore < 0) {
+      return const Color(0xFF10B981); // Birdie/Eagle - Green
+    } else if (relativeScore == 0) {
+      return const Color(0xFF6B7280); // Par - Gray
+    } else if (relativeScore == 1) {
+      return const Color(0xFFFB923C); // Bogey - Orange
+    } else {
+      return const Color(0xFFEF4444); // Double+ - Red
+    }
   }
 }
 
 /// Small badge showing an outcome icon
 class _OutcomeBadge extends StatelessWidget {
-  const _OutcomeBadge({
-    required this.icon,
-    required this.color,
-  });
+  const _OutcomeBadge({required this.icon, required this.color});
 
   final IconData icon;
   final Color color;
@@ -700,11 +702,7 @@ class _OutcomeBadge extends StatelessWidget {
           color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Icon(
-          icon,
-          size: 14,
-          color: color,
-        ),
+        child: Icon(icon, size: 14, color: color),
       ),
     );
   }

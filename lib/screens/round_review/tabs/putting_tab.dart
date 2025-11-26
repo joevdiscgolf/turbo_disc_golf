@@ -33,7 +33,7 @@ class PuttingTab extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.only(top: 24, bottom: 80),
+      padding: const EdgeInsets.only(top: 12, bottom: 80),
       children: addRunSpacing(
         [
           // // New cards from deep analysis

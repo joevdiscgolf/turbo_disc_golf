@@ -392,121 +392,113 @@ class _DrivesTabState extends State<DrivesTab> {
     // Sort by birdie rate descending to identify best/worst performers
     allThrowTypes.sort((a, b) => b.birdieRate.compareTo(a.birdieRate));
 
-    return Container(
-      color: const Color(0xFFF8F9FA),
-      child: ListView(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: 80,
+    return ListView(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
+      children: [
+        // Core stats card
+        CoreDriveStatsCard(
+          coreStats: coreStats,
+          onC1InRegPressed: () {
+            _navigateToStatDetail(
+              context,
+              'C1 in Reg',
+              coreStats.c1InRegPct,
+              const Color(0xFF137e66),
+              _getC1InRegHoles(),
+            );
+          },
+          onC2InRegPressed: () {
+            _navigateToStatDetail(
+              context,
+              'C2 in Reg',
+              coreStats.c2InRegPct,
+              const Color.fromARGB(255, 13, 21, 28),
+              _getC2InRegHoles(),
+            );
+          },
+          onFairwayPressed: () {
+            _navigateToStatDetail(
+              context,
+              'Fairway',
+              coreStats.fairwayHitPct,
+              const Color(0xFF4CAF50),
+              _getFairwayHoles(),
+            );
+          },
+          onOBPressed: () {
+            _navigateToStatDetail(
+              context,
+              'OB',
+              coreStats.obPct,
+              const Color(0xFFFF7A7A),
+              _getOBHoles(),
+            );
+          },
+          onParkedPressed: () {
+            _navigateToStatDetail(
+              context,
+              'Parked',
+              coreStats.parkedPct,
+              const Color(0xFFFFA726),
+              _getParkedHoles(),
+            );
+          },
         ),
-        children: [
-          // Core stats card
-          CoreDriveStatsCard(
-            coreStats: coreStats,
-            onC1InRegPressed: () {
-              _navigateToStatDetail(
-                context,
-                'C1 in Reg',
-                coreStats.c1InRegPct,
-                const Color(0xFF137e66),
-                _getC1InRegHoles(),
-              );
-            },
-            onC2InRegPressed: () {
-              _navigateToStatDetail(
-                context,
-                'C2 in Reg',
-                coreStats.c2InRegPct,
-                const Color.fromARGB(255, 13, 21, 28),
-                _getC2InRegHoles(),
-              );
-            },
-            onFairwayPressed: () {
-              _navigateToStatDetail(
-                context,
-                'Fairway',
-                coreStats.fairwayHitPct,
-                const Color(0xFF4CAF50),
-                _getFairwayHoles(),
-              );
-            },
-            onOBPressed: () {
-              _navigateToStatDetail(
-                context,
-                'OB',
-                coreStats.obPct,
-                const Color(0xFFFF7A7A),
-                _getOBHoles(),
-              );
-            },
-            onParkedPressed: () {
-              _navigateToStatDetail(
-                context,
-                'Parked',
-                coreStats.parkedPct,
-                const Color(0xFFFFA726),
-                _getParkedHoles(),
-              );
-            },
+        const SizedBox(height: 16),
+
+        // Insight card
+        // if (allThrowTypes.length >= 2) ...[
+        //   InsightCard(
+        //     bestThrowType: allThrowTypes.first.displayName,
+        //     bestPercentage: allThrowTypes.first.birdieRate,
+        //     worstThrowType: allThrowTypes.last.displayName,
+        //     worstPercentage: allThrowTypes.last.birdieRate,
+        //   ),
+        //   const SizedBox(height: 16),
+        // ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Text(
+            'Throw Type Performance',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
+        ),
+        // View mode toggle
+        ViewModeToggle(
+          selectedMode: _viewMode,
+          onModeChanged: (DriveViewMode mode) {
+            setState(() {
+              _viewMode = mode;
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Conditional rendering based on view mode
+        if (_viewMode == DriveViewMode.cards)
+          ThrowTypeListCard(
+            throwTypes: allThrowTypes,
+            onThrowTypeTap: (ThrowTypeStats stats) {
+              _navigateToThrowTypeDetail(
+                context,
+                stats.throwType,
+                stats,
+                shotShapeBirdieRates,
+                circleInRegByShape,
+              );
+            },
+          )
+        else
+          ThrowTypeRadarChart(throwTypes: allThrowTypes),
+
+        // Performance by fairway width
+        if (performanceByFairwayWidth.isNotEmpty) ...[
           const SizedBox(height: 16),
-
-          // Insight card
-          // if (allThrowTypes.length >= 2) ...[
-          //   InsightCard(
-          //     bestThrowType: allThrowTypes.first.displayName,
-          //     bestPercentage: allThrowTypes.first.birdieRate,
-          //     worstThrowType: allThrowTypes.last.displayName,
-          //     worstPercentage: allThrowTypes.last.birdieRate,
-          //   ),
-          //   const SizedBox(height: 16),
-          // ],
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Text(
-              'Throw Type Performance',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-          // View mode toggle
-          ViewModeToggle(
-            selectedMode: _viewMode,
-            onModeChanged: (DriveViewMode mode) {
-              setState(() {
-                _viewMode = mode;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Conditional rendering based on view mode
-          if (_viewMode == DriveViewMode.cards)
-            ThrowTypeListCard(
-              throwTypes: allThrowTypes,
-              onThrowTypeTap: (ThrowTypeStats stats) {
-                _navigateToThrowTypeDetail(
-                  context,
-                  stats.throwType,
-                  stats,
-                  shotShapeBirdieRates,
-                  circleInRegByShape,
-                );
-              },
-            )
-          else
-            ThrowTypeRadarChart(throwTypes: allThrowTypes),
-
-          // Performance by fairway width
-          if (performanceByFairwayWidth.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
-          ],
+          _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
         ],
-      ),
+      ],
     );
   }
 

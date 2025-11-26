@@ -18,7 +18,6 @@ class FlowStateCard extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -30,10 +29,7 @@ class FlowStateCard extends StatelessWidget {
           // Header with icon and title
           Row(
             children: [
-              const Text(
-                '🌊',
-                style: TextStyle(fontSize: 32),
-              ),
+              const Text('🌊', style: TextStyle(fontSize: 32)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -41,17 +37,15 @@ class FlowStateCard extends StatelessWidget {
                   children: [
                     Text(
                       'Flow State',
-                      style:
-                          Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       'In the zone',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -106,9 +100,7 @@ class FlowStateCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -127,9 +119,9 @@ class FlowStateCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'No Flow States Detected',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -137,8 +129,8 @@ class FlowStateCard extends StatelessWidget {
                 ? flowAnalysis.insights.first
                 : 'String together 4+ consistent holes with high shot quality to enter flow state.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -152,9 +144,9 @@ class FlowStateCard extends StatelessWidget {
       children: [
         Text(
           'Round Timeline',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 10),
         SizedBox(
@@ -175,14 +167,14 @@ class FlowStateCard extends StatelessWidget {
             Text(
               'Hole 1',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             Text(
               'Hole $totalHoles',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -190,24 +182,19 @@ class FlowStateCard extends StatelessWidget {
     );
   }
 
-
   Widget _buildFlowTriggers(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.bolt,
-              color: Color(0xFFFFB800),
-              size: 18,
-            ),
+            const Icon(Icons.bolt, color: Color(0xFFFFB800), size: 18),
             const SizedBox(width: 8),
             Text(
               'Flow Triggers',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -217,25 +204,15 @@ class FlowStateCard extends StatelessWidget {
           runSpacing: 8,
           children: flowAnalysis.flowTriggers.map((trigger) {
             return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color(0xFFFFB800),
-                  width: 1.5,
-                ),
+                border: Border.all(color: const Color(0xFFFFB800), width: 1.5),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.bolt,
-                    color: Color(0xFFFFB800),
-                    size: 14,
-                  ),
+                  const Icon(Icons.bolt, color: Color(0xFFFFB800), size: 14),
                   const SizedBox(width: 4),
                   Text(
                     trigger,
@@ -260,9 +237,9 @@ class FlowStateCard extends StatelessWidget {
       children: [
         Text(
           'Flow Periods',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 10),
         ...flowAnalysis.flowPeriods.map((period) {
@@ -284,18 +261,10 @@ class FlowStateCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE8F5E9),
-            Color(0xFFF1F8F4),
-          ],
+          colors: [Color(0xFFE8F5E9), Color(0xFFF1F8F4)],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(
-            color: qualityColor,
-            width: 4,
-          ),
-        ),
+        border: Border(left: BorderSide(color: qualityColor, width: 4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,10 +272,7 @@ class FlowStateCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: qualityColor,
                   borderRadius: BorderRadius.circular(4),
@@ -324,16 +290,16 @@ class FlowStateCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   period.label,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               Text(
                 '${period.duration} holes',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -346,17 +312,9 @@ class FlowStateCard extends StatelessWidget {
                 '${period.shotQualityRate.toStringAsFixed(0)}%',
               ),
               const SizedBox(width: 16),
-              _buildPeriodStat(
-                context,
-                'Birdies',
-                '${period.birdieCount}',
-              ),
+              _buildPeriodStat(context, 'Birdies', '${period.birdieCount}'),
               const SizedBox(width: 16),
-              _buildPeriodStat(
-                context,
-                'Mistakes',
-                '${period.mistakeCount}',
-              ),
+              _buildPeriodStat(context, 'Mistakes', '${period.mistakeCount}'),
             ],
           ),
           if (period.commonDiscs.isNotEmpty) ...[
@@ -372,14 +330,16 @@ class FlowStateCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       disc,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   );
                 }),
@@ -390,14 +350,16 @@ class FlowStateCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       tech,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontStyle: FontStyle.italic,
-                          ),
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   );
                 }),
@@ -409,26 +371,22 @@ class FlowStateCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPeriodStat(
-    BuildContext context,
-    String label,
-    String value,
-  ) {
+  Widget _buildPeriodStat(BuildContext context, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 11,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 11,
+          ),
         ),
         Text(
           value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -474,22 +432,14 @@ class FlowTimelinePainter extends CustomPainter {
 
     // Draw base timeline
     final double y = size.height / 2;
-    canvas.drawLine(
-      Offset(0, y),
-      Offset(size.width, y),
-      baseLinePaint,
-    );
+    canvas.drawLine(Offset(0, y), Offset(size.width, y), baseLinePaint);
 
     // Draw flow periods
     for (final FlowStatePeriod period in flowPeriods) {
       final double startX = ((period.startHole - 1) / totalHoles) * size.width;
       final double endX = (period.endHole / totalHoles) * size.width;
 
-      canvas.drawLine(
-        Offset(startX, y),
-        Offset(endX, y),
-        flowPaint,
-      );
+      canvas.drawLine(Offset(startX, y), Offset(endX, y), flowPaint);
     }
 
     // Draw hole markers at start and end only
@@ -498,11 +448,7 @@ class FlowTimelinePainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     // Start marker
-    canvas.drawLine(
-      Offset(0, y - 10),
-      Offset(0, y + 10),
-      markerPaint,
-    );
+    canvas.drawLine(Offset(0, y - 10), Offset(0, y + 10), markerPaint);
 
     // End marker
     canvas.drawLine(

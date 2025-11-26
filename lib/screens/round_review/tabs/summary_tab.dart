@@ -4,15 +4,16 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 
-class SummaryTab extends StatelessWidget {
+class AiSummaryTab extends StatelessWidget {
   final DGRound round;
 
-  const SummaryTab({super.key, required this.round});
+  const AiSummaryTab({super.key, required this.round});
 
   @override
   Widget build(BuildContext context) {
     // Generate analysis if we have AI content with segments
-    final analysis = (round.aiSummary != null && round.aiSummary!.segments != null)
+    final analysis =
+        (round.aiSummary != null && round.aiSummary!.segments != null)
         ? RoundAnalysisGenerator.generateAnalysis(round)
         : null;
 
@@ -35,8 +36,8 @@ class SummaryTab extends StatelessWidget {
                   child: Text(
                     'Here\'s your round analysis and coaching!',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -65,10 +66,10 @@ class SummaryTab extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'This summary is out of date with the current round',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                         ),
                       ),
                     ],

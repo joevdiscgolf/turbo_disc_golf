@@ -249,8 +249,8 @@ class AiParsingService {
     required String voiceTranscript,
     required List<DGDisc> userBag,
     required int holeNumber,
-    required int holePar,
-    required int? holeFeet,
+    required int? existingHolePar,
+    required int? existingHoleFeet,
     required String courseName,
   }) async {
     try {
@@ -258,8 +258,6 @@ class AiParsingService {
         voiceTranscript,
         userBag,
         holeNumber,
-        holePar,
-        holeFeet,
         courseName,
       );
       debugPrint(
@@ -278,22 +276,22 @@ class AiParsingService {
         'Gemini response received for hole $holeNumber, parsing YAML...',
       );
 
-      // // Print raw YAML response for debugging
-      // debugPrint(
-      //   '==================== RAW SINGLE HOLE YAML (Hole $holeNumber) ====================',
-      // );
-      // // debugPrint in chunks to avoid truncation
-      // const chunkSize = 800;
-      // for (int i = 0; i < responseText.length; i += chunkSize) {
-      //   final end = (i + chunkSize < responseText.length)
-      //       ? i + chunkSize
-      //       : responseText.length;
-      //   debugPrint(responseText.substring(i, end));
-      // }
-      // debugPrint(
-      //   '================================================================================',
-      // );
-      // debugPrint('Response length: ${responseText.length} characters');
+      // Print raw YAML response for debugging
+      debugPrint(
+        '==================== RAW SINGLE HOLE YAML (Hole $holeNumber) ====================',
+      );
+      // debugPrint in chunks to avoid truncation
+      const chunkSize = 800;
+      for (int i = 0; i < responseText.length; i += chunkSize) {
+        final end = (i + chunkSize < responseText.length)
+            ? i + chunkSize
+            : responseText.length;
+        debugPrint(responseText.substring(i, end));
+      }
+      debugPrint(
+        '================================================================================',
+      );
+      debugPrint('Response length: ${responseText.length} characters');
 
       // Clean up the response - remove markdown code blocks if present
       responseText = responseText.trim();
@@ -315,8 +313,23 @@ class AiParsingService {
       final yamlDoc = loadYaml(responseText);
       final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
 
-      // Ensure hole number, par, and feet match the context
+      // Ensure hole number matches
       jsonMap['number'] = holeNumber;
+
+      // Use existing par/feet as fallback if not detected in the AI response
+      if (jsonMap['par'] == null && existingHolePar != null) {
+        debugPrint(
+          'No par detected in AI response, using existing par: $existingHolePar',
+        );
+        jsonMap['par'] = existingHolePar;
+      }
+
+      if (jsonMap['feet'] == null && existingHoleFeet != null) {
+        debugPrint(
+          'No distance detected in AI response, using existing distance: $existingHoleFeet',
+        );
+        jsonMap['feet'] = existingHoleFeet;
+      }
 
       debugPrint(
         'Single hole YAML parsed successfully, converting to PotentialDGHole...',
@@ -478,8 +491,6 @@ class AiParsingService {
     String voiceTranscript,
     List<DGDisc> userBag,
     int holeNumber,
-    int holePar,
-    int? holeFeet,
     String courseName,
   ) {
     switch (_selectedModel) {
@@ -488,8 +499,6 @@ class AiParsingService {
           voiceTranscript,
           userBag,
           holeNumber,
-          holePar,
-          holeFeet,
           courseName,
         );
     }

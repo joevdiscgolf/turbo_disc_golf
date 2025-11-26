@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -92,7 +93,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
         title = 'Mental Game';
         break;
       case 9: // Summary
-        detailScreen = SummaryTab(round: widget.round);
+        detailScreen = AiSummaryTab(round: widget.round);
         title = 'AI Insights';
         break;
       case 11: // Roast
@@ -204,7 +205,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
             isDetailScreen: false,
             onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           // Padding(
           //   padding: const EdgeInsets.symmetric(horizontal: 16),
           //   child: SkillsOverviewCard(
@@ -2856,7 +2857,11 @@ class _DetailScreenWrapper extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(backgroundColor: Colors.transparent, title: Text(title)),
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: title,
+          backgroundColor: Colors.transparent,
+        ),
         body: child,
       ),
     );

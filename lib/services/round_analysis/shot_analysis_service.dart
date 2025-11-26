@@ -16,7 +16,8 @@ class ShotAnalysisService {
     // Bad outcomes = failure
     if (discThrow.landingSpot == LandingSpot.outOfBounds) return false;
     if (discThrow.landingSpot == LandingSpot.offFairway) return false;
-    if (discThrow.penaltyStrokes != null && discThrow.penaltyStrokes! > 0) {
+    if (discThrow.customPenaltyStrokes != null &&
+        discThrow.customPenaltyStrokes! > 0) {
       return false;
     }
 

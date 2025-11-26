@@ -269,7 +269,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
       final int penaltyStrokes =
           hole.throws?.fold<int>(
             0,
-            (prev, discThrow) => prev + (discThrow.penaltyStrokes ?? 0),
+            (prev, discThrow) => prev + (discThrow.customPenaltyStrokes ?? 0),
           ) ??
           0;
       return sum + throwsCount + penaltyStrokes;

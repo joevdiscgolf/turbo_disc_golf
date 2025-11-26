@@ -164,8 +164,8 @@ class RoundStatisticsService {
       for (var discThrow in hole.throws) {
         if (discThrow.landingSpot == LandingSpot.outOfBounds ||
             discThrow.landingSpot == LandingSpot.offFairway ||
-            (discThrow.penaltyStrokes != null &&
-                discThrow.penaltyStrokes! > 0)) {
+            (discThrow.customPenaltyStrokes != null &&
+                discThrow.customPenaltyStrokes! > 0)) {
           hadTrouble = true;
           break;
         }

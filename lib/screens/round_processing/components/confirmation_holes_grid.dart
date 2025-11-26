@@ -199,8 +199,9 @@ class _HoleGridItemState extends State<_HoleGridItem> {
     int holeIndex,
   ) {
     // Get course name from state
-    final RoundConfirmationState state =
-        context.read<RoundConfirmationCubit>().state;
+    final RoundConfirmationState state = context
+        .read<RoundConfirmationCubit>()
+        .state;
     final String courseName = (state is ConfirmingRoundActive)
         ? (state.potentialRound.courseName ?? 'Unknown Course')
         : 'Unknown Course';
@@ -238,8 +239,9 @@ class _HoleGridItemState extends State<_HoleGridItem> {
     );
 
     // Sync to cubit - BlocBuilder will rebuild EditableHoleDetailPanel
-    BlocProvider.of<RoundConfirmationCubit>(context)
-        .updatePotentialHole(holeIndex, parsedHole);
+    BlocProvider.of<RoundConfirmationCubit>(
+      context,
+    ).updatePotentialHole(holeIndex, parsedHole);
 
     // Show success
     ScaffoldMessenger.of(context).showSnackBar(
@@ -263,7 +265,7 @@ class _HoleGridItemState extends State<_HoleGridItem> {
       final int penaltyStrokes =
           widget.potentialHole.throws?.fold<int>(
             0,
-            (prev, t) => prev + (t.penaltyStrokes ?? 0),
+            (prev, t) => prev + (t.customPenaltyStrokes ?? 0),
           ) ??
           0;
       score = throwsCount + penaltyStrokes;

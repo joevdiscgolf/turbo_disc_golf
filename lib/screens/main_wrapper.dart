@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
@@ -64,9 +65,9 @@ class _MainWrapperState extends State<MainWrapper> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          title: Text(appBarTitle),
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: appBarTitle,
         ),
         body: IndexedStack(
           index: _selectedIndex,

@@ -105,7 +105,7 @@ class _RoundStoryViewState extends State<RoundStoryView> {
                   });
                 },
                 children: [
-                  _buildStoryPage(SummaryTab(round: widget.round), 'Summary'),
+                  _buildStoryPage(AiSummaryTab(round: widget.round), 'Summary'),
                   _buildStoryPage(ScoresTab(round: widget.round), 'Course'),
                   _buildStoryPage(DrivesTab(round: widget.round), 'Drives'),
                   _buildStoryPage(PuttingTab(round: widget.round), 'Putting'),

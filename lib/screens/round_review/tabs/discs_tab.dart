@@ -51,7 +51,7 @@ class DiscsTab extends StatelessWidget {
     final otherDiscs = sortedDiscs.skip(3).toList();
 
     return ListView(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 80),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
       children: addRunSpacing(
         [
           // Hero section - Top performing discs
