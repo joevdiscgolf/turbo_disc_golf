@@ -8,7 +8,7 @@ class AppBarBackButton extends StatelessWidget {
     super.key,
     this.onPressed,
     this.color,
-    this.size = 40,
+    this.size = 48,
   });
 
   final Function? onPressed;

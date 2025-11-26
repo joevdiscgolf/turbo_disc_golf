@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
@@ -246,7 +246,7 @@ class _RecordRoundPanelV2State extends State<RecordRoundPanelV2> {
                       const SizedBox(height: 14),
 
                       // Debug buttons (Change + Parse) preserved
-                      if (kDebugMode) ...[
+                      if (true) ...[
                         Row(
                           children: [
                             PrimaryButton(

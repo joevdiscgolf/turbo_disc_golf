@@ -37,14 +37,14 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
                 SizedBox(
-                  height: 40,
-                  width: 40,
+                  height: 48,
+                  width: 48,
                   child: hasBackButton
-                      ? AppBarBackButton(size: 40, color: foregroundColor)
+                      ? AppBarBackButton(color: foregroundColor)
                       : null,
                 ),
                 Expanded(
@@ -58,7 +58,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: 40, child: rightWidget),
+                SizedBox(width: 48, child: rightWidget),
               ],
             ),
           ),
