@@ -2,3 +2,4 @@ const bool shouldAnimateProgressIndicators = true;
 const bool useRoundReviewScreenV2 = true;
 const bool useHeroAnimationsForRoundReview = false;
 const bool useCustomPageTransitionsForRoundReview = true;
+const bool useAddThrowPanelV2 = true;

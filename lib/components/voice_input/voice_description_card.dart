@@ -18,16 +18,13 @@ class VoiceDescriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color base = Colors.grey.shade50;
-    final Color border = isListening
-        ? const Color(0xFF2196F3)
-        : Colors.grey.shade200;
+    final Color baseColor = Colors.grey.shade50;
 
     return Container(
       decoration: BoxDecoration(
-        color: base,
+        color: baseColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border),
+        border: Border.all(color: flattenedOverWhite(accent, 0.5)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

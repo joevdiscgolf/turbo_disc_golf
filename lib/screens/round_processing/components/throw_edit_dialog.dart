@@ -15,7 +15,6 @@ class ThrowEditDialog extends StatefulWidget {
     super.key,
     required DiscThrow throw_,
     required this.throwIndex,
-    required this.holeNumber,
     required this.onSave,
     this.onDelete,
     this.isNewThrow = false,
@@ -23,7 +22,6 @@ class ThrowEditDialog extends StatefulWidget {
 
   final DiscThrow _throw;
   final int throwIndex;
-  final int holeNumber;
   final void Function(DiscThrow) onSave;
   final VoidCallback? onDelete;
   final bool isNewThrow;

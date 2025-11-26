@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/add_throw_panel.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
 ///
@@ -70,7 +72,9 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
 
     if (oldWidget.potentialHole != widget.potentialHole) {
       debugPrint('🔄 EditableHoleDetailPanel received new potentialHole');
-      debugPrint('   Old throws: ${oldWidget.potentialHole.throws?.length ?? 0}');
+      debugPrint(
+        '   Old throws: ${oldWidget.potentialHole.throws?.length ?? 0}',
+      );
       debugPrint('   New throws: ${widget.potentialHole.throws?.length ?? 0}');
     }
   }
@@ -149,29 +153,52 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       technique: ThrowTechnique.backhand,
     );
 
-    // await showDialog(
-    //   context: context,
-    //   builder: (context) => AddThrowWalkthroughDialog(
-    //     onComplete: (_, __) {},
-    //     throwIndex: displayThrowNumber,
-    //   ),
-    // );
+    if (useAddThrowPanelV2) {
+      // Determine the previous throw for smart auto-selection
+      // If addAtIndex is null, previous throw is the last throw
+      // If addAtIndex is a number, previous throw is the throw at that index
+      final DiscThrow? previousThrow = addAtIndex != null
+          ? (currentHole.throws != null && addAtIndex < currentHole.throws!.length
+              ? currentHole.throws![addAtIndex]
+              : null)
+          : (currentHole.throws?.isNotEmpty ?? false
+              ? currentHole.throws!.last
+              : null);
 
-    await showDialog(
-      context: context,
-      builder: (context) => ThrowEditDialog(
-        throw_: newThrow,
-        throwIndex: displayThrowNumber,
-        holeNumber: currentHole.number ?? widget.holeIndex + 1,
-        isNewThrow: true,
-        onSave: (savedThrow) {
-          // Pass the original addAtIndex to parent - it handles actual insertion
-          widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
-          Navigator.of(context).pop();
-        },
-        onDelete: null, // No delete for new throws
-      ),
-    );
+      // Show the panel
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => AddThrowPanel(
+          existingThrow: null,
+          previousThrow: previousThrow,
+          throwIndex: 0,
+          onSave: (savedThrow) {
+            // Pass the original addAtIndex to parent - it handles actual insertion
+            widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
+            Navigator.of(context).pop();
+          },
+          onDelete: null, // No delete for new throws
+          isNewThrow: true, // or false for editing
+        ),
+      );
+    } else {
+      await showDialog(
+        context: context,
+        builder: (context) => ThrowEditDialog(
+          throw_: newThrow,
+          throwIndex: displayThrowNumber,
+          isNewThrow: true,
+          onSave: (savedThrow) {
+            // Pass the original addAtIndex to parent - it handles actual insertion
+            widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
+            Navigator.of(context).pop();
+          },
+          onDelete: null, // No delete for new throws
+        ),
+      );
+    }
 
     // Unfocus again after dialog closes to prevent keyboard from popping up
     if (mounted) {
@@ -194,30 +221,51 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       return; // Can't edit incomplete throw
     }
 
-    // await showDialog(
-    //   context: context,
-    //   builder: (context) => AddThrowWalkthroughDialog(
-    //     onComplete: (_, __) {},
-    //     throwIndex: currentHole.number ?? widget.holeIndex + 1,
-    //   ),
-    // );
+    if (useAddThrowPanelV2) {
+      // Determine the previous throw for smart auto-selection
+      final DiscThrow? previousThrow = throwIndex > 0 &&
+              currentHole.throws != null &&
+              throwIndex - 1 < currentHole.throws!.length
+          ? currentHole.throws![throwIndex - 1]
+          : null;
 
-    await showDialog(
-      context: context,
-      builder: (context) => ThrowEditDialog(
-        throw_: currentThrow,
-        throwIndex: throwIndex,
-        holeNumber: currentHole.number ?? widget.holeIndex + 1,
-        onSave: (updatedThrow) {
-          widget.onThrowEdited(throwIndex, updatedThrow);
-          Navigator.of(context).pop();
-        },
-        onDelete: () {
-          widget.onThrowDeleted(throwIndex);
-          Navigator.of(context).pop();
-        },
-      ),
-    );
+      // Show the panel
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => AddThrowPanel(
+          existingThrow: currentThrow,
+          previousThrow: previousThrow,
+          throwIndex: 0,
+          onSave: (updatedThrow) {
+            widget.onThrowEdited(throwIndex, updatedThrow);
+            Navigator.of(context).pop();
+          },
+          onDelete: () {
+            widget.onThrowDeleted(throwIndex);
+            Navigator.of(context).pop();
+          },
+          isNewThrow: false,
+        ),
+      );
+    } else {
+      await showDialog(
+        context: context,
+        builder: (context) => ThrowEditDialog(
+          throw_: currentThrow,
+          throwIndex: throwIndex,
+          onSave: (updatedThrow) {
+            widget.onThrowEdited(throwIndex, updatedThrow);
+            Navigator.of(context).pop();
+          },
+          onDelete: () {
+            widget.onThrowDeleted(throwIndex);
+            Navigator.of(context).pop();
+          },
+        ),
+      );
+    }
 
     // Unfocus again after dialog closes to prevent keyboard from popping up
     if (mounted) {

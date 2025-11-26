@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/components/add_throw_panel.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -8,6 +9,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_d
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 /// Bottom sheet that guides user through fixing each incomplete hole sequentially.
@@ -350,97 +352,44 @@ class _IncompleteHoleWalkthroughPanelState
       technique: ThrowTechnique.backhand,
     );
 
-    await showDialog(
-      context: context,
-      builder: (context) => ThrowEditDialog(
-        throw_: newThrow,
-        throwIndex: insertionIndex,
-        holeNumber: currentHole.number ?? holeIndex + 1,
-        isNewThrow: true,
-        onSave: (savedThrow) {
-          final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
-            currentHole.throws ?? [],
-          );
+    if (useAddThrowPanelV2) {
+      // Determine the previous throw for smart auto-selection
+      final DiscThrow? previousThrow = addThrowAtIndex != null
+          ? (currentHole.throws != null &&
+                  addThrowAtIndex < currentHole.throws!.length
+              ? currentHole.throws![addThrowAtIndex]
+              : null)
+          : (currentHole.throws?.isNotEmpty ?? false
+              ? currentHole.throws!.last
+              : null);
 
-          // Determine insertion index: if null, append at end; otherwise insert after the specified index
-          final int insertIndex = addThrowAtIndex != null
-              ? addThrowAtIndex + 1
-              : updatedThrows.length;
-
-          updatedThrows.insert(
-            insertIndex,
-            DiscThrow(
-              index: insertIndex, // Will be re-indexed below
-              purpose: savedThrow.purpose,
-              technique: savedThrow.technique,
-              puttStyle: savedThrow.puttStyle,
-              shotShape: savedThrow.shotShape,
-              stance: savedThrow.stance,
-              power: savedThrow.power,
-              distanceFeetBeforeThrow: savedThrow.distanceFeetBeforeThrow,
-              distanceFeetAfterThrow: savedThrow.distanceFeetAfterThrow,
-              elevationChangeFeet: savedThrow.elevationChangeFeet,
-              windDirection: savedThrow.windDirection,
-              windStrength: savedThrow.windStrength,
-              resultRating: savedThrow.resultRating,
-              landingSpot: savedThrow.landingSpot,
-              fairwayWidth: savedThrow.fairwayWidth,
-              penaltyStrokes: savedThrow.penaltyStrokes,
-              notes: savedThrow.notes,
-              rawText: savedThrow.rawText,
-              parseConfidence: savedThrow.parseConfidence,
-              discName: savedThrow.discName,
-              disc: savedThrow.disc,
-            ),
-          );
-
-          // Reindex all throws after insertion
-          final List<DiscThrow> reindexedThrows = updatedThrows
-              .asMap()
-              .entries
-              .map((entry) {
-                final DiscThrow throw_ = entry.value;
-                return DiscThrow(
-                  index: entry.key,
-                  purpose: throw_.purpose,
-                  technique: throw_.technique,
-                  puttStyle: throw_.puttStyle,
-                  shotShape: throw_.shotShape,
-                  stance: throw_.stance,
-                  power: throw_.power,
-                  distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
-                  distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
-                  elevationChangeFeet: throw_.elevationChangeFeet,
-                  windDirection: throw_.windDirection,
-                  windStrength: throw_.windStrength,
-                  resultRating: throw_.resultRating,
-                  landingSpot: throw_.landingSpot,
-                  fairwayWidth: throw_.fairwayWidth,
-                  penaltyStrokes: throw_.penaltyStrokes,
-                  notes: throw_.notes,
-                  rawText: throw_.rawText,
-                  parseConfidence: throw_.parseConfidence,
-                  discName: throw_.discName,
-                  disc: throw_.disc,
-                );
-              })
-              .toList();
-
-          final PotentialDGHole updatedHole = PotentialDGHole(
-            number: currentHole.number,
-            par: currentHole.par,
-            feet: currentHole.feet,
-            throws: reindexedThrows,
-            holeType: currentHole.holeType,
-          );
-
-          // Update the entire hole including throws
-          _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
-          Navigator.of(context).pop();
-        },
-        onDelete: null, // No delete for new throws
-      ),
-    );
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => AddThrowPanel(
+          existingThrow: newThrow,
+          previousThrow: previousThrow,
+          throwIndex: insertionIndex,
+          isNewThrow: true,
+          onSave: (savedThrow) =>
+              _onSaveThrow(savedThrow, currentHole, addThrowAtIndex, holeIndex),
+          onDelete: null, // No delete for new throws
+        ),
+      );
+    } else {
+      await showDialog(
+        context: context,
+        builder: (context) => ThrowEditDialog(
+          throw_: newThrow,
+          throwIndex: insertionIndex,
+          isNewThrow: true,
+          onSave: (savedThrow) =>
+              _onSaveThrow(savedThrow, currentHole, addThrowAtIndex, holeIndex),
+          onDelete: null, // No delete for new throws
+        ),
+      );
+    }
 
     // Unfocus again after dialog closes to prevent keyboard from popping up
     if (mounted) {
@@ -464,26 +413,57 @@ class _IncompleteHoleWalkthroughPanelState
       return; // Can't edit incomplete throw
     }
 
-    await showDialog(
-      context: context,
-      builder: (context) => ThrowEditDialog(
-        throw_: currentThrow,
-        throwIndex: throwIndex,
-        holeNumber: currentHole.number ?? holeIndex + 1,
-        onSave: (updatedThrow) {
-          _roundConfirmationCubit.updateThrow(
-            holeIndex,
-            throwIndex,
-            updatedThrow,
-          );
-          Navigator.of(context).pop();
-        },
-        onDelete: () {
-          _handleDeleteThrow(currentHole, holeIndex, throwIndex);
-          Navigator.of(context).pop();
-        },
-      ),
-    );
+    if (useAddThrowPanelV2) {
+      // Determine the previous throw for smart auto-selection
+      final DiscThrow? previousThrow = throwIndex > 0 &&
+              currentHole.throws != null &&
+              throwIndex - 1 < currentHole.throws!.length
+          ? currentHole.throws![throwIndex - 1]
+          : null;
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => AddThrowPanel(
+          existingThrow: currentThrow,
+          previousThrow: previousThrow,
+          throwIndex: throwIndex,
+          onSave: (updatedThrow) {
+            _roundConfirmationCubit.updateThrow(
+              holeIndex,
+              throwIndex,
+              updatedThrow,
+            );
+            Navigator.of(context).pop();
+          },
+          onDelete: () {
+            _handleDeleteThrow(currentHole, holeIndex, throwIndex);
+            Navigator.of(context).pop();
+          },
+        ),
+      );
+    } else {
+      await showDialog(
+        context: context,
+        builder: (context) => ThrowEditDialog(
+          throw_: currentThrow,
+          throwIndex: throwIndex,
+          onSave: (updatedThrow) {
+            _roundConfirmationCubit.updateThrow(
+              holeIndex,
+              throwIndex,
+              updatedThrow,
+            );
+            Navigator.of(context).pop();
+          },
+          onDelete: () {
+            _handleDeleteThrow(currentHole, holeIndex, throwIndex);
+            Navigator.of(context).pop();
+          },
+        ),
+      );
+    }
 
     // Unfocus again after dialog closes to prevent keyboard from popping up
     if (mounted) {
@@ -543,6 +523,91 @@ class _IncompleteHoleWalkthroughPanelState
 
     // Update the entire hole including throws
     _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
+  }
+
+  void _onSaveThrow(
+    DiscThrow savedThrow,
+    PotentialDGHole currentHole,
+    int? addThrowAtIndex,
+    int holeIndex,
+  ) {
+    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(
+      currentHole.throws ?? [],
+    );
+
+    // Determine insertion index: if null, append at end; otherwise insert after the specified index
+    final int insertIndex = addThrowAtIndex != null
+        ? addThrowAtIndex + 1
+        : updatedThrows.length;
+
+    updatedThrows.insert(
+      insertIndex,
+      DiscThrow(
+        index: insertIndex, // Will be re-indexed below
+        purpose: savedThrow.purpose,
+        technique: savedThrow.technique,
+        puttStyle: savedThrow.puttStyle,
+        shotShape: savedThrow.shotShape,
+        stance: savedThrow.stance,
+        power: savedThrow.power,
+        distanceFeetBeforeThrow: savedThrow.distanceFeetBeforeThrow,
+        distanceFeetAfterThrow: savedThrow.distanceFeetAfterThrow,
+        elevationChangeFeet: savedThrow.elevationChangeFeet,
+        windDirection: savedThrow.windDirection,
+        windStrength: savedThrow.windStrength,
+        resultRating: savedThrow.resultRating,
+        landingSpot: savedThrow.landingSpot,
+        fairwayWidth: savedThrow.fairwayWidth,
+        penaltyStrokes: savedThrow.penaltyStrokes,
+        notes: savedThrow.notes,
+        rawText: savedThrow.rawText,
+        parseConfidence: savedThrow.parseConfidence,
+        discName: savedThrow.discName,
+        disc: savedThrow.disc,
+      ),
+    );
+
+    // Reindex all throws after insertion
+    final List<DiscThrow> reindexedThrows = updatedThrows.asMap().entries.map((
+      entry,
+    ) {
+      final DiscThrow throw_ = entry.value;
+      return DiscThrow(
+        index: entry.key,
+        purpose: throw_.purpose,
+        technique: throw_.technique,
+        puttStyle: throw_.puttStyle,
+        shotShape: throw_.shotShape,
+        stance: throw_.stance,
+        power: throw_.power,
+        distanceFeetBeforeThrow: throw_.distanceFeetBeforeThrow,
+        distanceFeetAfterThrow: throw_.distanceFeetAfterThrow,
+        elevationChangeFeet: throw_.elevationChangeFeet,
+        windDirection: throw_.windDirection,
+        windStrength: throw_.windStrength,
+        resultRating: throw_.resultRating,
+        landingSpot: throw_.landingSpot,
+        fairwayWidth: throw_.fairwayWidth,
+        penaltyStrokes: throw_.penaltyStrokes,
+        notes: throw_.notes,
+        rawText: throw_.rawText,
+        parseConfidence: throw_.parseConfidence,
+        discName: throw_.discName,
+        disc: throw_.disc,
+      );
+    }).toList();
+
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: currentHole.par,
+      feet: currentHole.feet,
+      throws: reindexedThrows,
+      holeType: currentHole.holeType,
+    );
+
+    // Update the entire hole including throws
+    _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
+    Navigator.of(context).pop();
   }
 
   /// Handle parsed hole from voice panel
