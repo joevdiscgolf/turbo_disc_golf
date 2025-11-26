@@ -9,7 +9,9 @@ import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
-  const RoundHistoryScreen({super.key});
+  const RoundHistoryScreen({super.key, required this.bottomViewPadding});
+
+  final double bottomViewPadding;
 
   @override
   State<RoundHistoryScreen> createState() => _RoundHistoryScreenState();
@@ -27,7 +29,10 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   }
 
   Future<void> _showRecordRoundSheet() async {
-    await displayBottomSheet(context, const RecordRoundPanelV2());
+    await displayBottomSheet(
+      context,
+      RecordRoundPanelV2(bottomViewPadding: widget.bottomViewPadding),
+    );
   }
 
   @override
@@ -68,15 +73,12 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         return SliverFillRemaining(child: _buildEmptyState());
       }
       return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final DGRound round = sortedRounds[index];
-              return RoundHistoryRow(round: round);
-            },
-            childCount: sortedRounds.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final DGRound round = sortedRounds[index];
+            return RoundHistoryRow(round: round);
+          }, childCount: sortedRounds.length),
         ),
       );
     } else if (state is RoundHistoryRefreshing) {
@@ -86,15 +88,12 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         return SliverFillRemaining(child: _buildEmptyState());
       }
       return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final DGRound round = sortedRounds[index];
-              return RoundHistoryRow(round: round);
-            },
-            childCount: sortedRounds.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final DGRound round = sortedRounds[index];
+            return RoundHistoryRow(round: round);
+          }, childCount: sortedRounds.length),
         ),
       );
     } else {

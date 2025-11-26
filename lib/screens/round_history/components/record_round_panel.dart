@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
@@ -93,28 +94,19 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
     displayBottomSheet(
       context,
       SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PanelHeader(
+              title: 'Select Test Constant',
+              onClose: () => Navigator.pop(context),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Select Test Constant',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
               ...List.generate(
                 _testRoundDescriptionNames.length,
                 (index) => Padding(
@@ -155,9 +147,11 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -202,36 +196,28 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
             topRight: Radius.circular(20),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Record Round',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              Text(
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PanelHeader(
+              title: 'Record Round',
+              onClose: () => Navigator.pop(context),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
                 'Describe your round and I\'ll track the details',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
-              const SizedBox(height: 12),
-              // Editable transcript text field
-              Expanded(
+            ),
+            const SizedBox(height: 12),
+            // Editable transcript text field
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[100],
@@ -276,9 +262,15 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              // Animated microphone button with sound wave indicator
-              Center(
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 24),
+                  // Animated microphone button with sound wave indicator
+                  Center(
                 child: AnimatedMicrophoneButton(
                   isListening: isListening,
                   onTap: _toggleListening,
@@ -360,9 +352,11 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                 disabled: !hasTranscript || isListening,
                 onPressed: _handleContinue,
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

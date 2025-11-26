@@ -6,7 +6,7 @@ import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
-import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
+import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -149,7 +149,7 @@ class _HoleGridItem extends StatelessWidget {
             onVoiceRecord: () {
               displayBottomSheet(
                 context,
-                RecordSingleHolePanelV2(
+                RecordSingleHolePanel(
                   holeNumber: currentHole.number,
                   holePar: currentHole.par,
                   holeFeet: currentHole.feet,
@@ -157,6 +157,7 @@ class _HoleGridItem extends StatelessWidget {
                   showTestButton: true,
                   onParseComplete: (parsedHole) =>
                       _handleParsedVoiceHole(context, parsedHole),
+                  bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
                 ),
               );
             },

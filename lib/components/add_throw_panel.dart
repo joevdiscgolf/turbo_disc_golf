@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -48,6 +49,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
   late String? _discId;
   late ShotShape? _shotShape;
   late PuttStyle? _puttStyle;
+  int? _landingDistance; // Direct state for slider to avoid lag
 
   // Controllers for custom inputs
   late TextEditingController _customDistanceBeforeController;
@@ -63,9 +65,11 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
   // Accent colors for different fields (following record_round_panel_v2 pattern)
   static const Color _purposeAccent = Color(0xFF2196F3); // blue
   static const Color _techniqueAccent = Color(0xFF4CAF50); // green
-  static const Color _landingAccent = Color(0xFF9D4EDD); // purple
+  static const Color _landingAccent = Color(
+    0xFFB39DDB,
+  ); // light purple (matches description card)
   // static const Color _distanceAccent = Color(0xFFFF9800); // orange
-  static const Color _ratingAccent = Color(0xFFFFC107); // amber
+  static const Color _ratingAccent = Color(0xFF2E7D32); // dark green
   static const Color _discAccent = Color(0xFF00BCD4); // cyan
   static const Color _shapeAccent = Color(0xFFB39DDB); // light purple
   static const Color _generalAccent = Color(0xFF9E9E9E); // gray
@@ -100,6 +104,9 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     );
     _customLandingDistanceController = TextEditingController();
     _discSearchController = TextEditingController();
+
+    // Initialize landing distance from text controller if available
+    _landingDistance = int.tryParse(_customLandingDistanceController.text);
   }
 
   @override
@@ -143,13 +150,25 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
           bottom: MediaQuery.of(context).viewPadding.bottom,
         ),
         decoration: const BoxDecoration(
-          color: Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF5EEF8), // Light purple tint
+              Colors.white, // Fade to white
+            ],
+          ),
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHeader(),
+            PanelHeader(
+              title: widget.isNewThrow
+                  ? 'Add Throw'
+                  : 'Edit Throw ${widget.throwIndex + 1}',
+            ),
+            // _buildHeader(),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -170,35 +189,6 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
             _buildActionBar(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            widget.isNewThrow
-                ? 'Add Throw'
-                : 'Edit Throw ${widget.throwIndex + 1}',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              FocusScope.of(context).unfocus();
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
       ),
     );
   }
@@ -224,7 +214,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     ];
 
     return _FieldCard(
-      label: '🎯 Purpose',
+      label: 'Purpose',
+      icon: Icons.track_changes,
       accentColor: _purposeAccent,
       child: Row(
         children: [
@@ -250,6 +241,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
             ),
           ),
           _buildMoreButton(
+            accentColor: _purposeAccent,
             onTap: () => _showEnumPicker<ThrowPurpose>(
               title: 'Select Purpose',
               values: ThrowPurpose.values,
@@ -281,7 +273,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       ];
 
       return _FieldCard(
-        label: '⛳ Putt style',
+        label: 'Putt style',
+        icon: Icons.golf_course,
         accentColor: _techniqueAccent,
         child: Row(
           children: [
@@ -299,6 +292,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
               ),
             ),
             _buildMoreButton(
+              accentColor: _techniqueAccent,
               onTap: () => _showEnumPicker<PuttStyle>(
                 title: 'Select Putt Style',
                 values: PuttStyle.values,
@@ -320,7 +314,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     ];
 
     return _FieldCard(
-      label: '🎲 Technique',
+      label: 'Technique',
+      icon: Icons.style,
       accentColor: _techniqueAccent,
       child: Row(
         children: [
@@ -338,6 +333,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
             ),
           ),
           _buildMoreButton(
+            accentColor: _techniqueAccent,
             onTap: () => _showEnumPicker<ThrowTechnique>(
               title: 'Select Technique',
               values: ThrowTechnique.values,
@@ -360,7 +356,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     ];
 
     return _FieldCard(
-      label: '🎪 Landing spot',
+      label: 'Landing spot',
+      icon: Icons.place,
       accentColor: _landingAccent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -381,6 +378,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
                 ),
               ),
               _buildMoreButton(
+                accentColor: _landingAccent,
                 onTap: () => _showEnumPicker<LandingSpot>(
                   title: 'Select Landing Spot',
                   values: LandingSpot.values,
@@ -393,19 +391,179 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
             ],
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _customLandingDistanceController,
-            decoration: const InputDecoration(
-              labelText: 'Custom Distance (ft)',
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          ),
+          _buildLandingDistanceInput(),
         ],
       ),
+    );
+  }
+
+  Widget _buildLandingDistanceInput() {
+    // In Basket - show disabled message
+    if (_landingSpot == LandingSpot.inBasket) {
+      return Opacity(
+        opacity: 0.5,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.info_outline, color: Colors.grey.shade500, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Distance not applicable for basket',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Circle 1 or Circle 2 - show slider
+    if (_landingSpot == LandingSpot.circle1 ||
+        _landingSpot == LandingSpot.circle2) {
+      final int minDistance = _landingSpot == LandingSpot.circle1 ? 0 : 33;
+      final int maxDistance = _landingSpot == LandingSpot.circle1 ? 33 : 66;
+
+      // Initialize landing distance if null or out of range
+      if (_landingDistance == null ||
+          _landingDistance! < minDistance ||
+          _landingDistance! > maxDistance) {
+        _landingDistance = minDistance;
+        _customLandingDistanceController.text = minDistance.toString();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Landing distance',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: _landingAccent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _landingAccent.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  '$_landingDistance ft',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _landingAccent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: _landingAccent,
+              inactiveTrackColor: flattenedOverWhite(_landingAccent, 0.2),
+              thumbColor: _landingAccent,
+              overlayColor: _landingAccent.withValues(alpha: 0.2),
+              trackHeight: 6,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
+              valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
+              valueIndicatorColor: _landingAccent,
+              valueIndicatorTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            child: Slider(
+              value: _landingDistance!.toDouble(),
+              min: minDistance.toDouble(),
+              max: maxDistance.toDouble(),
+              divisions: maxDistance - minDistance,
+              label: '$_landingDistance ft',
+              onChanged: (value) {
+                setState(() {
+                  _landingDistance = value.round();
+                  _customLandingDistanceController.text = _landingDistance.toString();
+                });
+              },
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$minDistance ft',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+              Text(
+                '$maxDistance ft',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Other landing spots - show text input
+    return TextField(
+      controller: _customLandingDistanceController,
+      style: const TextStyle(color: Colors.black87),
+      decoration: InputDecoration(
+        labelText: 'Landing distance (ft)',
+        hintText: 'Enter distance',
+        hintStyle: TextStyle(
+          color: Colors.grey.shade400,
+          fontStyle: FontStyle.italic,
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: flattenedOverWhite(_landingAccent, 0.3),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: flattenedOverWhite(_landingAccent, 0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: _landingAccent, width: 2),
+        ),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+      ),
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
     );
   }
 
@@ -473,6 +631,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
         _buildDiscTypeField(),
         const SizedBox(height: 12),
         _buildShotShapeField(),
+        const SizedBox(height: 64),
       ],
     );
   }
@@ -534,7 +693,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
 
   Widget _buildResultRatingField() {
     return _FieldCard(
-      label: '⭐ Result rating',
+      label: 'Result rating',
+      icon: Icons.star,
       accentColor: _ratingAccent,
       child: Wrap(
         spacing: 8,
@@ -563,7 +723,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
         .toList();
 
     return _FieldCard(
-      label: '💿 Disc type',
+      label: 'Disc',
+      icon: Icons.album,
       accentColor: _discAccent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -614,7 +775,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     ];
 
     return _FieldCard(
-      label: '🔄 Shot shape',
+      label: 'Shot shape',
+      icon: Icons.swap_horiz,
       accentColor: _shapeAccent,
       child: Row(
         children: [
@@ -632,6 +794,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
             ),
           ),
           _buildMoreButton(
+            accentColor: _shapeAccent,
             onTap: () => _showEnumPicker<ShotShape>(
               title: 'Select Shot Shape',
               values: ShotShape.values,
@@ -693,7 +856,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
               label: 'Save',
               width: double.infinity,
               height: 48,
-              backgroundColor: Colors.green,
+              backgroundColor: TurbColors.blue,
               labelColor: Colors.white,
               disabled: !canSave,
               onPressed: _handleSave,
@@ -732,7 +895,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
             child: Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
               maxLines: 1,
@@ -744,20 +907,24 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     );
   }
 
-  Widget _buildMoreButton({required VoidCallback onTap}) {
+  Widget _buildMoreButton({
+    required VoidCallback onTap,
+    required Color accentColor,
+  }) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.all(8),
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
-          color: _buttonAccent.withValues(alpha: 0.1),
-          border: Border.all(color: _buttonAccent.withValues(alpha: 0.3)),
+          color: flattenedOverWhite(accentColor, 0.15),
+          border: Border.all(color: flattenedOverWhite(accentColor, 0.4)),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(Icons.expand_more, color: _buttonAccent, size: 20),
+        child: Icon(Icons.expand_more, color: accentColor, size: 18),
       ),
     );
   }
@@ -882,11 +1049,13 @@ class _FieldCard extends StatelessWidget {
     required this.label,
     required this.child,
     required this.accentColor,
+    required this.icon,
   });
 
   final String label;
   final Widget child;
   final Color accentColor;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -896,10 +1065,10 @@ class _FieldCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           transform: GradientRotation(math.pi / 4),
-          colors: [flattenedOverWhite(accentColor, 0.15), Colors.white],
+          colors: [flattenedOverWhite(accentColor, 0.2), Colors.white],
         ),
         border: Border.all(color: flattenedOverWhite(accentColor, 0.3)),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -911,11 +1080,35 @@ class _FieldCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              // Circular icon container with radial gradient
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [Colors.white, accentColor.withValues(alpha: 0.0)],
+                    stops: const [0.6, 1.0],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, size: 20, color: accentColor),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           child,

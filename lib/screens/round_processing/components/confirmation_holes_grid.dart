@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
-import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel_v2.dart';
+import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -208,7 +208,7 @@ class _HoleGridItemState extends State<_HoleGridItem> {
 
     displayBottomSheet(
       contextToUse,
-      RecordSingleHolePanelV2(
+      RecordSingleHolePanel(
         holeNumber: currentHole.number ?? holeIndex + 1,
         holePar: currentHole.par,
         holeFeet: currentHole.feet,
@@ -216,6 +216,7 @@ class _HoleGridItemState extends State<_HoleGridItem> {
         showTestButton: true,
         onParseComplete: (parsedHole) =>
             _handleParseComplete(parsedHole, holeIndex),
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
       ),
     );
   }

@@ -39,7 +39,7 @@ class RoundHistoryRow extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
+      child: GestureDetector(
         onTap: () {
           // Set the existing round so the parser can calculate stats
           locator.get<RoundParser>().setRound(round);
@@ -53,9 +53,9 @@ class RoundHistoryRow extends StatelessWidget {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

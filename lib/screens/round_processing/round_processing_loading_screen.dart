@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/explosion_effect.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
@@ -378,34 +379,22 @@ class _RoundProcessingLoadingScreenState
                 builder: (context, progress, child) {
                   return Opacity(
                     opacity: progress, // Fade from 0 to 1
-                    child: AppBar(
+                    child: GenericAppBar(
+                      topViewPadding: MediaQuery.of(context).viewPadding.top,
+                      title: _roundParser.parsedRound?.courseName ??
+                          'Round Review',
                       backgroundColor: Colors.transparent,
-                      surfaceTintColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      elevation: 0,
-                      foregroundColor:
-                          Colors.black87, // Dark text for light background
-                      title: Text(
-                        _roundParser.parsedRound?.courseName ?? 'Round Review',
-                      ),
+                      foregroundColor: Colors.black87,
                     ),
                   );
                 },
               )
             : _processingState == _ProcessingState.confirming
-            ? AppBar(
-                backgroundColor: const Color(
-                  0xFFEEE8F5,
-                ), // Match scaffold background
-                surfaceTintColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                elevation: 0,
+            ? GenericAppBar(
+                topViewPadding: MediaQuery.of(context).viewPadding.top,
+                title: 'Confirm Round',
+                backgroundColor: const Color(0xFFF5F0FA),
                 foregroundColor: Colors.black87,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                title: const Text('Confirm Round'),
               )
             : Container(
                 color:
@@ -417,7 +406,7 @@ class _RoundProcessingLoadingScreenState
         children: [
           // Layer 0: Base background color - consistent light color throughout
           Container(
-            color: const Color(0xFFEEE8F5), // Light purple-gray background
+            color: const Color(0xFFF5F0FA), // Lighter purple-gray background
           ),
 
           // Layer 1: Background animations with smooth 300ms crossfades

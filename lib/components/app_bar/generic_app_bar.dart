@@ -10,6 +10,8 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.bottomWidget,
     this.bottomWidgetHeight,
     this.backgroundColor,
+    this.foregroundColor,
+    this.hasBackButton = true,
   });
 
   final String title;
@@ -18,6 +20,8 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? bottomWidget;
   final double? bottomWidgetHeight;
   final Color? backgroundColor;
+  final Color? foregroundColor;
+  final bool hasBackButton;
 
   @override
   Size get preferredSize =>
@@ -36,13 +40,20 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const AppBarBackButton(size: 40),
+                SizedBox(
+                  height: 40,
+                  width: 40,
+                  child: hasBackButton
+                      ? AppBarBackButton(size: 40, color: foregroundColor)
+                      : null,
+                ),
                 Expanded(
                   child: Center(
                     child: Text(
                       title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w500,
+                        color: foregroundColor,
                       ),
                     ),
                   ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
@@ -68,12 +67,15 @@ class _MainWrapperState extends State<MainWrapper> {
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
           title: appBarTitle,
+          hasBackButton: false,
         ),
         body: IndexedStack(
           index: _selectedIndex,
           children: [
-            const RoundHistoryScreen(),
-            const RecordRoundScreen(),
+            RoundHistoryScreen(
+              bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+            ),
+            // const RecordRoundScreen(),
             const StatsScreen(),
             const TestAiSummaryScreen(),
             const TestImageParsingScreen(),
@@ -89,10 +91,10 @@ class _MainWrapperState extends State<MainWrapper> {
               icon: Icon(Icons.play_arrow),
               label: 'Rounds',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle),
-              label: 'Add Round',
-            ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.add_circle),
+            //   label: 'Add Round',
+            // ),
             BottomNavigationBarItem(
               icon: Icon(Icons.analytics),
               label: 'Stats',
