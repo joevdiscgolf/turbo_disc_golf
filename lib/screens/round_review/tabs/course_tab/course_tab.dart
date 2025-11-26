@@ -45,7 +45,10 @@ class _CourseTabState extends State<CourseTab> {
       builder: (context, state) {
         if (state is! ReviewingRoundActive) {
           // Fallback to widget.round if state is not active yet
-          final List<Widget> children = _getListViewChildren(context, widget.round);
+          final List<Widget> children = _getListViewChildren(
+            context,
+            widget.round,
+          );
           return ListView.builder(
             padding: const EdgeInsets.only(top: 12, bottom: 80),
             itemCount: children.length,
@@ -62,7 +65,10 @@ class _CourseTabState extends State<CourseTab> {
           });
         }
 
-        final List<Widget> children = _getListViewChildren(context, currentRound);
+        final List<Widget> children = _getListViewChildren(
+          context,
+          currentRound,
+        );
         return ListView.builder(
           padding: const EdgeInsets.only(top: 12, bottom: 80),
           itemCount: children.length,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/services/scorecard_ocr_service.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/voice_detail_input_screen.dart';
@@ -523,7 +524,10 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Import Scorecard')),
+      appBar: GenericAppBar(
+        topViewPadding: MediaQuery.of(context).viewPadding.top,
+        title: 'Import scorecard',
+      ),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(

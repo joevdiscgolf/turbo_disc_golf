@@ -18,7 +18,7 @@ import 'package:turbo_disc_golf/utils/date_formatter.dart';
 /// Tracks the potential round being edited and the current hole being edited
 class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
   RoundConfirmationCubit({required this.roundHistoryCubit})
-      : super(const ConfirmingRoundInactive());
+    : super(const ConfirmingRoundInactive());
 
   final RoundHistoryCubit roundHistoryCubit;
 
@@ -196,7 +196,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
         resultRating: newThrow.resultRating,
         landingSpot: newThrow.landingSpot,
         fairwayWidth: newThrow.fairwayWidth,
-        penaltyStrokes: newThrow.penaltyStrokes,
+        customPenaltyStrokes: newThrow.customPenaltyStrokes,
         notes: newThrow.notes,
         rawText: newThrow.rawText,
         parseConfidence: newThrow.parseConfidence,
@@ -292,7 +292,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
       resultRating: updatedThrow.resultRating,
       landingSpot: updatedThrow.landingSpot,
       fairwayWidth: updatedThrow.fairwayWidth,
-      penaltyStrokes: updatedThrow.penaltyStrokes,
+      customPenaltyStrokes: updatedThrow.customPenaltyStrokes,
       notes: updatedThrow.notes,
       rawText: updatedThrow.rawText,
       parseConfidence: updatedThrow.parseConfidence,
@@ -375,7 +375,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
         resultRating: throw_.resultRating,
         landingSpot: throw_.landingSpot,
         fairwayWidth: throw_.fairwayWidth,
-        penaltyStrokes: throw_.penaltyStrokes,
+        customPenaltyStrokes: throw_.customPenaltyStrokes,
         notes: throw_.notes,
         rawText: throw_.rawText,
         parseConfidence: throw_.parseConfidence,
@@ -502,7 +502,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
               resultRating: workingThrow.resultRating,
               landingSpot: workingThrow.landingSpot,
               fairwayWidth: workingThrow.fairwayWidth,
-              penaltyStrokes: workingThrow.penaltyStrokes,
+              customPenaltyStrokes: workingThrow.customPenaltyStrokes,
               notes: workingThrow.notes,
               rawText: workingThrow.rawText,
               parseConfidence: workingThrow.parseConfidence,
@@ -573,7 +573,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
                 resultRating: workingThrow.resultRating,
                 landingSpot: correctLandingSpot,
                 fairwayWidth: workingThrow.fairwayWidth,
-                penaltyStrokes: workingThrow.penaltyStrokes,
+                customPenaltyStrokes: workingThrow.customPenaltyStrokes,
                 notes: workingThrow.notes,
                 rawText: workingThrow.rawText,
                 parseConfidence: workingThrow.parseConfidence,

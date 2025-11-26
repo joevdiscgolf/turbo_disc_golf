@@ -356,12 +356,12 @@ class _IncompleteHoleWalkthroughPanelState
       // Determine the previous throw for smart auto-selection
       final DiscThrow? previousThrow = addThrowAtIndex != null
           ? (currentHole.throws != null &&
-                  addThrowAtIndex < currentHole.throws!.length
-              ? currentHole.throws![addThrowAtIndex]
-              : null)
+                    addThrowAtIndex < currentHole.throws!.length
+                ? currentHole.throws![addThrowAtIndex]
+                : null)
           : (currentHole.throws?.isNotEmpty ?? false
-              ? currentHole.throws!.last
-              : null);
+                ? currentHole.throws!.last
+                : null);
 
       showModalBottomSheet(
         context: context,
@@ -415,7 +415,8 @@ class _IncompleteHoleWalkthroughPanelState
 
     if (useAddThrowPanelV2) {
       // Determine the previous throw for smart auto-selection
-      final DiscThrow? previousThrow = throwIndex > 0 &&
+      final DiscThrow? previousThrow =
+          throwIndex > 0 &&
               currentHole.throws != null &&
               throwIndex - 1 < currentHole.throws!.length
           ? currentHole.throws![throwIndex - 1]
@@ -503,7 +504,7 @@ class _IncompleteHoleWalkthroughPanelState
         resultRating: throw_.resultRating,
         landingSpot: throw_.landingSpot,
         fairwayWidth: throw_.fairwayWidth,
-        penaltyStrokes: throw_.penaltyStrokes,
+        customPenaltyStrokes: throw_.customPenaltyStrokes,
         notes: throw_.notes,
         rawText: throw_.rawText,
         parseConfidence: throw_.parseConfidence,
@@ -558,7 +559,7 @@ class _IncompleteHoleWalkthroughPanelState
         resultRating: savedThrow.resultRating,
         landingSpot: savedThrow.landingSpot,
         fairwayWidth: savedThrow.fairwayWidth,
-        penaltyStrokes: savedThrow.penaltyStrokes,
+        customPenaltyStrokes: savedThrow.customPenaltyStrokes,
         notes: savedThrow.notes,
         rawText: savedThrow.rawText,
         parseConfidence: savedThrow.parseConfidence,
@@ -588,7 +589,7 @@ class _IncompleteHoleWalkthroughPanelState
         resultRating: throw_.resultRating,
         landingSpot: throw_.landingSpot,
         fairwayWidth: throw_.fairwayWidth,
-        penaltyStrokes: throw_.penaltyStrokes,
+        customPenaltyStrokes: throw_.customPenaltyStrokes,
         notes: throw_.notes,
         rawText: throw_.rawText,
         parseConfidence: throw_.parseConfidence,

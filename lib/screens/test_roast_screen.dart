@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -298,7 +299,10 @@ class _TestRoastScreenState extends State<TestRoastScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Test Roast Generator')),
+      appBar: GenericAppBar(
+        topViewPadding: MediaQuery.of(context).viewPadding.top,
+        title: 'Test roast generator',
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -478,11 +482,7 @@ class _TestRoastScreenState extends State<TestRoastScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomMarkdownContent(
-                        data: _roast!,
-                      ),
-                    ],
+                    children: [CustomMarkdownContent(data: _roast!)],
                   ),
                 ),
               ),

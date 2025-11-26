@@ -582,6 +582,25 @@ class _PositionListItem extends StatelessWidget {
 
 #### BLoC/Cubit Pattern
 
+**CRITICAL: Always use BlocProvider.of<T>(context) to access Cubits, NEVER use locator.get<T>()**
+
+When accessing a Cubit or Bloc in a widget, you must use `BlocProvider.of<T>(context)` to properly leverage the widget tree and ensure proper lifecycle management.
+
+❌ **WRONG: Using service locator to access Cubit**
+```dart
+class _MyScreenState extends State<MyScreen> {
+  late final MyCubit _cubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _cubit = locator.get<MyCubit>();  // NEVER DO THIS!
+    _cubit.initialize();
+  }
+}
+```
+
+✅ **CORRECT: Using BlocProvider.of to access Cubit**
 ```dart
 class MyScreen extends StatefulWidget {
   @override
@@ -594,7 +613,7 @@ class _MyScreenState extends State<MyScreen> {
   @override
   void initState() {
     super.initState();
-    _cubit = BlocProvider.of<MyCubit>(context);
+    _cubit = BlocProvider.of<MyCubit>(context);  // ALWAYS DO THIS!
     _cubit.initialize();
   }
 
@@ -620,6 +639,11 @@ class _MyScreenState extends State<MyScreen> {
   }
 }
 ```
+
+**Why this matters:**
+- `BlocProvider.of<T>(context)` ensures the Cubit is obtained from the widget tree, maintaining proper context and lifecycle
+- `locator.get<T>()` bypasses the widget tree and can lead to memory leaks and improper state management
+- Using `BlocProvider.of` ensures that the Cubit is properly scoped to the widget and will be disposed when the widget is removed from the tree
 
 #### Provider Pattern
 
@@ -876,3 +900,4 @@ Before submitting code, verify:
 - [ ] Theme values are used instead of hardcoded colors
 - [ ] Error states and empty states are handled
 - [ ] Analytics tracking is added for user interactions
+- [ ] **Cubits/Blocs are accessed using `BlocProvider.of<T>(context)`, NEVER `locator.get<T>()`**

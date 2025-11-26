@@ -137,7 +137,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             DiscsTab(round: _round),
             MistakesTab(round: _round),
             PsychTab(round: _round),
-            SummaryTab(round: _round),
+            AiSummaryTab(round: _round),
             CoachTab(round: _round),
             RoastTab(round: _round),
           ],

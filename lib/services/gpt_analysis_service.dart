@@ -243,8 +243,7 @@ class GPTAnalysisService {
         : 0.8;
 
     // if landingSpot explicitly out_of_bounds or penaltyStrokes > 0 => severe
-    if (t.landingSpot == LandingSpot.outOfBounds ||
-        (t.penaltyStrokes ?? 0) > 0) {
+    if ((t.penaltyStrokes) > 0) {
       return ThrowAnalysis(
         discThrow: t,
         execCategory: ExecCategory.severe,

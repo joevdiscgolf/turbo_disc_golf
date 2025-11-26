@@ -84,7 +84,7 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
     _windDirection = widget._throw.windDirection;
     _windStrength = widget._throw.windStrength;
     _penaltyController = TextEditingController(
-      text: widget._throw.penaltyStrokes?.toString() ?? '',
+      text: widget._throw.customPenaltyStrokes?.toString() ?? '',
     );
     _notesController = TextEditingController(text: widget._throw.notes ?? '');
   }
@@ -135,7 +135,7 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
       resultRating: _resultRating,
       landingSpot: _landingSpot,
       fairwayWidth: _fairwayWidth,
-      penaltyStrokes: penalty,
+      customPenaltyStrokes: penalty,
       notes: _notesController.text.isEmpty ? null : _notesController.text,
       rawText: widget._throw.rawText,
       parseConfidence: widget._throw.parseConfidence,

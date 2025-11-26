@@ -21,7 +21,7 @@ class DiscThrow {
     this.resultRating,
     this.landingSpot,
     this.fairwayWidth,
-    this.penaltyStrokes,
+    this.customPenaltyStrokes,
     this.notes,
     this.rawText,
     this.parseConfidence,
@@ -51,7 +51,19 @@ class DiscThrow {
   final ThrowResultRating? resultRating; // 1-5
   final LandingSpot? landingSpot;
   final FairwayWidth? fairwayWidth;
-  final int? penaltyStrokes;
+  final int? customPenaltyStrokes;
+
+  int get penaltyStrokes {
+    if (customPenaltyStrokes != null) {
+      return customPenaltyStrokes!;
+    } else if (penaltyStrokeLandingSpots.contains(landingSpot)) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  int get totalStrokes => 1 + penaltyStrokes;
 
   /// Free text & parser confidence (0.0 - 1.0)
   final String? notes; // short human-friendly note
@@ -269,9 +281,16 @@ enum LandingSpot {
   offFairway,
   @JsonValue('out_of_bounds')
   outOfBounds,
+  @JsonValue('hazard')
+  hazard,
   @JsonValue('other')
   other,
 }
+
+const List<LandingSpot> penaltyStrokeLandingSpots = [
+  LandingSpot.outOfBounds,
+  LandingSpot.hazard,
+];
 
 /// Fairway width / openness (hole-level attribute you requested)
 enum FairwayWidth {

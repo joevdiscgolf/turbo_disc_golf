@@ -53,46 +53,41 @@ class PsychTab extends StatelessWidget {
       );
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
+    return ListView(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
+      children: [
+        // Overview card
+        PsychOverviewCard(stats: psychStats),
 
-          // Overview card
-          PsychOverviewCard(stats: psychStats),
+        const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
+        // Flow State card (if available)
+        if (psychStats.flowStateAnalysis != null)
+          FlowStateCard(
+            flowAnalysis: psychStats.flowStateAnalysis!,
+            totalHoles: round.holes.length,
+          ),
 
-          // Flow State card (if available)
-          if (psychStats.flowStateAnalysis != null)
-            FlowStateCard(
-              flowAnalysis: psychStats.flowStateAnalysis!,
-              totalHoles: round.holes.length,
-            ),
+        if (psychStats.flowStateAnalysis != null) const SizedBox(height: 16),
 
-          if (psychStats.flowStateAnalysis != null) const SizedBox(height: 16),
+        // Transition matrix
+        TransitionMatrixCard(stats: psychStats),
 
-          // Transition matrix
-          TransitionMatrixCard(stats: psychStats),
+        const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
+        // Key metrics
+        PsychMetricsCard(stats: psychStats),
 
-          // Key metrics
-          PsychMetricsCard(stats: psychStats),
+        const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
+        // Conditioning & Focus
+        ConditioningCard(stats: psychStats, round: round),
 
-          // Conditioning & Focus
-          ConditioningCard(stats: psychStats, round: round),
+        const SizedBox(height: 16),
 
-          const SizedBox(height: 16),
-
-          // Insights
-          InsightsCard(stats: psychStats),
-
-          const SizedBox(height: 24),
-        ],
-      ),
+        // Insights
+        InsightsCard(stats: psychStats),
+      ],
     );
   }
 }

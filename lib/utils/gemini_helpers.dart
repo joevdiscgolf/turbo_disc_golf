@@ -9,8 +9,6 @@ abstract class GeminiHelpers {
     String voiceTranscript,
     List<DGDisc> userBag,
     int holeNumber,
-    int? holePar,
-    int? holeFeet,
     String courseName,
   ) {
     // Get enum values dynamically
@@ -30,13 +28,11 @@ abstract class GeminiHelpers {
         )
         .join('\n');
 
-    final String parLine = holePar != null && holePar > 0
-        ? 'par: $holePar'
-        : '# par: (infer from description or omit)';
     final schemaExample =
         '''
 number: $holeNumber
-$parLine${holeFeet != null ? '\nfeet: $holeFeet' : ''}
+par: 3
+feet: 350
 throws:
   - index: 0
     discName: Destroyer
@@ -56,13 +52,61 @@ throws:
     return '''
 Parse disc golf hole description into YAML. Return ONLY raw YAML (no markdown/code blocks).
 
-CONTEXT: Hole $holeNumber, Par ${(holePar ?? 0) > 0 ? holePar : '?'}${holeFeet != null ? ', Distance $holeFeet ft' : ''}, $courseName
+CONTEXT: Hole $holeNumber, $courseName
 TRANSCRIPT: "$voiceTranscript"
 DISC BAG: $discListString
 
+DISC GOLF SCORE TERMINOLOGY:
+Understand these score terms to calculate expected throw count:
+- Condor: 4 under par (-4)
+- Albatross: 3 under par (-3)
+- Eagle: 2 under par (-2)
+- Birdie: 1 under par (-1)
+- Par: Even with par (0)
+- Bogey: 1 over par (+1)
+- Double Bogey: 2 over par (+2)
+- Triple Bogey: 3 over par (+3)
+
+CALCULATING THROW COUNT FROM SCORE:
+If user says "bogey on par 3", expected throws = 3 + 1 = 4 throws
+If user says "birdie on par 4", expected throws = 4 - 1 = 3 throws
+If user says "eagle on par 5", expected throws = 5 - 2 = 3 throws
+
+CRITICAL VALIDATION RULE:
+Your parsed throws MUST match the stated score exactly.
+- If you parse fewer throws than the score indicates, you MISSED detecting a throw
+- Re-read the description carefully and look for implied throws (tap-ins, missed putts, etc.)
+- The stated score is ALWAYS CORRECT - adjust your parsing to match it
+- Every hole must end with landingSpot: in_basket if a final score is stated
+
+CRITICAL MULTI-THROW DETECTION:
+Pay special attention to phrases that indicate multiple separate throws:
+- "missed the putt and missed the comeback" = 2 separate missed putts
+- "missed the comeback putt... tapped in" = 2 separate throws (miss + tap-in)
+- "tapped in for [score]" = separate tap-in throw (distanceFeetBeforeThrow: 8, distanceFeetAfterThrow: 0, landingSpot: in_basket)
+- "so I tapped in" = separate throw AFTER the previous action
+- "two putts" or "two-putted" = exactly 2 separate putt throws
+- "three putts" or "3-putted" = exactly 3 separate putt throws
+- Conjunctions like "and then", "so I", "then I" often indicate NEW throws
+
+DETECTING MISSED PUTTS:
+When user says they missed a putt, create a separate throw entry:
+- "missed that putt" after describing a position = new throw with purpose: putt
+- "missed the birdie putt" = separate putt throw
+- "missed the comeback putt" = another separate putt throw
+- Each missed putt should show distance change if mentioned, or omit distanceFeetAfterThrow if unclear
+- NEVER show distanceFeetAfterThrow same as distanceFeetBeforeThrow for a missed putt (disc must move)
+
+COMPLETING THE HOLE:
+If user states a final score, the last throw MUST have landingSpot: in_basket
+- If last described throw doesn't make it in, you missed a final putt
+- Common pattern: "missed comeback... for bogey" implies a tap-in was added after the miss
+- Look for implied tap-ins when score is stated but last throw isn't in basket
+
 OUTPUT FIELDS:
 - number: $holeNumber (required)
-- par: ${(holePar ?? 0) > 0 ? holePar : '?'} (required)${holeFeet != null ? '\n- feet: $holeFeet (required - use this value from context)' : '\n- feet: extract from transcript if mentioned (e.g., "620 foot" → feet: 620), otherwise omit entirely'}
+- par: extract from transcript if mentioned (e.g., "par 3" → par: 3), otherwise omit entirely
+- feet: extract from transcript if mentioned (e.g., "620 foot" → feet: 620), otherwise omit entirely
 - throws: array of throw objects (required)
 
 THROW STRUCTURE:
@@ -90,10 +134,26 @@ COMMON PATTERNS:
 "parked" → distanceFeetAfterThrow: 8, landingSpot: parked, THEN add final putt (in_basket)
 "made putt" → distanceFeetAfterThrow: 0, landingSpot: in_basket
 "tap in" → distanceFeetBeforeThrow: 8, distanceFeetAfterThrow: 0, purpose: putt, landingSpot: in_basket
-"laid up and tapped in" → 2 separate throws
+"laid up and tapped in" → 2 separate throws (layup + tap-in)
+"missed the putt and tapped in" → 2 separate throws (missed putt + tap-in)
 "birdied/parred/bogeyed" → hole is finished, last throw must have landingSpot: in_basket
 
-CRITICAL: Every hole MUST end with landingSpot: in_basket. If they finished the hole (any score mentioned), add a final throw with distanceFeetAfterThrow: 0 and landingSpot: in_basket.
+CRITICAL EXAMPLES - DETECTING ALL THROWS:
+Example 1: "ended up 25 ft, missed that putt, missed the comeback, tapped in for bogey"
+- This is 4 separate throws after tee drive: position at 25ft, miss #1, miss #2, tap-in
+- Bogey on par 3 = 4 throws total (1 drive + 3 putts)
+
+Example 2: "parked at 10 ft, made the birdie putt"
+- This is 2 throws: tee drive (parked), birdie putt (made)
+- Birdie on par 3 = 2 throws total
+
+Example 3: "missed the 20 ft putt, tapped in for par"
+- This is 3 throws total: tee drive (to 20ft), miss, tap-in
+- Par on par 3 = 3 throws total
+
+CRITICAL: Every hole MUST end with landingSpot: in_basket. If they finished the hole (any score mentioned), ensure the final throw has distanceFeetAfterThrow: 0 and landingSpot: in_basket.
+
+NEVER COMBINE MULTIPLE THROWING ACTIONS INTO ONE THROW!
 
 IMPORTANT: Only include fields with actual values. Never include null values or empty fields.
 

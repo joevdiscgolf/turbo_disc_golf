@@ -864,7 +864,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       resultRating: _resultRating,
       landingSpot: _landingSpot,
       fairwayWidth: widget.existingThrow?.fairwayWidth,
-      penaltyStrokes: widget.existingThrow?.penaltyStrokes,
+      customPenaltyStrokes: widget.existingThrow?.customPenaltyStrokes,
       notes: widget.existingThrow?.notes,
       rawText: widget.existingThrow?.rawText,
       parseConfidence: widget.existingThrow?.parseConfidence,

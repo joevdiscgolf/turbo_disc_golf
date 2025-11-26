@@ -113,7 +113,7 @@ class _HoleGridItem extends StatelessWidget {
                     resultRating: t.resultRating,
                     landingSpot: t.landingSpot,
                     fairwayWidth: t.fairwayWidth,
-                    penaltyStrokes: t.penaltyStrokes,
+                    customPenaltyStrokes: t.customPenaltyStrokes,
                     notes: t.notes,
                     rawText: t.rawText,
                     parseConfidence: t.parseConfidence,
@@ -156,7 +156,7 @@ class _HoleGridItem extends StatelessWidget {
                   courseName: round.courseName,
                   showTestButton: true,
                   onParseComplete: (parsedHole) =>
-                      _handleParseComplete(context, parsedHole),
+                      _handleParsedVoiceHole(context, parsedHole),
                 ),
               );
             },
@@ -170,9 +170,7 @@ class _HoleGridItem extends StatelessWidget {
     );
   }
 
-  /// Handle parsed hole from voice panel
-  /// Panel has already popped itself, we just convert and update
-  void _handleParseComplete(
+  void _handleParsedVoiceHole(
     BuildContext context,
     PotentialDGHole? parsedHole,
   ) {

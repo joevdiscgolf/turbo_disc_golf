@@ -13,17 +13,12 @@ import 'package:turbo_disc_golf/state/round_review_state.dart';
 /// Tracks the completed round being edited and the current hole being edited
 class RoundReviewCubit extends Cubit<RoundReviewState> {
   RoundReviewCubit({required this.roundHistoryCubit})
-      : super(const ReviewingRoundInactive());
+    : super(const ReviewingRoundInactive());
 
   final RoundHistoryCubit roundHistoryCubit;
 
   void startRoundReview(DGRound round) {
-    emit(
-      ReviewingRoundActive(
-        round: round,
-        currentEditingHoleIndex: null,
-      ),
-    );
+    emit(ReviewingRoundActive(round: round, currentEditingHoleIndex: null));
   }
 
   void clearRoundReview() {
@@ -54,12 +49,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState> {
   }
 
   /// Update a hole's basic metadata (number, par, distance)
-  void updateHoleMetadata(
-    int holeIndex, {
-    int? number,
-    int? par,
-    int? feet,
-  }) {
+  void updateHoleMetadata(int holeIndex, {int? number, int? par, int? feet}) {
     if (state is! ReviewingRoundActive) {
       return;
     }
@@ -168,7 +158,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState> {
         resultRating: newThrow.resultRating,
         landingSpot: newThrow.landingSpot,
         fairwayWidth: newThrow.fairwayWidth,
-        penaltyStrokes: newThrow.penaltyStrokes,
+        customPenaltyStrokes: newThrow.customPenaltyStrokes,
         notes: newThrow.notes,
         rawText: newThrow.rawText,
         parseConfidence: newThrow.parseConfidence,
@@ -260,7 +250,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState> {
       resultRating: updatedThrow.resultRating,
       landingSpot: updatedThrow.landingSpot,
       fairwayWidth: updatedThrow.fairwayWidth,
-      penaltyStrokes: updatedThrow.penaltyStrokes,
+      customPenaltyStrokes: updatedThrow.customPenaltyStrokes,
       notes: updatedThrow.notes,
       rawText: updatedThrow.rawText,
       parseConfidence: updatedThrow.parseConfidence,
@@ -340,7 +330,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState> {
         resultRating: throw_.resultRating,
         landingSpot: throw_.landingSpot,
         fairwayWidth: throw_.fairwayWidth,
-        penaltyStrokes: throw_.penaltyStrokes,
+        customPenaltyStrokes: throw_.customPenaltyStrokes,
         notes: throw_.notes,
         rawText: throw_.rawText,
         parseConfidence: throw_.parseConfidence,
@@ -353,9 +343,9 @@ class RoundReviewCubit extends Cubit<RoundReviewState> {
   /// Save the round to both local storage and Firestore
   Future<void> _saveRound(DGRound round) async {
     // Save to shared preferences
-    final bool savedLocally = await locator.get<RoundStorageService>().saveRound(
-      round,
-    );
+    final bool savedLocally = await locator
+        .get<RoundStorageService>()
+        .saveRound(round);
     if (savedLocally) {
       debugPrint('Successfully saved round to shared preferences');
     } else {

@@ -34,7 +34,7 @@ DiscThrow _$DiscThrowFromJson(Map json) => DiscThrow(
     _$FairwayWidthEnumMap,
     json['fairwayWidth'],
   ),
-  penaltyStrokes: (json['penaltyStrokes'] as num?)?.toInt(),
+  customPenaltyStrokes: (json['customPenaltyStrokes'] as num?)?.toInt(),
   notes: json['notes'] as String?,
   rawText: json['rawText'] as String?,
   parseConfidence: (json['parseConfidence'] as num?)?.toDouble(),
@@ -60,7 +60,7 @@ Map<String, dynamic> _$DiscThrowToJson(DiscThrow instance) => <String, dynamic>{
   'resultRating': _$ThrowResultRatingEnumMap[instance.resultRating],
   'landingSpot': _$LandingSpotEnumMap[instance.landingSpot],
   'fairwayWidth': _$FairwayWidthEnumMap[instance.fairwayWidth],
-  'penaltyStrokes': instance.penaltyStrokes,
+  'customPenaltyStrokes': instance.customPenaltyStrokes,
   'notes': instance.notes,
   'rawText': instance.rawText,
   'parseConfidence': instance.parseConfidence,
@@ -163,6 +163,7 @@ const _$LandingSpotEnumMap = {
   LandingSpot.fairway: 'fairway',
   LandingSpot.offFairway: 'off_fairway',
   LandingSpot.outOfBounds: 'out_of_bounds',
+  LandingSpot.hazard: 'hazard',
   LandingSpot.other: 'other',
 };
 
