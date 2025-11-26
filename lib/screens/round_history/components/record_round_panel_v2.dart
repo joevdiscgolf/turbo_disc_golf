@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
@@ -21,7 +22,9 @@ const String testCourseName = 'Foxwood';
 /// - Course selector (select/create)
 /// - Keeps original voice recording & parse/continue logic
 class RecordRoundPanelV2 extends StatefulWidget {
-  const RecordRoundPanelV2({super.key});
+  const RecordRoundPanelV2({super.key, required this.bottomViewPadding});
+
+  final double bottomViewPadding;
 
   @override
   State<RecordRoundPanelV2> createState() => _RecordRoundPanelV2State();
@@ -115,76 +118,35 @@ class _RecordRoundPanelV2State extends State<RecordRoundPanelV2> {
               topRight: Radius.circular(20),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Record round',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // Course card (blue tint)
-                _InfoCard(
-                      icon: Icons.landscape,
-                      title: 'Course',
-                      subtitle: _selectedCourse == 'Select a course'
-                          ? 'Select a course'
-                          : _selectedCourse,
-                      onTap: _showCourseSelector,
-                      accent: _courseAccent,
-                    )
-                    .animate()
-                    .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-                    .slideY(
-                      begin: 0.08,
-                      end: 0.0,
-                      duration: 280.ms,
-                      curve: Curves.easeOut,
-                    ),
-                const SizedBox(height: 12),
-
-                // Date card (green tint)
-                _InfoCard(
-                      icon: Icons.access_time,
-                      title: 'Date & Time',
-                      subtitle: '${_formatDateTime(_selectedDateTime)}  (auto)',
-                      onTap: _showDateTimeEditor,
-                      accent: _dateAccent,
-                    )
-                    .animate(delay: 90.ms)
-                    .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-                    .slideY(
-                      begin: 0.08,
-                      end: 0.0,
-                      duration: 280.ms,
-                      curve: Curves.easeOut,
-                    ),
-                const SizedBox(height: 12),
-
-                // Description (light purple tint) — larger
-                Expanded(
-                  child:
-                      VoiceDescriptionCard(
-                            controller: _transcriptController,
-                            focusNode: _transcriptFocusNode,
-                            isListening: isListening,
-                            accent: _descAccent,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PanelHeader(
+                title: 'Record round',
+                onClose: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: widget.bottomViewPadding,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Course card (blue tint)
+                      _InfoCard(
+                            icon: Icons.landscape,
+                            title: 'Course',
+                            subtitle: _selectedCourse == 'Select a course'
+                                ? 'Select a course'
+                                : _selectedCourse,
+                            onTap: _showCourseSelector,
+                            accent: _courseAccent,
                           )
-                          .animate(delay: 180.ms)
+                          .animate()
                           .fadeIn(duration: 280.ms, curve: Curves.easeOut)
                           .slideY(
                             begin: 0.08,
@@ -192,122 +154,167 @@ class _RecordRoundPanelV2State extends State<RecordRoundPanelV2> {
                             duration: 280.ms,
                             curve: Curves.easeOut,
                           ),
-                ),
+                      const SizedBox(height: 12),
 
-                const SizedBox(height: 18),
+                      // Date card (green tint)
+                      _InfoCard(
+                            icon: Icons.access_time,
+                            title: 'Date & Time',
+                            subtitle:
+                                '${_formatDateTime(_selectedDateTime)}  (auto)',
+                            onTap: _showDateTimeEditor,
+                            accent: _dateAccent,
+                          )
+                          .animate(delay: 90.ms)
+                          .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+                          .slideY(
+                            begin: 0.08,
+                            end: 0.0,
+                            duration: 280.ms,
+                            curve: Curves.easeOut,
+                          ),
+                      const SizedBox(height: 12),
 
-                // Microphone with state-based glow
-                Center(
-                  child:
-                      Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  isListening
-                                      ? const Color(0xFFFF7A7A).withValues(
-                                          alpha: 0.06,
-                                        ) // Red glow when listening
-                                      : const Color(0xFF2196F3).withValues(
-                                          alpha: 0.06,
-                                        ), // Blue glow when idle
-                                  Colors.transparent,
-                                ],
-                                stops: const [0.4, 1.0],
+                      // Description (light purple tint) — larger
+                      Expanded(
+                        child:
+                            VoiceDescriptionCard(
+                                  controller: _transcriptController,
+                                  focusNode: _transcriptFocusNode,
+                                  isListening: isListening,
+                                  accent: _descAccent,
+                                )
+                                .animate(delay: 180.ms)
+                                .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+                                .slideY(
+                                  begin: 0.08,
+                                  end: 0.0,
+                                  duration: 280.ms,
+                                  curve: Curves.easeOut,
+                                ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Microphone with state-based glow
+                      Center(
+                        child:
+                            Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        isListening
+                                            ? const Color(
+                                                0xFFFF7A7A,
+                                              ).withValues(
+                                                alpha: 0.06,
+                                              ) // Red glow when listening
+                                            : const Color(
+                                                0xFF2196F3,
+                                              ).withValues(
+                                                alpha: 0.06,
+                                              ), // Blue glow when idle
+                                        Colors.transparent,
+                                      ],
+                                      stops: const [0.4, 1.0],
+                                    ),
+                                  ),
+                                  child: AnimatedMicrophoneButton(
+                                    isListening: isListening,
+                                    onTap: _toggleListening,
+                                  ),
+                                )
+                                .animate(delay: 270.ms)
+                                .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                                .scale(
+                                  begin: const Offset(0.85, 0.85),
+                                  end: const Offset(1.0, 1.0),
+                                  duration: 300.ms,
+                                  curve: Curves.easeOutBack,
+                                ),
+                      ),
+
+                      Center(
+                        child: Text(
+                          isListening ? 'Tap to stop' : 'Tap to start',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Debug buttons (Change + Parse) preserved
+                      if (kDebugMode) ...[
+                        Row(
+                          children: [
+                            PrimaryButton(
+                              label: 'Change',
+                              width: 100,
+                              height: 44,
+                              backgroundColor: _createAccent.withValues(
+                                alpha: 0.18,
+                              ),
+                              labelColor: _createAccent,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              onPressed: _showTestConstantSelector,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: PrimaryButton(
+                                label: 'Parse',
+                                width: double.infinity,
+                                height: 44,
+                                backgroundColor: _createAccent,
+                                labelColor: Colors.white,
+                                icon: Icons.science,
+                                iconColor: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                onPressed: () async {
+                                  final bool useCached = false;
+                                  debugPrint(
+                                    'Test Parse Constant: Using cached round: $useCached',
+                                  );
+                                  if (context.mounted) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            RoundProcessingLoadingScreen(
+                                              transcript: _selectedTranscript,
+                                              courseName: testCourseName,
+                                              useSharedPreferences: useCached,
+                                            ),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
                             ),
-                            child: AnimatedMicrophoneButton(
-                              isListening: isListening,
-                              onTap: _toggleListening,
-                            ),
-                          )
-                          .animate(delay: 270.ms)
-                          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                          .scale(
-                            begin: const Offset(0.85, 0.85),
-                            end: const Offset(1.0, 1.0),
-                            duration: 300.ms,
-                            curve: Curves.easeOutBack,
-                          ),
-                ),
-
-                Center(
-                  child: Text(
-                    isListening ? 'Tap to stop' : 'Tap to start',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Debug buttons (Change + Parse) preserved
-                if (kDebugMode) ...[
-                  Row(
-                    children: [
-                      PrimaryButton(
-                        label: 'Change',
-                        width: 100,
-                        height: 44,
-                        backgroundColor: _createAccent.withValues(alpha: 0.18),
-                        labelColor: _createAccent,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        onPressed: _showTestConstantSelector,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: PrimaryButton(
-                          label: 'Parse',
-                          width: double.infinity,
-                          height: 44,
-                          backgroundColor: _createAccent,
-                          labelColor: Colors.white,
-                          icon: Icons.science,
-                          iconColor: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          onPressed: () async {
-                            final bool useCached = false;
-                            debugPrint(
-                              'Test Parse Constant: Using cached round: $useCached',
-                            );
-                            if (context.mounted) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      RoundProcessingLoadingScreen(
-                                        transcript: _selectedTranscript,
-                                        courseName: testCourseName,
-                                        useSharedPreferences: useCached,
-                                      ),
-                                ),
-                              );
-                            }
-                          },
+                          ],
                         ),
+                        const SizedBox(height: 14),
+                      ],
+
+                      // Continue button
+                      PrimaryButton(
+                        label: 'Continue',
+                        labelColor: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        width: double.infinity,
+                        height: 56,
+                        disabled: !hasTranscript || isListening,
+                        onPressed: _handleContinue,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                ],
-
-                // Continue button
-                PrimaryButton(
-                  label: 'Continue',
-                  labelColor: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  width: double.infinity,
-                  height: 56,
-                  disabled: !hasTranscript || isListening,
-                  onPressed: _handleContinue,
                 ),
-                const SizedBox(height: 12),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

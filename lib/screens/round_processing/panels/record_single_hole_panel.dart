@@ -1,80 +1,72 @@
+// Updated RecordSingleHolePanel using VoiceDescriptionCard and unified background
+// NOTE: Replace placeholders for VoiceDescriptionCard import if needed.
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/panels/panel_header.dart';
+import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
 /// A reusable panel for recording a single hole via voice input.
-///
-/// This panel provides voice recording UI without baked-in business logic,
-/// making it suitable for multiple use cases:
-/// - Adding a hole to a PotentialDgRound in round confirmation flow
-/// - Re-recording a hole during round processing
-/// - Editing a hole from the round review screen
-///
-/// The panel uses callbacks to delegate business logic to the parent widget,
-/// allowing for flexible integration with different flows and state management.
+/// Now uses VoiceDescriptionCard and applies unified background
 class RecordSingleHolePanel extends StatefulWidget {
   const RecordSingleHolePanel({
     super.key,
     required this.holeNumber,
     this.holePar,
     this.holeFeet,
-    this.isProcessing = false,
-    this.showTestButton = false,
+    required this.courseName,
+    this.showTestButton = true,
     this.title,
     this.subtitle,
-    required this.onContinuePressed,
-    this.onTestingPressed,
-    this.onCancel,
+    required this.onParseComplete,
+    required this.bottomViewPadding,
   });
 
-  /// The hole number to display (e.g., "Record Hole 5")
   final int holeNumber;
-
-  /// Optional par value to display in subtitle
   final int? holePar;
-
-  /// Optional distance in feet to display in subtitle
   final int? holeFeet;
-
-  /// Whether the parent is currently processing the transcript.
-  /// When true, the continue button shows a loading indicator.
-  final bool isProcessing;
-
-  /// Whether to show the testing button (typically only in debug mode)
+  final String courseName;
   final bool showTestButton;
-
-  /// Optional custom title. Defaults to "Record Hole {holeNumber}"
   final String? title;
-
-  /// Optional custom subtitle. Defaults to hole metadata or instructions.
   final String? subtitle;
-
-  /// Called when the user presses continue with a valid transcript.
-  /// The parent should handle the business logic (e.g., processing with AI,
-  /// updating state, navigation).
-  final void Function(String transcript) onContinuePressed;
-
-  /// Optional callback for the testing button (debug mode).
-  /// Should be provided when showTestButton is true.
-  /// Receives the selected test constant string.
-  final void Function(String testConstant)? onTestingPressed;
-
-  /// Optional callback when the user cancels/closes the panel.
-  final VoidCallback? onCancel;
+  final void Function(PotentialDGHole? parsedHole) onParseComplete;
+  final double bottomViewPadding;
 
   @override
   State<RecordSingleHolePanel> createState() => _RecordSingleHolePanelState();
 }
 
 class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
+  static const Color _descAccent = Color(0xFFB39DDB); // light purple
+
+  final TextEditingController _textEditingController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
   late VoiceRecordingService _voiceService;
   final ScrollController _scrollController = ScrollController();
   int _selectedTestIndex = 0;
 
-  // Get list of test constant keys and values
+  // Internal processing state
+  bool _processingContinueButton = false;
+  bool _processingTestButton = false;
+
+  bool get _isProcessing => _processingContinueButton || _processingTestButton;
+  set _isProcessing(bool isProcessing) {
+    _processingContinueButton = false;
+    _processingTestButton = false;
+  }
+
+  String _processingError = '';
+
   List<String> get _testConstantKeys =>
       DescriptionConstants.singleHoleDescriptionConstants.keys.toList();
   List<String> get _testConstantValues =>
@@ -102,129 +94,50 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final String transcript = _voiceService.transcribedText;
     final bool isListening = _voiceService.isListening;
-    final bool hasTranscript = transcript.isNotEmpty;
-    final bool showContinueButton =
-        hasTranscript && !isListening && !widget.isProcessing;
 
-    return Stack(
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
+    return Container(
+      padding: EdgeInsets.only(bottom: widget.bottomViewPadding),
+      height: MediaQuery.of(context).size.height - 64,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF7F4FF), // unified panel background
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PanelHeader(
+            title: widget.title ?? _defaultTitle,
+            subtitle: widget.subtitle ?? _defaultSubtitle,
           ),
-          child: SafeArea(
+          Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header
-                  Row(
-                    children: [
-                      const Icon(Icons.mic, color: Color(0xFF9D4EDD)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.title ?? _defaultTitle,
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              widget.subtitle ?? _defaultSubtitle,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: _handleCancel,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
                   // Error display
                   if (_voiceService.lastError.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3CD),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFFFA726).withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Color(0xFFFF8F00),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _voiceService.lastError,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: const Color(0xFF664D03)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildErrorBox(context),
 
-                  // Transcript container
-                  Container(
-                    height: 150,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isListening
-                            ? const Color(0xFF2196F3)
-                            : Colors.grey[300]!,
-                        width: 2,
-                      ),
+                  // Parsing error display
+                  if (_processingError.isNotEmpty)
+                    _buildParsingErrorBox(context),
+
+                  // --- REPLACED WITH UNIVERSAL COMPONENT ---
+                  Expanded(
+                    child: VoiceDescriptionCard(
+                      isListening: isListening,
+                      controller: _textEditingController,
+                      focusNode: _focusNode,
+                      accent: _descAccent,
                     ),
-                    child: transcript.isEmpty
-                        ? Center(
-                            child: Text(
-                              isListening
-                                  ? 'Listening...'
-                                  : 'Tap the microphone to start',
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    color: Colors.grey[400],
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                            ),
-                          )
-                        : SingleChildScrollView(
-                            controller: _scrollController,
-                            child: Text(
-                              transcript,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyLarge?.copyWith(height: 1.5),
-                            ),
-                          ),
                   ),
                   const SizedBox(height: 24),
-                  // Animated microphone button
+
                   Center(
                     child: AnimatedMicrophoneButton(
                       isListening: isListening,
@@ -241,131 +154,130 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                     ),
                   ),
 
-                  // Testing button (debug mode only)
-                  if (widget.showTestButton && kDebugMode) ...[
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        // Change button
-                        PrimaryButton(
-                          label: 'Change',
-                          width: 100,
-                          height: 48,
-                          backgroundColor: const Color(
-                            0xFF9D4EDD,
-                          ).withValues(alpha: 0.2),
-                          labelColor: const Color(0xFF9D4EDD),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          onPressed: _showTestConstantSelector,
-                        ),
-                        const SizedBox(width: 12),
-                        // Parse button
-                        Expanded(
-                          child: PrimaryButton(
-                            label: 'Parse',
-                            width: double.infinity,
-                            height: 48,
-                            backgroundColor: const Color(0xFF9D4EDD),
-                            labelColor: Colors.white,
-                            icon: Icons.science,
-                            iconColor: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            disabled: widget.onTestingPressed == null,
-                            onPressed: () {
-                              if (widget.onTestingPressed != null) {
-                                widget.onTestingPressed!(
-                                  _testConstantValues[_selectedTestIndex],
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  if (widget.showTestButton && kDebugMode) _buildTestingRow(),
 
-                  // Continue button
-                  if (showContinueButton) ...[
-                    const SizedBox(height: 24),
-                    PrimaryButton(
-                      label: 'Continue',
-                      width: double.infinity,
-                      height: 56,
-                      backgroundColor: const Color(0xFF2196F3),
-                      labelColor: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      loading: widget.isProcessing,
-                      disabled: widget.isProcessing,
-                      onPressed: _handleContinue,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
+                  PrimaryButton(
+                    label: 'Continue',
+                    width: double.infinity,
+                    height: 56,
+                    backgroundColor: const Color(0xFF2196F3),
+                    labelColor: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    loading: _processingContinueButton,
+                    disabled: _isProcessing,
+                    onPressed: _handleContinue,
+                  ),
                 ],
               ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
 
-        // Processing overlay
-        if (widget.isProcessing)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(
-                        width: 60,
-                        height: 60,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 4,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF2196F3),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Processing...',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Analyzing your recording',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+  Widget _buildErrorBox(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3CD),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFFFFA726).withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Color(0xFFFF8F00),
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _voiceService.lastError,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF664D03)),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParsingErrorBox(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEBEE),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _processingError,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.red.shade900),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => setState(() => _processingError = ''),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestingRow() {
+    return Column(
+      children: [
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            PrimaryButton(
+              label: 'Change',
+              width: 100,
+              height: 48,
+              backgroundColor: const Color(0xFF9D4EDD).withValues(alpha: 0.2),
+              labelColor: const Color(0xFF9D4EDD),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              disabled: _isProcessing,
+              onPressed: _showTestConstantSelector,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: PrimaryButton(
+                label: 'Parse',
+                height: 48,
+                backgroundColor: const Color(0xFF9D4EDD),
+                labelColor: Colors.white,
+                icon: Icons.science,
+                iconColor: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                loading: _processingTestButton,
+                disabled: _isProcessing,
+                onPressed: _handleTestParse,
+                width: double.infinity,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -373,7 +285,6 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   void _onVoiceServiceUpdate() {
     if (mounted) {
       setState(() {});
-      // Auto-scroll to bottom when new text arrives
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -387,24 +298,19 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   }
 
   Future<void> _toggleListening() async {
+    if (_isProcessing) return;
+
     if (_voiceService.isListening) {
       await _voiceService.stopListening();
     } else {
-      // Try to initialize first if not initialized
       if (!_voiceService.isInitialized) {
-        final bool initialized = await _voiceService.initialize();
-        if (!initialized) {
+        final bool ok = await _voiceService.initialize();
+        if (!ok) {
           if (mounted) {
             setState(() {});
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  _voiceService.lastError.isNotEmpty
-                      ? _voiceService.lastError
-                      : 'Unable to initialize voice recording',
-                ),
-              ),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(_voiceService.lastError)));
           }
           return;
         }
@@ -414,7 +320,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   }
 
   void _showTestConstantSelector() {
-    showModalBottomSheet<void>(
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -448,12 +354,12 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                ...List.generate(
-                  _testConstantKeys.length,
-                  (index) => Padding(
+                ...List.generate(_testConstantKeys.length, (index) {
+                  final selected = _selectedTestIndex == index;
+                  return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      selected: _selectedTestIndex == index,
+                      selected: selected,
                       selectedTileColor: const Color(
                         0xFF9D4EDD,
                       ).withValues(alpha: 0.1),
@@ -463,30 +369,25 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                       title: Text(
                         _testConstantKeys[index],
                         style: TextStyle(
-                          fontWeight: _selectedTestIndex == index
+                          fontWeight: selected
                               ? FontWeight.bold
                               : FontWeight.normal,
-                          color: _selectedTestIndex == index
-                              ? const Color(0xFF9D4EDD)
-                              : null,
+                          color: selected ? const Color(0xFF9D4EDD) : null,
                         ),
                       ),
-                      trailing: _selectedTestIndex == index
+                      trailing: selected
                           ? const Icon(
                               Icons.check_circle,
                               color: Color(0xFF9D4EDD),
                             )
                           : null,
                       onTap: () {
-                        setState(() {
-                          _selectedTestIndex = index;
-                        });
+                        setState(() => _selectedTestIndex = index);
                         Navigator.pop(context);
                       },
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                  );
+                }),
               ],
             ),
           ),
@@ -495,9 +396,79 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
     );
   }
 
+  /// Parse transcript internally using AI service
+  Future<void> _parseTranscript(
+    String transcript, {
+    required bool isTestConstant,
+  }) async {
+    setState(() {
+      if (isTestConstant) {
+        _processingTestButton = true;
+      } else {
+        _processingContinueButton = true;
+      }
+      _processingError = '';
+    });
+
+    try {
+      final AiParsingService aiService = locator.get<AiParsingService>();
+      final BagService bagService = locator.get<BagService>();
+
+      // Ensure bag is loaded
+      if (bagService.userBag.isEmpty) {
+        await bagService.loadBag();
+        if (bagService.userBag.isEmpty) {
+          bagService.loadSampleBag();
+        }
+      }
+
+      debugPrint('🎤 Parsing hole ${widget.holeNumber}');
+
+      // Call AI parsing
+      final PotentialDGHole? parsed = await aiService.parseSingleHole(
+        voiceTranscript: transcript,
+        userBag: bagService.userBag,
+        holeNumber: widget.holeNumber,
+        existingHolePar: widget.holePar,
+        existingHoleFeet: widget.holeFeet,
+        courseName: widget.courseName,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isProcessing = false;
+      });
+
+      HapticFeedback.mediumImpact();
+
+      if (parsed != null) {
+        debugPrint('✅ Successfully parsed hole ${widget.holeNumber}');
+
+        // Pop panel before calling callback
+        Navigator.of(context).pop();
+
+        // Return parsed hole to parent
+        widget.onParseComplete(parsed);
+      } else {
+        setState(() {
+          _processingError = 'Failed to parse hole. Please try again.';
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error parsing: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isProcessing = false;
+        _processingError = 'Error: ${e.toString()}';
+      });
+    }
+  }
+
   void _handleContinue() {
     final String transcript = _voiceService.transcribedText.trim();
-
     if (transcript.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -506,14 +477,12 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
       );
       return;
     }
-
-    // Delegate business logic to parent via callback
-    widget.onContinuePressed(transcript);
+    _parseTranscript(transcript, isTestConstant: false);
   }
 
-  void _handleCancel() {
-    widget.onCancel?.call();
-    Navigator.of(context).pop();
+  void _handleTestParse() {
+    final String test = _testConstantValues[_selectedTestIndex];
+    _parseTranscript(test, isTestConstant: true);
   }
 
   String get _defaultTitle => 'Record Hole ${widget.holeNumber}';

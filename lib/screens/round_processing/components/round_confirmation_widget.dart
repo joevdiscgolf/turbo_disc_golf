@@ -1,15 +1,14 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/confirmation_holes_grid.dart';
-import 'package:turbo_disc_golf/screens/round_processing/components/incomplete_hole_walkthrough_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
-import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundConfirmationWidget extends StatefulWidget {
   const RoundConfirmationWidget({
@@ -90,7 +89,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     bool hasRequiredFields,
   ) {
     return Container(
-      color: const Color(0xFFEEE8F5), // Light purple-gray background
+      color: const Color(0xFFF5F0FA), // Lighter purple-gray background
       // color: Colors.blue,
       child: Column(
         children: [
@@ -113,19 +112,19 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 ),
                 const SizedBox(height: 12),
                 // Warning banner for missing data
-                if (validationIssues.isNotEmpty)
-                  _buildWarningBanner(
-                    context,
-                    currentRound,
-                    validationIssues,
-                    missingHoles,
-                    hasRequiredFields,
-                  ),
-                if (validationIssues.isNotEmpty) const SizedBox(height: 16),
+                // if (validationIssues.isNotEmpty)
+                //   _buildWarningBanner(
+                //     context,
+                //     currentRound,
+                //     validationIssues,
+                //     missingHoles,
+                //     hasRequiredFields,
+                //   ),
+                // if (validationIssues.isNotEmpty) const SizedBox(height: 16),
 
                 // Instructions
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.only(left: 4, right: 4, top: 12),
                   child: Text(
                     'Review holes',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -150,74 +149,74 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     );
   }
 
-  int _getIncompleteHoleCount(PotentialDGRound round) {
-    if (round.holes == null) return 0;
-    // Count holes that are missing required fields OR have no throws OR no basket throw
-    return round.holes!
-        .where(
-          (hole) =>
-              !hole.hasRequiredFields ||
-              hole.throws == null ||
-              hole.throws!.isEmpty ||
-              !_hasBasketThrow(hole),
-        )
-        .length;
-  }
+  // int _getIncompleteHoleCount(PotentialDGRound round) {
+  //   if (round.holes == null) return 0;
+  //   // Count holes that are missing required fields OR have no throws OR no basket throw
+  //   return round.holes!
+  //       .where(
+  //         (hole) =>
+  //             !hole.hasRequiredFields ||
+  //             hole.throws == null ||
+  //             hole.throws!.isEmpty ||
+  //             !_hasBasketThrow(hole),
+  //       )
+  //       .length;
+  // }
 
-  bool _hasBasketThrow(PotentialDGHole hole) {
-    if (hole.throws == null || hole.throws!.isEmpty) return false;
-    return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
-  }
+  // bool _hasBasketThrow(PotentialDGHole hole) {
+  //   if (hole.throws == null || hole.throws!.isEmpty) return false;
+  //   return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
+  // }
 
-  Future<void> _openWalkthroughDialog(
-    BuildContext context,
-    PotentialDGRound currentRound,
-  ) async {
-    displayBottomSheet(
-      context,
-      IncompleteHoleWalkthroughPanel(
-        potentialRound: currentRound,
-        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
-      ),
-    );
-  }
+  // Future<void> _openWalkthroughDialog(
+  //   BuildContext context,
+  //   PotentialDGRound currentRound,
+  // ) async {
+  //   displayBottomSheet(
+  //     context,
+  //     IncompleteHoleWalkthroughPanel(
+  //       potentialRound: currentRound,
+  //       bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+  //     ),
+  //   );
+  // }
 
-  Widget _buildWarningBanner(
-    BuildContext context,
-    PotentialDGRound currentRound,
-    List<String> issues,
-    Set<int> missingHoles,
-    bool hasRequiredFields,
-  ) {
-    final int incompleteHoleCount = _getIncompleteHoleCount(currentRound);
-    final int holesToAddress = incompleteHoleCount + missingHoles.length;
+  // Widget _buildWarningBanner(
+  //   BuildContext context,
+  //   PotentialDGRound currentRound,
+  //   List<String> issues,
+  //   Set<int> missingHoles,
+  //   bool hasRequiredFields,
+  // ) {
+  //   final int incompleteHoleCount = _getIncompleteHoleCount(currentRound);
+  //   final int holesToAddress = incompleteHoleCount + missingHoles.length;
 
-    return Row(
-      children: [
-        if (holesToAddress > 0)
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                // Open the walkthrough to guide user through filling in incomplete holes
-                await _openWalkthroughDialog(context, currentRound);
-              },
-              icon: const Icon(Icons.warning, size: 18),
-              label: Text(
-                '$holesToAddress ${holesToAddress == 1 ? 'hole needs' : 'holes need'} attention',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFEB3B),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  //   return Row(
+  //     children: [
+  //       if (holesToAddress > 0)
+  //         Expanded(
+  //           child: ElevatedButton.icon(
+  //             onPressed: () async {
+  //               // Open the walkthrough to guide user through filling in incomplete holes
+  //               await _openWalkthroughDialog(context, currentRound);
+  //             },
+  //             icon: const Icon(Icons.warning, size: 18),
+  //             label: Text(
+  //               '$holesToAddress ${holesToAddress == 1 ? 'hole needs' : 'holes need'} attention',
+  //             ),
+  //             style: ElevatedButton.styleFrom(
+  //               backgroundColor: const Color(0xFFFFEB3B),
+  //               foregroundColor: Colors.black,
+  //               padding: const EdgeInsets.symmetric(vertical: 12),
+  //               shape: RoundedRectangleBorder(
+  //                 borderRadius: BorderRadius.circular(12),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildBottomBar(BuildContext context, bool hasRequiredFields) {
     return ClipRect(

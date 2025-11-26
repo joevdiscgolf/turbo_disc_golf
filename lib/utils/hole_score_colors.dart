@@ -21,8 +21,8 @@ class HoleScoreColors {
     } else if (relativeScore == 0) {
       // Par - darker grey gradient
       return [
-        Colors.grey.withValues(alpha: 0.35),
-        Colors.grey.withValues(alpha: 0.25),
+        Colors.grey.withValues(alpha: 0.3),
+        Colors.grey.withValues(alpha: 0.2),
       ];
     } else if (relativeScore == 1) {
       // Bogey - light red gradient

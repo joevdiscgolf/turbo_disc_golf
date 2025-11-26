@@ -237,7 +237,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         builder: (context) => AddThrowPanel(
           existingThrow: currentThrow,
           previousThrow: previousThrow,
-          throwIndex: 0,
+          throwIndex: throwIndex,
           onSave: (updatedThrow) {
             widget.onThrowEdited(throwIndex, updatedThrow);
             Navigator.of(context).pop();

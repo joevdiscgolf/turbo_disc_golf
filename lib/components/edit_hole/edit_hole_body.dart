@@ -160,7 +160,7 @@ class EditHoleBody extends StatelessWidget {
     final int? score = _getScore();
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.only(top: 16, bottom: 12, left: 16, right: 16),
       decoration: BoxDecoration(
         color: scoreColor.withValues(alpha: !hasRequiredFields ? 0.2 : 0.1),
         borderRadius: BorderRadius.only(
