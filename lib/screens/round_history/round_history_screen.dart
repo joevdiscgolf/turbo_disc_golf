@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
+import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -29,9 +31,12 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   }
 
   Future<void> _showRecordRoundSheet() async {
+    // Start recording round in Cubit before showing panel
+    BlocProvider.of<RecordRoundCubit>(context).startRecordingRound();
+
     await displayBottomSheet(
       context,
-      RecordRoundPanel(bottomViewPadding: widget.bottomViewPadding),
+      RecordRoundStepsPanel(bottomViewPadding: widget.bottomViewPadding),
     );
   }
 

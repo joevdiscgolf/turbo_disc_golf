@@ -14,6 +14,7 @@ class PrimaryButton extends StatelessWidget {
     this.fontSize = 16,
     this.fontWeight = FontWeight.w600,
     this.icon,
+    this.iconRight,
     this.gradientBackground,
     this.loading = false,
     this.disabled = false,
@@ -32,6 +33,7 @@ class PrimaryButton extends StatelessWidget {
   final double height;
   final double width;
   final IconData? icon;
+  final IconData? iconRight;
   final Function onPressed;
   final bool loading;
   final bool disabled;
@@ -66,7 +68,26 @@ class PrimaryButton extends StatelessWidget {
     );
 
     Widget button;
-    if (icon != null && !loading) {
+    if (iconRight != null && !loading) {
+      button = ElevatedButton(
+        onPressed: (loading || disabled)
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onPressed();
+              },
+        style: buttonStyle,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            text,
+            const SizedBox(width: 8),
+            Icon(iconRight, color: iconColor, size: 20),
+          ],
+        ),
+      );
+    } else if (icon != null && !loading) {
       button = ElevatedButton.icon(
         icon: Icon(icon, color: iconColor, size: 20),
         onPressed: (loading || disabled)

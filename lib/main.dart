@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/firebase_options.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
@@ -39,15 +40,13 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<RoundHistoryCubit>.value(value: roundHistoryCubit),
         BlocProvider<RoundConfirmationCubit>(
-          create: (_) => RoundConfirmationCubit(
-            roundHistoryCubit: roundHistoryCubit,
-          ),
+          create: (_) =>
+              RoundConfirmationCubit(roundHistoryCubit: roundHistoryCubit),
         ),
         BlocProvider<RoundReviewCubit>(
-          create: (_) => RoundReviewCubit(
-            roundHistoryCubit: roundHistoryCubit,
-          ),
+          create: (_) => RoundReviewCubit(roundHistoryCubit: roundHistoryCubit),
         ),
+        BlocProvider<RecordRoundCubit>(create: (_) => RecordRoundCubit()),
       ],
       child: ChangeNotifierProvider<RoundParser>.value(
         value: locator.get<RoundParser>(),
@@ -122,10 +121,12 @@ class MyApp extends StatelessWidget {
             ),
             textSelectionTheme: TextSelectionThemeData(
               cursorColor: const Color(0xFF5B7EFF), // Blue cursor
-              selectionColor: const Color(0xFF5B7EFF)
-                  .withValues(alpha: 0.3), // Light blue selection background
-              selectionHandleColor:
-                  const Color(0xFF5B7EFF), // Blue selection handles
+              selectionColor: const Color(
+                0xFF5B7EFF,
+              ).withValues(alpha: 0.3), // Light blue selection background
+              selectionHandleColor: const Color(
+                0xFF5B7EFF,
+              ), // Blue selection handles
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
