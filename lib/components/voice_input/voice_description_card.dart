@@ -7,6 +7,7 @@ class VoiceDescriptionCard extends StatelessWidget {
   final FocusNode focusNode;
   final bool isListening;
   final Color accent;
+  final VoidCallback? onClear;
 
   const VoiceDescriptionCard({
     super.key,
@@ -14,6 +15,7 @@ class VoiceDescriptionCard extends StatelessWidget {
     required this.focusNode,
     required this.isListening,
     required this.accent,
+    this.onClear,
   });
 
   @override
@@ -87,6 +89,28 @@ class VoiceDescriptionCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              if (!isListening && onClear != null && controller.text.isNotEmpty)
+                TextButton(
+                  onPressed: onClear,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    minimumSize: const Size(60, 36),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: Text(
+                    'Clear',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
                 ),
             ],
           ),

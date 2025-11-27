@@ -84,7 +84,7 @@ class VoiceRecordingService extends ChangeNotifier {
     }
   }
 
-  Future<void> startListening() async {
+  Future<void> startListening({bool preserveExistingText = false}) async {
     debugPrint('=== Starting voice recording ===');
 
     if (!_isInitialized) {
@@ -93,14 +93,30 @@ class VoiceRecordingService extends ChangeNotifier {
     }
 
     if (_isInitialized && !_isListening) {
-      _transcribedText = ''; // Clear previous text
+      // Store existing text if we want to preserve it
+      final String existingText =
+          preserveExistingText && _transcribedText.isNotEmpty
+              ? _transcribedText.trim()
+              : '';
+
+      if (!preserveExistingText) {
+        _transcribedText = ''; // Clear previous text
+      }
       _lastError = '';
       debugPrint('Starting speech recognition...');
+      if (existingText.isNotEmpty) {
+        debugPrint('Preserving existing text: $existingText');
+      }
 
       try {
         await _speechToText.listen(
           onResult: (result) {
-            _transcribedText = result.recognizedWords;
+            if (existingText.isNotEmpty) {
+              // Append new voice input to existing text
+              _transcribedText = '$existingText ${result.recognizedWords}';
+            } else {
+              _transcribedText = result.recognizedWords;
+            }
             debugPrint('=== VOICE TRANSCRIPT UPDATE ===');
             debugPrint('Raw text: ${result.recognizedWords}');
             debugPrint('Is final: ${result.finalResult}');

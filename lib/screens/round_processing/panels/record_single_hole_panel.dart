@@ -77,6 +77,13 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
     _voiceService = VoiceRecordingService();
     _initializeVoiceService();
     _voiceService.addListener(_onVoiceServiceUpdate);
+    _textEditingController.addListener(_onTextControllerChange);
+    _focusNode.addListener(_onFocusChange);
+
+    // Initialize controller with any existing transcript from voice service
+    if (_voiceService.transcribedText.isNotEmpty) {
+      _textEditingController.text = _voiceService.transcribedText;
+    }
   }
 
   Future<void> _initializeVoiceService() async {
@@ -86,8 +93,12 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   @override
   void dispose() {
     _voiceService.removeListener(_onVoiceServiceUpdate);
+    _textEditingController.removeListener(_onTextControllerChange);
+    _focusNode.removeListener(_onFocusChange);
     _voiceService.dispose();
     _scrollController.dispose();
+    _textEditingController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -133,6 +144,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                       controller: _textEditingController,
                       focusNode: _focusNode,
                       accent: _descAccent,
+                      onClear: _handleClearText,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -283,6 +295,17 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
 
   void _onVoiceServiceUpdate() {
     if (mounted) {
+      // Only sync from voice service to controller when actively listening
+      // This prevents:
+      // 1. Clearing text when restarting microphone (Bug #1)
+      // 2. Overwriting manual edits (Bug #2)
+      if (_voiceService.isListening && !_focusNode.hasFocus) {
+        _textEditingController.text = _voiceService.transcribedText;
+        _textEditingController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _textEditingController.text.length),
+        );
+      }
+
       setState(() {});
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -293,6 +316,21 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
           );
         }
       });
+    }
+  }
+
+  void _onTextControllerChange() {
+    // Sync manual edits back to voice service when user is editing
+    // This ensures edits persist and are used when parsing
+    if (!_voiceService.isListening && _focusNode.hasFocus) {
+      _voiceService.updateText(_textEditingController.text);
+    }
+  }
+
+  void _onFocusChange() {
+    // Stop listening when user starts editing manually
+    if (_focusNode.hasFocus && _voiceService.isListening) {
+      _voiceService.stopListening();
     }
   }
 
@@ -314,7 +352,8 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
           return;
         }
       }
-      await _voiceService.startListening();
+      // Preserve existing text (including manual edits) when restarting
+      await _voiceService.startListening(preserveExistingText: true);
     }
   }
 
@@ -464,6 +503,13 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
         _processingError = 'Error: ${e.toString()}';
       });
     }
+  }
+
+  void _handleClearText() {
+    setState(() {
+      _textEditingController.clear();
+      _voiceService.clearText();
+    });
   }
 
   void _handleContinue() {
