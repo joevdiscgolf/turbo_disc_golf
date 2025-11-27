@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel_v2.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
@@ -31,7 +31,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   Future<void> _showRecordRoundSheet() async {
     await displayBottomSheet(
       context,
-      RecordRoundPanelV2(bottomViewPadding: widget.bottomViewPadding),
+      RecordRoundPanel(bottomViewPadding: widget.bottomViewPadding),
     );
   }
 
