@@ -154,7 +154,6 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                       // Course card (blue tint)
                       _InfoCard(
                             icon: Icons.landscape,
-                            title: 'Course *',
                             subtitle: _selectedCourse == 'Select a course'
                                 ? 'Select a course'
                                 : _selectedCourse,
@@ -174,7 +173,6 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                       // Date card (green tint)
                       _InfoCard(
                             icon: Icons.access_time,
-                            title: 'Date & Time',
                             subtitle:
                                 '${_formatDateTime(_selectedDateTime)}  (auto)',
                             onTap: _showDateTimeEditor,
@@ -669,14 +667,12 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
 /// Info card with subtle gradient tint and shared icon bubble.
 class _InfoCard extends StatelessWidget {
   final IconData icon;
-  final String title;
   final String subtitle;
   final VoidCallback? onTap;
   final Color accent;
 
   const _InfoCard({
     required this.icon,
-    required this.title,
     required this.subtitle,
     this.onTap,
     required this.accent,
@@ -691,7 +687,7 @@ class _InfoCard extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 72,
+        height: 48,
         decoration: BoxDecoration(
           color: baseColor,
           borderRadius: BorderRadius.circular(12),
@@ -711,12 +707,12 @@ class _InfoCard extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
             // Circular icon container with radial gradient
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   colors: [Colors.white, accent.withValues(alpha: 0.0)],
@@ -726,39 +722,28 @@ class _InfoCard extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: accent.withValues(alpha: 0.08), // Colored shadow
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Icon(icon, size: 20, color: accent),
+              child: Icon(icon, size: 16, color: accent),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Icon(
               Icons.chevron_right,
+              size: 18,
               color: isClickable ? Colors.grey[500] : Colors.grey[300],
             ),
           ],

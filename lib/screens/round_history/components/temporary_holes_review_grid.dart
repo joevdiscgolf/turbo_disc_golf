@@ -31,6 +31,7 @@ class TemporaryHolesReviewGrid extends StatelessWidget {
         const SizedBox(height: 12),
         Expanded(
           child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 64),
             child: Wrap(
               spacing: 0,

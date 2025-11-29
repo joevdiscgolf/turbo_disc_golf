@@ -6,6 +6,7 @@ import 'package:flutter_remix/flutter_remix.dart';
 
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -71,6 +72,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   static const Color _descAccent = Color(0xFFB39DDB); // light purple
   static const Color _createAccent = Color(0xFF9D4EDD); // purple-ish
   static const Color _courseAccent = Color(0xFF2196F3); // blue
+  static const Color _dateAccent = Color(0xFF4CAF50); // green
 
   @override
   void initState() {
@@ -273,14 +275,6 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                         curve: Curves.easeOutBack,
                       ),
             ),
-            Center(
-              child: Text(
-                isListening ? 'Tap to stop' : 'Tap to listen',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-              ),
-            ),
             const SizedBox(height: 14),
             _buildNavigationButtons(),
             _buildDebugButtons(),
@@ -293,144 +287,100 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   Widget _buildHeader(RecordRoundActive state) {
     final double progress = (_currentHoleIndex + 1) / totalHoles;
 
-    return GestureDetector(
-      onTap: _showReviewGrid,
-      behavior: HitTestBehavior.translucent,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      children: [
+        // Course card (blue tint)
+        RoundDataInputCard(
+          icon: Icons.landscape,
+          subtitle: state.selectedCourse ?? 'Select a course',
+          onTap: _showCourseSelector,
+          accent: _courseAccent,
+        )
+            .animate()
+            .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+            .slideY(
+              begin: 0.08,
+              end: 0.0,
+              duration: 280.ms,
+              curve: Curves.easeOut,
+            ),
+        const SizedBox(height: 8),
+        // Date card (green tint)
+        RoundDataInputCard(
+          icon: Icons.access_time,
+          subtitle: _formatDateTime(state.selectedDateTime),
+          onTap: _showDateTimeEditor,
+          accent: _dateAccent,
+        )
+            .animate(delay: 90.ms)
+            .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+            .slideY(
+              begin: 0.08,
+              end: 0.0,
+              duration: 280.ms,
+              curve: Curves.easeOut,
+            ),
+        const SizedBox(height: 8),
+        // Hole Progress Card
+        GestureDetector(
+          onTap: _showReviewGrid,
+          behavior: HitTestBehavior.translucent,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
               children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _showCourseSelector,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: _courseAccent.withValues(alpha: 0.3),
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.landscape,
-                            size: 14,
-                            color: _courseAccent,
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              state.selectedCourse ?? 'Select course',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Hole ${_currentHoleIndex + 1} of $totalHoles',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _showDateTimeEditor,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.grey.shade400,
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Row(
                       children: [
                         Icon(
-                          Icons.access_time,
-                          size: 12,
-                          color: Colors.grey[600],
+                          Icons.grid_on,
+                          color: Colors.blue.shade700,
+                          size: 20,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _formatDateTime(state.selectedDateTime),
+                          'View',
                           style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Hole ${_currentHoleIndex + 1} of $totalHoles',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: _currentHoleIndex == totalHoles - 1
-                        ? Colors.black
-                        : _descAccent,
-                  ),
-                ),
-
-                Row(
-                  children: [
-                    Icon(Icons.grid_on, color: Colors.blue.shade700, size: 20),
-                    const SizedBox(width: 4),
-                    Text(
-                      'View',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.green,
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                backgroundColor: Colors.grey.shade200,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -447,8 +397,8 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
         final double previousButtonWidth = isFirstHole
             ? 0
             : isLastHole
-                ? 64 // 56px button + 8px spacing
-                : (availableWidth - 8) / 2; // Equal width for middle holes
+            ? 64 // 56px button + 8px spacing
+            : (availableWidth - 8) / 2; // Equal width for middle holes
 
         return Row(
           children: [
@@ -489,8 +439,9 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                 labelColor: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                iconRight:
-                    showFinalize ? Icons.check_circle : FlutterRemix.arrow_right_s_line,
+                iconRight: showFinalize
+                    ? Icons.check_circle
+                    : FlutterRemix.arrow_right_s_line,
                 iconColor: Colors.white,
                 disabled: isLastHole && !allHolesFilled,
                 onPressed: showFinalize ? _finishAndParse : _nextHole,
@@ -718,13 +669,28 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
 
   String _formatDateTime(DateTime dt) {
     final DateTime local = dt.toLocal();
-    final String date =
-        '${local.year}-${_twoDigits(local.month)}-${_twoDigits(local.day)}';
+    // Month names
+    const List<String> months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final String monthName = months[local.month - 1];
+    final String date = '$monthName ${local.day}, ${local.year}';
     final int hour = local.hour;
     final String minute = _twoDigits(local.minute);
     final String ampm = hour >= 12 ? 'PM' : 'AM';
     final int hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    return '$date • $hour12:$minute $ampm';
+    return '$date  •  $hour12:$minute $ampm';
   }
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
