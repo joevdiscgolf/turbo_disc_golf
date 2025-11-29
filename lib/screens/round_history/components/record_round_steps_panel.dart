@@ -438,7 +438,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
     final bool allHolesFilled = _areAllHolesFilled();
     final bool isFirstHole = _currentHoleIndex == 0;
     final bool isLastHole = _currentHoleIndex == totalHoles - 1;
-    final bool showFinalize = isLastHole && allHolesFilled;
+    final bool showFinalize = isLastHole;
 
     return LayoutBuilder(
       builder: (context, constraints) {
