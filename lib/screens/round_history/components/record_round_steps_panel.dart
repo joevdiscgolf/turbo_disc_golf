@@ -239,11 +239,10 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                         curve: Curves.easeOut,
                       ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             Center(
               child:
                   Container(
-                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
@@ -275,7 +274,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                         curve: Curves.easeOutBack,
                       ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             _buildNavigationButtons(),
             _buildDebugButtons(),
           ],
@@ -291,11 +290,11 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
       children: [
         // Course card (blue tint)
         RoundDataInputCard(
-          icon: Icons.landscape,
-          subtitle: state.selectedCourse ?? 'Select a course',
-          onTap: _showCourseSelector,
-          accent: _courseAccent,
-        )
+              icon: Icons.landscape,
+              subtitle: state.selectedCourse ?? 'Select a course',
+              onTap: _showCourseSelector,
+              accent: _courseAccent,
+            )
             .animate()
             .fadeIn(duration: 280.ms, curve: Curves.easeOut)
             .slideY(
@@ -307,11 +306,11 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
         const SizedBox(height: 8),
         // Date card (green tint)
         RoundDataInputCard(
-          icon: Icons.access_time,
-          subtitle: _formatDateTime(state.selectedDateTime),
-          onTap: _showDateTimeEditor,
-          accent: _dateAccent,
-        )
+              icon: Icons.access_time,
+              subtitle: _formatDateTime(state.selectedDateTime),
+              onTap: _showDateTimeEditor,
+              accent: _dateAccent,
+            )
             .animate(delay: 90.ms)
             .fadeIn(duration: 280.ms, curve: Curves.easeOut)
             .slideY(
@@ -337,45 +336,59 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Hole ${_currentHoleIndex + 1} of $totalHoles',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text(
+                        'Hole ${_currentHoleIndex + 1} of $totalHoles',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.grid_on,
-                          color: Colors.blue.shade700,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'View',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                    if (!showInlineMiniHoleGrid)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.grid_on,
                             color: Colors.blue.shade700,
+                            size: 20,
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'View',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 6,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.green,
+                if (!showInlineMiniHoleGrid) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.green,
+                      ),
                     ),
                   ),
-                ),
+                ],
+                if (showInlineMiniHoleGrid) ...[
+                  const SizedBox(height: 12),
+                  _MiniHolesGrid(
+                    state: state,
+                    currentHoleIndex: _currentHoleIndex,
+                    onHoleTap: _onHoleTapFromGrid,
+                  ),
+                ],
               ],
             ),
           ),
@@ -392,44 +405,47 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Calculate button widths for smooth animation
-        final double availableWidth = constraints.maxWidth;
-        final double previousButtonWidth = isFirstHole
-            ? 0
-            : isLastHole
-            ? 64 // 56px button + 8px spacing
-            : (availableWidth - 8) / 2; // Equal width for middle holes
+        final double maxWidth = constraints.maxWidth;
+
+        // SAFELY calculate previous button width
+        double previousButtonWidth;
+
+        if (isFirstHole) {
+          previousButtonWidth = 0;
+        } else if (isLastHole) {
+          previousButtonWidth = 56; // locked small button
+        } else {
+          previousButtonWidth = (maxWidth - 8) / 2;
+        }
+
+        // Clamp to avoid negative/infinity widths
+        previousButtonWidth = previousButtonWidth.clamp(0, maxWidth);
+
+        final bool showPrevious = previousButtonWidth > 0;
 
         return Row(
           children: [
-            // Previous button - animated width transition
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              width: previousButtonWidth,
-              child: previousButtonWidth == 0
-                  ? const SizedBox.shrink()
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: PrimaryButton(
-                            label: isLastHole ? '' : 'Previous',
-                            width: double.infinity,
-                            height: 56,
-                            backgroundColor: Colors.grey.shade200,
-                            labelColor: Colors.grey.shade700,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            icon: FlutterRemix.arrow_left_s_line,
-                            iconColor: Colors.grey.shade700,
-                            onPressed: _previousHole,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ),
-            ),
-            // Next/Finalize button - expands to fill available space
+            if (showPrevious)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: previousButtonWidth,
+                child: PrimaryButton(
+                  label: isLastHole ? '' : 'Previous',
+                  width: double.infinity,
+                  height: 56,
+                  backgroundColor: Colors.grey.shade200,
+                  labelColor: Colors.grey.shade700,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  icon: FlutterRemix.arrow_left_s_line,
+                  iconColor: Colors.grey.shade700,
+                  onPressed: _previousHole,
+                ),
+              ),
+
+            if (showPrevious) const SizedBox(width: 8),
+
             Expanded(
               child: PrimaryButton(
                 label: showFinalize ? 'Finalize Round' : 'Next',
@@ -898,5 +914,82 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
         ),
       );
     }
+  }
+}
+
+/// Mini hole indicator for inline grid - shows completion status and allows navigation
+class _MiniHoleIndicator extends StatelessWidget {
+  const _MiniHoleIndicator({
+    required this.holeNumber,
+    required this.isComplete,
+    required this.isCurrent,
+    required this.onTap,
+  });
+
+  final int holeNumber;
+  final bool isComplete;
+  final bool isCurrent;
+  final VoidCallback onTap;
+
+  static const Color _holeAccent = Color(0xFF2196F3); // blue
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isCurrent
+              ? _holeAccent.withValues(alpha: 0.1)
+              : Colors.transparent,
+          border: isCurrent ? Border.all(color: _holeAccent, width: 1) : null,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Center(
+          child: Icon(
+            isComplete ? Icons.check_circle : Icons.circle_outlined,
+            size: 16,
+            color: isComplete ? Colors.green : Colors.grey[400],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mini holes grid for inline display - 9 holes per row
+class _MiniHolesGrid extends StatelessWidget {
+  const _MiniHolesGrid({
+    required this.state,
+    required this.currentHoleIndex,
+    required this.onHoleTap,
+  });
+
+  final RecordRoundActive state;
+  final int currentHoleIndex;
+  final Function(int) onHoleTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: List.generate(totalHoles, (index) {
+        final String? description = state.holeDescriptions[index];
+        final bool isComplete =
+            description != null && description.trim().isNotEmpty;
+        final bool isCurrent = index == currentHoleIndex;
+
+        return _MiniHoleIndicator(
+          holeNumber: index + 1,
+          isComplete: isComplete,
+          isCurrent: isCurrent,
+          onTap: () => onHoleTap(index),
+        );
+      }),
+    );
   }
 }
