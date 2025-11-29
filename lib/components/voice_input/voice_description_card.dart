@@ -3,12 +3,6 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Description card (larger) with unified background and subtle amber tint.
 class VoiceDescriptionCard extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool isListening;
-  final Color accent;
-  final VoidCallback? onClear;
-
   const VoiceDescriptionCard({
     super.key,
     required this.controller,
@@ -16,7 +10,15 @@ class VoiceDescriptionCard extends StatelessWidget {
     required this.isListening,
     required this.accent,
     this.onClear,
+    required this.isSingleHole,
   });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isListening;
+  final Color accent;
+  final VoidCallback? onClear;
+  final bool isSingleHole;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +73,7 @@ class VoiceDescriptionCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Round Description',
+                '${isSingleHole ? 'Hole' : 'Round'} description',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -107,9 +109,9 @@ class VoiceDescriptionCard extends StatelessWidget {
                   child: Text(
                     'Clear',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
             ],

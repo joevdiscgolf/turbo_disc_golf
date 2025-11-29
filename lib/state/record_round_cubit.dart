@@ -29,7 +29,8 @@ class RecordRoundCubit extends Cubit<RecordRoundState> {
   void setHoleDescription(String description, {required int index}) {
     if (state is! RecordRoundActive) return;
     final activeState = state as RecordRoundActive;
-    final updatedHoleDescriptions = activeState.holeDescriptions;
+    // Create a new map to trigger state update
+    final updatedHoleDescriptions = Map<int, String>.from(activeState.holeDescriptions);
     updatedHoleDescriptions[index] = description;
 
     emit(activeState.copyWith(holeDescriptions: updatedHoleDescriptions));

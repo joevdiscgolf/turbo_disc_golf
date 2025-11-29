@@ -8,9 +8,11 @@ class AnimatedMicrophoneButton extends StatelessWidget {
     super.key,
     required this.isListening,
     required this.onTap,
+    this.isLoading = false,
   });
 
   final bool isListening;
+  final bool isLoading;
   final VoidCallback onTap;
 
   @override
@@ -47,14 +49,24 @@ class AnimatedMicrophoneButton extends StatelessWidget {
           transitionBuilder: (child, animation) {
             return FadeTransition(opacity: animation, child: child);
           },
-          child: isListening
-              ? const _SoundWaveIndicator(key: ValueKey('soundwave'))
-              : const Icon(
-                  Icons.mic,
-                  color: Colors.white,
-                  size: 32,
-                  key: ValueKey('mic'),
-                ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                    key: ValueKey('loading'),
+                  ),
+                )
+              : isListening
+                  ? const _SoundWaveIndicator(key: ValueKey('soundwave'))
+                  : const Icon(
+                      Icons.mic,
+                      color: Colors.white,
+                      size: 32,
+                      key: ValueKey('mic'),
+                    ),
         ),
       ),
     );

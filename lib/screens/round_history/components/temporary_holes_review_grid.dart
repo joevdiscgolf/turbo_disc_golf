@@ -31,21 +31,22 @@ class TemporaryHolesReviewGrid extends StatelessWidget {
         const SizedBox(height: 12),
         Expanded(
           child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 0,
-                runSpacing: 0,
-                children: List.generate(
-                  18,
-                  (index) => _HoleGridCard(
-                    holeNumber: index + 1,
-                    hasTranscript: holeDescriptions[index]?.isNotEmpty ?? false,
-                    width: itemWidth,
-                    onTap: () => onHoleTap(index),
-                  ),
-                ),
-              ),
+            physics: const ClampingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 64),
+            child: Wrap(
+              spacing: 0,
+              runSpacing: 0,
+              children: List.generate(18, (index) {
+                final String? description = holeDescriptions[index];
+                final bool hasContent =
+                    description != null && description.trim().isNotEmpty;
+                return _HoleGridCard(
+                  holeNumber: index + 1,
+                  hasTranscript: hasContent,
+                  width: itemWidth,
+                  onTap: () => onHoleTap(index),
+                );
+              }),
             ),
           ),
         ),
@@ -57,7 +58,7 @@ class TemporaryHolesReviewGrid extends StatelessWidget {
 
   Widget _buildBackButton(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
           Material(
@@ -66,7 +67,10 @@ class TemporaryHolesReviewGrid extends StatelessWidget {
               onTap: onBack,
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -96,11 +100,7 @@ class TemporaryHolesReviewGrid extends StatelessWidget {
 
   Widget _buildBottomButtons() {
     return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: bottomViewPadding,
-      ),
+      padding: EdgeInsets.only(left: 16, right: 16, bottom: bottomViewPadding),
       child: PrimaryButton(
         label: 'Finish & Parse',
         labelColor: Colors.white,
@@ -138,10 +138,7 @@ class _HoleGridCard extends StatelessWidget {
           margin: const EdgeInsets.all(4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: BorderSide(
-              color: Colors.grey.shade300,
-              width: 1,
-            ),
+            side: BorderSide(color: Colors.grey.shade300, width: 1),
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -173,15 +170,8 @@ class _HoleGridCard extends StatelessWidget {
       return Container(
         width: 32,
         height: 32,
-        decoration: BoxDecoration(
-          color: Colors.green,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.check,
-          color: Colors.white,
-          size: 20,
-        ),
+        decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+        child: const Icon(Icons.check, color: Colors.white, size: 20),
       );
     } else {
       return Container(

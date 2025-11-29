@@ -88,17 +88,31 @@ class PrimaryButton extends StatelessWidget {
         ),
       );
     } else if (icon != null && !loading) {
-      button = ElevatedButton.icon(
-        icon: Icon(icon, color: iconColor, size: 20),
-        onPressed: (loading || disabled)
-            ? null
-            : () {
-                HapticFeedback.lightImpact();
-                onPressed();
-              },
-        label: text,
-        style: buttonStyle,
-      );
+      if (label.isEmpty) {
+        // Icon only, no label - avoid ElevatedButton.icon spacing
+        button = ElevatedButton(
+          onPressed: (loading || disabled)
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  onPressed();
+                },
+          style: buttonStyle,
+          child: Icon(icon, color: iconColor, size: 20),
+        );
+      } else {
+        button = ElevatedButton.icon(
+          icon: Icon(icon, color: iconColor, size: 20),
+          onPressed: (loading || disabled)
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  onPressed();
+                },
+          label: text,
+          style: buttonStyle,
+        );
+      }
     } else {
       button = ElevatedButton(
         onPressed: (loading || disabled)
