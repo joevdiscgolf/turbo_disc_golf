@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_remix/flutter_remix.dart';
 
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
@@ -15,14 +14,12 @@ import 'package:turbo_disc_golf/screens/round_processing/round_processing_loadin
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String testCourseName = 'Foxwood';
 const int totalHoles = 18;
-
-enum RecordRoundStep { step1Setup, step2Holes }
 
 class RecordRoundStepsPanel extends StatefulWidget {
   const RecordRoundStepsPanel({super.key, required this.bottomViewPadding});
@@ -41,11 +38,11 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   late final TextEditingController _textEditingController;
   late final FocusNode _focusNode;
 
-  // Step management
-  RecordRoundStep _currentStep = RecordRoundStep.step1Setup;
+  // State management
   int _currentHoleIndex = 0;
   bool _showingReviewGrid = false;
   bool _shouldAutoStartListening = false;
+  bool _isStartingListening = false;
 
   // Course/Date selection (Step 1)
   final List<String> _courses = <String>[
@@ -74,7 +71,6 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   static const Color _descAccent = Color(0xFFB39DDB); // light purple
   static const Color _createAccent = Color(0xFF9D4EDD); // purple-ish
   static const Color _courseAccent = Color(0xFF2196F3); // blue
-  static const Color _dateAccent = Color(0xFF4CAF50); // green
 
   @override
   void initState() {
@@ -123,6 +119,10 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
           TextPosition(offset: _textEditingController.text.length),
         );
       }
+      // Clear loading state when actually listening
+      if (_voiceService.isListening && _isStartingListening) {
+        _isStartingListening = false;
+      }
       setState(() {});
     }
   }
@@ -134,7 +134,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          height: _getPanelHeight(context),
+          height: MediaQuery.of(context).size.height - 64,
           child: GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
             behavior: HitTestBehavior.opaque,
@@ -155,15 +155,10 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   PanelHeader(
-                    title: _currentStep == RecordRoundStep.step1Setup
-                        ? 'Course & date'
-                        : 'Record round',
+                    title: 'Record round',
                     onClose: () => Navigator.pop(context),
                   ),
-                  if (_currentStep == RecordRoundStep.step1Setup)
-                    _buildStep1Content()
-                  else
-                    _buildStep2Content(recordRoundState),
+                  _buildContent(recordRoundState),
                 ],
               ),
             ),
@@ -173,97 +168,26 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
     );
   }
 
-  double? _getPanelHeight(BuildContext context) {
-    if (_currentStep == RecordRoundStep.step1Setup) {
-      // Step 1: Let Flutter auto-size based on content (MainAxisSize.min)
-      return null;
-    } else {
-      // Step 2: Fixed full height
-      return MediaQuery.of(context).size.height - 64;
-    }
-  }
-
-  Widget _buildStep1Content() {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: widget.bottomViewPadding,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _InfoCard(
-                icon: Icons.landscape,
-                title: 'Course *',
-                subtitle: _selectedCourse ?? 'Select a course',
-                onTap: _showCourseSelector,
-                accent: _courseAccent,
-              )
-              .animate()
-              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-              .slideY(
-                begin: 0.08,
-                end: 0.0,
-                duration: 280.ms,
-                curve: Curves.easeOut,
-              ),
-          const SizedBox(height: 12),
-          _InfoCard(
-                icon: Icons.access_time,
-                title: 'Date & Time',
-                subtitle: '${_formatDateTime(_selectedDateTime)}  (auto)',
-                onTap: _showDateTimeEditor,
-                accent: _dateAccent,
-              )
-              .animate(delay: 90.ms)
-              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-              .slideY(
-                begin: 0.08,
-                end: 0.0,
-                duration: 280.ms,
-                curve: Curves.easeOut,
-              ),
-          const SizedBox(height: 32),
-          PrimaryButton(
-            label: 'Continue to Hole Recording',
-            labelColor: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            width: double.infinity,
-            height: 56,
-            disabled:
-                !kDebugMode && _selectedCourse == null ||
-                _selectedCourse == 'Select a course',
-            onPressed: _handleContinueToHoleRecording,
-          ),
-          const SizedBox(height: 14),
-          _buildDebugButtons(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStep2Content(RecordRoundState recordRoundState) {
+  Widget _buildContent(RecordRoundState recordRoundState) {
     if (_showingReviewGrid && recordRoundState is RecordRoundActive) {
       return Expanded(
-        child: TemporaryHolesReviewGrid(
-          holeDescriptions: recordRoundState.holeDescriptions,
-          onHoleTap: _onHoleTapFromGrid,
-          onFinishAndParse: _finishAndParse,
-          onBack: () => setState(() => _showingReviewGrid = false),
-          allHolesFilled: _areAllHolesFilled(),
-          bottomViewPadding: widget.bottomViewPadding,
-        )
-            .animate()
-            .scale(
-              begin: const Offset(0.85, 0.85),
-              end: const Offset(1.0, 1.0),
-              duration: 300.ms,
-              curve: Curves.easeOutBack,
-            )
-            .fadeIn(duration: 250.ms, curve: Curves.easeOut),
+        child:
+            TemporaryHolesReviewGrid(
+                  holeDescriptions: recordRoundState.holeDescriptions,
+                  onHoleTap: _onHoleTapFromGrid,
+                  onFinishAndParse: _finishAndParse,
+                  onBack: () => setState(() => _showingReviewGrid = false),
+                  allHolesFilled: _areAllHolesFilled(),
+                  bottomViewPadding: widget.bottomViewPadding,
+                )
+                .animate()
+                .scale(
+                  begin: const Offset(0.85, 0.85),
+                  end: const Offset(1.0, 1.0),
+                  duration: 300.ms,
+                  curve: Curves.easeOutBack,
+                )
+                .fadeIn(duration: 250.ms, curve: Curves.easeOut),
       );
     }
 
@@ -302,6 +226,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                         isListening: isListening,
                         accent: _descAccent,
                         onClear: _handleClearText,
+                        isSingleHole: true,
                       )
                       .animate(delay: 180.ms)
                       .fadeIn(duration: 280.ms, curve: Curves.easeOut)
@@ -335,6 +260,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                         ),
                         child: AnimatedMicrophoneButton(
                           isListening: isListening,
+                          isLoading: _isStartingListening,
                           onTap: _toggleListening,
                         ),
                       )
@@ -349,7 +275,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
             ),
             Center(
               child: Text(
-                isListening ? 'Tap to stop' : 'Tap to start',
+                isListening ? 'Tap to stop' : 'Tap to listen',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
@@ -367,118 +293,217 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   Widget _buildHeader(RecordRoundActive state) {
     final double progress = (_currentHoleIndex + 1) / totalHoles;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.landscape, size: 16, color: _courseAccent),
-                  const SizedBox(width: 6),
-                  Text(
-                    state.selectedCourse ?? 'Unknown Course',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+    return GestureDetector(
+      onTap: _showReviewGrid,
+      behavior: HitTestBehavior.translucent,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _showCourseSelector,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: _courseAccent.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.landscape,
+                            size: 14,
+                            color: _courseAccent,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              state.selectedCourse ?? 'Select course',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              Text(
-                _formatDateTime(state.selectedDateTime),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Hole ${_currentHoleIndex + 1} of $totalHoles',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: _descAccent,
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _showDateTimeEditor,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.grey.shade400,
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 12,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatDateTime(state.selectedDateTime),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: const AlwaysStoppedAnimation<Color>(_descAccent),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Hole ${_currentHoleIndex + 1} of $totalHoles',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _currentHoleIndex == totalHoles - 1
+                        ? Colors.black
+                        : _descAccent,
+                  ),
+                ),
+
+                Row(
+                  children: [
+                    Icon(Icons.grid_on, color: Colors.blue.shade700, size: 20),
+                    const SizedBox(width: 4),
+                    Text(
+                      'View',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildNavigationButtons() {
     final bool allHolesFilled = _areAllHolesFilled();
+    final bool isFirstHole = _currentHoleIndex == 0;
+    final bool isLastHole = _currentHoleIndex == totalHoles - 1;
+    final bool showFinalize = isLastHole && allHolesFilled;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate button widths for smooth animation
+        final double availableWidth = constraints.maxWidth;
+        final double previousButtonWidth = isFirstHole
+            ? 0
+            : isLastHole
+                ? 64 // 56px button + 8px spacing
+                : (availableWidth - 8) / 2; // Equal width for middle holes
+
+        return Row(
           children: [
-            Expanded(
-              child: PrimaryButton(
-                label: 'Previous',
-                width: double.infinity,
-                height: 44,
-                backgroundColor: Colors.grey.shade200,
-                labelColor: Colors.grey.shade700,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                icon: Icons.arrow_back,
-                iconColor: Colors.grey.shade700,
-                disabled: _currentHoleIndex == 0,
-                onPressed: _previousHole,
-              ),
+            // Previous button - animated width transition
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              width: previousButtonWidth,
+              child: previousButtonWidth == 0
+                  ? const SizedBox.shrink()
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: PrimaryButton(
+                            label: isLastHole ? '' : 'Previous',
+                            width: double.infinity,
+                            height: 56,
+                            backgroundColor: Colors.grey.shade200,
+                            labelColor: Colors.grey.shade700,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            icon: FlutterRemix.arrow_left_s_line,
+                            iconColor: Colors.grey.shade700,
+                            onPressed: _previousHole,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
             ),
-            const SizedBox(width: 8),
+            // Next/Finalize button - expands to fill available space
             Expanded(
               child: PrimaryButton(
-                label: 'Next',
+                label: showFinalize ? 'Finalize Round' : 'Next',
                 width: double.infinity,
-                height: 44,
-                backgroundColor: _descAccent,
+                height: 56,
+                backgroundColor: showFinalize ? Colors.green : Colors.blue,
                 labelColor: Colors.white,
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
-                iconRight: Icons.arrow_forward,
+                iconRight:
+                    showFinalize ? Icons.check_circle : FlutterRemix.arrow_right_s_line,
                 iconColor: Colors.white,
-                disabled: _currentHoleIndex == totalHoles - 1,
-                onPressed: _nextHole,
+                disabled: isLastHole && !allHolesFilled,
+                onPressed: showFinalize ? _finishAndParse : _nextHole,
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        PrimaryButton(
-          label: allHolesFilled ? 'Finalize Round' : 'Review All',
-          width: double.infinity,
-          height: 56,
-          backgroundColor: allHolesFilled ? _descAccent : Colors.blue.shade50,
-          labelColor: allHolesFilled ? Colors.white : Colors.blue.shade700,
-          fontSize: 14,
-          fontWeight: allHolesFilled ? FontWeight.bold : FontWeight.w600,
-          icon: allHolesFilled ? Icons.check_circle : Icons.grid_on,
-          iconColor: allHolesFilled ? Colors.white : Colors.blue.shade700,
-          onPressed: allHolesFilled ? _finishAndParse : _showReviewGrid,
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildDebugButtons() {
-    if (_currentStep == RecordRoundStep.step1Setup || kDebugMode) {
+    if (kDebugMode) {
       return const SizedBox();
     }
     return Padding(
@@ -704,23 +729,6 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
 
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
-  void _handleContinueToHoleRecording() {
-    if (!kDebugMode && _selectedCourse == null ||
-        _selectedCourse == 'Select a course') {
-      return;
-    }
-
-    _cubit.setSelectedCourse(_selectedCourse ?? 'Default course name');
-    _cubit.setSelectedTime(_selectedDateTime);
-
-    setState(() {
-      _currentStep = RecordRoundStep.step2Holes;
-      _currentHoleIndex = 0;
-      _textEditingController.text = '';
-      _shouldAutoStartListening = false; // Don't auto-start on hole 1
-    });
-  }
-
   bool _areAllHolesFilled() {
     if (_cubit.state is! RecordRoundActive) return false;
     final RecordRoundActive state = _cubit.state as RecordRoundActive;
@@ -767,14 +775,16 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
             '';
         _voiceService.clearText();
         // Auto-start listening when navigating to next hole (but not on hole 1)
-        _shouldAutoStartListening = _currentHoleIndex > 0;
+        _shouldAutoStartListening =
+            autoStartListeningOnNextHole && _currentHoleIndex > 0;
       });
 
-      // Start listening after state is updated
+      // Start listening after frame is built to avoid semantics errors
       if (_shouldAutoStartListening) {
-        Future.delayed(const Duration(milliseconds: 300), () {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (mounted && !_voiceService.isListening) {
-            _voiceService.startListening(preserveExistingText: false);
+            setState(() => _isStartingListening = true);
+            await _voiceService.startListening(preserveExistingText: false);
           }
         });
       }
@@ -784,6 +794,11 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   }
 
   void _showReviewGrid() {
+    // Save current hole description before showing grid
+    _cubit.setHoleDescription(
+      _textEditingController.text,
+      index: _currentHoleIndex,
+    );
     setState(() => _showingReviewGrid = true);
   }
 
@@ -820,7 +835,9 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   Future<void> _toggleListening() async {
     if (_voiceService.isListening) {
       await _voiceService.stopListening();
+      setState(() => _isStartingListening = false);
     } else {
+      setState(() => _isStartingListening = true);
       FocusScope.of(context).unfocus();
       await _voiceService.startListening(preserveExistingText: true);
     }
@@ -915,102 +932,5 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
         ),
       );
     }
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.onTap,
-    required this.accent,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isClickable = onTap != null;
-    final Color baseColor = Colors.grey.shade50;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 72,
-        decoration: BoxDecoration(
-          color: baseColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: flattenedOverWhite(accent, 0.3)),
-          gradient: LinearGradient(
-            transform: GradientRotation(math.pi / 4),
-            colors: [flattenedOverWhite(accent, 0.2), Colors.white],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  colors: [Colors.white, accent.withValues(alpha: 0.0)],
-                  stops: const [0.6, 1.0],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Icon(icon, size: 20, color: accent),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: isClickable ? Colors.grey[500] : Colors.grey[300],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

@@ -145,6 +145,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                       focusNode: _focusNode,
                       accent: _descAccent,
                       onClear: _handleClearText,
+                      isSingleHole: true,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -158,7 +159,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                      isListening ? 'Tap to stop' : 'Tap to start',
+                      isListening ? 'Tap to stop' : 'Tap to listen',
                       style: Theme.of(
                         context,
                       ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),

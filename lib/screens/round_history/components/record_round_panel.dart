@@ -199,6 +199,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                                   isListening: isListening,
                                   accent: _descAccent,
                                   onClear: _handleClearText,
+                                  isSingleHole: false,
                                 )
                                 .animate(delay: 180.ms)
                                 .fadeIn(duration: 280.ms, curve: Curves.easeOut)
@@ -254,7 +255,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
 
                       Center(
                         child: Text(
-                          isListening ? 'Tap to stop' : 'Tap to start',
+                          isListening ? 'Tap to stop' : 'Tap to listen',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: Colors.grey[600]),
                         ),
@@ -323,7 +324,8 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                         fontWeight: FontWeight.bold,
                         width: double.infinity,
                         height: 56,
-                        disabled: !hasTranscript ||
+                        disabled:
+                            !hasTranscript ||
                             isListening ||
                             _selectedCourse == 'Select a course',
                         onPressed: _handleContinue,
