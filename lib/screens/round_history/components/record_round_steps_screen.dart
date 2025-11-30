@@ -1,13 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
-
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
-import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
@@ -22,16 +22,16 @@ import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 const String testCourseName = 'Foxwood';
 const int totalHoles = 18;
 
-class RecordRoundStepsPanel extends StatefulWidget {
-  const RecordRoundStepsPanel({super.key, required this.bottomViewPadding});
+class RecordRoundStepsScreen extends StatefulWidget {
+  const RecordRoundStepsScreen({super.key, required this.bottomViewPadding});
 
   final double bottomViewPadding;
 
   @override
-  State<RecordRoundStepsPanel> createState() => _RecordRoundStepsPanelState();
+  State<RecordRoundStepsScreen> createState() => _RecordRoundStepsScreenState();
 }
 
-class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
+class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   late final RecordRoundCubit _cubit;
   late final VoiceRecordingService _voiceService;
 
@@ -131,16 +131,28 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RecordRoundCubit, RecordRoundState>(
-      builder: (context, recordRoundState) {
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          height: MediaQuery.of(context).size.height - 64,
-          child: GestureDetector(
+    return Scaffold(
+      appBar: GenericAppBar(
+        topViewPadding: MediaQuery.of(context).viewPadding.top,
+        title: 'Record round',
+        hasBackButton: false,
+        backgroundColor: Colors.transparent,
+        rightWidget: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: true,
+      body: BlocBuilder<RecordRoundCubit, RecordRoundState>(
+        builder: (context, recordRoundState) {
+          return GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
             behavior: HitTestBehavior.opaque,
             child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).viewPadding.top + 120,
+              ),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
@@ -152,45 +164,32 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                   topRight: Radius.circular(20),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PanelHeader(
-                    title: 'Record round',
-                    onClose: () => Navigator.pop(context),
-                  ),
-                  _buildContent(recordRoundState),
-                ],
-              ),
+              child: _mainBody(recordRoundState),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildContent(RecordRoundState recordRoundState) {
+  Widget _mainBody(RecordRoundState recordRoundState) {
     if (_showingReviewGrid && recordRoundState is RecordRoundActive) {
-      return Expanded(
-        child:
-            TemporaryHolesReviewGrid(
-                  holeDescriptions: recordRoundState.holeDescriptions,
-                  onHoleTap: _onHoleTapFromGrid,
-                  onFinishAndParse: _finishAndParse,
-                  onBack: () => setState(() => _showingReviewGrid = false),
-                  allHolesFilled: _areAllHolesFilled(),
-                  bottomViewPadding: widget.bottomViewPadding,
-                )
-                .animate()
-                .scale(
-                  begin: const Offset(0.85, 0.85),
-                  end: const Offset(1.0, 1.0),
-                  duration: 300.ms,
-                  curve: Curves.easeOutBack,
-                )
-                .fadeIn(duration: 250.ms, curve: Curves.easeOut),
-      );
+      return TemporaryHolesReviewGrid(
+            holeDescriptions: recordRoundState.holeDescriptions,
+            onHoleTap: _onHoleTapFromGrid,
+            onFinishAndParse: _finishAndParse,
+            onBack: () => setState(() => _showingReviewGrid = false),
+            allHolesFilled: _areAllHolesFilled(),
+            bottomViewPadding: widget.bottomViewPadding,
+          )
+          .animate()
+          .scale(
+            begin: const Offset(0.85, 0.85),
+            end: const Offset(1.0, 1.0),
+            duration: 300.ms,
+            curve: Curves.easeOutBack,
+          )
+          .fadeIn(duration: 250.ms, curve: Curves.easeOut);
     }
 
     return _buildHoleEntryView(recordRoundState)
@@ -207,12 +206,12 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
   Widget _buildHoleEntryView(RecordRoundState recordRoundState) {
     final bool isListening = _voiceService.isListening;
 
-    return Expanded(
+    return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
-          bottom: widget.bottomViewPadding,
+          bottom: MediaQuery.of(context).viewPadding.bottom + 24,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,7 +219,8 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
             if (recordRoundState is RecordRoundActive)
               _buildHeader(recordRoundState),
             const SizedBox(height: 12),
-            Expanded(
+            SizedBox(
+              height: 300,
               child:
                   VoiceDescriptionCard(
                         controller: _textEditingController,
@@ -325,7 +325,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
           onTap: _showReviewGrid,
           behavior: HitTestBehavior.translucent,
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(12),
@@ -337,7 +337,7 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         'Hole ${_currentHoleIndex + 1} of $totalHoles',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -383,10 +383,13 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                 ],
                 if (showInlineMiniHoleGrid) ...[
                   const SizedBox(height: 12),
-                  _MiniHolesGrid(
-                    state: state,
-                    currentHoleIndex: _currentHoleIndex,
-                    onHoleTap: _onHoleTapFromGrid,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: _MiniHolesGrid(
+                      state: state,
+                      currentHoleIndex: _currentHoleIndex,
+                      onHoleTap: _onHoleTapFromGrid,
+                    ),
                   ),
                 ],
               ],
@@ -407,45 +410,26 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
       builder: (context, constraints) {
         final double maxWidth = constraints.maxWidth;
 
-        // SAFELY calculate previous button width
-        double previousButtonWidth;
-
-        if (isFirstHole) {
-          previousButtonWidth = 0;
-        } else if (isLastHole) {
-          previousButtonWidth = 56; // locked small button
-        } else {
-          previousButtonWidth = (maxWidth - 8) / 2;
-        }
-
-        // Clamp to avoid negative/infinity widths
-        previousButtonWidth = previousButtonWidth.clamp(0, maxWidth);
-
-        final bool showPrevious = previousButtonWidth > 0;
+        // Calculate previous button width
+        final double previousButtonWidth = isFirstHole
+            ? 0.0
+            : isLastHole
+            ? 56.0
+            : (maxWidth - 8) / 2;
 
         return Row(
           children: [
-            if (showPrevious)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                width: previousButtonWidth,
-                child: PrimaryButton(
-                  label: isLastHole ? '' : 'Previous',
-                  width: double.infinity,
-                  height: 56,
-                  backgroundColor: Colors.grey.shade200,
-                  labelColor: Colors.grey.shade700,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  icon: FlutterRemix.arrow_left_s_line,
-                  iconColor: Colors.grey.shade700,
-                  onPressed: _previousHole,
-                ),
-              ),
-
-            if (showPrevious) const SizedBox(width: 8),
-
+            _AnimatedPreviousButton(
+              isFirstHole: isFirstHole,
+              isLastHole: isLastHole,
+              targetWidth: previousButtonWidth,
+              onPressed: _previousHole,
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              width: isFirstHole ? 0 : 8,
+            ),
             Expanded(
               child: PrimaryButton(
                 label: showFinalize ? 'Finalize Round' : 'Next',
@@ -455,10 +439,6 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
                 labelColor: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                iconRight: showFinalize
-                    ? Icons.check_circle
-                    : FlutterRemix.arrow_right_s_line,
-                iconColor: Colors.white,
                 disabled: isLastHole && !allHolesFilled,
                 onPressed: showFinalize ? _finishAndParse : _nextHole,
               ),
@@ -914,6 +894,85 @@ class _RecordRoundStepsPanelState extends State<RecordRoundStepsPanel> {
         ),
       );
     }
+  }
+}
+
+/// Animated previous button that smoothly transitions between full-width with text
+/// and icon-only modes without using AnimatedSwitcher
+class _AnimatedPreviousButton extends StatelessWidget {
+  const _AnimatedPreviousButton({
+    required this.isFirstHole,
+    required this.isLastHole,
+    required this.targetWidth,
+    required this.onPressed,
+  });
+
+  final bool isFirstHole;
+  final bool isLastHole;
+  final double targetWidth;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      opacity: isFirstHole ? 0.0 : 1.0,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        width: targetWidth,
+        height: 56,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onPressed();
+            },
+            borderRadius: BorderRadius.circular(32),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Text - visible when NOT last hole
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      opacity: isLastHole ? 0.0 : 1.0,
+                      child: Text(
+                        'Previous',
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    // Icon - visible when IS last hole
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      opacity: isLastHole ? 1.0 : 0.0,
+                      child: Icon(
+                        FlutterRemix.arrow_left_s_line,
+                        color: Colors.grey.shade700,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
