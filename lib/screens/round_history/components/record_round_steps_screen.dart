@@ -207,20 +207,21 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final bool isListening = _voiceService.isListening;
 
     return SingleChildScrollView(
-      child: Padding(
+      padding: EdgeInsets.only(left: 16, right: 16),
+      child: Container(
         padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          bottom: MediaQuery.of(context).viewPadding.bottom + 24,
+          bottom: MediaQuery.of(context).viewPadding.bottom,
         ),
+        height:
+            MediaQuery.of(context).size.height -
+            (MediaQuery.of(context).viewPadding.top + 64),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (recordRoundState is RecordRoundActive)
               _buildHeader(recordRoundState),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 300,
+            Expanded(
               child:
                   VoiceDescriptionCard(
                         controller: _textEditingController,
@@ -274,9 +275,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                         curve: Curves.easeOutBack,
                       ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            if (kDebugMode || kReleaseMode) _buildDebugButtons(),
             _buildNavigationButtons(),
-            _buildDebugButtons(),
           ],
         ),
       ),
@@ -450,17 +451,14 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildDebugButtons() {
-    if (kDebugMode) {
-      return const SizedBox();
-    }
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           PrimaryButton(
             label: 'Change',
             width: 100,
-            height: 44,
+            height: 56,
             backgroundColor: _createAccent.withValues(alpha: 0.18),
             labelColor: _createAccent,
             fontSize: 14,
@@ -472,7 +470,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             child: PrimaryButton(
               label: 'Parse',
               width: double.infinity,
-              height: 44,
+              height: 56,
               backgroundColor: _createAccent,
               labelColor: Colors.white,
               icon: Icons.science,
@@ -756,6 +754,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _showReviewGrid() {
+    if (showInlineMiniHoleGrid) {
+      return;
+    }
     // Save current hole description before showing grid
     _cubit.setHoleDescription(
       _textEditingController.text,
