@@ -451,6 +451,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildDebugButtons() {
+    if (kDebugMode) {
+      return const SizedBox();
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
