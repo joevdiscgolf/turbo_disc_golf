@@ -27,25 +27,25 @@ class _MainWrapperState extends State<MainWrapper> {
     String appBarTitle;
     switch (_selectedIndex) {
       case 0:
-        appBarTitle = 'Round History';
+        appBarTitle = 'Round history';
         break;
       case 1:
-        appBarTitle = 'Add Round';
+        appBarTitle = 'Add round';
         break;
       case 2:
         appBarTitle = 'Stats';
         break;
       case 3:
-        appBarTitle = 'Test AI Summary';
+        appBarTitle = 'Test AI summary';
         break;
       case 4:
-        appBarTitle = 'Test Image Parsing';
+        appBarTitle = 'Test image parsing';
         break;
       case 5:
-        appBarTitle = 'Test Roast';
+        appBarTitle = 'Test roast';
         break;
       default:
-        appBarTitle = 'Round History';
+        appBarTitle = 'Round history';
     }
 
     return Container(

@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_panel.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -37,9 +37,17 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       // Start recording round in Cubit before showing panel
       BlocProvider.of<RecordRoundCubit>(context).startRecordingRound();
 
-      await displayBottomSheet(
-        context,
-        RecordRoundStepsPanel(bottomViewPadding: widget.bottomViewPadding),
+      // await displayBottomSheet(
+      //   context,
+      //   RecordRoundStepsPanel(bottomViewPadding: widget.bottomViewPadding),
+      // );
+      Navigator.of(context).push(
+        CupertinoPageRoute(
+          builder: (context) => RecordRoundStepsScreen(
+            bottomViewPadding: widget.bottomViewPadding,
+          ),
+          fullscreenDialog: true,
+        ),
       );
     } else {
       await displayBottomSheet(
