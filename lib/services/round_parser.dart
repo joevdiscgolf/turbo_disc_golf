@@ -57,6 +57,7 @@ class RoundParser extends ChangeNotifier {
   Future<bool> parseVoiceTranscript(
     String transcript, {
     String? courseName,
+    int numHoles = 18,
     bool useSharedPreferences = false,
     List<HoleMetadata>?
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
@@ -135,6 +136,7 @@ class RoundParser extends ChangeNotifier {
             voiceTranscript: transcript,
             userBag: bagService.userBag,
             courseName: courseName,
+            numHoles: numHoles,
             preParsedHoles: preParsedHoles, // Pass through pre-parsed holes
           );
 

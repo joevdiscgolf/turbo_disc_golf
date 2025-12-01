@@ -108,6 +108,17 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _onTextControllerChange() {
+    final bool isUserInput = _focusNode.hasFocus || _voiceService.isListening;
+
+    // Save to cubit as user types or voice dictates
+    if (isUserInput) {
+      _cubit.setHoleDescription(
+        _textEditingController.text,
+        index: _currentHoleIndex,
+      );
+    }
+
+    // Update voice service when manually typing
     if (!_voiceService.isListening && _focusNode.hasFocus) {
       _voiceService.updateText(_textEditingController.text);
     }
@@ -326,7 +337,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           onTap: _showReviewGrid,
           behavior: HitTestBehavior.translucent,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(
+              vertical: showHoleProgressLabel ? 8 : 12,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(12),
@@ -334,20 +347,22 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        'Hole ${_currentHoleIndex + 1} of $totalHoles',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                if (showHoleProgressLabel)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'Hole ${_currentHoleIndex + 1} of $totalHoles',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ),
-                    ),
-                    if (!showInlineMiniHoleGrid)
+                      if (!showInlineMiniHoleGrid)
                       Row(
                         children: [
                           Icon(
@@ -366,10 +381,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                           ),
                         ],
                       ),
-                  ],
-                ),
+                    ],
+                  ),
                 if (!showInlineMiniHoleGrid) ...[
-                  const SizedBox(height: 12),
+                  if (showHoleProgressLabel) const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
@@ -383,7 +398,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                   ),
                 ],
                 if (showInlineMiniHoleGrid) ...[
-                  const SizedBox(height: 12),
+                  if (showHoleProgressLabel) const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: _MiniHolesGrid(
@@ -433,14 +448,17 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             ),
             Expanded(
               child: PrimaryButton(
-                label: showFinalize ? 'Finalize Round' : 'Next',
+                label: showFinalize ? 'Finalize' : 'Next',
                 width: double.infinity,
                 height: 56,
                 backgroundColor: showFinalize ? Colors.green : Colors.blue,
                 labelColor: Colors.white,
+                icon: showFinalize ? Icons.check : null,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                disabled: isLastHole && !allHolesFilled,
+                disabled:
+                    !(kDebugMode || kReleaseMode) &&
+                    (isLastHole && !allHolesFilled),
                 onPressed: showFinalize ? _finishAndParse : _nextHole,
               ),
             ),
@@ -451,9 +469,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildDebugButtons() {
-    if (kDebugMode) {
-      return const SizedBox();
-    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -468,7 +483,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             fontWeight: FontWeight.w600,
             onPressed: _showTestConstantSelector,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: PrimaryButton(
               label: 'Parse',
@@ -556,6 +571,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                               : null,
                           onTap: () {
                             setState(() => _selectedCourse = course);
+                            _cubit.setSelectedCourse(course);
                             Navigator.pop(context);
                           },
                         );
@@ -615,6 +631,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     _courses.add(name);
                     _selectedCourse = name;
                   });
+                  _cubit.setSelectedCourse(name);
                 }
                 Navigator.pop(context);
               },
@@ -641,27 +658,31 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       initialTime: initialTime,
     );
     if (pickedTime == null) {
-      setState(() {
-        _selectedDateTime = DateTime(
-          pickedDate.year,
-          pickedDate.month,
-          pickedDate.day,
-          _selectedDateTime.hour,
-          _selectedDateTime.minute,
-        );
-      });
-      return;
-    }
-
-    setState(() {
-      _selectedDateTime = DateTime(
+      final DateTime updatedDateTime = DateTime(
         pickedDate.year,
         pickedDate.month,
         pickedDate.day,
-        pickedTime.hour,
-        pickedTime.minute,
+        _selectedDateTime.hour,
+        _selectedDateTime.minute,
       );
+      setState(() {
+        _selectedDateTime = updatedDateTime;
+      });
+      _cubit.setSelectedTime(updatedDateTime);
+      return;
+    }
+
+    final DateTime updatedDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+    setState(() {
+      _selectedDateTime = updatedDateTime;
     });
+    _cubit.setSelectedTime(updatedDateTime);
   }
 
   String _formatDateTime(DateTime dt) {
@@ -706,12 +727,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   void _previousHole() {
     if (_currentHoleIndex > 0) {
-      // Save current hole description
-      _cubit.setHoleDescription(
-        _textEditingController.text,
-        index: _currentHoleIndex,
-      );
-
       setState(() {
         _currentHoleIndex--;
         _textEditingController.text =
@@ -725,10 +740,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _nextHole() {
-    _cubit.setHoleDescription(
-      _textEditingController.text,
-      index: _currentHoleIndex,
-    );
     if (_currentHoleIndex < totalHoles - 1) {
       setState(() {
         _currentHoleIndex++;
@@ -736,7 +747,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             (_cubit.state as RecordRoundActive)
                 .holeDescriptions[_currentHoleIndex] ??
             '';
-        _voiceService.clearText();
+        _voiceService.updateText(_textEditingController.text);
         // Auto-start listening when navigating to next hole (but not on hole 1)
         _shouldAutoStartListening =
             autoStartListeningOnNextHole && _currentHoleIndex > 0;
@@ -760,11 +771,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     if (showInlineMiniHoleGrid) {
       return;
     }
-    // Save current hole description before showing grid
-    _cubit.setHoleDescription(
-      _textEditingController.text,
-      index: _currentHoleIndex,
-    );
     setState(() => _showingReviewGrid = true);
   }
 
@@ -781,17 +787,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _finishAndParse() {
-    _cubit.setHoleDescription(
-      _textEditingController.text,
-      index: _currentHoleIndex,
-    );
-
     final RecordRoundActive state = _cubit.state as RecordRoundActive;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => RoundProcessingLoadingScreen(
           transcript: state.fullTranscript,
           courseName: state.selectedCourse ?? 'Unknown Course',
+          numHoles: state.numHoles,
           useSharedPreferences: false,
         ),
       ),
@@ -1003,7 +1005,7 @@ class _MiniHoleIndicator extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 32,
-        height: 32,
+        padding: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
           color: isCurrent
               ? _holeAccent.withValues(alpha: 0.1)
@@ -1011,12 +1013,24 @@ class _MiniHoleIndicator extends StatelessWidget {
           border: isCurrent ? Border.all(color: _holeAccent, width: 1) : null,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Center(
-          child: Icon(
-            isComplete ? Icons.check_circle : Icons.circle_outlined,
-            size: 16,
-            color: isComplete ? Colors.green : Colors.grey[400],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$holeNumber',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isCurrent ? _holeAccent : Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 2),
+            Icon(
+              isComplete ? Icons.check_circle : Icons.circle_outlined,
+              size: 14,
+              color: isComplete ? Colors.green : Colors.grey[400],
+            ),
+          ],
         ),
       ),
     );

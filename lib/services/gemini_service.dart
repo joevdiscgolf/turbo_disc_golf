@@ -241,7 +241,13 @@ holes:
         discName: Aviar
         purpose: putt
         notes: tapped in for bogey
-        landingSpot: in_basket''';
+        landingSpot: in_basket
+  - number: 3
+    throws:
+      - index: 0
+        purpose: tee_drive
+        notes: test throw with minimal details
+# IMPORTANT: Note how hole 3 omits par and feet - only include fields that are mentioned in the transcript!''';
 
     return '''
 You are a disc golf scorecard parser. Parse the following voice transcript of a disc golf round into structured YAML data.
@@ -311,8 +317,15 @@ EXAMPLES OF CORRECT DISTANCE-LANDINGSPOT MATCHING:
 
 DO NOT let descriptive phrases like "into the green" or "in the fairway" override the numeric distance!
 If distanceFeetAfterThrow = 23, it MUST be circle_1, even if the user said "into the green".
-6. If par or hole distance isn't mentioned, use standard values (par 3 for <400ft, par 4 for 400-600ft, par 5 for >600ft)
-7. Number holes sequentially starting from 1
+
+⚠️⚠️⚠️ CRITICAL: DO NOT MAKE UP DEFAULTS ⚠️⚠️⚠️
+6. If par is NOT mentioned in the transcript, OMIT the par field entirely (do NOT add "par: 3" as default)
+7. If hole distance is NOT mentioned, OMIT the feet field entirely (do NOT add "feet: 350" as default)
+8. If the transcript provides insufficient information about a hole, you can create a minimal hole entry with just:
+   - number: (hole number)
+   - throws: [] (empty list if no throw details provided)
+   BUT do NOT add par or feet fields unless explicitly mentioned!
+9. Number holes sequentially starting from 1
 
 CRITICAL DISTANCE RULES:
 We track TWO distance measurements for each throw:
