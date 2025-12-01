@@ -337,11 +337,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           onTap: _showReviewGrid,
           behavior: HitTestBehavior.translucent,
           child: Container(
+            width: double.infinity,
             padding: EdgeInsets.symmetric(
               vertical: showHoleProgressLabel ? 8 : 12,
+              horizontal: 2,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade300),
             ),
@@ -363,24 +365,24 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                         ),
                       ),
                       if (!showInlineMiniHoleGrid)
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.grid_on,
-                            color: Colors.blue.shade700,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'View',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.grid_on,
                               color: Colors.blue.shade700,
+                              size: 20,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'View',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 if (!showInlineMiniHoleGrid) ...[
@@ -399,13 +401,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 ],
                 if (showInlineMiniHoleGrid) ...[
                   if (showHoleProgressLabel) const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: _MiniHolesGrid(
-                      state: state,
-                      currentHoleIndex: _currentHoleIndex,
-                      onHoleTap: _onHoleTapFromGrid,
-                    ),
+                  _MiniHolesGrid(
+                    state: state,
+                    currentHoleIndex: _currentHoleIndex,
+                    onHoleTap: _onHoleTapFromGrid,
                   ),
                 ],
               ],
@@ -1005,12 +1004,16 @@ class _MiniHoleIndicator extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 32,
+        height: 42,
         padding: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
           color: isCurrent
               ? _holeAccent.withValues(alpha: 0.1)
               : Colors.transparent,
-          border: isCurrent ? Border.all(color: _holeAccent, width: 1) : null,
+          border: Border.all(
+            color: isCurrent ? _holeAccent : Colors.transparent,
+            width: 1,
+          ),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Column(
