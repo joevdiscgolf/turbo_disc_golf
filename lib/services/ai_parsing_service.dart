@@ -77,6 +77,7 @@ class AiParsingService {
     required String voiceTranscript,
     required List<DGDisc> userBag,
     String? courseName,
+    int numHoles = 18,
     List<HoleMetadata>?
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
@@ -156,7 +157,7 @@ class AiParsingService {
       final PotentialDGRound potentialRound = PotentialDGRound.fromJson(
         jsonMap,
       );
-      return _fillMissingHoles(potentialRound);
+      return _fillMissingHoles(potentialRound, numHoles);
     } catch (e, trace) {
       debugPrint('Error parsing round with Gemini: $e');
       debugPrint(trace.toString());
@@ -167,22 +168,45 @@ class AiParsingService {
     }
   }
 
-  /// Fills in missing holes in the sequence from 1 to max hole number.
+  /// Fills in missing holes in the sequence from 1 to numHoles.
   /// Creates empty PotentialDGHole objects with null par values.
-  PotentialDGRound _fillMissingHoles(PotentialDGRound round) {
+  PotentialDGRound _fillMissingHoles(PotentialDGRound round, int numHoles) {
+    // If no holes exist, create empty holes for all
     if (round.holes == null || round.holes!.isEmpty) {
-      return round;
+      debugPrint('No holes found, creating $numHoles empty holes');
+      final List<PotentialDGHole> emptyHoles = List.generate(
+        numHoles,
+        (index) => PotentialDGHole(
+          number: index + 1,
+          par: null,
+          feet: null,
+          throws: [],
+          holeType: null,
+        ),
+      );
+      return PotentialDGRound(
+        id: round.id,
+        courseId: round.courseId,
+        courseName: round.courseName,
+        holes: emptyHoles,
+        analysis: round.analysis,
+        aiSummary: round.aiSummary,
+        aiCoachSuggestion: round.aiCoachSuggestion,
+        versionId: round.versionId,
+        createdAt: round.createdAt,
+        playedRoundAt: round.playedRoundAt,
+      );
     }
 
-    // Find the maximum hole number
-    final int maxHoleNumber = round.holes!
+    // Use the larger of: max hole number in parsed data or requested numHoles
+    final int maxParsedHoleNumber = round.holes!
         .where((h) => h.number != null)
         .map((h) => h.number!)
         .fold(0, (max, n) => n > max ? n : max);
 
-    if (maxHoleNumber <= 1) {
-      return round; // No gaps possible with 0 or 1 hole
-    }
+    final int maxHoleNumber = maxParsedHoleNumber > numHoles
+        ? maxParsedHoleNumber
+        : numHoles;
 
     // Create a set of existing hole numbers
     final Set<int> existingHoles = round.holes!

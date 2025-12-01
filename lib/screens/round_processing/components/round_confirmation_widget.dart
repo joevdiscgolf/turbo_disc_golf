@@ -241,7 +241,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
           ),
           child: Center(
             child: PrimaryButton(
-              label: 'Looks good!',
+              label: 'Finalize',
               backgroundColor: Colors.green,
               icon: Icons.check,
               width: double.infinity,

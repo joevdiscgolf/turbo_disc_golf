@@ -57,6 +57,7 @@ class RoundParser extends ChangeNotifier {
   Future<bool> parseVoiceTranscript(
     String transcript, {
     String? courseName,
+    int numHoles = 18,
     bool useSharedPreferences = false,
     List<HoleMetadata>?
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
@@ -102,9 +103,9 @@ class RoundParser extends ChangeNotifier {
       debugPrint('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
       debugPrint('Transcript length: ${transcript.length} characters');
       debugPrint('Course name: ${courseName ?? "Not specified"}');
-      // debugPrint('Raw transcript:');
-      // debugPrint(transcript);
-      // debugPrint('==========================================');
+      debugPrint('Raw transcript:');
+      debugPrint(transcript);
+      debugPrint('==========================================');
 
       _isProcessing = true;
       _lastError = '';
@@ -112,7 +113,18 @@ class RoundParser extends ChangeNotifier {
 
       // Check if transcript is empty (only needed if we're actually parsing)
       if (transcript.trim().isEmpty) {
-        _lastError = 'Transcript is empty';
+        _lastError = 'Transcript is empty. Please record descriptions for your holes.';
+        _isProcessing = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Check if transcript only contains hole labels without actual descriptions
+      final String cleanTranscript = transcript
+          .replaceAll(RegExp(r'Hole \d+:'), '')
+          .trim();
+      if (cleanTranscript.isEmpty) {
+        _lastError = 'No hole descriptions provided. Please add details for at least one hole.';
         _isProcessing = false;
         notifyListeners();
         return false;
@@ -129,14 +141,22 @@ class RoundParser extends ChangeNotifier {
       }
 
       // Parse with Gemini - returns PotentialDGRound with optional fields
+      debugPrint('Calling Gemini API to parse round...');
       _potentialRound = await locator
           .get<AiParsingService>()
           .parseRoundDescription(
             voiceTranscript: transcript,
             userBag: bagService.userBag,
             courseName: courseName,
+            numHoles: numHoles,
             preParsedHoles: preParsedHoles, // Pass through pre-parsed holes
           );
+
+      debugPrint('Gemini parsing completed');
+      debugPrint('Potential round is ${_potentialRound == null ? 'NULL' : 'valid'}');
+      if (_potentialRound != null) {
+        debugPrint('Potential round has ${_potentialRound!.holes?.length ?? 0} holes');
+      }
 
       if (_potentialRound == null) {
         _lastError = 'Failed to parse round. Check console for details.';

@@ -26,12 +26,14 @@ import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 class RoundProcessingLoadingScreen extends StatefulWidget {
   final String transcript;
   final String? courseName;
+  final int numHoles;
   final bool useSharedPreferences;
 
   const RoundProcessingLoadingScreen({
     super.key,
     this.transcript = '',
     this.courseName,
+    this.numHoles = 18,
     this.useSharedPreferences = false,
   });
 
@@ -83,6 +85,7 @@ class _RoundProcessingLoadingScreenState
       await _roundParser.parseVoiceTranscript(
         widget.transcript,
         courseName: widget.courseName,
+        numHoles: widget.numHoles,
         useSharedPreferences: widget.useSharedPreferences,
       );
 

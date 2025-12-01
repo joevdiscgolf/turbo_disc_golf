@@ -6,3 +6,4 @@ const bool useAddThrowPanelV2 = true;
 const bool useAddRoundStepsPanel = true;
 const bool autoStartListeningOnNextHole = false;
 const bool showInlineMiniHoleGrid = true;
+const bool showHoleProgressLabel = false;

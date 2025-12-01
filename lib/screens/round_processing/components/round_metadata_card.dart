@@ -63,7 +63,7 @@ class RoundMetadataCard extends StatelessWidget {
                 child: _buildScoreKPIStat(
                   context,
                   'Score',
-                  relativeScore >= 0 ? '+$relativeScore' : '$relativeScore',
+                  relativeScore > 0 ? '+$relativeScore' : '$relativeScore',
                   _getScoreColor(relativeScore),
                 ),
               ),
