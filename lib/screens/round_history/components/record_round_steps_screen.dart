@@ -10,6 +10,7 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/hole_count_selector_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
@@ -20,7 +21,6 @@ import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String testCourseName = 'Foxwood';
-const int totalHoles = 18;
 
 class RecordRoundStepsScreen extends StatefulWidget {
   const RecordRoundStepsScreen({super.key, required this.bottomViewPadding});
@@ -205,86 +205,104 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   Widget _buildHoleEntryView(RecordRoundState recordRoundState) {
     final bool isListening = _voiceService.isListening;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(left: 16, right: 16),
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewPadding.bottom,
-        ),
-        height:
-            MediaQuery.of(context).size.height -
-            (MediaQuery.of(context).viewPadding.top + 64),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (recordRoundState is RecordRoundActive)
-              _buildHeader(recordRoundState),
-            const SizedBox(height: 12),
-            Expanded(
-              child:
-                  VoiceDescriptionCard(
-                        controller: _textEditingController,
-                        focusNode: _focusNode,
-                        isListening: isListening,
-                        accent: _descAccent,
-                        onClear: _handleClearText,
-                        isSingleHole: true,
-                      )
-                      .animate(delay: 180.ms)
-                      .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-                      .slideY(
-                        begin: 0.08,
-                        end: 0.0,
-                        duration: 280.ms,
-                        curve: Curves.easeOut,
-                      ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child:
-                  Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              isListening
-                                  ? const Color(
-                                      0xFFFF7A7A,
-                                    ).withValues(alpha: 0.06)
-                                  : const Color(
-                                      0xFF2196F3,
-                                    ).withValues(alpha: 0.06),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.4, 1.0],
-                          ),
-                        ),
-                        child: AnimatedMicrophoneButton(
+    // Responsive height for VoiceDescriptionCard
+    final double cardHeight = screenHeight >= 700
+        ? 260.0 // Large screen
+        : screenHeight >= 600
+        ? 260.0 // Medium screen
+        : 220.0; // Small screen
+
+    final double boxHeight =
+        MediaQuery.of(context).size.height -
+        (MediaQuery.of(context).viewPadding.top + 64) +
+        MediaQuery.of(context).viewInsets.bottom;
+    print('box height: ${boxHeight}');
+
+    return ListView(
+      reverse: true,
+      padding: EdgeInsets.only(left: 16, right: 16, bottom: keyboardHeight),
+      children: [
+        SizedBox(
+          height: boxHeight,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (recordRoundState is RecordRoundActive)
+                _buildHeader(recordRoundState),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: cardHeight,
+                child:
+                    VoiceDescriptionCard(
+                          controller: _textEditingController,
+                          focusNode: _focusNode,
                           isListening: isListening,
-                          isLoading: _isStartingListening,
-                          onTap: _toggleListening,
+                          accent: _descAccent,
+                          onClear: _handleClearText,
+                          isSingleHole: true,
+                        )
+                        .animate(delay: 180.ms)
+                        .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+                        .slideY(
+                          begin: 0.08,
+                          end: 0.0,
+                          duration: 280.ms,
+                          curve: Curves.easeOut,
                         ),
-                      )
-                      .animate(delay: 270.ms)
-                      .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                      .scale(
-                        begin: const Offset(0.85, 0.85),
-                        end: const Offset(1.0, 1.0),
-                        duration: 300.ms,
-                        curve: Curves.easeOutBack,
-                      ),
-            ),
-            const SizedBox(height: 20),
-            if (kDebugMode || kReleaseMode) _buildDebugButtons(),
-            _buildNavigationButtons(),
-          ],
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Center(
+                  child:
+                      Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  isListening
+                                      ? const Color(
+                                          0xFFFF7A7A,
+                                        ).withValues(alpha: 0.06)
+                                      : const Color(
+                                          0xFF2196F3,
+                                        ).withValues(alpha: 0.06),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.4, 1.0],
+                              ),
+                            ),
+                            child: AnimatedMicrophoneButton(
+                              isListening: isListening,
+                              isLoading: _isStartingListening,
+                              onTap: _toggleListening,
+                            ),
+                          )
+                          .animate(delay: 270.ms)
+                          .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+                          .scale(
+                            begin: const Offset(0.85, 0.85),
+                            end: const Offset(1.0, 1.0),
+                            duration: 300.ms,
+                            curve: Curves.easeOutBack,
+                          ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (kDebugMode || kReleaseMode) _buildDebugButtons(),
+              if (recordRoundState is RecordRoundActive)
+                _buildNavigationButtons(recordRoundState.totalHoles),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildHeader(RecordRoundActive state) {
+    final int totalHoles = state.totalHoles;
     final double progress = (_currentHoleIndex + 1) / totalHoles;
 
     return Column(
@@ -348,23 +366,66 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                       ),
                     ),
                     if (!showInlineMiniHoleGrid)
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.grid_on,
-                            color: Colors.blue.shade700,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'View',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.grid_on,
                               color: Colors.blue.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'View',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (showInlineMiniHoleGrid)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: _showHoleCountSelector,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: Colors.blue.shade200,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.edit,
+                                  color: Colors.blue.shade700,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Edit',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                   ],
                 ),
@@ -401,7 +462,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     );
   }
 
-  Widget _buildNavigationButtons() {
+  Widget _buildNavigationButtons(int totalHoles) {
     final bool allHolesFilled = _areAllHolesFilled();
     final bool isFirstHole = _currentHoleIndex == 0;
     final bool isLastHole = _currentHoleIndex == totalHoles - 1;
@@ -664,6 +725,18 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     });
   }
 
+  Future<void> _showHoleCountSelector() async {
+    displayBottomSheet(
+      context,
+      HoleCountSelectorPanel(
+        currentHoleIndex: _currentHoleIndex,
+        onHoleCountChanged: (int newTotalHoles, int adjustedHoleIndex) {
+          setState(() => _currentHoleIndex = adjustedHoleIndex);
+        },
+      ),
+    );
+  }
+
   String _formatDateTime(DateTime dt) {
     final DateTime local = dt.toLocal();
     // Month names
@@ -695,7 +768,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   bool _areAllHolesFilled() {
     if (_cubit.state is! RecordRoundActive) return false;
     final RecordRoundActive state = _cubit.state as RecordRoundActive;
-    for (int i = 0; i < totalHoles; i++) {
+    for (int i = 0; i < state.totalHoles; i++) {
       final String? description = state.holeDescriptions[i];
       if (description == null || description.trim().isEmpty) {
         return false;
@@ -729,6 +802,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       _textEditingController.text,
       index: _currentHoleIndex,
     );
+    final int totalHoles = (_cubit.state as RecordRoundActive).totalHoles;
     if (_currentHoleIndex < totalHoles - 1) {
       setState(() {
         _currentHoleIndex++;
@@ -1040,7 +1114,7 @@ class _MiniHolesGrid extends StatelessWidget {
     return Wrap(
       spacing: 4,
       runSpacing: 4,
-      children: List.generate(totalHoles, (index) {
+      children: List.generate(state.totalHoles, (index) {
         final String? description = state.holeDescriptions[index];
         final bool isComplete =
             description != null && description.trim().isNotEmpty;

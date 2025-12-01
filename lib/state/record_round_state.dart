@@ -14,21 +14,25 @@ class RecordRoundActive extends RecordRoundState {
     required this.selectedCourse,
     required this.selectedDateTime,
     required this.holeDescriptions,
+    this.totalHoles = 18,
   });
 
   final String? selectedCourse;
   final DateTime selectedDateTime;
   final Map<int, String> holeDescriptions;
+  final int totalHoles;
 
   RecordRoundActive copyWith({
     String? selectedCourse,
     DateTime? selectedDateTime,
     Map<int, String>? holeDescriptions,
+    int? totalHoles,
   }) {
     return RecordRoundActive(
       selectedCourse: selectedCourse ?? this.selectedCourse,
       selectedDateTime: selectedDateTime ?? this.selectedDateTime,
       holeDescriptions: holeDescriptions ?? this.holeDescriptions,
+      totalHoles: totalHoles ?? this.totalHoles,
     );
   }
 

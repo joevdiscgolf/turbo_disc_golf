@@ -35,4 +35,18 @@ class RecordRoundCubit extends Cubit<RecordRoundState> {
 
     emit(activeState.copyWith(holeDescriptions: updatedHoleDescriptions));
   }
+
+  void setTotalHoles(int totalHoles) {
+    if (state is! RecordRoundActive) return;
+    final activeState = state as RecordRoundActive;
+
+    // If reducing hole count, remove descriptions for holes beyond the new total
+    final updatedHoleDescriptions = Map<int, String>.from(activeState.holeDescriptions);
+    updatedHoleDescriptions.removeWhere((int index, _) => index >= totalHoles);
+
+    emit(activeState.copyWith(
+      totalHoles: totalHoles,
+      holeDescriptions: updatedHoleDescriptions,
+    ));
+  }
 }
