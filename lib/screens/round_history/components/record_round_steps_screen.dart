@@ -287,7 +287,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                       ),
             ),
             const SizedBox(height: 20),
-            if (kDebugMode || kReleaseMode) _buildDebugButtons(),
+            // if (kDebugMode || kReleaseMode) _buildDebugButtons(),
             _buildNavigationButtons(),
           ],
         ),
