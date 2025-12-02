@@ -20,6 +20,7 @@ class PrimaryButton extends StatelessWidget {
     this.disabled = false,
     required this.label,
     required this.onPressed,
+    this.underline = false,
   });
 
   final Color backgroundColor;
@@ -37,6 +38,7 @@ class PrimaryButton extends StatelessWidget {
   final Function onPressed;
   final bool loading;
   final bool disabled;
+  final bool underline;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +66,7 @@ class PrimaryButton extends StatelessWidget {
         fontSize: fontSize,
         fontWeight: fontWeight,
         overflow: TextOverflow.ellipsis,
+        decoration: underline ? TextDecoration.underline : null,
       ),
     );
 

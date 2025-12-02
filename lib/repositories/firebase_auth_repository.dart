@@ -3,8 +3,10 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
 import 'package:turbo_disc_golf/repositories/auth_repository.dart';
+import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
 
 final FirebaseAuth auth = FirebaseAuth.instance;
 
@@ -31,11 +33,15 @@ class FirebaseAuthRepository implements AuthRepository {
         email: email,
         password: password,
       );
+
+      debugPrint('user credential user: ${userCredential.user}');
       if (userCredential.user == null) {
         return false;
       }
+
+      debugPrint('attempting to create a user doc');
       return await FirebaseFirestore.instance
-          .collection('Users')
+          .collection(kUsersCollection)
           .doc(userCredential.user?.uid)
           .set(<String, dynamic>{
             'uid': userCredential.user?.uid,
@@ -43,6 +49,7 @@ class FirebaseAuthRepository implements AuthRepository {
           })
           .then((_) => true);
     } on FirebaseAuthException catch (e) {
+      debugPrint('firebase exception: $e');
       if (e.code == 'weak-password') {
         exception = 'The password provided is too weak.';
       } else if (e.code == 'email-already-in-use') {
@@ -105,6 +112,9 @@ class FirebaseAuthRepository implements AuthRepository {
     });
   }
 
+  @override
+  String get exceptionMessage => exception;
+
   final FirebaseAuth _auth = auth;
 
   String exception = '';
@@ -144,54 +154,6 @@ class FirebaseAuthRepository implements AuthRepository {
         reason: '[FirebaseAuthService][getAuthToken] exception',
       );
       return null;
-    }
-  }
-
-  Future<bool> signUpWithEmail(String inputEmail, String inputPassword) async {
-    try {
-      UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-        email: inputEmail,
-        password: inputPassword,
-      );
-      if (userCredential.user == null) {
-        return false;
-      }
-      return await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userCredential.user?.uid)
-          .set(<String, dynamic>{
-            'uid': userCredential.user?.uid,
-            'createdAt': DateTime.now().toUtc().toIso8601String(),
-          })
-          .then((_) => true);
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        exception = 'The password provided is too weak.';
-      } else if (e.code == 'email-already-in-use') {
-        exception = 'Email already in use';
-      }
-      return false;
-    }
-  }
-
-  Future<bool> signInWithEmail(String inputEmail, String inputPassword) async {
-    try {
-      UserCredential userCredential = await auth.signInWithEmailAndPassword(
-        email: inputEmail,
-        password: inputPassword,
-      );
-      if (userCredential.user == null) {
-        return false;
-      }
-      return true;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        exception = 'No user found for that email.';
-      } else if (e.code == 'wrong-password') {
-        exception = 'Wrong password provided for that user.';
-      }
-      log(e.toString());
-      return false;
     }
   }
 

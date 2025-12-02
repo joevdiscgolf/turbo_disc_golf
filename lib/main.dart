@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/firebase_options.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
+import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
+import 'package:turbo_disc_golf/screens/onboarding/onboarding_screen.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
@@ -31,42 +33,60 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Create RoundHistoryCubit first (no dependencies)
-    final RoundHistoryCubit roundHistoryCubit = RoundHistoryCubit();
+  State<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router;
+  late final RoundHistoryCubit _roundHistoryCubit;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Create router once
     final AppPhaseController appPhaseController = locator
         .get<AppPhaseController>();
+    _router = createRouter(appPhaseController);
 
+    // Create cubit once
+    _roundHistoryCubit = RoundHistoryCubit();
+  }
+
+  @override
+  void dispose() {
+    _roundHistoryCubit.close();
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Provide RoundParser at app level so components can listen to round changes
     return MultiBlocProvider(
       providers: [
-        BlocProvider<RoundHistoryCubit>.value(value: roundHistoryCubit),
+        BlocProvider<RoundHistoryCubit>.value(value: _roundHistoryCubit),
         BlocProvider<RoundConfirmationCubit>(
           create: (_) =>
-              RoundConfirmationCubit(roundHistoryCubit: roundHistoryCubit),
+              RoundConfirmationCubit(roundHistoryCubit: _roundHistoryCubit),
         ),
         BlocProvider<RoundReviewCubit>(
-          create: (_) => RoundReviewCubit(roundHistoryCubit: roundHistoryCubit),
+          create: (_) =>
+              RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit),
         ),
         BlocProvider<RecordRoundCubit>(create: (_) => RecordRoundCubit()),
       ],
       child: ChangeNotifierProvider<RoundParser>.value(
         value: locator.get<RoundParser>(),
-        child: ListenableBuilder(
-          listenable: appPhaseController,
-          builder: (_, __) {
-            return MaterialApp.router(
-              routerConfig: createRouter(appPhaseController),
-              debugShowCheckedModeBanner: false,
-              title: 'Turbo Disc Golf',
-              theme: kThemeData,
-            );
-          },
+        child: MaterialApp.router(
+          routerConfig: _router,
+          debugShowCheckedModeBanner: false,
+          title: 'Turbo Disc Golf',
+          theme: kThemeData,
         ),
       ),
     );
@@ -77,7 +97,6 @@ GoRouter createRouter(AppPhaseController controller) {
   return GoRouter(
     refreshListenable: controller,
     redirect: (context, state) {
-      print('controller phase: ${controller.phase}');
       switch (controller.phase) {
         case AppPhase.loading:
           return '/loading';
@@ -98,9 +117,12 @@ GoRouter createRouter(AppPhaseController controller) {
         builder: (_, __) => const Scaffold(body: Text('Loading')),
       ),
       // todo: implement login
-      GoRoute(path: '/login', builder: (_, __) => const Scaffold()),
+      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       // todo: implement onboarding
-      GoRoute(path: '/onboarding', builder: (_, __) => const Scaffold()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
+      ),
       GoRoute(path: '/home', builder: (_, __) => const MainWrapper()),
     ],
   );

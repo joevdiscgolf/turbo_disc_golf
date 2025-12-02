@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
+import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
@@ -44,6 +45,8 @@ class _MainWrapperState extends State<MainWrapper> {
       case 5:
         appBarTitle = 'Test roast';
         break;
+      case 6:
+        appBarTitle = 'Settings';
       default:
         appBarTitle = 'Round history';
     }
@@ -80,6 +83,7 @@ class _MainWrapperState extends State<MainWrapper> {
             const TestAiSummaryScreen(),
             const TestImageParsingScreen(),
             const TestRoastScreen(),
+            const SettingsScreen(),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(
@@ -91,10 +95,7 @@ class _MainWrapperState extends State<MainWrapper> {
               icon: Icon(Icons.play_arrow),
               label: 'Rounds',
             ),
-            // BottomNavigationBarItem(
-            //   icon: Icon(Icons.add_circle),
-            //   label: 'Add Round',
-            // ),
+
             BottomNavigationBarItem(
               icon: Icon(Icons.analytics),
               label: 'Stats',
@@ -105,11 +106,15 @@ class _MainWrapperState extends State<MainWrapper> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.image_search),
-              label: 'Test Image',
+              label: 'Test image',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.local_fire_department),
-              label: 'Test Roast',
+              label: 'Test roast',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: 'Settings',
             ),
           ],
           currentIndex: _selectedIndex,

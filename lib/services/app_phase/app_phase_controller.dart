@@ -10,27 +10,11 @@ class AppPhaseController extends ChangeNotifier {
   AppPhase get phase => _phase;
 
   AppPhaseController({required this.authService}) {
-    // React to login/logout
-    authService.authState.listen(_handleAuthStateChange);
-
-    // On startup, compute initial state
-    _initialize();
-  }
-
-  Future<void> _initialize() async {
-    final user = await authService.getCurrentUser();
-
-    if (user == null) {
-      setPhase(AppPhase.loggedOut);
-    } else {
-      // You'll expand this logic later based on profile data, onboarding steps, etc.
-      final requiresOnboarding = await _needsOnboarding(user);
-      if (requiresOnboarding) {
-        setPhase(AppPhase.onboarding);
-      } else {
-        setPhase(AppPhase.home);
-      }
-    }
+    // React to login/logout - Firebase emits immediately on subscription
+    authService.authState.distinct((previous, next) {
+      // Only emit when the user ID changes (handles login, logout, user switch)
+      return previous?.uid == next?.uid;
+    }).listen(_handleAuthStateChange);
   }
 
   void _handleAuthStateChange(AuthUser? user) async {

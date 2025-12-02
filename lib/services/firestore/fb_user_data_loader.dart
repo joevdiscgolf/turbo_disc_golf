@@ -2,9 +2,7 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
-import 'package:turbo_disc_golf/repositories/firebase_auth_repository.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
 import 'package:turbo_disc_golf/utils/firebase/firebase_utils.dart';
@@ -12,18 +10,10 @@ import 'package:turbo_disc_golf/utils/firebase/firebase_utils.dart';
 FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 abstract class FBUserDataLoader {
-  FBUserDataLoader._internal();
-
-  Future<TurboUser?> getCurrentUser({
+  static Future<TurboUser?> getCurrentUser(
+    String uid, {
     Duration timeoutDuration = shortTimeout,
   }) async {
-    final String? uid = locator
-        .get<FirebaseAuthRepository>()
-        .getCurrentUserId();
-    if (uid == null) {
-      return null;
-    }
-
     return firestoreFetch(
       '$kUsersCollection/$uid',
       timeoutDuration: timeoutDuration,
@@ -38,14 +28,7 @@ abstract class FBUserDataLoader {
     });
   }
 
-  Future<Map<String, dynamic>?> getUserJson() async {
-    final String? uid = locator
-        .get<FirebaseAuthRepository>()
-        .getCurrentUserId();
-    if (uid == null) {
-      return null;
-    }
-
+  static Future<Map<String, dynamic>?> getUserJson(String uid) async {
     return firestore
         .doc('$kUsersCollection/$uid')
         .get()
@@ -66,13 +49,10 @@ abstract class FBUserDataLoader {
         });
   }
 
-  Future<List<TurboUser>> getUsersByUsername(String username) async {
-    final FirebaseAuthRepository authService = locator
-        .get<FirebaseAuthRepository>();
-    final String? currentUid = authService.getCurrentUserId();
-    if (currentUid == null) {
-      return [];
-    }
+  static Future<List<TurboUser>> getUsersByUsername(
+    String uid,
+    String username,
+  ) async {
     return firestore
         .collection(kUsersCollection)
         .where('keywords', arrayContains: username)
@@ -89,7 +69,7 @@ abstract class FBUserDataLoader {
           List<TurboUser> existingUsers = [];
 
           for (var user in users) {
-            if (user != null && user.uid != currentUid) {
+            if (user != null && user.uid != uid) {
               existingUsers.add(user);
             }
           }
@@ -108,7 +88,7 @@ abstract class FBUserDataLoader {
         });
   }
 
-  bool isValidUser(Map<String, dynamic>? data) {
+  static bool isValidUser(Map<String, dynamic>? data) {
     return data?['username'] != null &&
         data?['displayName'] != null &&
         data?['uid'] != null;

@@ -35,6 +35,25 @@ class AuthService {
     return _authRepository.deleteCurrentUser();
   }
 
+  Future<bool> attemptSignUpWithEmail(String email, String password) async {
+    final bool signUpSuccess = await _authRepository.signUpWithEmailPassword(
+      email,
+      password,
+    );
+
+    print('[attemptSignUpWithEmail] signUpSuccess: $signUpSuccess');
+
+    final AuthUser? authUser = await getCurrentUser();
+
+    if (!signUpSuccess || authUser == null) {
+      errorMessage = _authRepository.exceptionMessage;
+      return false;
+    } else {
+      locator.get<AppPhaseController>().setPhase(AppPhase.onboarding);
+      return true;
+    }
+  }
+
   Future<bool> attemptSignInWithEmail(String email, String password) async {
     final bool signinSuccess = await _authRepository.signInWithEmailPassword(
       email,
