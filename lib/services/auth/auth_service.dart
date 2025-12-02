@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
@@ -41,7 +42,7 @@ class AuthService {
       password,
     );
 
-    print('[attemptSignUpWithEmail] signUpSuccess: $signUpSuccess');
+    debugPrint('[attemptSignUpWithEmail] signUpSuccess: $signUpSuccess');
 
     final AuthUser? authUser = await getCurrentUser();
 
