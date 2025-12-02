@@ -77,6 +77,7 @@ GoRouter createRouter(AppPhaseController controller) {
   return GoRouter(
     refreshListenable: controller,
     redirect: (context, state) {
+      print('controller phase: ${controller.phase}');
       switch (controller.phase) {
         case AppPhase.loading:
           return '/loading';

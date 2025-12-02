@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:developer';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/repositories/auth_repository.dart';
+import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
-import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
+import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 
 class AuthService {
   final AuthRepository _authRepository;
@@ -44,41 +46,24 @@ class AuthService {
       return false;
     }
 
-    bool? isSetup;
-
-    await FBUserDataLoader.instance
-        .getCurrentUser()
-        .then((TurboUser? user) {
-          isSetup = userIsValid(user);
-        })
-        .catchError((e, trace) async {
-          FirebaseCrashlytics.instance.recordError(
-            e,
-            trace,
-            reason: '[AuthService][userIsSetup] get User timeout',
-          );
-        });
-
-    if (isSetup == null) {
-      errorMessage = 'Something went wrong, please try again.';
+    final AuthUser? authUser = await getCurrentUser();
+    if (authUser == null) {
       return false;
-    } else if (isSetup == false) {
-      locator.get<AppPhaseCubit>().emitState(const SetUpPhase());
+    }
+
+    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
+
+    if (!isSetUp) {
+      locator.get<AppPhaseController>().setPhase(AppPhase.onboarding);
       return true;
     }
 
-    // mark is set up to true
     locator.get<SharedPreferencesService>().markUserIsSetUp(true);
 
-    _mixpanel.track(
-      'Sign in',
-      properties: {'Uid': _firebaseAuthService.getCurrentUserId()},
-    );
-
     try {
-      fetchLocalRepositoryData();
-      fetchRepositoryData();
-      locator.get<AppPhaseCubit>().emitState(const LoggedInPhase());
+      // fetchLocalRepositoryData();
+      // fetchRepositoryData();
+      locator.get<AppPhaseController>().setPhase(AppPhase.home);
     } catch (e, trace) {
       log(
         '[myputt_auth_service][attemptSigninWithEmail] Failed to fetch repository data. Error: $e',
@@ -100,40 +85,29 @@ class AuthService {
     String displayName, {
     int? pdgaNumber,
   }) async {
-    final TurboUser? newUser = await _firebaseAuthService.setupNewUser(
-      username,
-      displayName,
-      pdgaNumber: pdgaNumber,
-    );
+    final AuthUser? authUser = await getCurrentUser();
+    if (authUser == null) {
+      return false;
+    }
+
+    final TurboUser? newUser = await _authDatabaseService
+        .setUpNewUserInDatabase(
+          authUser,
+          username,
+          displayName,
+          pdgaNumber: pdgaNumber,
+        );
     if (newUser == null) {
       return false;
     }
-    bool? isSetUp;
 
-    await FBUserDataLoader.instance
-        .getCurrentUser()
-        .then((TurboUser? user) {
-          isSetUp = userIsValid(user);
-        })
-        .catchError((e, trace) async {
-          FirebaseCrashlytics.instance.recordError(
-            e,
-            trace,
-            reason: '[AuthService][userIsSetup] get User timeout',
-          );
-        });
+    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
 
-    if (isSetUp != true) {
+    if (!isSetUp) {
       return false;
     }
 
-    _mixpanel.track(
-      'New User Set Up',
-      properties: {'Uid': newUser.uid, 'Username': username},
-    );
-
-    _userRepository.currentUser = newUser;
-    locator.get<AppPhaseCubit>().emitState(const LoggedInPhase());
+    locator.get<AppPhaseController>().setPhase(AppPhase.home);
     return true;
   }
 

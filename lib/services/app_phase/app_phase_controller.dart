@@ -21,28 +21,28 @@ class AppPhaseController extends ChangeNotifier {
     final user = await authService.getCurrentUser();
 
     if (user == null) {
-      _set(AppPhase.loggedOut);
+      setPhase(AppPhase.loggedOut);
     } else {
       // You'll expand this logic later based on profile data, onboarding steps, etc.
       final requiresOnboarding = await _needsOnboarding(user);
       if (requiresOnboarding) {
-        _set(AppPhase.onboarding);
+        setPhase(AppPhase.onboarding);
       } else {
-        _set(AppPhase.home);
+        setPhase(AppPhase.home);
       }
     }
   }
 
   void _handleAuthStateChange(AuthUser? user) async {
     if (user == null) {
-      _set(AppPhase.loggedOut);
+      setPhase(AppPhase.loggedOut);
     } else {
       final requiresOnboarding = await _needsOnboarding(user);
 
       if (requiresOnboarding) {
-        _set(AppPhase.onboarding);
+        setPhase(AppPhase.onboarding);
       } else {
-        _set(AppPhase.home);
+        setPhase(AppPhase.home);
       }
     }
   }
@@ -52,7 +52,7 @@ class AppPhaseController extends ChangeNotifier {
     return false;
   }
 
-  void _set(AppPhase newPhase) {
+  void setPhase(AppPhase newPhase) {
     if (newPhase == _phase) return;
     _phase = newPhase;
     notifyListeners(); // GoRouter reacts to this

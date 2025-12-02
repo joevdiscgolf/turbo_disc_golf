@@ -31,4 +31,8 @@ class AuthDatabaseService {
   Future<bool> usernameIsAvailable(String username) {
     return _authDatabaseRepository.usernameIsAvailable(username);
   }
+
+  Future<bool> userIsSetUp(String uid) {
+    return _authDatabaseRepository.userIsSetUp(uid);
+  }
 }
