@@ -1,5 +1,10 @@
 import 'package:get_it/get_it.dart';
+import 'package:turbo_disc_golf/repositories/firebase_auth_database_repository.dart';
+import 'package:turbo_disc_golf/repositories/firebase_auth_repository.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
+import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
@@ -12,6 +17,7 @@ import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.da
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
+import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -20,6 +26,20 @@ Future<void> setUpLocator() async {
   await dotenv.load();
   final String? geminiApiKey = dotenv.env['GEMINI_API_KEY'];
   // Register core services first
+  locator.registerSingleton<SharedPreferencesService>(
+    SharedPreferencesService(),
+  );
+
+  // Auth / Navigation Services
+  final AuthDatabaseService authDatabaseService = AuthDatabaseService(
+    FirebaseAuthDatabaseRepository(),
+  );
+  final AuthService authService = AuthService(
+    FirebaseAuthRepository(),
+    authDatabaseService,
+  );
+  locator.registerSingleton<AuthService>(authService);
+  locator.registerSingleton(AppPhaseController(authService: authService));
 
   // Round analysis
   locator.registerSingleton<VoiceRecordingService>(VoiceRecordingService());
