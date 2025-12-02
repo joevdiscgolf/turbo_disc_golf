@@ -2,15 +2,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/firebase_options.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
+import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
+import 'package:turbo_disc_golf/screens/onboarding/onboarding_screen.dart';
+import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
+import 'package:turbo_disc_golf/utils/theme/theme_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,125 +33,97 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Create RoundHistoryCubit first (no dependencies)
-    final RoundHistoryCubit roundHistoryCubit = RoundHistoryCubit();
+  State<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router;
+  late final RoundHistoryCubit _roundHistoryCubit;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Create router once
+    final AppPhaseController appPhaseController = locator
+        .get<AppPhaseController>();
+    _router = createRouter(appPhaseController);
+
+    // Create cubit once
+    _roundHistoryCubit = RoundHistoryCubit();
+  }
+
+  @override
+  void dispose() {
+    _roundHistoryCubit.close();
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Provide RoundParser at app level so components can listen to round changes
     return MultiBlocProvider(
       providers: [
-        BlocProvider<RoundHistoryCubit>.value(value: roundHistoryCubit),
+        BlocProvider<RoundHistoryCubit>.value(value: _roundHistoryCubit),
         BlocProvider<RoundConfirmationCubit>(
           create: (_) =>
-              RoundConfirmationCubit(roundHistoryCubit: roundHistoryCubit),
+              RoundConfirmationCubit(roundHistoryCubit: _roundHistoryCubit),
         ),
         BlocProvider<RoundReviewCubit>(
-          create: (_) => RoundReviewCubit(roundHistoryCubit: roundHistoryCubit),
+          create: (_) =>
+              RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit),
         ),
         BlocProvider<RecordRoundCubit>(create: (_) => RecordRoundCubit()),
       ],
       child: ChangeNotifierProvider<RoundParser>.value(
         value: locator.get<RoundParser>(),
-        child: MaterialApp(
+        child: MaterialApp.router(
+          routerConfig: _router,
           debugShowCheckedModeBanner: false,
           title: 'Turbo Disc Golf',
-          theme: ThemeData(
-            brightness: Brightness.light,
-            useMaterial3: true,
-            // fontFamily: GoogleFonts.inter().fontFamily,
-            colorScheme: ColorScheme.light(
-              primary: const Color(0xFFB8E986), // Soft mint green
-              secondary: const Color(0xFF5B7EFF), // Vibrant blue
-              surface: const Color(0xFFFFFFFF), // Pure white for cards
-              error: const Color(0xFFFF7F7F), // Coral
-              onPrimary: const Color(0xFF2C2C2C), // Dark text on mint
-              onSecondary: const Color(0xFFFFFFFF), // White text on blue
-              onSurface: const Color(0xFF2C2C2C), // Dark text on surface
-              onError: const Color(0xFFFFFFFF), // White text on error
-            ),
-            scaffoldBackgroundColor:
-                Colors.transparent, // Transparent for gradient background
-            cardTheme: const CardThemeData(
-              color: Color(0xFFFFFFFF), // Pure white cards
-              elevation: 2,
-              shadowColor: Colors.black12,
-            ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor:
-                  Colors.transparent, // Transparent to show gradient
-              foregroundColor: Color(0xFF2C2C2C), // Dark text
-              elevation: 0,
-              surfaceTintColor: Colors.transparent,
-            ),
-            textTheme: const TextTheme(
-              displayLarge: TextStyle(color: Color(0xFF2C2C2C)),
-              displayMedium: TextStyle(color: Color(0xFF2C2C2C)),
-              displaySmall: TextStyle(color: Color(0xFF2C2C2C)),
-              headlineLarge: TextStyle(color: Color(0xFF2C2C2C)),
-              headlineMedium: TextStyle(color: Color(0xFF2C2C2C)),
-              headlineSmall: TextStyle(color: Color(0xFF2C2C2C)),
-              titleLarge: TextStyle(color: Color(0xFF2C2C2C)),
-              titleMedium: TextStyle(color: Color(0xFF2C2C2C)),
-              titleSmall: TextStyle(color: Color(0xFF2C2C2C)),
-              bodyLarge: TextStyle(color: Color(0xFF2C2C2C)),
-              bodyMedium: TextStyle(color: Color(0xFF2C2C2C)),
-              bodySmall: TextStyle(color: Color(0xFF6B7280)),
-              labelLarge: TextStyle(color: Color(0xFF2C2C2C)),
-              labelMedium: TextStyle(color: Color(0xFF6B7280)),
-              labelSmall: TextStyle(color: Color(0xFF6B7280)),
-            ),
-            inputDecorationTheme: InputDecorationTheme(
-              filled: true,
-              fillColor: const Color(0xFFFFFFFF), // Pure white fill
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFFB8E986),
-                  width: 2,
-                ),
-              ),
-              labelStyle: const TextStyle(color: Color(0xFF6B7280)),
-              hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-            ),
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: const Color(0xFF5B7EFF), // Blue cursor
-              selectionColor: const Color(
-                0xFF5B7EFF,
-              ).withValues(alpha: 0.3), // Light blue selection background
-              selectionHandleColor: const Color(
-                0xFF5B7EFF,
-              ), // Blue selection handles
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB8E986), // Mint green
-                foregroundColor: const Color(0xFF2C2C2C), // Dark text
-                elevation: 2,
-                shadowColor: Colors.black.withValues(alpha: 0.1),
-              ),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF5B7EFF),
-              ),
-            ),
-            iconTheme: const IconThemeData(color: Color(0xFF2C2C2C)),
-          ),
-          home: const MainWrapper(),
+          theme: kThemeData,
         ),
       ),
     );
   }
+}
+
+GoRouter createRouter(AppPhaseController controller) {
+  return GoRouter(
+    refreshListenable: controller,
+    redirect: (context, state) {
+      switch (controller.phase) {
+        case AppPhase.loading:
+          return '/loading';
+
+        case AppPhase.loggedOut:
+          return '/login';
+
+        case AppPhase.onboarding:
+          return '/onboarding';
+
+        case AppPhase.home:
+          return '/home';
+      }
+    },
+    routes: [
+      GoRoute(
+        path: '/loading',
+        builder: (_, __) => const Scaffold(body: Text('Loading')),
+      ),
+      // todo: implement login
+      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      // todo: implement onboarding
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
+      ),
+      GoRoute(path: '/home', builder: (_, __) => const MainWrapper()),
+    ],
+  );
 }

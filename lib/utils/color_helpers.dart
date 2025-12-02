@@ -76,7 +76,11 @@ abstract class TurbColors {
     900: Color(0xff000000),
   });
 
+  static const Color darkGray = Color(0xff111111);
+
   static const Color blue = Colors.blue;
+  static const Color darkBlue = Color(0xff0E7DD6);
+  static const Color white = Colors.white;
 }
 
 Color flattenedOverWhite(Color color, double opacity) {
