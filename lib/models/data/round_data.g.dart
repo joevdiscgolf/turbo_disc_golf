@@ -7,6 +7,7 @@ part of 'round_data.dart';
 // **************************************************************************
 
 DGRound _$DGRoundFromJson(Map json) => DGRound(
+  uid: json['uid'] as String,
   id: json['id'] as String,
   courseName: json['courseName'] as String,
   courseId: json['courseId'] as String?,
@@ -32,6 +33,7 @@ DGRound _$DGRoundFromJson(Map json) => DGRound(
 );
 
 Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{
+  'uid': instance.uid,
   'id': instance.id,
   'courseId': instance.courseId,
   'courseName': instance.courseName,

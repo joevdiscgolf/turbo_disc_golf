@@ -1,7 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 
-class RecordRoundCubit extends Cubit<RecordRoundState> {
+class RecordRoundCubit extends Cubit<RecordRoundState>
+    implements ClearOnLogoutProtocol {
   RecordRoundCubit() : super(const RecordRoundInactive());
 
   static const defaultNumHoles = 18;
@@ -53,5 +55,10 @@ class RecordRoundCubit extends Cubit<RecordRoundState> {
         (index) => MapEntry(index, ''),
       ),
     );
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    emit(const RecordRoundInactive());
   }
 }

@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 
 /// Cubit for managing round history state
 /// Handles loading, refreshing, adding, and updating rounds in the history list
-class RoundHistoryCubit extends Cubit<RoundHistoryState> {
-  RoundHistoryCubit() : super(const RoundHistoryInitial());
+class RoundHistoryCubit extends Cubit<RoundHistoryState>
+    implements ClearOnLogoutProtocol {
+  RoundHistoryCubit() : super(const RoundHistoryLoading());
 
   /// Load rounds from Firestore (initial load)
   /// Shows full-screen loading spinner
@@ -16,11 +18,15 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState> {
     try {
       emit(const RoundHistoryLoading());
 
-      final List<DGRound> rounds = await locator
-          .get<FirestoreRoundService>()
-          .getRounds();
+      final List<DGRound>? rounds = await locator
+          .get<RoundsService>()
+          .loadRoundsForUser();
 
-      emit(RoundHistoryLoaded(rounds: rounds));
+      if (rounds != null) {
+        emit(RoundHistoryLoaded(rounds: rounds));
+      } else {
+        emit(RoundHistoryError(error: 'Something went wrong'));
+      }
     } catch (e) {
       debugPrint('Error loading rounds: $e');
       emit(RoundHistoryError(error: e.toString()));
@@ -35,17 +41,19 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState> {
       if (state is RoundHistoryLoaded) {
         final List<DGRound> currentRounds =
             (state as RoundHistoryLoaded).rounds;
-        emit(RoundHistoryRefreshing(currentRounds: currentRounds));
+        emit(RoundHistoryLoaded(rounds: currentRounds, isRefreshing: true));
       } else {
         // If no data yet, just show loading
         emit(const RoundHistoryLoading());
       }
 
-      final List<DGRound> rounds = await locator
-          .get<FirestoreRoundService>()
-          .getRounds();
+      final List<DGRound>? rounds = await locator
+          .get<RoundsService>()
+          .loadRoundsForUser();
 
-      emit(RoundHistoryLoaded(rounds: rounds));
+      if (rounds != null) {
+        emit(RoundHistoryLoaded(rounds: rounds));
+      }
     } catch (e) {
       debugPrint('Error refreshing rounds: $e');
       emit(RoundHistoryError(error: e.toString()));
@@ -57,14 +65,6 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState> {
   void addRound(DGRound round) {
     if (state is RoundHistoryLoaded) {
       final List<DGRound> currentRounds = (state as RoundHistoryLoaded).rounds;
-      final List<DGRound> updatedRounds = List<DGRound>.from(currentRounds);
-      updatedRounds.add(round);
-
-      emit(RoundHistoryLoaded(rounds: updatedRounds));
-      debugPrint('Added round ${round.id} to history');
-    } else if (state is RoundHistoryRefreshing) {
-      final List<DGRound> currentRounds =
-          (state as RoundHistoryRefreshing).currentRounds;
       final List<DGRound> updatedRounds = List<DGRound>.from(currentRounds);
       updatedRounds.add(round);
 
@@ -82,16 +82,6 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState> {
   void updateRound(DGRound updatedRound) {
     if (state is RoundHistoryLoaded) {
       final List<DGRound> currentRounds = (state as RoundHistoryLoaded).rounds;
-      final List<DGRound> updatedRounds = currentRounds.map((round) {
-        // Replace the round with matching ID
-        return round.id == updatedRound.id ? updatedRound : round;
-      }).toList();
-
-      emit(RoundHistoryLoaded(rounds: updatedRounds));
-      // debugPrint('Updated round ${updatedRound.id} in history');
-    } else if (state is RoundHistoryRefreshing) {
-      final List<DGRound> currentRounds =
-          (state as RoundHistoryRefreshing).currentRounds;
       final List<DGRound> updatedRounds = currentRounds.map((round) {
         // Replace the round with matching ID
         return round.id == updatedRound.id ? updatedRound : round;
@@ -117,5 +107,10 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState> {
       emit(RoundHistoryLoaded(rounds: updatedRounds));
       debugPrint('Deleted round $roundId from history');
     }
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    emit(const RoundHistoryLoading());
   }
 }

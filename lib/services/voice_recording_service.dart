@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 
-class VoiceRecordingService extends ChangeNotifier {
+class VoiceRecordingService extends ChangeNotifier
+    implements ClearOnLogoutProtocol {
   final SpeechToText _speechToText = SpeechToText();
   String _transcribedText = '';
   bool _isListening = false;
@@ -170,6 +172,11 @@ class VoiceRecordingService extends ChangeNotifier {
   void updateText(String text) {
     _transcribedText = text;
     notifyListeners();
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    clearText();
   }
 
   @override

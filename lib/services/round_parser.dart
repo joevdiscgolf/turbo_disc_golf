@@ -5,14 +5,16 @@ import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
-class RoundParser extends ChangeNotifier {
+class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
   PotentialDGRound? _potentialRound;
   DGRound? _parsedRound;
   bool _isProcessing = false;
@@ -113,7 +115,8 @@ class RoundParser extends ChangeNotifier {
 
       // Check if transcript is empty (only needed if we're actually parsing)
       if (transcript.trim().isEmpty) {
-        _lastError = 'Transcript is empty. Please record descriptions for your holes.';
+        _lastError =
+            'Transcript is empty. Please record descriptions for your holes.';
         _isProcessing = false;
         notifyListeners();
         return false;
@@ -124,7 +127,8 @@ class RoundParser extends ChangeNotifier {
           .replaceAll(RegExp(r'Hole \d+:'), '')
           .trim();
       if (cleanTranscript.isEmpty) {
-        _lastError = 'No hole descriptions provided. Please add details for at least one hole.';
+        _lastError =
+            'No hole descriptions provided. Please add details for at least one hole.';
         _isProcessing = false;
         notifyListeners();
         return false;
@@ -153,9 +157,13 @@ class RoundParser extends ChangeNotifier {
           );
 
       debugPrint('Gemini parsing completed');
-      debugPrint('Potential round is ${_potentialRound == null ? 'NULL' : 'valid'}');
+      debugPrint(
+        'Potential round is ${_potentialRound == null ? 'NULL' : 'valid'}',
+      );
       if (_potentialRound != null) {
-        debugPrint('Potential round has ${_potentialRound!.holes?.length ?? 0} holes');
+        debugPrint(
+          'Potential round has ${_potentialRound!.holes?.length ?? 0} holes',
+        );
       }
 
       if (_potentialRound == null) {
@@ -181,6 +189,9 @@ class RoundParser extends ChangeNotifier {
   /// Finalize the potential round after confirmation
   /// Converts PotentialDGRound to DGRound, validates, enhances, and saves
   Future<bool> finalizeRound() async {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return false;
+
     if (_potentialRound == null) {
       _lastError = 'No potential round to finalize';
       return false;
@@ -212,7 +223,7 @@ class RoundParser extends ChangeNotifier {
       }
 
       // Validate and enhance the parsed data
-      _parsedRound = _validateAndEnhanceRound(_parsedRound!);
+      _parsedRound = _validateAndEnhanceRound(uid, _parsedRound!);
 
       // Generate analysis from round data
       debugPrint('Generating round analysis...');
@@ -225,8 +236,10 @@ class RoundParser extends ChangeNotifier {
           .generateRoundInsights(round: _parsedRound!, analysis: analysis);
 
       // Update round with analysis and insights
+
       final String currentTimestamp = getCurrentISOString();
       _parsedRound = DGRound(
+        uid: uid,
         id: _parsedRound!.id,
         courseName: _parsedRound!.courseName,
         courseId: _parsedRound!.courseId,
@@ -252,9 +265,9 @@ class RoundParser extends ChangeNotifier {
 
       // Save to Firestore
       debugPrint('Saving parsed round to Firestore...');
-      final firestoreSuccess = await locator
-          .get<FirestoreRoundService>()
-          .addRound(_parsedRound!);
+      final firestoreSuccess = await locator.get<RoundsService>().addRound(
+        _parsedRound!,
+      );
       if (firestoreSuccess) {
         debugPrint('Successfully saved round to Firestore');
       } else {
@@ -272,7 +285,7 @@ class RoundParser extends ChangeNotifier {
     }
   }
 
-  DGRound _validateAndEnhanceRound(DGRound round) {
+  DGRound _validateAndEnhanceRound(String uid, DGRound round) {
     final bagService = locator.get<BagService>();
 
     // Ensure all throws have valid disc references
@@ -394,6 +407,7 @@ class RoundParser extends ChangeNotifier {
     }).toList();
 
     return DGRound(
+      uid: uid,
       courseName: round.courseName,
       holes: enhancedHoles,
       id: round.id,
@@ -403,12 +417,13 @@ class RoundParser extends ChangeNotifier {
     );
   }
 
-  void updateHole(int holeIndex, DGHole updatedHole) {
+  void updateHole(String uid, int holeIndex, DGHole updatedHole) {
     if (_parsedRound != null && holeIndex < _parsedRound!.holes.length) {
       final updatedHoles = List<DGHole>.from(_parsedRound!.holes);
       updatedHoles[holeIndex] = updatedHole;
 
       _parsedRound = DGRound(
+        uid: uid,
         courseName: _parsedRound!.courseName,
         holes: updatedHoles,
         id: _parsedRound!.id,
@@ -425,6 +440,9 @@ class RoundParser extends ChangeNotifier {
   }
 
   void updateThrow(int holeIndex, int throwIndex, DiscThrow updatedThrow) {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return;
+
     if (_parsedRound != null &&
         holeIndex < _parsedRound!.holes.length &&
         throwIndex < _parsedRound!.holes[holeIndex].throws.length) {
@@ -439,65 +457,17 @@ class RoundParser extends ChangeNotifier {
         throws: updatedThrows,
       );
 
-      updateHole(holeIndex, updatedHole);
+      updateHole(uid, holeIndex, updatedHole);
     }
-  }
-
-  /// Adds an empty hole to the round at the correct position based on hole number
-  void addEmptyHole(int holeNumber, {int? par, int? feet}) {
-    if (_parsedRound == null) return;
-
-    // Check if hole already exists
-    final bool holeExists = _parsedRound!.holes.any(
-      (h) => h.number == holeNumber,
-    );
-    if (holeExists) {
-      debugPrint('Hole $holeNumber already exists, skipping...');
-      return;
-    }
-
-    // Create empty hole
-    final DGHole emptyHole = DGHole(
-      number: holeNumber,
-      par:
-          par ??
-          0, // Use 0 as sentinel for unknown par (DGHole requires non-null)
-      feet: feet ?? 0,
-      throws: [], // Empty throws list
-    );
-
-    // Find correct insertion position (maintain hole number order)
-    final List<DGHole> updatedHoles = List<DGHole>.from(_parsedRound!.holes);
-
-    // Find index where this hole should be inserted
-    int insertIndex = updatedHoles.length;
-    for (int i = 0; i < updatedHoles.length; i++) {
-      if (updatedHoles[i].number > holeNumber) {
-        insertIndex = i;
-        break;
-      }
-    }
-
-    updatedHoles.insert(insertIndex, emptyHole);
-
-    _parsedRound = DGRound(
-      courseName: _parsedRound!.courseName,
-      holes: updatedHoles,
-      id: _parsedRound!.id,
-      analysis: _parsedRound!.analysis,
-      aiSummary: _parsedRound!.aiSummary,
-      aiCoachSuggestion: _parsedRound!.aiCoachSuggestion,
-      versionId: _parsedRound!.versionId + 1, // Increment version on edit
-      createdAt: _parsedRound!.createdAt,
-      playedRoundAt: _parsedRound!.playedRoundAt,
-    );
-
-    notifyListeners();
   }
 
   /// Adds empty holes to the potential round (for round confirmation workflow)
   void addEmptyHolesToPotentialRound(Set<int> holeNumbers, {int? defaultPar}) {
-    if (_potentialRound == null || _potentialRound!.holes == null) {
+    final String? uid = locator.get<AuthService>().currentUid;
+
+    if (uid == null ||
+        _potentialRound == null ||
+        _potentialRound!.holes == null) {
       debugPrint('Cannot add empty holes: no potential round exists');
       return;
     }
@@ -542,6 +512,7 @@ class RoundParser extends ChangeNotifier {
     }
 
     _potentialRound = PotentialDGRound(
+      uid: uid,
       id: _potentialRound!.id,
       courseName: _potentialRound!.courseName,
       courseId: _potentialRound!.courseId,
@@ -562,6 +533,9 @@ class RoundParser extends ChangeNotifier {
     required int holeIndex,
     required String voiceTranscript,
   }) async {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return false;
+
     // Can work with either parsed round or potential round
     final bool hasParsedRound =
         _parsedRound != null && holeIndex < _parsedRound!.holes.length;
@@ -647,10 +621,10 @@ class RoundParser extends ChangeNotifier {
 
         // Convert to DGHole and update
         final newHole = potentialHole.toDGHole();
-        updateHole(holeIndex, newHole);
+        updateHole(uid, holeIndex, newHole);
 
         // Re-validate and enhance the entire round
-        _parsedRound = _validateAndEnhanceRound(_parsedRound!);
+        _parsedRound = _validateAndEnhanceRound(uid, _parsedRound!);
 
         // Save updated round to shared preferences
         debugPrint('Saving updated round to shared preferences...');
@@ -663,6 +637,7 @@ class RoundParser extends ChangeNotifier {
         updatedHoles[holeIndex] = potentialHole;
 
         _potentialRound = PotentialDGRound(
+          uid: uid,
           id: _potentialRound!.id,
           courseName: _potentialRound!.courseName,
           courseId: _potentialRound!.courseId,
@@ -696,6 +671,9 @@ class RoundParser extends ChangeNotifier {
     int? par,
     int? feet,
   }) {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return;
+
     if (_potentialRound == null || _potentialRound!.holes == null) {
       debugPrint('Cannot update potential hole: no potential round exists');
       return;
@@ -724,6 +702,7 @@ class RoundParser extends ChangeNotifier {
     updatedHoles[holeIndex] = updatedHole;
 
     _potentialRound = PotentialDGRound(
+      uid: uid,
       id: _potentialRound!.id,
       courseName: _potentialRound!.courseName,
       courseId: _potentialRound!.courseId,
@@ -747,7 +726,11 @@ class RoundParser extends ChangeNotifier {
 
   /// Update an entire potential hole including its throws
   void updatePotentialHole(int holeIndex, PotentialDGHole updatedHole) {
-    if (_potentialRound == null || _potentialRound!.holes == null) {
+    final String? uid = locator.get<AuthService>().currentUid;
+
+    if (uid == null ||
+        _potentialRound == null ||
+        _potentialRound!.holes == null) {
       debugPrint('Cannot update potential hole: no potential round exists');
       return;
     }
@@ -764,6 +747,7 @@ class RoundParser extends ChangeNotifier {
     updatedHoles[holeIndex] = updatedHole;
 
     _potentialRound = PotentialDGRound(
+      uid: uid,
       id: _potentialRound!.id,
       courseName: _potentialRound!.courseName,
       courseId: _potentialRound!.courseId,
@@ -954,5 +938,16 @@ class RoundParser extends ChangeNotifier {
         if (score < -3) return 'Ace';
         return '+$score';
     }
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    _potentialRound = null;
+    _parsedRound = null;
+    _isProcessing = false;
+    _isReadyToNavigate = false;
+    _shouldNavigateToReview = false;
+    _lastError = '';
+    notifyListeners();
   }
 }

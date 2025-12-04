@@ -6,17 +6,20 @@ import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
 /// Cubit for managing round confirmation workflow state
 /// Tracks the potential round being edited and the current hole being edited
-class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
+class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
+    implements ClearOnLogoutProtocol {
   RoundConfirmationCubit({required this.roundHistoryCubit})
     : super(const ConfirmingRoundInactive());
 
@@ -97,7 +100,11 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     );
     updatedHoles[holeIndex] = updatedHole;
 
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return;
+
     final updatedRound = PotentialDGRound(
+      uid: uid,
       id: activeState.potentialRound.id,
       courseName: activeState.potentialRound.courseName,
       courseId: activeState.potentialRound.courseId,
@@ -115,6 +122,9 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
 
   /// Update an entire potential hole including its throws
   void updatePotentialHole(int holeIndex, PotentialDGHole updatedHole) {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return;
+
     if (state is! ConfirmingRoundActive) {
       return;
     }
@@ -132,6 +142,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     updatedHoles[holeIndex] = updatedHole;
 
     final updatedRound = PotentialDGRound(
+      uid: uid,
       id: activeState.potentialRound.id,
       courseName: activeState.potentialRound.courseName,
       courseId: activeState.potentialRound.courseId,
@@ -394,6 +405,9 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
       return null;
     }
 
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return null;
+
     final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
     final PotentialDGRound potentialRound = activeState.potentialRound;
 
@@ -417,7 +431,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     }
 
     // Validate and enhance the parsed data
-    parsedRound = _validateAndEnhanceRound(parsedRound);
+    parsedRound = _validateAndEnhanceRound(uid, parsedRound);
 
     // Generate analysis from round data
     debugPrint('Generating round analysis...');
@@ -432,6 +446,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     // Update round with analysis and insights
     final String currentTimestamp = getCurrentISOString();
     parsedRound = DGRound(
+      uid: uid,
       id: parsedRound.id,
       courseName: parsedRound.courseName,
       courseId: parsedRound.courseId,
@@ -457,9 +472,9 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
 
     // Save to Firestore
     debugPrint('Saving parsed round to Firestore...');
-    final firestoreSuccess = await locator
-        .get<FirestoreRoundService>()
-        .addRound(parsedRound);
+    final firestoreSuccess = await locator.get<RoundsService>().addRound(
+      parsedRound,
+    );
     if (firestoreSuccess) {
       debugPrint('Successfully saved round to Firestore');
 
@@ -474,7 +489,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
 
   /// Validate and enhance a round
   /// Ensures all throws have valid disc references and correct landing spots
-  DGRound _validateAndEnhanceRound(DGRound round) {
+  DGRound _validateAndEnhanceRound(String uid, DGRound round) {
     final BagService bagService = locator.get<BagService>();
 
     // Ensure all throws have valid disc references
@@ -596,6 +611,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
     }).toList();
 
     return DGRound(
+      uid: uid,
       courseName: round.courseName,
       holes: enhancedHoles,
       id: round.id,
@@ -603,5 +619,10 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState> {
       createdAt: DateTime.now().toIso8601String(),
       playedRoundAt: DateTime.now().toIso8601String(),
     );
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    emit(const ConfirmingRoundInactive());
   }
 }

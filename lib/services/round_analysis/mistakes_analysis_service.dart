@@ -92,7 +92,7 @@ class MistakesAnalysisService {
         final isRecoveryAfterPenalty =
             i > 0 &&
             discThrow.purpose != ThrowPurpose.putt &&
-            (hole.throws[i - 1].customPenaltyStrokes ?? 0) > 0 &&
+            (hole.throws[i - 1].penaltyStrokes) > 0 &&
             isLikelyGoodThrow;
 
         // Override the analysis for approaches that seem good but weren't marked as such

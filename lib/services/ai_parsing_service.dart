@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
 import 'package:turbo_disc_golf/utils/gemini_helpers.dart';
@@ -21,6 +22,29 @@ class AiParsingService {
 
   String? _lastRawResponse; // Store the last raw response
   String? get lastRawResponse => _lastRawResponse;
+
+  /// Sanitizes YAML to fix common AI-generated formatting issues
+  String _sanitizeYaml(String yaml) {
+    // Fix: notes field with comma-separated strings instead of single string
+    // Example: notes: "string1", "string2" -> notes: "string1, string2"
+    final RegExp notesPattern = RegExp(
+      r'notes:\s*"([^"]+)"(?:\s*,\s*"([^"]+)")+',
+      multiLine: true,
+    );
+
+    yaml = yaml.replaceAllMapped(notesPattern, (match) {
+      // Get all the quoted strings and combine them
+      final fullMatch = match.group(0)!;
+      final allQuotes = RegExp(r'"([^"]+)"').allMatches(fullMatch);
+      final values = allQuotes.map((m) => m.group(1)!).toList();
+
+      // Combine into a single string
+      final combinedValue = values.join(', ');
+      return 'notes: "$combinedValue"';
+    });
+
+    return yaml;
+  }
 
   /// Detects and removes repetitive text patterns (model stuck in a loop)
   String _removeRepetitiveText(String text) {
@@ -81,6 +105,9 @@ class AiParsingService {
     List<HoleMetadata>?
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return null;
+
     try {
       final prompt = _buildParsingPrompt(
         voiceTranscript,
@@ -143,6 +170,10 @@ class AiParsingService {
 
       debugPrint('Cleaned response for parsing...');
 
+      // Sanitize YAML to fix common AI formatting issues
+      responseText = _sanitizeYaml(responseText);
+      debugPrint('YAML sanitized...');
+
       // Parse the YAML response
       debugPrint('Parsing YAML response...');
       final yamlDoc = loadYaml(responseText);
@@ -152,12 +183,14 @@ class AiParsingService {
 
       jsonMap['id'] = _uuid.v4();
       jsonMap['courseName'] = courseName;
+      jsonMap['uid'] = uid;
 
       debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
       final PotentialDGRound potentialRound = PotentialDGRound.fromJson(
         jsonMap,
       );
-      return _fillMissingHoles(potentialRound, numHoles);
+
+      return _fillMissingHoles(uid, potentialRound, numHoles);
     } catch (e, trace) {
       debugPrint('Error parsing round with Gemini: $e');
       debugPrint(trace.toString());
@@ -170,7 +203,11 @@ class AiParsingService {
 
   /// Fills in missing holes in the sequence from 1 to numHoles.
   /// Creates empty PotentialDGHole objects with null par values.
-  PotentialDGRound _fillMissingHoles(PotentialDGRound round, int numHoles) {
+  PotentialDGRound _fillMissingHoles(
+    String uid,
+    PotentialDGRound round,
+    int numHoles,
+  ) {
     // If no holes exist, create empty holes for all
     if (round.holes == null || round.holes!.isEmpty) {
       debugPrint('No holes found, creating $numHoles empty holes');
@@ -185,6 +222,7 @@ class AiParsingService {
         ),
       );
       return PotentialDGRound(
+        uid: uid,
         id: round.id,
         courseId: round.courseId,
         courseName: round.courseName,
@@ -254,6 +292,7 @@ class AiParsingService {
     }
 
     return PotentialDGRound(
+      uid: uid,
       id: round.id,
       courseId: round.courseId,
       courseName: round.courseName,
@@ -332,6 +371,9 @@ class AiParsingService {
             .substring(0, responseText.length - 3)
             .trim();
       }
+
+      // Sanitize YAML to fix common AI formatting issues
+      responseText = _sanitizeYaml(responseText);
 
       // Parse the YAML response
       final yamlDoc = loadYaml(responseText);

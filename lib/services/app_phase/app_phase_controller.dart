@@ -33,7 +33,7 @@ class AppPhaseController extends ChangeNotifier {
 
     String? minimumVersion;
 
-    final AuthUser? currentAuthUser = _authService.getCurrentUser();
+    final AuthUser? currentAuthUser = _authService.currentUser;
     if (currentAuthUser == null) {
       setPhase(AppPhase.loggedOut);
       return;

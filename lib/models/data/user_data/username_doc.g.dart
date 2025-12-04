@@ -6,10 +6,10 @@ part of 'username_doc.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-UsernameDocument _$UsernameDocFromJson(Map json) => UsernameDocument(
+UsernameDocument _$UsernameDocumentFromJson(Map json) => UsernameDocument(
   username: json['username'] as String,
   uid: json['uid'] as String,
 );
 
-Map<String, dynamic> _$UsernameDocToJson(UsernameDocument instance) =>
+Map<String, dynamic> _$UsernameDocumentToJson(UsernameDocument instance) =>
     <String, dynamic>{'username': instance.username, 'uid': instance.uid};

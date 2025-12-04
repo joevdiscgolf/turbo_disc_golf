@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -57,6 +58,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
         final currentRound = state.potentialRound;
         final int totalScore = _calculateTotalScoreForValidHoles(currentRound);
         final int totalPar = _calculateTotalParForValidHoles(currentRound);
+
         final int relativeScore = totalScore - totalPar;
         final Map<String, dynamic> validation = _validateRound(currentRound);
         final List<String> validationIssues =
@@ -100,7 +102,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                 left: 16,
                 right: 16,
                 bottom: 48,
-                top: widget.topViewPadding + 72,
+                top: widget.topViewPadding + 64,
               ),
               children: [
                 // Course metadata header
@@ -110,17 +112,16 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                   totalPar: totalPar,
                   relativeScore: relativeScore,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 // Warning banner for missing data
-                // if (validationIssues.isNotEmpty)
-                //   _buildWarningBanner(
-                //     context,
-                //     currentRound,
-                //     validationIssues,
-                //     missingHoles,
-                //     hasRequiredFields,
-                //   ),
-                // if (validationIssues.isNotEmpty) const SizedBox(height: 16),
+                if (validationIssues.isNotEmpty)
+                  _buildWarningBanner(
+                    context,
+                    currentRound,
+                    validationIssues,
+                    missingHoles,
+                    hasRequiredFields,
+                  ),
 
                 // Instructions
                 Padding(
@@ -149,24 +150,24 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     );
   }
 
-  // int _getIncompleteHoleCount(PotentialDGRound round) {
-  //   if (round.holes == null) return 0;
-  //   // Count holes that are missing required fields OR have no throws OR no basket throw
-  //   return round.holes!
-  //       .where(
-  //         (hole) =>
-  //             !hole.hasRequiredFields ||
-  //             hole.throws == null ||
-  //             hole.throws!.isEmpty ||
-  //             !_hasBasketThrow(hole),
-  //       )
-  //       .length;
-  // }
+  int _getIncompleteHoleCount(PotentialDGRound round) {
+    if (round.holes == null) return 0;
+    // Count holes that are missing required fields OR have no throws OR no basket throw
+    return round.holes!
+        .where(
+          (hole) =>
+              !hole.hasRequiredFields ||
+              hole.throws == null ||
+              hole.throws!.isEmpty ||
+              !_hasBasketThrow(hole),
+        )
+        .length;
+  }
 
-  // bool _hasBasketThrow(PotentialDGHole hole) {
-  //   if (hole.throws == null || hole.throws!.isEmpty) return false;
-  //   return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
-  // }
+  bool _hasBasketThrow(PotentialDGHole hole) {
+    if (hole.throws == null || hole.throws!.isEmpty) return false;
+    return hole.throws!.any((t) => t.landingSpot == LandingSpot.inBasket);
+  }
 
   // Future<void> _openWalkthroughDialog(
   //   BuildContext context,
@@ -181,42 +182,54 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
   //   );
   // }
 
-  // Widget _buildWarningBanner(
-  //   BuildContext context,
-  //   PotentialDGRound currentRound,
-  //   List<String> issues,
-  //   Set<int> missingHoles,
-  //   bool hasRequiredFields,
-  // ) {
-  //   final int incompleteHoleCount = _getIncompleteHoleCount(currentRound);
-  //   final int holesToAddress = incompleteHoleCount + missingHoles.length;
+  Widget _buildWarningBanner(
+    BuildContext context,
+    PotentialDGRound currentRound,
+    List<String> issues,
+    Set<int> missingHoles,
+    bool hasRequiredFields,
+  ) {
+    final int incompleteHoleCount = _getIncompleteHoleCount(currentRound);
+    final int holesToAddress = incompleteHoleCount + missingHoles.length;
 
-  //   return Row(
-  //     children: [
-  //       if (holesToAddress > 0)
-  //         Expanded(
-  //           child: ElevatedButton.icon(
-  //             onPressed: () async {
-  //               // Open the walkthrough to guide user through filling in incomplete holes
-  //               await _openWalkthroughDialog(context, currentRound);
-  //             },
-  //             icon: const Icon(Icons.warning, size: 18),
-  //             label: Text(
-  //               '$holesToAddress ${holesToAddress == 1 ? 'hole needs' : 'holes need'} attention',
-  //             ),
-  //             style: ElevatedButton.styleFrom(
-  //               backgroundColor: const Color(0xFFFFEB3B),
-  //               foregroundColor: Colors.black,
-  //               padding: const EdgeInsets.symmetric(vertical: 12),
-  //               shape: RoundedRectangleBorder(
-  //                 borderRadius: BorderRadius.circular(12),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //     ],
-  //   );
-  // }
+    return Row(
+      children: [
+        if (holesToAddress > 0)
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFFF7A7A).withValues(alpha: 0.25),
+                    const Color(0xFFFF7A7A).withValues(alpha: 0.15),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    FlutterRemix.error_warning_fill,
+                    size: 18,
+                    color: Colors.black,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$holesToAddress ${holesToAddress == 1 ? 'hole needs' : 'holes need'} attention',
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   Widget _buildBottomBar(BuildContext context, bool hasRequiredFields) {
     return ClipRect(
@@ -268,9 +281,10 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
       final int penaltyStrokes =
           hole.throws?.fold<int>(
             0,
-            (prev, discThrow) => prev + (discThrow.customPenaltyStrokes ?? 0),
+            (prev, discThrow) => prev + (discThrow.penaltyStrokes),
           ) ??
           0;
+
       return sum + throwsCount + penaltyStrokes;
     });
   }

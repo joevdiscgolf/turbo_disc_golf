@@ -1,6 +1,8 @@
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+
 /// Service to track which animations have been played to prevent re-animation
 /// when Hero widgets recreate components during navigation transitions.
-class AnimationStateService {
+class AnimationStateService implements ClearOnLogoutProtocol {
   AnimationStateService._();
 
   static final AnimationStateService instance = AnimationStateService._();
@@ -33,5 +35,10 @@ class AnimationStateService {
   /// Useful for app-wide resets or testing
   void clearAll() {
     _animatedKeys.clear();
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    clearAll();
   }
 }

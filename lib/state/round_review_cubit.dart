@@ -4,14 +4,16 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
 
 /// Cubit for managing round review workflow state
 /// Tracks the completed round being edited and the current hole being edited
-class RoundReviewCubit extends Cubit<RoundReviewState> {
+class RoundReviewCubit extends Cubit<RoundReviewState>
+    implements ClearOnLogoutProtocol {
   RoundReviewCubit({required this.roundHistoryCubit})
     : super(const ReviewingRoundInactive());
 
@@ -354,7 +356,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState> {
 
     // Save to Firestore
     final bool firestoreSuccess = await locator
-        .get<FirestoreRoundService>()
+        .get<RoundsService>()
         .updateRound(round);
     if (firestoreSuccess) {
       debugPrint('Successfully saved round to Firestore');
@@ -364,5 +366,10 @@ class RoundReviewCubit extends Cubit<RoundReviewState> {
     } else {
       debugPrint('Failed to save round to Firestore');
     }
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    emit(const ReviewingRoundInactive());
   }
 }

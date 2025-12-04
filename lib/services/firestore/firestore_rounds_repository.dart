@@ -1,16 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/repositories/rounds_repository.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
 
-class FirestoreRoundService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+class FirestoreRoundsRepository implements RoundsRepository {
+  @override
   Future<bool> addRound(DGRound round) async {
     try {
       debugPrint('Saving round with id: ${round.id}');
       await _firestore
-          .collection(kRoundsCollection)
+          .collection('$kRoundsCollection/${round.uid}/$kRoundsCollection')
           .doc(round.id)
           .set(round.toJson())
           .timeout(
@@ -27,11 +29,12 @@ class FirestoreRoundService {
     }
   }
 
+  @override
   Future<bool> updateRound(DGRound round) async {
     try {
       debugPrint('Updating round with id: ${round.id}');
       await _firestore
-          .collection(kRoundsCollection)
+          .collection('$kRoundsCollection/${round.uid}/$kRoundsCollection')
           .doc(round.id)
           .update(round.toJson())
           .timeout(
@@ -48,25 +51,12 @@ class FirestoreRoundService {
     }
   }
 
-  Future<DGRound?> getRound(String roundId) async {
+  @override
+  Future<List<DGRound>?> loadRoundsForUser(String uid) async {
     try {
       final snapshot = await _firestore
-          .collection(kRoundsCollection)
-          .doc(roundId)
+          .collection('$kRoundsCollection/$uid/$kRoundsCollection')
           .get();
-      if (snapshot.exists && snapshot.data() != null) {
-        return DGRound.fromJson(snapshot.data()!);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error getting round: $e');
-      return null;
-    }
-  }
-
-  Future<List<DGRound>> getRounds() async {
-    try {
-      final snapshot = await _firestore.collection(kRoundsCollection).get();
       return snapshot.docs.map((doc) => DGRound.fromJson(doc.data())).toList();
     } catch (e, trace) {
       debugPrint('Error getting rounds: $e');

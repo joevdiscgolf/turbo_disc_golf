@@ -5,7 +5,6 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
@@ -55,10 +54,6 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
 
     // Listen to voice service changes only
     _voiceService.addListener(_onVoiceServiceChange);
-
-    locator.get<FirestoreRoundService>().getRounds().then((rounds) {
-      debugPrint('Firestore rounds: ${rounds.length}');
-    });
   }
 
   Future<void> _initializeServices() async {

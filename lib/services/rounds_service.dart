@@ -1,73 +1,49 @@
 import 'package:flutter/foundation.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
+import 'package:turbo_disc_golf/repositories/rounds_repository.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 
-/// Service that manages rounds data and makes it accessible app-wide
-/// Uses ValueNotifier for reactive updates throughout the app
 class RoundsService {
-  RoundsService(this._firestoreRoundService) {
-    // Load rounds on initialization
-    loadRounds();
-  }
+  RoundsService(this._roundsRepository);
+  final RoundsRepository _roundsRepository;
 
-  final FirestoreRoundService _firestoreRoundService;
-
-  /// Notifier that holds all rounds loaded from Firestore
-  final ValueNotifier<List<DGRound>> roundsNotifier = ValueNotifier<List<DGRound>>([]);
-
-  /// Loading state
-  final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
-
-  /// Error state
-  final ValueNotifier<String?> error = ValueNotifier<String?>(null);
-
-  /// Get all rounds
-  List<DGRound> get rounds => roundsNotifier.value;
-
-  /// Load rounds from Firestore
-  Future<void> loadRounds() async {
+  Future<List<DGRound>?> loadRoundsForUser() async {
     try {
-      isLoading.value = true;
-      error.value = null;
+      final AuthUser? authuser = locator.get<AuthService>().currentUser;
+      if (authuser == null) return null;
 
-      final loadedRounds = await _firestoreRoundService.getRounds();
+      final loadedRounds = await _roundsRepository.loadRoundsForUser(
+        authuser.uid,
+      );
 
       // Sort rounds by date (most recent first)
       // Assuming rounds have IDs that are sortable (e.g., timestamps or sequential)
-      loadedRounds.sort((a, b) => b.id.compareTo(a.id));
+      loadedRounds?.sort((a, b) => b.id.compareTo(a.id));
 
-      roundsNotifier.value = loadedRounds;
-      debugPrint('RoundsService: Loaded ${loadedRounds.length} rounds');
+      debugPrint('RoundsService: Loaded ${loadedRounds?.length} rounds');
+
+      return loadedRounds;
     } catch (e) {
-      error.value = 'Failed to load rounds: $e';
       debugPrint('RoundsService: Error loading rounds - $e');
-    } finally {
-      isLoading.value = false;
+      return null;
     }
   }
 
-  /// Refresh rounds from Firestore
-  Future<void> refreshRounds() async {
-    await loadRounds();
-  }
-
   /// Get the last X rounds
-  List<DGRound> getLastXRounds(int count) {
+  List<DGRound> getLastXRounds(List<DGRound> allRounds, int count) {
     if (count <= 0) return [];
-    final allRounds = roundsNotifier.value;
+
     if (count >= allRounds.length) return allRounds;
     return allRounds.sublist(0, count);
   }
 
-  /// Get all rounds (alias for convenience)
-  List<DGRound> getAllRounds() {
-    return roundsNotifier.value;
+  Future<bool> addRound(DGRound round) {
+    return _roundsRepository.addRound(round);
   }
 
-  /// Dispose notifiers when service is destroyed
-  void dispose() {
-    roundsNotifier.dispose();
-    isLoading.dispose();
-    error.dispose();
+  Future<bool> updateRound(DGRound round) {
+    return _roundsRepository.updateRound(round);
   }
 }

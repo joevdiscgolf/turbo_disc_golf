@@ -10,7 +10,7 @@ class SettingsScreen extends StatelessWidget {
     return Center(
       child: GestureDetector(
         onTap: () {
-          locator.get<AuthService>().signOut();
+          locator.get<AuthService>().logout();
         },
         child: Container(
           padding: const EdgeInsets.all(16),

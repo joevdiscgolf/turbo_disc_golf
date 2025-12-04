@@ -7,11 +7,17 @@ import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/firebase_options.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
 import 'package:turbo_disc_golf/screens/onboarding/onboarding_screen.dart';
+import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
+import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -45,6 +51,9 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router;
   late final RoundHistoryCubit _roundHistoryCubit;
+  late final RoundConfirmationCubit _roundConfirmationCubit;
+  late final RoundReviewCubit _roundReviewCubit;
+  late final RecordRoundCubit _recordRoundCubit;
 
   @override
   void initState() {
@@ -55,13 +64,43 @@ class _MyAppState extends State<MyApp> {
         .get<AppPhaseController>();
     _router = createRouter(appPhaseController);
 
-    // Create cubit once
+    // Create cubits once
     _roundHistoryCubit = RoundHistoryCubit();
+    _roundConfirmationCubit =
+        RoundConfirmationCubit(roundHistoryCubit: _roundHistoryCubit);
+    _roundReviewCubit = RoundReviewCubit(
+      roundHistoryCubit: _roundHistoryCubit,
+    );
+    _recordRoundCubit = RecordRoundCubit();
+
+    // Centralized list of ALL components (cubits + services) that need logout cleanup
+    final List<ClearOnLogoutProtocol> clearOnLogoutComponents = [
+      // Cubits
+      _roundHistoryCubit,
+      _roundConfirmationCubit,
+      _roundReviewCubit,
+      _recordRoundCubit,
+
+      // Services from locator
+      locator.get<RoundParser>(),
+      locator.get<BagService>(),
+      locator.get<RoundStorageService>(),
+      locator.get<VoiceRecordingService>(),
+      AnimationStateService.instance,
+    ];
+
+    // Register LogoutManager with service locator
+    locator.registerSingleton<LogoutManager>(
+      LogoutManager(components: clearOnLogoutComponents),
+    );
   }
 
   @override
   void dispose() {
     _roundHistoryCubit.close();
+    _roundConfirmationCubit.close();
+    _roundReviewCubit.close();
+    _recordRoundCubit.close();
     _router.dispose();
     super.dispose();
   }
@@ -72,15 +111,11 @@ class _MyAppState extends State<MyApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<RoundHistoryCubit>.value(value: _roundHistoryCubit),
-        BlocProvider<RoundConfirmationCubit>(
-          create: (_) =>
-              RoundConfirmationCubit(roundHistoryCubit: _roundHistoryCubit),
+        BlocProvider<RoundConfirmationCubit>.value(
+          value: _roundConfirmationCubit,
         ),
-        BlocProvider<RoundReviewCubit>(
-          create: (_) =>
-              RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit),
-        ),
-        BlocProvider<RecordRoundCubit>(create: (_) => RecordRoundCubit()),
+        BlocProvider<RoundReviewCubit>.value(value: _roundReviewCubit),
+        BlocProvider<RecordRoundCubit>.value(value: _recordRoundCubit),
       ],
       child: ChangeNotifierProvider<RoundParser>.value(
         value: locator.get<RoundParser>(),

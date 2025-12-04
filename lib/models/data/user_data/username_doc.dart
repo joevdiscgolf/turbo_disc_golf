@@ -8,7 +8,7 @@ class UsernameDocument {
   final String uid;
 
   factory UsernameDocument.fromJson(Map<String, dynamic> json) =>
-      _$UsernameDocFromJson(json);
+      _$UsernameDocumentFromJson(json);
 
-  Map<String, dynamic> toJson() => _$UsernameDocToJson(this);
+  Map<String, dynamic> toJson() => _$UsernameDocumentToJson(this);
 }
