@@ -20,7 +20,7 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthUser?> getCurrentUser() async {
+  AuthUser? getCurrentUser() {
     final User? currentFirebaseUser = _auth.currentUser;
     if (currentFirebaseUser == null) return null;
     return AuthUser.fromFirebaseuser(currentFirebaseUser);
@@ -131,6 +131,40 @@ class FirebaseAuthRepository implements AuthRepository {
         reason: '[FirebaseAuthService][getUser] exception',
       );
       return null;
+    }
+  }
+
+  @override
+  bool userHasOnboarded() {
+    return getCurrentUser()?.displayName?.contains('has_onboarded') == true;
+  }
+
+  @override
+  Future<bool> markUserOnboarded() async {
+    try {
+      if (_auth.currentUser == null) {
+        return false;
+      }
+
+      // Get existing display name or empty string
+      final String currentDisplayName = _auth.currentUser!.displayName ?? '';
+
+      // Append onboarding marker
+      final String newDisplayName = '$currentDisplayName//has_onboarded';
+
+      // Update the display name
+      await _auth.currentUser!.updateProfile(displayName: newDisplayName);
+
+      return true;
+    } catch (e, trace) {
+      log(e.toString());
+      log(trace.toString());
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[FirebaseAuthRepository][markUserOnboarded] exception',
+      );
+      return false;
     }
   }
 

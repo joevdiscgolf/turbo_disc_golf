@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_story_view.dart';
@@ -44,7 +45,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.of(context).push(
-            MaterialPageRoute(
+            CupertinoPageRoute(
               builder: (context) => RoundStoryView(round: _round),
               fullscreenDialog: true,
             ),
@@ -93,7 +94,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
               tooltip: 'View as Story',
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
+                  CupertinoPageRoute(
                     builder: (context) => RoundStoryView(round: _round),
                     fullscreenDialog: true,
                   ),

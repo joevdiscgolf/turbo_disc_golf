@@ -1,5 +1,10 @@
 import 'package:intl/intl.dart';
 
+int versionToNumber(String version) {
+  final withoutDots = version.replaceAll(RegExp('\\.'), ''); // abc
+  return int.parse(withoutDots);
+}
+
 String getEnumValuesAsString<T>(List<T> values) {
   return values
       .map((e) {
@@ -19,11 +24,6 @@ String getEnumValuesAsString<T>(List<T> values) {
         return snakeCase;
       })
       .join(', ');
-}
-
-int versionToNumber(String version) {
-  final withoutDots = version.replaceAll(RegExp('\\.'), ''); // abc
-  return int.parse(withoutDots);
 }
 
 List<String> getPrefixes(String str) {

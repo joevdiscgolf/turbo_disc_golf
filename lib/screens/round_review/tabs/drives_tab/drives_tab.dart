@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/hole_breakdown_list.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
@@ -44,7 +45,7 @@ class _DrivesTabState extends State<DrivesTab> {
     }
 
     Navigator.of(context).push(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => DrivingStatDetailScreen(
           statName: statName,
           percentage: percentage,
@@ -348,7 +349,7 @@ class _DrivesTabState extends State<DrivesTab> {
         _getShotDetailsByShape(throwType);
 
     Navigator.of(context).push(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => ThrowTypeDetailScreen(
           throwType: throwType,
           overallStats: overallStats,
@@ -2832,7 +2833,7 @@ class _CombinedStatsCardState extends State<_CombinedStatsCard> {
     }
 
     Navigator.of(context).push(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => DrivingStatDetailScreen(
           statName: _getQualifyingLabel(),
           percentage: _getPercentage(),

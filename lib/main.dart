@@ -30,6 +30,8 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await setUpLocator();
 
+  await locator.get<AppPhaseController>().initialize();
+
   runApp(const MyApp());
 }
 
@@ -98,8 +100,8 @@ GoRouter createRouter(AppPhaseController controller) {
     refreshListenable: controller,
     redirect: (context, state) {
       switch (controller.phase) {
-        case AppPhase.loading:
-          return '/loading';
+        case AppPhase.initial:
+          return '/initial';
 
         case AppPhase.loggedOut:
           return '/login';
@@ -109,21 +111,115 @@ GoRouter createRouter(AppPhaseController controller) {
 
         case AppPhase.home:
           return '/home';
+
+        case AppPhase.forceUpgrade:
+          return '/force_upgrade';
       }
     },
     routes: [
       GoRoute(
-        path: '/loading',
-        builder: (_, __) => const Scaffold(body: Text('Loading')),
+        path: '/initial',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const Scaffold(body: Text('Initial')),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1.0, 0.0), // Slide from right
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
+              child: child,
+            );
+          },
+        ),
       ),
       // todo: implement login
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const LoginScreen(),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Zoom out transition - current screen zooms out while login appears
+            return ScaleTransition(
+              scale:
+                  Tween<double>(
+                    begin: 1.2, // Start slightly zoomed in
+                    end: 1.0, // End at normal size
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+        ),
+      ),
       // todo: implement onboarding
       GoRoute(
         path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const OnboardingScreen(),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1.0, 0.0), // Slide from right
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
+              child: child,
+            );
+          },
+        ),
       ),
-      GoRoute(path: '/home', builder: (_, __) => const MainWrapper()),
+      GoRoute(
+        path: '/home',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const MainWrapper(),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1.0, 0.0), // Slide from right
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
+              child: child,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/force_upgrade',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const Scaffold(body: Center(child: Text('Force upgrade'))),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1.0, 0.0), // Slide from right
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
+              child: child,
+            );
+          },
+        ),
+      ),
     ],
   );
 }

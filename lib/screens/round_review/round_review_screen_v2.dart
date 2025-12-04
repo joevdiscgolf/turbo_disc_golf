@@ -113,7 +113,7 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
               //   tooltip: 'View Fullscreen Story',
               //   onPressed: () {
               //     Navigator.of(context).push(
-              //       MaterialPageRoute(
+              //       CupertinoPageRoute(
               //         builder: (context) => RoundStoryView(round: round),
               //         fullscreenDialog: true,
               //       ),
@@ -130,7 +130,7 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
             //   tooltip: 'View Fullscreen Story',
             //   onPressed: () {
             //     Navigator.of(context).push(
-            //       MaterialPageRoute(
+            //       CupertinoPageRoute(
             //         builder: (context) => RoundStoryView(round: round),
             //         fullscreenDialog: true,
             //       ),

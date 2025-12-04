@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -46,7 +47,7 @@ class RoundHistoryRow extends StatelessWidget {
 
           Navigator.push(
             context,
-            MaterialPageRoute(
+            CupertinoPageRoute(
               builder: (context) => useRoundReviewScreenV2
                   ? RoundReviewScreenV2(round: round)
                   : RoundReviewScreen(round: round),
