@@ -20,15 +20,29 @@ class AuthService {
 
   Stream<AuthUser?> get authState => _authRepository.authStateChanges();
 
-  Future<bool> isLoggedIn() async =>
-      (await _authRepository.getCurrentUser()) != null;
+  Future<bool> isLoggedIn() async => _authRepository.getCurrentUser() != null;
 
   Future<void> login(String email, String password) =>
       _authRepository.signInWithEmailPassword(email, password);
 
   Future<void> logout() => _authRepository.signOut();
 
-  Future<AuthUser?> getCurrentUser() => _authRepository.getCurrentUser();
+  AuthUser? getCurrentUser() => _authRepository.getCurrentUser();
+
+  bool userHasOnboarded() {
+    return _authRepository.userHasOnboarded();
+  }
+
+  Future<bool> markUserOnboarded() async {
+    final bool markUserOnboardedSuccess = await _authRepository
+        .markUserOnboarded();
+
+    if (markUserOnboardedSuccess) {
+      locator.get<AppPhaseController>().onMarkUserOnboarded();
+    }
+
+    return markUserOnboardedSuccess;
+  }
 
   String errorMessage = '';
 
@@ -44,7 +58,7 @@ class AuthService {
 
     debugPrint('[attemptSignUpWithEmail] signUpSuccess: $signUpSuccess');
 
-    final AuthUser? authUser = await getCurrentUser();
+    final AuthUser? authUser = getCurrentUser();
 
     if (!signUpSuccess || authUser == null) {
       errorMessage = _authRepository.exceptionMessage;
@@ -66,7 +80,7 @@ class AuthService {
       return false;
     }
 
-    final AuthUser? authUser = await getCurrentUser();
+    final AuthUser? authUser = getCurrentUser();
     if (authUser == null) {
       return false;
     }
@@ -105,10 +119,8 @@ class AuthService {
     String displayName, {
     int? pdgaNumber,
   }) async {
-    final AuthUser? authUser = await getCurrentUser();
-    if (authUser == null) {
-      return false;
-    }
+    final AuthUser? authUser = getCurrentUser();
+    if (authUser == null) return false;
 
     final TurboUser? newUser = await _authDatabaseService
         .setUpNewUserInDatabase(

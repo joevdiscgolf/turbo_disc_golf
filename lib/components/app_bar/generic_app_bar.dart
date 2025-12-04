@@ -12,6 +12,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.backgroundColor,
     this.foregroundColor,
     this.hasBackButton = true,
+    this.onBackPressed,
   });
 
   final String title;
@@ -22,6 +23,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Color? backgroundColor;
   final Color? foregroundColor;
   final bool hasBackButton;
+  final Function? onBackPressed;
 
   @override
   Size get preferredSize =>
@@ -48,7 +50,10 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                   height: 40,
                   width: backButtonTouchTargetWidth,
                   child: hasBackButton
-                      ? AppBarBackButton(color: foregroundColor)
+                      ? AppBarBackButton(
+                          color: foregroundColor,
+                          onPressed: onBackPressed,
+                        )
                       : null,
                 ),
                 Expanded(

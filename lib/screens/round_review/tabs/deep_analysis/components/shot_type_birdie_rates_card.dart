@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -32,7 +33,7 @@ class _ShotTypeBirdieRatesCardState extends State<ShotTypeBirdieRatesCard> {
       onPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
+          CupertinoPageRoute(
             builder: (context) =>
                 GenericStatsScreen(statsWidget: _buildBirdieDetailsList()),
           ),

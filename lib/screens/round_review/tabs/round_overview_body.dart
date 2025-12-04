@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -136,7 +137,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
         );
       } else {
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute(
             builder: (context) =>
                 _DetailScreenWrapper(title: title, child: screen),
           ),
@@ -188,7 +189,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
     } else {
       Navigator.of(
         context,
-      ).push(MaterialPageRoute(builder: (context) => screen));
+      ).push(CupertinoPageRoute(builder: (context) => screen));
     }
   }
 

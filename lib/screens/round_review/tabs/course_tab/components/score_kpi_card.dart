@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -31,7 +32,7 @@ class ScoreKPICard extends StatelessWidget {
         } else {
           Navigator.push(
             context,
-            MaterialPageRoute(
+            CupertinoPageRoute(
               builder: (context) => ScoreDetailScreen(round: round),
             ),
           );

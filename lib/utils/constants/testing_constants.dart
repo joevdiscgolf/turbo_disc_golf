@@ -7,3 +7,5 @@ const bool useAddRoundStepsPanel = true;
 const bool autoStartListeningOnNextHole = false;
 const bool showInlineMiniHoleGrid = true;
 const bool showHoleProgressLabel = false;
+
+const List<String> adminUids = ['9abVDwf3ZVM8unEzqMcWk95in2F3'];

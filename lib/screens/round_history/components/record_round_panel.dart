@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
@@ -296,7 +297,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                                   if (context.mounted) {
                                     Navigator.pushReplacement(
                                       context,
-                                      MaterialPageRoute(
+                                      CupertinoPageRoute(
                                         builder: (context) =>
                                             RoundProcessingLoadingScreen(
                                               transcript: _selectedTranscript,
@@ -460,7 +461,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => RoundProcessingLoadingScreen(
           transcript: transcript,
           courseName: _selectedCourse,

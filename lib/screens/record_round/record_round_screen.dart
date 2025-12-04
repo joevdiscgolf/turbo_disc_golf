@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -195,54 +196,54 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
             // Subtitle
             Text(
               'Import from screenshot or paste description',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFFB0B0B0),
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFFB0B0B0)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
 
-              // Compact Image + Voice Card
-              _buildImageVoiceCard(context),
+            // Compact Image + Voice Card
+            _buildImageVoiceCard(context),
 
-              const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-              // Compact Divider with "OR"
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: Color(0xFF334155))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                    child: Text(
-                      'OR',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF64748B),
-                            fontWeight: FontWeight.bold,
-                          ),
+            // Compact Divider with "OR"
+            Row(
+              children: [
+                const Expanded(child: Divider(color: Color(0xFF334155))),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: Text(
+                    'OR',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF64748B),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Expanded(child: Divider(color: Color(0xFF334155))),
-                ],
-              ),
+                ),
+                const Expanded(child: Divider(color: Color(0xFF334155))),
+              ],
+            ),
 
-              const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-              // Test Mode Toggles - Compact
-              if (_testMode) _buildTestModeToggles(),
+            // Test Mode Toggles - Compact
+            if (_testMode) _buildTestModeToggles(),
 
-              // Round Description TextField - Prominent
-              _buildRoundDescriptionField(),
+            // Round Description TextField - Prominent
+            _buildRoundDescriptionField(),
 
-              const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-              // Test Buttons - Compact
-              if (_testMode) _buildTestButtons(),
+            // Test Buttons - Compact
+            if (_testMode) _buildTestButtons(),
 
-              // Extra bottom padding for keyboard visibility
-              SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 40),
-            ],
-          ),
+            // Extra bottom padding for keyboard visibility
+            SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 40),
+          ],
         ),
+      ),
     );
   }
 
@@ -252,9 +253,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
       child: InkWell(
         onTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ImportScoreScreen(),
-            ),
+            CupertinoPageRoute(builder: (context) => const ImportScoreScreen()),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -283,15 +282,15 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                     Text(
                       'Import from Screenshot',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Upload scorecard + voice description',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFB0B0B0),
-                          ),
+                        color: const Color(0xFFB0B0B0),
+                      ),
                     ),
                   ],
                 ),
@@ -381,9 +380,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
               children: [
                 Text(
                   'Round Description',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (_transcriptController.text.isNotEmpty)
                   TextButton.icon(
@@ -447,7 +446,10 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF137e66), width: 2),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF137e66),
+                    width: 2,
+                  ),
                 ),
                 filled: true,
                 fillColor: const Color(0xFF0F172A),
@@ -484,11 +486,11 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
         ElevatedButton.icon(
           onPressed: () {
             Navigator.of(context).push(
-              MaterialPageRoute(
+              CupertinoPageRoute(
                 builder: (context) => const ImportScoreScreen(
                   testMode: true,
-                  testVoiceDescription:
-                      DescriptionConstants.flingsGivingRound2DescriptionNoHoleDistance,
+                  testVoiceDescription: DescriptionConstants
+                      .flingsGivingRound2DescriptionNoHoleDistance,
                 ),
               ),
             );

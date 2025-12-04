@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -788,7 +789,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   void _finishAndParse() {
     final RecordRoundActive state = _cubit.state as RecordRoundActive;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => RoundProcessingLoadingScreen(
           transcript: state.fullTranscript,
           courseName: state.selectedCourse ?? 'Unknown Course',
@@ -890,7 +891,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
+        CupertinoPageRoute(
           builder: (context) => RoundProcessingLoadingScreen(
             transcript: _selectedTranscript,
             courseName: testCourseName,
