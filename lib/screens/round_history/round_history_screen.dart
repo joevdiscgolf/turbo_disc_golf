@@ -103,21 +103,6 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           }, childCount: sortedRounds.length),
         ),
       );
-    } else if (state is RoundHistoryRefreshing) {
-      // Refreshing state - show current data with refresh indicator
-      final List<DGRound> sortedRounds = state.sortedRounds;
-      if (sortedRounds.isEmpty) {
-        return SliverFillRemaining(child: _buildEmptyState());
-      }
-      return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final DGRound round = sortedRounds[index];
-            return RoundHistoryRow(round: round);
-          }, childCount: sortedRounds.length),
-        ),
-      );
     } else {
       // Initial state - trigger load
       return const SliverFillRemaining(

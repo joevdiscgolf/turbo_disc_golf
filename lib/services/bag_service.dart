@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 
-class BagService extends ChangeNotifier {
+class BagService extends ChangeNotifier implements ClearOnLogoutProtocol {
   static const String _bagKey = 'user_disc_bag';
   List<DGDisc> _userBag = [];
 
@@ -149,5 +150,12 @@ class BagService extends ChangeNotifier {
     ];
     notifyListeners();
     saveBag();
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    _userBag.clear();
+    notifyListeners();
+    await saveBag();
   }
 }

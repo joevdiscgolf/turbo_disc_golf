@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 
-class RoundStorageService {
+class RoundStorageService implements ClearOnLogoutProtocol {
   static const String _cachedRoundKey = 'cached_test_round';
 
   /// Save a DGRound to shared preferences
@@ -57,5 +58,10 @@ class RoundStorageService {
       debugPrint('Error clearing cached round: $e');
       return false;
     }
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    await clearCachedRound();
   }
 }

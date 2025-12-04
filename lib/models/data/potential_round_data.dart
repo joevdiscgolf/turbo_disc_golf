@@ -90,6 +90,7 @@ class PotentialDGHole {
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class PotentialDGRound {
   const PotentialDGRound({
+    required this.uid,
     required this.id,
     this.courseId,
     this.courseName,
@@ -102,6 +103,7 @@ class PotentialDGRound {
     this.playedRoundAt,
   });
 
+  final String uid;
   final String id;
   final String? courseId;
   final String? courseName;
@@ -183,6 +185,7 @@ class PotentialDGRound {
     }
 
     return DGRound(
+      uid: uid,
       id: id,
       courseId: courseId,
       courseName: courseName!,

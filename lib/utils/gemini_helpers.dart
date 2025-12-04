@@ -40,13 +40,13 @@ throws:
     technique: backhand
     distanceFeetAfterThrow: 25
     landingSpot: circle_1
-    notes: threw it close
+    notes: "threw it close to the basket"
   - index: 1
     distanceFeetBeforeThrow: 25
     distanceFeetAfterThrow: 0
     discName: Aviar
     purpose: putt
-    notes: made the putt
+    notes: "made the putt for par"
     landingSpot: in_basket''';
 
     return '''
@@ -117,7 +117,7 @@ THROW STRUCTURE:
 - distanceFeetBeforeThrow: starting distance from basket
 - distanceFeetAfterThrow: ending distance from basket
 - landingSpot: $landingSpotValues (in_basket=0ft, parked=≤10ft, circle_1=11-33ft, circle_2=34-66ft, fairway=>66ft)
-- notes: brief description
+- notes: brief description as a SINGLE string (combine multiple details with commas inside one quoted string)
 
 ALLOWED ENUM VALUES (use ONLY these exact values):
 - purpose (what the throw is for): $throwPurposeValues

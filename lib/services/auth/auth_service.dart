@@ -10,6 +10,7 @@ import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/repositories/auth_repository.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
+import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 
 class AuthService {
@@ -25,9 +26,17 @@ class AuthService {
   Future<void> login(String email, String password) =>
       _authRepository.signInWithEmailPassword(email, password);
 
-  Future<void> logout() => _authRepository.signOut();
+  Future<void> logout() async {
+    // Clear all component state before Firebase logout
+    await locator.get<LogoutManager>().clearAll();
 
-  AuthUser? getCurrentUser() => _authRepository.getCurrentUser();
+    // Then perform Firebase logout
+    await _authRepository.signOut();
+  }
+
+  AuthUser? get currentUser => _authRepository.getCurrentUser();
+
+  String? get currentUid => _authRepository.getCurrentUser()?.uid;
 
   bool userHasOnboarded() {
     return _authRepository.userHasOnboarded();
@@ -58,9 +67,7 @@ class AuthService {
 
     debugPrint('[attemptSignUpWithEmail] signUpSuccess: $signUpSuccess');
 
-    final AuthUser? authUser = getCurrentUser();
-
-    if (!signUpSuccess || authUser == null) {
+    if (!signUpSuccess || currentUser == null) {
       errorMessage = _authRepository.exceptionMessage;
       return false;
     } else {
@@ -80,10 +87,8 @@ class AuthService {
       return false;
     }
 
-    final AuthUser? authUser = getCurrentUser();
-    if (authUser == null) {
-      return false;
-    }
+    final AuthUser? authUser = currentUser;
+    if (authUser == null) return false;
 
     final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
 
@@ -119,7 +124,7 @@ class AuthService {
     String displayName, {
     int? pdgaNumber,
   }) async {
-    final AuthUser? authUser = getCurrentUser();
+    final AuthUser? authUser = currentUser;
     if (authUser == null) return false;
 
     final TurboUser? newUser = await _authDatabaseService
@@ -141,11 +146,5 @@ class AuthService {
 
     locator.get<AppPhaseController>().setPhase(AppPhase.home);
     return true;
-  }
-
-  void signOut() {
-    // clearRepositoryData();
-    // locator.get<SharedPreferencesService>().markUserIsSetUp(false);
-    _authRepository.signOut();
   }
 }

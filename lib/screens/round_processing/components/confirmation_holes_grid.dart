@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 /// Grid of holes that opens editable dialogs when tapped.
 ///
@@ -259,19 +261,12 @@ class _HoleGridItemState extends State<_HoleGridItem> {
     final bool isIncomplete = !widget.potentialHole.hasRequiredFields;
 
     // Calculate score for complete holes
-    int? score;
+    final List<DiscThrow>? throws = widget.potentialHole.throws;
+
+    final int? score = throws == null ? null : getScoreFromThrows(throws);
     int? relativeScore;
-    if (!isIncomplete) {
-      final int throwsCount = widget.potentialHole.throws?.length ?? 0;
-      final int penaltyStrokes =
-          widget.potentialHole.throws?.fold<int>(
-            0,
-            (prev, t) => prev + (t.customPenaltyStrokes ?? 0),
-          ) ??
-          0;
-      score = throwsCount + penaltyStrokes;
-      final int par = widget.potentialHole.par ?? 3;
-      relativeScore = score - par;
+    if (widget.potentialHole.par != null && score != null) {
+      relativeScore = score - (relativeScore = widget.potentialHole.par!);
     }
 
     return HoleGridItem(

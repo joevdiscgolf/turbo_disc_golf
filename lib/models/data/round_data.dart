@@ -8,6 +8,7 @@ part 'round_data.g.dart';
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class DGRound {
   const DGRound({
+    required this.uid,
     required this.id,
     required this.courseName,
     this.courseId,
@@ -20,6 +21,7 @@ class DGRound {
     required this.playedRoundAt,
   });
 
+  final String uid;
   final String id;
   final String? courseId;
   final String courseName;
@@ -82,6 +84,7 @@ class DGRound {
     String? playedRoundAt,
   }) {
     return DGRound(
+      uid: uid,
       id: id ?? this.id,
       courseName: courseName ?? this.courseName,
       courseId: courseId ?? this.courseId,

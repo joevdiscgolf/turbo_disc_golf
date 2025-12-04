@@ -32,6 +32,7 @@ const _$HoleTypeEnumMap = {
 };
 
 PotentialDGRound _$PotentialDGRoundFromJson(Map json) => PotentialDGRound(
+  uid: json['uid'] as String,
   id: json['id'] as String,
   courseId: json['courseId'] as String?,
   courseName: json['courseName'] as String?,
@@ -60,6 +61,7 @@ PotentialDGRound _$PotentialDGRoundFromJson(Map json) => PotentialDGRound(
 
 Map<String, dynamic> _$PotentialDGRoundToJson(PotentialDGRound instance) =>
     <String, dynamic>{
+      'uid': instance.uid,
       'id': instance.id,
       'courseId': instance.courseId,
       'courseName': instance.courseName,

@@ -1,3 +1,4 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
 import 'package:turbo_disc_golf/repositories/firebase_auth_database_repository.dart';
 import 'package:turbo_disc_golf/repositories/firebase_auth_repository.dart';
@@ -6,7 +7,7 @@ import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/firestore/firestore_round_service.dart';
+import 'package:turbo_disc_golf/services/firestore/firestore_rounds_repository.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
@@ -19,7 +20,6 @@ import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 import 'package:turbo_disc_golf/services/voice_recording_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final locator = GetIt.instance;
 Future<void> setUpLocator() async {
@@ -56,11 +56,10 @@ Future<void> setUpLocator() async {
   );
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
-  locator.registerSingleton<FirestoreRoundService>(FirestoreRoundService());
 
   // Register RoundsService which depends on FirestoreRoundService
   locator.registerSingleton<RoundsService>(
-    RoundsService(locator.get<FirestoreRoundService>()),
+    RoundsService(FirestoreRoundsRepository()),
   );
 
   // Register RoundParser which depends on other services
