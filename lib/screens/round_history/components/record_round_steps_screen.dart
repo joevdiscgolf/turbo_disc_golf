@@ -46,11 +46,11 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   int get _currentHoleIndex => _holeIndex;
   set _currentHoleIndex(int newIndex) {
-    _holeIndex = newIndex;
     _recordRoundCubit.onHoleIndexChanged(
       _voiceService.transcribedText,
-      newIndex,
+      newIndex, // old index
     );
+    _holeIndex = newIndex;
   }
 
   bool _showingReviewGrid = false;
