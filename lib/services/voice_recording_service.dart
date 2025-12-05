@@ -11,6 +11,7 @@ class VoiceRecordingService extends ChangeNotifier
   bool _isInitialized = false;
   String _lastError = '';
 
+  // Simple getter - just returns raw speech recognition output
   String get transcribedText => _transcribedText;
   bool get isListening => _isListening;
   bool get isInitialized => _isInitialized;
@@ -90,7 +91,6 @@ class VoiceRecordingService extends ChangeNotifier
     debugPrint('=== Starting voice recording ===');
 
     if (!_isInitialized) {
-      // debugPrint('Not initialized, initializing now...');
       await initialize();
     }
 
@@ -98,11 +98,11 @@ class VoiceRecordingService extends ChangeNotifier
       // Store existing text if we want to preserve it
       final String existingText =
           preserveExistingText && _transcribedText.isNotEmpty
-              ? _transcribedText.trim()
-              : '';
+          ? _transcribedText.trim()
+          : '';
 
       if (!preserveExistingText) {
-        _transcribedText = ''; // Clear previous text
+        _transcribedText = '';
       }
       _lastError = '';
       debugPrint('Starting speech recognition...');
@@ -114,15 +114,14 @@ class VoiceRecordingService extends ChangeNotifier
         await _speechToText.listen(
           onResult: (result) {
             if (existingText.isNotEmpty) {
-              // Append new voice input to existing text
               _transcribedText = '$existingText ${result.recognizedWords}';
             } else {
               _transcribedText = result.recognizedWords;
             }
-            debugPrint('=== VOICE TRANSCRIPT UPDATE ===');
-            debugPrint('Raw text: ${result.recognizedWords}');
-            debugPrint('Is final: ${result.finalResult}');
-            debugPrint('===============================');
+            // debugPrint('=== VOICE TRANSCRIPT UPDATE ===');
+            // debugPrint('Raw text: ${result.recognizedWords}');
+            // debugPrint('Is final: ${result.finalResult}');
+            // debugPrint('===============================');
             notifyListeners();
           },
           listenFor: const Duration(minutes: 10),

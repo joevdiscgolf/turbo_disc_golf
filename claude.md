@@ -32,6 +32,44 @@ These definitions follow PDGA (Professional Disc Golf Association) standards.
 
 ## Code Style and Architecture
 
+### Code Simplicity and Elegance
+
+**CRITICAL: Always prioritize simple, elegant solutions over complex ones.**
+
+#### Core Principles:
+
+1. **Keep It Simple**: If you find yourself adding complex workarounds, step back and reconsider the approach
+   - Removing and re-adding listeners is a code smell
+   - Multiple nested callbacks indicate a design issue
+   - If the logic is hard to explain, it's too complex
+
+2. **Single Source of Truth**: Avoid conflicting sources of truth for the same data
+   - Don't sync data between multiple state holders unless absolutely necessary
+   - Clearly define which component owns each piece of state
+
+3. **Predictable Data Flow**: State changes should follow a clear, unidirectional path
+   - Parent → Child for data
+   - Child → Parent for events
+   - Avoid circular dependencies and callback chains
+
+4. **Think Before Implementing**: Before writing code:
+   - Understand the root cause of the problem
+   - Consider if there's a simpler architectural approach
+   - Ask: "Is this the simplest solution that could work?"
+
+5. **Refactor When Complexity Grows**: If you're adding fixes on top of fixes:
+   - Stop and refactor the underlying architecture
+   - Simplify the data flow
+   - Reduce the number of moving parts
+
+6. **Clear Separation of Concerns**: Each component should have ONE clear responsibility
+   - Voice service manages speech recognition
+   - Cubit manages saved hole data
+   - UI components display and capture user input
+   - Don't mix concerns
+
+**Why This Matters**: Complex code with multiple workarounds leads to bugs. Simple, well-architected code is easier to understand, maintain, and extend.
+
 ### Widget Composition Philosophy
 
 **CRITICAL: Always prefer independent, stateless widgets over nested widget trees.**
