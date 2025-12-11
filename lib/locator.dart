@@ -19,7 +19,10 @@ import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/ios_voice_service.dart';
+import 'package:turbo_disc_golf/services/voice/speech_to_text_service.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 final locator = GetIt.instance;
 Future<void> setUpLocator() async {
@@ -41,8 +44,15 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<AuthService>(authService);
   locator.registerSingleton(AppPhaseController(authService: authService));
 
-  // Round analysis
-  locator.registerSingleton<VoiceRecordingService>(VoiceRecordingService());
+  // Round analysis - conditionally register voice service based on flag
+  if (useIosVoiceService) {
+    locator.registerSingleton<BaseVoiceRecordingService>(
+      IosVoiceService(),
+      // GoogleSpeechRecordingService(),
+    );
+  } else {
+    locator.registerSingleton<BaseVoiceRecordingService>(SpeechToTextService());
+  }
   locator.registerSingleton<DiscAnalysisService>(DiscAnalysisService());
   locator.registerSingleton<MistakesAnalysisService>(MistakesAnalysisService());
   locator.registerSingleton<PsychAnalysisService>(PsychAnalysisService());

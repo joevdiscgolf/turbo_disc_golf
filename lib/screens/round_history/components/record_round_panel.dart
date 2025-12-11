@@ -9,7 +9,7 @@ import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -32,8 +32,8 @@ class RecordRoundPanel extends StatefulWidget {
 }
 
 class _RecordRoundPanelState extends State<RecordRoundPanel> {
-  final VoiceRecordingService _voiceService = locator
-      .get<VoiceRecordingService>();
+  final BaseVoiceRecordingService _voiceService = locator
+      .get<BaseVoiceRecordingService>();
   final TextEditingController _transcriptController = TextEditingController();
   final FocusNode _transcriptFocusNode = FocusNode();
 
@@ -61,6 +61,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
       .toList();
 
   String get _selectedTranscript => _testRoundConstants[_selectedTestIndex];
+  String _textWhenListeningStarted = '';
 
   // Accent colors
   static const Color _courseAccent = Color(0xFF2196F3); // blue
@@ -342,14 +343,16 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
 
   void _onVoiceServiceUpdate() {
     if (mounted) {
-      // Only sync from voice service to controller when actively listening
-      // This prevents:
-      // 1. Clearing text when restarting microphone (Bug #1)
-      // 2. Overwriting manual edits (Bug #2)
       if (_voiceService.isListening && !_transcriptFocusNode.hasFocus) {
-        _transcriptController.text = _voiceService.transcribedText;
+        // Combine baseline (what was there) + session (what's being said now)
+        final String sessionText = _voiceService.transcribedText;
+        final String combinedText = _textWhenListeningStarted.isEmpty
+            ? sessionText
+            : '${_textWhenListeningStarted.trim()} ${sessionText.trim()}';
+
+        _transcriptController.text = combinedText;
         _transcriptController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _transcriptController.text.length),
+          TextPosition(offset: combinedText.length),
         );
       }
       setState(() {});
@@ -361,8 +364,12 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
       await _voiceService.stopListening();
     } else {
       FocusScope.of(context).unfocus();
-      // Preserve existing text (including manual edits) when restarting
-      await _voiceService.startListening(preserveExistingText: true);
+
+      // Capture current text as baseline
+      _textWhenListeningStarted = _transcriptController.text;
+
+      // Start fresh voice session
+      await _voiceService.startListening();
     }
   }
 
@@ -439,6 +446,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
     setState(() {
       _transcriptController.clear();
       _voiceService.clearText();
+      _textWhenListeningStarted = ''; // Clear baseline
     });
   }
 

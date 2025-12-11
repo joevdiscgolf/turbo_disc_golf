@@ -13,7 +13,7 @@ import 'package:turbo_disc_golf/components/voice_input/voice_description_card.da
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
@@ -34,33 +34,18 @@ class RecordRoundStepsScreen extends StatefulWidget {
 
 class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   late final RecordRoundCubit _recordRoundCubit;
-  late final VoiceRecordingService _voiceService;
+  late final BaseVoiceRecordingService _voiceService;
 
   // Text editing
   late final TextEditingController _textEditingController;
   late final FocusNode _focusNode;
 
   // State management
-
-  int _holeIndex = 0;
-
-  int get _currentHoleIndex => _holeIndex;
-  set _currentHoleIndex(int newIndex) {
-    _recordRoundCubit.onHoleIndexChanged(
-      _voiceService.transcribedText,
-      newIndex, // old index
-    );
-    _holeIndex = newIndex;
-  }
-
+  int _currentHoleIndex = 0;
   bool _showingReviewGrid = false;
   bool _isStartingListening = false;
-
-  // Continuous voice recording: track text ranges for each hole
-  final Map<int, _HoleTextRange> _holeRanges = {};
-  bool _isActivelyRecording = false;
-  int?
-  _activeRecordingHoleIndex; // Track which hole is currently being recorded
+  bool _hasScheduledLoadingClear = false;
+  String _textWhenListeningStarted = '';
 
   // Course/Date selection (Step 1)
   final List<String> _courses = <String>[
@@ -97,7 +82,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _recordRoundCubit = BlocProvider.of<RecordRoundCubit>(context);
     _textEditingController = TextEditingController();
     _focusNode = FocusNode();
-    _voiceService = locator.get<VoiceRecordingService>();
+    _voiceService = locator.get<BaseVoiceRecordingService>();
     _voiceService.initialize();
     _voiceService.addListener(_onVoiceServiceUpdate);
     _focusNode.addListener(_onFocusChange);
@@ -118,106 +103,44 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   void _onFocusChange() {
     if (_focusNode.hasFocus && _voiceService.isListening) {
-      // User started typing, freeze current range
-      final _HoleTextRange? currentRange = _holeRanges[_currentHoleIndex];
-      if (currentRange != null) {
-        currentRange.end = _voiceService.transcribedText.length;
-      }
+      // User started typing, stop listening and save text
+      _saveToCubit(_currentHoleIndex, _voiceService.transcribedText);
       _voiceService.stopListening();
-      _isActivelyRecording = false;
     }
   }
 
-  // Simple: only update text if we're on the hole that's being recorded
   void _onVoiceServiceUpdate() {
-    // debugPrint('🎤 === VOICE UPDATE TRIGGERED ===');
-    // debugPrint('full transcript: ${_voiceService.transcribedText}');
-    // debugPrint('  mounted: $mounted');
-    // debugPrint('  isListening: ${_voiceService.isListening}');
-    // debugPrint('  isActivelyRecording: $_isActivelyRecording');
-    // debugPrint('  focusNode.hasFocus: ${_focusNode.hasFocus}');
-    // debugPrint('  currentHoleIndex: $_currentHoleIndex');
-    // debugPrint(
-    //   '  fullTranscript length: ${_voiceService.transcribedText.length}',
-    // );
-
-    if (mounted &&
-        _voiceService.isListening &&
-        _isActivelyRecording &&
-        !_focusNode.hasFocus) {
-      if (_isStartingListening) {
-        setState(() {
-          _isStartingListening = false;
+    if (mounted && _voiceService.isListening && !_focusNode.hasFocus) {
+      // Handle loading state with delay to ensure visibility
+      if (_isStartingListening && !_hasScheduledLoadingClear) {
+        _hasScheduledLoadingClear = true;
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && _isStartingListening) {
+            setState(() {
+              _isStartingListening = false;
+              _hasScheduledLoadingClear = false;
+            });
+          }
         });
       }
 
-      _recordRoundCubit.onVoiceServiceUpdate(
-        _voiceService.transcribedText,
-        _currentHoleIndex,
+      // Combine baseline (what was there) + session (what's being said now)
+      final String sessionText = _voiceService.transcribedText;
+      final String combinedText = _textWhenListeningStarted.isEmpty
+          ? sessionText
+          : '${_textWhenListeningStarted.trim()} ${sessionText.trim()}';
+
+      // Update UI with combined text
+      _textEditingController.text = combinedText;
+      _textEditingController.selection = TextSelection.fromPosition(
+        TextPosition(offset: combinedText.length),
       );
-      // final String fullTranscript = _voiceService.transcribedText;
-      // _HoleTextRange? range = _holeRanges[_currentHoleIndex];
 
-      // debugPrint('  ✅ PASSED CONDITIONS!');
-      // debugPrint(
-      //   '  range for hole $_currentHoleIndex: ${range != null ? "start=${range.start}, end=${range.end}" : "NULL"}',
-      // );
+      // Save combined text to cubit (using setHoleDescription, not append)
+      _saveToCubit(_currentHoleIndex, combinedText);
 
-      // // Auto-create range if it doesn't exist (happens when navigating while recording)
-      // if (range == null) {
-      //   debugPrint(
-      //     '  ⚠️  NO RANGE! Auto-creating range for hole $_currentHoleIndex...',
-      //   );
-      //   final int startPos = fullTranscript.length;
-      //   range = _HoleTextRange(start: startPos, end: startPos);
-      //   _holeRanges[_currentHoleIndex] = range;
-      //   _activeRecordingHoleIndex =
-      //       _currentHoleIndex; // Make this the active recording hole
-      //   debugPrint('  ✅ AUTO-CREATED range: start=$startPos, end=$startPos');
-      // }
-
-      // // CRITICAL: Only update end if this is the actively recording hole
-      // // Otherwise we'd overwrite frozen ranges from previous holes!
-      // final bool isActiveHole = _currentHoleIndex == _activeRecordingHoleIndex;
-      // if (isActiveHole) {
-      //   range.end = fullTranscript.length;
-      //   debugPrint(
-      //     '  ✅ Updating end for ACTIVE hole $_currentHoleIndex: end=${range.end}',
-      //   );
-      // } else {
-      //   debugPrint(
-      //     '  🔒 FROZEN hole $_currentHoleIndex: start=${range.start}, end=${range.end} (not updating)',
-      //   );
-      // }
-
-      // // Extract substring for current hole
-      // final String holeText = fullTranscript.substring(range.start, range.end);
-
-      // debugPrint(
-      //   '  📝 Extracted text for hole $_currentHoleIndex: "$holeText"',
-      // );
-      // debugPrint('  Full transcript: "$fullTranscript"');
-
-      // // Update UI
-      // _textEditingController.text = holeText;
-      // _textEditingController.selection = TextSelection.fromPosition(
-      //   TextPosition(offset: holeText.length),
-      // );
-
-      // // Auto-save while speaking
-      // _saveToCubit(_currentHoleIndex, holeText);
-
-      // // Clear loading state when actually listening
-      // if (_isStartingListening) {
-      //   _isStartingListening = false;
-      // }
-
-      // setState(() {});
+      setState(() {});
     }
-    //  else {
-    //   debugPrint('  ❌ FILTERED OUT - conditions failed');
-    // }
-    // debugPrint('================================\n');
   }
 
   // Explicit save to cubit
@@ -263,10 +186,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           }
         },
         listenWhen: (previous, current) {
-          return true;
-          // return (previous is RecordRoundActive &&
-          //     current is RecordRoundActive &&
-          //     previous.holeDescriptions != current.holeDescriptions);
+          // Disabled: We manually load text in navigation methods (_loadFromCubit)
+          // This listener was causing text duplication during hole navigation
+          return false;
         },
         builder: (context, recordRoundState) {
           return GestureDetector(
@@ -837,149 +759,95 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     return true;
   }
 
-  void _previousHole() {
-    debugPrint('\n⬅️  === PREVIOUS HOLE NAVIGATION ===');
-    debugPrint('  From hole: $_currentHoleIndex');
-    debugPrint('  isActivelyRecording: $_isActivelyRecording');
-    debugPrint('  isListening: ${_voiceService.isListening}');
-
+  Future<void> _previousHole() async {
     if (_currentHoleIndex > 0) {
-      // 1. Freeze current hole's text range at current transcript position
-      final _HoleTextRange? currentRange = _holeRanges[_currentHoleIndex];
-      if (currentRange != null && _isActivelyRecording) {
-        currentRange.end = _voiceService.transcribedText.length;
+      final bool wasListening = _voiceService.isListening;
+
+      // Save current hole's text
+      _saveToCubit(_currentHoleIndex, _textEditingController.text);
+
+      // Stop recording if active
+      if (wasListening) {
+        final stopwatch = Stopwatch()..start();
+        await _voiceService.stopListening();
+        stopwatch.stop();
         debugPrint(
-          '  ✅ Froze hole $_currentHoleIndex range: start=${currentRange.start}, end=${currentRange.end}',
+          '⏱️ Stop listening took: ${stopwatch.elapsedMilliseconds}ms',
         );
+
+        // Small delay to ensure stop completes fully
+        await Future.delayed(const Duration(milliseconds: 100));
       }
 
-      // 2. Change index
+      // Navigate to previous hole
       setState(() {
         _currentHoleIndex--;
       });
-      debugPrint('  To hole: $_currentHoleIndex');
 
-      // 3. Create range for previous hole if recording and it doesn't exist
-      if (_isActivelyRecording && !_holeRanges.containsKey(_currentHoleIndex)) {
-        final int startPos = _voiceService.transcribedText.length;
-        _holeRanges[_currentHoleIndex] = _HoleTextRange(
-          start: startPos,
-          end: startPos,
-        );
-        // Make this the active recording hole
-        _activeRecordingHoleIndex = _currentHoleIndex;
+      // Load previous hole's text from cubit
+      _loadFromCubit(_currentHoleIndex);
+
+      // Restart recording if it was active
+      if (wasListening) {
+        final stopwatch = Stopwatch()..start();
+
+        // Capture current hole's accumulated text as baseline
+        _textWhenListeningStarted = _textEditingController.text;
+
+        // Start fresh voice session
+        await _voiceService.startListening();
+
+        stopwatch.stop();
         debugPrint(
-          '  ✅ Created NEW range for hole $_currentHoleIndex: start=$startPos, end=$startPos (ACTIVE)',
+          '⏱️ Start listening took: ${stopwatch.elapsedMilliseconds}ms',
         );
-      } else if (_holeRanges.containsKey(_currentHoleIndex)) {
-        // Returning to a frozen hole - if voice is listening, UNFREEZE it and continue recording
-        if (_isActivelyRecording && _voiceService.isListening) {
-          _activeRecordingHoleIndex = _currentHoleIndex;
-          debugPrint(
-            '  🔓 UNFREEZING hole $_currentHoleIndex - voice is listening, continuing recording from end=${_holeRanges[_currentHoleIndex]!.end}',
-          );
-        } else {
-          debugPrint(
-            '  ℹ️  Returning to FROZEN hole $_currentHoleIndex (read-only)',
-          );
-        }
       }
-
-      // 4. Load previous hole's text from its frozen range
-      final _HoleTextRange? prevRange = _holeRanges[_currentHoleIndex];
-      if (prevRange != null) {
-        final String fullTranscript = _voiceService.transcribedText;
-        final String holeText = fullTranscript.substring(
-          prevRange.start,
-          prevRange.end,
-        );
-        _textEditingController.text = holeText;
-        debugPrint('  📝 Loaded text for hole $_currentHoleIndex: "$holeText"');
-      } else {
-        // No range exists, load from cubit (manual edits)
-        _loadFromCubit(_currentHoleIndex);
-        debugPrint('  📂 Loaded from cubit instead');
-      }
-
-      // debugPrint('================================\n');
     }
   }
 
-  void _nextHole() {
-    debugPrint('\n🔄 === NEXT HOLE TRANSITION ===');
-    debugPrint('  From hole: $_currentHoleIndex');
-    debugPrint('  isActivelyRecording: $_isActivelyRecording');
-    debugPrint('  isListening: ${_voiceService.isListening}');
-    debugPrint(
-      '  Full transcript length: ${_voiceService.transcribedText.length}',
-    );
-
+  Future<void> _nextHole() async {
     if (_currentHoleIndex < totalHoles - 1) {
-      // 1. Freeze current hole's text range at current transcript position
-      final _HoleTextRange? currentRange = _holeRanges[_currentHoleIndex];
-      if (currentRange != null && _isActivelyRecording) {
-        currentRange.end = _voiceService.transcribedText.length;
+      final bool wasListening = _voiceService.isListening;
+
+      // Save current hole's text
+      _saveToCubit(_currentHoleIndex, _textEditingController.text);
+
+      // Stop recording if active
+      if (wasListening) {
+        final stopwatch = Stopwatch()..start();
+        await _voiceService.stopListening();
+        stopwatch.stop();
         debugPrint(
-          '  ✅ Froze hole $_currentHoleIndex range: start=${currentRange.start}, end=${currentRange.end}',
+          '⏱️ Stop listening took: ${stopwatch.elapsedMilliseconds}ms',
         );
-      } else {
-        debugPrint(
-          '  ⚠️  No range to freeze (range=${currentRange != null}, recording=$_isActivelyRecording)',
-        );
+
+        // Small delay to ensure stop completes fully
+        await Future.delayed(const Duration(milliseconds: 100));
       }
 
-      // 2. Change index
+      // Navigate to next hole
       setState(() {
         _currentHoleIndex++;
       });
-      debugPrint('  To hole: $_currentHoleIndex');
 
-      // 3. Create new range for next hole if it doesn't exist
-      if (!_holeRanges.containsKey(_currentHoleIndex)) {
-        final int startPos = _voiceService.transcribedText.length;
-        _holeRanges[_currentHoleIndex] = _HoleTextRange(
-          start: startPos,
-          end: startPos,
-        );
-        // Make this the active recording hole
-        if (_isActivelyRecording) {
-          _activeRecordingHoleIndex = _currentHoleIndex;
-        }
-        debugPrint(
-          '  ✅ Created NEW range for hole $_currentHoleIndex: start=$startPos, end=$startPos (ACTIVE)',
-        );
-      } else {
-        final range = _holeRanges[_currentHoleIndex]!;
-        // Returning to a frozen hole - if voice is listening, UNFREEZE it and continue recording
-        if (_isActivelyRecording && _voiceService.isListening) {
-          _activeRecordingHoleIndex = _currentHoleIndex;
-          debugPrint(
-            '  🔓 UNFREEZING hole $_currentHoleIndex - voice is listening, continuing recording from end=${range.end}',
-          );
-        } else {
-          debugPrint(
-            '  ℹ️  Using EXISTING FROZEN range for hole $_currentHoleIndex: start=${range.start}, end=${range.end}',
-          );
-        }
-      }
+      // Load next hole's text from cubit
+      _loadFromCubit(_currentHoleIndex);
 
-      // 4. Load next hole's text
-      final _HoleTextRange? nextRange = _holeRanges[_currentHoleIndex];
-      if (nextRange != null) {
-        final String fullTranscript = _voiceService.transcribedText;
-        final String holeText = fullTranscript.substring(
-          nextRange.start,
-          nextRange.end,
-        );
-        _textEditingController.text = holeText;
+      // Restart recording if it was active
+      if (wasListening) {
+        final stopwatch = Stopwatch()..start();
+
+        // Capture current hole's accumulated text as baseline
+        _textWhenListeningStarted = _textEditingController.text;
+
+        // Start fresh voice session
+        await _voiceService.startListening();
+
+        stopwatch.stop();
         debugPrint(
-          '  📝 Loaded text for hole $_currentHoleIndex: "$holeText" (${holeText.length} chars)',
+          '⏱️ Start listening took: ${stopwatch.elapsedMilliseconds}ms',
         );
-      } else {
-        _loadFromCubit(_currentHoleIndex);
-        debugPrint('  📂 Loaded from cubit instead');
       }
-      // debugPrint('================================\n');
     } else {
       _finishAndParse();
     }
@@ -992,68 +860,45 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     setState(() => _showingReviewGrid = true);
   }
 
-  void _onHoleTapFromGrid(int holeIndex) {
-    debugPrint('\n📱 === GRID TAP NAVIGATION ===');
-    debugPrint('  From hole: $_currentHoleIndex');
-    debugPrint('  To hole: $holeIndex');
-    debugPrint('  isActivelyRecording: $_isActivelyRecording');
-    debugPrint('  isListening: ${_voiceService.isListening}');
+  Future<void> _onHoleTapFromGrid(int holeIndex) async {
+    final bool wasListening = _voiceService.isListening;
 
-    // 1. Freeze current hole's range if recording
-    final _HoleTextRange? currentRange = _holeRanges[_currentHoleIndex];
-    if (currentRange != null && _isActivelyRecording) {
-      currentRange.end = _voiceService.transcribedText.length;
-      debugPrint(
-        '  ✅ Froze hole $_currentHoleIndex range: start=${currentRange.start}, end=${currentRange.end}',
-      );
-    }
-
-    // 2. Save current hole to cubit
+    // Save current hole's text
     _saveToCubit(_currentHoleIndex, _textEditingController.text);
 
-    // 3. Change index
+    // Stop recording if active
+    if (wasListening) {
+      final stopwatch = Stopwatch()..start();
+      await _voiceService.stopListening();
+      stopwatch.stop();
+      debugPrint('⏱️ Stop listening took: ${stopwatch.elapsedMilliseconds}ms');
+
+      // Small delay to ensure stop completes fully
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    // Navigate to target hole
     setState(() {
       _showingReviewGrid = false;
       _currentHoleIndex = holeIndex;
     });
 
-    // 4. Create range for target hole if recording and it doesn't exist
-    if (_isActivelyRecording && !_holeRanges.containsKey(holeIndex)) {
-      final int startPos = _voiceService.transcribedText.length;
-      _holeRanges[holeIndex] = _HoleTextRange(start: startPos, end: startPos);
-      // Make this the active recording hole
-      _activeRecordingHoleIndex = holeIndex;
-      debugPrint(
-        '  ✅ Created NEW range for hole $holeIndex: start=$startPos, end=$startPos (ACTIVE)',
-      );
-    } else if (_holeRanges.containsKey(holeIndex)) {
-      // Navigating to a frozen hole - if voice is listening, UNFREEZE it and continue recording
-      if (_isActivelyRecording && _voiceService.isListening) {
-        _activeRecordingHoleIndex = holeIndex;
-        debugPrint(
-          '  🔓 UNFREEZING hole $holeIndex - voice is listening, continuing recording from end=${_holeRanges[holeIndex]!.end}',
-        );
-      } else {
-        debugPrint('  ℹ️  Navigating to FROZEN hole $holeIndex (read-only)');
-      }
-    }
+    // Load target hole's text from cubit
+    _loadFromCubit(holeIndex);
 
-    // 5. Load target hole's text
-    final _HoleTextRange? targetRange = _holeRanges[holeIndex];
-    if (targetRange != null && _voiceService.isListening) {
-      final String fullTranscript = _voiceService.transcribedText;
-      final String holeText = fullTranscript.substring(
-        targetRange.start,
-        targetRange.end,
-      );
-      _textEditingController.text = holeText;
-      debugPrint('  📝 Loaded text for hole $holeIndex: "$holeText"');
-    } else {
-      _loadFromCubit(holeIndex);
-      debugPrint('  📂 Loaded from cubit instead');
-    }
+    // Restart recording if it was active
+    if (wasListening) {
+      final stopwatch = Stopwatch()..start();
 
-    // debugPrint('================================\n');
+      // Capture current hole's accumulated text as baseline
+      _textWhenListeningStarted = _textEditingController.text;
+
+      // Start fresh voice session
+      await _voiceService.startListening();
+
+      stopwatch.stop();
+      debugPrint('⏱️ Start listening took: ${stopwatch.elapsedMilliseconds}ms');
+    }
   }
 
   void _finishAndParse() {
@@ -1072,51 +917,27 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _toggleListening() async {
-    debugPrint('\n🎙️  === TOGGLE LISTENING ===');
-    debugPrint('  Current state: isListening=${_voiceService.isListening}');
-    debugPrint('  On hole: $_currentHoleIndex');
-
     if (_voiceService.isListening) {
-      // Stop listening and freeze current hole's range
-      debugPrint('  🛑 STOPPING listening...');
+      // Stop listening - save final text
+      _saveToCubit(_currentHoleIndex, _textEditingController.text);
+
       await _voiceService.stopListening();
-      _isActivelyRecording = false;
-
-      final _HoleTextRange? currentRange = _holeRanges[_currentHoleIndex];
-      if (currentRange != null) {
-        currentRange.end = _voiceService.transcribedText.length;
-        debugPrint(
-          '  ✅ Froze range for hole $_currentHoleIndex: start=${currentRange.start}, end=${currentRange.end}',
-        );
-      }
-
-      setState(() => _isStartingListening = false);
-      debugPrint('  isActivelyRecording: $_isActivelyRecording');
+      setState(() {
+        _isStartingListening = false;
+        _hasScheduledLoadingClear = false;
+      });
     } else {
-      // Start listening and create/update range for current hole
-      final int startPos = _voiceService.transcribedText.length;
-      _holeRanges[_currentHoleIndex] = _HoleTextRange(
-        start: startPos,
-        end: startPos,
-      );
-      _isActivelyRecording = true;
-      _activeRecordingHoleIndex =
-          _currentHoleIndex; // Set as active recording hole
-
-      debugPrint('  ▶️  STARTING listening...');
-      debugPrint(
-        '  Created range for hole $_currentHoleIndex: start=$startPos, end=$startPos',
-      );
-      debugPrint('  isActivelyRecording: $_isActivelyRecording');
-      debugPrint('  activeRecordingHoleIndex: $_activeRecordingHoleIndex');
+      // Capture what text exists now (from cubit/previous session)
+      _textWhenListeningStarted = _textEditingController.text;
 
       setState(() {
         _isStartingListening = true;
       });
       FocusScope.of(context).unfocus();
-      await _voiceService.startListening(preserveExistingText: true);
+
+      // Start fresh voice session (no parameter!)
+      _voiceService.startListening();
     }
-    // debugPrint('================================\n');
   }
 
   void _showTestConstantSelector() {
@@ -1190,7 +1011,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     setState(() {
       _textEditingController.clear();
       _voiceService.clearText();
+      _textWhenListeningStarted = ''; // Clear baseline
     });
+    _saveToCubit(_currentHoleIndex, '');
   }
 
   void _handleParse() {
@@ -1381,12 +1204,4 @@ class _MiniHolesGrid extends StatelessWidget {
       }),
     );
   }
-}
-
-/// Helper class to track text range for each hole in the continuous transcript
-class _HoleTextRange {
-  final int start;
-  int end;
-
-  _HoleTextRange({required this.start, required this.end});
 }

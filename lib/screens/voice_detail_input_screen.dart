@@ -6,7 +6,7 @@ import 'package:turbo_disc_golf/screens/round_processing/round_processing_loadin
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
@@ -34,7 +34,7 @@ class VoiceDetailInputScreen extends StatefulWidget {
 
 class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
     with SingleTickerProviderStateMixin {
-  late final VoiceRecordingService _voiceService;
+  late final BaseVoiceRecordingService _voiceService;
   late final RoundParser _roundParser;
   late AnimationController _animationController;
   final TextEditingController _transcriptController = TextEditingController();
@@ -44,7 +44,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
   @override
   void initState() {
     super.initState();
-    _voiceService = VoiceRecordingService();
+    _voiceService = locator.get<BaseVoiceRecordingService>();
     _roundParser = locator.get<RoundParser>();
 
     _animationController = AnimationController(
