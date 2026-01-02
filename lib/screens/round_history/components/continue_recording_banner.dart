@@ -54,41 +54,50 @@ class ContinueRecordingBanner extends StatelessWidget {
             ),
           );
         },
-        child: Container(
-          color: Colors.transparent,
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Continue Recording',
-                      style: TextStyle(
-                        color: Color(0xFF1565C0),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+        child: Hero(
+          tag: 'record_round_header',
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              color: Colors.transparent,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Continue Recording',
+                          style: TextStyle(
+                            color: Color(0xFF1565C0),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: const Color(0xFF1565C0).withValues(alpha: 0.7),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: const Color(0xFF1565C0).withValues(alpha: 0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color(0xFF1565C0),
+                    size: 16,
+                  ),
+                ],
               ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Color(0xFF1565C0),
-                size: 16,
-              ),
-            ],
+            ),
           ),
         ),
       ),

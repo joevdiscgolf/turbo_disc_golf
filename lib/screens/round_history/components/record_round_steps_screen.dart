@@ -125,71 +125,115 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: GenericAppBar(
-        topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: 'Record round',
-        hasBackButton: false,
-        backgroundColor: Colors.transparent,
-        leftWidget: _clearAllButton(),
-        rightWidget: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(
+          56 + MediaQuery.of(context).viewPadding.top,
+        ),
+        child: Stack(
+          children: [
+            // Hero widget that morphs from banner - fades to transparent
+            Positioned.fill(
+              child: Hero(
+                tag: 'record_round_header',
+                flightShuttleBuilder:
+                    (
+                      BuildContext flightContext,
+                      Animation<double> animation,
+                      HeroFlightDirection flightDirection,
+                      BuildContext fromHeroContext,
+                      BuildContext toHeroContext,
+                    ) {
+                      // During the flight, fade out the banner content
+                      return FadeTransition(
+                        opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: const Interval(
+                              0.0,
+                              0.7,
+                              curve: Curves.easeOut,
+                            ),
+                          ),
+                        ),
+                        child:
+                            (flightDirection == HeroFlightDirection.push
+                                    ? fromHeroContext.widget
+                                    : toHeroContext.widget)
+                                as Hero,
+                      );
+                    },
+                child: const SizedBox(height: 56),
+              ),
+            ),
+            // GenericAppBar on top
+            GenericAppBar(
+              topViewPadding: MediaQuery.of(context).viewPadding.top,
+              title: 'Record Round',
+              hasBackButton: false,
+              backgroundColor: Colors.transparent,
+              leftWidget: _clearAllButton(),
+              rightWidget: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _handleClose,
+              ),
+            ),
+          ],
         ),
       ),
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
       body: BlocConsumer<RecordRoundCubit, RecordRoundState>(
-          listener: (context, recordRoundstate) {
-            if (recordRoundstate is! RecordRoundActive) return;
+        listener: (context, recordRoundstate) {
+          if (recordRoundstate is! RecordRoundActive) return;
 
-            final String? holeText = recordRoundstate
-                .holeDescriptions[recordRoundstate.currentHoleIndex];
+          final String? holeText = recordRoundstate
+              .holeDescriptions[recordRoundstate.currentHoleIndex];
 
-            // Only update if text is different to avoid loops and unnecessary updates
-            if (holeText != null && holeText != _textEditingController.text) {
-              // Temporarily remove listener to prevent triggering _onTextChanged
-              _textEditingController.removeListener(_onTextChanged);
+          // Only update if text is different to avoid loops and unnecessary updates
+          if (holeText != null && holeText != _textEditingController.text) {
+            // Temporarily remove listener to prevent triggering _onTextChanged
+            _textEditingController.removeListener(_onTextChanged);
 
-              _textEditingController.text = holeText;
-              _textEditingController.selection = TextSelection.fromPosition(
-                TextPosition(offset: holeText.length),
-              );
-
-              // Re-add listener
-              _textEditingController.addListener(_onTextChanged);
-            }
-          },
-          listenWhen: (previous, current) {
-            // Listen when hole descriptions change
-            if (previous is RecordRoundActive && current is RecordRoundActive) {
-              return previous.holeDescriptions != current.holeDescriptions;
-            }
-            return false;
-          },
-          builder: (context, recordRoundState) {
-            return GestureDetector(
-              onTap: () => FocusScope.of(context).unfocus(),
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).viewPadding.top + 120,
-                ),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFF5EEF8), Colors.white],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: _mainBody(recordRoundState),
-              ),
+            _textEditingController.text = holeText;
+            _textEditingController.selection = TextSelection.fromPosition(
+              TextPosition(offset: holeText.length),
             );
-          },
-        ),
+
+            // Re-add listener
+            _textEditingController.addListener(_onTextChanged);
+          }
+        },
+        listenWhen: (previous, current) {
+          // Listen when hole descriptions change
+          if (previous is RecordRoundActive && current is RecordRoundActive) {
+            return previous.holeDescriptions != current.holeDescriptions;
+          }
+          return false;
+        },
+        builder: (context, recordRoundState) {
+          return GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).viewPadding.top + 120,
+              ),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF5EEF8), Colors.white],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: _mainBody(recordRoundState),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -971,7 +1015,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       child: Container(
         width: 40,
         color: Colors.transparent,
-        padding: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsets.only(left: 16),
         child: Center(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -1004,6 +1048,28 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         ),
       );
     }
+  }
+
+  void _handleClose() {
+    // Check if any holes have descriptions - if not, reset to inactive state
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is RecordRoundActive) {
+      bool anyHolesFilled = false;
+      for (int i = 0; i < totalHoles; i++) {
+        final String? description = state.holeDescriptions[i];
+        if (description != null && description.trim().isNotEmpty) {
+          anyHolesFilled = true;
+          break;
+        }
+      }
+
+      // If no holes are filled, reset to inactive state
+      if (!anyHolesFilled) {
+        _recordRoundCubit.clearOnLogout();
+      }
+    }
+
+    Navigator.of(context).pop();
   }
 }
 
