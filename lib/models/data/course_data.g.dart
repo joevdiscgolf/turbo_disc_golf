@@ -10,7 +10,13 @@ CourseHole _$CourseHoleFromJson(Map json) => CourseHole(
   holeNumber: (json['holeNumber'] as num).toInt(),
   par: (json['par'] as num).toInt(),
   feet: (json['feet'] as num).toInt(),
+  pins:
+      (json['pins'] as List<dynamic>?)
+          ?.map((e) => HolePin.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList() ??
+      const [],
   holeType: $enumDecodeNullable(_$HoleTypeEnumMap, json['holeType']),
+  defaultPinId: json['defaultPinId'] as String?,
 );
 
 Map<String, dynamic> _$CourseHoleToJson(CourseHole instance) =>
@@ -18,7 +24,9 @@ Map<String, dynamic> _$CourseHoleToJson(CourseHole instance) =>
       'holeNumber': instance.holeNumber,
       'par': instance.par,
       'feet': instance.feet,
+      'pins': instance.pins.map((e) => e.toJson()).toList(),
       'holeType': _$HoleTypeEnumMap[instance.holeType],
+      'defaultPinId': instance.defaultPinId,
     };
 
 const _$HoleTypeEnumMap = {
@@ -45,6 +53,20 @@ Map<String, dynamic> _$CourseLayoutToJson(CourseLayout instance) =>
       'description': instance.description,
       'isDefault': instance.isDefault,
     };
+
+HolePin _$HolePinFromJson(Map json) => HolePin(
+  id: json['id'] as String,
+  par: (json['par'] as num).toInt(),
+  feet: (json['feet'] as num).toInt(),
+  label: json['label'] as String,
+);
+
+Map<String, dynamic> _$HolePinToJson(HolePin instance) => <String, dynamic>{
+  'id': instance.id,
+  'par': instance.par,
+  'feet': instance.feet,
+  'label': instance.label,
+};
 
 Course _$CourseFromJson(Map json) => Course(
   id: json['id'] as String,

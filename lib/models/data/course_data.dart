@@ -10,7 +10,9 @@ class CourseHole {
     required this.holeNumber,
     required this.par,
     required this.feet,
+    this.pins = const [],
     this.holeType,
+    this.defaultPinId,
   });
 
   /// Hole number (1-18, 1-9, etc.)
@@ -22,8 +24,22 @@ class CourseHole {
   /// Distance in feet from tee to basket
   final int feet;
 
+  /// All possible pin positions for this hole
+  final List<HolePin> pins;
+
   /// Type of terrain/openness for this hole
   final HoleType? holeType;
+
+  /// Optional default (used if layout doesn't override)
+  final String? defaultPinId;
+
+  HolePin get defaultPin {
+    if (defaultPinId == null) return pins.first;
+    return pins.firstWhere(
+      (p) => p.id == defaultPinId,
+      orElse: () => pins.first,
+    );
+  }
 
   factory CourseHole.fromJson(Map<String, dynamic> json) =>
       _$CourseHoleFromJson(json);
@@ -34,13 +50,17 @@ class CourseHole {
     int? holeNumber,
     int? par,
     int? feet,
+    List<HolePin>? pins,
     HoleType? holeType,
+    String? defaultPinId,
   }) {
     return CourseHole(
       holeNumber: holeNumber ?? this.holeNumber,
       par: par ?? this.par,
       feet: feet ?? this.feet,
+      pins: pins ?? this.pins,
       holeType: holeType ?? this.holeType,
+      defaultPinId: defaultPinId ?? this.defaultPinId,
     );
   }
 }
@@ -100,6 +120,30 @@ class CourseLayout {
       isDefault: isDefault ?? this.isDefault,
     );
   }
+}
+
+@JsonSerializable(explicitToJson: true, anyMap: true)
+class HolePin {
+  const HolePin({
+    required this.id,
+    required this.par,
+    required this.feet,
+    required this.label,
+  });
+
+  /// Stable ID within the hole ("A", "B", "Long", UUID, etc.)
+  final String id;
+
+  final int par;
+  final int feet;
+
+  /// Human-friendly label ("Short", "Long", "Tournament")
+  final String label;
+
+  factory HolePin.fromJson(Map<String, dynamic> json) =>
+      _$HolePinFromJson(json);
+
+  Map<String, dynamic> toJson() => _$HolePinToJson(this);
 }
 
 /// Represents a disc golf course with potentially multiple layouts
