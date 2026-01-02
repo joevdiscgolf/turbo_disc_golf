@@ -10,6 +10,7 @@ import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.da
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
@@ -46,13 +47,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   bool _showingReviewGrid = false;
 
   // Course/Date selection (Step 1)
-  final List<String> _courses = <String>[
-    'Select a course',
-    'Redwood Park DGC',
-    'Riverside Long',
-    'Meadow Ridge',
-  ];
-  String? _selectedCourse;
+  List<Course> _courses = <Course>[];
+  Course? _selectedCourse;
   DateTime _selectedDateTime = DateTime.now();
 
   // Test constants
@@ -86,8 +82,14 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     // Initialize voice service in cubit
     _recordRoundCubit.initializeVoiceService();
 
+    // Load courses
+    _loadCourses();
+
     // Load hole 1's saved text (if any)
-    _loadTextFromCubit(0);
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is RecordRoundActive) {
+      _loadTextFromCubit(state.currentHoleIndex);
+    }
   }
 
   @override
@@ -98,6 +100,35 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _textEditingController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _loadCourses() {
+    // Temporary: Convert string course names to Course objects with default layouts
+    final List<String> courseNames = [
+      'Redwood Park DGC',
+      'Riverside Long',
+      'Meadow Ridge',
+    ];
+
+    setState(() {
+      _courses = courseNames.map((String name) {
+        // Generate courseId from name (lowercase, hyphens)
+        final String courseId = name.toLowerCase().replaceAll(' ', '-');
+
+        // Create a default layout with 18 holes, par 3, 300ft each
+        final CourseLayout defaultLayout = CourseLayout(
+          id: 'default',
+          name: 'Default Layout',
+          isDefault: true,
+          holes: List.generate(
+            18,
+            (int i) => CourseHole(holeNumber: i + 1, par: 3, feet: 300),
+          ),
+        );
+
+        return Course(id: courseId, name: name, layouts: [defaultLayout]);
+      }).toList();
+    });
   }
 
   void _onFocusChange() {
@@ -479,7 +510,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   Widget _buildCourseCard(RecordRoundActive state) {
     final Widget card = RoundDataInputCard(
       icon: Icons.landscape,
-      subtitle: state.selectedCourse ?? 'Select a course',
+      subtitle: state.selectedCourse?.name ?? 'Select a course',
       onTap: _showCourseSelector,
       accent: _courseAccent,
     );
@@ -647,8 +678,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       if (index < _courses.length) {
-                        final String course = _courses[index];
-                        final bool selected = course == _selectedCourse;
+                        final Course course = _courses[index];
+                        final bool selected = course.id == _selectedCourse?.id;
                         return ListTile(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -661,7 +692,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                             color: selected ? _courseAccent : Colors.black87,
                           ),
                           title: Text(
-                            course,
+                            course.name,
                             style: selected
                                 ? const TextStyle(
                                     fontWeight: FontWeight.bold,
@@ -733,11 +764,29 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               onPressed: () {
                 final String name = nameController.text.trim();
                 if (name.isNotEmpty) {
+                  // Create a Course object from the name
+                  final String courseId = name.toLowerCase().replaceAll(' ', '-');
+                  final CourseLayout defaultLayout = CourseLayout(
+                    id: 'default',
+                    name: 'Default Layout',
+                    isDefault: true,
+                    holes: List.generate(18, (int i) => CourseHole(
+                      holeNumber: i + 1,
+                      par: 3,
+                      feet: 300,
+                    )),
+                  );
+                  final Course newCourse = Course(
+                    id: courseId,
+                    name: name,
+                    layouts: [defaultLayout],
+                  );
+
                   setState(() {
-                    _courses.add(name);
-                    _selectedCourse = name;
+                    _courses.add(newCourse);
+                    _selectedCourse = newCourse;
                   });
-                  _recordRoundCubit.setSelectedCourse(name);
+                  _recordRoundCubit.setSelectedCourse(newCourse);
                 }
                 Navigator.pop(context);
               },
@@ -883,7 +932,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       CupertinoPageRoute(
         builder: (context) => RoundProcessingLoadingScreen(
           transcript: state.fullTranscript,
-          courseName: state.selectedCourse ?? 'Unknown Course',
+          selectedCourse: state.selectedCourse,
           numHoles: state.numHoles,
           useSharedPreferences: false,
         ),
@@ -1036,13 +1085,32 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   void _handleParse() {
     final bool useCached = false;
     debugPrint('Test Parse Constant: Using cached round: $useCached');
+
+    // Create a test Course object
+    final String courseId = testCourseName.toLowerCase().replaceAll(' ', '-');
+    final CourseLayout testLayout = CourseLayout(
+      id: 'default',
+      name: 'Default Layout',
+      isDefault: true,
+      holes: List.generate(18, (int i) => CourseHole(
+        holeNumber: i + 1,
+        par: 3,
+        feet: 300,
+      )),
+    );
+    final Course testCourse = Course(
+      id: courseId,
+      name: testCourseName,
+      layouts: [testLayout],
+    );
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
         CupertinoPageRoute(
           builder: (context) => RoundProcessingLoadingScreen(
             transcript: _selectedTranscript,
-            courseName: testCourseName,
+            selectedCourse: testCourse,
             useSharedPreferences: useCached,
           ),
         ),

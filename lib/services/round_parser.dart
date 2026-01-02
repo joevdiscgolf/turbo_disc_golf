@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
@@ -58,13 +59,18 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
 
   Future<bool> parseVoiceTranscript(
     String transcript, {
-    String? courseName,
+    Course? selectedCourse,
     int numHoles = 18,
     bool useSharedPreferences = false,
     List<HoleMetadata>?
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
   }) async {
     final BagService bagService = locator.get<BagService>();
+
+    // Extract course info from Course object
+    final String courseName = selectedCourse?.name ?? 'Unknown Course';
+    final String courseId = selectedCourse?.id ?? 'unknown';
+    final String layoutId = 'default'; // Use default layout for now
 
     try {
       // If using shared preferences, try to load cached round first
@@ -104,7 +110,7 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
       // Only print these logs when we're actually parsing with Gemini
       debugPrint('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
       debugPrint('Transcript length: ${transcript.length} characters');
-      debugPrint('Course name: ${courseName ?? "Not specified"}');
+      debugPrint('Course name: $courseName');
       debugPrint('Raw transcript:');
       debugPrint(transcript);
       debugPrint('==========================================');
@@ -164,6 +170,26 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
         debugPrint(
           'Potential round has ${_potentialRound!.holes?.length ?? 0} holes',
         );
+
+        // Add course data to potential round (AI service doesn't know about it)
+        final String? uid = locator.get<AuthService>().currentUid;
+        if (uid != null) {
+          _potentialRound = PotentialDGRound(
+            uid: uid,
+            id: _potentialRound!.id,
+            courseName: courseName,
+            courseId: courseId,
+            course: selectedCourse,
+            layoutId: layoutId,
+            holes: _potentialRound!.holes,
+            versionId: _potentialRound!.versionId,
+            analysis: _potentialRound!.analysis,
+            aiSummary: _potentialRound!.aiSummary,
+            aiCoachSuggestion: _potentialRound!.aiCoachSuggestion,
+            createdAt: _potentialRound!.createdAt,
+            playedRoundAt: _potentialRound!.playedRoundAt,
+          );
+        }
       }
 
       if (_potentialRound == null) {
@@ -243,6 +269,8 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
         id: _parsedRound!.id,
         courseName: _parsedRound!.courseName,
         courseId: _parsedRound!.courseId,
+        course: _parsedRound!.course,
+        layoutId: _parsedRound!.layoutId,
         holes: _parsedRound!.holes,
         analysis: analysis,
         aiSummary: insights['summary'],
@@ -408,7 +436,10 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
 
     return DGRound(
       uid: uid,
+      courseId: round.courseId,
       courseName: round.courseName,
+      course: round.course,
+      layoutId: round.layoutId,
       holes: enhancedHoles,
       id: round.id,
       versionId: round.versionId,
@@ -424,7 +455,10 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
 
       _parsedRound = DGRound(
         uid: uid,
+        courseId: _parsedRound!.courseId,
         courseName: _parsedRound!.courseName,
+        course: _parsedRound!.course,
+        layoutId: _parsedRound!.layoutId,
         holes: updatedHoles,
         id: _parsedRound!.id,
         analysis: _parsedRound!.analysis,
@@ -516,6 +550,8 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
       id: _potentialRound!.id,
       courseName: _potentialRound!.courseName,
       courseId: _potentialRound!.courseId,
+      course: _potentialRound!.course,
+      layoutId: _potentialRound!.layoutId,
       holes: updatedHoles,
       versionId: _potentialRound!.versionId,
       analysis: _potentialRound!.analysis,
@@ -706,6 +742,8 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
       id: _potentialRound!.id,
       courseName: _potentialRound!.courseName,
       courseId: _potentialRound!.courseId,
+      course: _potentialRound!.course,
+      layoutId: _potentialRound!.layoutId,
       holes: updatedHoles,
       versionId: _potentialRound!.versionId,
       analysis: _potentialRound!.analysis,
@@ -751,6 +789,8 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
       id: _potentialRound!.id,
       courseName: _potentialRound!.courseName,
       courseId: _potentialRound!.courseId,
+      course: _potentialRound!.course,
+      layoutId: _potentialRound!.layoutId,
       holes: updatedHoles,
       versionId: _potentialRound!.versionId,
       analysis: _potentialRound!.analysis,

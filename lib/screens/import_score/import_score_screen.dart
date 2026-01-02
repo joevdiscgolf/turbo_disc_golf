@@ -6,10 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/services/scorecard_ocr_service.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/voice_detail_input_screen.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/scorecard_ocr_service.dart';
 import 'package:turbo_disc_golf/locator.dart';
 
 class ImportScoreScreen extends StatefulWidget {
@@ -375,12 +376,31 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
       );
     }).toList();
 
+    // Create a Course object from the course name
+    final String courseName = _courseNameController.text.trim();
+    final String courseId = courseName.toLowerCase().replaceAll(' ', '-');
+    final CourseLayout defaultLayout = CourseLayout(
+      id: 'default',
+      name: 'Default Layout',
+      isDefault: true,
+      holes: List.generate(holeMetadata.length, (int i) => CourseHole(
+        holeNumber: i + 1,
+        par: holeMetadata[i].par,
+        feet: holeMetadata[i].distanceFeet ?? 300,
+      )),
+    );
+    final Course selectedCourse = Course(
+      id: courseId,
+      name: courseName,
+      layouts: [defaultLayout],
+    );
+
     // Navigate to voice detail input screen
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => VoiceDetailInputScreen(
           holeMetadata: holeMetadata,
-          courseName: _courseNameController.text.trim(),
+          selectedCourse: selectedCourse,
           testVoiceDescription: widget.testVoiceDescription,
         ),
       ),

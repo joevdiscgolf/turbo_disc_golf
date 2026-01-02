@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 
 part 'round_data.g.dart';
@@ -11,7 +12,9 @@ class DGRound {
     required this.uid,
     required this.id,
     required this.courseName,
-    this.courseId,
+    required this.courseId,
+    required this.course,
+    required this.layoutId,
     required this.holes,
     this.analysis,
     this.aiSummary,
@@ -23,8 +26,10 @@ class DGRound {
 
   final String uid;
   final String id;
-  final String? courseId;
+  final String courseId;
   final String courseName;
+  final Course course;
+  final String layoutId;
   final List<DGHole> holes;
   final RoundAnalysis? analysis;
   final AIContent? aiSummary;
@@ -70,11 +75,18 @@ class DGRound {
     return getTotalScore() - getTotalPar();
   }
 
+  /// Get the layout that was played in this round
+  CourseLayout get playedLayout {
+    return course.getLayoutById(layoutId) ?? course.defaultLayout;
+  }
+
   /// Create a copy of this round with updated fields
   DGRound copyWith({
     String? id,
     String? courseName,
     String? courseId,
+    Course? course,
+    String? layoutId,
     List<DGHole>? holes,
     RoundAnalysis? analysis,
     AIContent? aiSummary,
@@ -88,6 +100,8 @@ class DGRound {
       id: id ?? this.id,
       courseName: courseName ?? this.courseName,
       courseId: courseId ?? this.courseId,
+      course: course ?? this.course,
+      layoutId: layoutId ?? this.layoutId,
       holes: holes ?? this.holes,
       analysis: analysis ?? this.analysis,
       aiSummary: aiSummary ?? this.aiSummary,
