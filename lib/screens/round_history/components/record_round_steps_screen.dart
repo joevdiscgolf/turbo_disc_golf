@@ -82,7 +82,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _recordRoundCubit.initializeVoiceService();
 
     // Load hole 1's saved text (if any)
-    _loadFromCubit(0);
+    _loadTextFromCubit(0);
   }
 
   @override
@@ -109,7 +109,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   // Explicit load from cubit
-  void _loadFromCubit(int holeIndex) {
+  void _loadTextFromCubit(int holeIndex) {
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is RecordRoundActive) {
       final String savedText = state.holeDescriptions[holeIndex] ?? '';
@@ -119,12 +119,25 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: GenericAppBar(
+    return Hero(
+      tag: 'record_round_banner',
+      child: Scaffold(
+        appBar: GenericAppBar(
         topViewPadding: MediaQuery.of(context).viewPadding.top,
         title: 'Record round',
         hasBackButton: false,
         backgroundColor: Colors.transparent,
+        leftWidget: TextButton(
+          onPressed: _handleClearAll,
+          child: Text(
+            'Clear All',
+            style: TextStyle(
+              color: Colors.red.shade600,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
         rightWidget: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
@@ -183,6 +196,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -749,7 +763,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
 
       await _recordRoundCubit.navigateToHole(state.currentHoleIndex - 1);
-      _loadFromCubit(state.currentHoleIndex - 1);
+      _loadTextFromCubit(state.currentHoleIndex - 1);
     }
   }
 
@@ -762,7 +776,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
 
       await _recordRoundCubit.navigateToHole(state.currentHoleIndex + 1);
-      _loadFromCubit(state.currentHoleIndex + 1);
+      _loadTextFromCubit(state.currentHoleIndex + 1);
     } else {
       _finishAndParse();
     }
@@ -781,7 +795,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
     await _recordRoundCubit.navigateToHole(holeIndex);
     setState(() => _showingReviewGrid = false);
-    _loadFromCubit(holeIndex);
+    _loadTextFromCubit(holeIndex);
   }
 
   void _finishAndParse() {
@@ -874,6 +888,48 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   void _handleClearText() {
     _textEditingController.clear();
     _recordRoundCubit.clearCurrentHoleText();
+  }
+
+  Future<void> _handleClearAll() async {
+    // Unfocus keyboard
+    FocusScope.of(context).unfocus();
+
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Clear All Data?'),
+          content: const Text(
+            'This will discard all hole descriptions and reset the recording. This cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                'Clear All',
+                style: TextStyle(
+                  color: Colors.red.shade600,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    // If user confirmed, reset the recording
+    if (confirmed == true) {
+      await _recordRoundCubit.resetRecording();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   void _handleParse() {

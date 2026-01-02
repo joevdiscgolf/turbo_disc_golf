@@ -7,9 +7,11 @@ import 'package:turbo_disc_golf/screens/round_history/components/record_round_pa
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
+import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
@@ -37,16 +39,11 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       // Start recording round in Cubit before showing panel
       BlocProvider.of<RecordRoundCubit>(context).startRecordingRound();
 
-      // await displayBottomSheet(
-      //   context,
-      //   RecordRoundStepsPanel(bottomViewPadding: widget.bottomViewPadding),
-      // );
       Navigator.of(context).push(
-        CupertinoPageRoute(
+        ShrinkToBottomPageRoute(
           builder: (context) => RecordRoundStepsScreen(
             bottomViewPadding: widget.bottomViewPadding,
           ),
-          fullscreenDialog: true,
         ),
       );
     } else {
@@ -164,47 +161,148 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   }
 
   Widget _buildAddButton() {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 16,
-      child: Center(
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFBA68C8), Color(0xFF9C27B0)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
-                blurRadius: 20,
-                spreadRadius: 2,
-                offset: const Offset(0, 4),
+    return BlocBuilder<RecordRoundCubit, RecordRoundState>(
+      builder: (context, recordRoundState) {
+        if (recordRoundState is RecordRoundActive) {
+          return Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildContinueRecordingBanner(recordRoundState),
+          );
+        }
+
+        return Positioned(
+          left: 0,
+          right: 0,
+          bottom: 16,
+          child: Center(child: _buildNewRoundButton()),
+        );
+      },
+    );
+  }
+
+  Widget _buildNewRoundButton() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFBA68C8), Color(0xFF9C27B0)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _showRecordRoundSheet,
+          customBorder: const CircleBorder(),
+          child: const Center(
+            child: Text(
+              'Add',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContinueRecordingBanner(RecordRoundActive state) {
+    final int holesRecorded = state.holeDescriptions.values
+        .where((description) => description.isNotEmpty)
+        .length;
+    final String? courseName = state.selectedCourse;
+    final bool hasCourse = courseName != null && courseName.isNotEmpty;
+
+    // Build subtitle text
+    final String subtitle = hasCourse
+        ? '$courseName • $holesRecorded/${state.numHoles} holes'
+        : '$holesRecorded/${state.numHoles} holes';
+
+    return Hero(
+      tag: 'record_round_banner',
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: MediaQuery.of(context).viewPadding.bottom + 12,
+        ),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE3F2FD),
+              Color(0xFFBBDEFB),
             ],
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _showRecordRoundSheet,
-              customBorder: const CircleBorder(),
-              child: const Center(
-                child: Text(
-                  'Add',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _continueRecording,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Continue Recording',
+                        style: TextStyle(
+                          color: Color(0xFF1565C0),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: const Color(0xFF1565C0).withValues(alpha: 0.7),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Color(0xFF1565C0),
+                  size: 16,
+                ),
+              ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _continueRecording() {
+    Navigator.of(context).push(
+      ShrinkToBottomPageRoute(
+        builder: (context) => RecordRoundStepsScreen(
+          bottomViewPadding: widget.bottomViewPadding,
         ),
       ),
     );

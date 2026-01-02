@@ -71,3 +71,94 @@ class ZoomPageRoute<T> extends PageRouteBuilder<T> {
           },
         );
 }
+
+/// Custom page route that expands from a banner at the bottom and shrinks back.
+///
+/// The new page expands from the bottom banner position and fills the screen,
+/// and when dismissed, shrinks back down to the banner. Works with Hero animation.
+class ShrinkToBottomPageRoute<T> extends PageRoute<T> {
+  ShrinkToBottomPageRoute({
+    required this.builder,
+    super.settings,
+    this.transitionDuration = const Duration(milliseconds: 400),
+    this.reverseTransitionDuration = const Duration(milliseconds: 350),
+  });
+
+  final WidgetBuilder builder;
+
+  @override
+  final Duration transitionDuration;
+
+  @override
+  final Duration reverseTransitionDuration;
+
+  @override
+  Color? get barrierColor => Colors.black54;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  bool get opaque => false;
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return builder(context);
+  }
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    // Use different curves for opening and closing
+    final Animation<double> curvedAnimation = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    // Scale animation - starts small at bottom, expands to full screen
+    final Animation<double> scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(curvedAnimation);
+
+    // Vertical position animation - starts at bottom
+    final Animation<Offset> slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.15), // Start slightly from bottom
+      end: Offset.zero, // End at normal position
+    ).animate(curvedAnimation);
+
+    // Fade animation for smoother appearance
+    final Animation<double> fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: animation,
+      curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+      reverseCurve: const Interval(0.6, 1.0, curve: Curves.easeIn),
+    ));
+
+    return SlideTransition(
+      position: slideAnimation,
+      child: ScaleTransition(
+        scale: scaleAnimation,
+        alignment: Alignment.bottomCenter,
+        child: FadeTransition(
+          opacity: fadeAnimation,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
