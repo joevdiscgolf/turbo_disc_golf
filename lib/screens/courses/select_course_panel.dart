@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,7 +6,6 @@ import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/screens/courses/create_course_sheet.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
-import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 import 'package:turbo_disc_golf/utils/search_helpers.dart';
 
 class SelectCoursePanel extends StatefulWidget {
@@ -169,21 +169,46 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
                             ),
                             onTap: () {
                               HapticFeedback.lightImpact();
-                              displayBottomSheet(
-                                context,
-                                CreateCourseSheet(
-                                  onCourseCreated: (course) {
-                                    BlocProvider.of<RecordRoundCubit>(
-                                      context,
-                                    ).courses.add(course);
-                                    BlocProvider.of<RecordRoundCubit>(
-                                      context,
-                                    ).setSelectedCourse(course);
 
-                                    Navigator.pop(context);
-                                  },
+                              // Navigate to voice detail input screen
+                              Navigator.of(context).push(
+                                CupertinoPageRoute(
+                                  builder: (context) => CreateCourseSheet(
+                                    onCourseCreated: (course) {
+                                      BlocProvider.of<RecordRoundCubit>(
+                                        context,
+                                      ).courses.add(course);
+                                      BlocProvider.of<RecordRoundCubit>(
+                                        context,
+                                      ).setSelectedCourse(course);
+
+                                      Navigator.pop(context);
+                                    },
+                                    topViewPadding: MediaQuery.of(
+                                      context,
+                                    ).viewPadding.top,
+                                  ),
+                                  fullscreenDialog: true,
                                 ),
                               );
+                              // displayBottomSheet(
+                              //   context,
+                              //   CreateCourseSheet(
+                              //     onCourseCreated: (course) {
+                              //       BlocProvider.of<RecordRoundCubit>(
+                              //         context,
+                              //       ).courses.add(course);
+                              //       BlocProvider.of<RecordRoundCubit>(
+                              //         context,
+                              //       ).setSelectedCourse(course);
+
+                              //       Navigator.pop(context);
+                              //     },
+                              //     topViewPadding: MediaQuery.of(
+                              //       context,
+                              //     ).viewPadding.top,
+                              //   ),
+                              // );
                             },
                           );
                         }

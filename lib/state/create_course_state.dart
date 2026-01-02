@@ -4,8 +4,12 @@ import 'package:turbo_disc_golf/models/data/course_data.dart';
 class CreateCourseState extends Equatable {
   const CreateCourseState({
     required this.courseName,
-    required this.layouts,
+    required this.layoutId,
+    required this.layoutName,
+    required this.holes,
     required this.numberOfHoles,
+    required this.isParsingImage,
+    this.parseError,
     this.city,
     this.state,
     this.country,
@@ -17,8 +21,11 @@ class CreateCourseState extends Equatable {
   factory CreateCourseState.initial() {
     return const CreateCourseState(
       courseName: '',
-      layouts: [],
+      layoutId: '',
+      layoutName: 'Main Layout',
+      holes: [],
       numberOfHoles: 18,
+      isParsingImage: false,
     );
   }
 
@@ -26,41 +33,56 @@ class CreateCourseState extends Equatable {
   // Core fields
   // ─────────────────────────────────────────────
   final String courseName;
-  final List<CourseLayout> layouts;
 
-  /// Used when regenerating the default layout
+  /// Single default layout (UI assumes only one)
+  final String layoutId;
+  final String layoutName;
+  final List<CourseHole> holes;
+
+  /// Used when regenerating holes
   final int numberOfHoles;
 
+  // ─────────────────────────────────────────────
+  // Location
+  // ─────────────────────────────────────────────
   final String? city;
   final String? state;
   final String? country;
 
   // ─────────────────────────────────────────────
+  // Image parsing
+  // ─────────────────────────────────────────────
+  final bool isParsingImage;
+  final String? parseError;
+
+  // ─────────────────────────────────────────────
   // Derived
   // ─────────────────────────────────────────────
-  CourseLayout? get defaultLayout {
-    try {
-      return layouts.firstWhere((l) => l.isDefault);
-    } catch (_) {
-      return null;
-    }
-  }
+  bool get hasValidLayout => holes.isNotEmpty;
 
   // ─────────────────────────────────────────────
   // Copy
   // ─────────────────────────────────────────────
   CreateCourseState copyWith({
     String? courseName,
-    List<CourseLayout>? layouts,
+    String? layoutId,
+    String? layoutName,
+    List<CourseHole>? holes,
     int? numberOfHoles,
+    bool? isParsingImage,
+    String? parseError,
     String? city,
     String? state,
     String? country,
   }) {
     return CreateCourseState(
       courseName: courseName ?? this.courseName,
-      layouts: layouts ?? this.layouts,
+      layoutId: layoutId ?? this.layoutId,
+      layoutName: layoutName ?? this.layoutName,
+      holes: holes ?? this.holes,
       numberOfHoles: numberOfHoles ?? this.numberOfHoles,
+      isParsingImage: isParsingImage ?? this.isParsingImage,
+      parseError: parseError,
       city: city ?? this.city,
       state: state ?? this.state,
       country: country ?? this.country,
@@ -70,8 +92,12 @@ class CreateCourseState extends Equatable {
   @override
   List<Object?> get props => [
     courseName,
-    layouts,
+    layoutId,
+    layoutName,
+    holes,
     numberOfHoles,
+    isParsingImage,
+    parseError,
     city,
     state,
     country,

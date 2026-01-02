@@ -18,6 +18,7 @@ import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -55,6 +56,7 @@ class _MyAppState extends State<MyApp> {
   late final RoundConfirmationCubit _roundConfirmationCubit;
   late final RoundReviewCubit _roundReviewCubit;
   late final RecordRoundCubit _recordRoundCubit;
+  late final CreateCourseCubit _createCourseCubit;
 
   @override
   void initState() {
@@ -73,6 +75,7 @@ class _MyAppState extends State<MyApp> {
     _roundReviewCubit = RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit);
     // Warm up voice recognition (fire and forget - don't block app startup)
     _recordRoundCubit = RecordRoundCubit();
+    _createCourseCubit = CreateCourseCubit();
 
     // Centralized list of ALL components (cubits + services) that need logout cleanup
     final List<ClearOnLogoutProtocol> clearOnLogoutComponents = [
@@ -117,6 +120,7 @@ class _MyAppState extends State<MyApp> {
         ),
         BlocProvider<RoundReviewCubit>.value(value: _roundReviewCubit),
         BlocProvider<RecordRoundCubit>.value(value: _recordRoundCubit),
+        BlocProvider<CreateCourseCubit>.value(value: _createCourseCubit),
       ],
       child: ChangeNotifierProvider<RoundParser>.value(
         value: locator.get<RoundParser>(),
