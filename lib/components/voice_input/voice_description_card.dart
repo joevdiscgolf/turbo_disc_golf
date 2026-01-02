@@ -60,29 +60,31 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
   Widget build(BuildContext context) {
     final Color baseColor = Colors.grey.shade50;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: baseColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: flattenedOverWhite(widget.accent, 0.5)),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            flattenedOverWhite(widget.accent, 0.3),
-            Colors.white, // Fade to white at bottom right
+    return GestureDetector(
+      onTap: () => widget.focusNode.requestFocus(),
+      child: Container(
+        decoration: BoxDecoration(
+          color: baseColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: flattenedOverWhite(widget.accent, 0.5)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              flattenedOverWhite(widget.accent, 0.3),
+              Colors.white, // Fade to white at bottom right
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // title row with circular icon (matching _InfoCard)
@@ -181,6 +183,7 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

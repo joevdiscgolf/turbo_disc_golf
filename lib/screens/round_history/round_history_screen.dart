@@ -200,8 +200,8 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF81C784).withValues(alpha: 0.9),
-                const Color(0xFF2E7D32).withValues(alpha: 0.95),
+                const Color(0xFF64B5F6).withValues(alpha: 0.9),
+                const Color(0xFF1565C0).withValues(alpha: 0.95),
               ],
             ),
             border: Border.all(
@@ -216,7 +216,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
+                color: const Color(0xFF1565C0).withValues(alpha: 0.4),
                 blurRadius: 20,
                 spreadRadius: -2,
                 offset: const Offset(0, 4),
