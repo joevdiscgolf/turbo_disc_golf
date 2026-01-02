@@ -25,7 +25,7 @@ class ContinueRecordingBanner extends StatelessWidget {
 
     // Build subtitle text
     final String subtitle = hasCourse
-        ? '$course • $holesRecorded/${state.numHoles} holes'
+        ? '${course.name} • $holesRecorded/${state.numHoles} holes'
         : '$holesRecorded/${state.numHoles} holes';
 
     return Container(

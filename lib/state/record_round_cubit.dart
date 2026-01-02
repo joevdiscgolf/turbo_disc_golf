@@ -261,6 +261,10 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     );
   }
 
+  void emitInactive() {
+    emit(const RecordRoundInactive());
+  }
+
   @override
   Future<void> clearOnLogout() async {
     emit(const RecordRoundInactive());

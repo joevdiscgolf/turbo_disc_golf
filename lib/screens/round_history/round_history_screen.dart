@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -177,47 +179,70 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         }
 
         return Positioned(
-          left: 0,
-          right: 0,
+          right: 16,
           bottom: 16,
-          child: Center(child: _buildNewRoundButton()),
+          child: _buildNewRoundButton(),
         );
       },
     );
   }
 
   Widget _buildNewRoundButton() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFBA68C8), Color(0xFF9C27B0)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
+    return ClipOval(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+        child: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF81C784).withValues(alpha: 0.9),
+                const Color(0xFF2E7D32).withValues(alpha: 0.95),
+              ],
+            ),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.4),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 16,
+                spreadRadius: 0,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
+                blurRadius: 20,
+                spreadRadius: -2,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _showRecordRoundSheet,
-          customBorder: const CircleBorder(),
-          child: const Center(
-            child: Text(
-              'Add',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _showRecordRoundSheet,
+              customBorder: const CircleBorder(),
+              splashColor: Colors.white.withValues(alpha: 0.3),
+              highlightColor: Colors.white.withValues(alpha: 0.1),
+              child: const Center(
+                child: Icon(
+                  Icons.add,
+                  color: Colors.white,
+                  size: 24,
+                  shadows: [
+                    Shadow(
+                      color: Color(0xFF000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

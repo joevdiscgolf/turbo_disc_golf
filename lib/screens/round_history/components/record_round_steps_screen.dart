@@ -599,7 +599,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               iconColor: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              onPressed: _handleParse,
+              onPressed: _handleTestParse,
             ),
           ),
         ],
@@ -872,30 +872,17 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _clearAllButton() {
-    return GestureDetector(
-      onTap: _handleClearAll,
-      child: Container(
-        width: 40,
-        color: Colors.transparent,
-        padding: const EdgeInsets.only(left: 16),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: const Text(
-              'Clear All',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
+    return IconButton(
+      icon: Icon(
+        Icons.delete_sweep,
+        color: Colors.grey.shade600,
       ),
+      onPressed: _handleClearAll,
+      tooltip: 'Clear All',
     );
   }
 
-  void _handleParse() {
+  void _handleTestParse() {
     final bool useCached = false;
     debugPrint('Test Parse Constant: Using cached round: $useCached');
 

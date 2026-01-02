@@ -34,6 +34,15 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  // Set status bar style - dark icons for light background
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark, // Dark icons for Android
+      statusBarBrightness: Brightness.light, // Dark text for iOS
+    ),
+  );
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await setUpLocator();
 

@@ -12,6 +12,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/persistent_s
 import 'package:turbo_disc_golf/screens/round_processing/components/round_confirmation_widget.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 
 /// Full-screen loading experience shown while processing a round.
@@ -63,6 +64,8 @@ class _RoundProcessingLoadingScreenState
   @override
   void initState() {
     super.initState();
+
+    BlocProvider.of<RecordRoundCubit>(context).emitInactive();
 
     _roundParser = locator.get<RoundParser>();
 
@@ -385,7 +388,8 @@ class _RoundProcessingLoadingScreenState
                     opacity: progress, // Fade from 0 to 1
                     child: GenericAppBar(
                       topViewPadding: MediaQuery.of(context).viewPadding.top,
-                      title: _roundParser.parsedRound?.courseName ??
+                      title:
+                          _roundParser.parsedRound?.courseName ??
                           'Round Review',
                       backgroundColor: Colors.transparent,
                       foregroundColor: Colors.black87,

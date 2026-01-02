@@ -157,7 +157,7 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
           .parseRoundDescription(
             voiceTranscript: transcript,
             userBag: bagService.userBag,
-            courseName: courseName,
+            course: selectedCourse,
             numHoles: numHoles,
             preParsedHoles: preParsedHoles, // Pass through pre-parsed holes
           );
