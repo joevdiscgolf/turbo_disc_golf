@@ -22,9 +22,14 @@ const String testCourseName = 'Foxwood';
 const int totalHoles = 18;
 
 class RecordRoundStepsScreen extends StatefulWidget {
-  const RecordRoundStepsScreen({super.key, required this.bottomViewPadding});
+  const RecordRoundStepsScreen({
+    super.key,
+    required this.bottomViewPadding,
+    this.skipIntroAnimations = false,
+  });
 
   final double bottomViewPadding;
+  final bool skipIntroAnimations;
 
   @override
   State<RecordRoundStepsScreen> createState() => _RecordRoundStepsScreenState();
@@ -82,7 +87,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _recordRoundCubit.initializeVoiceService();
 
     // Load hole 1's saved text (if any)
-    _loadFromCubit(0);
+    _loadTextFromCubit(0);
   }
 
   @override
@@ -109,7 +114,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   // Explicit load from cubit
-  void _loadFromCubit(int holeIndex) {
+  void _loadTextFromCubit(int holeIndex) {
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is RecordRoundActive) {
       final String savedText = state.holeDescriptions[holeIndex] ?? '';
@@ -120,14 +125,59 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: GenericAppBar(
-        topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: 'Record round',
-        hasBackButton: false,
-        backgroundColor: Colors.transparent,
-        rightWidget: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(
+          56 + MediaQuery.of(context).viewPadding.top,
+        ),
+        child: Stack(
+          children: [
+            // Hero widget that morphs from banner - fades to transparent
+            Positioned.fill(
+              child: Hero(
+                tag: 'record_round_header',
+                flightShuttleBuilder:
+                    (
+                      BuildContext flightContext,
+                      Animation<double> animation,
+                      HeroFlightDirection flightDirection,
+                      BuildContext fromHeroContext,
+                      BuildContext toHeroContext,
+                    ) {
+                      // During the flight, fade out the banner content
+                      return FadeTransition(
+                        opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: const Interval(
+                              0.0,
+                              0.7,
+                              curve: Curves.easeOut,
+                            ),
+                          ),
+                        ),
+                        child:
+                            (flightDirection == HeroFlightDirection.push
+                                    ? fromHeroContext.widget
+                                    : toHeroContext.widget)
+                                as Hero,
+                      );
+                    },
+                child: const SizedBox(height: 56),
+              ),
+            ),
+            // GenericAppBar on top
+            GenericAppBar(
+              topViewPadding: MediaQuery.of(context).viewPadding.top,
+              title: 'Record Round',
+              hasBackButton: false,
+              backgroundColor: Colors.transparent,
+              leftWidget: _clearAllButton(),
+              rightWidget: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _handleClose,
+              ),
+            ),
+          ],
         ),
       ),
       extendBodyBehindAppBar: true,
@@ -189,14 +239,20 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   Widget _mainBody(RecordRoundState recordRoundState) {
     if (_showingReviewGrid && recordRoundState is RecordRoundActive) {
-      return TemporaryHolesReviewGrid(
-            holeDescriptions: recordRoundState.holeDescriptions,
-            onHoleTap: _onHoleTapFromGrid,
-            onFinishAndParse: _finishAndParse,
-            onBack: () => setState(() => _showingReviewGrid = false),
-            allHolesFilled: _areAllHolesFilled(),
-            bottomViewPadding: widget.bottomViewPadding,
-          )
+      final Widget grid = TemporaryHolesReviewGrid(
+        holeDescriptions: recordRoundState.holeDescriptions,
+        onHoleTap: _onHoleTapFromGrid,
+        onFinishAndParse: _finishAndParse,
+        onBack: () => setState(() => _showingReviewGrid = false),
+        allHolesFilled: _areAllHolesFilled(),
+        bottomViewPadding: widget.bottomViewPadding,
+      );
+
+      if (widget.skipIntroAnimations) {
+        return grid;
+      }
+
+      return grid
           .animate()
           .scale(
             begin: const Offset(0.85, 0.85),
@@ -207,7 +263,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           .fadeIn(duration: 250.ms, curve: Curves.easeOut);
     }
 
-    return _buildHoleEntryView(recordRoundState)
+    final Widget entryView = _buildHoleEntryView(recordRoundState);
+
+    if (widget.skipIntroAnimations) {
+      return entryView;
+    }
+
+    return entryView
         .animate()
         .scale(
           begin: const Offset(0.85, 0.85),
@@ -240,61 +302,14 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           children: [
             _buildHeader(recordRoundState),
             const SizedBox(height: 12),
-            Expanded(
-              child:
-                  VoiceDescriptionCard(
-                        controller: _textEditingController,
-                        focusNode: _focusNode,
-                        isListening: isListening,
-                        accent: _descAccent,
-                        onClear: _handleClearText,
-                        isSingleHole: true,
-                      )
-                      .animate(delay: 180.ms)
-                      .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-                      .slideY(
-                        begin: 0.08,
-                        end: 0.0,
-                        duration: 280.ms,
-                        curve: Curves.easeOut,
-                      ),
-            ),
+            Expanded(child: _buildVoiceCard(isListening)),
             const SizedBox(height: 20),
             Center(
-              child:
-                  Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              isListening
-                                  ? const Color(
-                                      0xFFFF7A7A,
-                                    ).withValues(alpha: 0.06)
-                                  : const Color(
-                                      0xFF2196F3,
-                                    ).withValues(alpha: 0.06),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.4, 1.0],
-                          ),
-                        ),
-                        child: AnimatedMicrophoneButton(
-                          showListeningWaveState:
-                              isListening ||
-                              recordRoundState.pausingBetweenHoles,
-                          isLoading: isStartingListening,
-                          onTap: _toggleListening,
-                        ),
-                      )
-                      .animate(delay: 270.ms)
-                      .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-                      .scale(
-                        begin: const Offset(0.85, 0.85),
-                        end: const Offset(1.0, 1.0),
-                        duration: 300.ms,
-                        curve: Curves.easeOutBack,
-                      ),
+              child: _buildMicrophoneButton(
+                isListening,
+                recordRoundState.pausingBetweenHoles,
+                isStartingListening,
+              ),
             ),
             const SizedBox(height: 20),
             if (kDebugMode || kReleaseMode) _buildDebugButtons(),
@@ -312,36 +327,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     return Column(
       children: [
         // Course card (blue tint)
-        RoundDataInputCard(
-              icon: Icons.landscape,
-              subtitle: state.selectedCourse ?? 'Select a course',
-              onTap: _showCourseSelector,
-              accent: _courseAccent,
-            )
-            .animate()
-            .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-            .slideY(
-              begin: 0.08,
-              end: 0.0,
-              duration: 280.ms,
-              curve: Curves.easeOut,
-            ),
+        _buildCourseCard(state),
         const SizedBox(height: 8),
         // Date card (green tint)
-        RoundDataInputCard(
-              icon: Icons.access_time,
-              subtitle: _formatDateTime(state.selectedDateTime),
-              onTap: _showDateTimeEditor,
-              accent: _dateAccent,
-            )
-            .animate(delay: 90.ms)
-            .fadeIn(duration: 280.ms, curve: Curves.easeOut)
-            .slideY(
-              begin: 0.08,
-              end: 0.0,
-              duration: 280.ms,
-              curve: Curves.easeOut,
-            ),
+        _buildDateCard(state),
         const SizedBox(height: 8),
         // Hole Progress Card
         GestureDetector(
@@ -424,6 +413,109 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildVoiceCard(bool isListening) {
+    final Widget card = VoiceDescriptionCard(
+      controller: _textEditingController,
+      focusNode: _focusNode,
+      isListening: isListening,
+      accent: _descAccent,
+      onClear: _handleClearText,
+      isSingleHole: true,
+    );
+
+    return widget.skipIntroAnimations
+        ? card
+        : card
+              .animate(delay: 180.ms)
+              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+              .slideY(
+                begin: 0.08,
+                end: 0.0,
+                duration: 280.ms,
+                curve: Curves.easeOut,
+              );
+  }
+
+  Widget _buildMicrophoneButton(
+    bool isListening,
+    bool pausingBetweenHoles,
+    bool isStartingListening,
+  ) {
+    final Widget button = Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            isListening
+                ? const Color(0xFFFF7A7A).withValues(alpha: 0.06)
+                : const Color(0xFF2196F3).withValues(alpha: 0.06),
+            Colors.transparent,
+          ],
+          stops: const [0.4, 1.0],
+        ),
+      ),
+      child: AnimatedMicrophoneButton(
+        showListeningWaveState: isListening || pausingBetweenHoles,
+        isLoading: isStartingListening,
+        onTap: _toggleListening,
+      ),
+    );
+
+    return widget.skipIntroAnimations
+        ? button
+        : button
+              .animate(delay: 270.ms)
+              .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+              .scale(
+                begin: const Offset(0.85, 0.85),
+                end: const Offset(1.0, 1.0),
+                duration: 300.ms,
+                curve: Curves.easeOutBack,
+              );
+  }
+
+  Widget _buildCourseCard(RecordRoundActive state) {
+    final Widget card = RoundDataInputCard(
+      icon: Icons.landscape,
+      subtitle: state.selectedCourse ?? 'Select a course',
+      onTap: _showCourseSelector,
+      accent: _courseAccent,
+    );
+
+    return widget.skipIntroAnimations
+        ? card
+        : card
+              .animate()
+              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+              .slideY(
+                begin: 0.08,
+                end: 0.0,
+                duration: 280.ms,
+                curve: Curves.easeOut,
+              );
+  }
+
+  Widget _buildDateCard(RecordRoundActive state) {
+    final Widget card = RoundDataInputCard(
+      icon: Icons.access_time,
+      subtitle: _formatDateTime(state.selectedDateTime),
+      onTap: _showDateTimeEditor,
+      accent: _dateAccent,
+    );
+
+    return widget.skipIntroAnimations
+        ? card
+        : card
+              .animate(delay: 90.ms)
+              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+              .slideY(
+                begin: 0.08,
+                end: 0.0,
+                duration: 280.ms,
+                curve: Curves.easeOut,
+              );
   }
 
   Widget _buildNavigationButtons() {
@@ -749,7 +841,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
 
       await _recordRoundCubit.navigateToHole(state.currentHoleIndex - 1);
-      _loadFromCubit(state.currentHoleIndex - 1);
+      _loadTextFromCubit(state.currentHoleIndex - 1);
     }
   }
 
@@ -762,7 +854,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
 
       await _recordRoundCubit.navigateToHole(state.currentHoleIndex + 1);
-      _loadFromCubit(state.currentHoleIndex + 1);
+      _loadTextFromCubit(state.currentHoleIndex + 1);
     } else {
       _finishAndParse();
     }
@@ -781,7 +873,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
     await _recordRoundCubit.navigateToHole(holeIndex);
     setState(() => _showingReviewGrid = false);
-    _loadFromCubit(holeIndex);
+    _loadTextFromCubit(holeIndex);
   }
 
   void _finishAndParse() {
@@ -876,6 +968,71 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _recordRoundCubit.clearCurrentHoleText();
   }
 
+  Future<void> _handleClearAll() async {
+    // Unfocus keyboard
+    FocusScope.of(context).unfocus();
+
+    await _recordRoundCubit.clearAllHoles();
+
+    // // Show confirmation dialog
+    // final bool? confirmed = await showDialog<bool>(
+    //   context: context,
+    //   builder: (context) {
+    //     return AlertDialog(
+    //       title: const Text('Clear All Data?'),
+    //       content: const Text(
+    //         'This will discard all hole descriptions and reset the recording. This cannot be undone.',
+    //       ),
+    //       actions: [
+    //         TextButton(
+    //           onPressed: () => Navigator.of(context).pop(false),
+    //           child: const Text('Cancel'),
+    //         ),
+    //         TextButton(
+    //           onPressed: () => Navigator.of(context).pop(true),
+    //           child: Text(
+    //             'Clear All',
+    //             style: TextStyle(
+    //               color: Colors.red.shade600,
+    //               fontWeight: FontWeight.bold,
+    //             ),
+    //           ),
+    //         ),
+    //       ],
+    //     );
+    //   },
+    // );
+
+    // // If user confirmed, reset the recording
+    // if (confirmed == true) {
+    // await _recordRoundCubit.resetRecording();
+    // }
+  }
+
+  Widget _clearAllButton() {
+    return GestureDetector(
+      onTap: _handleClearAll,
+      child: Container(
+        width: 40,
+        color: Colors.transparent,
+        padding: const EdgeInsets.only(left: 16),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: const Text(
+              'Clear All',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _handleParse() {
     final bool useCached = false;
     debugPrint('Test Parse Constant: Using cached round: $useCached');
@@ -891,6 +1048,28 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         ),
       );
     }
+  }
+
+  void _handleClose() {
+    // Check if any holes have descriptions - if not, reset to inactive state
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is RecordRoundActive) {
+      bool anyHolesFilled = false;
+      for (int i = 0; i < totalHoles; i++) {
+        final String? description = state.holeDescriptions[i];
+        if (description != null && description.trim().isNotEmpty) {
+          anyHolesFilled = true;
+          break;
+        }
+      }
+
+      // If no holes are filled, reset to inactive state
+      if (!anyHolesFilled) {
+        _recordRoundCubit.clearOnLogout();
+      }
+    }
+
+    Navigator.of(context).pop();
   }
 }
 

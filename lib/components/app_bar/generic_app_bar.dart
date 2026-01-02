@@ -7,6 +7,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.topViewPadding,
     required this.title,
     this.rightWidget,
+    this.leftWidget,
     this.bottomWidget,
     this.bottomWidgetHeight,
     this.backgroundColor,
@@ -18,6 +19,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final double topViewPadding;
   final Widget? rightWidget;
+  final Widget? leftWidget;
   final Widget? bottomWidget;
   final double? bottomWidgetHeight;
   final Color? backgroundColor;
@@ -49,12 +51,20 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                 SizedBox(
                   height: 40,
                   width: backButtonTouchTargetWidth,
-                  child: hasBackButton
-                      ? AppBarBackButton(
+                  child: Builder(
+                    builder: (context) {
+                      if (hasBackButton) {
+                        return AppBarBackButton(
                           color: foregroundColor,
                           onPressed: onBackPressed,
-                        )
-                      : null,
+                        );
+                      } else if (leftWidget != null) {
+                        return leftWidget!;
+                      } else {
+                        return const SizedBox();
+                      }
+                    },
+                  ),
                 ),
                 Expanded(
                   child: SizedBox(

@@ -2,11 +2,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:turbo_disc_golf/animations/page_transitions.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
+import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
@@ -37,16 +40,11 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       // Start recording round in Cubit before showing panel
       BlocProvider.of<RecordRoundCubit>(context).startRecordingRound();
 
-      // await displayBottomSheet(
-      //   context,
-      //   RecordRoundStepsPanel(bottomViewPadding: widget.bottomViewPadding),
-      // );
       Navigator.of(context).push(
-        CupertinoPageRoute(
+        BannerExpandPageRoute(
           builder: (context) => RecordRoundStepsScreen(
             bottomViewPadding: widget.bottomViewPadding,
           ),
-          fullscreenDialog: true,
         ),
       );
     } else {
@@ -164,44 +162,62 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   }
 
   Widget _buildAddButton() {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 16,
-      child: Center(
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFBA68C8), Color(0xFF9C27B0)],
+    return BlocBuilder<RecordRoundCubit, RecordRoundState>(
+      builder: (context, recordRoundState) {
+        if (recordRoundState is RecordRoundActive) {
+          return Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: ContinueRecordingBanner(
+              state: recordRoundState,
+              bottomViewPadding: widget.bottomViewPadding,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
-                blurRadius: 20,
-                spreadRadius: 2,
-                offset: const Offset(0, 4),
-              ),
-            ],
+          );
+        }
+
+        return Positioned(
+          left: 0,
+          right: 0,
+          bottom: 16,
+          child: Center(child: _buildNewRoundButton()),
+        );
+      },
+    );
+  }
+
+  Widget _buildNewRoundButton() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFBA68C8), Color(0xFF9C27B0)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _showRecordRoundSheet,
-              customBorder: const CircleBorder(),
-              child: const Center(
-                child: Text(
-                  'Add',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _showRecordRoundSheet,
+          customBorder: const CircleBorder(),
+          child: const Center(
+            child: Text(
+              'Add',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),

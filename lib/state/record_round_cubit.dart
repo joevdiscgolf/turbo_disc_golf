@@ -48,6 +48,9 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
   }
 
   void startRecordingRound() {
+    // don't overwrite if a round description already exists.
+    if (state is RecordRoundActive) return;
+
     emit(
       RecordRoundActive(
         selectedCourse: null,
@@ -233,6 +236,25 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     final RecordRoundActive activeState = state as RecordRoundActive;
 
     setHoleDescription(text, index: activeState.currentHoleIndex);
+  }
+
+  Future<void> clearAllHoles() async {
+    if (state is! RecordRoundActive) return;
+
+    // Stop listening if active
+    if (_voiceService.isListening) {
+      await _safeStopListening(isNavigatingFromDifferentHole: false);
+    }
+
+    // Reset to inactive state
+    emit(
+      RecordRoundActive(
+        selectedCourse: null,
+        selectedDateTime: DateTime.now(),
+        holeDescriptions: getEmptyHoleDescriptions(),
+        numHoles: defaultNumHoles,
+      ),
+    );
   }
 
   @override
