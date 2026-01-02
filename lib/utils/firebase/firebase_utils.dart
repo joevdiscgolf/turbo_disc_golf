@@ -40,7 +40,10 @@ Future<DocumentSnapshot<Map<String, dynamic>>?> firestoreFetch(
 }) async {
   try {
     final DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await FirebaseFirestore.instance.doc(path).get().timeout(
+        await FirebaseFirestore.instance
+            .doc(path)
+            .get()
+            .timeout(
               timeoutDuration,
               onTimeout: () => throw TimeoutException(
                 'Firestore fetch timed out for path: $path',
@@ -125,9 +128,8 @@ Future<QuerySnapshot<Map<String, dynamic>>?> firestoreQuery({
 
     final QuerySnapshot<Map<String, dynamic>> snapshot = await fetch.timeout(
       timeoutDuration,
-      onTimeout: () => throw TimeoutException(
-        'Firestore query timed out for path: $path',
-      ),
+      onTimeout: () =>
+          throw TimeoutException('Firestore query timed out for path: $path'),
     );
     return snapshot;
   } on TimeoutException catch (_) {
@@ -142,5 +144,46 @@ Future<QuerySnapshot<Map<String, dynamic>>?> firestoreQuery({
       reason: '[firestore][utils][firestoreQuery] exception, path: $path',
     );
     return null;
+  }
+}
+
+/// A generic Firestore write helper that performs set or update operations.
+///
+/// [path]: The Firestore document path (e.g., 'collection/docId').
+/// [data]: The data to write (as a Map).
+/// [merge]: If true (default), performs a merge with existing doc data (`set`), otherwise overwrites.
+/// [timeoutDuration]: Duration before timing out (default 5 seconds).
+/// Returns true if successful, false if an error or timeout occurred.
+Future<bool> firestoreWrite(
+  String path,
+  Map<String, dynamic> data, {
+  bool merge = true,
+  Duration timeoutDuration = const Duration(seconds: 5),
+}) async {
+  try {
+    final docRef = FirebaseFirestore.instance.doc(path);
+    await docRef
+        .set(data, SetOptions(merge: merge))
+        .timeout(
+          timeoutDuration,
+          onTimeout: () {
+            throw TimeoutException(
+              'Firestore write timed out for path: $path after $timeoutDuration',
+            );
+          },
+        );
+    return true;
+  } on TimeoutException catch (_) {
+    log(
+      '[firestore][utils][firestoreWrite] on timeout, path: $path, duration: $timeoutDuration s,',
+    );
+    return false;
+  } catch (e, trace) {
+    FirebaseCrashlytics.instance.recordError(
+      e,
+      trace,
+      reason: '[firestore][utils][firestoreWrite] exception, path: $path',
+    );
+    return false;
   }
 }

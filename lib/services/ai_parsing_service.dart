@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
@@ -100,7 +101,7 @@ class AiParsingService {
   Future<PotentialDGRound?> parseRoundDescription({
     required String voiceTranscript,
     required List<DGDisc> userBag,
-    String? courseName,
+    Course? course,
     int numHoles = 18,
     List<HoleMetadata>?
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
@@ -112,7 +113,7 @@ class AiParsingService {
       final prompt = _buildParsingPrompt(
         voiceTranscript,
         userBag,
-        courseName,
+        course?.name,
         preParsedHoles: preParsedHoles, // Pass through to prompt builder
       );
       debugPrint('Sending request to Gemini...');
@@ -182,7 +183,10 @@ class AiParsingService {
       final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
 
       jsonMap['id'] = _uuid.v4();
-      jsonMap['courseName'] = courseName;
+      jsonMap['courseName'] = course?.name;
+      jsonMap['courseId'] = course?.id;
+      jsonMap['course'] = course?.toJson();
+      jsonMap['layoutId'] = course?.defaultLayout.id;
       jsonMap['uid'] = uid;
 
       debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
