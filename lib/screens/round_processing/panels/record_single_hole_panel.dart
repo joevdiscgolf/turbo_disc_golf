@@ -153,7 +153,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
 
                   Center(
                     child: AnimatedMicrophoneButton(
-                      isListening: isListening,
+                      showListeningWaveState: isListening,
                       onTap: _toggleListening,
                     ),
                   ),

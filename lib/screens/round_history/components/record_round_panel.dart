@@ -239,7 +239,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                                     ),
                                   ),
                                   child: AnimatedMicrophoneButton(
-                                    isListening: isListening,
+                                    showListeningWaveState: isListening,
                                     onTap: _toggleListening,
                                   ),
                                 )

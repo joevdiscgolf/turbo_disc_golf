@@ -15,24 +15,40 @@ class RecordRoundActive extends RecordRoundState {
     required this.selectedDateTime,
     required this.holeDescriptions,
     required this.numHoles,
+    this.isListening = false,
+    this.pausingBetweenHoles = false,
+    this.isStartingListening = false,
+    this.currentHoleIndex = 0,
   });
 
   final String? selectedCourse;
   final DateTime selectedDateTime;
   final Map<int, String> holeDescriptions;
   final int numHoles;
+  final bool isListening;
+  final bool isStartingListening;
+  final bool pausingBetweenHoles;
+  final int currentHoleIndex;
 
   RecordRoundActive copyWith({
     String? selectedCourse,
     DateTime? selectedDateTime,
     Map<int, String>? holeDescriptions,
     int? numHoles,
+    bool? isListening,
+    bool? isStartingListening,
+    bool? pausingBetweenHoles,
+    int? currentHoleIndex,
   }) {
     return RecordRoundActive(
       selectedCourse: selectedCourse ?? this.selectedCourse,
       selectedDateTime: selectedDateTime ?? this.selectedDateTime,
       holeDescriptions: holeDescriptions ?? this.holeDescriptions,
       numHoles: numHoles ?? this.numHoles,
+      isListening: isListening ?? this.isListening,
+      isStartingListening: isStartingListening ?? this.isStartingListening,
+      pausingBetweenHoles: pausingBetweenHoles ?? this.pausingBetweenHoles,
+      currentHoleIndex: currentHoleIndex ?? this.currentHoleIndex,
     );
   }
 

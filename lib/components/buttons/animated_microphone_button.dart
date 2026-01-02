@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 class AnimatedMicrophoneButton extends StatelessWidget {
   const AnimatedMicrophoneButton({
     super.key,
-    required this.isListening,
+    required this.showListeningWaveState,
     required this.onTap,
     this.isLoading = false,
   });
 
-  final bool isListening;
+  final bool showListeningWaveState;
   final bool isLoading;
   final VoidCallback onTap;
 
@@ -27,14 +27,14 @@ class AnimatedMicrophoneButton extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isListening
+            colors: showListeningWaveState
                 ? [const Color(0xFFEF5350), const Color(0xFFD32F2F)]
                 : [const Color(0xFF64B5F6), const Color(0xFF2196F3)],
           ),
           boxShadow: [
             BoxShadow(
               color:
-                  (isListening
+                  (showListeningWaveState
                           ? const Color(0xFFEF5350)
                           : const Color(0xFF2196F3))
                       .withValues(alpha: 0.4),
@@ -59,14 +59,14 @@ class AnimatedMicrophoneButton extends StatelessWidget {
                     key: ValueKey('loading'),
                   ),
                 )
-              : isListening
-                  ? const _SoundWaveIndicator(key: ValueKey('soundwave'))
-                  : const Icon(
-                      Icons.mic,
-                      color: Colors.white,
-                      size: 32,
-                      key: ValueKey('mic'),
-                    ),
+              : showListeningWaveState
+              ? const _SoundWaveIndicator(key: ValueKey('soundwave'))
+              : const Icon(
+                  Icons.mic,
+                  color: Colors.white,
+                  size: 32,
+                  key: ValueKey('mic'),
+                ),
         ),
       ),
     );

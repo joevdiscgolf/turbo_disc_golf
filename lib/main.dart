@@ -71,10 +71,8 @@ class _MyAppState extends State<MyApp> {
       roundHistoryCubit: _roundHistoryCubit,
     );
     _roundReviewCubit = RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit);
-    _recordRoundCubit = RecordRoundCubit();
-
     // Warm up voice recognition (fire and forget - don't block app startup)
-    locator.get<BaseVoiceRecordingService>().warmUp();
+    _recordRoundCubit = RecordRoundCubit();
 
     // Centralized list of ALL components (cubits + services) that need logout cleanup
     final List<ClearOnLogoutProtocol> clearOnLogoutComponents = [
