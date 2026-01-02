@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 const bool shouldAnimateProgressIndicators = true;
 const bool useRoundReviewScreenV2 = true;
 const bool useHeroAnimationsForRoundReview = false;
@@ -8,6 +10,6 @@ const bool autoStartListeningOnNextHole = false;
 const bool showInlineMiniHoleGrid = true;
 const bool showHoleProgressLabel = false;
 const bool useIosVoiceService = true;
-const bool kUseMeiliCourseSearch = true;
+const bool kUseMeiliCourseSearch = kDebugMode;
 
 const List<String> adminUids = ['9abVDwf3ZVM8unEzqMcWk95in2F3'];
