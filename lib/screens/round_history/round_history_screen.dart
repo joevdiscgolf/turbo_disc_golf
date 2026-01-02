@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:turbo_disc_golf/animations/page_transitions.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
@@ -11,7 +13,6 @@ import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
-import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       BlocProvider.of<RecordRoundCubit>(context).startRecordingRound();
 
       Navigator.of(context).push(
-        ShrinkToBottomPageRoute(
+        BannerExpandPageRoute(
           builder: (context) => RecordRoundStepsScreen(
             bottomViewPadding: widget.bottomViewPadding,
           ),
@@ -168,7 +169,10 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: _buildContinueRecordingBanner(recordRoundState),
+            child: ContinueRecordingBanner(
+              state: recordRoundState,
+              bottomViewPadding: widget.bottomViewPadding,
+            ),
           );
         }
 
@@ -217,92 +221,6 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContinueRecordingBanner(RecordRoundActive state) {
-    final int holesRecorded = state.holeDescriptions.values
-        .where((description) => description.isNotEmpty)
-        .length;
-    final String? courseName = state.selectedCourse;
-    final bool hasCourse = courseName != null && courseName.isNotEmpty;
-
-    // Build subtitle text
-    final String subtitle = hasCourse
-        ? '$courseName • $holesRecorded/${state.numHoles} holes'
-        : '$holesRecorded/${state.numHoles} holes';
-
-    return Hero(
-      tag: 'record_round_banner',
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 12,
-          bottom: MediaQuery.of(context).viewPadding.bottom + 12,
-        ),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE3F2FD),
-              Color(0xFFBBDEFB),
-            ],
-          ),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _continueRecording,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Continue Recording',
-                        style: TextStyle(
-                          color: Color(0xFF1565C0),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: const Color(0xFF1565C0).withValues(alpha: 0.7),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Color(0xFF1565C0),
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _continueRecording() {
-    Navigator.of(context).push(
-      ShrinkToBottomPageRoute(
-        builder: (context) => RecordRoundStepsScreen(
-          bottomViewPadding: widget.bottomViewPadding,
         ),
       ),
     );

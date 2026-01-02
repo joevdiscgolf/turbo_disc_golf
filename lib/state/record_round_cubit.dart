@@ -238,7 +238,7 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     setHoleDescription(text, index: activeState.currentHoleIndex);
   }
 
-  Future<void> resetRecording() async {
+  Future<void> clearAllHoles() async {
     if (state is! RecordRoundActive) return;
 
     // Stop listening if active
@@ -247,7 +247,14 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     }
 
     // Reset to inactive state
-    emit(const RecordRoundInactive());
+    emit(
+      RecordRoundActive(
+        selectedCourse: null,
+        selectedDateTime: DateTime.now(),
+        holeDescriptions: getEmptyHoleDescriptions(),
+        numHoles: defaultNumHoles,
+      ),
+    );
   }
 
   @override
