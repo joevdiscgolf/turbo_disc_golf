@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
@@ -74,7 +75,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
 
   Future<void> _processAndNavigate({
     required String transcript,
-    String? courseName,
+    Course? selectedCourse,
     required bool useSharedPreferences,
   }) async {
     debugPrint('RecordRoundScreen: Starting round processing');
@@ -88,7 +89,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
         barrierDismissible: false,
         pageBuilder: (context, _, __) => RoundProcessingLoadingScreen(
           transcript: transcript,
-          courseName: courseName,
+          selectedCourse: selectedCourse,
           useSharedPreferences: useSharedPreferences,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -463,9 +464,27 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
       children: [
         ElevatedButton.icon(
           onPressed: () {
+            // Create a test Course object
+            final String courseId = testCourseName.toLowerCase().replaceAll(' ', '-');
+            final CourseLayout testLayout = CourseLayout(
+              id: 'default',
+              name: 'Default Layout',
+              isDefault: true,
+              holes: List.generate(18, (int i) => CourseHole(
+                holeNumber: i + 1,
+                par: 3,
+                feet: 300,
+              )),
+            );
+            final Course testCourse = Course(
+              id: courseId,
+              name: testCourseName,
+              layouts: [testLayout],
+            );
+
             _processAndNavigate(
               transcript: getCorrectTestDescription,
-              courseName: testCourseName,
+              selectedCourse: testCourse,
               useSharedPreferences: _useSharedPreferences,
             );
           },

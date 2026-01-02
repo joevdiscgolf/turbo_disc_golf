@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -38,13 +39,8 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
   final FocusNode _transcriptFocusNode = FocusNode();
 
   // Course management
-  final List<String> _courses = <String>[
-    'Select a course',
-    'Redwood Park DGC',
-    'Riverside Long',
-    'Meadow Ridge',
-  ];
-  String _selectedCourse = 'Select a course';
+  List<Course> _courses = <Course>[];
+  Course? _selectedCourse;
 
   // Date/time
   DateTime _selectedDateTime = DateTime.now();
@@ -81,6 +77,38 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
     if (_voiceService.transcribedText.isNotEmpty) {
       _transcriptController.text = _voiceService.transcribedText;
     }
+
+    // Initialize courses list with Course objects
+    _loadCourses();
+  }
+
+  void _loadCourses() {
+    final List<String> courseNames = [
+      'Redwood Park DGC',
+      'Riverside Long',
+      'Meadow Ridge',
+    ];
+
+    setState(() {
+      _courses = courseNames.map((String name) {
+        final String courseId = name.toLowerCase().replaceAll(' ', '-');
+        final CourseLayout defaultLayout = CourseLayout(
+          id: 'default',
+          name: 'Default Layout',
+          isDefault: true,
+          holes: List.generate(18, (int i) => CourseHole(
+            holeNumber: i + 1,
+            par: 3,
+            feet: 300,
+          )),
+        );
+        return Course(
+          id: courseId,
+          name: name,
+          layouts: [defaultLayout],
+        );
+      }).toList();
+    });
   }
 
   void _onTranscriptFocusChange() {
@@ -156,9 +184,9 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                       // Course card (blue tint)
                       _InfoCard(
                             icon: Icons.landscape,
-                            subtitle: _selectedCourse == 'Select a course'
+                            subtitle: _selectedCourse == null
                                 ? 'Select a course'
-                                : _selectedCourse,
+                                : _selectedCourse!.name,
                             onTap: _showCourseSelector,
                             accent: _courseAccent,
                           )
@@ -295,6 +323,25 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                                   debugPrint(
                                     'Test Parse Constant: Using cached round: $useCached',
                                   );
+
+                                  // Create a test Course object
+                                  final String courseId = testCourseName.toLowerCase().replaceAll(' ', '-');
+                                  final CourseLayout testLayout = CourseLayout(
+                                    id: 'default',
+                                    name: 'Default Layout',
+                                    isDefault: true,
+                                    holes: List.generate(18, (int i) => CourseHole(
+                                      holeNumber: i + 1,
+                                      par: 3,
+                                      feet: 300,
+                                    )),
+                                  );
+                                  final Course testCourse = Course(
+                                    id: courseId,
+                                    name: testCourseName,
+                                    layouts: [testLayout],
+                                  );
+
                                   if (context.mounted) {
                                     Navigator.pushReplacement(
                                       context,
@@ -302,7 +349,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                                         builder: (context) =>
                                             RoundProcessingLoadingScreen(
                                               transcript: _selectedTranscript,
-                                              courseName: testCourseName,
+                                              selectedCourse: testCourse,
                                               useSharedPreferences: useCached,
                                             ),
                                       ),
@@ -327,7 +374,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                         disabled:
                             !hasTranscript ||
                             isListening ||
-                            _selectedCourse == 'Select a course',
+                            _selectedCourse == null,
                         onPressed: _handleContinue,
                       ),
                     ],
@@ -460,7 +507,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
     }
 
     // Validate course selection
-    if (_selectedCourse == 'Select a course') {
+    if (_selectedCourse == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Please select a course')));
@@ -472,7 +519,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
       CupertinoPageRoute(
         builder: (context) => RoundProcessingLoadingScreen(
           transcript: transcript,
-          courseName: _selectedCourse,
+          selectedCourse: _selectedCourse,
           useSharedPreferences: false,
         ),
       ),
@@ -519,7 +566,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                     itemBuilder: (context, index) {
                       if (index < _courses.length) {
                         final course = _courses[index];
-                        final bool selected = course == _selectedCourse;
+                        final bool selected = course.id == _selectedCourse?.id;
                         return ListTile(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -532,7 +579,7 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                             color: selected ? _courseAccent : Colors.black87,
                           ),
                           title: Text(
-                            course,
+                            course.name,
                             style: selected
                                 ? const TextStyle(
                                     fontWeight: FontWeight.bold,
@@ -605,9 +652,27 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
               onPressed: () {
                 final String name = nameController.text.trim();
                 if (name.isNotEmpty) {
+                  // Create a Course object from the name
+                  final String courseId = name.toLowerCase().replaceAll(' ', '-');
+                  final CourseLayout defaultLayout = CourseLayout(
+                    id: 'default',
+                    name: 'Default Layout',
+                    isDefault: true,
+                    holes: List.generate(18, (int i) => CourseHole(
+                      holeNumber: i + 1,
+                      par: 3,
+                      feet: 300,
+                    )),
+                  );
+                  final Course newCourse = Course(
+                    id: courseId,
+                    name: name,
+                    layouts: [defaultLayout],
+                  );
+
                   setState(() {
-                    _courses.add(name);
-                    _selectedCourse = name;
+                    _courses.add(newCourse);
+                    _selectedCourse = newCourse;
                   });
                 }
                 Navigator.pop(context);

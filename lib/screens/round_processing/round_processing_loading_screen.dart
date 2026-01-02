@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/explosion_effect.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/persistent_square.dart';
@@ -25,14 +26,14 @@ import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 /// Otherwise, processes the transcript normally with Gemini.
 class RoundProcessingLoadingScreen extends StatefulWidget {
   final String transcript;
-  final String? courseName;
+  final Course? selectedCourse;
   final int numHoles;
   final bool useSharedPreferences;
 
   const RoundProcessingLoadingScreen({
     super.key,
     this.transcript = '',
-    this.courseName,
+    this.selectedCourse,
     this.numHoles = 18,
     this.useSharedPreferences = false,
   });
@@ -84,7 +85,7 @@ class _RoundProcessingLoadingScreenState
       // - Otherwise: normal Gemini API processing
       await _roundParser.parseVoiceTranscript(
         widget.transcript,
-        courseName: widget.courseName,
+        selectedCourse: widget.selectedCourse,
         numHoles: widget.numHoles,
         useSharedPreferences: widget.useSharedPreferences,
       );

@@ -10,7 +10,9 @@ DGRound _$DGRoundFromJson(Map json) => DGRound(
   uid: json['uid'] as String,
   id: json['id'] as String,
   courseName: json['courseName'] as String,
-  courseId: json['courseId'] as String?,
+  courseId: json['courseId'] as String,
+  course: Course.fromJson(Map<String, dynamic>.from(json['course'] as Map)),
+  layoutId: json['layoutId'] as String,
   holes: (json['holes'] as List<dynamic>)
       .map((e) => DGHole.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
@@ -37,6 +39,8 @@ Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{
   'id': instance.id,
   'courseId': instance.courseId,
   'courseName': instance.courseName,
+  'course': instance.course.toJson(),
+  'layoutId': instance.layoutId,
   'holes': instance.holes.map((e) => e.toJson()).toList(),
   'analysis': instance.analysis?.toJson(),
   'aiSummary': instance.aiSummary?.toJson(),

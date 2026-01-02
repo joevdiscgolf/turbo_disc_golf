@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
@@ -18,13 +19,13 @@ import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
 /// User only needs to describe their individual throws for each hole.
 class VoiceDetailInputScreen extends StatefulWidget {
   final List<HoleMetadata> holeMetadata;
-  final String courseName;
+  final Course selectedCourse;
   final String? testVoiceDescription;
 
   const VoiceDetailInputScreen({
     super.key,
     required this.holeMetadata,
-    required this.courseName,
+    required this.selectedCourse,
     this.testVoiceDescription,
   });
 
@@ -196,7 +197,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
 
     await _roundParser.parseVoiceTranscript(
       _transcriptController.text,
-      courseName: widget.courseName,
+      selectedCourse: widget.selectedCourse,
       preParsedHoles: widget.holeMetadata,
     );
 
@@ -285,7 +286,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            widget.courseName,
+                            widget.selectedCourse.name,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),

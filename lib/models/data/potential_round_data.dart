@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -94,6 +95,8 @@ class PotentialDGRound {
     required this.id,
     this.courseId,
     this.courseName,
+    this.course,
+    this.layoutId,
     this.holes,
     this.analysis,
     this.aiSummary,
@@ -107,6 +110,8 @@ class PotentialDGRound {
   final String id;
   final String? courseId;
   final String? courseName;
+  final Course? course;
+  final String? layoutId;
   final List<PotentialDGHole>? holes;
   final RoundAnalysis? analysis;
   final AIContent? aiSummary;
@@ -122,7 +127,14 @@ class PotentialDGRound {
 
   /// Check if this round has all required fields for conversion to DGRound
   bool get hasRequiredFields {
-    if (courseName == null || holes == null || holes!.isEmpty) return false;
+    if (courseName == null ||
+        courseId == null ||
+        course == null ||
+        layoutId == null ||
+        holes == null ||
+        holes!.isEmpty) {
+      return false;
+    }
 
     // Also check that all holes have required fields
     for (final potentialHole in holes!) {
@@ -136,6 +148,9 @@ class PotentialDGRound {
   List<String> getMissingFields() {
     final List<String> missing = [];
     if (courseName == null) missing.add('courseName');
+    if (courseId == null) missing.add('courseId');
+    if (course == null) missing.add('course');
+    if (layoutId == null) missing.add('layoutId');
     if (holes == null || holes!.isEmpty) {
       missing.add('holes');
     } else {
@@ -187,8 +202,10 @@ class PotentialDGRound {
     return DGRound(
       uid: uid,
       id: id,
-      courseId: courseId,
+      courseId: courseId!,
       courseName: courseName!,
+      course: course!,
+      layoutId: layoutId!,
       holes: holes!.map((h) => h.toDGHole()).toList(),
       analysis: analysis,
       aiSummary: aiSummary,

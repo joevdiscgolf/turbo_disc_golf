@@ -36,6 +36,10 @@ PotentialDGRound _$PotentialDGRoundFromJson(Map json) => PotentialDGRound(
   id: json['id'] as String,
   courseId: json['courseId'] as String?,
   courseName: json['courseName'] as String?,
+  course: json['course'] == null
+      ? null
+      : Course.fromJson(Map<String, dynamic>.from(json['course'] as Map)),
+  layoutId: json['layoutId'] as String?,
   holes: (json['holes'] as List<dynamic>?)
       ?.map(
         (e) => PotentialDGHole.fromJson(Map<String, dynamic>.from(e as Map)),
@@ -65,6 +69,8 @@ Map<String, dynamic> _$PotentialDGRoundToJson(PotentialDGRound instance) =>
       'id': instance.id,
       'courseId': instance.courseId,
       'courseName': instance.courseName,
+      'course': instance.course?.toJson(),
+      'layoutId': instance.layoutId,
       'holes': instance.holes?.map((e) => e.toJson()).toList(),
       'analysis': instance.analysis?.toJson(),
       'aiSummary': instance.aiSummary?.toJson(),

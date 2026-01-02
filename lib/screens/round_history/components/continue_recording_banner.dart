@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/animations/page_transitions.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 
@@ -19,12 +20,12 @@ class ContinueRecordingBanner extends StatelessWidget {
     final int holesRecorded = state.holeDescriptions.values
         .where((description) => description.isNotEmpty)
         .length;
-    final String? courseName = state.selectedCourse;
-    final bool hasCourse = courseName != null && courseName.isNotEmpty;
+    final Course? course = state.selectedCourse;
+    final bool hasCourse = course != null && course.name.isNotEmpty;
 
     // Build subtitle text
     final String subtitle = hasCourse
-        ? '$courseName • $holesRecorded/${state.numHoles} holes'
+        ? '$course • $holesRecorded/${state.numHoles} holes'
         : '$holesRecorded/${state.numHoles} holes';
 
     return Container(
@@ -82,7 +83,9 @@ class ContinueRecordingBanner extends StatelessWidget {
                         Text(
                           subtitle,
                           style: TextStyle(
-                            color: const Color(0xFF1565C0).withValues(alpha: 0.7),
+                            color: const Color(
+                              0xFF1565C0,
+                            ).withValues(alpha: 0.7),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),

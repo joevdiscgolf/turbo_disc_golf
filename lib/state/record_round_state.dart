@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/data/course_data.dart';
 
 @immutable
 abstract class RecordRoundState {
@@ -21,7 +22,7 @@ class RecordRoundActive extends RecordRoundState {
     this.currentHoleIndex = 0,
   });
 
-  final String? selectedCourse;
+  final Course? selectedCourse;
   final DateTime selectedDateTime;
   final Map<int, String> holeDescriptions;
   final int numHoles;
@@ -31,7 +32,7 @@ class RecordRoundActive extends RecordRoundState {
   final int currentHoleIndex;
 
   RecordRoundActive copyWith({
-    String? selectedCourse,
+    Course? selectedCourse,
     DateTime? selectedDateTime,
     Map<int, String>? holeDescriptions,
     int? numHoles,
