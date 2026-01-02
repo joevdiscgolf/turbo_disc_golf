@@ -17,6 +17,9 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		AFEA7DF7F4B9547A855ADFA5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9F43D002DBFDED6B7A6E9D3C /* GoogleService-Info.plist */; };
+		D95EB3532EE8E16500A94607 /* SpeechRecognitionPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95EB3522EE8E16500A94607 /* SpeechRecognitionPlugin.swift */; };
+		D95EB3552EEB37C700A94607 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D95EB3542EEB37C700A94607 /* Speech.framework */; };
+		D95EB3572EEB384400A94607 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D95EB3562EEB384400A94607 /* AVFoundation.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +68,9 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9F43D002DBFDED6B7A6E9D3C /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		D95EB3522EE8E16500A94607 /* SpeechRecognitionPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionPlugin.swift; sourceTree = "<group>"; };
+		D95EB3542EEB37C700A94607 /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
+		D95EB3562EEB384400A94607 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		DA94CB4D3905AF84E6000FD2 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		EDA513E1AE4F2058B0B72F8E /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -74,6 +80,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D95EB3572EEB384400A94607 /* AVFoundation.framework in Frameworks */,
+				D95EB3552EEB37C700A94607 /* Speech.framework in Frameworks */,
 				3C577F158A09BD3989DE8152 /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -92,6 +100,8 @@
 		21E2606FE56F5229195E8A08 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D95EB3562EEB384400A94607 /* AVFoundation.framework */,
+				D95EB3542EEB37C700A94607 /* Speech.framework */,
 				858336E865E52290A4503C55 /* Pods_Runner.framework */,
 				0BB60D80561E423FA776255D /* Pods_RunnerTests.framework */,
 			);
@@ -155,6 +165,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				D95EB3522EE8E16500A94607 /* SpeechRecognitionPlugin.swift */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -400,6 +411,7 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				D95EB3532EE8E16500A94607 /* SpeechRecognitionPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

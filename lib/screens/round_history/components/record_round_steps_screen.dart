@@ -10,10 +10,8 @@ import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.da
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
@@ -33,18 +31,14 @@ class RecordRoundStepsScreen extends StatefulWidget {
 }
 
 class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
-  late final RecordRoundCubit _cubit;
-  late final VoiceRecordingService _voiceService;
+  late final RecordRoundCubit _recordRoundCubit;
 
   // Text editing
   late final TextEditingController _textEditingController;
   late final FocusNode _focusNode;
 
   // State management
-  int _currentHoleIndex = 0;
   bool _showingReviewGrid = false;
-  bool _shouldAutoStartListening = false;
-  bool _isStartingListening = false;
 
   // Course/Date selection (Step 1)
   final List<String> _courses = <String>[
@@ -78,66 +72,48 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   @override
   void initState() {
     super.initState();
-    _cubit = BlocProvider.of<RecordRoundCubit>(context);
+    _recordRoundCubit = BlocProvider.of<RecordRoundCubit>(context);
     _textEditingController = TextEditingController();
     _focusNode = FocusNode();
-    _voiceService = locator.get<VoiceRecordingService>();
-    _voiceService.initialize();
-    _voiceService.addListener(_onVoiceServiceUpdate);
     _focusNode.addListener(_onFocusChange);
-    _textEditingController.addListener(_onTextControllerChange);
+    _textEditingController.addListener(_onTextChanged);
 
-    if (_voiceService.transcribedText.isNotEmpty) {
-      _textEditingController.text = _voiceService.transcribedText;
-    }
+    // Initialize voice service in cubit
+    _recordRoundCubit.initializeVoiceService();
+
+    // Load hole 1's saved text (if any)
+    _loadFromCubit(0);
   }
 
   @override
   void dispose() {
-    _voiceService.removeListener(_onVoiceServiceUpdate);
+    _recordRoundCubit.disposeVoiceService();
     _focusNode.removeListener(_onFocusChange);
-    _textEditingController.removeListener(_onTextControllerChange);
+    _textEditingController.removeListener(_onTextChanged);
     _textEditingController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
   void _onFocusChange() {
-    if (_focusNode.hasFocus && _voiceService.isListening) {
-      _voiceService.stopListening();
+    if (_focusNode.hasFocus) {
+      // User started typing, stop listening
+      _recordRoundCubit.stopListening();
     }
+    // Note: No need to save on unfocus - _onTextChanged handles it automatically
   }
 
-  void _onTextControllerChange() {
-    final bool isUserInput = _focusNode.hasFocus || _voiceService.isListening;
-
-    // Save to cubit as user types or voice dictates
-    if (isUserInput) {
-      _cubit.setHoleDescription(
-        _textEditingController.text,
-        index: _currentHoleIndex,
-      );
-    }
-
-    // Update voice service when manually typing
-    if (!_voiceService.isListening && _focusNode.hasFocus) {
-      _voiceService.updateText(_textEditingController.text);
-    }
+  void _onTextChanged() {
+    // Automatically update cubit state whenever text changes (typing, voice, etc.)
+    _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
   }
 
-  void _onVoiceServiceUpdate() {
-    if (mounted) {
-      if (_voiceService.isListening && !_focusNode.hasFocus) {
-        _textEditingController.text = _voiceService.transcribedText;
-        _textEditingController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _textEditingController.text.length),
-        );
-      }
-      // Clear loading state when actually listening
-      if (_voiceService.isListening && _isStartingListening) {
-        _isStartingListening = false;
-      }
-      setState(() {});
+  // Explicit load from cubit
+  void _loadFromCubit(int holeIndex) {
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is RecordRoundActive) {
+      final String savedText = state.holeDescriptions[holeIndex] ?? '';
+      _textEditingController.text = savedText;
     }
   }
 
@@ -156,7 +132,34 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       ),
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
-      body: BlocBuilder<RecordRoundCubit, RecordRoundState>(
+      body: BlocConsumer<RecordRoundCubit, RecordRoundState>(
+        listener: (context, recordRoundstate) {
+          if (recordRoundstate is! RecordRoundActive) return;
+
+          final String? holeText = recordRoundstate
+              .holeDescriptions[recordRoundstate.currentHoleIndex];
+
+          // Only update if text is different to avoid loops and unnecessary updates
+          if (holeText != null && holeText != _textEditingController.text) {
+            // Temporarily remove listener to prevent triggering _onTextChanged
+            _textEditingController.removeListener(_onTextChanged);
+
+            _textEditingController.text = holeText;
+            _textEditingController.selection = TextSelection.fromPosition(
+              TextPosition(offset: holeText.length),
+            );
+
+            // Re-add listener
+            _textEditingController.addListener(_onTextChanged);
+          }
+        },
+        listenWhen: (previous, current) {
+          // Listen when hole descriptions change
+          if (previous is RecordRoundActive && current is RecordRoundActive) {
+            return previous.holeDescriptions != current.holeDescriptions;
+          }
+          return false;
+        },
         builder: (context, recordRoundState) {
           return GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
@@ -216,7 +219,12 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildHoleEntryView(RecordRoundState recordRoundState) {
-    final bool isListening = _voiceService.isListening;
+    if (recordRoundState is! RecordRoundActive) {
+      return const SizedBox();
+    }
+
+    final bool isListening = recordRoundState.isListening;
+    final bool isStartingListening = recordRoundState.isStartingListening;
 
     return SingleChildScrollView(
       padding: EdgeInsets.only(left: 16, right: 16),
@@ -230,8 +238,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (recordRoundState is RecordRoundActive)
-              _buildHeader(recordRoundState),
+            _buildHeader(recordRoundState),
             const SizedBox(height: 12),
             Expanded(
               child:
@@ -273,8 +280,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                           ),
                         ),
                         child: AnimatedMicrophoneButton(
-                          isListening: isListening,
-                          isLoading: _isStartingListening,
+                          showListeningWaveState:
+                              isListening ||
+                              recordRoundState.pausingBetweenHoles,
+                          isLoading: isStartingListening,
                           onTap: _toggleListening,
                         ),
                       )
@@ -297,7 +306,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildHeader(RecordRoundActive state) {
-    final double progress = (_currentHoleIndex + 1) / totalHoles;
+    final int currentHoleIndex = state.currentHoleIndex;
+    final double progress = (currentHoleIndex + 1) / totalHoles;
 
     return Column(
       children: [
@@ -357,7 +367,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          'Hole ${_currentHoleIndex + 1} of $totalHoles',
+                          'Hole ${currentHoleIndex + 1} of $totalHoles',
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 fontSize: 18,
@@ -404,7 +414,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                   if (showHoleProgressLabel) const SizedBox(height: 12),
                   _MiniHolesGrid(
                     state: state,
-                    currentHoleIndex: _currentHoleIndex,
+                    currentHoleIndex: currentHoleIndex,
                     onHoleTap: _onHoleTapFromGrid,
                   ),
                 ],
@@ -417,9 +427,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildNavigationButtons() {
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is! RecordRoundActive) return const SizedBox();
+
+    final int currentHoleIndex = state.currentHoleIndex;
     final bool allHolesFilled = _areAllHolesFilled();
-    final bool isFirstHole = _currentHoleIndex == 0;
-    final bool isLastHole = _currentHoleIndex == totalHoles - 1;
+    final bool isFirstHole = currentHoleIndex == 0;
+    final bool isLastHole = currentHoleIndex == totalHoles - 1;
     final bool showFinalize = isLastHole;
 
     return LayoutBuilder(
@@ -571,7 +585,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                               : null,
                           onTap: () {
                             setState(() => _selectedCourse = course);
-                            _cubit.setSelectedCourse(course);
+                            _recordRoundCubit.setSelectedCourse(course);
                             Navigator.pop(context);
                           },
                         );
@@ -631,7 +645,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     _courses.add(name);
                     _selectedCourse = name;
                   });
-                  _cubit.setSelectedCourse(name);
+                  _recordRoundCubit.setSelectedCourse(name);
                 }
                 Navigator.pop(context);
               },
@@ -668,7 +682,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       setState(() {
         _selectedDateTime = updatedDateTime;
       });
-      _cubit.setSelectedTime(updatedDateTime);
+      _recordRoundCubit.setSelectedTime(updatedDateTime);
       return;
     }
 
@@ -682,7 +696,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     setState(() {
       _selectedDateTime = updatedDateTime;
     });
-    _cubit.setSelectedTime(updatedDateTime);
+    _recordRoundCubit.setSelectedTime(updatedDateTime);
   }
 
   String _formatDateTime(DateTime dt) {
@@ -714,8 +728,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
   bool _areAllHolesFilled() {
-    if (_cubit.state is! RecordRoundActive) return false;
-    final RecordRoundActive state = _cubit.state as RecordRoundActive;
+    if (_recordRoundCubit.state is! RecordRoundActive) return false;
+    final RecordRoundActive state =
+        _recordRoundCubit.state as RecordRoundActive;
     for (int i = 0; i < totalHoles; i++) {
       final String? description = state.holeDescriptions[i];
       if (description == null || description.trim().isEmpty) {
@@ -725,43 +740,29 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     return true;
   }
 
-  void _previousHole() {
-    if (_currentHoleIndex > 0) {
-      setState(() {
-        _currentHoleIndex--;
-        _textEditingController.text =
-            (_cubit.state as RecordRoundActive)
-                .holeDescriptions[_currentHoleIndex] ??
-            '';
-        _voiceService.updateText(_textEditingController.text);
-        _shouldAutoStartListening = false;
-      });
+  Future<void> _previousHole() async {
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is! RecordRoundActive) return;
+
+    if (state.currentHoleIndex > 0) {
+      // Save any manual edits before navigating
+      _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
+
+      await _recordRoundCubit.navigateToHole(state.currentHoleIndex - 1);
+      _loadFromCubit(state.currentHoleIndex - 1);
     }
   }
 
-  void _nextHole() {
-    if (_currentHoleIndex < totalHoles - 1) {
-      setState(() {
-        _currentHoleIndex++;
-        _textEditingController.text =
-            (_cubit.state as RecordRoundActive)
-                .holeDescriptions[_currentHoleIndex] ??
-            '';
-        _voiceService.updateText(_textEditingController.text);
-        // Auto-start listening when navigating to next hole (but not on hole 1)
-        _shouldAutoStartListening =
-            autoStartListeningOnNextHole && _currentHoleIndex > 0;
-      });
+  Future<void> _nextHole() async {
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is! RecordRoundActive) return;
 
-      // Start listening after frame is built to avoid semantics errors
-      if (_shouldAutoStartListening) {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          if (mounted && !_voiceService.isListening) {
-            setState(() => _isStartingListening = true);
-            await _voiceService.startListening(preserveExistingText: false);
-          }
-        });
-      }
+    if (state.currentHoleIndex < totalHoles - 1) {
+      // Save any manual edits before navigating
+      _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
+
+      await _recordRoundCubit.navigateToHole(state.currentHoleIndex + 1);
+      _loadFromCubit(state.currentHoleIndex + 1);
     } else {
       _finishAndParse();
     }
@@ -774,20 +775,18 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     setState(() => _showingReviewGrid = true);
   }
 
-  void _onHoleTapFromGrid(int holeIndex) {
-    setState(() {
-      _showingReviewGrid = false;
-      _currentHoleIndex = holeIndex;
-      _textEditingController.text =
-          (_cubit.state as RecordRoundActive).holeDescriptions[holeIndex] ?? '';
-      _voiceService.updateText(_textEditingController.text);
-      _shouldAutoStartListening =
-          false; // Don't auto-start when coming from grid
-    });
+  Future<void> _onHoleTapFromGrid(int holeIndex) async {
+    // Save any manual edits before navigating
+    _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
+
+    await _recordRoundCubit.navigateToHole(holeIndex);
+    setState(() => _showingReviewGrid = false);
+    _loadFromCubit(holeIndex);
   }
 
   void _finishAndParse() {
-    final RecordRoundActive state = _cubit.state as RecordRoundActive;
+    final RecordRoundActive state =
+        _recordRoundCubit.state as RecordRoundActive;
     Navigator.of(context).pushReplacement(
       CupertinoPageRoute(
         builder: (context) => RoundProcessingLoadingScreen(
@@ -801,14 +800,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _toggleListening() async {
-    if (_voiceService.isListening) {
-      await _voiceService.stopListening();
-      setState(() => _isStartingListening = false);
-    } else {
-      setState(() => _isStartingListening = true);
-      FocusScope.of(context).unfocus();
-      await _voiceService.startListening(preserveExistingText: true);
-    }
+    FocusScope.of(context).unfocus();
+    _recordRoundCubit.toggleListening();
   }
 
   void _showTestConstantSelector() {
@@ -879,10 +872,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _handleClearText() {
-    setState(() {
-      _textEditingController.clear();
-      _voiceService.clearText();
-    });
+    _textEditingController.clear();
+    _recordRoundCubit.clearCurrentHoleText();
   }
 
   void _handleParse() {
@@ -1005,7 +996,7 @@ class _MiniHoleIndicator extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 32,
-        height: 42,
+        height: 40,
         padding: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
           color: isCurrent
@@ -1018,7 +1009,7 @@ class _MiniHoleIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             Text(
               '$holeNumber',

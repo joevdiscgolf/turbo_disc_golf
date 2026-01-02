@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
 const testRoundDescriptions = [
@@ -31,7 +31,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
   static const descriptionIndex = 4;
   String get getCorrectTestDescription =>
       testRoundDescriptions[descriptionIndex];
-  late final VoiceRecordingService _voiceService;
+  late final BaseVoiceRecordingService _voiceService;
   late final BagService _bagService;
   late AnimationController _animationController;
   final TextEditingController _transcriptController = TextEditingController();
@@ -42,7 +42,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
   @override
   void initState() {
     super.initState();
-    _voiceService = VoiceRecordingService();
+    _voiceService = locator.get<BaseVoiceRecordingService>();
     _bagService = locator.get<BagService>();
 
     _animationController = AnimationController(

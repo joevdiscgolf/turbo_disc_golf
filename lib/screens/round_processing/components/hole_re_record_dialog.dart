@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 
 /// Dialog for re-recording voice description for a specific hole.
 ///
@@ -29,7 +29,7 @@ class HoleReRecordDialog extends StatefulWidget {
 
 class _HoleReRecordDialogState extends State<HoleReRecordDialog>
     with SingleTickerProviderStateMixin {
-  late VoiceRecordingService _voiceService;
+  late BaseVoiceRecordingService _voiceService;
   late AnimationController _animationController;
   final TextEditingController _transcriptController = TextEditingController();
   bool _isProcessing = false;
@@ -37,7 +37,7 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
   @override
   void initState() {
     super.initState();
-    _voiceService = VoiceRecordingService();
+    _voiceService = locator.get<BaseVoiceRecordingService>();
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -180,18 +180,18 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
                       Text(
                         'Re-record Hole ${widget.holeNumber}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (widget.holePar != null)
                         Text(
                           'Par ${widget.holePar}${widget.holeFeet != null ? ' • ${widget.holeFeet} ft' : ''}',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                     ],
                   ),
@@ -244,8 +244,8 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
                       child: Text(
                         _voiceService.lastError,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF664D03),
-                            ),
+                          color: const Color(0xFF664D03),
+                        ),
                       ),
                     ),
                   ],
@@ -270,25 +270,25 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
                         boxShadow: _voiceService.isListening
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF10E5FF)
-                                      .withValues(alpha: 0.7),
+                                  color: const Color(
+                                    0xFF10E5FF,
+                                  ).withValues(alpha: 0.7),
                                   blurRadius: 20 * _animationController.value,
                                   spreadRadius: 5 * _animationController.value,
                                 ),
                               ]
                             : [
                                 BoxShadow(
-                                  color: const Color(0xFF9D4EDD)
-                                      .withValues(alpha: 0.4),
+                                  color: const Color(
+                                    0xFF9D4EDD,
+                                  ).withValues(alpha: 0.4),
                                   blurRadius: 10,
                                   spreadRadius: 3,
                                 ),
                               ],
                       ),
                       child: Icon(
-                        _voiceService.isListening
-                            ? Icons.mic
-                            : Icons.mic_none,
+                        _voiceService.isListening ? Icons.mic : Icons.mic_none,
                         size: 40,
                         color: Colors.white,
                       ),
@@ -306,10 +306,10 @@ class _HoleReRecordDialogState extends State<HoleReRecordDialog>
                     ? 'Listening... Describe this hole!'
                     : 'Tap mic to record',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: _voiceService.isListening
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
+                  fontWeight: _voiceService.isListening
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
               ),
             ),
             const SizedBox(height: 24),

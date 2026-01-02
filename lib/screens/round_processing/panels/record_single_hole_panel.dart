@@ -11,7 +11,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
 /// A reusable panel for recording a single hole via voice input.
@@ -50,13 +50,14 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  late VoiceRecordingService _voiceService;
+  late BaseVoiceRecordingService _voiceService;
   final ScrollController _scrollController = ScrollController();
   int _selectedTestIndex = 0;
 
   // Internal processing state
   bool _processingContinueButton = false;
   bool _processingTestButton = false;
+  String _textWhenListeningStarted = '';
 
   bool get _isProcessing => _processingContinueButton || _processingTestButton;
   set _isProcessing(bool isProcessing) {
@@ -74,7 +75,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   @override
   void initState() {
     super.initState();
-    _voiceService = VoiceRecordingService();
+    _voiceService = locator.get<BaseVoiceRecordingService>();
     _initializeVoiceService();
     _voiceService.addListener(_onVoiceServiceUpdate);
     _textEditingController.addListener(_onTextControllerChange);
@@ -152,7 +153,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
 
                   Center(
                     child: AnimatedMicrophoneButton(
-                      isListening: isListening,
+                      showListeningWaveState: isListening,
                       onTap: _toggleListening,
                     ),
                   ),
@@ -296,14 +297,16 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
 
   void _onVoiceServiceUpdate() {
     if (mounted) {
-      // Only sync from voice service to controller when actively listening
-      // This prevents:
-      // 1. Clearing text when restarting microphone (Bug #1)
-      // 2. Overwriting manual edits (Bug #2)
       if (_voiceService.isListening && !_focusNode.hasFocus) {
-        _textEditingController.text = _voiceService.transcribedText;
+        // Combine baseline (what was there) + session (what's being said now)
+        final String sessionText = _voiceService.transcribedText;
+        final String combinedText = _textWhenListeningStarted.isEmpty
+            ? sessionText
+            : '${_textWhenListeningStarted.trim()} ${sessionText.trim()}';
+
+        _textEditingController.text = combinedText;
         _textEditingController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _textEditingController.text.length),
+          TextPosition(offset: combinedText.length),
         );
       }
 
@@ -353,8 +356,12 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
           return;
         }
       }
-      // Preserve existing text (including manual edits) when restarting
-      await _voiceService.startListening(preserveExistingText: true);
+
+      // Capture current text as baseline
+      _textWhenListeningStarted = _textEditingController.text;
+
+      // Start fresh voice session
+      await _voiceService.startListening();
     }
   }
 
@@ -510,6 +517,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
     setState(() {
       _textEditingController.clear();
       _voiceService.clearText();
+      _textWhenListeningStarted = ''; // Clear baseline
     });
   }
 

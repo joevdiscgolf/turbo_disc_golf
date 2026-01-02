@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 
-class VoiceRecordingService extends ChangeNotifier
-    implements ClearOnLogoutProtocol {
+class SpeechToTextService extends BaseVoiceRecordingService {
   final SpeechToText _speechToText = SpeechToText();
   String _transcribedText = '';
   bool _isListening = false;
   bool _isInitialized = false;
   String _lastError = '';
 
+  // Simple getter - just returns raw speech recognition output
+  @override
   String get transcribedText => _transcribedText;
+  @override
   bool get isListening => _isListening;
+  @override
   bool get isInitialized => _isInitialized;
+  @override
   String get lastError => _lastError;
 
+  @override
   Future<bool> initialize() async {
     try {
       // debugPrint('=== Initializing Voice Recording Service ===');
@@ -86,43 +91,66 @@ class VoiceRecordingService extends ChangeNotifier
     }
   }
 
-  Future<void> startListening({bool preserveExistingText = false}) async {
+  /// Warms up the speech recognition engine by doing a brief phantom listen.
+  /// This should be called on app startup to reduce latency on first real use.
+  @override
+  Future<void> warmUp() async {
+    debugPrint('=== Warming up speech recognition ===');
+
+    // Initialize if not already done
+    if (!_isInitialized) {
+      final bool success = await initialize();
+      if (!success) {
+        debugPrint('Warm-up failed: Could not initialize');
+        return;
+      }
+    }
+
+    // Start a brief phantom listen to warm up the engine
+    try {
+      await _speechToText.listen(
+        onResult: (result) {
+          // Do nothing with the result - this is just a warm-up
+        },
+        listenFor: const Duration(milliseconds: 100), // Very brief
+        listenOptions: SpeechListenOptions(
+          listenMode: ListenMode.dictation,
+          partialResults: true,
+        ),
+      );
+
+      // Immediately stop
+      await _speechToText.stop();
+
+      debugPrint('Speech recognition warmed up successfully');
+    } catch (e) {
+      debugPrint('Warm-up listen failed (non-critical): $e');
+      // Don't fail - this is just an optimization
+    }
+  }
+
+  @override
+  Future<void> startListening() async {
     debugPrint('=== Starting voice recording ===');
 
     if (!_isInitialized) {
-      // debugPrint('Not initialized, initializing now...');
       await initialize();
     }
 
     if (_isInitialized && !_isListening) {
-      // Store existing text if we want to preserve it
-      final String existingText =
-          preserveExistingText && _transcribedText.isNotEmpty
-              ? _transcribedText.trim()
-              : '';
-
-      if (!preserveExistingText) {
-        _transcribedText = ''; // Clear previous text
-      }
+      // Clear session text for fresh recording
+      _transcribedText = '';
       _lastError = '';
       debugPrint('Starting speech recognition...');
-      if (existingText.isNotEmpty) {
-        debugPrint('Preserving existing text: $existingText');
-      }
 
       try {
         await _speechToText.listen(
           onResult: (result) {
-            if (existingText.isNotEmpty) {
-              // Append new voice input to existing text
-              _transcribedText = '$existingText ${result.recognizedWords}';
-            } else {
-              _transcribedText = result.recognizedWords;
-            }
-            debugPrint('=== VOICE TRANSCRIPT UPDATE ===');
-            debugPrint('Raw text: ${result.recognizedWords}');
-            debugPrint('Is final: ${result.finalResult}');
-            debugPrint('===============================');
+            _transcribedText = result.recognizedWords;
+            // debugPrint('=== VOICE TRANSCRIPT UPDATE ===');
+            // debugPrint('Raw text: ${result.recognizedWords}');
+            // debugPrint('Is final: ${result.finalResult}');
+            // debugPrint('===============================');
             notifyListeners();
           },
           listenFor: const Duration(minutes: 10),
@@ -148,30 +176,18 @@ class VoiceRecordingService extends ChangeNotifier
     }
   }
 
+  @override
   Future<void> stopListening() async {
     debugPrint('=== Stopping voice recording ===');
     if (_isListening) {
-      await _speechToText.stop();
-      _isListening = false;
+      _isListening = false; // Set flag immediately
+      notifyListeners(); // Notify immediately so UI updates
+
+      await _speechToText.stop(); // Then await actual stop
+
       debugPrint('Speech recognition stopped');
       debugPrint('Final transcript: $_transcribedText');
-      notifyListeners();
     }
-  }
-
-  void appendText(String text) {
-    _transcribedText += ' $text';
-    notifyListeners();
-  }
-
-  void clearText() {
-    _transcribedText = '';
-    notifyListeners();
-  }
-
-  void updateText(String text) {
-    _transcribedText = text;
-    notifyListeners();
   }
 
   @override

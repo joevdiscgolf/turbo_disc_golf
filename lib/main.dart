@@ -15,9 +15,9 @@ import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/logout_manager.dart';
+import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
-import 'package:turbo_disc_golf/services/voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -37,6 +37,7 @@ Future<void> main() async {
   await setUpLocator();
 
   await locator.get<AppPhaseController>().initialize();
+  await locator.get<BaseVoiceRecordingService>().initialize();
 
   runApp(const MyApp());
 }
@@ -66,11 +67,11 @@ class _MyAppState extends State<MyApp> {
 
     // Create cubits once
     _roundHistoryCubit = RoundHistoryCubit();
-    _roundConfirmationCubit =
-        RoundConfirmationCubit(roundHistoryCubit: _roundHistoryCubit);
-    _roundReviewCubit = RoundReviewCubit(
+    _roundConfirmationCubit = RoundConfirmationCubit(
       roundHistoryCubit: _roundHistoryCubit,
     );
+    _roundReviewCubit = RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit);
+    // Warm up voice recognition (fire and forget - don't block app startup)
     _recordRoundCubit = RecordRoundCubit();
 
     // Centralized list of ALL components (cubits + services) that need logout cleanup
@@ -85,7 +86,7 @@ class _MyAppState extends State<MyApp> {
       locator.get<RoundParser>(),
       locator.get<BagService>(),
       locator.get<RoundStorageService>(),
-      locator.get<VoiceRecordingService>(),
+      locator.get<BaseVoiceRecordingService>(),
       AnimationStateService.instance,
     ];
 
