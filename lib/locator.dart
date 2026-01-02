@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_rounds_repository.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
@@ -66,6 +67,9 @@ Future<void> setUpLocator() async {
   );
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
+  locator.registerLazySingleton<CourseSearchService>(
+    () => CourseSearchService(),
+  );
 
   // Register RoundsService which depends on FirestoreRoundService
   locator.registerSingleton<RoundsService>(

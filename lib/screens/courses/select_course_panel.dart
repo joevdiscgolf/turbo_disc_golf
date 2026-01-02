@@ -1,12 +1,14 @@
-import 'package:flutter/cupertino.dart';
+// lib/ui/course_search/course_search_view.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course_data.dart';
-import 'package:turbo_disc_golf/screens/courses/create_course_sheet.dart';
+import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
-import 'package:turbo_disc_golf/state/record_round_state.dart';
-import 'package:turbo_disc_golf/utils/search_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class SelectCoursePanel extends StatefulWidget {
   const SelectCoursePanel({super.key});
@@ -16,211 +18,183 @@ class SelectCoursePanel extends StatefulWidget {
 }
 
 class _SelectCoursePanelState extends State<SelectCoursePanel> {
-  static const Color _courseAccent = Color(0xFF2196F3); // blue
-  static const Color _createAccent = Color(0xFF9D4EDD); // purple-ish
+  final _controller = TextEditingController();
+  late final CourseSearchService _searchService;
 
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  Timer? _debounce;
+  bool _isLoading = false;
+
+  List<CourseSearchHit> _meiliResults = [];
+  List<Course> _localResults = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _searchService = locator.get<CourseSearchService>();
+
+    // ⭐ Load recent courses immediately
+    if (kUseMeiliCourseSearch) {
+      _loadRecentCourses();
+    }
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _debounce?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
-  List<Course> _filterCourses(List<Course> courses) {
-    if (_searchQuery.isEmpty) {
-      return courses;
-    }
+  // -------------------------
+  // Initial recent load
+  // -------------------------
+  Future<void> _loadRecentCourses() async {
+    final recent = await _searchService.getRecentCourses();
+    setState(() {
+      _meiliResults = recent;
+    });
+  }
 
-    return courses.where((course) {
-      return fuzzyMatch(course.name, _searchQuery);
-    }).toList();
+  // -------------------------
+  // Debounced search handler
+  // -------------------------
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 200), () async {
+      if (!mounted) return;
+
+      if (kUseMeiliCourseSearch) {
+        // Empty or short input → recents
+        if (value.trim().length < 2) {
+          await _loadRecentCourses();
+          return;
+        }
+
+        setState(() => _isLoading = true);
+
+        final results = await _searchService.searchCourses(value);
+
+        if (!mounted) return;
+        setState(() {
+          _meiliResults = results;
+          _isLoading = false;
+        });
+      } else {
+        final allCourses = BlocProvider.of<RecordRoundCubit>(context).courses;
+
+        setState(() {
+          _localResults = allCourses
+              .where((c) => c.name.toLowerCase().contains(value.toLowerCase()))
+              .toList();
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RecordRoundCubit, RecordRoundState>(
-      builder: (context, recordRoundState) {
-        if (recordRoundState is! RecordRoundActive) return const SizedBox();
-
-        final List<Course> courses = BlocProvider.of<RecordRoundCubit>(
-          context,
-        ).courses;
-
-        final List<Course> filteredCourses = _filterCourses(courses);
-
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.75,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Select Course',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search courses...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _searchQuery = '';
-                                });
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: filteredCourses.length + 1,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        if (index < filteredCourses.length) {
-                          final Course course = filteredCourses[index];
-                          final bool selected =
-                              course.id == recordRoundState.selectedCourse?.id;
-
-                          return ListTile(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            tileColor: selected
-                                ? _courseAccent.withValues(alpha: 0.08)
-                                : null,
-                            leading: Icon(
-                              Icons.landscape,
-                              color: selected ? _courseAccent : Colors.black87,
-                            ),
-                            title: Text(
-                              course.name,
-                              style: selected
-                                  ? const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: _courseAccent,
-                                    )
-                                  : null,
-                            ),
-                            trailing: selected
-                                ? const Icon(
-                                    Icons.check_circle,
-                                    color: _courseAccent,
-                                  )
-                                : null,
-                            onTap: () {
-                              BlocProvider.of<RecordRoundCubit>(
-                                context,
-                              ).setSelectedCourse(course);
-                              Navigator.pop(context);
-                            },
-                          );
-                        } else {
-                          return ListTile(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            tileColor: _createAccent.withValues(alpha: 0.08),
-                            leading: const Icon(
-                              Icons.add_circle_outline,
-                              color: _createAccent,
-                            ),
-                            title: const Text(
-                              'Create new course',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-
-                              // Navigate to voice detail input screen
-                              Navigator.of(context).push(
-                                CupertinoPageRoute(
-                                  builder: (context) => CreateCourseSheet(
-                                    onCourseCreated: (course) {
-                                      BlocProvider.of<RecordRoundCubit>(
-                                        context,
-                                      ).courses.add(course);
-                                      BlocProvider.of<RecordRoundCubit>(
-                                        context,
-                                      ).setSelectedCourse(course);
-
-                                      Navigator.pop(context);
-                                    },
-                                    topViewPadding: MediaQuery.of(
-                                      context,
-                                    ).viewPadding.top,
-                                  ),
-                                  fullscreenDialog: true,
-                                ),
-                              );
-                              // displayBottomSheet(
-                              //   context,
-                              //   CreateCourseSheet(
-                              //     onCourseCreated: (course) {
-                              //       BlocProvider.of<RecordRoundCubit>(
-                              //         context,
-                              //       ).courses.add(course);
-                              //       BlocProvider.of<RecordRoundCubit>(
-                              //         context,
-                              //       ).setSelectedCourse(course);
-
-                              //       Navigator.pop(context);
-                              //     },
-                              //     topViewPadding: MediaQuery.of(
-                              //       context,
-                              //     ).viewPadding.top,
-                              //   ),
-                              // );
-                            },
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
+    return Column(
+      children: [
+        // 🔍 Search bar
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            controller: _controller,
+            onChanged: _onSearchChanged,
+            decoration: const InputDecoration(
+              hintText: 'Search courses…',
+              prefixIcon: Icon(Icons.search),
             ),
           ),
+        ),
+
+        if (_isLoading) const LinearProgressIndicator(),
+
+        Expanded(
+          child: kUseMeiliCourseSearch
+              ? _buildMeiliResults()
+              : _buildLocalResults(),
+        ),
+      ],
+    );
+  }
+
+  // -------------------------
+  // Meilisearch + recents
+  // -------------------------
+  Widget _buildMeiliResults() {
+    if (_meiliResults.isEmpty) {
+      return const Center(child: Text('No recent courses'));
+    }
+
+    return ListView.builder(
+      itemCount: _meiliResults.length,
+      itemBuilder: (context, index) {
+        final courseSearchHit = _meiliResults[index];
+
+        return ListTile(
+          title: Text(courseSearchHit.name),
+          subtitle: Text(
+            [
+              courseSearchHit.city,
+              courseSearchHit.state,
+            ].where((e) => e != null && e.isNotEmpty).join(', '),
+          ),
+          onTap: () async {
+            _onCourseTapped(courseSearchHit);
+          },
         );
       },
     );
+  }
+
+  // -------------------------
+  // Local (test) results
+  // -------------------------
+  Widget _buildLocalResults() {
+    return ListView.builder(
+      itemCount: _localResults.length,
+      itemBuilder: (context, index) {
+        final course = _localResults[index];
+
+        return ListTile(
+          title: Text(course.name),
+          subtitle: Text(
+            [
+              course.city,
+              course.state,
+            ].where((e) => e != null && e.isNotEmpty).join(', '),
+          ),
+          onTap: () {
+            _onCourseTapped(course.toCourseSearchHit());
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _onCourseTapped(CourseSearchHit courseSearchHit) async {
+    // Fetch full Course from Firestore using course.id
+    locator.get<CourseSearchService>().markCourseAsUsed(courseSearchHit);
+
+    final Course? course = await FBCourseDataLoader.getCourseById(
+      courseSearchHit.id,
+    );
+
+    if (!mounted) return;
+    if (course == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Applied defaults to all holes'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    BlocProvider.of<RecordRoundCubit>(context).setSelectedCourse(course);
+    Navigator.pop(context);
   }
 }

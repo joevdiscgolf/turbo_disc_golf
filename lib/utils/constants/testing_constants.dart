@@ -8,5 +8,6 @@ const bool autoStartListeningOnNextHole = false;
 const bool showInlineMiniHoleGrid = true;
 const bool showHoleProgressLabel = false;
 const bool useIosVoiceService = true;
+const bool kUseMeiliCourseSearch = true;
 
 const List<String> adminUids = ['9abVDwf3ZVM8unEzqMcWk95in2F3'];

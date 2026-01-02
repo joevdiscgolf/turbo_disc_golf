@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
-import 'package:turbo_disc_golf/services/courses_service.dart';
+import 'package:turbo_disc_golf/services/courses/courses_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 

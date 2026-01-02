@@ -246,7 +246,9 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
       country: state.country?.trim().isEmpty ?? true ? null : state.country,
     );
 
-    print('on course created to implement here, course name: ${course.name}');
+    debugPrint(
+      'on course created to implement here, course name: ${course.name}',
+    );
     // _onCourseCreated(course);
   }
 }

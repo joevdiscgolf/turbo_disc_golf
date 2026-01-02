@@ -129,5 +129,3 @@ const kTestCourses = [
     pdgaId: 'pdga_820',
   ),
 ];
-
-class CoursesService {}
