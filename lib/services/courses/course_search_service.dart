@@ -1,40 +1,23 @@
 // lib/services/course_search_service.dart
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
-
-class CourseSearchHit {
-  final String id;
-  final String name;
-  final String? city;
-  final String? state;
-
-  CourseSearchHit({
-    required this.id,
-    required this.name,
-    this.city,
-    this.state,
-  });
-
-  factory CourseSearchHit.fromJson(Map<String, dynamic> json) {
-    return CourseSearchHit(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      city: json['city'] as String?,
-      state: json['state'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name, 'city': city, 'state': state};
-  }
-}
 
 extension CourseToSearchDocument on Course {
   CourseSearchHit toCourseSearchHit() {
-    return CourseSearchHit(id: id, name: name, city: city, state: state);
+    return CourseSearchHit(
+      id: id,
+      name: name,
+      city: city,
+      state: state,
+      layouts: layouts
+          .map((CourseLayout layout) => layout.toCourseLayoutSummary())
+          .toList(),
+    );
   }
 
   Map<String, dynamic> toSearchDocument() {
@@ -54,6 +37,20 @@ extension CourseToSearchDocument on Course {
       'holeCount': holeCount,
       'par': par,
     };
+  }
+}
+
+extension LayoutToSummary on CourseLayout {
+  CourseLayoutSummary toCourseLayoutSummary() {
+    return CourseLayoutSummary(
+      id: id,
+      name: name,
+      holeCount: holes.length,
+      par: holes.fold<int>(0, (sum, hole) => sum + hole.par),
+      isDefault: isDefault,
+      totalFeet: holes.fold<int>(0, (sum, hole) => sum + hole.feet),
+      description: description,
+    );
   }
 }
 

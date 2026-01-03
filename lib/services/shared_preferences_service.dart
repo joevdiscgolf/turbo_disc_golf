@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesService {
-  // ------------------
-  // Existing methods
-  // ------------------
+  static const String _recentCoursesKey = 'recent_courses';
+  static const String _cachedCoursesKey = 'cached_courses';
+
   setBooleanValue(String key, bool value) async {
     SharedPreferences myPrefs = await SharedPreferences.getInstance();
     myPrefs.setBool(key, value);
@@ -26,9 +26,6 @@ class SharedPreferencesService {
     return myPrefs.getBool('userIsSetUp');
   }
 
-  // ------------------
-  // NEW generic helpers
-  // ------------------
   Future<void> setStringList(String key, List<String> value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(key, value);
@@ -49,5 +46,11 @@ class SharedPreferencesService {
     final raw = prefs.getString(key);
     if (raw == null) return {};
     return jsonDecode(raw) as Map<String, dynamic>;
+  }
+
+  Future<void> clearCachedCourses() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_recentCoursesKey);
+    await prefs.remove(_cachedCoursesKey);
   }
 }

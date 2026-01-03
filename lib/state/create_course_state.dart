@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 
 class CreateCourseState extends Equatable {
   const CreateCourseState({

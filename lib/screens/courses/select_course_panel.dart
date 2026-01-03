@@ -3,11 +3,13 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
 import 'package:turbo_disc_golf/screens/courses/create_course_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
@@ -41,6 +43,9 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     // ⭐ Load recent courses immediately
     if (kUseMeiliCourseSearch) {
       _loadRecentCourses();
+    } else {
+      // Load all local courses initially
+      _loadAllCourses();
     }
   }
 
@@ -58,6 +63,16 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     final recent = await _searchService.getRecentCourses();
     setState(() {
       _meiliResults = recent;
+    });
+  }
+
+  // -------------------------
+  // Load all local courses
+  // -------------------------
+  void _loadAllCourses() {
+    final allCourses = BlocProvider.of<RecordRoundCubit>(context).courses;
+    setState(() {
+      _localResults = allCourses;
     });
   }
 
@@ -90,9 +105,17 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         final allCourses = BlocProvider.of<RecordRoundCubit>(context).courses;
 
         setState(() {
-          _localResults = allCourses
-              .where((c) => c.name.toLowerCase().contains(value.toLowerCase()))
-              .toList();
+          if (value.trim().isEmpty) {
+            // Empty search → show all courses
+            _localResults = allCourses;
+          } else {
+            // Filter courses based on search text
+            _localResults = allCourses
+                .where(
+                  (c) => c.name.toLowerCase().contains(value.toLowerCase()),
+                )
+                .toList();
+          }
         });
       }
     });
@@ -157,7 +180,8 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         final courseSearchHit = _meiliResults[index];
         return _CourseListItem(
           course: courseSearchHit,
-          onTap: () => _onCourseTapped(courseSearchHit),
+          onLayoutSelected: (layout) =>
+              _onLayoutSelected(courseSearchHit, layout),
         );
       },
     );
@@ -182,7 +206,8 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         final courseSearchHit = course.toCourseSearchHit();
         return _CourseListItem(
           course: courseSearchHit,
-          onTap: () => _onCourseTapped(courseSearchHit),
+          onLayoutSelected: (layout) =>
+              _onLayoutSelected(courseSearchHit, layout),
         );
       },
     );
@@ -219,10 +244,13 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
                 fullscreenDialog: true,
                 builder: (context) => CreateCourseSheet(
                   onCourseCreated: (course) {
-                    // Set the course and close both sheets
+                    // Set the course with default layout and close both sheets
                     BlocProvider.of<RecordRoundCubit>(
                       context,
-                    ).setSelectedCourse(course);
+                    ).setSelectedCourse(
+                      course,
+                      layoutId: course.defaultLayout.id,
+                    );
                     Navigator.pop(context); // Close create sheet
                     Navigator.pop(context); // Close select panel
                   },
@@ -236,78 +264,225 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     );
   }
 
-  Future<void> _onCourseTapped(CourseSearchHit courseSearchHit) async {
+  Future<void> _onLayoutSelected(
+    CourseSearchHit courseSearchHit,
+    CourseLayoutSummary layout,
+  ) async {
     // Fetch full Course from Firestore using course.id
     locator.get<CourseSearchService>().markCourseAsUsed(courseSearchHit);
 
-    final Course? course = await FBCourseDataLoader.getCourseById(
-      courseSearchHit.id,
-    );
+    FBCourseDataLoader.getCourseById(courseSearchHit.id).then((Course? course) {
+      if (!mounted) return;
+      if (course == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to load course'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        BlocProvider.of<RecordRoundCubit>(
+          context,
+        ).setSelectedCourse(course, layoutId: layout.id);
+      }
+    });
 
-    if (!mounted) return;
-    if (course == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Applied defaults to all holes'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    BlocProvider.of<RecordRoundCubit>(context).setSelectedCourse(course);
     Navigator.pop(context);
   }
 }
 
 // -------------------------
-// Course list item widget (NO cards, NO borders)
+// Course list item widget with expandable layouts
 // -------------------------
-class _CourseListItem extends StatelessWidget {
-  const _CourseListItem({required this.course, required this.onTap});
+class _CourseListItem extends StatefulWidget {
+  const _CourseListItem({required this.course, required this.onLayoutSelected});
 
   final CourseSearchHit course;
-  final VoidCallback onTap;
+  final void Function(CourseLayoutSummary layout) onLayoutSelected;
+
+  @override
+  State<_CourseListItem> createState() => _CourseListItemState();
+}
+
+class _CourseListItemState extends State<_CourseListItem>
+    with SingleTickerProviderStateMixin {
+  bool _isExpanded = false;
+
+  void _toggleExpanded() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Course name
-            Text(
-              course.name,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            // Location with icon
-            Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: _toggleExpanded,
+          child: Container(
+            color: Colors.transparent,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
               children: [
-                Icon(
-                  Icons.location_on,
-                  size: 14,
-                  color: TurbColors.gray.shade400,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Course name
+                      Text(
+                        widget.course.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Location with icon
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              [widget.course.city, widget.course.state]
+                                  .where((e) => e != null && e.isNotEmpty)
+                                  .join(', '),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: TurbColors.gray.shade500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.course.layouts.length == 1
+                      ? '1 layout'
+                      : '${widget.course.layouts.length} layouts',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: TurbColors.gray.shade400,
+                  ),
                 ),
                 const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    [
-                      course.city,
-                      course.state,
-                    ].where((e) => e != null && e.isNotEmpty).join(', '),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: TurbColors.gray.shade500,
-                    ),
+                AnimatedRotation(
+                  turns: _isExpanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: TurbColors.gray.shade400,
+                    size: 20,
                   ),
                 ),
               ],
             ),
-          ],
+          ),
+        ),
+        ClipRect(
+          child: AnimatedAlign(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            heightFactor: _isExpanded ? 1.0 : 0.0,
+            alignment: Alignment.topCenter,
+            child: _buildLayoutsList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLayoutsList() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widget.course.layouts.map((layout) {
+          return _LayoutListItem(
+            layout: layout,
+            onTap: () => widget.onLayoutSelected(layout),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// -------------------------
+// Layout list item widget
+// -------------------------
+class _LayoutListItem extends StatelessWidget {
+  const _LayoutListItem({required this.layout, required this.onTap});
+
+  final CourseLayoutSummary layout;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  flattenedOverWhite(TurbColors.blue, 0.1),
+                  flattenedOverWhite(TurbColors.blue, 0.05),
+                ],
+                begin: Alignment.bottomRight,
+                end: Alignment.topLeft,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(color: TurbColors.gray.shade100, width: 1),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        layout.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${layout.holeCount} holes • Par ${layout.par} • ${layout.totalFeet} ft',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: TurbColors.gray.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: TurbColors.gray.shade400,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

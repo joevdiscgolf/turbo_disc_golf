@@ -1,4 +1,4 @@
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 
 const kTestCourses = [
   Course(
@@ -7,7 +7,7 @@ const kTestCourses = [
     layouts: [
       CourseLayout(
         id: 'sunny18',
-        name: '18-hole Main',
+        name: 'Main',
         holes: [
           CourseHole(holeNumber: 1, par: 3, feet: 325),
           CourseHole(holeNumber: 2, par: 4, feet: 420),
@@ -44,7 +44,7 @@ const kTestCourses = [
     layouts: [
       CourseLayout(
         id: 'forest9',
-        name: '9-hole Short',
+        name: 'Shorts',
         holes: [
           CourseHole(holeNumber: 1, par: 3, feet: 215),
           CourseHole(holeNumber: 2, par: 3, feet: 245),
@@ -109,7 +109,7 @@ const kTestCourses = [
     layouts: [
       CourseLayout(
         id: 'lake6',
-        name: '6-hole Family',
+        name: 'Family',
         holes: [
           CourseHole(holeNumber: 1, par: 3, feet: 170),
           CourseHole(holeNumber: 2, par: 3, feet: 140),
@@ -127,5 +127,42 @@ const kTestCourses = [
     description: 'Beginner friendly lakeside course for families.',
     uDiscId: 'udisc_910',
     pdgaId: 'pdga_820',
+  ),
+  Course(
+    id: 'test5',
+    name: 'Foxwood',
+    layouts: [
+      CourseLayout(
+        id: 'big-white',
+        name: 'Big Red',
+        holes: [
+          CourseHole(holeNumber: 1, par: 4, feet: 600),
+          CourseHole(holeNumber: 2, par: 3, feet: 170),
+          CourseHole(holeNumber: 3, par: 3, feet: 370),
+          CourseHole(holeNumber: 4, par: 3, feet: 380),
+          CourseHole(holeNumber: 5, par: 4, feet: 440),
+          CourseHole(holeNumber: 6, par: 3, feet: 330),
+          CourseHole(holeNumber: 7, par: 4, feet: 500),
+          CourseHole(holeNumber: 8, par: 3, feet: 240),
+          CourseHole(holeNumber: 9, par: 3, feet: 300),
+          CourseHole(holeNumber: 10, par: 4, feet: 550),
+          CourseHole(holeNumber: 11, par: 3, feet: 315),
+          CourseHole(holeNumber: 12, par: 3, feet: 200),
+          CourseHole(holeNumber: 13, par: 5, feet: 800),
+          CourseHole(holeNumber: 14, par: 3, feet: 340),
+          CourseHole(holeNumber: 15, par: 4, feet: 280),
+          CourseHole(holeNumber: 16, par: 3, feet: 200),
+          CourseHole(holeNumber: 17, par: 4, feet: 700),
+          CourseHole(holeNumber: 18, par: 5, feet: 400),
+        ],
+        isDefault: true,
+      ),
+    ],
+    city: 'Baden',
+    state: 'ON',
+    country: 'Canada',
+    description: '18 hole course on the red 9 at Foxwood.',
+    uDiscId: 'udisc_1234',
+    pdgaId: 'pdga_78910',
   ),
 ];

@@ -10,7 +10,7 @@ import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.da
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/courses/select_course_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
@@ -475,9 +475,24 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildCourseCard(RecordRoundActive state) {
+    String subtitle;
+    if (state.selectedCourse != null) {
+      subtitle = state.selectedCourse!.name;
+      if (state.selectedLayoutId != null) {
+        final CourseLayout? layout = state.selectedCourse!.getLayoutById(
+          state.selectedLayoutId!,
+        );
+        if (layout != null) {
+          subtitle += ' • ${layout.name}';
+        }
+      }
+    } else {
+      subtitle = 'Select a course';
+    }
+
     final Widget card = RoundDataInputCard(
       icon: Icons.landscape,
-      subtitle: state.selectedCourse?.name ?? 'Select a course',
+      subtitle: subtitle,
       onTap: _showCourseSelector,
       accent: _courseAccent,
     );
@@ -873,10 +888,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   Widget _clearAllButton() {
     return IconButton(
-      icon: Icon(
-        Icons.delete_sweep,
-        color: Colors.grey.shade600,
-      ),
+      icon: Icon(Icons.delete_sweep, color: Colors.grey.shade600),
       onPressed: _handleClearAll,
       tooltip: 'Clear All',
     );

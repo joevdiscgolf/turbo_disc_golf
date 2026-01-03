@@ -8,7 +8,7 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -96,17 +96,12 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
           id: 'default',
           name: 'Default Layout',
           isDefault: true,
-          holes: List.generate(18, (int i) => CourseHole(
-            holeNumber: i + 1,
-            par: 3,
-            feet: 300,
-          )),
+          holes: List.generate(
+            18,
+            (int i) => CourseHole(holeNumber: i + 1, par: 3, feet: 300),
+          ),
         );
-        return Course(
-          id: courseId,
-          name: name,
-          layouts: [defaultLayout],
-        );
+        return Course(id: courseId, name: name, layouts: [defaultLayout]);
       }).toList();
     });
   }
@@ -325,16 +320,21 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                                   );
 
                                   // Create a test Course object
-                                  final String courseId = testCourseName.toLowerCase().replaceAll(' ', '-');
+                                  final String courseId = testCourseName
+                                      .toLowerCase()
+                                      .replaceAll(' ', '-');
                                   final CourseLayout testLayout = CourseLayout(
                                     id: 'default',
                                     name: 'Default Layout',
                                     isDefault: true,
-                                    holes: List.generate(18, (int i) => CourseHole(
-                                      holeNumber: i + 1,
-                                      par: 3,
-                                      feet: 300,
-                                    )),
+                                    holes: List.generate(
+                                      18,
+                                      (int i) => CourseHole(
+                                        holeNumber: i + 1,
+                                        par: 3,
+                                        feet: 300,
+                                      ),
+                                    ),
                                   );
                                   final Course testCourse = Course(
                                     id: courseId,
@@ -653,16 +653,19 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                 final String name = nameController.text.trim();
                 if (name.isNotEmpty) {
                   // Create a Course object from the name
-                  final String courseId = name.toLowerCase().replaceAll(' ', '-');
+                  final String courseId = name.toLowerCase().replaceAll(
+                    ' ',
+                    '-',
+                  );
                   final CourseLayout defaultLayout = CourseLayout(
                     id: 'default',
                     name: 'Default Layout',
                     isDefault: true,
-                    holes: List.generate(18, (int i) => CourseHole(
-                      holeNumber: i + 1,
-                      par: 3,
-                      feet: 300,
-                    )),
+                    holes: List.generate(
+                      18,
+                      (int i) =>
+                          CourseHole(holeNumber: i + 1, par: 3, feet: 300),
+                    ),
                   );
                   final Course newCourse = Course(
                     id: courseId,
