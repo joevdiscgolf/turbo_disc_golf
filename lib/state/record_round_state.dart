@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 
 @immutable
 abstract class RecordRoundState {
@@ -16,6 +16,7 @@ class RecordRoundActive extends RecordRoundState {
     required this.selectedDateTime,
     required this.holeDescriptions,
     required this.numHoles,
+    this.selectedLayoutId,
     this.isListening = false,
     this.pausingBetweenHoles = false,
     this.isStartingListening = false,
@@ -23,6 +24,7 @@ class RecordRoundActive extends RecordRoundState {
   });
 
   final Course? selectedCourse;
+  final String? selectedLayoutId;
   final DateTime selectedDateTime;
   final Map<int, String> holeDescriptions;
   final int numHoles;
@@ -33,6 +35,7 @@ class RecordRoundActive extends RecordRoundState {
 
   RecordRoundActive copyWith({
     Course? selectedCourse,
+    String? selectedLayoutId,
     DateTime? selectedDateTime,
     Map<int, String>? holeDescriptions,
     int? numHoles,
@@ -43,6 +46,7 @@ class RecordRoundActive extends RecordRoundState {
   }) {
     return RecordRoundActive(
       selectedCourse: selectedCourse ?? this.selectedCourse,
+      selectedLayoutId: selectedLayoutId ?? this.selectedLayoutId,
       selectedDateTime: selectedDateTime ?? this.selectedDateTime,
       holeDescriptions: holeDescriptions ?? this.holeDescriptions,
       numHoles: numHoles ?? this.numHoles,

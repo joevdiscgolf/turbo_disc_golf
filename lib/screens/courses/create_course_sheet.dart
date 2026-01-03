@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/hole_grid_card.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/create_course_state.dart';
@@ -172,7 +172,11 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
             ButtonSegment<int>(value: 18, label: Text('18')),
             ButtonSegment<int>(value: 0, label: Text('Custom')),
           ],
-          selected: {state.numberOfHoles == 9 || state.numberOfHoles == 18 ? state.numberOfHoles : 0},
+          selected: {
+            state.numberOfHoles == 9 || state.numberOfHoles == 18
+                ? state.numberOfHoles
+                : 0,
+          },
           onSelectionChanged: (Set<int> selection) {
             final int value = selection.first;
             if (value == 0) {
@@ -198,7 +202,9 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
             child: Row(
               children: [
                 Icon(
-                  state.isParsingImage ? Icons.hourglass_empty : Icons.camera_alt,
+                  state.isParsingImage
+                      ? Icons.hourglass_empty
+                      : Icons.camera_alt,
                   color: TurbColors.gray.shade600,
                   size: 24,
                 ),
@@ -208,7 +214,9 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        state.isParsingImage ? 'Parsing Image...' : 'Upload scorecard image',
+                        state.isParsingImage
+                            ? 'Parsing Image...'
+                            : 'Upload scorecard image',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: TurbColors.gray.shade800,
@@ -312,8 +320,12 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
                 style: TextStyle(fontSize: 12),
               ),
               initiallyExpanded: false,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-              collapsedBackgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.05),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.1),
+              collapsedBackgroundColor: Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.05),
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

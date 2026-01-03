@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/voice_detail_input_screen.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
@@ -383,11 +383,14 @@ class _ImportScoreScreenState extends State<ImportScoreScreen> {
       id: 'default',
       name: 'Default Layout',
       isDefault: true,
-      holes: List.generate(holeMetadata.length, (int i) => CourseHole(
-        holeNumber: i + 1,
-        par: holeMetadata[i].par,
-        feet: holeMetadata[i].distanceFeet ?? 300,
-      )),
+      holes: List.generate(
+        holeMetadata.length,
+        (int i) => CourseHole(
+          holeNumber: i + 1,
+          par: holeMetadata[i].par,
+          feet: holeMetadata[i].distanceFeet ?? 300,
+        ),
+      ),
     );
     final Course selectedCourse = Course(
       id: courseId,

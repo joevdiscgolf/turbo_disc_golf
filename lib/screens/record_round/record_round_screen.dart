@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/course_data.dart';
+import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
@@ -465,16 +465,18 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
         ElevatedButton.icon(
           onPressed: () {
             // Create a test Course object
-            final String courseId = testCourseName.toLowerCase().replaceAll(' ', '-');
+            final String courseId = testCourseName.toLowerCase().replaceAll(
+              ' ',
+              '-',
+            );
             final CourseLayout testLayout = CourseLayout(
               id: 'default',
               name: 'Default Layout',
               isDefault: true,
-              holes: List.generate(18, (int i) => CourseHole(
-                holeNumber: i + 1,
-                par: 3,
-                feet: 300,
-              )),
+              holes: List.generate(
+                18,
+                (int i) => CourseHole(holeNumber: i + 1, par: 3, feet: 300),
+              ),
             );
             final Course testCourse = Course(
               id: courseId,
