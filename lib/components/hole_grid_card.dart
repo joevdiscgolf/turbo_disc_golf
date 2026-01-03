@@ -21,14 +21,17 @@ class HoleGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
+            colors: [
+              const Color(0xFFE8F5E9).withValues(alpha: 0.3),
+              const Color(0xFFC8E6C9).withValues(alpha: 0.3),
+            ],
           ),
           borderRadius: BorderRadius.circular(12),
         ),

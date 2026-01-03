@@ -18,7 +18,9 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class SelectCoursePanel extends StatefulWidget {
-  const SelectCoursePanel({super.key});
+  const SelectCoursePanel({super.key, required this.bottomViewPadding});
+
+  final double bottomViewPadding;
 
   @override
   State<SelectCoursePanel> createState() => _SelectCoursePanelState();
@@ -218,7 +220,12 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   // -------------------------
   Widget _buildCreateCourseButton(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: widget.bottomViewPadding,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
@@ -229,37 +236,34 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: PrimaryButton(
-          width: double.infinity,
-          height: 56,
-          backgroundColor: Colors.blue,
-          label: 'Create new course',
-          icon: Icons.add,
-          onPressed: () {
-            Navigator.push(
-              context,
-              CupertinoPageRoute(
-                fullscreenDialog: true,
-                builder: (context) => CreateCourseSheet(
-                  onCourseCreated: (course) {
-                    // Set the course with default layout and close both sheets
-                    BlocProvider.of<RecordRoundCubit>(
-                      context,
-                    ).setSelectedCourse(
-                      course,
-                      layoutId: course.defaultLayout.id,
-                    );
-                    Navigator.pop(context); // Close create sheet
-                    Navigator.pop(context); // Close select panel
-                  },
-                  topViewPadding: MediaQuery.of(context).padding.top,
-                ),
+      child: PrimaryButton(
+        width: double.infinity,
+        height: 56,
+        backgroundColor: Colors.blue,
+        label: 'Create new course',
+        icon: Icons.add,
+        onPressed: () {
+          Navigator.of(context).pop();
+          Navigator.push(
+            context,
+            CupertinoPageRoute(
+              fullscreenDialog: true,
+              builder: (context) => CreateCourseSheet(
+                onCourseCreated: (course) {
+                  // Set the course with default layout and close both sheets
+                  BlocProvider.of<RecordRoundCubit>(context).setSelectedCourse(
+                    course,
+                    layoutId: course.defaultLayout.id,
+                  );
+                  Navigator.pop(context); // Close create sheet
+                  Navigator.pop(context); // Close select panel
+                },
+                topViewPadding: MediaQuery.of(context).padding.top,
+                bottomViewPadding: MediaQuery.of(context).padding.bottom,
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

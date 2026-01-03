@@ -623,7 +623,12 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _showCourseSelector() async {
-    displayBottomSheet(context, SelectCoursePanel());
+    displayBottomSheet(
+      context,
+      SelectCoursePanel(
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+      ),
+    );
   }
 
   Future<void> _showDateTimeEditor() async {

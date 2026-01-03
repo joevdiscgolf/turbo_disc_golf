@@ -136,37 +136,28 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
   Future<void> pickAndParseImage(BuildContext context) async {
     emit(state.copyWith(parseError: null));
 
-    final ImageSource? source = await showDialog<ImageSource>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Image Source'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (source == null) return;
-
     try {
-      final image = await _picker.pickImage(source: source);
-      if (image == null) return;
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1800,
+        maxHeight: 1800,
+        imageQuality: 85,
+      ).catchError((error) {
+        debugPrint('Error picking image: $error');
+        return null;
+      });
+
+      // User cancelled or error occurred
+      if (image == null) {
+        emit(state.copyWith(isParsingImage: false, parseError: null));
+        return;
+      }
+
+      if (!context.mounted) return;
 
       emit(state.copyWith(isParsingImage: true));
 
-      final ai = locator.get<AiParsingService>();
+      final AiParsingService ai = locator.get<AiParsingService>();
       final List<HoleMetadata> metadata = await ai.parseScorecard(
         imagePath: image.path,
       );
@@ -211,6 +202,7 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
         SnackBar(content: Text('Parsed ${metadata.length} holes')),
       );
     } catch (e) {
+      debugPrint('Error in pickAndParseImage: $e');
       emit(
         state.copyWith(
           isParsingImage: false,

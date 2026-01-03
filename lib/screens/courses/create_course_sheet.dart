@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/hole_grid_card.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/courses/components/quick_fill_holes_card.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/create_course_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -16,10 +16,12 @@ class CreateCourseSheet extends StatefulWidget {
     super.key,
     required this.onCourseCreated,
     required this.topViewPadding,
+    required this.bottomViewPadding,
   });
 
   final void Function(Course course) onCourseCreated;
   final double topViewPadding;
+  final double bottomViewPadding;
 
   @override
   State<CreateCourseSheet> createState() => _CreateCourseSheetState();
@@ -59,7 +61,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
               FocusScope.of(context).unfocus();
             },
             child: ListView(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: EdgeInsets.only(bottom: widget.bottomViewPadding),
               children: [
                 // PanelHeader(
                 //   title: 'Create Course',
@@ -166,32 +168,89 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
           style: TextStyle(fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
-        SegmentedButton<int>(
-          segments: const [
-            ButtonSegment<int>(value: 9, label: Text('9')),
-            ButtonSegment<int>(value: 18, label: Text('18')),
-            ButtonSegment<int>(value: 0, label: Text('Custom')),
-          ],
-          selected: {
-            state.numberOfHoles == 9 || state.numberOfHoles == 18
-                ? state.numberOfHoles
-                : 0,
-          },
-          onSelectionChanged: (Set<int> selection) {
-            final int value = selection.first;
-            if (value == 0) {
-              _showCustomHoleCountDialog(context);
-            } else {
-              _createCourseCubit.updateHoleCount(value);
-            }
-          },
+        SizedBox(
+          width: double.infinity,
+          child: Stack(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<int>(
+                  showSelectedIcon: false,
+                  style: ButtonStyle(
+                    side: WidgetStateProperty.all(
+                      BorderSide(color: TurbColors.gray.shade300),
+                    ),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  segments: [
+                    ButtonSegment<int>(
+                      value: 9,
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: const Text('9', maxLines: 1),
+                      ),
+                    ),
+                    ButtonSegment<int>(
+                      value: 18,
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: const Text('18', maxLines: 1),
+                      ),
+                    ),
+                    ButtonSegment<int>(
+                      value: 0,
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          state.numberOfHoles != 9 && state.numberOfHoles != 18
+                              ? 'Custom (${state.numberOfHoles})'
+                              : 'Custom',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  selected: {
+                    state.numberOfHoles == 9 || state.numberOfHoles == 18
+                        ? state.numberOfHoles
+                        : 0,
+                  },
+                  onSelectionChanged: (Set<int> selection) {
+                    final int value = selection.first;
+                    if (value == 0) {
+                      _showCustomHoleCountDialog(context);
+                    } else {
+                      _createCourseCubit.updateHoleCount(value);
+                    }
+                  },
+                ),
+              ),
+              // Transparent overlay on custom segment to allow re-tapping
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  onTap: () => _showCustomHoleCountDialog(context),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width / 3 - 16,
+                    color: Colors.transparent,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
-        InkWell(
+        GestureDetector(
           onTap: state.isParsingImage
               ? null
               : () => _createCourseCubit.pickAndParseImage(context),
-          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -296,137 +355,6 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
     }
   }
 
-  Widget _buildQuickFillCard(BuildContext context) {
-    int quickFillPar = 3;
-    int quickFillFeet = 300;
-    HoleType quickFillType = HoleType.open;
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              title: const Text(
-                'Quick Fill',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              subtitle: const Text(
-                'Set default values for all holes',
-                style: TextStyle(fontSize: 12),
-              ),
-              initiallyExpanded: false,
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withValues(alpha: 0.1),
-              collapsedBackgroundColor: Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withValues(alpha: 0.05),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              initialValue: quickFillPar.toString(),
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Par',
-                                isDense: true,
-                              ),
-                              onChanged: (v) {
-                                final int? parsed = int.tryParse(v);
-                                if (parsed != null) {
-                                  setState(() => quickFillPar = parsed);
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: TextFormField(
-                              initialValue: quickFillFeet.toString(),
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Distance (ft)',
-                                isDense: true,
-                              ),
-                              onChanged: (v) {
-                                final int? parsed = int.tryParse(v);
-                                if (parsed != null) {
-                                  setState(() => quickFillFeet = parsed);
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<HoleType>(
-                        initialValue: quickFillType,
-                        decoration: const InputDecoration(
-                          labelText: 'Hole Type',
-                          isDense: true,
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: HoleType.open,
-                            child: Text('🌳 Open'),
-                          ),
-                          DropdownMenuItem(
-                            value: HoleType.slightlyWooded,
-                            child: Text('🌲 Moderate'),
-                          ),
-                          DropdownMenuItem(
-                            value: HoleType.wooded,
-                            child: Text('🌲🌲 Wooded'),
-                          ),
-                        ],
-                        onChanged: (HoleType? value) {
-                          if (value != null) {
-                            setState(() => quickFillType = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _createCourseCubit.applyDefaultsToAllHoles(
-                              defaultPar: quickFillPar,
-                              defaultFeet: quickFillFeet,
-                              defaultType: quickFillType,
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Applied defaults to all holes'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          child: const Text('Apply to All Holes'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   // ─────────────────────────────────────────────
   Widget _buildHolesSection(BuildContext context, CreateCourseState state) {
     return Column(
@@ -434,7 +362,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
       children: [
         _sectionHeader('Holes', Icons.sports_golf, Colors.orange),
         const SizedBox(height: 8),
-        _buildQuickFillCard(context),
+        QuickFillHolesCard(),
         const SizedBox(height: 8),
         ...state.holes.map((hole) {
           return HoleGridCard(
@@ -453,30 +381,14 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
 
   // ─────────────────────────────────────────────
   Widget _buildSaveButton(BuildContext context) {
-    return Container(
+    return PrimaryButton(
       width: double.infinity,
       height: 56,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF137e66), Color(0xFF1a9f7f)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ElevatedButton(
-        onPressed: _createCourseCubit.saveCourse,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-        ),
-        child: const Text(
-          'Create Course',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
+      label: 'Create Course',
+      gradientBackground: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      onPressed: _createCourseCubit.saveCourse,
     );
   }
 
