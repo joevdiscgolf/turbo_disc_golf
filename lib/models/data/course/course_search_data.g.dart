@@ -36,6 +36,7 @@ CourseLayoutSummary _$CourseLayoutSummaryFromJson(Map json) =>
       par: (json['par'] as num).toInt(),
       totalFeet: (json['totalFeet'] as num).toInt(),
       isDefault: json['isDefault'] as bool,
+      description: json['description'] as String?,
     );
 
 Map<String, dynamic> _$CourseLayoutSummaryToJson(
@@ -47,4 +48,5 @@ Map<String, dynamic> _$CourseLayoutSummaryToJson(
   'par': instance.par,
   'totalFeet': instance.totalFeet,
   'isDefault': instance.isDefault,
+  'description': instance.description,
 };

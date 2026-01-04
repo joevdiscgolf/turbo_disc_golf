@@ -59,6 +59,12 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
     }
   }
 
+  void _navigateToJudgeTab() {
+    if (widget.tabController != null) {
+      widget.tabController!.animateTo(2); // Navigate to Judge tab (index 2)
+    }
+  }
+
   void _pushDetailScreen(int tabIndex) {
     // Import detail screens at the top of the file
     // Tab indices from RoundReviewScreen:
@@ -196,11 +202,26 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    // Determine if we should show banner
+    final bool shouldShowBanner = widget.round.aiJudgment == null;
+
+    // Check if this is first time seeing banner (for animation)
+    final bool isFirstView = !AnimationStateService.instance.hasAnimated(
+      widget.round.id,
+      'judge_banner',
+    );
+
     return Container(
       color: Colors.transparent,
       child: ListView(
-        padding: const EdgeInsets.only(top: 16, bottom: 80),
+        padding: const EdgeInsets.only(top: 0, bottom: 80),
         children: [
+          if (shouldShowBanner)
+            _JudgeBanner(
+              onTap: _navigateToJudgeTab,
+              shouldAnimate: isFirstView,
+            ),
           ScoreKPICard(
             round: widget.round,
             isDetailScreen: false,
@@ -2866,5 +2887,129 @@ class _DetailScreenWrapper extends StatelessWidget {
         body: child,
       ),
     );
+  }
+}
+
+/// Promotional banner that appears at top of Stats tab
+/// Encourages users to try the Judge feature
+class _JudgeBanner extends StatefulWidget {
+  final VoidCallback onTap;
+  final bool shouldAnimate;
+
+  const _JudgeBanner({required this.onTap, this.shouldAnimate = false});
+
+  @override
+  State<_JudgeBanner> createState() => _JudgeBannerState();
+}
+
+class _JudgeBannerState extends State<_JudgeBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.shouldAnimate) {
+      _controller = AnimationController(
+        duration: const Duration(milliseconds: 600),
+        vsync: this,
+      );
+
+      _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+      );
+
+      _fadeAnimation = Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+
+      // Start animation after short delay
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) _controller.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.shouldAnimate) _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget banner = GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFFF6B6B),
+              Color(0xFF2196F3),
+            ], // Roast red to glaze blue
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.local_fire_department,
+              color: Colors.white,
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Get Judged',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Glaze or brutal roast',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+
+    // Wrap with animation if enabled
+    if (widget.shouldAnimate) {
+      return FadeTransition(
+        opacity: _fadeAnimation,
+        child: ScaleTransition(scale: _scaleAnimation, child: banner),
+      );
+    }
+
+    return banner;
   }
 }
