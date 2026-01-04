@@ -171,6 +171,16 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
           'Potential round has ${_potentialRound!.holes?.length ?? 0} holes',
         );
 
+        // Enhance holes with course layout data (fill missing par/distance/holeType)
+        List<PotentialDGHole>? enhancedHoles;
+        if (selectedCourse != null && _potentialRound!.holes != null) {
+          enhancedHoles = _enhanceHolesWithCourseLayout(
+            _potentialRound!.holes!,
+            selectedCourse,
+            layoutId,
+          );
+        }
+
         // Add course data to potential round (AI service doesn't know about it)
         final String? uid = locator.get<AuthService>().currentUid;
         if (uid != null) {
@@ -181,7 +191,7 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
             courseId: courseId,
             course: selectedCourse,
             layoutId: layoutId,
-            holes: _potentialRound!.holes,
+            holes: enhancedHoles ?? _potentialRound!.holes,
             versionId: _potentialRound!.versionId,
             analysis: _potentialRound!.analysis,
             aiSummary: _potentialRound!.aiSummary,
@@ -516,6 +526,9 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
         .map((h) => h.number!)
         .toSet();
 
+    // Get course layout data for filling empty holes
+    final CourseLayout? layout = _potentialRound!.course?.defaultLayout;
+
     for (final int holeNumber in holeNumbers) {
       // Check if hole already exists
       if (existingHoleNumbers.contains(holeNumber)) {
@@ -523,12 +536,38 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
         continue;
       }
 
+      // Try to get hole metadata from course layout
+      final CourseHole? courseHole = layout?.holes
+          .cast<CourseHole?>()
+          .firstWhere(
+            (h) => h?.holeNumber == holeNumber,
+            orElse: () => null,
+          );
+
+      // Use course layout data if available, otherwise use defaults
+      final int? holePar = defaultPar ?? courseHole?.par;
+      final int? holeFeet = courseHole?.feet;
+      final HoleType? holeType = courseHole?.holeType;
+
+      // Log when using course layout data
+      if (courseHole != null) {
+        if (defaultPar == null) {
+          debugPrint(
+            '✓ Using par from course layout for hole $holeNumber: ${courseHole.par}',
+          );
+        }
+        debugPrint(
+          '✓ Using distance from course layout for hole $holeNumber: ${courseHole.feet} ft',
+        );
+      }
+
       // Create empty potential hole
       final PotentialDGHole emptyHole = PotentialDGHole(
         number: holeNumber,
-        par: defaultPar, // Keep null if not provided
-        feet: null, // No distance yet
+        par: holePar,
+        feet: holeFeet,
         throws: [], // Empty throws list
+        holeType: holeType,
       );
 
       // Find correct insertion position (maintain hole number order)
@@ -644,19 +683,74 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
 
       debugPrint('Successfully re-parsed hole $holeNumber');
 
+      // Enhance hole with course layout data if needed
+      PotentialDGHole enhancedHole = potentialHole;
+      if (potentialHole.par == null ||
+          potentialHole.feet == null ||
+          potentialHole.holeType == null) {
+        final Course? course = hasParsedRound
+            ? _parsedRound!.course
+            : _potentialRound?.course;
+
+        if (course != null) {
+          final CourseLayout layout = course.getLayoutById(
+                course.defaultLayout.id,
+              ) ??
+              course.defaultLayout;
+
+          final CourseHole? courseHole = layout.holes
+              .cast<CourseHole?>()
+              .firstWhere(
+                (h) => h?.holeNumber == holeNumber,
+                orElse: () => null,
+              );
+
+          if (courseHole != null) {
+            final bool needsPar = potentialHole.par == null;
+            final bool needsFeet = potentialHole.feet == null;
+            final bool needsHoleType = potentialHole.holeType == null;
+
+            enhancedHole = PotentialDGHole(
+              number: potentialHole.number,
+              par: potentialHole.par ?? courseHole.par,
+              feet: potentialHole.feet ?? courseHole.feet,
+              throws: potentialHole.throws,
+              holeType: potentialHole.holeType ?? courseHole.holeType,
+            );
+
+            // Log what was filled
+            if (needsPar) {
+              debugPrint(
+                '✓ Filled par for hole $holeNumber from course layout: ${courseHole.par}',
+              );
+            }
+            if (needsFeet) {
+              debugPrint(
+                '✓ Filled distance for hole $holeNumber from course layout: ${courseHole.feet} ft',
+              );
+            }
+            if (needsHoleType && courseHole.holeType != null) {
+              debugPrint(
+                '✓ Filled holeType for hole $holeNumber from course layout: ${courseHole.holeType?.name}',
+              );
+            }
+          }
+        }
+      }
+
       // If we have a parsed round, convert and update it
       if (hasParsedRound) {
         // Check if potential hole has required fields
-        if (!potentialHole.hasRequiredFields) {
+        if (!enhancedHole.hasRequiredFields) {
           _lastError =
-              'Re-parsed hole is missing required fields: ${potentialHole.getMissingFields().join(', ')}';
+              'Re-parsed hole is missing required fields: ${enhancedHole.getMissingFields().join(', ')}';
           _isProcessing = false;
           notifyListeners();
           return false;
         }
 
         // Convert to DGHole and update
-        final newHole = potentialHole.toDGHole();
+        final newHole = enhancedHole.toDGHole();
         updateHole(uid, holeIndex, newHole);
 
         // Re-validate and enhance the entire round
@@ -670,7 +764,7 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
         final updatedHoles = List<PotentialDGHole>.from(
           _potentialRound!.holes!,
         );
-        updatedHoles[holeIndex] = potentialHole;
+        updatedHoles[holeIndex] = enhancedHole;
 
         _potentialRound = PotentialDGRound(
           uid: uid,
@@ -956,6 +1050,87 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
       throws: enhancedThrows,
       holeType: hole.holeType,
     );
+  }
+
+  /// Enhance holes with par, distance, and holeType from course layout
+  /// Fills in missing values when AI doesn't return them
+  List<PotentialDGHole> _enhanceHolesWithCourseLayout(
+    List<PotentialDGHole> holes,
+    Course course,
+    String? layoutId,
+  ) {
+    // Get the appropriate layout (use layoutId or fall back to default)
+    final CourseLayout layout =
+        course.getLayoutById(layoutId ?? 'default') ?? course.defaultLayout;
+
+    debugPrint(
+      '=== Enhancing holes with course layout data from "${layout.name}" ===',
+    );
+
+    final List<PotentialDGHole> enhancedHoles = [];
+
+    for (final PotentialDGHole hole in holes) {
+      // Skip if hole number is null (can't match to layout)
+      if (hole.number == null) {
+        debugPrint('⚠️ Skipping hole with null number');
+        enhancedHoles.add(hole);
+        continue;
+      }
+
+      final int holeNumber = hole.number!;
+
+      // Find corresponding hole in course layout
+      final CourseHole? courseHole = layout.holes
+          .cast<CourseHole?>()
+          .firstWhere(
+            (h) => h?.holeNumber == holeNumber,
+            orElse: () => null,
+          );
+
+      if (courseHole == null) {
+        debugPrint(
+          '⚠️ Hole $holeNumber not found in course layout "${layout.name}"',
+        );
+        enhancedHoles.add(hole);
+        continue;
+      }
+
+      // Check which fields need to be filled
+      final bool needsPar = hole.par == null;
+      final bool needsFeet = hole.feet == null;
+      final bool needsHoleType = hole.holeType == null;
+
+      // Create enhanced hole with course layout data
+      final PotentialDGHole enhancedHole = PotentialDGHole(
+        number: hole.number,
+        par: hole.par ?? courseHole.par,
+        feet: hole.feet ?? courseHole.feet,
+        throws: hole.throws,
+        holeType: hole.holeType ?? courseHole.holeType,
+      );
+
+      // Log what was filled
+      if (needsPar) {
+        debugPrint(
+          '✓ Filled par for hole $holeNumber from course layout: ${courseHole.par}',
+        );
+      }
+      if (needsFeet) {
+        debugPrint(
+          '✓ Filled distance for hole $holeNumber from course layout: ${courseHole.feet} ft',
+        );
+      }
+      if (needsHoleType && courseHole.holeType != null) {
+        debugPrint(
+          '✓ Filled holeType for hole $holeNumber from course layout: ${courseHole.holeType?.name}',
+        );
+      }
+
+      enhancedHoles.add(enhancedHole);
+    }
+
+    debugPrint('=== Finished enhancing ${enhancedHoles.length} holes ===');
+    return enhancedHoles;
   }
 
   String getScoreName(int score) {

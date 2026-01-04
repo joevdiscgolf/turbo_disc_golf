@@ -760,6 +760,47 @@ var tags = ['flutter', 'dart'];
   for (var item in items) { ... }  // Acceptable when item type is obvious
   ```
 
+### Button Usage
+
+**CRITICAL: Always use PrimaryButton from `lib/components/buttons/primary_button.dart` for action buttons.**
+
+When creating buttons for user actions (submit, save, create, etc.), always use the PrimaryButton component instead of raw ElevatedButton or custom button implementations.
+
+✅ **CORRECT: Use PrimaryButton**
+```dart
+import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+
+PrimaryButton(
+  width: double.infinity,
+  height: 56,
+  label: 'Create Course',
+  gradientBackground: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
+  fontSize: 18,
+  fontWeight: FontWeight.bold,
+  onPressed: _handleSubmit,
+)
+```
+
+❌ **WRONG: Custom button implementations**
+```dart
+// Don't create custom button widgets
+Container(
+  decoration: BoxDecoration(
+    gradient: LinearGradient(colors: [...]),
+  ),
+  child: ElevatedButton(...),
+)
+```
+
+**Why PrimaryButton?**
+- Consistent styling across the app
+- Built-in haptic feedback
+- Loading states
+- Gradient support
+- Proper disabled states
+- Bounce animation
+- Less code duplication
+
 ### Component Structure Template
 
 ```dart
@@ -933,6 +974,7 @@ Before submitting code, verify:
 - [ ] StatefulWidget is used when component needs local state management
 - [ ] Const constructors are used where possible
 - [ ] Variables use explicit type annotations (e.g., `final String name = 'value'`)
+- [ ] **Action buttons use PrimaryButton from `lib/components/buttons/primary_button.dart`**
 - [ ] Imports are organized correctly
 - [ ] Resources are properly disposed
 - [ ] Theme values are used instead of hardcoded colors

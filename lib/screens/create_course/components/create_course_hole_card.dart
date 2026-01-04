@@ -3,8 +3,8 @@ import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 
 /// Compact card widget for displaying and editing a single hole
-class HoleGridCard extends StatelessWidget {
-  const HoleGridCard({
+class CrateCourseHoleCard extends StatelessWidget {
+  const CrateCourseHoleCard({
     super.key,
     required this.hole,
     required this.onParChanged,
@@ -19,62 +19,71 @@ class HoleGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Hole number
-              SizedBox(
-                width: 70,
-                child: Text(
-                  'Hole ${hole.holeNumber}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+    return Container(
+      decoration: BoxDecoration(
+        // gradient: LinearGradient(
+        //   begin: Alignment.topLeft,
+        //   end: Alignment.bottomRight,
+        //   colors: [
+        //     flattenedOverWhite(const Color(0xFF64B5F6), 0.10),
+        //     flattenedOverWhite(const Color(0xFF1565C0), 0.05),
+        //     // flattenedOverWhite(const Color(0xFFE8F5E9), 0.6),
+        //     // flattenedOverWhite(const Color(0xFFC8E6C9), 0.1),
+        //   ],
+        // ),
+        color: Colors.white,
+        // borderRadius: BorderRadius.circular(12),
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: Colors.black.withValues(alpha: 0.05),
+        //     offset: Offset(0, 4),
+        //     blurRadius: 8,
+        //     spreadRadius: 0,
+        //   ),
+        // ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            // Hole number
+            SizedBox(
+              width: 24,
+              child: Text(
+                '${hole.holeNumber}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
                 ),
               ),
-              const SizedBox(width: 8),
-              // Par field
-              Expanded(
-                flex: 1,
-                child: _CompactNumberField(
-                  label: 'Par',
-                  value: hole.par,
-                  onChanged: onParChanged,
-                ),
+            ),
+            const SizedBox(width: 8),
+            // Par field
+            Expanded(
+              flex: 1,
+              child: _CompactNumberField(
+                label: 'Par',
+                value: hole.par,
+                onChanged: onParChanged,
               ),
-              const SizedBox(width: 8),
-              // Feet field
-              Expanded(
-                flex: 2,
-                child: _CompactNumberField(
-                  label: 'Feet',
-                  value: hole.feet,
-                  onChanged: onFeetChanged,
-                ),
+            ),
+            const SizedBox(width: 8),
+            // Feet field
+            Expanded(
+              flex: 2,
+              child: _CompactNumberField(
+                label: 'Feet',
+                value: hole.feet,
+                onChanged: onFeetChanged,
               ),
-              const SizedBox(width: 8),
-              // Hole type selector
-              _HoleTypeCompact(
-                selectedType: hole.holeType ?? HoleType.open,
-                onTypeChanged: onTypeChanged,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            // Hole type selector
+            _HoleTypeCompact(
+              selectedType: hole.holeType ?? HoleType.open,
+              onTypeChanged: onTypeChanged,
+            ),
+          ],
         ),
       ),
     );
@@ -96,6 +105,7 @@ class _CompactNumberField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      key: ValueKey('$label-$value'), // Force rebuild when value changes
       initialValue: value.toString(),
       keyboardType: TextInputType.number,
       textAlign: TextAlign.center,
@@ -158,20 +168,26 @@ class _HoleTypeCompact extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey[300]!),
       ),
-      child: DropdownButton<HoleType>(
-        value: selectedType,
-        isDense: true,
-        underline: const SizedBox(),
-        style: const TextStyle(fontSize: 11, color: Colors.black87),
-        items: HoleType.values.map((type) {
-          return DropdownMenuItem(
-            value: type,
-            child: Text('${_getIcon(type)} ${_getLabel(type)}'),
-          );
-        }).toList(),
-        onChanged: (HoleType? value) {
-          if (value != null) onTypeChanged(value);
-        },
+      child: Center(
+        child: DropdownButton<HoleType>(
+          value: selectedType,
+          isDense: true,
+          underline: const SizedBox(),
+          iconSize: 16, // Smaller dropdown arrow
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+          items: HoleType.values.map((type) {
+            return DropdownMenuItem(
+              value: type,
+              child: Text(
+                '${_getIcon(type)} ${_getLabel(type)}',
+                style: const TextStyle(fontSize: 14),
+              ),
+            );
+          }).toList(),
+          onChanged: (HoleType? value) {
+            if (value != null) onTypeChanged(value);
+          },
+        ),
       ),
     );
   }

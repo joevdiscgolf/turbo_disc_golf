@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class ScoreKPICard extends StatelessWidget {
@@ -151,7 +152,7 @@ class ScoreKPICard extends StatelessWidget {
       context,
       'Throws',
       '${round.getTotalScore()}',
-      const Color(0xFF2196F3),
+      TurbColors.gray[600]!,
     );
   }
 
@@ -160,7 +161,7 @@ class ScoreKPICard extends StatelessWidget {
       context,
       'Par',
       '${round.getTotalPar()}',
-      const Color(0xFFFFA726),
+      TurbColors.gray[600]!,
     );
   }
 

@@ -11,7 +11,7 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
-import 'package:turbo_disc_golf/screens/courses/select_course_panel.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_steps/panels/select_course_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
@@ -623,7 +623,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _showCourseSelector() async {
-    displayBottomSheet(context, SelectCoursePanel());
+    displayBottomSheet(
+      context,
+      SelectCoursePanel(
+        topViewPadding: MediaQuery.of(context).viewPadding.top,
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+      ),
+    );
   }
 
   Future<void> _showDateTimeEditor() async {

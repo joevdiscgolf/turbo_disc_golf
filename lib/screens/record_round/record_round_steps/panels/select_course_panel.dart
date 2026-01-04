@@ -1,7 +1,5 @@
-// lib/ui/course_search/course_search_view.dart
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,15 +8,23 @@ import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
-import 'package:turbo_disc_golf/screens/courses/create_course_sheet.dart';
+import 'package:turbo_disc_golf/screens/create_course/create_course_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class SelectCoursePanel extends StatefulWidget {
-  const SelectCoursePanel({super.key});
+  const SelectCoursePanel({
+    super.key,
+    required this.topViewPadding,
+    required this.bottomViewPadding,
+  });
+
+  final double topViewPadding;
+  final double bottomViewPadding;
 
   @override
   State<SelectCoursePanel> createState() => _SelectCoursePanelState();
@@ -218,7 +224,12 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   // -------------------------
   Widget _buildCreateCourseButton(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: widget.bottomViewPadding,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
@@ -229,37 +240,32 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: PrimaryButton(
-          width: double.infinity,
-          height: 56,
-          backgroundColor: Colors.blue,
-          label: 'Create new course',
-          icon: Icons.add,
-          onPressed: () {
-            Navigator.push(
-              context,
-              CupertinoPageRoute(
-                fullscreenDialog: true,
-                builder: (context) => CreateCourseSheet(
-                  onCourseCreated: (course) {
-                    // Set the course with default layout and close both sheets
-                    BlocProvider.of<RecordRoundCubit>(
-                      context,
-                    ).setSelectedCourse(
-                      course,
-                      layoutId: course.defaultLayout.id,
-                    );
-                    Navigator.pop(context); // Close create sheet
-                    Navigator.pop(context); // Close select panel
-                  },
-                  topViewPadding: MediaQuery.of(context).padding.top,
-                ),
-              ),
-            );
-          },
-        ),
+      child: PrimaryButton(
+        width: double.infinity,
+        height: 56,
+        backgroundColor: Colors.blue,
+        label: 'Create new course',
+        icon: Icons.add,
+        onPressed: () {
+          Navigator.of(context).pop();
+
+          pushCupertinoRoute(
+            context,
+            CreateCourseSheet(
+              onCourseCreated: (course) {
+                BlocProvider.of<RecordRoundCubit>(
+                  context,
+                ).setSelectedCourse(course, layoutId: course.defaultLayout.id);
+
+                Navigator.pop(context); // Close create sheet
+                // Navigator.pop(context); // Close select panel
+              },
+              topViewPadding: widget.topViewPadding,
+              bottomViewPadding: widget.bottomViewPadding,
+            ),
+            pushFromBottom: true,
+          );
+        },
       ),
     );
   }

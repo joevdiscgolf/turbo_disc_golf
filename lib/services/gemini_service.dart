@@ -14,6 +14,10 @@ class GeminiService {
 
   static const String twoPointFiveFlashLiteModel = 'gemini-2.5-flash-lite';
   static const String twoPointFiveFlashModel = 'gemini-2.5-flash';
+  static const String twoPointZeroFlashExpModel = 'gemini-2.0-flash-exp';
+  static const String onePointFiveFlashModel = 'gemini-1.5-flash';
+  static const String onePointFiveFlashLatestModel = 'gemini-1.5-flash-latest';
+  static const String onePointZeroProVisionModel = 'models/gemini-1.0-pro-vision';
 
   late final String _apiKey;
 
@@ -36,8 +40,9 @@ class GeminiService {
     );
 
     // Vision model for scorecard image processing
+    // Using gemini-2.5-flash for image generation
     _visionModel = GenerativeModel(
-      model: 'gemini-2.0-flash-exp',
+      model: twoPointFiveFlashModel,
       apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.1, // Very low temperature for accurate data extraction

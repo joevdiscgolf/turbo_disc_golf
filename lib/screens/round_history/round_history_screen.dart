@@ -8,7 +8,7 @@ import 'package:turbo_disc_golf/animations/page_transitions.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/record_round_steps_screen.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_steps/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
@@ -178,11 +178,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           );
         }
 
-        return Positioned(
-          right: 16,
-          bottom: 16,
-          child: _buildNewRoundButton(),
-        );
+        return Positioned(right: 16, bottom: 16, child: _buildNewRoundButton());
       },
     );
   }
