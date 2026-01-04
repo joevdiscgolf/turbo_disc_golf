@@ -342,6 +342,16 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
     }).toList();
   }
 
+  /// Update the entire round (useful for AI content updates)
+  void updateRoundData(DGRound updatedRound) {
+    if (state is! ReviewingRoundActive) {
+      return;
+    }
+    final ReviewingRoundActive activeState = state as ReviewingRoundActive;
+    emit(activeState.copyWith(round: updatedRound));
+    _saveRound(updatedRound);
+  }
+
   /// Save the round to both local storage and Firestore
   Future<void> _saveRound(DGRound round) async {
     // Save to shared preferences

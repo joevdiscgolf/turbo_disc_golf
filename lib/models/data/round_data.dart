@@ -19,6 +19,7 @@ class DGRound {
     this.analysis,
     this.aiSummary,
     this.aiCoachSuggestion,
+    this.aiJudgment,
     this.versionId = 1,
     required this.createdAt,
     required this.playedRoundAt,
@@ -34,6 +35,7 @@ class DGRound {
   final RoundAnalysis? analysis;
   final AIContent? aiSummary;
   final AIContent? aiCoachSuggestion;
+  final AIContent? aiJudgment;
   final int versionId;
   final String createdAt;
   final String playedRoundAt;
@@ -53,6 +55,12 @@ class DGRound {
   bool get isAICoachingOutdated {
     if (aiCoachSuggestion == null) return false;
     return aiCoachSuggestion!.roundVersionId != versionId;
+  }
+
+  /// Check if AI judgment is out of date with the current round version
+  bool get isAIJudgmentOutdated {
+    if (aiJudgment == null) return false;
+    return aiJudgment!.roundVersionId != versionId;
   }
 
   int getTotalScore() {
@@ -91,6 +99,7 @@ class DGRound {
     RoundAnalysis? analysis,
     AIContent? aiSummary,
     AIContent? aiCoachSuggestion,
+    AIContent? aiJudgment,
     int? versionId,
     String? createdAt,
     String? playedRoundAt,
@@ -106,6 +115,7 @@ class DGRound {
       analysis: analysis ?? this.analysis,
       aiSummary: aiSummary ?? this.aiSummary,
       aiCoachSuggestion: aiCoachSuggestion ?? this.aiCoachSuggestion,
+      aiJudgment: aiJudgment ?? this.aiJudgment,
       versionId: versionId ?? this.versionId,
       createdAt: createdAt ?? this.createdAt,
       playedRoundAt: playedRoundAt ?? this.playedRoundAt,

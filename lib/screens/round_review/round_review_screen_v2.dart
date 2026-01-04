@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
@@ -30,7 +31,7 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _reviewCubit = BlocProvider.of<RoundReviewCubit>(context);
 
     // Initialize the cubit with the round
@@ -101,10 +102,20 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
                 ),
-                labelPadding: const EdgeInsets.symmetric(vertical: 8),
+                labelPadding: EdgeInsets.zero,
                 tabs: const [
                   Tab(text: 'Stats'),
                   Tab(text: 'Story'),
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.local_fire_department, size: 16),
+                        SizedBox(width: 4),
+                        Text('Judge'),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               bottomWidgetHeight: 48,
@@ -165,8 +176,13 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
             body: TabBarView(
               controller: _tabController,
               children: [
-                RoundOverviewBody(round: round, isReviewV2Screen: true),
+                RoundOverviewBody(
+                  round: round,
+                  isReviewV2Screen: true,
+                  tabController: _tabController,
+                ),
                 RoundStoryTab(round: round),
+                JudgeRoundTab(round: round),
               ],
             ),
           ),

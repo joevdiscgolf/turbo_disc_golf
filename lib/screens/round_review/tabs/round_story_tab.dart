@@ -101,7 +101,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         ),
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

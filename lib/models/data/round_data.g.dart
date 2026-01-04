@@ -29,6 +29,11 @@ DGRound _$DGRoundFromJson(Map json) => DGRound(
       : AIContent.fromJson(
           Map<String, dynamic>.from(json['aiCoachSuggestion'] as Map),
         ),
+  aiJudgment: json['aiJudgment'] == null
+      ? null
+      : AIContent.fromJson(
+          Map<String, dynamic>.from(json['aiJudgment'] as Map),
+        ),
   versionId: (json['versionId'] as num?)?.toInt() ?? 1,
   createdAt: json['createdAt'] as String,
   playedRoundAt: json['playedRoundAt'] as String,
@@ -45,6 +50,7 @@ Map<String, dynamic> _$DGRoundToJson(DGRound instance) => <String, dynamic>{
   'analysis': instance.analysis?.toJson(),
   'aiSummary': instance.aiSummary?.toJson(),
   'aiCoachSuggestion': instance.aiCoachSuggestion?.toJson(),
+  'aiJudgment': instance.aiJudgment?.toJson(),
   'versionId': instance.versionId,
   'createdAt': instance.createdAt,
   'playedRoundAt': instance.playedRoundAt,
