@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
-import 'package:turbo_disc_golf/components/hole_grid_card.dart';
+import 'package:turbo_disc_golf/screens/create_course/components/create_course_hole_card.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
-import 'package:turbo_disc_golf/screens/courses/components/quick_fill_holes_card.dart';
+import 'package:turbo_disc_golf/screens/create_course/components/quick_fill_holes_card.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/create_course_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Bottom sheet / modal for creating a course + default layout
 class CreateCourseSheet extends StatefulWidget {
@@ -93,21 +94,6 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
               ],
             ),
           );
-
-          // return SafeArea(
-          //   child: DraggableScrollableSheet(
-          //     controller: _sheetController,
-          //     expand: false,
-          //     initialChildSize: 1.0,
-          //     minChildSize: 0.0,
-          //     maxChildSize: 1.0,
-          //     snap: true,
-          //     snapSizes: const [1.0],
-          //     builder: (context, scrollController) {
-          //       return
-          //     },
-          //   ),
-          // );
         },
       ),
     );
@@ -250,7 +236,15 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
         GestureDetector(
           onTap: state.isParsingImage
               ? null
-              : () => _createCourseCubit.pickAndParseImage(context),
+              : () async {
+                  // Unfocus any active text fields first
+                  FocusScope.of(context).unfocus();
+                  // Small delay to ensure keyboard is dismissed
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  if (context.mounted) {
+                    _createCourseCubit.pickAndParseImage(context);
+                  }
+                },
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -364,17 +358,21 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
         const SizedBox(height: 8),
         QuickFillHolesCard(),
         const SizedBox(height: 8),
-        ...state.holes.map((hole) {
-          return HoleGridCard(
-            hole: hole,
-            onParChanged: (v) =>
-                _createCourseCubit.updateHolePar(hole.holeNumber, v),
-            onFeetChanged: (v) =>
-                _createCourseCubit.updateHoleFeet(hole.holeNumber, v),
-            onTypeChanged: (type) =>
-                _createCourseCubit.updateHoleType(hole.holeNumber, type),
-          );
-        }),
+        ...addDividers(
+          state.holes.map((hole) {
+            return CrateCourseHoleCard(
+              hole: hole,
+              onParChanged: (v) =>
+                  _createCourseCubit.updateHolePar(hole.holeNumber, v),
+              onFeetChanged: (v) =>
+                  _createCourseCubit.updateHoleFeet(hole.holeNumber, v),
+              onTypeChanged: (type) =>
+                  _createCourseCubit.updateHoleType(hole.holeNumber, type),
+            );
+          }).toList(),
+          height: 12,
+          dividerColor: TurbColors.gray[50],
+        ),
       ],
     );
   }
@@ -388,7 +386,35 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
       gradientBackground: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
       fontSize: 18,
       fontWeight: FontWeight.bold,
-      onPressed: _createCourseCubit.saveCourse,
+      onPressed: () async {
+        await _createCourseCubit.saveCourse(
+          onSuccess: (Course course) {
+            // Call parent callback
+            widget.onCourseCreated(course);
+
+            if (context.mounted) {
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Course "${course.name}" created!')),
+              );
+
+              // Close the sheet
+              Navigator.of(context).pop();
+            }
+          },
+          onError: (String errorMessage) {
+            if (context.mounted) {
+              // Show error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(errorMessage),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        );
+      },
     );
   }
 

@@ -9,6 +9,8 @@ import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 
 class CreateCourseCubit extends Cubit<CreateCourseState> {
   CreateCourseCubit() : super(CreateCourseState.initial()) {
@@ -136,31 +138,91 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
   Future<void> pickAndParseImage(BuildContext context) async {
     emit(state.copyWith(parseError: null));
 
+    XFile? image;
+
     try {
-      final XFile? image = await _picker.pickImage(
+      // Use addPostFrameCallback to ensure UI is ready before showing picker
+      await Future.delayed(Duration.zero);
+
+      // Pick image with timeout to prevent indefinite hanging
+      image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1800,
         maxHeight: 1800,
         imageQuality: 85,
-      ).catchError((error) {
-        debugPrint('Error picking image: $error');
-        return null;
-      });
-
-      // User cancelled or error occurred
-      if (image == null) {
-        emit(state.copyWith(isParsingImage: false, parseError: null));
-        return;
-      }
-
-      if (!context.mounted) return;
-
-      emit(state.copyWith(isParsingImage: true));
-
-      final AiParsingService ai = locator.get<AiParsingService>();
-      final List<HoleMetadata> metadata = await ai.parseScorecard(
-        imagePath: image.path,
+        requestFullMetadata: false, // Faster loading
+      ).timeout(
+        const Duration(minutes: 5),
+        onTimeout: () {
+          debugPrint('Image picker timed out');
+          return null;
+        },
       );
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+
+      // Only show error if it's not a user cancellation
+      if (!e.toString().toLowerCase().contains('cancel')) {
+        emit(state.copyWith(
+          isParsingImage: false,
+          parseError: 'Failed to pick image: ${e.toString()}',
+        ));
+      } else {
+        emit(state.copyWith(isParsingImage: false, parseError: null));
+      }
+      return;
+    }
+
+    // User cancelled or error occurred
+    if (image == null) {
+      emit(state.copyWith(isParsingImage: false, parseError: null));
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    emit(state.copyWith(isParsingImage: true));
+
+    try {
+      final AiParsingService ai = locator.get<AiParsingService>();
+      List<HoleMetadata> metadata = [];
+
+      // Try parsing with automatic retry on rate limit
+      try {
+        metadata = await ai.parseScorecard(imagePath: image.path);
+      } catch (e) {
+        // Check if it's a quota/rate limit error
+        if (e.toString().contains('Quota exceeded') ||
+            e.toString().contains('quota') ||
+            e.toString().contains('rate limit')) {
+          debugPrint('Rate limit hit, retrying after delay...');
+
+          // Extract wait time from error message if available
+          final RegExp waitTimeRegex = RegExp(r'retry in (\d+\.?\d*)s');
+          final Match? match = waitTimeRegex.firstMatch(e.toString());
+          final double waitSeconds = match != null
+              ? double.parse(match.group(1)!)
+              : 10.0; // Default to 10 seconds
+
+          emit(
+            state.copyWith(
+              parseError:
+                  'Rate limit reached. Retrying in ${waitSeconds.ceil()} seconds...',
+            ),
+          );
+
+          // Wait for the suggested time
+          await Future.delayed(Duration(milliseconds: (waitSeconds * 1000).toInt()));
+
+          // Retry the request
+          metadata = await ai.parseScorecard(imagePath: image.path);
+
+          // Clear the retry message
+          emit(state.copyWith(parseError: null));
+        } else {
+          rethrow;
+        }
+      }
 
       if (metadata.isEmpty) {
         emit(
@@ -219,28 +281,60 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
     return state.courseName.trim().isNotEmpty && state.holes.isNotEmpty;
   }
 
-  void saveCourse() {
-    if (!canSave) return;
+  Future<bool> saveCourse({
+    required void Function(Course) onSuccess,
+    required void Function(String errorMessage) onError,
+  }) async {
+    if (!canSave) {
+      onError('Please fill in all required fields');
+      return false;
+    }
 
-    final layout = CourseLayout(
-      id: state.layoutId,
-      name: state.layoutName.trim(),
-      holes: state.holes,
-      isDefault: true,
-    );
+    try {
+      final layout = CourseLayout(
+        id: state.layoutId,
+        name: state.layoutName.trim(),
+        holes: state.holes,
+        isDefault: true,
+      );
 
-    final course = Course(
-      id: _uuid.v4(),
-      name: state.courseName.trim(),
-      layouts: [layout],
-      city: state.city?.trim().isEmpty ?? true ? null : state.city,
-      state: state.state?.trim().isEmpty ?? true ? null : state.state,
-      country: state.country?.trim().isEmpty ?? true ? null : state.country,
-    );
+      final course = Course(
+        id: _uuid.v4(),
+        name: state.courseName.trim(),
+        layouts: [layout],
+        city: state.city?.trim().isEmpty ?? true ? null : state.city,
+        state: state.state?.trim().isEmpty ?? true ? null : state.state,
+        country: state.country?.trim().isEmpty ?? true ? null : state.country,
+      );
 
-    debugPrint(
-      'on course created to implement here, course name: ${course.name}',
-    );
-    // _onCourseCreated(course);
+      debugPrint('Saving course: ${course.name}');
+
+      // Save to Firestore
+      final bool firestoreSaved = await FBCourseDataLoader.saveCourse(course);
+      if (!firestoreSaved) {
+        onError('Failed to save course to database');
+        return false;
+      }
+      debugPrint('Course saved to Firestore');
+
+      // Save to MeiliSearch
+      try {
+        await locator.get<CourseSearchService>().upsertCourse(course);
+        debugPrint('Course indexed in MeiliSearch');
+      } catch (e) {
+        // MeiliSearch indexing failure shouldn't block course creation
+        debugPrint('Warning: Failed to index course in MeiliSearch: $e');
+      }
+
+      // Call success callback
+      onSuccess(course);
+
+      return true;
+    } catch (e, trace) {
+      debugPrint('Error saving course: $e');
+      debugPrint(trace.toString());
+      onError('Failed to create course: ${e.toString()}');
+      return false;
+    }
   }
 }

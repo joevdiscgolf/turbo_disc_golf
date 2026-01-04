@@ -1,7 +1,5 @@
-// lib/ui/course_search/course_search_view.dart
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,16 +8,22 @@ import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
-import 'package:turbo_disc_golf/screens/courses/create_course_sheet.dart';
+import 'package:turbo_disc_golf/screens/create_course/create_course_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class SelectCoursePanel extends StatefulWidget {
-  const SelectCoursePanel({super.key, required this.bottomViewPadding});
+  const SelectCoursePanel({
+    super.key,
+    required this.topViewPadding,
+    required this.bottomViewPadding,
+  });
 
+  final double topViewPadding;
   final double bottomViewPadding;
 
   @override
@@ -244,24 +248,22 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         icon: Icons.add,
         onPressed: () {
           Navigator.of(context).pop();
-          Navigator.push(
+
+          pushCupertinoRoute(
             context,
-            CupertinoPageRoute(
-              fullscreenDialog: true,
-              builder: (context) => CreateCourseSheet(
-                onCourseCreated: (course) {
-                  // Set the course with default layout and close both sheets
-                  BlocProvider.of<RecordRoundCubit>(context).setSelectedCourse(
-                    course,
-                    layoutId: course.defaultLayout.id,
-                  );
-                  Navigator.pop(context); // Close create sheet
-                  Navigator.pop(context); // Close select panel
-                },
-                topViewPadding: MediaQuery.of(context).padding.top,
-                bottomViewPadding: MediaQuery.of(context).padding.bottom,
-              ),
+            CreateCourseSheet(
+              onCourseCreated: (course) {
+                BlocProvider.of<RecordRoundCubit>(
+                  context,
+                ).setSelectedCourse(course, layoutId: course.defaultLayout.id);
+
+                Navigator.pop(context); // Close create sheet
+                // Navigator.pop(context); // Close select panel
+              },
+              topViewPadding: widget.topViewPadding,
+              bottomViewPadding: widget.bottomViewPadding,
             ),
+            pushFromBottom: true,
           );
         },
       ),

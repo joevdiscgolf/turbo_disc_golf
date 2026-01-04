@@ -5,18 +5,21 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-class QuickFillHolesCard extends StatelessWidget {
+class QuickFillHolesCard extends StatefulWidget {
   const QuickFillHolesCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    int quickFillPar = 3;
-    int quickFillFeet = 300;
-    HoleType quickFillType = HoleType.open;
+  State<QuickFillHolesCard> createState() => _QuickFillHolesCardState();
+}
 
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Card(
+class _QuickFillHolesCardState extends State<QuickFillHolesCard> {
+  int quickFillPar = 3;
+  int quickFillFeet = 300;
+  HoleType quickFillType = HoleType.open;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
           margin: const EdgeInsets.symmetric(vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -76,7 +79,9 @@ class QuickFillHolesCard extends StatelessWidget {
                                   onChanged: (v) {
                                     final int? parsed = int.tryParse(v);
                                     if (parsed != null) {
-                                      setState(() => quickFillPar = parsed);
+                                      setState(() {
+                                        quickFillPar = parsed;
+                                      });
                                     }
                                   },
                                 ),
@@ -102,7 +107,9 @@ class QuickFillHolesCard extends StatelessWidget {
                                   onChanged: (v) {
                                     final int? parsed = int.tryParse(v);
                                     if (parsed != null) {
-                                      setState(() => quickFillFeet = parsed);
+                                      setState(() {
+                                        quickFillFeet = parsed;
+                                      });
                                     }
                                   },
                                 ),
@@ -132,7 +139,9 @@ class QuickFillHolesCard extends StatelessWidget {
                           ],
                           onChanged: (HoleType? value) {
                             if (value != null) {
-                              setState(() => quickFillType = value);
+                              setState(() {
+                                quickFillType = value;
+                              });
                             }
                           },
                         ),
@@ -164,7 +173,5 @@ class QuickFillHolesCard extends StatelessWidget {
             ),
           ),
         );
-      },
-    );
   }
 }
