@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
@@ -10,6 +11,7 @@ import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
+import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 
 /// AI narrative story tab that tells the story of your round
 /// with embedded visualizations and insights
@@ -87,6 +89,16 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       await storageService.saveRound(updatedRound);
 
       if (mounted) {
+        // Update the RoundReviewCubit so it knows about the new story
+        // This ensures the updated round is available when switching tabs
+        try {
+          final RoundReviewCubit? reviewCubit = context.read<RoundReviewCubit?>();
+          reviewCubit?.updateRoundData(updatedRound);
+        } catch (e) {
+          // Cubit might not be available in all contexts (e.g., standalone usage)
+          debugPrint('RoundReviewCubit not available: $e');
+        }
+
         setState(() {
           _isGenerating = false;
           _currentRound =
