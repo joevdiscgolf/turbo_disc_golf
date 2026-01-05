@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -320,9 +319,10 @@ Shared from Turbo Disc Golf''';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Debug regenerate button (only in debug mode)
-        if (kDebugMode)
-          Padding(
+        // Regenerate button
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: OutlinedButton.icon(
               onPressed: () {
@@ -332,14 +332,15 @@ Shared from Turbo Disc Golf''';
                 });
                 _generateJudgment();
               },
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Regenerate (Debug)'),
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Regenerate'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.orange,
-                side: const BorderSide(color: Colors.orange),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                textStyle: const TextStyle(fontSize: 12),
               ),
             ),
           ),
+        ),
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

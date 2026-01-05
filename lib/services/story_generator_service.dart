@@ -6,7 +6,9 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:yaml/yaml.dart';
 
 /// Service for generating AI-powered narrative stories about disc golf rounds
@@ -128,6 +130,15 @@ ${_formatDiscPerformance(analysis)}
 # Hole Type Performance
 ${_formatHoleTypePerformance(round, analysis)}
 
+# Mistakes Breakdown
+${_formatMistakesBreakdown(round)}
+
+# Throw Type Performance (Backhand vs Forehand)
+${_formatThrowTypeComparison(analysis)}
+
+# Shot Shape Performance
+${_formatShotShapePerformance(round)}
+
 # Your Task
 Analyze this disc golf round and provide a structured breakdown in YAML format:
 
@@ -239,10 +250,14 @@ RULES:
    - Same structure as strengths
    - Be constructive, focus on patterns not isolated mistakes
    - Aim for 2-3 highlights when there's enough notable data
-5. Mistakes: 1 highlight about key mistakes (optional, use MISTAKES card)
+5. Mistakes: REQUIRED - 1 highlight about key mistakes (ALWAYS use MISTAKES card)
+   - Include cardId: MISTAKES to show the mistakes breakdown widget
+   - Summarize the key errors that cost strokes
 6. Biggest Opportunity: ONE SINGLE focus area (highest impact)
-7. Practice Advice: 2-4 concrete, realistic practice drills (no vague advice)
-8. Strategy Tips: 2-4 specific, NON-OBVIOUS course management tips
+7. Practice Advice: REQUIRED - 2-4 concrete, realistic practice drills (no vague advice)
+8. Strategy Tips: REQUIRED - 2-4 specific, NON-OBVIOUS course management tips
+
+IMPORTANT: ALL sections (mistakes, practiceAdvice, strategyTips) MUST be included in your response.
 
 INSIGHT GUIDELINES:
 - Prioritize DIFFERENT topics in strengths/weaknesses for maximum insight
@@ -265,6 +280,30 @@ WIDGET SELECTION STRATEGY:
 - Use HOLE_TYPE when performance varies significantly by par (e.g., crushing Par 3s but struggling on Par 5s)
 - Use SHOT_SHAPE_BREAKDOWN when a specific shot shape was notably strong/weak
 - Use text-only highlights for nuanced insights (e.g., "Your upshots were more conservative than usual, favoring safety over birdie attempts")
+
+CRITICAL - "What Cost You Strokes" (Weaknesses) Guidelines:
+- ALWAYS check the Mistakes Breakdown FIRST - it shows exactly what went wrong
+- If missed C1X putts are the #1 mistake type, they MUST appear in weaknesses
+- If OB shots appear in mistakes, include them in weaknesses with the count
+- Use the actual mistake counts in your explanations (e.g., "5 missed C1X putts cost you...")
+- The Mistakes Breakdown data is the PRIMARY source for the weaknesses section
+- Disc/shot type/shot shape performance is SECONDARY context for weaknesses
+- Example: If mistakes show "Missed C1X putt: 5 (56%)", your weaknesses MUST include a highlight about C1X putting
+
+THROW TYPE INSIGHTS:
+- If backhand birdie rate is >15% higher than forehand (or vice versa), mention it in strengths or weaknesses
+- Use THROW_TYPE_COMPARISON card when the difference is notable
+- Ignore throw type data with only 1-2 attempts - not enough to show a pattern
+
+SHOT SHAPE INSIGHTS:
+- If a specific shot shape (hyzer, anhyzer, etc.) has notably better/worse birdie rate, include it
+- Use SHOT_SHAPE_BREAKDOWN card when shape performance varies significantly
+- Ignore shapes with only 1-2 attempts - not enough data to be meaningful
+
+DISC PERFORMANCE INSIGHTS:
+- If a specific disc has notably high/low birdie rate compared to others, mention it
+- Use DISC_PERFORMANCE:{discName} card when a disc dominated or underperformed
+- Ignore discs with only 1-2 throws - not enough data to draw conclusions
 
 CRITICAL - Strategy Tips Guidelines:
 - DO NOT state obvious advice like "be more conservative on OB holes" or "play safer on difficult holes"
@@ -350,6 +389,100 @@ If you're approaching token limits, prioritize completing the YAML structure ove
     return buffer.toString();
   }
 
+  /// Format mistakes breakdown for the prompt
+  String _formatMistakesBreakdown(DGRound round) {
+    final MistakesAnalysisService mistakesService = MistakesAnalysisService();
+    final List mistakeTypes = mistakesService.getMistakeTypes(round);
+    final int totalMistakes = mistakesService.getTotalMistakesCount(round);
+
+    if (totalMistakes == 0) {
+      return 'No significant mistakes recorded';
+    }
+
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln('Total Mistakes: $totalMistakes');
+
+    for (final mistake in mistakeTypes) {
+      final String label = mistake.label;
+      final int count = mistake.count;
+      final double percentage = mistake.percentage;
+      buffer.writeln(
+        '$label: $count (${percentage.toStringAsFixed(0)}%)',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// Format throw type comparison (backhand vs forehand) for the prompt
+  String _formatThrowTypeComparison(dynamic analysis) {
+    final StringBuffer buffer = StringBuffer();
+
+    // Get tee shot comparison from analysis
+    final teeComparison = analysis.teeComparison;
+    if (teeComparison != null) {
+      final String tech1Name = teeComparison.technique1 ?? 'Backhand';
+      final String tech2Name = teeComparison.technique2 ?? 'Forehand';
+      final double tech1Birdie = teeComparison.technique1BirdieRate ?? 0.0;
+      final double tech2Birdie = teeComparison.technique2BirdieRate ?? 0.0;
+      final int tech1Count = teeComparison.technique1Count ?? 0;
+      final int tech2Count = teeComparison.technique2Count ?? 0;
+
+      if (tech1Count > 0) {
+        buffer.writeln(
+          '$tech1Name: ${tech1Birdie.toStringAsFixed(1)}% birdie rate ($tech1Count tee shots)',
+        );
+      }
+      if (tech2Count > 0) {
+        buffer.writeln(
+          '$tech2Name: ${tech2Birdie.toStringAsFixed(1)}% birdie rate ($tech2Count tee shots)',
+        );
+      }
+    }
+
+    if (buffer.isEmpty) {
+      return 'No throw type comparison data available';
+    }
+
+    return buffer.toString();
+  }
+
+  /// Format shot shape performance for the prompt
+  String _formatShotShapePerformance(DGRound round) {
+    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final Map<String, dynamic> shotShapeStats =
+        statsService.getShotShapeBirdieRateStats();
+
+    if (shotShapeStats.isEmpty) {
+      return 'No shot shape data available';
+    }
+
+    final StringBuffer buffer = StringBuffer();
+
+    // Sort by attempts (most used first)
+    final List<MapEntry<String, dynamic>> entries = shotShapeStats.entries
+        .where((e) => (e.value.totalAttempts ?? 0) >= 2) // Min 2 attempts
+        .toList();
+    entries.sort((a, b) =>
+        (b.value.totalAttempts ?? 0).compareTo(a.value.totalAttempts ?? 0));
+
+    for (final MapEntry<String, dynamic> entry in entries.take(6)) {
+      final String shapeName = entry.key;
+      final double birdieRate = entry.value.percentage ?? 0.0;
+      final int attempts = entry.value.totalAttempts ?? 0;
+
+      buffer.writeln(
+        '$shapeName: ${birdieRate.toStringAsFixed(1)}% birdie rate ($attempts attempts)',
+      );
+    }
+
+    if (buffer.isEmpty) {
+      return 'No shot shape data with sufficient attempts';
+    }
+
+    return buffer.toString();
+  }
+
   /// Parse the AI response into AIContent with segments or structured content
   AIContent _parseStoryResponse(String response, DGRound round) {
     try {
@@ -378,23 +511,44 @@ If you're approaching token limits, prioritize completing the YAML structure ove
 
       // Try to parse as structured YAML (new format)
       debugPrint('Parsing YAML response...');
-      final yamlDoc = loadYaml(cleanedResponse);
+      debugPrint('Raw response length: ${cleanedResponse.length}');
+
+      // First try to parse as-is
+      dynamic yamlDoc;
+      String yamlToParse = cleanedResponse;
+      try {
+        yamlDoc = loadYaml(cleanedResponse);
+        debugPrint('Parsed YAML without repair');
+      } catch (parseError) {
+        // If parsing fails, try repairing truncated YAML
+        debugPrint('Initial parse failed, attempting repair: $parseError');
+        yamlToParse = _repairTruncatedYaml(cleanedResponse);
+        debugPrint('After repair, length: ${yamlToParse.length}');
+        yamlDoc = loadYaml(yamlToParse);
+        debugPrint('Parsed YAML after repair');
+      }
 
       // Convert YamlMap to regular Map<String, dynamic>
       final Map<String, dynamic> parsedData = json.decode(json.encode(yamlDoc)) as Map<String, dynamic>;
       debugPrint('Successfully parsed YAML');
+      debugPrint('Parsed fields: ${parsedData.keys.toList()}');
 
-      // Validate required fields exist (some fields optional for backwards compatibility)
+      // Validate minimum required fields exist (core fields that define the story)
+      // practiceAdvice and strategyTips are optional since AI may hit token limits
       if (parsedData.containsKey('overview') &&
           parsedData.containsKey('strengths') &&
-          parsedData.containsKey('weaknesses') &&
-          parsedData.containsKey('practiceAdvice')) {
+          parsedData.containsKey('weaknesses')) {
 
-        // Add default values for new fields if not present (backwards compatibility)
+        // Add default values for optional/missing fields (handles truncated responses)
         if (!parsedData.containsKey('roundTitle')) {
           parsedData['roundTitle'] = 'Round Summary';
         }
+        if (!parsedData.containsKey('practiceAdvice')) {
+          debugPrint('practiceAdvice missing, adding empty default');
+          parsedData['practiceAdvice'] = <String>[];
+        }
         if (!parsedData.containsKey('strategyTips')) {
+          debugPrint('strategyTips missing, adding empty default');
           parsedData['strategyTips'] = <String>[];
         }
 
@@ -408,9 +562,19 @@ If you're approaching token limits, prioritize completing the YAML structure ove
         if (parsedData['weaknesses'] is! List) {
           throw Exception('Invalid weaknesses field');
         }
+        // practiceAdvice is optional but validate if present
         if (parsedData['practiceAdvice'] is! List) {
-          throw Exception('Invalid practiceAdvice field');
+          parsedData['practiceAdvice'] = <String>[];
         }
+        // strategyTips is optional but validate if present
+        if (parsedData['strategyTips'] is! List) {
+          parsedData['strategyTips'] = <String>[];
+        }
+
+        // Log what we're passing to the model
+        debugPrint('mistakes present: ${parsedData.containsKey('mistakes')}');
+        debugPrint('practiceAdvice count: ${(parsedData['practiceAdvice'] as List).length}');
+        debugPrint('strategyTips count: ${(parsedData['strategyTips'] as List).length}');
 
         // Parse as StructuredStoryContent
         final structuredContent = StructuredStoryContent.fromJson({
@@ -433,6 +597,119 @@ If you're approaching token limits, prioritize completing the YAML structure ove
 
     // Fallback: Parse as old format with {{PLACEHOLDERS}}
     return _parseOldFormat(response, round);
+  }
+
+  /// Attempt to repair truncated YAML by removing incomplete trailing content
+  String _repairTruncatedYaml(String yaml) {
+    final List<String> lines = yaml.split('\n');
+
+    // If the last line appears incomplete (no colon, or ends mid-value), remove it
+    while (lines.isNotEmpty) {
+      final String lastLine = lines.last.trim();
+
+      // Empty lines are fine
+      if (lastLine.isEmpty) {
+        lines.removeLast();
+        continue;
+      }
+
+      // Check if this line looks complete
+      // A complete YAML line either:
+      // 1. Is a list item starting with "- " followed by content
+      // 2. Has a key: value pattern
+      // 3. Is just a key with nested content (ends with ":")
+
+      // If the line is a list item, check if it has a complete value
+      if (lastLine.startsWith('- ')) {
+        final String content = lastLine.substring(2).trim();
+        // List items with key-value pairs should have a colon
+        if (content.contains(':')) {
+          // Check if value after colon is complete (not cut off mid-sentence)
+          final int colonIndex = content.indexOf(':');
+          final String afterColon = content.substring(colonIndex + 1).trim();
+          // If there's content after colon that doesn't end properly, it might be truncated
+          if (afterColon.isNotEmpty && !_looksComplete(afterColon)) {
+            lines.removeLast();
+            continue;
+          }
+        }
+        break; // Line looks OK
+      }
+
+      // For regular key: value lines
+      if (lastLine.contains(':')) {
+        final int colonIndex = lastLine.indexOf(':');
+        final String afterColon = lastLine.substring(colonIndex + 1).trim();
+        // If there's content after colon, check if it looks complete
+        if (afterColon.isNotEmpty && !_looksComplete(afterColon)) {
+          lines.removeLast();
+          continue;
+        }
+        break; // Line looks OK
+      }
+
+      // Line doesn't have a colon and isn't a continuation - might be truncated
+      // Check if it's a valid continuation (indented content)
+      if (lastLine.startsWith(' ') || lastLine.startsWith('\t')) {
+        // Could be continuation of multi-line string, check if it looks complete
+        if (!_looksComplete(lastLine)) {
+          lines.removeLast();
+          continue;
+        }
+      }
+
+      break;
+    }
+
+    // Also check for incomplete list items in the middle (truncated mid-object)
+    // This handles cases like strengths list getting cut off
+    String result = lines.join('\n');
+
+    // Remove any trailing incomplete nested objects
+    // Look for patterns like "  - headline: X\n    cardId:" with no value
+    final RegExp incompleteListItem = RegExp(
+      r'(\n\s+-\s+\w+:[^\n]*\n\s+\w+:\s*)$',
+      multiLine: true,
+    );
+
+    if (incompleteListItem.hasMatch(result)) {
+      // Find the start of the incomplete list item and remove it
+      final Match? match = incompleteListItem.firstMatch(result);
+      if (match != null) {
+        result = result.substring(0, match.start);
+      }
+    }
+
+    return result.trim();
+  }
+
+  /// Check if a YAML value looks complete (not truncated mid-sentence)
+  bool _looksComplete(String value) {
+    // Empty values are complete
+    if (value.isEmpty) return true;
+
+    // Quoted strings should have closing quote
+    if (value.startsWith('"') && !value.endsWith('"')) return false;
+    if (value.startsWith("'") && !value.endsWith("'")) return false;
+
+    // Values ending with common truncation patterns are incomplete
+    // e.g., "with a 58" (cut off mid-number or mid-sentence)
+    final List<String> truncationPatterns = [
+      ' a ', ' an ', ' the ', ' with ', ' to ', ' for ', ' on ', ' in ',
+      ' at ', ' of ', ' and ', ' or ', ' but ', ' is ', ' was ', ' are ',
+    ];
+
+    for (final String pattern in truncationPatterns) {
+      if (value.endsWith(pattern.trim())) return false;
+    }
+
+    // Single words that are likely incomplete
+    if (value.split(' ').last.length <= 2 && !RegExp(r'^\d+$').hasMatch(value.split(' ').last)) {
+      // Short trailing words might indicate truncation, unless they're numbers
+      // This is a heuristic and might have false positives
+    }
+
+    return true;
   }
 
   /// Parse old markdown format with {{PLACEHOLDER}} syntax

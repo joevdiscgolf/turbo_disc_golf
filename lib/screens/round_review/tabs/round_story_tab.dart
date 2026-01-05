@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
@@ -253,20 +252,19 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildRegenerateButton() {
-    // Only show in debug mode
-    if (!kDebugMode) {
-      return const SizedBox.shrink();
-    }
-
-    return Align(
-      alignment: Alignment.centerRight,
-      child: OutlinedButton.icon(
-        onPressed: _isGenerating ? null : _generateStory,
-        icon: const Icon(Icons.refresh, size: 16),
-        label: const Text('Regenerate (Debug)'),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          textStyle: const TextStyle(fontSize: 12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: OutlinedButton.icon(
+          onPressed: _isGenerating ? null : _generateStory,
+          icon: const Icon(Icons.refresh, size: 16),
+          label: const Text('Regenerate'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            textStyle: const TextStyle(fontSize: 12),
+          ),
         ),
       ),
     );
