@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Compact hole type performance card for story context
 /// Shows scoring average and birdie rate for a specific hole type (Par 3, 4, 5)
@@ -27,10 +28,7 @@ class HoleTypeStoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: TurbColors.gray[100]!),
         ),
         child: Text(
           'Invalid hole type: $holeType',
@@ -52,10 +50,7 @@ class HoleTypeStoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: TurbColors.gray[100]!),
         ),
         child: Text(
           'No $holeType holes in this round',
@@ -82,9 +77,7 @@ class HoleTypeStoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: TurbColors.gray[100]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,14 +87,14 @@ class HoleTypeStoryCard extends StatelessWidget {
               Icon(
                 Icons.golf_course,
                 size: 20,
-                color: _getColorForPar(par),
+                color: TurbColors.gray[500],
               ),
               const SizedBox(width: 8),
               Text(
                 holeType,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: _getColorForPar(par),
+                      color: TurbColors.gray[500],
                     ),
               ),
               const Spacer(),
@@ -109,7 +102,7 @@ class HoleTypeStoryCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getColorForPar(par).withValues(alpha: 0.15),
+                  color: TurbColors.gray[100],
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -117,6 +110,7 @@ class HoleTypeStoryCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 11,
+                        color: TurbColors.gray[500],
                       ),
                 ),
               ),
@@ -127,16 +121,16 @@ class HoleTypeStoryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatColumn(
-                  label: 'Avg Score',
-                  value: _formatAvgRelative(avgRelative),
-                  color: _getScoreColor(avgRelative),
+                  label: 'Birdie Rate',
+                  value: '${birdieRate.toStringAsFixed(0)}%',
+                  color: const Color(0xFF137e66),
                 ),
               ),
               Expanded(
                 child: _StatColumn(
-                  label: 'Birdie Rate',
-                  value: '${birdieRate.toStringAsFixed(0)}%',
-                  color: const Color(0xFF137e66),
+                  label: 'Avg Score',
+                  value: _formatAvgRelative(avgRelative),
+                  color: _getScoreColor(avgRelative),
                 ),
               ),
               Expanded(
@@ -161,19 +155,6 @@ class HoleTypeStoryCard extends StatelessWidget {
       return int.tryParse(match.group(1)!);
     }
     return null;
-  }
-
-  Color _getColorForPar(int par) {
-    switch (par) {
-      case 3:
-        return const Color(0xFF2196F3); // Blue
-      case 4:
-        return const Color(0xFF9C27B0); // Purple
-      case 5:
-        return const Color(0xFFFF7043); // Orange
-      default:
-        return const Color(0xFF757575); // Gray
-    }
   }
 
   Color _getScoreColor(double avgRelative) {

@@ -6,7 +6,9 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:yaml/yaml.dart';
 
 /// Service for generating AI-powered narrative stories about disc golf rounds
@@ -127,6 +129,15 @@ ${_formatDiscPerformance(analysis)}
 
 # Hole Type Performance
 ${_formatHoleTypePerformance(round, analysis)}
+
+# Mistakes Breakdown
+${_formatMistakesBreakdown(round)}
+
+# Throw Type Performance (Backhand vs Forehand)
+${_formatThrowTypeComparison(analysis)}
+
+# Shot Shape Performance
+${_formatShotShapePerformance(round)}
 
 # Your Task
 Analyze this disc golf round and provide a structured breakdown in YAML format:
@@ -270,6 +281,30 @@ WIDGET SELECTION STRATEGY:
 - Use SHOT_SHAPE_BREAKDOWN when a specific shot shape was notably strong/weak
 - Use text-only highlights for nuanced insights (e.g., "Your upshots were more conservative than usual, favoring safety over birdie attempts")
 
+CRITICAL - "What Cost You Strokes" (Weaknesses) Guidelines:
+- ALWAYS check the Mistakes Breakdown FIRST - it shows exactly what went wrong
+- If missed C1X putts are the #1 mistake type, they MUST appear in weaknesses
+- If OB shots appear in mistakes, include them in weaknesses with the count
+- Use the actual mistake counts in your explanations (e.g., "5 missed C1X putts cost you...")
+- The Mistakes Breakdown data is the PRIMARY source for the weaknesses section
+- Disc/shot type/shot shape performance is SECONDARY context for weaknesses
+- Example: If mistakes show "Missed C1X putt: 5 (56%)", your weaknesses MUST include a highlight about C1X putting
+
+THROW TYPE INSIGHTS:
+- If backhand birdie rate is >15% higher than forehand (or vice versa), mention it in strengths or weaknesses
+- Use THROW_TYPE_COMPARISON card when the difference is notable
+- Ignore throw type data with only 1-2 attempts - not enough to show a pattern
+
+SHOT SHAPE INSIGHTS:
+- If a specific shot shape (hyzer, anhyzer, etc.) has notably better/worse birdie rate, include it
+- Use SHOT_SHAPE_BREAKDOWN card when shape performance varies significantly
+- Ignore shapes with only 1-2 attempts - not enough data to be meaningful
+
+DISC PERFORMANCE INSIGHTS:
+- If a specific disc has notably high/low birdie rate compared to others, mention it
+- Use DISC_PERFORMANCE:{discName} card when a disc dominated or underperformed
+- Ignore discs with only 1-2 throws - not enough data to draw conclusions
+
 CRITICAL - Strategy Tips Guidelines:
 - DO NOT state obvious advice like "be more conservative on OB holes" or "play safer on difficult holes"
 - DO give specific disc selection, shot shape, or positioning advice
@@ -349,6 +384,100 @@ If you're approaching token limits, prioritize completing the YAML structure ove
         '${birdieRate.toStringAsFixed(1)}% birdie rate, '
         '${holes.length} holes',
       );
+    }
+
+    return buffer.toString();
+  }
+
+  /// Format mistakes breakdown for the prompt
+  String _formatMistakesBreakdown(DGRound round) {
+    final MistakesAnalysisService mistakesService = MistakesAnalysisService();
+    final List mistakeTypes = mistakesService.getMistakeTypes(round);
+    final int totalMistakes = mistakesService.getTotalMistakesCount(round);
+
+    if (totalMistakes == 0) {
+      return 'No significant mistakes recorded';
+    }
+
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln('Total Mistakes: $totalMistakes');
+
+    for (final mistake in mistakeTypes) {
+      final String label = mistake.label;
+      final int count = mistake.count;
+      final double percentage = mistake.percentage;
+      buffer.writeln(
+        '$label: $count (${percentage.toStringAsFixed(0)}%)',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// Format throw type comparison (backhand vs forehand) for the prompt
+  String _formatThrowTypeComparison(dynamic analysis) {
+    final StringBuffer buffer = StringBuffer();
+
+    // Get tee shot comparison from analysis
+    final teeComparison = analysis.teeComparison;
+    if (teeComparison != null) {
+      final String tech1Name = teeComparison.technique1 ?? 'Backhand';
+      final String tech2Name = teeComparison.technique2 ?? 'Forehand';
+      final double tech1Birdie = teeComparison.technique1BirdieRate ?? 0.0;
+      final double tech2Birdie = teeComparison.technique2BirdieRate ?? 0.0;
+      final int tech1Count = teeComparison.technique1Count ?? 0;
+      final int tech2Count = teeComparison.technique2Count ?? 0;
+
+      if (tech1Count > 0) {
+        buffer.writeln(
+          '$tech1Name: ${tech1Birdie.toStringAsFixed(1)}% birdie rate ($tech1Count tee shots)',
+        );
+      }
+      if (tech2Count > 0) {
+        buffer.writeln(
+          '$tech2Name: ${tech2Birdie.toStringAsFixed(1)}% birdie rate ($tech2Count tee shots)',
+        );
+      }
+    }
+
+    if (buffer.isEmpty) {
+      return 'No throw type comparison data available';
+    }
+
+    return buffer.toString();
+  }
+
+  /// Format shot shape performance for the prompt
+  String _formatShotShapePerformance(DGRound round) {
+    final RoundStatisticsService statsService = RoundStatisticsService(round);
+    final Map<String, dynamic> shotShapeStats =
+        statsService.getShotShapeBirdieRateStats();
+
+    if (shotShapeStats.isEmpty) {
+      return 'No shot shape data available';
+    }
+
+    final StringBuffer buffer = StringBuffer();
+
+    // Sort by attempts (most used first)
+    final List<MapEntry<String, dynamic>> entries = shotShapeStats.entries
+        .where((e) => (e.value.totalAttempts ?? 0) >= 2) // Min 2 attempts
+        .toList();
+    entries.sort((a, b) =>
+        (b.value.totalAttempts ?? 0).compareTo(a.value.totalAttempts ?? 0));
+
+    for (final MapEntry<String, dynamic> entry in entries.take(6)) {
+      final String shapeName = entry.key;
+      final double birdieRate = entry.value.percentage ?? 0.0;
+      final int attempts = entry.value.totalAttempts ?? 0;
+
+      buffer.writeln(
+        '$shapeName: ${birdieRate.toStringAsFixed(1)}% birdie rate ($attempts attempts)',
+      );
+    }
+
+    if (buffer.isEmpty) {
+      return 'No shot shape data with sufficient attempts';
     }
 
     return buffer.toString();

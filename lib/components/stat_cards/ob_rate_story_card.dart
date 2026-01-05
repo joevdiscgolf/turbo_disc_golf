@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/stat_cards/renderers/bar_stat_renderer.dart';
 import 'package:turbo_disc_golf/components/stat_cards/renderers/circular_stat_renderer.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
-import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 
 /// Single-stat widget showing Out of Bounds rate
 ///
-/// Displays percentage of holes with OB throws in either
+/// Displays percentage of throws that went OB in either
 /// circular indicator or horizontal bar format.
 /// Used by AI story to highlight penalty avoidance and course management.
 class OBRateStoryCard extends StatelessWidget {
@@ -23,10 +22,23 @@ class OBRateStoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CoreStats stats = RoundStatisticsService(round).getCoreStats();
-    final double percentage = stats.obPct;
-    final int count = ((stats.obPct / 100) * stats.totalHoles).round();
-    final int total = stats.totalHoles;
+    // Calculate OB rate based on throws, not holes
+    int totalThrows = 0;
+    int obThrows = 0;
+
+    for (final hole in round.holes) {
+      for (final discThrow in hole.throws) {
+        totalThrows++;
+        if (discThrow.landingSpot == LandingSpot.outOfBounds) {
+          obThrows++;
+        }
+      }
+    }
+
+    final double percentage =
+        totalThrows > 0 ? (obThrows / totalThrows) * 100 : 0.0;
+    final int count = obThrows;
+    final int total = totalThrows;
 
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
@@ -46,6 +58,7 @@ class OBRateStoryCard extends StatelessWidget {
         icon: Icons.warning_rounded,
         count: count,
         total: total,
+        useColorForHeading: true,
       );
     }
   }

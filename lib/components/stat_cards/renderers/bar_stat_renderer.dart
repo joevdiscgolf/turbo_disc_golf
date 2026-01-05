@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Reusable component for rendering stats as horizontal progress bars
 ///
 /// Displays a stat with:
-/// - Header row with icon, label, and large percentage value
+/// - Header row with icon, label, percentage, and count/total in brackets
 /// - Horizontal progress bar (8px height)
-/// - Context row showing count/total
 ///
-/// More compact than CircularStatRenderer, saves vertical space.
+/// Compact design for story cards.
 /// Used by all single-stat story cards in bar rendering mode.
 class BarStatRenderer extends StatelessWidget {
   const BarStatRenderer({
@@ -19,6 +19,7 @@ class BarStatRenderer extends StatelessWidget {
     required this.count,
     required this.total,
     this.subtitle,
+    this.useColorForHeading = false,
   });
 
   final double percentage;
@@ -28,28 +29,25 @@ class BarStatRenderer extends StatelessWidget {
   final int count;
   final int total;
   final String? subtitle;
+  final bool useColorForHeading;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: TurbColors.gray[100]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(context),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildProgressBar(),
-          const SizedBox(height: 8),
-          _buildContext(context),
           if (subtitle != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             _buildSubtitle(context),
           ],
         ],
@@ -58,19 +56,17 @@ class BarStatRenderer extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final Color headingColor = useColorForHeading ? color : TurbColors.gray[500]!;
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: color,
-        ),
+        Icon(icon, size: 20, color: headingColor),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             label,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: headingColor,
                 ),
           ),
         ),
@@ -80,6 +76,15 @@ class BarStatRenderer extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: color,
                 fontSize: 20,
+              ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '($count/$total)',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: TurbColors.gray[400],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
         ),
       ],
@@ -98,27 +103,13 @@ class BarStatRenderer extends StatelessWidget {
     );
   }
 
-  Widget _buildContext(BuildContext context) {
-    return Center(
-      child: Text(
-        '$count / $total',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-      ),
-    );
-  }
-
   Widget _buildSubtitle(BuildContext context) {
     return Text(
       subtitle!,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: TurbColors.gray[400],
             fontSize: 11,
           ),
-      textAlign: TextAlign.center,
     );
   }
 }

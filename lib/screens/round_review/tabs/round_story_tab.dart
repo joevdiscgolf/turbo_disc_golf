@@ -261,6 +261,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
           icon: const Icon(Icons.refresh, size: 16),
           label: const Text('Regenerate'),
           style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             textStyle: const TextStyle(fontSize: 12),
           ),

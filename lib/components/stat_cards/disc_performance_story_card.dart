@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Compact disc performance card for story context
 /// Shows birdie rate, average score, and throw count for a specific disc
@@ -36,9 +37,7 @@ class DiscPerformanceStoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: TurbColors.gray[100]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +47,7 @@ class DiscPerformanceStoryCard extends StatelessWidget {
               Icon(
                 Icons.album,
                 size: 20,
-                color: Theme.of(context).colorScheme.primary,
+                color: TurbColors.gray[500],
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -56,7 +55,7 @@ class DiscPerformanceStoryCard extends StatelessWidget {
                   discName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: TurbColors.gray[500],
                       ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -65,10 +64,7 @@ class DiscPerformanceStoryCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primaryContainer
-                      .withValues(alpha: 0.5),
+                  color: TurbColors.gray[100],
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -76,6 +72,7 @@ class DiscPerformanceStoryCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 11,
+                        color: TurbColors.gray[500],
                       ),
                 ),
               ),

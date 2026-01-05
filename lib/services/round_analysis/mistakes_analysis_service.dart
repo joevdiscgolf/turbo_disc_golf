@@ -163,8 +163,21 @@ class MistakesAnalysisService {
       return 'Missed long putt';
     }
 
+    // Handle OB for ANY throw type (not just tee shots)
+    if (lossReason == LossReason.outOfBounds) {
+      switch (purpose) {
+        case ThrowPurpose.teeDrive:
+          return 'OB tee shot';
+        case ThrowPurpose.fairwayDrive:
+          return 'OB fairway drive';
+        case ThrowPurpose.approach:
+          return 'OB approach';
+        default:
+          return 'OB shot';
+      }
+    }
+
     if (purpose == ThrowPurpose.teeDrive) {
-      if (lossReason == LossReason.outOfBounds) return 'OB tee shot';
       if (lossReason == LossReason.poorDrive) return 'Poor tee shot';
     }
 
