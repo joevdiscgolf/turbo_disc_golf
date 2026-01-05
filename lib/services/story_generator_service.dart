@@ -239,10 +239,14 @@ RULES:
    - Same structure as strengths
    - Be constructive, focus on patterns not isolated mistakes
    - Aim for 2-3 highlights when there's enough notable data
-5. Mistakes: 1 highlight about key mistakes (optional, use MISTAKES card)
+5. Mistakes: REQUIRED - 1 highlight about key mistakes (ALWAYS use MISTAKES card)
+   - Include cardId: MISTAKES to show the mistakes breakdown widget
+   - Summarize the key errors that cost strokes
 6. Biggest Opportunity: ONE SINGLE focus area (highest impact)
-7. Practice Advice: 2-4 concrete, realistic practice drills (no vague advice)
-8. Strategy Tips: 2-4 specific, NON-OBVIOUS course management tips
+7. Practice Advice: REQUIRED - 2-4 concrete, realistic practice drills (no vague advice)
+8. Strategy Tips: REQUIRED - 2-4 specific, NON-OBVIOUS course management tips
+
+IMPORTANT: ALL sections (mistakes, practiceAdvice, strategyTips) MUST be included in your response.
 
 INSIGHT GUIDELINES:
 - Prioritize DIFFERENT topics in strengths/weaknesses for maximum insight
@@ -378,23 +382,44 @@ If you're approaching token limits, prioritize completing the YAML structure ove
 
       // Try to parse as structured YAML (new format)
       debugPrint('Parsing YAML response...');
-      final yamlDoc = loadYaml(cleanedResponse);
+      debugPrint('Raw response length: ${cleanedResponse.length}');
+
+      // First try to parse as-is
+      dynamic yamlDoc;
+      String yamlToParse = cleanedResponse;
+      try {
+        yamlDoc = loadYaml(cleanedResponse);
+        debugPrint('Parsed YAML without repair');
+      } catch (parseError) {
+        // If parsing fails, try repairing truncated YAML
+        debugPrint('Initial parse failed, attempting repair: $parseError');
+        yamlToParse = _repairTruncatedYaml(cleanedResponse);
+        debugPrint('After repair, length: ${yamlToParse.length}');
+        yamlDoc = loadYaml(yamlToParse);
+        debugPrint('Parsed YAML after repair');
+      }
 
       // Convert YamlMap to regular Map<String, dynamic>
       final Map<String, dynamic> parsedData = json.decode(json.encode(yamlDoc)) as Map<String, dynamic>;
       debugPrint('Successfully parsed YAML');
+      debugPrint('Parsed fields: ${parsedData.keys.toList()}');
 
-      // Validate required fields exist (some fields optional for backwards compatibility)
+      // Validate minimum required fields exist (core fields that define the story)
+      // practiceAdvice and strategyTips are optional since AI may hit token limits
       if (parsedData.containsKey('overview') &&
           parsedData.containsKey('strengths') &&
-          parsedData.containsKey('weaknesses') &&
-          parsedData.containsKey('practiceAdvice')) {
+          parsedData.containsKey('weaknesses')) {
 
-        // Add default values for new fields if not present (backwards compatibility)
+        // Add default values for optional/missing fields (handles truncated responses)
         if (!parsedData.containsKey('roundTitle')) {
           parsedData['roundTitle'] = 'Round Summary';
         }
+        if (!parsedData.containsKey('practiceAdvice')) {
+          debugPrint('practiceAdvice missing, adding empty default');
+          parsedData['practiceAdvice'] = <String>[];
+        }
         if (!parsedData.containsKey('strategyTips')) {
+          debugPrint('strategyTips missing, adding empty default');
           parsedData['strategyTips'] = <String>[];
         }
 
@@ -408,9 +433,19 @@ If you're approaching token limits, prioritize completing the YAML structure ove
         if (parsedData['weaknesses'] is! List) {
           throw Exception('Invalid weaknesses field');
         }
+        // practiceAdvice is optional but validate if present
         if (parsedData['practiceAdvice'] is! List) {
-          throw Exception('Invalid practiceAdvice field');
+          parsedData['practiceAdvice'] = <String>[];
         }
+        // strategyTips is optional but validate if present
+        if (parsedData['strategyTips'] is! List) {
+          parsedData['strategyTips'] = <String>[];
+        }
+
+        // Log what we're passing to the model
+        debugPrint('mistakes present: ${parsedData.containsKey('mistakes')}');
+        debugPrint('practiceAdvice count: ${(parsedData['practiceAdvice'] as List).length}');
+        debugPrint('strategyTips count: ${(parsedData['strategyTips'] as List).length}');
 
         // Parse as StructuredStoryContent
         final structuredContent = StructuredStoryContent.fromJson({
@@ -433,6 +468,119 @@ If you're approaching token limits, prioritize completing the YAML structure ove
 
     // Fallback: Parse as old format with {{PLACEHOLDERS}}
     return _parseOldFormat(response, round);
+  }
+
+  /// Attempt to repair truncated YAML by removing incomplete trailing content
+  String _repairTruncatedYaml(String yaml) {
+    final List<String> lines = yaml.split('\n');
+
+    // If the last line appears incomplete (no colon, or ends mid-value), remove it
+    while (lines.isNotEmpty) {
+      final String lastLine = lines.last.trim();
+
+      // Empty lines are fine
+      if (lastLine.isEmpty) {
+        lines.removeLast();
+        continue;
+      }
+
+      // Check if this line looks complete
+      // A complete YAML line either:
+      // 1. Is a list item starting with "- " followed by content
+      // 2. Has a key: value pattern
+      // 3. Is just a key with nested content (ends with ":")
+
+      // If the line is a list item, check if it has a complete value
+      if (lastLine.startsWith('- ')) {
+        final String content = lastLine.substring(2).trim();
+        // List items with key-value pairs should have a colon
+        if (content.contains(':')) {
+          // Check if value after colon is complete (not cut off mid-sentence)
+          final int colonIndex = content.indexOf(':');
+          final String afterColon = content.substring(colonIndex + 1).trim();
+          // If there's content after colon that doesn't end properly, it might be truncated
+          if (afterColon.isNotEmpty && !_looksComplete(afterColon)) {
+            lines.removeLast();
+            continue;
+          }
+        }
+        break; // Line looks OK
+      }
+
+      // For regular key: value lines
+      if (lastLine.contains(':')) {
+        final int colonIndex = lastLine.indexOf(':');
+        final String afterColon = lastLine.substring(colonIndex + 1).trim();
+        // If there's content after colon, check if it looks complete
+        if (afterColon.isNotEmpty && !_looksComplete(afterColon)) {
+          lines.removeLast();
+          continue;
+        }
+        break; // Line looks OK
+      }
+
+      // Line doesn't have a colon and isn't a continuation - might be truncated
+      // Check if it's a valid continuation (indented content)
+      if (lastLine.startsWith(' ') || lastLine.startsWith('\t')) {
+        // Could be continuation of multi-line string, check if it looks complete
+        if (!_looksComplete(lastLine)) {
+          lines.removeLast();
+          continue;
+        }
+      }
+
+      break;
+    }
+
+    // Also check for incomplete list items in the middle (truncated mid-object)
+    // This handles cases like strengths list getting cut off
+    String result = lines.join('\n');
+
+    // Remove any trailing incomplete nested objects
+    // Look for patterns like "  - headline: X\n    cardId:" with no value
+    final RegExp incompleteListItem = RegExp(
+      r'(\n\s+-\s+\w+:[^\n]*\n\s+\w+:\s*)$',
+      multiLine: true,
+    );
+
+    if (incompleteListItem.hasMatch(result)) {
+      // Find the start of the incomplete list item and remove it
+      final Match? match = incompleteListItem.firstMatch(result);
+      if (match != null) {
+        result = result.substring(0, match.start);
+      }
+    }
+
+    return result.trim();
+  }
+
+  /// Check if a YAML value looks complete (not truncated mid-sentence)
+  bool _looksComplete(String value) {
+    // Empty values are complete
+    if (value.isEmpty) return true;
+
+    // Quoted strings should have closing quote
+    if (value.startsWith('"') && !value.endsWith('"')) return false;
+    if (value.startsWith("'") && !value.endsWith("'")) return false;
+
+    // Values ending with common truncation patterns are incomplete
+    // e.g., "with a 58" (cut off mid-number or mid-sentence)
+    final List<String> truncationPatterns = [
+      ' a ', ' an ', ' the ', ' with ', ' to ', ' for ', ' on ', ' in ',
+      ' at ', ' of ', ' and ', ' or ', ' but ', ' is ', ' was ', ' are ',
+    ];
+
+    for (final String pattern in truncationPatterns) {
+      if (value.endsWith(pattern.trim())) return false;
+    }
+
+    // Single words that are likely incomplete
+    if (value.split(' ').last.length <= 2 && !RegExp(r'^\d+$').hasMatch(value.split(' ').last)) {
+      // Short trailing words might indicate truncation, unless they're numbers
+      // This is a heuristic and might have false positives
+    }
+
+    return true;
   }
 
   /// Parse old markdown format with {{PLACEHOLDER}} syntax

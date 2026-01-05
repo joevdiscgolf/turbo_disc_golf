@@ -1,16 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/stat_card_registry.dart';
 import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/hole_type_story_card.dart';
-import 'package:turbo_disc_golf/components/stat_cards/horizontal_driving_stats_card.dart';
-import 'package:turbo_disc_golf/components/stat_cards/horizontal_putting_stats_card.dart';
-import 'package:turbo_disc_golf/components/stat_cards/mistakes_stats_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/scoring_stats_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/shot_shape_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/throw_type_story_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
@@ -426,31 +425,53 @@ class StructuredStoryRenderer extends StatelessWidget {
       );
     }
 
-    // Map card IDs to appropriate stat widgets
+    // NEW: Check if this is one of the new suffix-based story cards
+    // (ends with _CIRCLE or _BAR) OR if it's a base card ID that maps to a new widget
+    final List<String> newFocusedCardIds = [
+      'FAIRWAY_HIT',
+      'C1_IN_REG',
+      'OB_RATE',
+      'PARKED',
+      'C1_PUTTING',
+      'C1X_PUTTING',
+      'C2_PUTTING',
+      'BIRDIE_RATE',
+      'BOGEY_RATE',
+      'PAR_RATE',
+      'BOUNCE_BACK',
+      'HOT_STREAK',
+      'FLOW_STATE',
+      'MISTAKES',
+      'SKILLS_SCORE',
+    ];
+
+    // Check if this is a new focused card (with or without suffix)
+    String cardIdToUse = cardId;
+    if (cardId.endsWith('_CIRCLE') || cardId.endsWith('_BAR')) {
+      // Already has suffix, use as-is
+      cardIdToUse = cardId;
+    } else if (newFocusedCardIds.contains(cardId)) {
+      // Base card ID without suffix - default to BAR mode (horizontal)
+      cardIdToUse = '${cardId}_BAR';
+    }
+
+    // Try to build using StatCardRegistry for new focused widgets
+    if (cardIdToUse.endsWith('_CIRCLE') || cardIdToUse.endsWith('_BAR')) {
+      final analysis = RoundAnalysisGenerator.generateAnalysis(round);
+      final Widget? widget = StatCardRegistry.buildCard(cardIdToUse, round, analysis);
+      if (widget != null) {
+        return widget;
+      }
+    }
+
+    // Map card IDs to appropriate stat widgets (legacy behavior for old composite cards)
     switch (cardId) {
-      // Putting cards - show horizontal compact putting stats
-      case 'C1X_PUTTING':
-      case 'C1_PUTTING':
-      case 'C2_PUTTING':
-        return HorizontalPuttingStatsCard(round: round);
-
-      // Driving cards - show horizontal compact driving stats
-      case 'FAIRWAY_HIT':
-      case 'C1_IN_REG':
-      case 'OB_RATE':
-      case 'PARKED':
-        return HorizontalDrivingStatsCard(round: round);
-
       // Scoring cards - show scoring distribution
       case 'BIRDIES':
       case 'SCORING':
       case 'EAGLES':
       case 'PARS':
         return ScoringStatsCard(round: round);
-
-      // Mistakes card - show mistakes breakdown
-      case 'MISTAKES':
-        return MistakesStatsCard(round: round);
 
       // NEW: Throw type comparison
       case 'THROW_TYPE_COMPARISON':

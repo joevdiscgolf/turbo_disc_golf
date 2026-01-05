@@ -1,8 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/compact_stat_cards.dart';
+import 'package:turbo_disc_golf/components/stat_cards/birdie_rate_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/bogey_rate_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/bounce_back_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/c1_in_reg_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/c1_putting_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/c1x_putting_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/c2_putting_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/fairway_hit_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/flow_state_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/hot_streak_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/mistakes_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/ob_rate_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/par_rate_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/parked_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/skills_score_story_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 
 /// Registry for stat card widgets that can be embedded in AI responses
@@ -18,8 +34,64 @@ class StatCardRegistry {
     Map<String, dynamic>? params,
   }) {
     // Make card ID case-insensitive
-    final id = cardId.toUpperCase();
+    final String id = cardId.toUpperCase();
 
+    // Check for render mode suffix (_CIRCLE or _BAR)
+    StatRenderMode renderMode = StatRenderMode.circle; // Default
+    String baseId = id;
+
+    if (id.endsWith('_CIRCLE')) {
+      renderMode = StatRenderMode.circle;
+      baseId = id.substring(0, id.length - 7); // Remove '_CIRCLE'
+    } else if (id.endsWith('_BAR')) {
+      renderMode = StatRenderMode.bar;
+      baseId = id.substring(0, id.length - 4); // Remove '_BAR'
+    }
+
+    // Handle new suffix-based story cards
+    switch (baseId) {
+      // ===== DRIVING STORY CARDS (with dual rendering) =====
+      case 'FAIRWAY_HIT':
+        return FairwayHitStoryCard(round: round, renderMode: renderMode);
+      case 'C1_IN_REG':
+        return C1InRegStoryCard(round: round, renderMode: renderMode);
+      case 'OB_RATE':
+        return OBRateStoryCard(round: round, renderMode: renderMode);
+      case 'PARKED':
+        return ParkedStoryCard(round: round, renderMode: renderMode);
+
+      // ===== PUTTING STORY CARDS (with dual rendering) =====
+      case 'C1_PUTTING':
+        return C1PuttingStoryCard(round: round, renderMode: renderMode);
+      case 'C1X_PUTTING':
+        return C1XPuttingStoryCard(round: round, renderMode: renderMode);
+      case 'C2_PUTTING':
+        return C2PuttingStoryCard(round: round, renderMode: renderMode);
+
+      // ===== SCORING STORY CARDS (with dual rendering) =====
+      case 'BIRDIE_RATE':
+        return BirdieRateStoryCard(round: round, renderMode: renderMode);
+      case 'BOGEY_RATE':
+        return BogeyRateStoryCard(round: round, renderMode: renderMode);
+      case 'PAR_RATE':
+        return ParRateStoryCard(round: round, renderMode: renderMode);
+
+      // ===== MENTAL GAME STORY CARDS (with dual rendering) =====
+      case 'BOUNCE_BACK':
+        return BounceBackStoryCard(round: round, renderMode: renderMode);
+      case 'HOT_STREAK':
+        return HotStreakStoryCard(round: round, renderMode: renderMode);
+      case 'FLOW_STATE':
+        return FlowStateStoryCard(round: round, renderMode: renderMode);
+
+      // ===== PERFORMANCE STORY CARDS (with dual rendering) =====
+      case 'MISTAKES':
+        return MistakesStoryCard(round: round, renderMode: renderMode);
+      case 'SKILLS_SCORE':
+        return SkillsScoreStoryCard(round: round, renderMode: renderMode);
+    }
+
+    // Fall back to original switch statement for legacy cards
     switch (id) {
       // ===== COMPOSITE STORY CARDS =====
       case 'PUTTING_STATS':
@@ -555,34 +627,62 @@ class StatCardRegistry {
   /// Get list of all supported card IDs
   static List<String> getSupportedCardIds() {
     return [
-      // Composite story cards
+      // Composite story cards (legacy)
       'PUTTING_STATS',
       'DRIVING_STATS',
       'SCORE_BREAKDOWN',
       'MISTAKES_CHART',
-      // Putting
-      'C1X_PUTTING',
-      'C1_PUTTING',
-      'C2_PUTTING',
+
+      // Driving story cards (dual rendering with _CIRCLE / _BAR suffix)
+      'FAIRWAY_HIT_CIRCLE',
+      'FAIRWAY_HIT_BAR',
+      'C1_IN_REG_CIRCLE',
+      'C1_IN_REG_BAR',
+      'OB_RATE_CIRCLE',
+      'OB_RATE_BAR',
+      'PARKED_CIRCLE',
+      'PARKED_BAR',
+
+      // Putting story cards (dual rendering with _CIRCLE / _BAR suffix)
+      'C1_PUTTING_CIRCLE',
+      'C1_PUTTING_BAR',
+      'C1X_PUTTING_CIRCLE',
+      'C1X_PUTTING_BAR',
+      'C2_PUTTING_CIRCLE',
+      'C2_PUTTING_BAR',
+
+      // Scoring story cards (dual rendering with _CIRCLE / _BAR suffix)
+      'BIRDIE_RATE_CIRCLE',
+      'BIRDIE_RATE_BAR',
+      'BOGEY_RATE_CIRCLE',
+      'BOGEY_RATE_BAR',
+      'PAR_RATE_CIRCLE',
+      'PAR_RATE_BAR',
+
+      // Mental game story cards (dual rendering with _CIRCLE / _BAR suffix)
+      'BOUNCE_BACK_CIRCLE',
+      'BOUNCE_BACK_BAR',
+      'HOT_STREAK_CIRCLE',
+      'HOT_STREAK_BAR',
+      'FLOW_STATE_CIRCLE',
+      'FLOW_STATE_BAR',
+
+      // Performance story cards (dual rendering with _CIRCLE / _BAR suffix)
+      'MISTAKES_CIRCLE',
+      'MISTAKES_BAR',
+      'SKILLS_SCORE_CIRCLE',
+      'SKILLS_SCORE_BAR',
+
+      // Legacy compact cards (kept for backward compatibility)
       'PUTTING_COMPARISON',
-      // Driving
-      'FAIRWAY_HIT',
-      'C1_IN_REG',
-      'OB_RATE',
-      // Scoring
       'BIRDIES',
       'BOGEYS',
       'SCORING_MIX',
-      // Mistakes
       'TOTAL_MISTAKES',
       'DRIVING_MISTAKES',
       'PUTTING_MISTAKES',
       'APPROACH_MISTAKES',
-      // Mental game
-      'BOUNCE_BACK',
-      'HOT_STREAK',
       'COLD_STREAK',
-      // Disc performance
       'TOP_DISC',
       'DISC_COUNT',
     ];
@@ -644,6 +744,64 @@ class StatCardRegistry {
         return 'Top performing disc with stats';
       case 'DISC_COUNT':
         return 'Number of discs used';
+
+      // ===== NEW STORY CARDS WITH DUAL RENDERING =====
+
+      // Driving story cards
+      case 'FAIRWAY_HIT_CIRCLE':
+      case 'FAIRWAY_HIT_BAR':
+        return 'Fairway hit percentage - Shows accuracy off the tee, avoiding trouble';
+      case 'C1_IN_REG_CIRCLE':
+      case 'C1_IN_REG_BAR':
+        return 'C1 in Regulation percentage - Measures birdie opportunity creation';
+      case 'OB_RATE_CIRCLE':
+      case 'OB_RATE_BAR':
+        return 'Out of Bounds rate - Shows penalty avoidance and course management';
+      case 'PARKED_CIRCLE':
+      case 'PARKED_BAR':
+        return 'Parked percentage - Elite accuracy metric for tap-in range shots';
+
+      // Putting story cards
+      case 'C1_PUTTING_CIRCLE':
+      case 'C1_PUTTING_BAR':
+        return 'C1 Putting percentage (0-33 ft) - Overall putting performance inside Circle 1';
+      case 'C1X_PUTTING_CIRCLE':
+      case 'C1X_PUTTING_BAR':
+        return 'C1X Putting percentage (11-33 ft) - Key putting metric excluding gimme putts';
+      case 'C2_PUTTING_CIRCLE':
+      case 'C2_PUTTING_BAR':
+        return 'C2 Putting percentage (33-66 ft) - Long-range putting performance';
+
+      // Scoring story cards
+      case 'BIRDIE_RATE_CIRCLE':
+      case 'BIRDIE_RATE_BAR':
+        return 'Birdie Rate percentage - Shows scoring aggression and success';
+      case 'BOGEY_RATE_CIRCLE':
+      case 'BOGEY_RATE_BAR':
+        return 'Bogey Rate percentage - Indicates error frequency and consistency';
+      case 'PAR_RATE_CIRCLE':
+      case 'PAR_RATE_BAR':
+        return 'Par Rate percentage - Measures consistency and solid performance';
+
+      // Mental game story cards
+      case 'BOUNCE_BACK_CIRCLE':
+      case 'BOUNCE_BACK_BAR':
+        return 'Bounce Back Rate - Recovery rate after bogeys, shows mental resilience';
+      case 'HOT_STREAK_CIRCLE':
+      case 'HOT_STREAK_BAR':
+        return 'Hot Streak Energy - Birdie-after-birdie rate, shows scoring momentum';
+      case 'FLOW_STATE_CIRCLE':
+      case 'FLOW_STATE_BAR':
+        return 'Flow State percentage - Time spent in peak performance zones';
+
+      // Performance story cards
+      case 'MISTAKES_CIRCLE':
+      case 'MISTAKES_BAR':
+        return 'Total Mistakes count - Overall error frequency across all categories';
+      case 'SKILLS_SCORE_CIRCLE':
+      case 'SKILLS_SCORE_BAR':
+        return 'Overall Skills Score (0-100) - Comprehensive performance rating';
+
       default:
         return 'Unknown card';
     }

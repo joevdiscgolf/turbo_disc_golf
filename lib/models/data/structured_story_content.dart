@@ -63,8 +63,8 @@ class StructuredStoryContent {
     required this.weaknesses,
     this.mistakes,
     this.biggestOpportunity,
-    required this.practiceAdvice,
-    required this.strategyTips,
+    this.practiceAdvice = const [],
+    this.strategyTips = const [],
     required this.roundVersionId,
   });
 

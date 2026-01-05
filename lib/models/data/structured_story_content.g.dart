@@ -42,12 +42,16 @@ StructuredStoryContent _$StructuredStoryContentFromJson(
       : StoryHighlight.fromJson(
           Map<String, dynamic>.from(json['biggestOpportunity'] as Map),
         ),
-  practiceAdvice: (json['practiceAdvice'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList(),
-  strategyTips: (json['strategyTips'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList(),
+  practiceAdvice:
+      (json['practiceAdvice'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  strategyTips:
+      (json['strategyTips'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
   roundVersionId: (json['roundVersionId'] as num).toInt(),
 );
 
