@@ -181,7 +181,10 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
                   isReviewV2Screen: true,
                   tabController: _tabController,
                 ),
-                RoundStoryTab(round: round),
+                RoundStoryTab(
+                  round: round,
+                  tabController: _tabController,
+                ),
                 JudgeRoundTab(round: round),
               ],
             ),

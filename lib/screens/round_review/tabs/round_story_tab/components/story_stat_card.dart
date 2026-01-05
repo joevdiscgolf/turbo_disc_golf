@@ -24,9 +24,7 @@ class StoryStatCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -51,16 +49,12 @@ class StoryStatCard extends StatelessWidget {
   Widget _buildExplanation(BuildContext context) {
     return Text(
       explanation!,
-      style: const TextStyle(
-        fontSize: 15,
-        height: 1.5,
-        color: Colors.black87,
-      ),
+      style: const TextStyle(fontSize: 15, height: 1.5, color: Colors.black87),
     );
   }
 
   Widget _buildViewDetailsButton() {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -74,11 +68,7 @@ class StoryStatCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          Icon(
-            Icons.arrow_forward,
-            size: 16,
-            color: const Color(0xFF137e66),
-          ),
+          Icon(Icons.arrow_forward, size: 16, color: const Color(0xFF137e66)),
         ],
       ),
     );

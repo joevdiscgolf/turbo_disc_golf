@@ -7,8 +7,9 @@ import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 
 class AiSummaryTab extends StatelessWidget {
   final DGRound round;
+  final TabController? tabController;
 
-  const AiSummaryTab({super.key, required this.round});
+  const AiSummaryTab({super.key, required this.round, this.tabController});
 
   @override
   Widget build(BuildContext context) {
@@ -86,12 +87,14 @@ class AiSummaryTab extends StatelessWidget {
                         round: round,
                       )
                     : (analysis != null
-                        ? AIContentRenderer(
-                            aiContent: round.aiSummary!,
-                            round: round,
-                            analysis: analysis,
-                          )
-                        : CustomMarkdownContent(data: round.aiSummary!.content)),
+                          ? AIContentRenderer(
+                              aiContent: round.aiSummary!,
+                              round: round,
+                              analysis: analysis,
+                            )
+                          : CustomMarkdownContent(
+                              data: round.aiSummary!.content,
+                            )),
               ),
             ),
           ] else

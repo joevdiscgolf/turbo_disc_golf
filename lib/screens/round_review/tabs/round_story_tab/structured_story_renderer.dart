@@ -23,10 +23,12 @@ class StructuredStoryRenderer extends StatelessWidget {
     super.key,
     required this.content,
     required this.round,
+    this.tabController,
   });
 
   final StructuredStoryContent content;
   final DGRound round;
+  final TabController? tabController;
 
   @override
   Widget build(BuildContext context) {
@@ -278,11 +280,33 @@ class StructuredStoryRenderer extends StatelessWidget {
   }
 
   void _navigateToStatsTab(BuildContext context, String? targetTab) {
-    // TODO: Implement navigation to Stats tab
-    // For now, this is a placeholder. Full navigation with scroll/highlight
-    // can be implemented by exposing TabController through InheritedWidget
-    // or by using a state management solution.
+    if (targetTab == null || tabController == null) return;
 
-    debugPrint('Navigate to Stats tab, target: $targetTab');
+    // Map target tab string to tab index
+    const Map<String, int> tabMapping = {
+      'putting': 5,
+      'driving': 4,
+      'drives': 4,
+      'mistakes': 7,
+      'mental': 8,
+      'psych': 8,
+      'discs': 6,
+      'scores': 3,
+      'scoring': 3,
+      'overview': 0,
+      'skills': 1,
+      'course': 2,
+      'summary': 9,
+      'coach': 10,
+    };
+
+    final int? tabIndex = tabMapping[targetTab.toLowerCase()];
+    if (tabIndex == null) {
+      debugPrint('Unknown target tab: $targetTab');
+      return;
+    }
+
+    // Navigate to the target tab
+    tabController!.animateTo(tabIndex);
   }
 }

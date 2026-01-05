@@ -15,8 +15,13 @@ import 'package:turbo_disc_golf/services/story_generator_service.dart';
 /// with embedded visualizations and insights
 class RoundStoryTab extends StatefulWidget {
   final DGRound round;
+  final TabController? tabController;
 
-  const RoundStoryTab({super.key, required this.round});
+  const RoundStoryTab({
+    super.key,
+    required this.round,
+    this.tabController,
+  });
 
   @override
   State<RoundStoryTab> createState() => _RoundStoryTabState();
@@ -304,6 +309,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
           StructuredStoryRenderer(
             content: story!.structuredContent!,
             round: _currentRound,
+            tabController: widget.tabController,
           )
         // Fallback: render old format with AIContentRenderer
         else if (story?.segments != null)
