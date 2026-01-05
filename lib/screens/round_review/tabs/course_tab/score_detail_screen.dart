@@ -67,7 +67,9 @@ class _ScoreDetailScreenState extends State<ScoreDetailScreen>
               fontSize: 14,
               fontWeight: FontWeight.normal,
             ),
-            labelPadding: const EdgeInsets.symmetric(vertical: 8),
+            labelPadding: EdgeInsets.zero,
+            padding: EdgeInsets.zero,
+            indicatorPadding: EdgeInsets.zero,
             tabs: const [
               Tab(text: 'Course'),
               Tab(text: 'Scores'),

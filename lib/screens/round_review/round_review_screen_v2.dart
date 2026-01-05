@@ -86,39 +86,9 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
             appBar: GenericAppBar(
               topViewPadding: MediaQuery.of(context).viewPadding.top,
               title: round.courseName,
-              bottomWidget: TabBar(
-                controller: _tabController,
-                splashFactory: NoSplash.splashFactory,
-                overlayColor: WidgetStateProperty.all(Colors.transparent),
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.black54,
-                indicatorColor: Colors.black,
-                indicatorWeight: 2,
-                labelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                ),
-                labelPadding: EdgeInsets.zero,
-                tabs: const [
-                  Tab(text: 'Stats'),
-                  Tab(text: 'Story'),
-                  Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.local_fire_department, size: 16),
-                        SizedBox(width: 4),
-                        Text('Judge'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              bottomWidget: _tabBar(),
               bottomWidgetHeight: 48,
+
               // rightWidget: IconButton(
               //   icon: const Icon(Icons.auto_stories),
               //   tooltip: 'View Fullscreen Story',
@@ -181,16 +151,47 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
                   isReviewV2Screen: true,
                   tabController: _tabController,
                 ),
-                RoundStoryTab(
-                  round: round,
-                  tabController: _tabController,
-                ),
+                RoundStoryTab(round: round, tabController: _tabController),
                 JudgeRoundTab(round: round),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _tabBar() {
+    return TabBar(
+      controller: _tabController,
+      splashFactory: NoSplash.splashFactory,
+      overlayColor: WidgetStateProperty.all(Colors.transparent),
+      labelColor: Colors.black,
+      unselectedLabelColor: Colors.black54,
+      indicatorColor: Colors.black,
+      indicatorWeight: 2,
+      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.normal,
+      ),
+      labelPadding: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      indicatorPadding: EdgeInsets.zero,
+      tabs: const [
+        Tab(text: 'Stats'),
+        Tab(text: 'Story'),
+        Tab(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.local_fire_department, size: 16),
+              SizedBox(width: 4),
+              Text('Judge'),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -7,13 +7,15 @@ part of 'structured_story_content.dart';
 // **************************************************************************
 
 StoryHighlight _$StoryHighlightFromJson(Map json) => StoryHighlight(
-  cardId: json['cardId'] as String,
+  headline: json['headline'] as String?,
+  cardId: json['cardId'] as String?,
   explanation: json['explanation'] as String?,
   targetTab: json['targetTab'] as String?,
 );
 
 Map<String, dynamic> _$StoryHighlightToJson(StoryHighlight instance) =>
     <String, dynamic>{
+      'headline': instance.headline,
       'cardId': instance.cardId,
       'explanation': instance.explanation,
       'targetTab': instance.targetTab,

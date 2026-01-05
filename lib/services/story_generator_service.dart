@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:yaml/yaml.dart';
 
 /// Service for generating AI-powered narrative stories about disc golf rounds
 class StoryGeneratorService {
@@ -86,7 +88,7 @@ class StoryGeneratorService {
 
     buffer.writeln('''
 You are a knowledgeable disc golf coach analyzing a player's round.
-Your task is to provide a structured breakdown in JSON format with specific sections.
+Your task is to provide a structured breakdown in YAML format with specific sections.
 
 # Round Information
 Course: ${round.courseName}
@@ -120,45 +122,48 @@ C1 Putting: ${(analysis.puttingStats.c1Percentage).toStringAsFixed(1)}% (${analy
 C1X Putting: ${(analysis.puttingStats.c1xPercentage).toStringAsFixed(1)}% (${analysis.puttingStats.c1xMakes}/${analysis.puttingStats.c1xAttempts})
 C2 Putting: ${(analysis.puttingStats.c2Percentage).toStringAsFixed(1)}% (${analysis.puttingStats.c2Makes}/${analysis.puttingStats.c2Attempts})
 
-# Your Task
-Analyze this disc golf round and provide a structured breakdown in JSON format:
+# Disc Performance
+${_formatDiscPerformance(analysis)}
 
-{
-  "roundTitle": "Strong -6 Round",
-  "overview": "2-3 sentence summary. Set context, not hype. NO STATS. Just the big picture tone of the round.",
-  "strengths": [
-    {
-      "cardId": "FAIRWAY_HIT",
-      "explanation": "Your 89% fairway accuracy gave you clean looks all day. You were dialed in off the tee.",
-      "targetTab": "driving"
-    }
-  ],
-  "weaknesses": [
-    {
-      "cardId": "C1X_PUTTING",
-      "explanation": "C1X putting at 67% left opportunities on the table. Missing makeable putts cost you strokes.",
-      "targetTab": "putting"
-    }
-  ],
-  "mistakes": {
-    "cardId": "MISTAKES",
-    "explanation": "3 OB drives and 2 three-putts cost you 5 strokes. These avoidable errors prevented an even lower score.",
-    "targetTab": "mistakes"
-  },
-  "biggestOpportunity": {
-    "cardId": "C1_IN_REG",
-    "explanation": "Only 28% C1 in regulation. Giving yourself more looks inside the circle is your path to lower scores.",
-    "targetTab": "driving"
-  },
-  "practiceAdvice": [
-    "Work on driving accuracy from 300-350 feet",
-    "Practice lag putting from 40-50 feet to reduce three-putts"
-  ],
-  "strategyTips": [
-    "Consider using a fairway driver instead of distance driver on tight holes 3, 7, and 12",
-    "Focus on lag putting from 40+ feet rather than running hot - safer two-putt strategy"
-  ]
-}
+# Hole Type Performance
+${_formatHoleTypePerformance(round, analysis)}
+
+# Your Task
+Analyze this disc golf round and provide a structured breakdown in YAML format:
+
+roundTitle: Strong -6 Round
+overview: 2-3 sentence summary. Set context, not hype. NO STATS. Just the big picture tone of the round.
+strengths:
+  - headline: Dialed in from the tee
+    cardId: FAIRWAY_HIT
+    explanation: Your 89% fairway accuracy gave you clean looks all day. You were consistently in position to score.
+    targetTab: driving
+  - headline: Parked it consistently
+    cardId: PARKED
+    explanation: Your 17% parked rate gave you easy birdie opportunities. When you gave yourself chances, you capitalized.
+    targetTab: driving
+weaknesses:
+  - headline: Missed makeable putts
+    cardId: C1X_PUTTING
+    explanation: C1X putting at 67% left strokes on the table. Missing these routine putts prevented a lower score.
+    targetTab: putting
+  - headline: null
+    cardId: null
+    explanation: Your distance control on Par 5s was inconsistent, often coming up short and leaving yourself tough upshots.
+mistakes:
+  cardId: MISTAKES
+  explanation: 3 OB drives and 2 three-putts cost you 5 strokes. These avoidable errors prevented an even lower score.
+  targetTab: mistakes
+biggestOpportunity:
+  cardId: C1_IN_REG
+  explanation: Only 28% C1 in regulation. Giving yourself more looks inside the circle is your path to lower scores.
+  targetTab: driving
+practiceAdvice:
+  - Work on driving accuracy from 300-350 feet
+  - Practice lag putting from 40-50 feet to reduce three-putts
+strategyTips:
+  - Consider using a fairway driver instead of distance driver on tight holes 3, 7, and 12
+  - Focus on lag putting from 40+ feet rather than running hot - safer two-putt strategy
 
 # Available Card IDs
 PUTTING CARDS:
@@ -179,7 +184,30 @@ SCORING CARDS:
 MISTAKE CARDS:
 - MISTAKES - Use for mistakes breakdown (OB, three-putts, missed C1, etc.)
 
-IMPORTANT: Use these exact card IDs in your JSON response.
+THROW TYPE CARDS:
+- THROW_TYPE_COMPARISON - Use when backhand vs forehand performance is notably different
+  Displays: Side-by-side birdie % and C1 in reg % for BH vs FH
+  When to use: When one throw type significantly outperformed the other (>15% difference in birdie rate)
+
+SHOT SHAPE CARDS:
+- SHOT_SHAPE_BREAKDOWN - Use when specific shot shapes dominated performance
+  Displays: Top shot shapes with birdie % and C1 in reg %
+  When to use: When one shot shape has notably higher success (e.g., backhand hyzer at 40% birdie vs others at 15%)
+
+DISC PERFORMANCE CARDS:
+- DISC_PERFORMANCE:{discName} - Use when a specific disc was notably good/bad
+  Example: "DISC_PERFORMANCE:Destroyer"
+  Displays: Birdie %, avg score, throw count for that disc
+  When to use: When a disc has exceptional performance (>35% birdie rate) or poor performance (<10% on birdie-able holes)
+  Parameters: {discName} should be the exact disc name from the round data
+
+HOLE TYPE CARDS:
+- HOLE_TYPE:{parType} - Use when performance on specific hole types is notable
+  Example: "HOLE_TYPE:Par 3", "HOLE_TYPE:Par 4", "HOLE_TYPE:Par 5"
+  Displays: Scoring average, birdie rate for that hole type
+  When to use: When a hole type shows clear strength/weakness (e.g., -0.8 avg on Par 3s vs +0.5 on Par 5s)
+
+IMPORTANT: Use these exact card IDs in your YAML response.
 
 # Disc Golf Language Guidelines
 Sound like a knowledgeable disc golfer, not a generic LLM:
@@ -202,18 +230,41 @@ TONE:
 RULES:
 1. Round Title: 3-5 words summarizing the round (e.g., "Strong -6 Round", "Birdie Fest", "Consistent Par Round")
 2. Overview: 2-3 sentences max, no stats, set context
-3. Strengths: 1 highlight of what went well (pick ONE specific stat, not all 4 driving stats)
-4. Weaknesses: 1 highlight of what cost strokes (pick ONE specific stat)
+3. Strengths: 1-4 highlights of what went well (flexible based on round)
+   - Each highlight can have: optional headline, optional cardId, explanation text
+   - Pick VARIED stats/topics - don't just show all 4 driving stats
+   - For text-only insights, set cardId to null and provide headline + explanation
+   - Aim for 2-3 highlights when there's enough notable data
+4. Weaknesses: 1-4 highlights of what cost strokes (flexible based on round)
+   - Same structure as strengths
+   - Be constructive, focus on patterns not isolated mistakes
+   - Aim for 2-3 highlights when there's enough notable data
 5. Mistakes: 1 highlight about key mistakes (optional, use MISTAKES card)
 6. Biggest Opportunity: ONE SINGLE focus area (highest impact)
 7. Practice Advice: 2-4 concrete, realistic practice drills (no vague advice)
 8. Strategy Tips: 2-4 specific, NON-OBVIOUS course management tips
 
+INSIGHT GUIDELINES:
+- Prioritize DIFFERENT topics in strengths/weaknesses for maximum insight
+- Example: If fairway hits were great, also mention parked % or throw type performance
+- Use text-only highlights (cardId: null) for nuanced observations that don't fit a widget
+- Mix widget-backed highlights with text-only insights for depth
+- Each highlight should tell a different part of the story
+
 CRITICAL - Card Usage:
-- DO NOT use the same card ID multiple times (e.g., don't use FAIRWAY_HIT in both strengths and weaknesses)
-- Each section should focus on ONE specific stat, not show all 4 driving stats every time
-- If talking about driving, pick the MOST RELEVANT stat (FAIRWAY_HIT, C1_IN_REG, OB_RATE, or PARKED)
-- If talking about putting, pick the MOST RELEVANT stat (C1_PUTTING, C1X_PUTTING, or C2_PUTTING)
+- DO NOT use the same card ID multiple times across all sections
+- Each widget should appear at most once in the entire response
+- If talking about driving, pick DIFFERENT specific stats for multiple highlights
+- Example: Use FAIRWAY_HIT for one strength, PARKED for another, THROW_TYPE_COMPARISON for weaknesses
+
+WIDGET SELECTION STRATEGY:
+- Use specific widgets that match the insight (don't default to generic driving card for all tee shots)
+- Prefer THROW_TYPE_COMPARISON when BH vs FH difference is the key insight
+- Prefer PARKED or C1_IN_REG over FAIRWAY_HIT when approach quality is the focus
+- Use DISC_PERFORMANCE when a specific disc dominated (e.g., Destroyer with 8 birdies)
+- Use HOLE_TYPE when performance varies significantly by par (e.g., crushing Par 3s but struggling on Par 5s)
+- Use SHOT_SHAPE_BREAKDOWN when a specific shot shape was notably strong/weak
+- Use text-only highlights for nuanced insights (e.g., "Your upshots were more conservative than usual, favoring safety over birdie attempts")
 
 CRITICAL - Strategy Tips Guidelines:
 - DO NOT state obvious advice like "be more conservative on OB holes" or "play safer on difficult holes"
@@ -230,15 +281,71 @@ CRITICAL - Strategy Tips Guidelines:
   ✗ "Focus on course management"
 
 CRITICAL FORMATTING REQUIREMENTS:
-- RESPOND ONLY WITH VALID, COMPLETE JSON
+- RESPOND ONLY WITH VALID, COMPLETE YAML
 - NO markdown formatting, NO code blocks (```), NO explanations
-- The response must start with { and end with }
-- ENSURE the JSON is complete - do not cut off mid-response
-- All strings must be properly quoted and escaped
-- All arrays and objects must be properly closed with ] and }
+- Use proper YAML indentation (2 spaces per level)
+- ENSURE the YAML is complete - do not cut off mid-response
+- All strings should be properly quoted if they contain special characters
+- Lists use dash (-) prefix with proper indentation
+- Use null for null values (not "null" string)
 
-If you're approaching token limits, prioritize completing the JSON structure over adding more details.
+If you're approaching token limits, prioritize completing the YAML structure over adding more details.
 ''');
+
+    return buffer.toString();
+  }
+
+  /// Format disc performance data for the prompt
+  String _formatDiscPerformance(dynamic analysis) {
+    final StringBuffer buffer = StringBuffer();
+    final List discPerfs = analysis.discPerformances as List;
+
+    // Take top 5 discs by throw count
+    final List sortedDiscs = List.from(discPerfs);
+    sortedDiscs.sort((a, b) => b.totalShots.compareTo(a.totalShots));
+
+    for (final disc in sortedDiscs.take(5)) {
+      final String discName = disc.discName;
+      final double birdieRate =
+          (analysis.discBirdieRates[discName] ?? 0.0) as double;
+      final double avgScore =
+          (analysis.discAverageScores[discName] ?? 0.0) as double;
+      final int throwCount = disc.totalShots;
+
+      buffer.writeln(
+        '$discName: ${birdieRate.toStringAsFixed(1)}% birdie rate, '
+        '$throwCount throws, ${avgScore >= 0 ? '+' : ''}${avgScore.toStringAsFixed(2)} avg score',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// Format hole type performance data for the prompt
+  String _formatHoleTypePerformance(DGRound round, dynamic analysis) {
+    final Map<int, List<DGHole>> holesByPar = {};
+
+    for (final DGHole hole in round.holes) {
+      holesByPar.putIfAbsent(hole.par, () => []).add(hole);
+    }
+
+    final StringBuffer buffer = StringBuffer();
+
+    for (final MapEntry<int, List<DGHole>> entry in holesByPar.entries) {
+      final int par = entry.key;
+      final List<DGHole> holes = entry.value;
+      final int totalScore = holes.fold<int>(0, (sum, h) => sum + h.holeScore);
+      final int totalPar = holes.length * par;
+      final double avgRelative = (totalScore - totalPar) / holes.length;
+      final double birdieRate =
+          (analysis.birdieRateByPar[par] ?? 0.0) as double;
+
+      buffer.writeln(
+        'Par $par: ${avgRelative >= 0 ? '+' : ''}${avgRelative.toStringAsFixed(2)} avg, '
+        '${birdieRate.toStringAsFixed(1)}% birdie rate, '
+        '${holes.length} holes',
+      );
+    }
 
     return buffer.toString();
   }
@@ -250,9 +357,17 @@ If you're approaching token limits, prioritize completing the JSON structure ove
       String cleanedResponse = response.trim();
 
       // Remove markdown code blocks if present
-      if (cleanedResponse.startsWith('```json')) {
-        cleanedResponse = cleanedResponse.substring(7);
+      if (cleanedResponse.startsWith('```yaml') ||
+          cleanedResponse.startsWith('```YAML')) {
+        cleanedResponse = cleanedResponse.substring(cleanedResponse.indexOf('\n') + 1);
       }
+
+      // Remove just 'yaml' or 'YAML' at the beginning
+      if (cleanedResponse.startsWith('yaml\n') ||
+          cleanedResponse.startsWith('YAML\n')) {
+        cleanedResponse = cleanedResponse.substring(5);
+      }
+
       if (cleanedResponse.startsWith('```')) {
         cleanedResponse = cleanedResponse.substring(3);
       }
@@ -261,61 +376,45 @@ If you're approaching token limits, prioritize completing the JSON structure ove
       }
       cleanedResponse = cleanedResponse.trim();
 
-      // Try to parse as structured JSON (new format)
-      Map<String, dynamic>? json;
+      // Try to parse as structured YAML (new format)
+      debugPrint('Parsing YAML response...');
+      final yamlDoc = loadYaml(cleanedResponse);
 
-      try {
-        json = jsonDecode(cleanedResponse);
-      } catch (e) {
-        // If JSON is incomplete, try to repair it
-        debugPrint('JSON parse error: $e');
-        debugPrint('Attempting to repair incomplete JSON...');
-
-        final String repairedJson = _attemptJsonRepair(cleanedResponse);
-        try {
-          json = jsonDecode(repairedJson);
-          debugPrint('Successfully repaired JSON');
-        } catch (repairError) {
-          debugPrint('JSON repair failed: $repairError');
-          throw Exception('Could not parse or repair JSON');
-        }
-      }
-
-      if (json == null) {
-        throw Exception('JSON parsing resulted in null');
-      }
+      // Convert YamlMap to regular Map<String, dynamic>
+      final Map<String, dynamic> parsedData = json.decode(json.encode(yamlDoc)) as Map<String, dynamic>;
+      debugPrint('Successfully parsed YAML');
 
       // Validate required fields exist (some fields optional for backwards compatibility)
-      if (json.containsKey('overview') &&
-          json.containsKey('strengths') &&
-          json.containsKey('weaknesses') &&
-          json.containsKey('practiceAdvice')) {
+      if (parsedData.containsKey('overview') &&
+          parsedData.containsKey('strengths') &&
+          parsedData.containsKey('weaknesses') &&
+          parsedData.containsKey('practiceAdvice')) {
 
         // Add default values for new fields if not present (backwards compatibility)
-        if (!json.containsKey('roundTitle')) {
-          json['roundTitle'] = 'Round Summary';
+        if (!parsedData.containsKey('roundTitle')) {
+          parsedData['roundTitle'] = 'Round Summary';
         }
-        if (!json.containsKey('strategyTips')) {
-          json['strategyTips'] = <String>[];
+        if (!parsedData.containsKey('strategyTips')) {
+          parsedData['strategyTips'] = <String>[];
         }
 
         // Ensure all required fields are valid
-        if (json['overview'] is! String || (json['overview'] as String).isEmpty) {
+        if (parsedData['overview'] is! String || (parsedData['overview'] as String).isEmpty) {
           throw Exception('Invalid overview field');
         }
-        if (json['strengths'] is! List) {
+        if (parsedData['strengths'] is! List) {
           throw Exception('Invalid strengths field');
         }
-        if (json['weaknesses'] is! List) {
+        if (parsedData['weaknesses'] is! List) {
           throw Exception('Invalid weaknesses field');
         }
-        if (json['practiceAdvice'] is! List) {
+        if (parsedData['practiceAdvice'] is! List) {
           throw Exception('Invalid practiceAdvice field');
         }
 
         // Parse as StructuredStoryContent
         final structuredContent = StructuredStoryContent.fromJson({
-          ...json,
+          ...parsedData,
           'roundVersionId': round.versionId,
         });
 
@@ -325,71 +424,15 @@ If you're approaching token limits, prioritize completing the JSON structure ove
           structuredContent: structuredContent,
         );
       } else {
-        throw Exception('Missing required fields in JSON response');
+        throw Exception('Missing required fields in YAML response');
       }
     } catch (e) {
-      debugPrint('Failed to parse as structured JSON: $e');
+      debugPrint('Failed to parse as structured YAML: $e');
       debugPrint('Response was: $response');
     }
 
     // Fallback: Parse as old format with {{PLACEHOLDERS}}
     return _parseOldFormat(response, round);
-  }
-
-  /// Attempt to repair incomplete JSON by closing unclosed structures
-  String _attemptJsonRepair(String incompleteJson) {
-    final StringBuffer repaired = StringBuffer(incompleteJson);
-
-    // Count opening and closing braces/brackets
-    int braceCount = 0;
-    int bracketCount = 0;
-    bool inString = false;
-    bool escaped = false;
-
-    for (int i = 0; i < incompleteJson.length; i++) {
-      final char = incompleteJson[i];
-
-      if (escaped) {
-        escaped = false;
-        continue;
-      }
-
-      if (char == '\\') {
-        escaped = true;
-        continue;
-      }
-
-      if (char == '"' && !escaped) {
-        inString = !inString;
-        continue;
-      }
-
-      if (!inString) {
-        if (char == '{') braceCount++;
-        if (char == '}') braceCount--;
-        if (char == '[') bracketCount++;
-        if (char == ']') bracketCount--;
-      }
-    }
-
-    // If we're still in a string, close it
-    if (inString) {
-      repaired.write('"');
-    }
-
-    // Close unclosed arrays
-    while (bracketCount > 0) {
-      repaired.write(']');
-      bracketCount--;
-    }
-
-    // Close unclosed objects
-    while (braceCount > 0) {
-      repaired.write('}');
-      braceCount--;
-    }
-
-    return repaired.toString();
   }
 
   /// Parse old markdown format with {{PLACEHOLDER}} syntax

@@ -109,7 +109,10 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
       }
 
       // Build content with metadata
-      final String contentWithMetadata = _buildJudgmentContent(judgment, _isGlaze);
+      final String contentWithMetadata = _buildJudgmentContent(
+        judgment,
+        _isGlaze,
+      );
 
       // Create AIContent
       final AIContent aiJudgment = AIContent(
@@ -118,7 +121,8 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
       );
 
       // Update round with judgment
-      final RoundStorageService storageService = locator.get<RoundStorageService>();
+      final RoundStorageService storageService = locator
+          .get<RoundStorageService>();
       final DGRound updatedRound = _currentRound.copyWith(
         aiJudgment: aiJudgment,
       );
@@ -126,7 +130,9 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
 
       // Update cubit state so banner disappears
       if (mounted) {
-        final RoundReviewCubit reviewCubit = BlocProvider.of<RoundReviewCubit>(context);
+        final RoundReviewCubit reviewCubit = BlocProvider.of<RoundReviewCubit>(
+          context,
+        );
         reviewCubit.updateRoundData(updatedRound);
 
         setState(() {
@@ -149,7 +155,7 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     super.build(context);
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -163,7 +169,7 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
         ),
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -195,9 +201,9 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
             const SizedBox(height: 16),
             Text(
               'Ready to Be Judged?',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -236,9 +242,9 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
             const SizedBox(height: 24),
             Text(
               'Analyzing your round...',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -254,7 +260,8 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   }
 
   void _shareJudgment(String content, String headline) {
-    final String shareText = '''
+    final String shareText =
+        '''
 ${_isGlaze ? '🍩' : '🔥'} $headline
 
 $content
@@ -299,10 +306,16 @@ Shared from Turbo Disc Golf''';
     );
 
     // Generate analysis for rendering
-    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(_currentRound);
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      _currentRound,
+    );
 
-    final Color primaryColor = _isGlaze ? const Color(0xFF2196F3) : const Color(0xFFFF6B6B);
-    final Color darkColor = _isGlaze ? const Color(0xFF1565C0) : const Color(0xFFD32F2F);
+    final Color primaryColor = _isGlaze
+        ? const Color(0xFF2196F3)
+        : const Color(0xFFFF6B6B);
+    final Color darkColor = _isGlaze
+        ? const Color(0xFF1565C0)
+        : const Color(0xFFD32F2F);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,9 +328,7 @@ Shared from Turbo Disc Golf''';
               onPressed: () {
                 // Clear the current judgment to force regeneration
                 setState(() {
-                  _currentRound = _currentRound.copyWith(
-                    aiJudgment: null,
-                  );
+                  _currentRound = _currentRound.copyWith(aiJudgment: null);
                 });
                 _generateJudgment();
               },
@@ -349,10 +360,7 @@ Shared from Turbo Disc Golf''';
           child: Row(
             children: [
               _isGlaze
-                  ? const Text(
-                      '🍩',
-                      style: TextStyle(fontSize: 48),
-                    )
+                  ? const Text('🍩', style: TextStyle(fontSize: 48))
                   : Icon(
                       Icons.local_fire_department,
                       size: 48,
@@ -366,10 +374,10 @@ Shared from Turbo Disc Golf''';
                     Text(
                       headline,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: darkColor,
-                            fontSize: 22,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: darkColor,
+                        fontSize: 22,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -377,8 +385,8 @@ Shared from Turbo Disc Golf''';
                           ? 'Excessive compliments incoming...'
                           : 'Brutal honesty incoming...',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: darkColor.withValues(alpha: 0.7),
-                          ),
+                        color: darkColor.withValues(alpha: 0.7),
+                      ),
                     ),
                   ],
                 ),
@@ -520,9 +528,10 @@ class _JudgmentLoadingAnimationState extends State<_JudgmentLoadingAnimation>
       vsync: this,
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

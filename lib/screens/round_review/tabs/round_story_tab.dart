@@ -19,11 +19,7 @@ class RoundStoryTab extends StatefulWidget {
   final DGRound round;
   final TabController? tabController;
 
-  const RoundStoryTab({
-    super.key,
-    required this.round,
-    this.tabController,
-  });
+  const RoundStoryTab({super.key, required this.round, this.tabController});
 
   @override
   State<RoundStoryTab> createState() => _RoundStoryTabState();
@@ -92,7 +88,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         // Update the RoundReviewCubit so it knows about the new story
         // This ensures the updated round is available when switching tabs
         try {
-          final RoundReviewCubit? reviewCubit = context.read<RoundReviewCubit?>();
+          final RoundReviewCubit? reviewCubit = context
+              .read<RoundReviewCubit?>();
           reviewCubit?.updateRoundData(updatedRound);
         } catch (e) {
           // Cubit might not be available in all contexts (e.g., standalone usage)
@@ -120,7 +117,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -134,7 +131,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         ),
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
+        padding: const EdgeInsets.fromLTRB(0, 12, 0, 96),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
