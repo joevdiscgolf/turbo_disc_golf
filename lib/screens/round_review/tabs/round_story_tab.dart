@@ -1,20 +1,29 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
+import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 
 /// AI narrative story tab that tells the story of your round
 /// with embedded visualizations and insights
 class RoundStoryTab extends StatefulWidget {
   final DGRound round;
+  final TabController? tabController;
 
-  const RoundStoryTab({super.key, required this.round});
+  const RoundStoryTab({
+    super.key,
+    required this.round,
+    this.tabController,
+  });
 
   @override
   State<RoundStoryTab> createState() => _RoundStoryTabState();
@@ -39,6 +48,18 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     _analysis = RoundAnalysisGenerator.generateAnalysis(_currentRound);
   }
 
+  @override
+  void didUpdateWidget(RoundStoryTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync with parent widget's round if it changed (e.g., from Firestore update)
+    if (oldWidget.round != widget.round) {
+      setState(() {
+        _currentRound = widget.round;
+        _analysis = RoundAnalysisGenerator.generateAnalysis(_currentRound);
+      });
+    }
+  }
+
   Future<void> _generateStory() async {
     setState(() {
       _isGenerating = true;
@@ -52,9 +73,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         geminiService,
       );
 
-      // Generate story
+      // Generate story using current round state
       final AIContent? story = await storyService.generateRoundStory(
-        widget.round,
+        _currentRound,
       );
 
       if (story == null) {
@@ -62,14 +83,26 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       }
 
       // Update round with new story
-      final RoundStorageService storageService = locator.get<RoundStorageService>();
+      final RoundStorageService storageService = locator
+          .get<RoundStorageService>();
       final DGRound updatedRound = _currentRound.copyWith(aiSummary: story);
       await storageService.saveRound(updatedRound);
 
       if (mounted) {
+        // Update the RoundReviewCubit so it knows about the new story
+        // This ensures the updated round is available when switching tabs
+        try {
+          final RoundReviewCubit? reviewCubit = context.read<RoundReviewCubit?>();
+          reviewCubit?.updateRoundData(updatedRound);
+        } catch (e) {
+          // Cubit might not be available in all contexts (e.g., standalone usage)
+          debugPrint('RoundReviewCubit not available: $e');
+        }
+
         setState(() {
           _isGenerating = false;
-          _currentRound = updatedRound; // Update local state to trigger UI rebuild
+          _currentRound =
+              updatedRound; // Update local state to trigger UI rebuild
         });
       }
     } catch (e) {
@@ -101,7 +134,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         ),
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 96),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -110,9 +143,11 @@ class _RoundStoryTabState extends State<RoundStoryTab>
             else if (_errorMessage != null)
               _buildErrorState(context)
             else if (_currentRound.aiSummary != null &&
-                _currentRound.aiSummary!.content.isNotEmpty)
-              _buildStoryContent(context, _analysis)
-            else
+                _currentRound.aiSummary!.content.isNotEmpty) ...[
+              _buildRegenerateButton(),
+              const SizedBox(height: 8),
+              _buildStoryContent(context, _analysis),
+            ] else
               _buildEmptyState(context),
           ],
         ),
@@ -220,6 +255,26 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     );
   }
 
+  Widget _buildRegenerateButton() {
+    // Only show in debug mode
+    if (!kDebugMode) {
+      return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: OutlinedButton.icon(
+        onPressed: _isGenerating ? null : _generateStory,
+        icon: const Icon(Icons.refresh, size: 16),
+        label: const Text('Regenerate (Debug)'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          textStyle: const TextStyle(fontSize: 12),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStoryContent(BuildContext context, RoundAnalysis analysis) {
     // Check if content is outdated
     if (_currentRound.isAISummaryOutdated) {
@@ -254,8 +309,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
             child: Text(
               'This story is out of date with the current round',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ),
           TextButton(
@@ -268,45 +323,49 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildContentCard(BuildContext context, RoundAnalysis analysis) {
+    final AIContent? story = _currentRound.aiSummary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Round Timeline
-        // RoundTimeline(
-        //   round: _currentRound,
-        //   highlightedMoments: _getKeyMoments(analysis),
-        // ),
-        // const SizedBox(height: 16),
-
-        // // Quick Stats Overview with Pills
-        // _buildQuickStatsOverview(context, analysis),
-        // const SizedBox(height: 16),
-
-        // Main Story Content
-        // StorySectionHeader(
-        //   title: 'Your Round Story',
-        //   icon: Icons.auto_stories,
-        //   accentColor: const Color(0xFF137e66),
-        // ),
-        // const SizedBox(height: 8),
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: AIContentRenderer(
-              aiContent: _currentRound.aiSummary!,
-              round: _currentRound,
-              analysis: analysis,
+        // Render structured story if available (new format)
+        if (story?.structuredContent != null)
+          StructuredStoryRenderer(
+            content: story!.structuredContent!,
+            round: _currentRound,
+            tabController: widget.tabController,
+          )
+        // Fallback: render old format with AIContentRenderer
+        else if (story?.segments != null)
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: AIContentRenderer(
+                aiContent: story!,
+                round: _currentRound,
+                analysis: analysis,
+              ),
+            ),
+          )
+        // Final fallback: plain markdown
+        else
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                story?.content ?? 'No story available',
+                style: const TextStyle(fontSize: 16, height: 1.6),
+              ),
             ),
           ),
-        ),
-        // const SizedBox(height: 16),
-
-        // // Performance Summary with circular indicators
-        // _buildPerformanceSummary(context, analysis),
       ],
     );
   }

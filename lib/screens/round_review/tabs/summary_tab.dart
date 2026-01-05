@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 
 class AiSummaryTab extends StatelessWidget {
   final DGRound round;
+  final TabController? tabController;
 
-  const AiSummaryTab({super.key, required this.round});
+  const AiSummaryTab({super.key, required this.round, this.tabController});
 
   @override
   Widget build(BuildContext context) {
@@ -79,13 +81,21 @@ class AiSummaryTab extends StatelessWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: analysis != null
-                    ? AIContentRenderer(
-                        aiContent: round.aiSummary!,
+                child: round.aiSummary?.structuredContent != null
+                    ? StructuredStoryRenderer(
+                        content: round.aiSummary!.structuredContent!,
                         round: round,
-                        analysis: analysis,
+                        tabController: tabController,
                       )
-                    : CustomMarkdownContent(data: round.aiSummary!.content),
+                    : (analysis != null
+                          ? AIContentRenderer(
+                              aiContent: round.aiSummary!,
+                              round: round,
+                              analysis: analysis,
+                            )
+                          : CustomMarkdownContent(
+                              data: round.aiSummary!.content,
+                            )),
               ),
             ),
           ] else

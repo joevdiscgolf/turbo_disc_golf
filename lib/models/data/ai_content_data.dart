@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 
 part 'ai_content_data.g.dart';
 
@@ -39,6 +40,7 @@ class AIContent {
     required this.content,
     required this.roundVersionId,
     this.segments,
+    this.structuredContent,
   });
 
   /// Raw markdown content (kept for backward compatibility)
@@ -49,7 +51,13 @@ class AIContent {
 
   /// Structured segments (markdown + stat cards)
   /// If null, falls back to rendering raw content as markdown
+  /// Used for old-format stories with {{PLACEHOLDERS}}
   final List<AIContentSegment>? segments;
+
+  /// Structured story content with specific sections
+  /// Used for new-format stories with organized coaching sections
+  /// If present, this takes precedence over segments
+  final StructuredStoryContent? structuredContent;
 
   factory AIContent.fromJson(Map<String, dynamic> json) =>
       _$AIContentFromJson(json);
