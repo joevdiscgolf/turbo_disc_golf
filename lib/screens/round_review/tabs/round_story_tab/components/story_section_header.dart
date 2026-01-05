@@ -21,43 +21,25 @@ class StorySectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Icon(
-              icon,
-              color: accentColor,
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: accentColor,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-              ),
-            ),
-          ],
+        Icon(
+          icon,
+          color: accentColor,
+          size: 22,
         ),
-        const SizedBox(height: 8),
-        Container(
-          height: 3,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                accentColor,
-                accentColor.withValues(alpha: 0.1),
-              ],
-              stops: const [0.3, 1.0],
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: accentColor,
+              letterSpacing: 0.5,
             ),
-            borderRadius: BorderRadius.circular(2),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ],

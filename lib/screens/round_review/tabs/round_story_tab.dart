@@ -46,6 +46,18 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     _analysis = RoundAnalysisGenerator.generateAnalysis(_currentRound);
   }
 
+  @override
+  void didUpdateWidget(RoundStoryTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync with parent widget's round if it changed (e.g., from Firestore update)
+    if (oldWidget.round != widget.round) {
+      setState(() {
+        _currentRound = widget.round;
+        _analysis = RoundAnalysisGenerator.generateAnalysis(_currentRound);
+      });
+    }
+  }
+
   Future<void> _generateStory() async {
     setState(() {
       _isGenerating = true;
@@ -59,9 +71,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         geminiService,
       );
 
-      // Generate story
+      // Generate story using current round state
       final AIContent? story = await storyService.generateRoundStory(
-        widget.round,
+        _currentRound,
       );
 
       if (story == null) {

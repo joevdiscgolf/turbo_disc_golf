@@ -85,6 +85,7 @@ class AiSummaryTab extends StatelessWidget {
                     ? StructuredStoryRenderer(
                         content: round.aiSummary!.structuredContent!,
                         round: round,
+                        tabController: tabController,
                       )
                     : (analysis != null
                           ? AIContentRenderer(

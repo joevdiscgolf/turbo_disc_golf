@@ -5,10 +5,8 @@ import 'package:turbo_disc_golf/components/stat_cards/mistakes_stats_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/scoring_stats_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/opportunity_highlight.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_stat_card.dart';
 
 /// Renderer for structured story content with specific sections
 ///
@@ -36,30 +34,30 @@ class StructuredStoryRenderer extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeadline(context),
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
         if (content.strengths.isNotEmpty) ...[
           _buildStrengths(context),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
         if (content.weaknesses.isNotEmpty) ...[
           _buildWeaknesses(context),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
         if (content.mistakes != null) ...[
           _buildMistakes(context),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
         if (content.biggestOpportunity != null) ...[
           _buildOpportunity(context),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
         if (content.practiceAdvice.isNotEmpty) ...[
           _buildPractice(context),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
         ],
         if (content.strategyTips.isNotEmpty) ...[
           _buildStrategy(context),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
         ],
       ],
     );
@@ -70,6 +68,7 @@ class StructuredStoryRenderer extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
         elevation: 2,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -100,141 +99,253 @@ class StructuredStoryRenderer extends StatelessWidget {
   }
 
   Widget _buildStrengths(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: StorySectionHeader(
-            title: 'What You Did Well',
-            icon: Icons.trending_up,
-            accentColor: const Color(0xFF4CAF50),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'What you did well',
+                icon: Icons.trending_up,
+                accentColor: const Color(0xFF4CAF50),
+              ),
+              const SizedBox(height: 16),
+              ...content.strengths.map(
+                (highlight) => Padding(
+                  padding: EdgeInsets.only(
+                    bottom: highlight != content.strengths.last ? 16 : 0,
+                  ),
+                  child: InkWell(
+                    onTap: () =>
+                        _navigateToStatsTab(context, highlight.targetTab),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStatWidget(highlight.cardId),
+                        if (highlight.explanation != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            highlight.explanation!,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              height: 1.5,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        ...content.strengths.map(
-          (highlight) => StoryStatCard(
-            statWidget: _buildStatWidget(highlight.cardId),
-            explanation: highlight.explanation,
-            onTap: () => _navigateToStatsTab(context, highlight.targetTab),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildWeaknesses(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: StorySectionHeader(
-            title: 'What Cost You Strokes',
-            icon: Icons.trending_down,
-            accentColor: const Color(0xFFFF7A7A),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'What cost you strokes',
+                icon: Icons.trending_down,
+                accentColor: const Color(0xFFFF7A7A),
+              ),
+              const SizedBox(height: 16),
+              ...content.weaknesses.map(
+                (highlight) => Padding(
+                  padding: EdgeInsets.only(
+                    bottom: highlight != content.weaknesses.last ? 16 : 0,
+                  ),
+                  child: InkWell(
+                    onTap: () =>
+                        _navigateToStatsTab(context, highlight.targetTab),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStatWidget(highlight.cardId),
+                        if (highlight.explanation != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            highlight.explanation!,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              height: 1.5,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        ...content.weaknesses.map(
-          (highlight) => StoryStatCard(
-            statWidget: _buildStatWidget(highlight.cardId),
-            explanation: highlight.explanation,
-            onTap: () => _navigateToStatsTab(context, highlight.targetTab),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildMistakes(BuildContext context) {
     final mistakes = content.mistakes!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: StorySectionHeader(
-            title: 'Key Mistakes',
-            icon: Icons.warning_rounded,
-            accentColor: const Color(0xFFFF7A7A),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'Key mistakes',
+                icon: Icons.warning_rounded,
+                accentColor: const Color(0xFFFF7A7A),
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => _navigateToStatsTab(context, mistakes.targetTab),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatWidget(mistakes.cardId),
+                    if (mistakes.explanation != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        mistakes.explanation!,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        StoryStatCard(
-          statWidget: _buildStatWidget(mistakes.cardId),
-          explanation: mistakes.explanation,
-          onTap: () => _navigateToStatsTab(context, mistakes.targetTab),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildOpportunity(BuildContext context) {
     final opportunity = content.biggestOpportunity!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: StorySectionHeader(
-            title: 'Biggest Opportunity to Improve',
-            icon: Icons.stars,
-            accentColor: const Color(0xFFFFA726),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'Where to improve',
+                icon: Icons.stars,
+                accentColor: const Color(0xFFFFA726),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () =>
+                    _navigateToStatsTab(context, opportunity.targetTab),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatWidget(opportunity.cardId),
+                    if (opportunity.explanation != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        opportunity.explanation!,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: OpportunityHighlight(
-            statWidget: _buildStatWidget(opportunity.cardId),
-            explanation: opportunity.explanation ?? '',
-            onTap: () => _navigateToStatsTab(context, opportunity.targetTab),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildPractice(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: StorySectionHeader(
-            title: 'Practice Focus',
-            icon: Icons.emoji_objects,
-            accentColor: const Color(0xFF2196F3),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'Practice focus',
+                icon: Icons.emoji_objects,
+                accentColor: const Color(0xFF2196F3),
+              ),
+              const SizedBox(height: 16),
+              PracticeAdviceList(advice: content.practiceAdvice),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: PracticeAdviceList(advice: content.practiceAdvice),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildStrategy(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: StorySectionHeader(
-            title: 'Strategy Tips',
-            icon: Icons.psychology,
-            accentColor: const Color(0xFF9C27B0),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'Strategy tips',
+                icon: Icons.psychology,
+                accentColor: const Color(0xFF9C27B0),
+              ),
+              const SizedBox(height: 16),
+              PracticeAdviceList(advice: content.strategyTips),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: PracticeAdviceList(advice: content.strategyTips),
-        ),
-      ],
+      ),
     );
   }
 
@@ -306,7 +417,11 @@ class StructuredStoryRenderer extends StatelessWidget {
       return;
     }
 
+    // Check if tab index is valid for current controller
+    // If out of bounds, navigate to Overview tab (index 0) instead
+    final int targetIndex = tabIndex >= tabController!.length ? 0 : tabIndex;
+
     // Navigate to the target tab
-    tabController!.animateTo(tabIndex);
+    tabController!.animateTo(targetIndex);
   }
 }

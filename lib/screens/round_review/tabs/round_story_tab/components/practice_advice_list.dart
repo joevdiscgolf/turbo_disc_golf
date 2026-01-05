@@ -22,17 +22,11 @@ class PracticeAdviceList extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: advice.asMap().entries.map((entry) {
-            return _buildAdviceItem(entry.value, entry.key);
-          }).toList(),
-        ),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: advice.asMap().entries.map((entry) {
+        return _buildAdviceItem(entry.value, entry.key);
+      }).toList(),
     );
   }
 
