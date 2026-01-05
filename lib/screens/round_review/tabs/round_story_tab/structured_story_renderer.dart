@@ -1,0 +1,288 @@
+import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/stat_cards/horizontal_driving_stats_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/horizontal_putting_stats_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/mistakes_stats_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/scoring_stats_card.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/opportunity_highlight.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_stat_card.dart';
+
+/// Renderer for structured story content with specific sections
+///
+/// Displays structured AI coaching in organized sections:
+/// 1. Round Overview (context setting)
+/// 2. What You Did Well (strengths with stat cards)
+/// 3. What Cost You Strokes (weaknesses with stat cards)
+/// 4. Biggest Opportunity (emphasized single focus)
+/// 5. Practice & Strategy (actionable advice)
+class StructuredStoryRenderer extends StatelessWidget {
+  const StructuredStoryRenderer({
+    super.key,
+    required this.content,
+    required this.round,
+  });
+
+  final StructuredStoryContent content;
+  final DGRound round;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeadline(context),
+        const SizedBox(height: 24),
+        if (content.strengths.isNotEmpty) ...[
+          _buildStrengths(context),
+          const SizedBox(height: 24),
+        ],
+        if (content.weaknesses.isNotEmpty) ...[
+          _buildWeaknesses(context),
+          const SizedBox(height: 24),
+        ],
+        if (content.mistakes != null) ...[
+          _buildMistakes(context),
+          const SizedBox(height: 24),
+        ],
+        if (content.biggestOpportunity != null) ...[
+          _buildOpportunity(context),
+          const SizedBox(height: 24),
+        ],
+        if (content.practiceAdvice.isNotEmpty) ...[
+          _buildPractice(context),
+          const SizedBox(height: 24),
+        ],
+        if (content.strategyTips.isNotEmpty) ...[
+          _buildStrategy(context),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHeadline(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                content.roundTitle,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF137e66),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                content.overview,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.6,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStrengths(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: StorySectionHeader(
+            title: 'What You Did Well',
+            icon: Icons.trending_up,
+            accentColor: const Color(0xFF4CAF50),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...content.strengths.map(
+          (highlight) => StoryStatCard(
+            statWidget: _buildStatWidget(highlight.cardId),
+            explanation: highlight.explanation,
+            onTap: () => _navigateToStatsTab(context, highlight.targetTab),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeaknesses(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: StorySectionHeader(
+            title: 'What Cost You Strokes',
+            icon: Icons.trending_down,
+            accentColor: const Color(0xFFFF7A7A),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...content.weaknesses.map(
+          (highlight) => StoryStatCard(
+            statWidget: _buildStatWidget(highlight.cardId),
+            explanation: highlight.explanation,
+            onTap: () => _navigateToStatsTab(context, highlight.targetTab),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMistakes(BuildContext context) {
+    final mistakes = content.mistakes!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: StorySectionHeader(
+            title: 'Key Mistakes',
+            icon: Icons.warning_rounded,
+            accentColor: const Color(0xFFFF7A7A),
+          ),
+        ),
+        const SizedBox(height: 12),
+        StoryStatCard(
+          statWidget: _buildStatWidget(mistakes.cardId),
+          explanation: mistakes.explanation,
+          onTap: () => _navigateToStatsTab(context, mistakes.targetTab),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOpportunity(BuildContext context) {
+    final opportunity = content.biggestOpportunity!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: StorySectionHeader(
+            title: 'Biggest Opportunity to Improve',
+            icon: Icons.stars,
+            accentColor: const Color(0xFFFFA726),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: OpportunityHighlight(
+            statWidget: _buildStatWidget(opportunity.cardId),
+            explanation: opportunity.explanation ?? '',
+            onTap: () => _navigateToStatsTab(context, opportunity.targetTab),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPractice(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: StorySectionHeader(
+            title: 'Practice Focus',
+            icon: Icons.emoji_objects,
+            accentColor: const Color(0xFF2196F3),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: PracticeAdviceList(advice: content.practiceAdvice),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStrategy(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: StorySectionHeader(
+            title: 'Strategy Tips',
+            icon: Icons.psychology,
+            accentColor: const Color(0xFF9C27B0),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: PracticeAdviceList(advice: content.strategyTips),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatWidget(String cardId) {
+    // Map card IDs to appropriate stat widgets
+    switch (cardId) {
+      // Putting cards - show horizontal compact putting stats
+      case 'C1X_PUTTING':
+      case 'C1_PUTTING':
+      case 'C2_PUTTING':
+        return HorizontalPuttingStatsCard(round: round);
+
+      // Driving cards - show horizontal compact driving stats
+      case 'FAIRWAY_HIT':
+      case 'C1_IN_REG':
+      case 'OB_RATE':
+      case 'PARKED':
+        return HorizontalDrivingStatsCard(round: round);
+
+      // Scoring cards - show scoring distribution
+      case 'BIRDIES':
+      case 'SCORING':
+      case 'EAGLES':
+      case 'PARS':
+        return ScoringStatsCard(round: round);
+
+      // Mistakes card - show mistakes breakdown
+      case 'MISTAKES':
+        return MistakesStatsCard(round: round);
+
+      // Fallback: simple placeholder for unsupported card types
+      default:
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Stat: $cardId',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ),
+        );
+    }
+  }
+
+  void _navigateToStatsTab(BuildContext context, String? targetTab) {
+    // TODO: Implement navigation to Stats tab
+    // For now, this is a placeholder. Full navigation with scroll/highlight
+    // can be implemented by exposing TabController through InheritedWidget
+    // or by using a state management solution.
+
+    debugPrint('Navigate to Stats tab, target: $targetTab');
+  }
+}
