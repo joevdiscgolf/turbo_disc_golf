@@ -15,13 +15,19 @@ enum StorySection {
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class StoryHighlight {
   const StoryHighlight({
-    required this.cardId,
+    this.headline,
+    this.cardId,
     this.explanation,
     this.targetTab,
   });
 
+  /// Optional sub-headline for this topic (e.g., "Dialed in from the tee")
+  /// Used to give each highlight its own mini-title
+  final String? headline;
+
   /// Card ID for the stat (e.g., 'C1X_PUTTING', 'FAIRWAY_HIT', 'OB_RATE')
-  final String cardId;
+  /// Optional to support text-only highlights without widgets
+  final String? cardId;
 
   /// Disc golf coaching context/explanation for this stat
   /// Uses terminology like "giving yourself looks", "inside the circle", etc.

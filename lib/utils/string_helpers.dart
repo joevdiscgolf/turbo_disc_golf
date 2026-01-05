@@ -53,3 +53,10 @@ String getMessageFromDifference(int difference) {
 String timestampToDate(int timestamp) {
   return '${DateFormat.yMMMMd('en_US').format(DateTime.fromMillisecondsSinceEpoch(timestamp)).toString()}, ${DateFormat.jm().format(DateTime.fromMillisecondsSinceEpoch(timestamp)).toString()}';
 }
+
+extension CapitalizeFirstExtension on String {
+  String capitalizeFirst() {
+    if (isEmpty) return this;
+    return this[0].toUpperCase() + substring(1).toLowerCase();
+  }
+}

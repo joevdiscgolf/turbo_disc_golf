@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/components/stat_cards/driving_stats_card.dart' as compact;
-import 'package:turbo_disc_golf/components/stat_cards/putting_stats_card.dart' as compact;
+import 'package:turbo_disc_golf/components/stat_cards/driving_stats_card.dart'
+    as compact;
+import 'package:turbo_disc_golf/components/stat_cards/putting_stats_card.dart'
+    as compact;
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -214,101 +216,95 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
       'judge_banner',
     );
 
-    return Container(
-      color: Colors.transparent,
-      child: ListView(
-        padding: const EdgeInsets.only(top: 0, bottom: 80),
-        children: [
-          if (shouldShowBanner)
-            _JudgeBanner(
-              onTap: _navigateToJudgeTab,
-              shouldAnimate: isFirstView,
-            ),
-          ScoreKPICard(
+    return ListView(
+      padding: const EdgeInsets.only(top: 12, bottom: 80),
+      children: [
+        if (shouldShowBanner)
+          _JudgeBanner(onTap: _navigateToJudgeTab, shouldAnimate: isFirstView),
+        ScoreKPICard(
+          round: widget.round,
+          isDetailScreen: false,
+          onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
+        ),
+        const SizedBox(height: 8),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: SkillsOverviewCard(
+        //     round: widget.round,
+        //     onTap: () => _navigateToDetailView(1), // Skills tab
+        //   ),
+        // ),
+        // const SizedBox(height: 8),
+        // Scorecard now included in ScoreKPICard above
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: _ScorecardCard(
+        //     round: widget.round,
+        //     onTap: () => _navigateToTab(2), // Course tab (moved down)
+        //   ),
+        // ),
+        // const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: compact.DrivingStatsCard(
+                  round: widget.round,
+                  onTap: () => _navigateToDetailView(4), // Drives tab
+                ),
+              ),
+              Expanded(
+                child: compact.PuttingStatsCard(
+                  round: widget.round,
+                  onTap: () => _navigateToDetailView(5), // Putting tab
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _MistakesCard(
             round: widget.round,
-            isDetailScreen: false,
-            onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
+            onTap: () => _navigateToDetailView(7), // Mistakes tab
           ),
-          const SizedBox(height: 8),
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 16),
-          //   child: SkillsOverviewCard(
-          //     round: widget.round,
-          //     onTap: () => _navigateToDetailView(1), // Skills tab
-          //   ),
-          // ),
-          // const SizedBox(height: 8),
-          // Scorecard now included in ScoreKPICard above
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 16),
-          //   child: _ScorecardCard(
-          //     round: widget.round,
-          //     onTap: () => _navigateToTab(2), // Course tab (moved down)
-          //   ),
-          // ),
-          // const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: compact.DrivingStatsCard(
-                    round: widget.round,
-                    onTap: () => _navigateToDetailView(4), // Drives tab
-                  ),
-                ),
-                Expanded(
-                  child: compact.PuttingStatsCard(
-                    round: widget.round,
-                    onTap: () => _navigateToDetailView(5), // Putting tab
-                  ),
-                ),
-              ],
-            ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _MentalGameCard(
+            round: widget.round,
+            onTap: () => _navigateToDetailView(8), // Psych tab
           ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _MistakesCard(
-              round: widget.round,
-              onTap: () => _navigateToDetailView(7), // Mistakes tab
-            ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _DiscUsageCard(
+            round: widget.round,
+            onTap: () => _navigateToDetailView(6), // Discs tab
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _MentalGameCard(
-              round: widget.round,
-              onTap: () => _navigateToDetailView(8), // Psych tab
-            ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _AICoachCard(
+            round: widget.round,
+            onTap: () => _navigateToDetailView(9), // Summary tab
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _DiscUsageCard(
-              round: widget.round,
-              onTap: () => _navigateToDetailView(6), // Discs tab
-            ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _AIRoastCard(
+            round: widget.round,
+            onTap: () => _navigateToDetailView(11), // Roast tab
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _AICoachCard(
-              round: widget.round,
-              onTap: () => _navigateToDetailView(9), // Summary tab
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _AIRoastCard(
-              round: widget.round,
-              onTap: () => _navigateToDetailView(11), // Roast tab
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1472,10 +1468,9 @@ class _MistakesCard extends StatelessWidget {
     final int totalMistakes = mistakesService.getTotalMistakesCount(round);
     final List<dynamic> mistakeTypes = mistakesService.getMistakeTypes(round);
 
-    // Filter out mistakes with count > 0 and take top 3
+    // Filter out mistakes with count > 0
     final List<dynamic> topMistakes = mistakeTypes
         .where((mistake) => mistake.count > 0)
-        .take(3)
         .toList();
 
     return Card(

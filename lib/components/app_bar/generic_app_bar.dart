@@ -29,7 +29,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize =>
-      Size.fromHeight(56 + topViewPadding + (bottomWidgetHeight ?? 0));
+      Size.fromHeight(40 + topViewPadding + (bottomWidgetHeight ?? 0));
 
   static const double backButtonTouchTargetWidth = 60;
   static const double rightPadding = 12;

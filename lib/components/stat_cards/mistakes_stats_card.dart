@@ -7,16 +7,12 @@ import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_servic
 ///
 /// Displays mistakes breakdown with:
 /// - Total mistakes count
-/// - Top 3 mistake types as horizontal bar charts
+/// - All mistake types as horizontal bar charts
 class MistakesStatsCard extends StatefulWidget {
   final DGRound round;
   final VoidCallback? onTap;
 
-  const MistakesStatsCard({
-    super.key,
-    required this.round,
-    this.onTap,
-  });
+  const MistakesStatsCard({super.key, required this.round, this.onTap});
 
   @override
   State<MistakesStatsCard> createState() => _MistakesStatsCardState();
@@ -43,13 +39,16 @@ class _MistakesStatsCardState extends State<MistakesStatsCard>
     super.build(context);
     final MistakesAnalysisService mistakesService = locator
         .get<MistakesAnalysisService>();
-    final int totalMistakes = mistakesService.getTotalMistakesCount(widget.round);
-    final List<dynamic> mistakeTypes = mistakesService.getMistakeTypes(widget.round);
+    final int totalMistakes = mistakesService.getTotalMistakesCount(
+      widget.round,
+    );
+    final List<dynamic> mistakeTypes = mistakesService.getMistakeTypes(
+      widget.round,
+    );
 
-    // Filter out mistakes with count > 0 and take top 3
+    // Filter out mistakes with count > 0
     final List<dynamic> topMistakes = mistakeTypes
         .where((mistake) => mistake.count > 0)
-        .take(3)
         .toList();
 
     return InkWell(
@@ -79,9 +78,9 @@ class _MistakesStatsCardState extends State<MistakesStatsCard>
                   const SizedBox(width: 8),
                   Text(
                     'mistakes',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.grey),
                   ),
                 ],
               ),
@@ -131,9 +130,9 @@ class _MistakesStatsCardState extends State<MistakesStatsCard>
             Expanded(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             Text(
