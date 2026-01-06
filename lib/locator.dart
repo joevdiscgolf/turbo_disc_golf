@@ -19,6 +19,7 @@ import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.da
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
+import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/voice/ios_voice_service.dart';
@@ -67,6 +68,7 @@ Future<void> setUpLocator() async {
   );
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
+  locator.registerSingleton<ShareService>(ShareService());
   locator.registerLazySingleton<CourseSearchService>(
     () => CourseSearchService(),
   );

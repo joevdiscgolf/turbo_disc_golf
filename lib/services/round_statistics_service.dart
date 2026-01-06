@@ -320,7 +320,8 @@ class RoundStatisticsService {
     int parked = 0;
     int c1InReg = 0;
     int c2InReg = 0;
-    int obHoles = 0;
+    int obThrows = 0;
+    int totalThrows = 0;
     int validHoles = 0;
 
     for (var hole in round.holes) {
@@ -361,15 +362,13 @@ class RoundStatisticsService {
         parked++;
       }
 
-      // OB: check if any throw on this hole went out of bounds
-      bool hadOB = false;
+      // Count OB throws and total throws (OB% = OB throws / total throws)
       for (var discThrow in hole.throws) {
+        totalThrows++;
         if (discThrow.landingSpot == LandingSpot.outOfBounds) {
-          hadOB = true;
-          break;
+          obThrows++;
         }
       }
-      if (hadOB) obHoles++;
 
       // C1 in Regulation: reached Circle 1 in ≤(par-2) strokes (chance for birdie)
       // C2 in Regulation: reached Circle 2 in ≤(par-2) strokes (chance for birdie)
@@ -395,7 +394,7 @@ class RoundStatisticsService {
       parkedPct: totalHoles > 0 ? (parked / totalHoles) * 100 : 0.0,
       c1InRegPct: totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0,
       c2InRegPct: totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0,
-      obPct: totalHoles > 0 ? (obHoles / totalHoles) * 100 : 0.0,
+      obPct: totalThrows > 0 ? (obThrows / totalThrows) * 100 : 0.0,
       totalHoles: totalHoles,
     );
   }

@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/components/stat_cards/renderers/circular_stat_re
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Single-stat widget showing Birdie Rate
 ///
@@ -28,11 +29,13 @@ class BirdieRateStoryCard extends StatelessWidget {
     final int count = scoringStats.birdies;
     final int total = scoringStats.totalHoles;
 
+    final Color color = getSemanticColor(percentage);
+
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
         label: 'Birdie Rate',
-        color: const Color(0xFF4CAF50),
+        color: color,
         icon: Icons.trending_up,
         count: count,
         total: total,
@@ -42,7 +45,7 @@ class BirdieRateStoryCard extends StatelessWidget {
       return BarStatRenderer(
         percentage: percentage,
         label: 'Birdie Rate',
-        color: const Color(0xFF4CAF50),
+        color: color,
         icon: Icons.trending_up,
         count: count,
         total: total,

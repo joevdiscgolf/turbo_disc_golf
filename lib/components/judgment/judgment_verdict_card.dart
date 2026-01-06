@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Animated verdict card that reveals the judgment result.
 ///
@@ -24,18 +25,18 @@ class JudgmentVerdictCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color primaryColor = isGlaze
-        ? const Color(0xFF2196F3)
+        ? const Color(0xFF137e66) // Green for glaze
         : const Color(0xFFFF6B6B);
     final Color darkColor = isGlaze
-        ? const Color(0xFF1565C0)
+        ? const Color(0xFF0d5c4a) // Dark green for glaze
         : const Color(0xFFD32F2F);
 
     Widget card = Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primaryColor.withValues(alpha: 0.15),
-            primaryColor.withValues(alpha: 0.05),
+            flattenedOverWhite(primaryColor, 0.05),
+            flattenedOverWhite(primaryColor, 0.2),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -89,6 +90,7 @@ class JudgmentVerdictCard extends StatelessWidget {
                       : 'Brutal honesty incoming...',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: darkColor.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -111,26 +113,32 @@ class JudgmentVerdictCard extends StatelessWidget {
           end: const Offset(1.0, 1.0),
           curve: Curves.elasticOut,
         )
-        .fadeIn(
-          duration: const Duration(milliseconds: 200),
-        );
+        .fadeIn(duration: const Duration(milliseconds: 200));
   }
 }
 
 /// Large verdict announcement that appears during the celebrating phase.
 class JudgmentVerdictAnnouncement extends StatelessWidget {
-  const JudgmentVerdictAnnouncement({
-    super.key,
-    required this.isGlaze,
-  });
+  const JudgmentVerdictAnnouncement({super.key, required this.isGlaze});
 
   final bool isGlaze;
 
   @override
   Widget build(BuildContext context) {
     final Color color = isGlaze
-        ? const Color(0xFFFFD700)
+        ? const Color(0xFF137e66) // Green for glaze
         : const Color(0xFFFF6B6B);
+
+    final String text = isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!';
+    final TextStyle textStyle = TextStyle(
+      fontSize: 32,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 1,
+      color: color,
+      shadows: [
+        Shadow(color: color.withValues(alpha: 0.5), blurRadius: 20),
+      ],
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -153,36 +161,16 @@ class JudgmentVerdictAnnouncement extends StatelessWidget {
                   '\u{1F369}', // Donut emoji
                   style: TextStyle(fontSize: 80),
                 )
-              : Icon(
-                  Icons.local_fire_department,
-                  size: 80,
-                  color: color,
-                ),
-        )
-            .animate()
-            .scale(
-              duration: const Duration(milliseconds: 500),
-              begin: const Offset(0.5, 0.5),
-              end: const Offset(1.0, 1.0),
-              curve: Curves.elasticOut,
-            ),
+              : Icon(Icons.local_fire_department, size: 80, color: color),
+        ).animate().scale(
+          duration: const Duration(milliseconds: 500),
+          begin: const Offset(0.5, 0.5),
+          end: const Offset(1.0, 1.0),
+          curve: Curves.elasticOut,
+        ),
         const SizedBox(height: 24),
         // Text announcement
-        Text(
-          isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1,
-            color: color,
-            shadows: [
-              Shadow(
-                color: color.withValues(alpha: 0.5),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-        )
+        Text(text, style: textStyle)
             .animate()
             .fadeIn(duration: const Duration(milliseconds: 300))
             .slideY(

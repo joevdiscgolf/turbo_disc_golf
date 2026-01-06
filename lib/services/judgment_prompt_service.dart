@@ -28,6 +28,17 @@ class JudgmentPromptService {
       );
     }
     buffer.writeln('');
+    buffer.writeln('CRITICAL - BE UNIQUE AND RANDOM:');
+    buffer.writeln(
+      '- Every ${shouldGlaze ? 'glaze' : 'roast'} must be COMPLETELY DIFFERENT from any other. Never use the same jokes, metaphors, or structures twice.',
+    );
+    buffer.writeln(
+      '- Pick a RANDOM creative angle: sports commentary, nature documentary, crime report, therapy session, dating profile, job interview, news headline, movie review, etc.',
+    );
+    buffer.writeln(
+      '- Invent fresh metaphors and comparisons each time - avoid common clichés like "restraining order" or "therapy".',
+    );
+    buffer.writeln('');
     buffer.writeln('IMPORTANT RULES:');
     buffer.writeln(
       '- Talk DIRECTLY to the player using "you" and "your" - make it personal and conversational',
@@ -39,7 +50,7 @@ class JudgmentPromptService {
       '- NO meta-commentary about performing or the audience - just ${shouldGlaze ? 'glaze' : 'roast'} them directly',
     );
     buffer.writeln(
-      '- Keep it culturally relevant and contemporary - use slang SPARINGLY and only when it\'s genuinely funny (e.g., "that shot was cheeks" works, but don\'t force slang into every sentence)',
+      '- Keep it culturally relevant and contemporary - use slang SPARINGLY and only when it\'s genuinely funny',
     );
     buffer.writeln(
       '- Mix humor with disc golf references - make it feel authentic and funny',
@@ -51,10 +62,7 @@ class JudgmentPromptService {
       '- Vary your joke structures: one-liners, setups/punchlines, callbacks, rule of three, misdirection',
     );
     buffer.writeln(
-      '- You can use "That\'s like..." or "It\'s like..." patterns ONCE or TWICE max - don\'t overdo it!',
-    );
-    buffer.writeln(
-      '- Mix in many other joke structures besides similes - keep it varied and unpredictable',
+      '- Avoid overused patterns like "That\'s like..." similes - find fresh ways to make comparisons',
     );
     if (shouldGlaze) {
       buffer.writeln(
@@ -86,9 +94,30 @@ class JudgmentPromptService {
       buffer.writeln('- End with a brutal but funny closer directed at them');
     }
     buffer.writeln('');
-    buffer.writeln(
-      'Make it 2-3 short paragraphs. Keep it punchy and concise. Make it REALLY funny but good-natured.',
-    );
+    buffer.writeln('STRUCTURE: Write 2-3 SHORT sections (NOT long paragraphs). Total ~100-150 words.');
+    buffer.writeln('Each section MUST start with an emoji + bold title on its own line.');
+    buffer.writeln('CRITICAL: Put a BLANK LINE after each title before the body text.');
+    buffer.writeln('Each section body is 2-3 sentences MAX.');
+    buffer.writeln('');
+    buffer.writeln('SECTION FORMAT EXAMPLE (note the blank lines after titles):');
+    if (shouldGlaze) {
+      buffer.writeln('**🎯 The Putting Masterclass**');
+      buffer.writeln('');
+      buffer.writeln('Your C1X was automatic. The chains didn\'t stand a chance.');
+      buffer.writeln('');
+      buffer.writeln('**🌲 Course Domination**');
+      buffer.writeln('');
+      buffer.writeln('89% fairway? Trees literally parted for you.');
+    } else {
+      buffer.writeln('**🎯 The Putting Situation**');
+      buffer.writeln('');
+      buffer.writeln('Your C1X was 50%. That\'s a coin flip you lost half the time.');
+      buffer.writeln('');
+      buffer.writeln('**🌲 Tree Magnetism**');
+      buffer.writeln('');
+      buffer.writeln('67% fairway means the other 33% had a tree\'s phone number.');
+    }
+    buffer.writeln('');
     buffer.writeln(
       'Write like you\'re their ${shouldGlaze ? 'biggest hype man' : 'brutally honest'} friend ${shouldGlaze ? 'hyping them up' : 'giving them grief'} about their round.',
     );
@@ -188,10 +217,26 @@ class JudgmentPromptService {
       );
     }
     buffer.writeln('');
-    buffer.writeln('IMPORTANT FORMAT:');
-    buffer.writeln('Start with a catchy headline (max 6 words) on the first line.');
-    buffer.writeln('The headline should capture the essence of the ${shouldGlaze ? 'glaze' : 'roast'} in a punchy way.');
-    buffer.writeln('Example ${shouldGlaze ? 'glaze' : 'roast'} headlines:');
+    buffer.writeln('IMPORTANT: Return your response as valid YAML with this exact structure:');
+    buffer.writeln('');
+    buffer.writeln('headline: Foxwood Legend Status');
+    buffer.writeln('tagline: You hit 89% fairways and shot -6. The trees filed a missing persons report on your disc.');
+    buffer.writeln('content: |');
+    buffer.writeln('  **🎯 The Approach Game**');
+    buffer.writeln('');
+    buffer.writeln('  Your content paragraphs go here.');
+    buffer.writeln('highlightStats:');
+    buffer.writeln('  - fairwayPct');
+    buffer.writeln('  - c1xPuttPct');
+    buffer.writeln('');
+    buffer.writeln('CRITICAL FORMAT RULES:');
+    buffer.writeln('- Do NOT include the field name in the value (wrong: "headline: Headline: My Title", correct: "headline: My Title")');
+    buffer.writeln('- headline: A catchy title, max 6 words, NO quotes needed');
+    buffer.writeln('- tagline: 2-3 punchy sentences (up to 280 chars) with specific stats');
+    buffer.writeln('- content: The full ${shouldGlaze ? 'glaze' : 'roast'} using markdown');
+    buffer.writeln('- highlightStats: Exactly 2 stat keys from the list below');
+    buffer.writeln('');
+    buffer.writeln('HEADLINE EXAMPLES (just the value, no "Headline:" prefix):');
     if (shouldGlaze) {
       buffer.writeln('- "Disc Golf Perfection Achieved"');
       buffer.writeln('- "The GOAT Graces The Course"');
@@ -201,7 +246,64 @@ class JudgmentPromptService {
       buffer.writeln('- "Trees: 18, You: 0"');
       buffer.writeln('- "New Definition of Struggling"');
     }
-    buffer.writeln('After the headline, skip a line, then write your ${shouldGlaze ? 'glaze' : 'roast'}.');
+    buffer.writeln('');
+    buffer.writeln(
+      'TAGLINE: 2-3 punchy sentences that summarize the round performance in a funny way.',
+    );
+    buffer.writeln(
+      'Include SPECIFIC STATS (putting %, fairway %, OB count, score) so someone can understand the round at a glance.',
+    );
+    buffer.writeln(
+      'Keep it funny and shareable - this is the viral quote people will screenshot.',
+    );
+    buffer.writeln(
+      'IMPORTANT: Tagline MUST be DIFFERENT from headline. Headline is the title, tagline tells the story.',
+    );
+    buffer.writeln('Examples of GREAT taglines:');
+    if (shouldGlaze) {
+      buffer.writeln(
+        '- "Your C1X putting was automatic at 85%, fairways parted like the Red Sea, and the only thing you missed was a chance to apologize to the course for the beating."',
+      );
+      buffer.writeln(
+        '- "67% fairways, 90% putting, zero mercy. The trees are still talking about the one that got away."',
+      );
+      buffer.writeln(
+        '- "You parked 4 holes, cashed every putt inside the circle, and shot -3. The course owes you an apology for even trying."',
+      );
+    } else {
+      buffer.writeln(
+        '- "You hit 45% fairways like the trees owed you money, went OB 4 times, and your putter? Still processing the trauma."',
+      );
+      buffer.writeln(
+        '- "50% C1X putting means you missed half your gimmes. The chains didn\'t even flinch. They knew."',
+      );
+      buffer.writeln(
+        '- "Three double bogeys, 5 OBs, and a scramble rate that made the marshals look away. A round to remember (and then forget)."',
+      );
+    }
+    buffer.writeln('');
+    buffer.writeln(
+      'HIGHLIGHT STATS: Choose exactly 2 stats from this list that are MOST RELEVANT to your ${shouldGlaze ? 'glaze' : 'roast'}:',
+    );
+    buffer.writeln('- fairwayPct (Fairway Hit %)');
+    buffer.writeln('- c1xPuttPct (C1X Putting %)');
+    buffer.writeln('- obPct (Out of Bounds %)');
+    buffer.writeln('- parkedPct (Parked %)');
+    buffer.writeln('- scramblePct (Scramble Success %)');
+    buffer.writeln('- bounceBackPct (Bounce Back %)');
+    buffer.writeln('');
+    buffer.writeln(
+      'CRITICAL: Match your highlightStats to the TOPIC of your ${shouldGlaze ? 'glaze' : 'roast'}:',
+    );
+    buffer.writeln('- If you mention PUTTING → MUST include c1xPuttPct');
+    buffer.writeln('- If you mention DRIVING/FAIRWAYS/TREES → MUST include fairwayPct');
+    buffer.writeln('- If you mention OB/OUT OF BOUNDS → MUST include obPct');
+    buffer.writeln('- If you mention PARKING/CLOSE SHOTS → include parkedPct');
+    buffer.writeln('The stats on the share card should match what you roasted/glazed about!');
+    buffer.writeln('');
+    buffer.writeln(
+      'IMPORTANT: Return ONLY the YAML, no additional text or markdown code fences.',
+    );
 
     return buffer.toString();
   }

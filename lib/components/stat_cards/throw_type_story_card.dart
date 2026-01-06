@@ -8,14 +8,22 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 /// Compact throw type comparison card for story context
-/// Shows backhand vs forehand performance side-by-side
+/// Shows two throw techniques' performance side-by-side
 class ThrowTypeStoryCard extends StatelessWidget {
-  const ThrowTypeStoryCard({super.key, required this.round});
+  const ThrowTypeStoryCard({
+    super.key,
+    required this.round,
+    this.technique1 = ThrowTechnique.backhand,
+    this.technique2 = ThrowTechnique.forehand,
+    this.technique1Color = const Color(0xFF2196F3),
+    this.technique2Color = const Color(0xFF9C27B0),
+  });
 
   final DGRound round;
-
-  static const Color _backhandColor = Color(0xFF2196F3);
-  static const Color _forehandColor = Color(0xFF9C27B0);
+  final ThrowTechnique technique1;
+  final ThrowTechnique technique2;
+  final Color technique1Color;
+  final Color technique2Color;
 
   @override
   Widget build(BuildContext context) {
@@ -27,15 +35,15 @@ class ThrowTypeStoryCard extends StatelessWidget {
     final Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType =
         statsService.getAllTeeShotsByType();
 
-    // Calculate stats for backhand and forehand
-    final ThrowTypeStats backhandStats = _calculateThrowTypeStats(
-      'backhand',
+    // Calculate stats for both techniques
+    final ThrowTypeStats stats1 = _calculateThrowTypeStats(
+      _techniqueToKey(technique1),
       teeShotBirdieRates,
       circleInRegByType,
       allTeeShotsByType,
     );
-    final ThrowTypeStats forehandStats = _calculateThrowTypeStats(
-      'forehand',
+    final ThrowTypeStats stats2 = _calculateThrowTypeStats(
+      _techniqueToKey(technique2),
       teeShotBirdieRates,
       circleInRegByType,
       allTeeShotsByType,
@@ -53,8 +61,8 @@ class ThrowTypeStoryCard extends StatelessWidget {
           children: [
             Expanded(
               child: _ThrowTypeColumn(
-                stats: backhandStats,
-                color: _backhandColor,
+                stats: stats1,
+                color: technique1Color,
               ),
             ),
             VerticalDivider(
@@ -64,14 +72,38 @@ class ThrowTypeStoryCard extends StatelessWidget {
             ),
             Expanded(
               child: _ThrowTypeColumn(
-                stats: forehandStats,
-                color: _forehandColor,
+                stats: stats2,
+                color: technique2Color,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Converts ThrowTechnique enum to the string key used in stats maps
+  String _techniqueToKey(ThrowTechnique technique) {
+    switch (technique) {
+      case ThrowTechnique.backhand:
+        return 'backhand';
+      case ThrowTechnique.forehand:
+        return 'forehand';
+      case ThrowTechnique.tomahawk:
+        return 'tomahawk';
+      case ThrowTechnique.thumber:
+        return 'thumber';
+      case ThrowTechnique.overhand:
+        return 'overhand';
+      case ThrowTechnique.backhandRoller:
+        return 'backhand_roller';
+      case ThrowTechnique.forehandRoller:
+        return 'forehand_roller';
+      case ThrowTechnique.grenade:
+        return 'grenade';
+      case ThrowTechnique.other:
+        return 'other';
+    }
   }
 
   ThrowTypeStats _calculateThrowTypeStats(
@@ -142,13 +174,13 @@ class _ThrowTypeColumn extends StatelessWidget {
             label: 'Birdie Rate',
             percentage: stats.birdieRate,
             color: color,
-            size: 72,
+            size: 80,
             strokeWidth: 5,
-            percentageFontSize: 20,
+            percentageFontSize: 22,
             internalLabel: '${stats.birdieCount}/${stats.totalHoles}',
             internalLabelFontSize: 10,
             labelFontSize: 11,
-            labelSpacing: 4,
+            labelSpacing: 8,
           ),
           const SizedBox(height: 12),
           // C1 in Reg bar

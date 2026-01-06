@@ -5,9 +5,8 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/stat_card_registry.dart';
 import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/hole_type_story_card.dart';
-import 'package:turbo_disc_golf/components/stat_cards/mistakes_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/mistakes_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/scoring_stats_card.dart';
-import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/components/stat_cards/shot_shape_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/throw_type_story_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -19,6 +18,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
@@ -88,9 +88,8 @@ class StructuredStoryRenderer extends StatelessWidget {
             children: [
               Text(
                 content.roundTitle.capitalizeFirst(),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF137e66),
+                style: kStorySectionHeaderStyle.copyWith(
+                  color: const Color(0xFF4CAF50),
                 ),
               ),
               const SizedBox(height: 12),
@@ -153,10 +152,7 @@ class StructuredStoryRenderer extends StatelessWidget {
                         InkWell(
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            _navigateToDetailScreen(
-                              context,
-                              highlight.cardId!,
-                            );
+                            _navigateToDetailScreen(context, highlight.cardId!);
                           },
                           child: _buildStatWidget(highlight.cardId!),
                         ),
@@ -214,32 +210,14 @@ class StructuredStoryRenderer extends StatelessWidget {
                     HapticFeedback.lightImpact();
                     _navigateToDetailScreen(context, 'MISTAKES');
                   },
-                  child: MistakesStoryCard(
+                  child: MistakesCard(
                     round: round,
-                    renderMode: StatRenderMode.bar,
+                    compact: true,
+                    showHeader: false,
+                    showCard: false,
                   ),
                 ),
-                // Mistakes explanation below the chart
-                if (mistakes.explanation != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    mistakes.explanation!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-                // Divider before detailed weakness highlights
-                if (hasWeaknesses) ...[
-                  const SizedBox(height: 16),
-                  Divider(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    height: 1,
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                if (hasWeaknesses) const SizedBox(height: 16),
               ],
 
               // Detailed weakness highlights
@@ -269,10 +247,7 @@ class StructuredStoryRenderer extends StatelessWidget {
                         InkWell(
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            _navigateToDetailScreen(
-                              context,
-                              highlight.cardId!,
-                            );
+                            _navigateToDetailScreen(context, highlight.cardId!);
                           },
                           child: _buildStatWidget(highlight.cardId!),
                         ),
@@ -332,7 +307,8 @@ class StructuredStoryRenderer extends StatelessWidget {
                     if (opportunity.cardId != null)
                       _buildStatWidget(opportunity.cardId!),
                     if (opportunity.explanation != null) ...[
-                      if (opportunity.cardId != null) const SizedBox(height: 12),
+                      if (opportunity.cardId != null)
+                        const SizedBox(height: 12),
                       Text(
                         opportunity.explanation!,
                         style: const TextStyle(
@@ -408,18 +384,12 @@ class StructuredStoryRenderer extends StatelessWidget {
     // Handle parameterized cards (e.g., DISC_PERFORMANCE:Destroyer)
     if (cardId.startsWith('DISC_PERFORMANCE:')) {
       final String discName = cardId.split(':')[1];
-      return DiscPerformanceStoryCard(
-        discName: discName,
-        round: round,
-      );
+      return DiscPerformanceStoryCard(discName: discName, round: round);
     }
 
     if (cardId.startsWith('HOLE_TYPE:')) {
       final String holeType = cardId.split(':')[1]; // "Par 3", "Par 4", "Par 5"
-      return HoleTypeStoryCard(
-        holeType: holeType,
-        round: round,
-      );
+      return HoleTypeStoryCard(holeType: holeType, round: round);
     }
 
     // NEW: Check if this is one of the new suffix-based story cards
@@ -455,7 +425,11 @@ class StructuredStoryRenderer extends StatelessWidget {
     // Try to build using StatCardRegistry for new focused widgets
     if (cardIdToUse.endsWith('_CIRCLE') || cardIdToUse.endsWith('_BAR')) {
       final analysis = RoundAnalysisGenerator.generateAnalysis(round);
-      final Widget? widget = StatCardRegistry.buildCard(cardIdToUse, round, analysis);
+      final Widget? widget = StatCardRegistry.buildCard(
+        cardIdToUse,
+        round,
+        analysis,
+      );
       if (widget != null) {
         return widget;
       }
@@ -567,9 +541,7 @@ class StructuredStoryRenderer extends StatelessWidget {
             ).chain(CurveTween(curve: curve));
             final scaleAnimation = animation.drive(tween);
 
-            final fadeAnimation = animation.drive(
-              CurveTween(curve: curve),
-            );
+            final fadeAnimation = animation.drive(CurveTween(curve: curve));
 
             return FadeTransition(
               opacity: fadeAnimation,
@@ -580,11 +552,9 @@ class StructuredStoryRenderer extends StatelessWidget {
         ),
       );
     } else {
-      Navigator.of(context).push(
-        CupertinoPageRoute(
-          builder: (context) => screenWithAppBar,
-        ),
-      );
+      Navigator.of(
+        context,
+      ).push(CupertinoPageRoute(builder: (context) => screenWithAppBar));
     }
   }
 }

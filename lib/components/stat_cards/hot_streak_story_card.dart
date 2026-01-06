@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Single-stat widget showing Hot Streak Energy
 ///
@@ -37,11 +38,13 @@ class HotStreakStoryCard extends StatelessWidget {
     final int opportunities = totalBirdies > 0 ? totalBirdies : 1;
     final int count = ((percentage / 100) * opportunities).round();
 
+    final Color color = getSemanticColor(percentage);
+
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
         label: 'Hot Streak',
-        color: const Color(0xFFFF6F00),
+        color: color,
         icon: Icons.local_fire_department,
         count: count,
         total: opportunities,
@@ -51,7 +54,7 @@ class HotStreakStoryCard extends StatelessWidget {
       return BarStatRenderer(
         percentage: percentage,
         label: 'Hot Streak',
-        color: const Color(0xFFFF6F00),
+        color: color,
         icon: Icons.local_fire_department,
         count: count,
         total: opportunities,

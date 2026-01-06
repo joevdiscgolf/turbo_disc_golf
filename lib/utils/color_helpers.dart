@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// Shared text style for story card section headers
+/// Used by headline card and section headers for consistency
+const TextStyle kStorySectionHeaderStyle = TextStyle(
+  fontSize: 18,
+  fontWeight: FontWeight.bold,
+);
+
 /// Brightens a color by increasing its lightness in HSL color space.
 ///
 /// [color] The base color to brighten.
@@ -81,6 +88,35 @@ abstract class TurbColors {
   static const Color blue = Colors.blue;
   static const Color darkBlue = Color(0xff0E7DD6);
   static const Color white = Colors.white;
+}
+
+/// Returns a semantic color based on percentage value.
+///
+/// For "higher is better" stats (putting %, fairway hits, etc.):
+/// - 100% → Green (good)
+/// - 50% → Amber (moderate)
+/// - 0% → Red (poor)
+///
+/// For "lower is better" stats (bogey rate, etc.), pass `100 - percentage`
+/// to invert the scale.
+///
+/// Uses smooth linear interpolation between color stops.
+/// All colors are chosen for good contrast against white backgrounds.
+Color getSemanticColor(double percentage) {
+  final double p = percentage.clamp(0.0, 100.0) / 100.0;
+
+  // Color stops - all chosen for good contrast against white
+  const Color green = Color(0xFF4CAF50); // Material Green 500 - vibrant, unified
+  const Color amber = Color(0xFFEF6C00); // Material Orange 800 - readable amber
+  const Color red = Color(0xFFD32F2F); // Material Red 700 - darker for contrast
+
+  if (p >= 0.5) {
+    // Amber to Green (50-100%)
+    return Color.lerp(amber, green, (p - 0.5) * 2)!;
+  } else {
+    // Red to Amber (0-50%)
+    return Color.lerp(red, amber, p * 2)!;
+  }
 }
 
 Color flattenedOverWhite(Color color, double opacity) {

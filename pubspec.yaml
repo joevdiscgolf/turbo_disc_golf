@@ -65,6 +65,9 @@ dependencies:
   auto_size_text: ^3.0.0
   package_info_plus: ^9.0.0
   http: ^1.6.0
+  share_plus: ^10.0.0
+  path_provider: ^2.1.0
+  qr_flutter: ^4.1.0
   # google_fonts: ^6.2.1
 
 dev_dependencies:
@@ -95,6 +98,7 @@ flutter:
   assets:
     - assets/mascots/turbo_mascot.png
     - assets/test_scorecards/
+    - assets/judge_tab/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

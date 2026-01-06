@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Single-stat widget showing Flow State percentage
 ///
@@ -30,11 +31,13 @@ class FlowStateStoryCard extends StatelessWidget {
     final int count = flowAnalysis?.totalFlowHoles ?? 0;
     final int total = round.holes.length;
 
+    final Color color = getSemanticColor(percentage);
+
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
         label: 'Flow State',
-        color: const Color(0xFF9C27B0),
+        color: color,
         icon: Icons.psychology,
         count: count,
         total: total,
@@ -44,7 +47,7 @@ class FlowStateStoryCard extends StatelessWidget {
       return BarStatRenderer(
         percentage: percentage,
         label: 'Flow State',
-        color: const Color(0xFF9C27B0),
+        color: color,
         icon: Icons.psychology,
         count: count,
         total: total,

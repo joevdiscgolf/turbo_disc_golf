@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Section header for structured story with icon and accent color
 ///
@@ -23,21 +24,12 @@ class StorySectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: accentColor,
-          size: 22,
-        ),
+        Icon(icon, color: accentColor, size: 22),
         const SizedBox(width: 8),
         Flexible(
           child: Text(
             title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: accentColor,
-              letterSpacing: 0.5,
-            ),
+            style: kStorySectionHeaderStyle.copyWith(color: accentColor),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),

@@ -12,7 +12,7 @@ class JudgmentSlotReel extends StatefulWidget {
     required this.targetIsGlaze,
     required this.onSpinComplete,
     required this.readyToStop,
-    this.landingDuration = const Duration(milliseconds: 1500),
+    this.landingDuration = const Duration(milliseconds: 2500),
   });
 
   /// Whether the final outcome should be GLAZE (true) or ROAST (false).
@@ -43,6 +43,9 @@ class _JudgmentSlotReelState extends State<JudgmentSlotReel>
 
   // Current scroll offset for continuous spinning
   double _scrollOffset = 0.0;
+
+  // Track last controller value to calculate delta (avoids recursive listener issue)
+  double _lastControllerValue = 0.0;
 
   // Whether we're in landing mode
   bool _isLanding = false;
@@ -86,13 +89,19 @@ class _JudgmentSlotReelState extends State<JudgmentSlotReel>
   void _onSpinTick() {
     if (_isLanding) return;
 
+    final double currentValue = _controller.value;
+    // Calculate delta since last tick (handles wrap-around from 1.0 to 0.0)
+    double delta = currentValue - _lastControllerValue;
+    if (delta < 0) delta += 1.0; // Animation wrapped around
+
     setState(() {
       // Move by a fraction of item height each tick
-      _scrollOffset += _itemHeight * 2 * _controller.value;
+      _scrollOffset += _itemHeight * 2 * delta;
       // Keep offset within bounds by wrapping
       _scrollOffset = _scrollOffset % (_itemHeight * _loopItems);
     });
-    _controller.value = 0.0;
+
+    _lastControllerValue = currentValue;
   }
 
   void _startLandingAnimation() {
@@ -106,8 +115,8 @@ class _JudgmentSlotReelState extends State<JudgmentSlotReel>
     final int currentWholeIndex = currentIndex.floor();
 
     // We want to land on target (ROAST = even index, GLAZE = odd index)
-    // Add some extra spins for drama (at least 6 more items)
-    int targetIndex = currentWholeIndex + 6;
+    // Add some extra spins for drama (at least 12 more items)
+    int targetIndex = currentWholeIndex + 12;
 
     // Adjust to land on correct parity
     if (widget.targetIsGlaze) {
