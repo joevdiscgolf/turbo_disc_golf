@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/animations/page_transitions.dart';
@@ -222,7 +223,10 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _showRecordRoundSheet,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showRecordRoundSheet();
+              },
               customBorder: const CircleBorder(),
               splashColor: Colors.white.withValues(alpha: 0.3),
               highlightColor: Colors.white.withValues(alpha: 0.1),

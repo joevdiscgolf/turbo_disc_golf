@@ -1,10 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/stat_card_registry.dart';
 import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/hole_type_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/mistakes_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/scoring_stats_card.dart';
+import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/components/stat_cards/shot_shape_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/throw_type_story_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -50,12 +53,9 @@ class StructuredStoryRenderer extends StatelessWidget {
           _buildStrengths(context),
           const SizedBox(height: 12),
         ],
-        if (content.weaknesses.isNotEmpty) ...[
+        // Merged: weaknesses + mistakes in a single cohesive section
+        if (content.weaknesses.isNotEmpty || content.mistakes != null) ...[
           _buildWeaknesses(context),
-          const SizedBox(height: 12),
-        ],
-        if (content.mistakes != null) ...[
-          _buildMistakes(context),
           const SizedBox(height: 12),
         ],
         if (content.biggestOpportunity != null) ...[
@@ -151,10 +151,13 @@ class StructuredStoryRenderer extends StatelessWidget {
                       // Widget (if cardId present)
                       if (highlight.cardId != null) ...[
                         InkWell(
-                          onTap: () => _navigateToDetailScreen(
-                            context,
-                            highlight.cardId!,
-                          ),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _navigateToDetailScreen(
+                              context,
+                              highlight.cardId!,
+                            );
+                          },
                           child: _buildStatWidget(highlight.cardId!),
                         ),
                         const SizedBox(height: 12),
@@ -182,6 +185,10 @@ class StructuredStoryRenderer extends StatelessWidget {
   }
 
   Widget _buildWeaknesses(BuildContext context) {
+    final StoryHighlight? mistakes = content.mistakes;
+    final bool hasMistakes = mistakes != null;
+    final bool hasWeaknesses = content.weaknesses.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
@@ -199,6 +206,43 @@ class StructuredStoryRenderer extends StatelessWidget {
                 accentColor: const Color(0xFFFF7A7A),
               ),
               const SizedBox(height: 16),
+
+              // Compact mistakes bar chart summary at top
+              if (hasMistakes) ...[
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _navigateToDetailScreen(context, 'MISTAKES');
+                  },
+                  child: MistakesStoryCard(
+                    round: round,
+                    renderMode: StatRenderMode.bar,
+                  ),
+                ),
+                // Mistakes explanation below the chart
+                if (mistakes.explanation != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    mistakes.explanation!,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+                // Divider before detailed weakness highlights
+                if (hasWeaknesses) ...[
+                  const SizedBox(height: 16),
+                  Divider(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    height: 1,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ],
+
+              // Detailed weakness highlights
               ...content.weaknesses.map(
                 (highlight) => Padding(
                   padding: EdgeInsets.only(
@@ -223,10 +267,13 @@ class StructuredStoryRenderer extends StatelessWidget {
                       // Widget (if cardId present)
                       if (highlight.cardId != null) ...[
                         InkWell(
-                          onTap: () => _navigateToDetailScreen(
-                            context,
-                            highlight.cardId!,
-                          ),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _navigateToDetailScreen(
+                              context,
+                              highlight.cardId!,
+                            );
+                          },
                           child: _buildStatWidget(highlight.cardId!),
                         ),
                         const SizedBox(height: 12),
@@ -242,58 +289,6 @@ class StructuredStoryRenderer extends StatelessWidget {
                             color: Colors.black87,
                           ),
                         ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMistakes(BuildContext context) {
-    final mistakes = content.mistakes!;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              StorySectionHeader(
-                title: 'Key mistakes',
-                icon: Icons.warning_rounded,
-                accentColor: const Color(0xFFFF7A7A),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: mistakes.cardId != null
-                    ? () => _navigateToDetailScreen(context, mistakes.cardId!)
-                    : null,
-                child: Container(
-                  color: Colors.transparent,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (mistakes.cardId != null)
-                        _buildStatWidget(mistakes.cardId!),
-                      if (mistakes.explanation != null) ...[
-                        if (mistakes.cardId != null) const SizedBox(height: 12),
-                        Text(
-                          mistakes.explanation!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            height: 1.5,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -326,8 +321,10 @@ class StructuredStoryRenderer extends StatelessWidget {
               const SizedBox(height: 16),
               InkWell(
                 onTap: opportunity.cardId != null
-                    ? () =>
-                        _navigateToDetailScreen(context, opportunity.cardId!)
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        _navigateToDetailScreen(context, opportunity.cardId!);
+                      }
                     : null,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
