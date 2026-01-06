@@ -348,7 +348,7 @@ class _RoastTabState extends State<RoastTab> {
                             icon: const Icon(Icons.refresh),
                             label: const Text('Roll Again (50-50)'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFF6B6B),
+                              foregroundColor: Colors.black,
                               side: const BorderSide(
                                 color: Color(0xFFFF6B6B),
                                 width: 2,
