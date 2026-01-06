@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/components/stat_cards/renderers/circular_stat_re
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Single-stat widget showing Bogey Rate
 ///
@@ -28,11 +29,14 @@ class BogeyRateStoryCard extends StatelessWidget {
     final int count = scoringStats.bogeys;
     final int total = scoringStats.totalHoles;
 
+    // Inverted: lower bogey rate = green (good), higher bogey rate = red (bad)
+    final Color color = getSemanticColor(100 - percentage);
+
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
         label: 'Bogey Rate',
-        color: const Color(0xFFFF9800),
+        color: color,
         icon: Icons.trending_down,
         count: count,
         total: total,
@@ -42,7 +46,7 @@ class BogeyRateStoryCard extends StatelessWidget {
       return BarStatRenderer(
         percentage: percentage,
         label: 'Bogey Rate',
-        color: const Color(0xFFFF9800),
+        color: color,
         icon: Icons.trending_down,
         count: count,
         total: total,

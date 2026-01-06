@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/models/data/hole_data.dart';
+
+import 'package:turbo_disc_golf/components/compact_scorecard.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
@@ -60,7 +61,7 @@ class ScoreKPICard extends StatelessWidget {
                 _kpiRow(context),
                 const SizedBox(height: 12),
                 if (!isDetailScreen) ...[
-                  _buildCompactScorecard(),
+                  CompactScorecard(holes: round.holes),
                   const SizedBox(height: 16),
                 ],
                 useHeroAnimationsForRoundReview
@@ -199,75 +200,5 @@ class ScoreKPICard extends StatelessWidget {
     } else {
       return const Color(0xFFF5F5F5);
     }
-  }
-
-  Widget _buildCompactScorecard() {
-    // Split into two rows (first 9, second 9)
-    final int halfLength = (round.holes.length / 2).ceil();
-    final List<DGHole> firstNine = round.holes.take(halfLength).toList();
-    final List<DGHole> secondNine = round.holes.skip(halfLength).toList();
-
-    return Column(
-      children: [
-        _buildScoreRow(firstNine),
-        const SizedBox(height: 12),
-        _buildScoreRow(secondNine),
-      ],
-    );
-  }
-
-  Widget _buildScoreRow(List<DGHole> holes) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: holes.map((hole) {
-        final int score = hole.holeScore;
-        final int scoreToPar = hole.relativeHoleScore;
-        final Color color = scoreToPar == 0
-            ? const Color(0xFFF5F5F5)
-            : scoreToPar < 0
-            ? const Color(0xFF137e66)
-            : const Color(0xFFFF7A7A);
-        final bool isPar = scoreToPar == 0;
-
-        return Expanded(
-          child: Column(
-            children: [
-              Text(
-                '${hole.number}',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-              const SizedBox(height: 4),
-              isPar
-                  ? Text(
-                      '$score',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    )
-                  : Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$score',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
   }
 }

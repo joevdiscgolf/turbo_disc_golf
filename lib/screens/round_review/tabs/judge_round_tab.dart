@@ -1,7 +1,12 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:yaml/yaml.dart';
+
 import 'package:confetti/confetti.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,7 +14,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_confetti_overlay.dart';
+import 'package:turbo_disc_golf/components/judgment/judgment_preparing_animation.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_reveal_effect.dart';
+import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_slot_reel.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -20,6 +27,7 @@ import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/judgment_prompt_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
@@ -27,7 +35,8 @@ import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 enum JudgmentState {
   idle, // "Ready to Be Judged?" card
   building, // Suspense buildup with morphing background
-  spinning, // Slot reel cycles ROAST/GLAZE
+  preparing, // Waiting for API response with engaging animation
+  spinning, // Slot reel cycles ROAST/GLAZE (API already ready)
   revealing, // Particle explosion as verdict locks
   celebrating, // Confetti burst + result card scales in
   complete, // Static result view
@@ -63,6 +72,9 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
 
   // Notifier to signal slot reel when API is ready
   final ValueNotifier<bool> _apiReadyNotifier = ValueNotifier<bool>(false);
+
+  // Key for capturing share card as image
+  final GlobalKey _shareCardKey = GlobalKey();
 
   // For blur transition into content
   bool _showBlurTransition = false;
@@ -115,16 +127,59 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     return '<!-- JUDGMENT_TYPE: ${isGlaze ? 'GLAZE' : 'ROAST'} -->\n$judgment';
   }
 
+  String _getDefaultTagline(bool isGlaze) {
+    return isGlaze
+        ? 'The chains literally bowed down when you walked up. Your disc had GPS-level accuracy. The course is considering renaming a hole after you.'
+        : 'The basket is still in therapy after watching your putts. The trees formed a support group. Even the OB stakes felt bad.';
+  }
+
+  /// Strips common AI-generated prefixes from YAML values.
+  ///
+  /// The AI sometimes returns values like "Headline: actual headline" instead
+  /// of just "actual headline". This strips those redundant prefixes.
+  String _stripAIPrefix(String value) {
+    return value
+        .replaceFirst(
+          RegExp(r'^(Headline|Tagline|Content):\s*', caseSensitive: false),
+          '',
+        )
+        .trim();
+  }
+
+  /// Waits for the API to signal it's ready.
+  ///
+  /// Returns immediately if already ready, otherwise waits for the
+  /// [_apiReadyNotifier] to become true.
+  Future<void> _waitForAPIReady() async {
+    if (_apiReadyNotifier.value) return;
+
+    final Completer<void> completer = Completer<void>();
+
+    void listener() {
+      if (_apiReadyNotifier.value && !completer.isCompleted) {
+        completer.complete();
+      }
+    }
+
+    _apiReadyNotifier.addListener(listener);
+    await completer.future;
+    _apiReadyNotifier.removeListener(listener);
+  }
+
   /// Starts the full judgment animation flow.
   Future<void> _startJudgmentFlow() async {
     // Determine roast vs glaze upfront (so slot reel knows where to land)
-    final Random random = Random(DateTime.now().microsecondsSinceEpoch);
-    _isGlaze = random.nextBool();
+    if (forceJudgmentType != null) {
+      _isGlaze = forceJudgmentType == 'glaze';
+    } else {
+      final Random random = Random(DateTime.now().microsecondsSinceEpoch);
+      _isGlaze = random.nextBool();
+    }
     _generatedJudgment = null;
     _errorMessage = null;
     _apiReadyNotifier.value = false;
 
-    // Phase 1: Building (1500ms)
+    // Phase 1: Building (1500ms) - suspense buildup
     setState(() {
       _currentState = JudgmentState.building;
     });
@@ -135,13 +190,21 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 
-    // Phase 2: Spinning - continues until API signals ready
+    // Phase 2: Preparing - wait for API to complete
+    setState(() {
+      _currentState = JudgmentState.preparing;
+    });
+
+    await _waitForAPIReady();
+    if (!mounted) return;
+
+    // Phase 3: Spinning - API is ready, reel will land immediately
     setState(() {
       _currentState = JudgmentState.spinning;
     });
 
-    // Slot reel will spin until _apiReadyNotifier becomes true,
-    // then land and call onSpinComplete
+    // Slot reel will detect _apiReadyNotifier is already true,
+    // start landing animation, and call onSpinComplete when done
   }
 
   /// Called when slot reel finishes spinning (API is already complete at this point).
@@ -228,31 +291,37 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   }
 
   String _getMockRoastJudgment() {
-    return '''🔥 The Disc Golf Disaster Report
+    return '''headline: The Disc Golf Disaster Report
+tagline: Your putter filed a restraining order against the basket
+content: |
+  **🎯 The Putting Situation**
+  Your C1X was a coin flip you kept losing. The basket had a restraining order against your discs - every putt sailed past like it had somewhere better to be.
 
-Listen, I've seen some questionable rounds in my time, but this one takes the cake and then throws it OB.
+  **🌲 Tree Magnetism**
+  Your fairway hits were giving "blindfolded throws in a wind tunnel" energy. Did you bring a map? Because you found every tree on the course.
 
-Your putting was... well, let's just say the basket had a restraining order against your discs. C1 putts? More like "See ya, putt!" as they sailed past the chains.
-
-The fairway hits were giving "blindfolded throws in a wind tunnel" energy. Did you bring a map? Because you found every tree on the course.
-
-But hey, at least you got some exercise walking to all those OB zones. Cardio counts, right?
-
-Keep grinding though - even the worst rounds teach us something. Usually it's humility. Lots and lots of humility.''';
+  **💡 Silver Lining**
+  At least you got cardio walking to all those OB zones. Every cloud, right?
+highlightStats:
+  - c1xPuttPct
+  - obPct''';
   }
 
   String _getMockGlazeJudgment() {
-    return '''🍩 Sweet Victory Unlocked!
+    return '''headline: Sweet Victory Unlocked
+tagline: The chains literally bowed down to your putting prowess
+content: |
+  **🎯 The Putting Masterclass**
+  Your putting was chef's kiss. Those chains didn't stand a chance - you were threading needles from C1 like it was your job. Automatic.
 
-Okay, we need to talk about what just happened out there because it was BEAUTIFUL.
+  **🌲 Course Domination**
+  Surgical precision on the fairways. You found lines that didn't exist before. Every drive was painting a masterpiece.
 
-Your putting was absolutely chef's kiss. Those chains didn't stand a chance - you were threading needles from C1 like it was your job. Automatic.
-
-The fairway game? Surgical precision. You found lines I didn't even know existed. Every drive was painting a masterpiece on the fairway canvas.
-
-This wasn't just a round - this was a statement. You showed up, showed out, and made the course your personal highlight reel.
-
-Take a bow, champion. You earned every single stroke of that score. This is the kind of round you tell your grandkids about!''';
+  **👑 The Verdict**
+  This wasn't just a round - this was a statement. Take a bow, champion!
+highlightStats:
+  - fairwayPct
+  - parkedPct''';
   }
 
   /// Saves the generated judgment to storage.
@@ -269,11 +338,9 @@ Take a bow, champion. You earned every single stroke of that score. This is the 
       roundVersionId: _currentRound.versionId,
     );
 
-    final RoundStorageService storageService =
-        locator.get<RoundStorageService>();
-    final DGRound updatedRound = _currentRound.copyWith(
-      aiJudgment: aiJudgment,
-    );
+    final RoundStorageService storageService = locator
+        .get<RoundStorageService>();
+    final DGRound updatedRound = _currentRound.copyWith(aiJudgment: aiJudgment);
     await storageService.saveRound(updatedRound);
 
     if (mounted) {
@@ -326,6 +393,8 @@ Take a bow, champion. You earned every single stroke of that score. This is the 
         return _buildIdleState(context);
       case JudgmentState.building:
         return const JudgmentBuildingAnimation();
+      case JudgmentState.preparing:
+        return const JudgmentPreparingAnimation();
       case JudgmentState.spinning:
         return _buildSpinningState(context);
       case JudgmentState.revealing:
@@ -355,9 +424,9 @@ Take a bow, champion. You earned every single stroke of that score. This is the 
               const SizedBox(height: 16),
               Text(
                 'Ready to Be Judged?',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -412,31 +481,91 @@ Take a bow, champion. You earned every single stroke of that score. This is the 
   }
 
   Widget _buildRevealingState(BuildContext context) {
-    return JudgmentRevealEffect(
-      isGlaze: _isGlaze,
-    );
+    return JudgmentRevealEffect(isGlaze: _isGlaze);
   }
 
   Widget _buildCelebratingState(BuildContext context) {
-    return Center(
-      child: JudgmentVerdictAnnouncement(isGlaze: _isGlaze),
-    );
+    return Center(child: JudgmentVerdictAnnouncement(isGlaze: _isGlaze));
   }
 
-  void _shareJudgment(String content, String headline) {
-    final String shareText = '''
-${_isGlaze ? '\u{1F369}' : '\u{1F525}'} $headline
+  Future<void> _shareJudgmentCard(String headline) async {
+    final ShareService shareService = locator.get<ShareService>();
 
-$content
+    final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
+    final String caption =
+        '$emoji $headline\n\n${_currentRound.courseName}\nShared from Turbo Disc Golf';
 
-\u{1F4CA} ${_currentRound.courseName}
-Shared from Turbo Disc Golf''';
+    final bool success = await shareService.captureAndShare(
+      _shareCardKey,
+      caption: caption,
+      filename: 'judgment_${_isGlaze ? 'glaze' : 'roast'}',
+    );
 
-    Clipboard.setData(ClipboardData(text: shareText));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied to clipboard! Ready to share.'),
-        duration: Duration(seconds: 2),
+    if (!success && mounted) {
+      // Fall back to clipboard if capture fails
+      Clipboard.setData(ClipboardData(text: caption));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Copied to clipboard! Ready to share.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Widget _buildShareButton(String headline) {
+    // Premium gradient colors for roast/glaze
+    final List<Color> gradientColors = _isGlaze
+        ? [const Color(0xFFFFD700), const Color(0xFFFFA500)] // Gold → Amber
+        : [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)]; // Coral → Salmon
+
+    return GestureDetector(
+      onTap: () => _shareJudgmentCard(headline),
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: gradientColors,
+          ),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors[0].withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: gradientColors[1].withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.ios_share, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Share my judgment',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -481,7 +610,6 @@ Shared from Turbo Disc Golf''';
   }
 
   Widget _buildResultContent(BuildContext context) {
-
     // Extract clean content (remove metadata comment)
     String cleanContent = _currentRound.aiJudgment!.content;
     if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
@@ -491,19 +619,36 @@ Shared from Turbo Disc Golf''';
       }
     }
 
-    // Extract headline from first line
+    // Parse YAML content
     String headline = _isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!';
-    String contentWithoutHeadline = cleanContent;
+    String tagline = '';
+    String content = cleanContent;
+    List<String> highlightStats = <String>[];
 
-    final List<String> lines = cleanContent.split('\n');
-    if (lines.isNotEmpty && lines[0].trim().isNotEmpty) {
-      headline = lines[0].trim();
-      contentWithoutHeadline = lines.skip(1).join('\n').trim();
+    try {
+      final dynamic yaml = loadYaml(cleanContent);
+      if (yaml is YamlMap) {
+        // Strip AI-generated prefixes like "Headline: " from values
+        headline = _stripAIPrefix((yaml['headline'] as String?) ?? headline);
+        tagline = _stripAIPrefix((yaml['tagline'] as String?) ?? '');
+        content = (yaml['content'] as String?) ?? cleanContent;
+        final YamlList? stats = yaml['highlightStats'] as YamlList?;
+        if (stats != null) {
+          highlightStats = stats.map((e) => e.toString()).toList();
+        }
+      }
+    } catch (e) {
+      // Fall back to legacy format (first line is headline)
+      final List<String> lines = cleanContent.split('\n');
+      if (lines.isNotEmpty && lines[0].trim().isNotEmpty) {
+        headline = lines[0].trim();
+        content = lines.skip(1).join('\n').trim();
+      }
     }
 
     // Create AIContent with clean content for rendering
     final AIContent cleanAIContent = AIContent(
-      content: contentWithoutHeadline,
+      content: content,
       roundVersionId: _currentRound.versionId,
     );
 
@@ -512,101 +657,118 @@ Shared from Turbo Disc Golf''';
       _currentRound,
     );
 
-    final Color primaryColor = _isGlaze
-        ? const Color(0xFF2196F3)
-        : const Color(0xFFFF6B6B);
+    // Ensure tagline is different from headline (AI sometimes duplicates them)
+    final String displayTagline = (tagline.isNotEmpty && tagline != headline)
+        ? tagline
+        : _getDefaultTagline(_isGlaze);
+
+    // Build the share card widget
+    final Widget shareCard = RepaintBoundary(
+      key: _shareCardKey,
+      child: JudgmentShareCard(
+        isGlaze: _isGlaze,
+        headline: headline,
+        tagline: displayTagline,
+        round: _currentRound,
+        analysis: analysis,
+        highlightStats: highlightStats,
+      ),
+    );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      padding: const EdgeInsets.only(top: 12, bottom: 96),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Regenerate button
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _currentRound = _currentRound.copyWith(aiJudgment: null);
-                    _currentState = JudgmentState.idle;
-                  });
-                  _startJudgmentFlow();
-                },
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Regenerate'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _currentRound = _currentRound.copyWith(aiJudgment: null);
+                      _currentState = JudgmentState.idle;
+                    });
+                    _startJudgmentFlow();
+                  },
+                  icon: const Icon(
+                    Icons.refresh,
+                    size: 16,
+                    color: TurbColors.darkGray,
                   ),
-                  textStyle: const TextStyle(fontSize: 12),
+                  label: const Text(
+                    'Regenerate',
+                    style: TextStyle(color: TurbColors.darkGray),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    textStyle: const TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
             ),
           ),
 
           // Verdict card
-          JudgmentVerdictCard(
-            isGlaze: _isGlaze,
-            headline: headline,
-            animate: false,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: JudgmentVerdictCard(
+              isGlaze: _isGlaze,
+              headline: headline,
+              animate: false,
+            ),
           ),
 
           const SizedBox(height: 16),
 
-          // Share button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _shareJudgment(contentWithoutHeadline, headline),
-              icon: const Icon(Icons.ios_share, size: 20),
-              label: const Text('Share'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-            ),
+          // Premium share button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildShareButton(headline),
           ),
 
           const SizedBox(height: 16),
 
           // Content card
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(20),
-            child: DefaultTextStyle(
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 1.5,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: AIContentRenderer(
-                aiContent: cleanAIContent,
-                round: _currentRound,
-                analysis: analysis,
+              padding: const EdgeInsets.all(20),
+              child: DefaultTextStyle(
+                style: const TextStyle(
+                  color: Color(0xFF1A1A1A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  height: 1.5,
+                ),
+                child: AIContentRenderer(
+                  aiContent: cleanAIContent,
+                  round: _currentRound,
+                  analysis: analysis,
+                ),
               ),
             ),
           ),
@@ -614,29 +776,52 @@ Shared from Turbo Disc Golf''';
           const SizedBox(height: 16),
 
           // Info card
-          Card(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Judgment is permanent for this round. '
-                      'Each round gets one 50/50 roll!',
-                      style: Theme.of(context).textTheme.bodySmall,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Judgment is permanent for this round. '
+                        'Each round gets one 50/50 roll!',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+
+          // Share card preview (visible in debug mode only)
+          if (kDebugMode) ...[
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Share Card Preview:',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(color: Colors.grey[600]),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Full-width share card - no padding needed
+            shareCard,
+          ],
+
+          // Off-screen share card for capture (release mode)
+          if (!kDebugMode) Offstage(child: shareCard),
         ],
       ),
     );

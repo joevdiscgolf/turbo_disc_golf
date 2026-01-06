@@ -10,7 +10,7 @@ import 'package:turbo_disc_golf/components/stat_cards/c2_putting_story_card.dart
 import 'package:turbo_disc_golf/components/stat_cards/fairway_hit_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/flow_state_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/hot_streak_story_card.dart';
-import 'package:turbo_disc_golf/components/stat_cards/mistakes_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/mistakes_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/ob_rate_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/par_rate_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/parked_story_card.dart';
@@ -86,7 +86,12 @@ class StatCardRegistry {
 
       // ===== PERFORMANCE STORY CARDS (with dual rendering) =====
       case 'MISTAKES':
-        return MistakesStoryCard(round: round, renderMode: renderMode);
+        return MistakesCard(
+          round: round,
+          compact: true,
+          showHeader: false,
+          showCard: false,
+        );
       case 'SKILLS_SCORE':
         return SkillsScoreStoryCard(round: round, renderMode: renderMode);
     }

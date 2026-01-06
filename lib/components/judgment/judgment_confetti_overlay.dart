@@ -2,10 +2,11 @@ import 'dart:math';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/judgment/fire_emoji_overlay.dart';
 
 /// Themed confetti overlay for judgment celebrations.
 ///
-/// Displays red flame-like particles for roasts and golden sparkles for glazes.
+/// Displays fire emoji particles for roasts and golden star sparkles for glazes.
 class JudgmentConfettiOverlay extends StatefulWidget {
   const JudgmentConfettiOverlay({
     super.key,
@@ -25,8 +26,49 @@ class JudgmentConfettiOverlay extends StatefulWidget {
 }
 
 class _JudgmentConfettiOverlayState extends State<JudgmentConfettiOverlay> {
+  bool _fireIsPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to confetti controller state to trigger fire emojis
+    widget.controller.addListener(_onControllerStateChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerStateChanged);
+    super.dispose();
+  }
+
+  void _onControllerStateChanged() {
+    if (!widget.isGlaze &&
+        widget.controller.state == ConfettiControllerState.playing) {
+      if (!_fireIsPlaying) {
+        setState(() {
+          _fireIsPlaying = true;
+        });
+      }
+    }
+  }
+
+  void _onFireComplete() {
+    setState(() {
+      _fireIsPlaying = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // For roast: show fire emojis
+    if (!widget.isGlaze) {
+      return FireEmojiOverlay(
+        isPlaying: _fireIsPlaying,
+        onComplete: _onFireComplete,
+      );
+    }
+
+    // For glaze: show golden star confetti
     return Stack(
       children: [
         // Center explosion
@@ -36,15 +78,13 @@ class _JudgmentConfettiOverlayState extends State<JudgmentConfettiOverlay> {
             confettiController: widget.controller,
             blastDirectionality: BlastDirectionality.explosive,
             emissionFrequency: 0.05,
-            numberOfParticles: widget.isGlaze ? 40 : 30,
-            maxBlastForce: widget.isGlaze ? 20 : 25,
-            minBlastForce: widget.isGlaze ? 8 : 10,
-            gravity: widget.isGlaze ? 0.08 : 0.15,
+            numberOfParticles: 40,
+            maxBlastForce: 20,
+            minBlastForce: 8,
+            gravity: 0.08,
             shouldLoop: false,
-            colors: widget.isGlaze ? _glazeColors : _roastColors,
-            createParticlePath: widget.isGlaze
-                ? _createStarPath
-                : _createFlamePath,
+            colors: _glazeColors,
+            createParticlePath: _createStarPath,
           ),
         ),
         // Top bursts for extra drama
@@ -57,25 +97,15 @@ class _JudgmentConfettiOverlayState extends State<JudgmentConfettiOverlay> {
             numberOfParticles: 15,
             maxBlastForce: 15,
             minBlastForce: 5,
-            gravity: widget.isGlaze ? 0.1 : 0.2,
+            gravity: 0.1,
             shouldLoop: false,
-            colors: widget.isGlaze ? _glazeColors : _roastColors,
-            createParticlePath: widget.isGlaze
-                ? _createStarPath
-                : _createFlamePath,
+            colors: _glazeColors,
+            createParticlePath: _createStarPath,
           ),
         ),
       ],
     );
   }
-
-  // Roast colors: red, orange, yellow flames
-  static const List<Color> _roastColors = [
-    Color(0xFFFF6B6B), // Primary red
-    Color(0xFFFF8C42), // Orange
-    Color(0xFFFFD93D), // Yellow
-    Color(0xFFD32F2F), // Dark red
-  ];
 
   // Glaze colors: gold, orange-gold, white sparkles
   static const List<Color> _glazeColors = [
@@ -84,23 +114,6 @@ class _JudgmentConfettiOverlayState extends State<JudgmentConfettiOverlay> {
     Color(0xFFFFFFFF), // White sparkle
     Color(0xFFFFE4B5), // Light gold (moccasin)
   ];
-
-  /// Creates a flame-like teardrop shape for roast particles.
-  Path _createFlamePath(Size size) {
-    final Path path = Path();
-    final double w = size.width;
-    final double h = size.height;
-
-    // Flame shape: teardrop pointing up
-    path.moveTo(w / 2, 0); // Top point
-    path.quadraticBezierTo(w, h * 0.3, w * 0.7, h * 0.6);
-    path.quadraticBezierTo(w / 2, h, w / 2, h); // Bottom curve
-    path.quadraticBezierTo(w / 2, h, w * 0.3, h * 0.6);
-    path.quadraticBezierTo(0, h * 0.3, w / 2, 0);
-    path.close();
-
-    return path;
-  }
 
   /// Creates a 4-point star shape for glaze sparkle particles.
   Path _createStarPath(Size size) {

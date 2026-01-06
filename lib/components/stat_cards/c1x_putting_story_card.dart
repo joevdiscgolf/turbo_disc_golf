@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Single-stat widget showing C1X Putting percentage
 ///
@@ -29,11 +30,13 @@ class C1XPuttingStoryCard extends StatelessWidget {
     final int count = stats.c1xMakes;
     final int total = stats.c1xAttempts;
 
+    final Color color = getSemanticColor(percentage);
+
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
         label: 'C1X Putting',
-        color: const Color(0xFF137e66),
+        color: color,
         icon: Icons.my_location,
         count: count,
         total: total,
@@ -43,7 +46,7 @@ class C1XPuttingStoryCard extends StatelessWidget {
       return BarStatRenderer(
         percentage: percentage,
         label: 'C1X Putting',
-        color: const Color(0xFF137e66),
+        color: color,
         icon: Icons.my_location,
         count: count,
         total: total,

@@ -123,7 +123,7 @@ class HoleTypeStoryCard extends StatelessWidget {
                 child: _StatColumn(
                   label: 'Birdie Rate',
                   value: '${birdieRate.toStringAsFixed(0)}%',
-                  color: const Color(0xFF137e66),
+                  color: const Color(0xFF4CAF50),
                 ),
               ),
               Expanded(

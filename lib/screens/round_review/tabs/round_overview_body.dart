@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/stat_cards/driving_stats_card.dart'
     as compact;
+import 'package:turbo_disc_golf/components/stat_cards/mistakes_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/putting_stats_card.dart'
     as compact;
 import 'package:turbo_disc_golf/locator.dart';
@@ -24,7 +25,6 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
-import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
@@ -231,13 +231,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
           onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
         ),
         const SizedBox(height: 8),
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   child: SkillsOverviewCard(
-        //     round: widget.round,
-        //     onTap: () => _navigateToDetailView(1), // Skills tab
-        //   ),
-        // ),
+
         // const SizedBox(height: 8),
         // Scorecard now included in ScoreKPICard above
         // Padding(
@@ -271,7 +265,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _MistakesCard(
+          child: MistakesCard(
             round: widget.round,
             onTap: () => _navigateToDetailView(7), // Mistakes tab
           ),
@@ -295,19 +289,27 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _AICoachCard(
+          child: SkillsOverviewCard(
             round: widget.round,
-            onTap: () => _navigateToDetailView(9), // Summary tab
+            onTap: () => _navigateToDetailView(1), // Skills tab
           ),
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _AIRoastCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(11), // Roast tab
-          ),
-        ),
+        // const SizedBox(height: 8),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: _AICoachCard(
+        //     round: widget.round,
+        //     onTap: () => _navigateToDetailView(9), // Summary tab
+        //   ),
+        // ),
+        // const SizedBox(height: 8),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16),
+        //   child: _AIRoastCard(
+        //     round: widget.round,
+        //     onTap: () => _navigateToDetailView(11), // Roast tab
+        //   ),
+        // ),
       ],
     );
   }
@@ -1462,212 +1464,6 @@ class _MiniMedalCard extends StatelessWidget {
   }
 }
 
-// Mistakes Card
-class _MistakesCard extends StatelessWidget {
-  final DGRound round;
-  final VoidCallback? onTap;
-
-  const _MistakesCard({required this.round, this.onTap});
-
-  Color _getColorForIndex(int index) {
-    final List<Color> colors = [
-      const Color(0xFFFF7A7A), // Red for top mistake
-      const Color(0xFF9C27B0), // Purple
-      const Color(0xFF2196F3), // Blue
-      const Color(0xFFFFA726), // Orange
-      const Color(0xFF66BB6A), // Green
-    ];
-    return colors[index % colors.length];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final MistakesAnalysisService mistakesService = locator
-        .get<MistakesAnalysisService>();
-    final int totalMistakes = mistakesService.getTotalMistakesCount(round);
-    final List<dynamic> mistakeTypes = mistakesService.getMistakeTypes(round);
-
-    // Filter out mistakes with count > 0
-    final List<dynamic> topMistakes = mistakeTypes
-        .where((mistake) => mistake.count > 0)
-        .toList();
-
-    return Card(
-      child: InkWell(
-        onTap: onTap != null
-            ? () {
-                HapticFeedback.lightImpact();
-                onTap!();
-              }
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    '⚠️ Mistakes Breakdown',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (totalMistakes == 0)
-                const Text(
-                  'No mistakes detected - perfect round!',
-                  style: TextStyle(color: Colors.grey),
-                )
-              else ...[
-                useHeroAnimationsForRoundReview
-                    ? Hero(
-                        tag: 'mistakes_count',
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '$totalMistakes',
-                                style: Theme.of(context).textTheme.displaySmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFFF7A7A),
-                                    ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'mistakes',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '$totalMistakes',
-                            style: Theme.of(context).textTheme.displaySmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFFF7A7A),
-                                ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'mistakes',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                if (topMistakes.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ...topMistakes.asMap().entries.map((entry) {
-                    final int index = entry.key;
-                    final dynamic mistake = entry.value;
-                    final int maxCount = topMistakes.first.count;
-
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index < topMistakes.length - 1 ? 12 : 0,
-                      ),
-                      child: _buildBarItem(
-                        context,
-                        label: mistake.label,
-                        count: mistake.count,
-                        maxCount: maxCount,
-                        color: _getColorForIndex(index),
-                      ),
-                    );
-                  }),
-                ],
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBarItem(
-    BuildContext context, {
-    required String label,
-    required int count,
-    required int maxCount,
-    required Color color,
-  }) {
-    final double barWidth = maxCount > 0 ? count / maxCount : 0.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-            Text(
-              '$count',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Stack(
-          children: [
-            // Background bar
-            Container(
-              height: 10,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-            // Foreground bar (actual value)
-            FractionallySizedBox(
-              widthFactor: barWidth,
-              child: Container(
-                height: 10,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(5),
-                  boxShadow: count > 0
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 // Mental Game Card
 class _MentalGameCard extends StatelessWidget {
   final DGRound round;
@@ -1869,124 +1665,6 @@ class _MentalGameCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// AI Coach Card
-class _AICoachCard extends StatelessWidget {
-  final DGRound round;
-  final VoidCallback? onTap;
-
-  const _AICoachCard({required this.round, this.onTap});
-
-  String _getFirstSentences(String content, int maxLength) {
-    // Remove markdown headers and get clean text
-    final List<String> lines = content.split('\n');
-    final StringBuffer text = StringBuffer();
-
-    for (final String line in lines) {
-      final String trimmed = line.trim();
-      // Skip headers and empty lines
-      if (trimmed.isEmpty || trimmed.startsWith('#')) continue;
-
-      // Remove markdown formatting (bold, italic, etc.)
-      String cleaned = trimmed
-          .replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1') // bold
-          .replaceAll(RegExp(r'\*([^*]+)\*'), r'$1') // italic
-          .replaceAll(RegExp(r'__([^_]+)__'), r'$1') // bold
-          .replaceAll(RegExp(r'_([^_]+)_'), r'$1'); // italic
-
-      text.write(cleaned);
-      text.write(' ');
-
-      // Stop if we have enough content
-      if (text.length >= maxLength) break;
-    }
-
-    return text.toString().trim();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool hasSummary =
-        round.aiSummary != null && round.aiSummary!.content.isNotEmpty;
-    final String? preview = hasSummary
-        ? _getFirstSentences(round.aiSummary!.content, 150)
-        : null;
-
-    return Card(
-      child: InkWell(
-        onTap: onTap != null
-            ? () {
-                HapticFeedback.lightImpact();
-                onTap!();
-              }
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    '🤖 AI Insights',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (hasSummary && preview != null && preview.isNotEmpty) ...[
-                Text(
-                  preview,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Tap to read full analysis',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ] else
-                Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'AI-powered analysis and coaching advice',
-                        style: TextStyle(fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -2413,54 +2091,6 @@ class _CompactSkillsSpiderChartPainter extends CustomPainter {
   bool shouldRepaint(_CompactSkillsSpiderChartPainter oldDelegate) {
     return oldDelegate.skills != skills ||
         oldDelegate.animationValue != animationValue;
-  }
-}
-
-// AI Roast Card
-class _AIRoastCard extends StatelessWidget {
-  final DGRound round;
-  final VoidCallback? onTap;
-
-  const _AIRoastCard({required this.round, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap != null
-            ? () {
-                HapticFeedback.lightImpact();
-                onTap!();
-              }
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    '🔥 AI Roast',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'AI roast coming soon...',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 

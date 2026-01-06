@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Single-stat widget showing Parked percentage
 ///
@@ -28,11 +29,13 @@ class ParkedStoryCard extends StatelessWidget {
     final int count = ((stats.parkedPct / 100) * stats.totalHoles).round();
     final int total = stats.totalHoles;
 
+    final Color color = getSemanticColor(percentage);
+
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
         label: 'Parked',
-        color: const Color(0xFFFFA726),
+        color: color,
         icon: Icons.star_rounded,
         count: count,
         total: total,
@@ -42,7 +45,7 @@ class ParkedStoryCard extends StatelessWidget {
       return BarStatRenderer(
         percentage: percentage,
         label: 'Parked',
-        color: const Color(0xFFFFA726),
+        color: color,
         icon: Icons.star_rounded,
         count: count,
         total: total,

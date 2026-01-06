@@ -113,27 +113,36 @@ class HoleGridItem extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                // Par and distance
-                Text(
-                  holePar != null ? 'Par $holePar' : 'Par —',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
-                Text(
-                  holeFeet != null ? '$holeFeet ft' : '— ft',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
                 const Spacer(),
-                // Edit icon in bottom right
-                const Align(
-                  alignment: Alignment.bottomRight,
-                  child: Icon(Icons.edit, size: 12),
+                // Bottom row with par/distance and edit icon
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          holePar != null ? 'Par $holePar' : 'Par —',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          holeFeet != null ? '$holeFeet ft' : '— ft',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Icon(Icons.edit, size: 12),
+                  ],
                 ),
               ],
             ),
@@ -227,30 +236,41 @@ class HoleGridItem extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
-                // Par and distance
-                Text(
-                  holePar != null ? 'Par $holePar' : 'Par —',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
-                if (holeFeet != null)
-                  Text(
-                    '$holeFeet ft',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 11,
+                const Spacer(),
+                // Bottom row with par/distance and arrow
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          holePar != null ? 'Par $holePar' : 'Par —',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (holeFeet != null)
+                          Text(
+                            '$holeFeet ft',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Icon(
-                    size: 12,
-                    FlutterRemix.arrow_right_s_line,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                    Icon(
+                      size: 12,
+                      FlutterRemix.arrow_right_s_line,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ],
                 ),
               ],
             ),

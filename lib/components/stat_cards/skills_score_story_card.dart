@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/components/stat_cards/renderers/circular_stat_re
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Single-stat widget showing Overall Skills Score
 ///
@@ -30,11 +31,13 @@ class SkillsScoreStoryCard extends StatelessWidget {
     final double percentage = overallScore;
     final int scoreValue = overallScore.round();
 
+    final Color color = getSemanticColor(percentage);
+
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
         label: 'Overall Skills',
-        color: const Color(0xFF1976D2),
+        color: color,
         icon: Icons.military_tech,
         count: scoreValue,
         total: 100,
@@ -45,7 +48,7 @@ class SkillsScoreStoryCard extends StatelessWidget {
       return BarStatRenderer(
         percentage: percentage,
         label: 'Overall Skills',
-        color: const Color(0xFF1976D2),
+        color: color,
         icon: Icons.military_tech,
         count: scoreValue,
         total: 100,
