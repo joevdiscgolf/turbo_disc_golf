@@ -6,7 +6,6 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:yaml/yaml.dart';
 
 import 'package:confetti/confetti.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -803,25 +802,20 @@ highlightStats:
             ),
           ),
 
-          // Share card preview (visible in debug mode only)
-          if (kDebugMode) ...[
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Share Card Preview:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(color: Colors.grey[600]),
-              ),
+          // Share card preview
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Share Card Preview:',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(color: Colors.grey[600]),
             ),
-            const SizedBox(height: 8),
-            // Full-width share card - no padding needed
-            shareCard,
-          ],
-
-          // Off-screen share card for capture (release mode)
-          if (!kDebugMode) Offstage(child: shareCard),
+          ),
+          const SizedBox(height: 8),
+          // Full-width share card
+          shareCard,
         ],
       ),
     );
