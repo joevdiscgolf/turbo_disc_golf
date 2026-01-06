@@ -47,7 +47,7 @@ class JudgmentShareCard extends StatelessWidget {
 
     // Lighter card colors using flattenedOverWhite for better scorecard contrast
     // Use lower opacity for roast to make it darker
-    final double cardOpacity = isGlaze ? 0.85 : 0.75;
+    final double cardOpacity = isGlaze ? 0.85 : 0.95;
     final List<Color> cardColors = [
       flattenedOverWhite(baseColors[0], cardOpacity),
       flattenedOverWhite(baseColors[1], cardOpacity),
@@ -58,8 +58,8 @@ class JudgmentShareCard extends StatelessWidget {
     const Color bodyColor = Colors.white;
     final Color subtleColor = Colors.white.withValues(alpha: 0.8);
     final Color containerBgAlpha = isGlaze
-        ? Colors.white.withValues(alpha: 0.35)
-        : Colors.white.withValues(alpha: 0.25);
+        ? Colors.white.withValues(alpha: 0.25)
+        : Colors.white.withValues(alpha: 0.2);
 
     // Outer background tint
     final List<Color> outerColors = isGlaze
@@ -263,7 +263,6 @@ class JudgmentShareCard extends StatelessWidget {
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: textColor,
-          fontStyle: FontStyle.italic,
           height: 1.3,
         ),
         textAlign: TextAlign.left,
