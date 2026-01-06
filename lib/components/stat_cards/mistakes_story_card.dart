@@ -53,31 +53,31 @@ class MistakesStoryCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Total mistakes count - prominent display
+        // Total mistakes count - compact display
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
               '$totalMistakes',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFFFF7A7A),
                   ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               totalMistakes == 1 ? 'mistake' : 'mistakes',
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(color: Colors.grey),
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
             ),
           ],
         ),
 
         // Bar breakdown for each mistake type
         if (activeMistakes.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           ...activeMistakes.asMap().entries.map((entry) {
             final int index = entry.key;
             final dynamic mistake = entry.value;
@@ -85,7 +85,7 @@ class MistakesStoryCard extends StatelessWidget {
 
             return Padding(
               padding: EdgeInsets.only(
-                bottom: index < activeMistakes.length - 1 ? 12 : 0,
+                bottom: index < activeMistakes.length - 1 ? 8 : 0,
               ),
               child: _buildBarItem(
                 context,
@@ -166,37 +166,37 @@ class MistakesStoryCard extends StatelessWidget {
                 label,
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             Text(
               '$count',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Stack(
           children: [
             // Background bar
             Container(
-              height: 10,
+              height: 8,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
             // Foreground bar (actual value)
             FractionallySizedBox(
               widthFactor: barWidth,
               child: Container(
-                height: 10,
+                height: 8,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(5),
+                  borderRadius: BorderRadius.circular(4),
                   boxShadow: count > 0
                       ? [
                           BoxShadow(

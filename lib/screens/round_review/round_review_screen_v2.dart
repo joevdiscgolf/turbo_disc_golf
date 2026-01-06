@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -178,6 +179,7 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
       labelPadding: EdgeInsets.zero,
       padding: EdgeInsets.zero,
       indicatorPadding: EdgeInsets.zero,
+      onTap: (_) => HapticFeedback.lightImpact(),
       tabs: const [
         Tab(text: 'Stats'),
         Tab(text: 'Story'),

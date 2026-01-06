@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/stat_cards/driving_stats_card.dart'
     as compact;
@@ -54,6 +55,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   bool get wantKeepAlive => true;
 
   void _navigateToDetailView(int tabIndex) {
+    HapticFeedback.lightImpact();
     if (widget.isReviewV2Screen) {
       // V2: Push new screen based on tab index
       _pushDetailScreen(tabIndex);
@@ -64,6 +66,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   }
 
   void _navigateToJudgeTab() {
+    HapticFeedback.lightImpact();
     if (widget.tabController != null) {
       widget.tabController!.animateTo(2); // Navigate to Judge tab (index 2)
     }
@@ -157,6 +160,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   }
 
   void _navigateToScoreDetail() {
+    HapticFeedback.lightImpact();
     if (!widget.isReviewV2Screen) {
       // V1: Navigate to Course tab (index 2)
       if (widget.tabController != null) {
@@ -370,7 +374,12 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
 
     return Card(
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: widget.onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                widget.onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -670,7 +679,12 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
 
     return Card(
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: widget.onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                widget.onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1287,7 +1301,12 @@ class _DiscUsageCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1475,7 +1494,12 @@ class _MistakesCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1708,7 +1732,12 @@ class _MentalGameCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1889,7 +1918,12 @@ class _AICoachCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1982,7 +2016,12 @@ class _SkillsOverviewCardState extends State<SkillsOverviewCard>
 
     return Card(
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: widget.onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                widget.onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.only(
             left: 12,
@@ -2388,7 +2427,12 @@ class _AIRoastCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -2509,7 +2553,10 @@ class _JudgeBannerState extends State<_JudgeBanner>
   @override
   Widget build(BuildContext context) {
     Widget banner = GestureDetector(
-      onTap: widget.onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),

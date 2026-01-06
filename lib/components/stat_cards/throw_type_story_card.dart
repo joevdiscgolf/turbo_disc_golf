@@ -4,6 +4,8 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 /// Compact throw type comparison card for story context
 /// Shows backhand vs forehand performance side-by-side
@@ -11,6 +13,9 @@ class ThrowTypeStoryCard extends StatelessWidget {
   const ThrowTypeStoryCard({super.key, required this.round});
 
   final DGRound round;
+
+  static const Color _backhandColor = Color(0xFF2196F3);
+  static const Color _forehandColor = Color(0xFF9C27B0);
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +45,7 @@ class ThrowTypeStoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: TurbColors.gray[100]!),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -51,19 +54,18 @@ class ThrowTypeStoryCard extends StatelessWidget {
             Expanded(
               child: _ThrowTypeColumn(
                 stats: backhandStats,
-                color: const Color(0xFF2196F3),
+                color: _backhandColor,
               ),
             ),
             VerticalDivider(
               width: 1,
               thickness: 1,
-              color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+              color: TurbColors.gray[100],
             ),
             Expanded(
               child: _ThrowTypeColumn(
                 stats: forehandStats,
-                color: const Color(0xFF9C27B0),
+                color: _forehandColor,
               ),
             ),
           ],
@@ -125,82 +127,38 @@ class _ThrowTypeColumn extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Label
           Text(
-            stats.displayName.toUpperCase(),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+            stats.displayName,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                   color: color,
                 ),
           ),
-          const SizedBox(height: 12),
-          _buildBirdieRate(context),
-          const SizedBox(height: 16),
-          _buildStatRow(
-            context,
-            label: 'C1 in Reg',
-            percentage: stats.c1InRegPct,
-            count: stats.c1Count,
-            total: stats.c1Total,
+          const SizedBox(height: 8),
+          // Birdie rate circle
+          CircularStatIndicator(
+            label: 'Birdie Rate',
+            percentage: stats.birdieRate,
+            color: color,
+            size: 72,
+            strokeWidth: 5,
+            percentageFontSize: 20,
+            internalLabel: '${stats.birdieCount}/${stats.totalHoles}',
+            internalLabelFontSize: 10,
+            labelFontSize: 11,
+            labelSpacing: 4,
           ),
+          const SizedBox(height: 12),
+          // C1 in Reg bar
+          _buildC1InRegBar(context),
         ],
       ),
     );
   }
 
-  Widget _buildBirdieRate(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: color,
-              width: 2.5,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              '${stats.birdieRate.toStringAsFixed(0)}%',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    fontSize: 20,
-                  ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Birdie Rate',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-        ),
-        Text(
-          '${stats.birdieCount}/${stats.totalHoles}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 10,
-              ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatRow(
-    BuildContext context, {
-    required String label,
-    required double percentage,
-    required int count,
-    required int total,
-  }) {
+  Widget _buildC1InRegBar(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -208,18 +166,31 @@ class _ThrowTypeColumn extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              label,
+              'C1 in Reg',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     fontSize: 11,
                   ),
             ),
-            Text(
-              '${percentage.toStringAsFixed(0)}%',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
+            Row(
+              children: [
+                Text(
+                  '${stats.c1InRegPct.toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        fontSize: 12,
+                      ),
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  '(${stats.c1Count}/${stats.c1Total})',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: TurbColors.gray[400],
+                        fontSize: 10,
+                      ),
+                ),
+              ],
             ),
           ],
         ),
@@ -227,20 +198,10 @@ class _ThrowTypeColumn extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(3),
           child: LinearProgressIndicator(
-            value: percentage / 100,
+            value: stats.c1InRegPct / 100,
             minHeight: 6,
-            backgroundColor: color.withValues(alpha: 0.2),
+            backgroundColor: color.withValues(alpha: 0.15),
             valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Center(
-          child: Text(
-            '($count/$total)',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 10,
-                ),
           ),
         ),
       ],

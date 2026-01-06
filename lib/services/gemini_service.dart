@@ -5,6 +5,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/gemini_helpers.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
@@ -60,8 +61,11 @@ class GeminiService {
     try {
       // Use full flash model if requested, otherwise use lite model
       if (useFullModel) {
+        final String modelToUse = useGeminiFallbackModel
+            ? onePointFiveFlashLatestModel
+            : twoPointFiveFlashModel;
         final fullModel = GenerativeModel(
-          model: twoPointFiveFlashModel,
+          model: modelToUse,
           apiKey: _apiKey,
           generationConfig: GenerationConfig(
             temperature: 1.0, // Higher temperature for creative content
