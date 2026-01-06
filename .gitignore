@@ -47,3 +47,4 @@ app.*.map.json
 # Ignore environment files
 .env
 .env.*
+.aider*
