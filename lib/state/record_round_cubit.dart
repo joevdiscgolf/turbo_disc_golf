@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/courses/courses_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
@@ -266,6 +267,79 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
 
   void emitInactive() {
     emit(const RecordRoundInactive());
+  }
+
+  /// Set imported scores from a parsed scorecard image.
+  /// Converts list of hole metadata to a map of holeIndex to score.
+  void setImportedScores(Map<int, int> scores) {
+    if (state is! RecordRoundActive) return;
+    emit((state as RecordRoundActive).copyWith(importedScores: scores));
+  }
+
+  /// Update a single hole's score (for manual correction).
+  void updateHoleScore(int holeIndex, int? score) {
+    if (state is! RecordRoundActive) return;
+    final RecordRoundActive activeState = state as RecordRoundActive;
+
+    // Create a new map with the updated score
+    final Map<int, int> updatedScores = Map<int, int>.from(
+      activeState.importedScores ?? {},
+    );
+
+    if (score != null) {
+      updatedScores[holeIndex] = score;
+    } else {
+      updatedScores.remove(holeIndex);
+    }
+
+    emit(activeState.copyWith(importedScores: updatedScores));
+  }
+
+  /// Increment the score for a hole by 1.
+  void incrementHoleScore(int holeIndex) {
+    if (state is! RecordRoundActive) return;
+    final RecordRoundActive activeState = state as RecordRoundActive;
+
+    final int currentScore = activeState.importedScores?[holeIndex] ?? 0;
+    updateHoleScore(holeIndex, currentScore + 1);
+  }
+
+  /// Decrement the score for a hole by 1 (minimum score is 1).
+  void decrementHoleScore(int holeIndex) {
+    if (state is! RecordRoundActive) return;
+    final RecordRoundActive activeState = state as RecordRoundActive;
+
+    final int? currentScore = activeState.importedScores?[holeIndex];
+    if (currentScore != null && currentScore > 1) {
+      updateHoleScore(holeIndex, currentScore - 1);
+    }
+  }
+
+  /// Set full imported hole metadata from a parsed scorecard image.
+  /// Stores both scores and full metadata (par, distance, etc.)
+  void setImportedHoleMetadata(List<HoleMetadata> metadata) {
+    if (state is! RecordRoundActive) return;
+
+    // Convert to Map<int, int> for scores (existing behavior)
+    final Map<int, int> scores = {};
+    final Map<int, HoleMetadata> holeMetadata = {};
+
+    for (final HoleMetadata hole in metadata) {
+      final int index = hole.holeNumber - 1; // 0-based
+      scores[index] = hole.score;
+      holeMetadata[index] = hole;
+    }
+
+    emit((state as RecordRoundActive).copyWith(
+      importedScores: scores,
+      importedHoleMetadata: holeMetadata,
+    ));
+  }
+
+  /// Clear imported scores
+  void clearImportedScores() {
+    if (state is! RecordRoundActive) return;
+    emit((state as RecordRoundActive).copyWith(clearImportedScores: true));
   }
 
   @override

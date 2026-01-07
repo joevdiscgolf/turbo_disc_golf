@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 
 @immutable
 abstract class RecordRoundState {
@@ -21,6 +22,8 @@ class RecordRoundActive extends RecordRoundState {
     this.pausingBetweenHoles = false,
     this.isStartingListening = false,
     this.currentHoleIndex = 0,
+    this.importedScores,
+    this.importedHoleMetadata,
   });
 
   final Course? selectedCourse;
@@ -32,6 +35,8 @@ class RecordRoundActive extends RecordRoundState {
   final bool isStartingListening;
   final bool pausingBetweenHoles;
   final int currentHoleIndex;
+  final Map<int, int>? importedScores; // holeIndex (0-based) -> score
+  final Map<int, HoleMetadata>? importedHoleMetadata; // holeIndex (0-based) -> full metadata
 
   RecordRoundActive copyWith({
     Course? selectedCourse,
@@ -43,6 +48,9 @@ class RecordRoundActive extends RecordRoundState {
     bool? isStartingListening,
     bool? pausingBetweenHoles,
     int? currentHoleIndex,
+    Map<int, int>? importedScores,
+    Map<int, HoleMetadata>? importedHoleMetadata,
+    bool clearImportedScores = false,
   }) {
     return RecordRoundActive(
       selectedCourse: selectedCourse ?? this.selectedCourse,
@@ -54,6 +62,11 @@ class RecordRoundActive extends RecordRoundState {
       isStartingListening: isStartingListening ?? this.isStartingListening,
       pausingBetweenHoles: pausingBetweenHoles ?? this.pausingBetweenHoles,
       currentHoleIndex: currentHoleIndex ?? this.currentHoleIndex,
+      importedScores:
+          clearImportedScores ? null : (importedScores ?? this.importedScores),
+      importedHoleMetadata: clearImportedScores
+          ? null
+          : (importedHoleMetadata ?? this.importedHoleMetadata),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Description card (larger) with unified background and subtle amber tint.
@@ -132,7 +133,10 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
                 ),
               if (!widget.isListening && widget.onClear != null && widget.controller.text.isNotEmpty)
                 TextButton(
-                  onPressed: widget.onClear,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    widget.onClear!();
+                  },
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,

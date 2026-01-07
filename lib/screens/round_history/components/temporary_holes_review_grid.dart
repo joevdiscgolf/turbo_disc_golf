@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 
@@ -64,7 +65,10 @@ class TemporaryHolesReviewGrid extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: onBack,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onBack();
+              },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -129,7 +133,10 @@ class _HoleGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: SizedBox(
         width: width,
         height: 96,

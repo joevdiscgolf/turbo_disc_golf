@@ -1,0 +1,43 @@
+app = "turbo-disc-golf-meili"
+primary_region = "yyz"
+
+[build]
+  image = "getmeili/meilisearch:v1.6"
+
+[processes]
+app = "meilisearch --db-path /meili_data --master-key $MEILI_MASTER_KEY"
+
+[mounts]
+  source = "meili_data"
+  destination = "/meili_data"
+
+[env]
+  MEILI_DB_PATH = "/meili_data"
+  MEILI_NO_ANALYTICS = "true"
+  MEILI_ENV = "production"
+  MEILI_HTTP_ADDR = "0.0.0.0:7700"
+
+[[services]]
+  internal_port = 7700
+  protocol = "tcp"
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024

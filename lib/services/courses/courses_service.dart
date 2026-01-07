@@ -153,7 +153,7 @@ const kTestCourses = [
           CourseHole(holeNumber: 15, par: 4, feet: 280),
           CourseHole(holeNumber: 16, par: 3, feet: 200),
           CourseHole(holeNumber: 17, par: 4, feet: 700),
-          CourseHole(holeNumber: 18, par: 5, feet: 400),
+          CourseHole(holeNumber: 18, par: 3, feet: 400),
         ],
         isDefault: true,
       ),

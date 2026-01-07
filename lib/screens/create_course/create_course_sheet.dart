@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
@@ -50,6 +51,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
             size: PanelConstants.closeButtonIconSize,
           ),
           onPressed: () {
+            HapticFeedback.lightImpact();
             Navigator.of(context).pop();
           },
         ),
@@ -207,6 +209,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
                         : 0,
                   },
                   onSelectionChanged: (Set<int> selection) {
+                    HapticFeedback.lightImpact();
                     final int value = selection.first;
                     if (value == 0) {
                       _showCustomHoleCountDialog(context);
@@ -222,7 +225,10 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
                 top: 0,
                 bottom: 0,
                 child: GestureDetector(
-                  onTap: () => _showCustomHoleCountDialog(context),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _showCustomHoleCountDialog(context);
+                  },
                   child: Container(
                     width: MediaQuery.of(context).size.width / 3 - 16,
                     color: Colors.transparent,
@@ -237,6 +243,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
           onTap: state.isParsingImage
               ? null
               : () async {
+                  HapticFeedback.lightImpact();
                   // Unfocus any active text fields first
                   FocusScope.of(context).unfocus();
                   // Small delay to ensure keyboard is dismissed
