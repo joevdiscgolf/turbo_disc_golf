@@ -61,7 +61,7 @@ class JudgmentShareCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.25)
         : Colors.white.withValues(alpha: 0.2);
 
-    // Outer background tint
+    // Outer background tint (layered over white for proper image capture)
     final List<Color> outerColors = isGlaze
         ? [
             const Color(0xFF137e66).withValues(alpha: 0.15),
@@ -76,17 +76,20 @@ class JudgmentShareCard extends StatelessWidget {
 
     final double screenHeight = MediaQuery.of(context).size.height;
 
+    // White background ensures proper image capture (no transparency)
     return Container(
       width: double.infinity,
       height: screenHeight,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: outerColors,
+      color: Colors.white,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: outerColors,
+          ),
         ),
-      ),
-      child: Stack(
+        child: Stack(
         children: [
           // Random background emojis
           ..._buildBackgroundEmojis(screenHeight),
@@ -145,7 +148,8 @@ class JudgmentShareCard extends StatelessWidget {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
