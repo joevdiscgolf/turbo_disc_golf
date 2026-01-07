@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -322,15 +323,16 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   Widget _buildHeader(RecordRoundActive state) {
     final int currentHoleIndex = state.currentHoleIndex;
-    final double progress = (currentHoleIndex + 1) / totalHoles;
+    final int numHoles = state.numHoles;
+    final double progress = (currentHoleIndex + 1) / numHoles;
 
     return Column(
       children: [
-        // Course card (blue tint)
-        _buildCourseCard(state),
+        // Course card + Import button
+        _buildCourseAndImportRow(state),
         const SizedBox(height: 8),
-        // Date card (2/3) + Import button (1/3)
-        _buildDateAndImportRow(state),
+        // Date card
+        _buildDateCard(state),
         const SizedBox(height: 8),
         // Hole Progress Card
         GestureDetector(
@@ -356,7 +358,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          'Hole ${currentHoleIndex + 1} of $totalHoles',
+                          'Hole ${currentHoleIndex + 1} of $numHoles',
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 fontSize: 18,
@@ -476,7 +478,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               );
   }
 
-  Widget _buildCourseCard(RecordRoundActive state) {
+  Widget _buildCourseAndImportRow(RecordRoundActive state) {
     String subtitle;
     if (state.selectedCourse != null) {
       subtitle = state.selectedCourse!.name;
@@ -492,16 +494,26 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       subtitle = 'Select a course';
     }
 
-    final Widget card = RoundDataInputCard(
-      icon: Icons.landscape,
-      subtitle: subtitle,
-      onTap: _showCourseSelector,
-      accent: _courseAccent,
+    final Widget row = Row(
+      children: [
+        // Course card (takes remaining space)
+        Expanded(
+          child: RoundDataInputCard(
+            icon: Icons.landscape,
+            subtitle: subtitle,
+            onTap: _showCourseSelector,
+            accent: _courseAccent,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Import button (icon only)
+        _buildImportScorecardButton(),
+      ],
     );
 
     return widget.skipIntroAnimations
-        ? card
-        : card
+        ? row
+        : row
               .animate()
               .fadeIn(duration: 280.ms, curve: Curves.easeOut)
               .slideY(
@@ -512,29 +524,17 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               );
   }
 
-  Widget _buildDateAndImportRow(RecordRoundActive state) {
-    final bool hasImportedScores = state.importedScores != null;
-
-    final Widget row = Row(
-      children: [
-        // Date card (takes remaining space)
-        Expanded(
-          child: RoundDataInputCard(
-            icon: Icons.access_time,
-            subtitle: _formatDateTime(state.selectedDateTime),
-            onTap: _showDateTimeEditor,
-            accent: _dateAccent,
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Import button (icon only)
-        _buildImportScorecardButton(hasImportedScores),
-      ],
+  Widget _buildDateCard(RecordRoundActive state) {
+    final Widget card = RoundDataInputCard(
+      icon: Icons.access_time,
+      subtitle: _formatDateTime(state.selectedDateTime),
+      onTap: _showDateTimeEditor,
+      accent: _dateAccent,
     );
 
     return widget.skipIntroAnimations
-        ? row
-        : row
+        ? card
+        : card
               .animate(delay: 90.ms)
               .fadeIn(duration: 280.ms, curve: Curves.easeOut)
               .slideY(
@@ -545,7 +545,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               );
   }
 
-  Widget _buildImportScorecardButton(bool hasImportedScores) {
+  Widget _buildImportScorecardButton() {
     const Color lightPurple = Color(0xFFE1BEE7); // lighter purple for gradient
 
     return GestureDetector(
@@ -557,26 +557,17 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         decoration: BoxDecoration(
           color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: hasImportedScores
-                ? Colors.green.shade300
-                : lightPurple.withValues(alpha: 0.5),
-          ),
+          border: Border.all(color: lightPurple.withValues(alpha: 0.5)),
           gradient: LinearGradient(
             transform: const GradientRotation(0.785), // ~45 degrees
-            colors: [
-              hasImportedScores
-                  ? Colors.green.shade50
-                  : lightPurple.withValues(alpha: 0.3),
-              Colors.white,
-            ],
+            colors: [lightPurple.withValues(alpha: 0.3), Colors.white],
           ),
         ),
         child: Center(
           child: Icon(
-            hasImportedScores ? Icons.check : Icons.photo_camera,
+            Icons.photo_camera,
             size: 20,
-            color: hasImportedScores ? Colors.green : TurbColors.darkGray,
+            color: TurbColors.darkGray,
           ),
         ),
       ),
@@ -602,99 +593,52 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     // Get imported score (if available)
     final int? score = state.importedScores?[currentHoleIndex];
 
-    // Calculate relative score
-    int? relativeScore;
-    if (score != null && par != null) {
-      relativeScore = score - par;
-    }
-
-    // Semantic colors
-    const Color underPar = Color(0xFF137e66); // green
-    const Color overPar = Color(0xFFFF7A7A); // red
-    const Color atPar = Color(0xFF9E9E9E); // gray
-    final Color naColor = Colors.grey.shade400;
-
-    Color scoreColor = naColor;
-    if (relativeScore != null) {
-      if (relativeScore < 0) {
-        scoreColor = underPar;
-      } else if (relativeScore > 0) {
-        scoreColor = overPar;
-      } else {
-        scoreColor = atPar;
-      }
-    }
-
-    // Format relative score string
-    String relativeScoreStr = '';
-    if (relativeScore != null) {
-      if (relativeScore > 0) {
-        relativeScoreStr = ' (+$relativeScore)';
-      } else if (relativeScore < 0) {
-        relativeScoreStr = ' ($relativeScore)';
-      } else {
-        relativeScoreStr = ' (E)';
-      }
-    }
-
-    // Format display strings with N/A fallbacks
-    final String parStr = par != null ? 'Par $par' : 'Par N/A';
-    final String distanceStr = feet != null ? '$feet ft' : 'N/A ft';
-    final String scoreStr = score != null ? '$score$relativeScoreStr' : 'N/A';
+    // Format display strings
+    final String parStr = par?.toString() ?? '-';
+    final String distanceStr = feet != null ? '$feet ft' : '-';
 
     final Widget card = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Line 1: Hole number
-          Text(
-            'Hole ${currentHoleIndex + 1}',
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          // Line 2: Par • Distance • Score
-          Row(
-            children: [
-              Text(
-                parStr,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: par != null ? Colors.grey.shade700 : naColor,
-                ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            // Par section
+            Expanded(
+              child: _buildInfoSection(
+                label: 'Par',
+                value: parStr,
+                valueColor: par != null
+                    ? Colors.grey.shade800
+                    : Colors.grey.shade400,
               ),
-              _buildInfoSeparator(),
-              Text(
-                distanceStr,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: feet != null ? Colors.grey.shade700 : naColor,
-                ),
+            ),
+            _buildVerticalDivider(),
+            // Score section (editable)
+            Expanded(
+              child: _buildEditableScoreSection(
+                score: score,
+                par: par,
+                holeIndex: currentHoleIndex,
               ),
-              _buildInfoSeparator(),
-              Text(
-                'Score: ',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            ),
+            _buildVerticalDivider(),
+            // Distance section
+            Expanded(
+              child: _buildInfoSection(
+                label: 'Distance',
+                value: distanceStr,
+                valueColor: feet != null
+                    ? Colors.grey.shade800
+                    : Colors.grey.shade400,
               ),
-              Text(
-                scoreStr,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: score != null
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                  color: score != null ? scoreColor : naColor,
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
 
@@ -711,14 +655,125 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               );
   }
 
-  Widget _buildInfoSeparator() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Text(
-        '•',
-        style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-      ),
+  Widget _buildInfoSection({
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildEditableScoreSection({
+    required int? score,
+    required int? par,
+    required int holeIndex,
+  }) {
+    // Calculate relative score for color coding
+    int? relativeScore;
+    if (score != null && par != null) {
+      relativeScore = score - par;
+    }
+    final Color scoreColor = _getScoreColorForRelative(relativeScore);
+    final Color displayColor = score != null ? scoreColor : Colors.grey.shade400;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Score',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          width: 40,
+          height: 24,
+          child: TextField(
+            controller: TextEditingController(text: score?.toString() ?? ''),
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: displayColor,
+            ),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(4),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(4),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(4),
+                borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+              ),
+            ),
+            onChanged: (value) {
+              final int? newScore = int.tryParse(value);
+              _recordRoundCubit.updateHoleScore(holeIndex, newScore);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider() {
+    return Container(
+      width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      color: Colors.grey.shade300,
+    );
+  }
+
+  /// Returns the appropriate color for a score based on relative to par.
+  /// Matches the design from CompactScorecard.
+  Color _getScoreColorForRelative(int? scoreToPar) {
+    if (scoreToPar == null) return Colors.grey.shade400;
+    if (scoreToPar == 0) {
+      return Colors.grey.shade700; // Par - neutral
+    } else if (scoreToPar <= -3) {
+      return const Color(0xFFFFD700); // Albatross or better - gold
+    } else if (scoreToPar == -2) {
+      return const Color(0xFF2196F3); // Eagle - blue
+    } else if (scoreToPar == -1) {
+      return const Color(0xFF137e66); // Birdie - green
+    } else if (scoreToPar == 1) {
+      return const Color(0xFFFF7A7A); // Bogey - light red
+    } else if (scoreToPar == 2) {
+      return const Color(0xFFE53935); // Double bogey - medium red
+    } else {
+      return const Color(0xFFB71C1C); // Triple bogey+ - dark red
+    }
   }
 
   Widget _buildParsingOverlay() {
@@ -765,9 +820,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     if (state is! RecordRoundActive) return const SizedBox();
 
     final int currentHoleIndex = state.currentHoleIndex;
+    final int numHoles = state.numHoles;
     final bool allHolesFilled = _areAllHolesFilled();
     final bool isFirstHole = currentHoleIndex == 0;
-    final bool isLastHole = currentHoleIndex == totalHoles - 1;
+    final bool isLastHole = currentHoleIndex == numHoles - 1;
     final bool showFinalize = isLastHole;
 
     return LayoutBuilder(
@@ -804,9 +860,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 icon: showFinalize ? Icons.check : null,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                disabled:
-                    !(kDebugMode || kReleaseMode) &&
-                    (isLastHole && !allHolesFilled),
+                disabled: showFinalize && !allHolesFilled,
                 onPressed: showFinalize ? _finishAndParse : _nextHole,
               ),
             ),
@@ -900,7 +954,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     if (_recordRoundCubit.state is! RecordRoundActive) return false;
     final RecordRoundActive state =
         _recordRoundCubit.state as RecordRoundActive;
-    for (int i = 0; i < totalHoles; i++) {
+    for (int i = 0; i < state.numHoles; i++) {
       final String? description = state.holeDescriptions[i];
       if (description == null || description.trim().isEmpty) {
         return false;
@@ -926,7 +980,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is! RecordRoundActive) return;
 
-    if (state.currentHoleIndex < totalHoles - 1) {
+    if (state.currentHoleIndex < state.numHoles - 1) {
       // Save any manual edits before navigating
       _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
 
@@ -1154,7 +1208,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is RecordRoundActive) {
       bool anyHolesFilled = false;
-      for (int i = 0; i < totalHoles; i++) {
+      for (int i = 0; i < state.numHoles; i++) {
         final String? description = state.holeDescriptions[i];
         if (description != null && description.trim().isNotEmpty) {
           anyHolesFilled = true;
@@ -1251,6 +1305,65 @@ class _AnimatedPreviousButton extends StatelessWidget {
   }
 }
 
+/// Paints a dashed rounded rectangle border
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({
+    required this.color,
+    required this.borderRadius,
+    this.strokeWidth = 1.0,
+    this.dashWidth = 4.0,
+    this.dashSpace = 3.0,
+  });
+
+  final Color color;
+  final double borderRadius;
+  final double strokeWidth;
+  final double dashWidth;
+  final double dashSpace;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final RRect rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Radius.circular(borderRadius),
+    );
+
+    final Path path = Path()..addRRect(rrect);
+    final Path dashedPath = _createDashedPath(path);
+    canvas.drawPath(dashedPath, paint);
+  }
+
+  Path _createDashedPath(Path source) {
+    final Path dashedPath = Path();
+    for (final PathMetric metric in source.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final double length = dashWidth.clamp(0, metric.length - distance);
+        dashedPath.addPath(
+          metric.extractPath(distance, distance + length),
+          Offset.zero,
+        );
+        distance += dashWidth + dashSpace;
+      }
+    }
+    return dashedPath;
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.borderRadius != borderRadius ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.dashWidth != dashWidth ||
+        oldDelegate.dashSpace != dashSpace;
+  }
+}
+
 /// Mini hole indicator for inline grid - shows completion status and allows navigation
 class _MiniHoleIndicator extends StatelessWidget {
   const _MiniHoleIndicator({
@@ -1270,24 +1383,44 @@ class _MiniHoleIndicator extends StatelessWidget {
   final int? par;
 
   static const Color _holeAccent = Color(0xFF2196F3); // blue
-  static const Color _descriptionComplete = Color(0xFFE8F5E9); // light green
-  static const Color _underPar = Color(0xFF137e66); // green (birdie/eagle)
-  static const Color _overPar = Color(0xFFFF7A7A); // red (bogey+)
-  static const Color _atPar = Color(0xFF9E9E9E); // gray (par)
   static const Color _noScore = Color(0xFFE0E0E0); // light gray (no score)
+  static const Color _defaultBorder = Color(0xFFE0E0E0); // light gray border
+  static const Color _completeDot = Color(0xFF4CAF50); // green dot for complete
+  static const Color _incompleteDot = Color(0xFFEF5350); // red dot for incomplete
 
+  /// Returns the appropriate color for a score based on how far it is from par.
+  /// Matches the design from CompactScorecard.
   Color _getScoreColor() {
     if (score == null || par == null) return _noScore;
-    final int relative = score! - par!;
-    if (relative < 0) return _underPar;
-    if (relative > 0) return _overPar;
-    return _atPar;
+    final int scoreToPar = score! - par!;
+    if (scoreToPar == 0) {
+      return Colors.transparent; // Par - no circle
+    } else if (scoreToPar <= -3) {
+      return const Color(0xFFFFD700); // Albatross or better - gold
+    } else if (scoreToPar == -2) {
+      return const Color(0xFF2196F3); // Eagle - blue
+    } else if (scoreToPar == -1) {
+      return const Color(0xFF137e66); // Birdie - green
+    } else if (scoreToPar == 1) {
+      return const Color(0xFFFF7A7A); // Bogey - light red
+    } else if (scoreToPar == 2) {
+      return const Color(0xFFE53935); // Double bogey - medium red
+    } else {
+      return const Color(0xFFB71C1C); // Triple bogey+ - dark red
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool hasScore = score != null && par != null;
+    final bool isPar = hasScore && score == par;
     final Color circleColor = _getScoreColor();
-    final bool hasScore = score != null;
+
+    // Border color: blue if current, otherwise default gray
+    final Color borderColor = isCurrent ? _holeAccent : _defaultBorder;
+
+    // Status dot color: green if complete, red if incomplete
+    final Color dotColor = hasDescription ? _completeDot : _incompleteDot;
 
     return GestureDetector(
       onTap: () {
@@ -1299,55 +1432,98 @@ class _MiniHoleIndicator extends StatelessWidget {
         height: 44,
         padding: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
-          color: isCurrent
-              ? _holeAccent.withValues(alpha: 0.1)
-              : hasDescription
-              ? _descriptionComplete
-              : Colors.transparent,
-          border: Border.all(
-            color: isCurrent ? _holeAccent : Colors.transparent,
-            width: 1,
-          ),
+          color: isCurrent ? _holeAccent.withValues(alpha: 0.1) : null,
+          border: Border.all(color: borderColor, width: 1),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Text(
-              '$holeNumber',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: isCurrent ? _holeAccent : Colors.grey[700],
+            // Main content
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '$holeNumber',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isCurrent ? _holeAccent : Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  _buildScoreIndicator(hasScore, isPar, circleColor),
+                ],
               ),
             ),
-            const SizedBox(height: 2),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: hasScore ? circleColor.withValues(alpha: 0.15) : null,
-                border: Border.all(
-                  color: circleColor,
-                  width: hasScore ? 1.5 : 1,
+            // Status dot badge (top-right corner, inside the border)
+            Positioned(
+              top: 2,
+              right: 2,
+              child: Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
                 ),
-              ),
-              child: Center(
-                child: hasScore
-                    ? Text(
-                        '$score',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: circleColor,
-                        ),
-                      )
-                    : null,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoreIndicator(bool hasScore, bool isPar, Color circleColor) {
+    // No score imported - show empty circle
+    if (!hasScore) {
+      return Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: _noScore, width: 1.5),
+        ),
+      );
+    }
+
+    // Par score - just show the number, no circle
+    if (isPar) {
+      return SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(
+          child: Text(
+            '$score',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Non-par score - solid color circle with white text
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: circleColor,
+      ),
+      child: Center(
+        child: Text(
+          '$score',
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -1375,52 +1551,71 @@ class _MiniHolesGrid extends StatelessWidget {
         state.selectedCourse?.getLayoutById(state.selectedLayoutId ?? '') ??
         state.selectedCourse?.defaultLayout;
 
+    // Use state.numHoles for variable hole count support
+    final int numHoles = state.numHoles;
+
     // Calculate number of rows needed
-    final int numRows = (totalHoles / _holesPerRow).ceil();
+    final int numRows = (numHoles / _holesPerRow).ceil();
 
-    return Column(
-      children: List.generate(numRows, (rowIndex) {
-        final int startHole = rowIndex * _holesPerRow;
-        final int endHole = (startHole + _holesPerRow).clamp(0, totalHoles);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        children: List.generate(numRows, (rowIndex) {
+          final int startHole = rowIndex * _holesPerRow;
+          final int endHole = (startHole + _holesPerRow).clamp(0, numHoles);
+          final int holesInRow = endHole - startHole;
 
-        return Padding(
-          padding: EdgeInsets.only(bottom: rowIndex < numRows - 1 ? 4 : 0),
-          child: Row(
-            children: List.generate(endHole - startHole, (colIndex) {
-              final int index = startHole + colIndex;
-              final String? description = state.holeDescriptions[index];
-              final bool hasDescription =
-                  description != null && description.trim().isNotEmpty;
-              final bool isCurrent = index == currentHoleIndex;
+          return Padding(
+            padding: EdgeInsets.only(bottom: rowIndex < numRows - 1 ? 4 : 0),
+            child: Row(
+              children: List.generate(_holesPerRow, (colIndex) {
+                // Add spacer for empty slots in partial rows
+                if (colIndex >= holesInRow) {
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: colIndex < _holesPerRow - 1 ? 4 : 0,
+                      ),
+                      child: const SizedBox(height: 44),
+                    ),
+                  );
+                }
 
-              // Get score from imported scorecard (if available)
-              final int? score = state.importedScores?[index];
+                final int index = startHole + colIndex;
+                final String? description = state.holeDescriptions[index];
+                final bool hasDescription =
+                    description != null && description.trim().isNotEmpty;
+                final bool isCurrent = index == currentHoleIndex;
 
-              // Get par from course layout (if available)
-              int? par;
-              if (layout != null && index < layout.holes.length) {
-                par = layout.holes[index].par;
-              }
+                // Get score from imported scorecard (if available)
+                final int? score = state.importedScores?[index];
 
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: colIndex < _holesPerRow - 1 ? 4 : 0,
+                // Get par from course layout (if available)
+                int? par;
+                if (layout != null && index < layout.holes.length) {
+                  par = layout.holes[index].par;
+                }
+
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: colIndex < _holesPerRow - 1 ? 4 : 0,
+                    ),
+                    child: _MiniHoleIndicator(
+                      holeNumber: index + 1,
+                      hasDescription: hasDescription,
+                      isCurrent: isCurrent,
+                      score: score,
+                      par: par,
+                      onTap: () => onHoleTap(index),
+                    ),
                   ),
-                  child: _MiniHoleIndicator(
-                    holeNumber: index + 1,
-                    hasDescription: hasDescription,
-                    isCurrent: isCurrent,
-                    score: score,
-                    par: par,
-                    onTap: () => onHoleTap(index),
-                  ),
-                ),
-              );
-            }),
-          ),
-        );
-      }),
+                );
+              }),
+            ),
+          );
+        }),
+      ),
     );
   }
 }

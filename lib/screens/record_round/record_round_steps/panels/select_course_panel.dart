@@ -5,15 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
 import 'package:turbo_disc_golf/screens/create_course/create_course_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
-import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
+import 'package:turbo_disc_golf/services/courses/courses_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class SelectCoursePanel extends StatefulWidget {
@@ -32,27 +30,14 @@ class SelectCoursePanel extends StatefulWidget {
 
 class _SelectCoursePanelState extends State<SelectCoursePanel> {
   final _controller = TextEditingController();
-  late final CourseSearchService _searchService;
 
   Timer? _debounce;
-  bool _isLoading = false;
-
-  List<CourseSearchHit> _meiliResults = [];
   List<Course> _localResults = [];
 
   @override
   void initState() {
     super.initState();
-
-    _searchService = locator.get<CourseSearchService>();
-
-    // ⭐ Load recent courses immediately
-    if (kUseMeiliCourseSearch) {
-      _loadRecentCourses();
-    } else {
-      // Load all local courses initially
-      _loadAllCourses();
-    }
+    _loadAllCourses();
   }
 
   @override
@@ -63,22 +48,11 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   }
 
   // -------------------------
-  // Initial recent load
-  // -------------------------
-  Future<void> _loadRecentCourses() async {
-    final recent = await _searchService.getRecentCourses();
-    setState(() {
-      _meiliResults = recent;
-    });
-  }
-
-  // -------------------------
-  // Load all local courses
+  // Load all test courses
   // -------------------------
   void _loadAllCourses() {
-    final allCourses = BlocProvider.of<RecordRoundCubit>(context).courses;
     setState(() {
-      _localResults = allCourses;
+      _localResults = kTestCourses;
     });
   }
 
@@ -88,42 +62,22 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   void _onSearchChanged(String value) {
     _debounce?.cancel();
 
-    _debounce = Timer(const Duration(milliseconds: 200), () async {
+    _debounce = Timer(const Duration(milliseconds: 200), () {
       if (!mounted) return;
 
-      if (kUseMeiliCourseSearch) {
-        // Empty or short input → recents
-        if (value.trim().length < 2) {
-          await _loadRecentCourses();
-          return;
+      setState(() {
+        if (value.trim().isEmpty) {
+          // Empty search → show all test courses
+          _localResults = kTestCourses;
+        } else {
+          // Filter courses based on search text
+          _localResults = kTestCourses
+              .where(
+                (c) => c.name.toLowerCase().contains(value.toLowerCase()),
+              )
+              .toList();
         }
-
-        setState(() => _isLoading = true);
-
-        final results = await _searchService.searchCourses(value);
-
-        if (!mounted) return;
-        setState(() {
-          _meiliResults = results;
-          _isLoading = false;
-        });
-      } else {
-        final allCourses = BlocProvider.of<RecordRoundCubit>(context).courses;
-
-        setState(() {
-          if (value.trim().isEmpty) {
-            // Empty search → show all courses
-            _localResults = allCourses;
-          } else {
-            // Filter courses based on search text
-            _localResults = allCourses
-                .where(
-                  (c) => c.name.toLowerCase().contains(value.toLowerCase()),
-                )
-                .toList();
-          }
-        });
-      }
+      });
     });
   }
 
@@ -150,46 +104,11 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
           ),
         ),
 
-        if (_isLoading) const LinearProgressIndicator(),
-
-        Expanded(
-          child: kUseMeiliCourseSearch
-              ? _buildMeiliResults()
-              : _buildLocalResults(),
-        ),
+        Expanded(child: _buildLocalResults()),
 
         // Create course button
         _buildCreateCourseButton(context),
       ],
-    );
-  }
-
-  // -------------------------
-  // Meilisearch + recents
-  // -------------------------
-  Widget _buildMeiliResults() {
-    if (_meiliResults.isEmpty) {
-      return const Center(child: Text('No recent courses'));
-    }
-
-    return ListView.separated(
-      itemCount: _meiliResults.length,
-      separatorBuilder: (context, index) => Divider(
-        height: 1,
-        thickness: 1,
-        color: TurbColors.gray.shade50,
-        indent: 16,
-        endIndent: 16,
-      ),
-      physics: const ClampingScrollPhysics(),
-      itemBuilder: (context, index) {
-        final courseSearchHit = _meiliResults[index];
-        return _CourseListItem(
-          course: courseSearchHit,
-          onLayoutSelected: (layout) =>
-              _onLayoutSelected(courseSearchHit, layout),
-        );
-      },
     );
   }
 
@@ -270,28 +189,20 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     );
   }
 
-  Future<void> _onLayoutSelected(
+  void _onLayoutSelected(
     CourseSearchHit courseSearchHit,
     CourseLayoutSummary layout,
-  ) async {
-    // Fetch full Course from Firestore using course.id
-    locator.get<CourseSearchService>().markCourseAsUsed(courseSearchHit);
+  ) {
+    // Find the full course from kTestCourses
+    final Course? course = kTestCourses
+        .cast<Course?>()
+        .firstWhere((c) => c?.id == courseSearchHit.id, orElse: () => null);
 
-    FBCourseDataLoader.getCourseById(courseSearchHit.id).then((Course? course) {
-      if (!mounted) return;
-      if (course == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to load course'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } else {
-        BlocProvider.of<RecordRoundCubit>(
-          context,
-        ).setSelectedCourse(course, layoutId: layout.id);
-      }
-    });
+    if (course != null) {
+      BlocProvider.of<RecordRoundCubit>(
+        context,
+      ).setSelectedCourse(course, layoutId: layout.id);
+    }
 
     Navigator.pop(context);
   }

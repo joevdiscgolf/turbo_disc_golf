@@ -276,6 +276,25 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     emit((state as RecordRoundActive).copyWith(importedScores: scores));
   }
 
+  /// Update a single hole's score (for manual correction).
+  void updateHoleScore(int holeIndex, int? score) {
+    if (state is! RecordRoundActive) return;
+    final RecordRoundActive activeState = state as RecordRoundActive;
+
+    // Create a new map with the updated score
+    final Map<int, int> updatedScores = Map<int, int>.from(
+      activeState.importedScores ?? {},
+    );
+
+    if (score != null) {
+      updatedScores[holeIndex] = score;
+    } else {
+      updatedScores.remove(holeIndex);
+    }
+
+    emit(activeState.copyWith(importedScores: updatedScores));
+  }
+
   /// Set full imported hole metadata from a parsed scorecard image.
   /// Stores both scores and full metadata (par, distance, etc.)
   void setImportedHoleMetadata(List<HoleMetadata> metadata) {
