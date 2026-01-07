@@ -62,7 +62,7 @@ class GeminiService {
       // Use full flash model if requested, otherwise use lite model
       if (useFullModel) {
         final String modelToUse = useGeminiFallbackModel
-            ? onePointFiveFlashLatestModel
+            ? twoPointZeroFlashExpModel
             : twoPointFiveFlashModel;
         final fullModel = GenerativeModel(
           model: modelToUse,

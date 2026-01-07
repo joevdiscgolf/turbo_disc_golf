@@ -26,7 +26,7 @@ const bool useVerdictImages = true;
 /// The URL encoded in the share card QR code (placeholder for now).
 const String shareCardQrUrl = 'https://scoresensei.app';
 
-/// When true, uses gemini-1.5-flash-latest instead of gemini-2.5-flash for story generation.
+/// When true, uses gemini-2.0-flash-exp instead of gemini-2.5-flash for story generation.
 /// Use this when hitting 2.5-flash quota limits.
 const bool useGeminiFallbackModel = false;
 
@@ -44,5 +44,9 @@ const bool showJudgmentPreparingAnimation = false;
 /// When true, fire emojis spin as they fall during roast celebration.
 /// When false, they fall straight down without rotation (for performance testing).
 const bool enableFireEmojiSpin = false;
+
+/// When true, shows the "How Close to Elite?" card in the structured story renderer.
+/// This card shows potential score if blow-ups were just bogeys.
+const bool showElitePotentialCard = true;
 
 const List<String> adminUids = ['9abVDwf3ZVM8unEzqMcWk95in2F3'];
