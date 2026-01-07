@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/courses/courses_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
@@ -266,6 +267,40 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
 
   void emitInactive() {
     emit(const RecordRoundInactive());
+  }
+
+  /// Set imported scores from a parsed scorecard image.
+  /// Converts list of hole metadata to a map of holeIndex to score.
+  void setImportedScores(Map<int, int> scores) {
+    if (state is! RecordRoundActive) return;
+    emit((state as RecordRoundActive).copyWith(importedScores: scores));
+  }
+
+  /// Set full imported hole metadata from a parsed scorecard image.
+  /// Stores both scores and full metadata (par, distance, etc.)
+  void setImportedHoleMetadata(List<HoleMetadata> metadata) {
+    if (state is! RecordRoundActive) return;
+
+    // Convert to Map<int, int> for scores (existing behavior)
+    final Map<int, int> scores = {};
+    final Map<int, HoleMetadata> holeMetadata = {};
+
+    for (final HoleMetadata hole in metadata) {
+      final int index = hole.holeNumber - 1; // 0-based
+      scores[index] = hole.score;
+      holeMetadata[index] = hole;
+    }
+
+    emit((state as RecordRoundActive).copyWith(
+      importedScores: scores,
+      importedHoleMetadata: holeMetadata,
+    ));
+  }
+
+  /// Clear imported scores
+  void clearImportedScores() {
+    if (state is! RecordRoundActive) return;
+    emit((state as RecordRoundActive).copyWith(clearImportedScores: true));
   }
 
   @override

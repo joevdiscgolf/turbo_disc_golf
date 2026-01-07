@@ -1,22 +1,30 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
+import 'package:turbo_disc_golf/components/panels/select_image_source_panel.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_steps/panels/select_course_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
+import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
-import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
@@ -46,26 +54,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   // State management
   bool _showingReviewGrid = false;
+  bool _isParsingScorecard = false;
 
   // Course/Date selection (Step 1)
   DateTime _selectedDateTime = DateTime.now();
 
-  // Test constants
-  int _selectedTestIndex = 0;
-  final List<String> _testRoundDescriptionNames = DescriptionConstants
-      .fullRoundConstants
-      .keys
-      .toList();
-  final List<String> _testRoundConstants = DescriptionConstants
-      .fullRoundConstants
-      .values
-      .toList();
-
-  String get _selectedTranscript => _testRoundConstants[_selectedTestIndex];
-
   // Accent colors
   static const Color _descAccent = Color(0xFFB39DDB); // light purple
-  static const Color _createAccent = Color(0xFF9D4EDD); // purple-ish
   static const Color _courseAccent = Color(0xFF2196F3); // blue
   static const Color _dateAccent = Color(0xFF4CAF50); // green
 
@@ -209,26 +204,31 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           return false;
         },
         builder: (context, recordRoundState) {
-          return GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).viewPadding.top + 120,
-              ),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFF5EEF8), Colors.white],
+          return Stack(
+            children: [
+              GestureDetector(
+                onTap: () => FocusScope.of(context).unfocus(),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).viewPadding.top + 120,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFF5EEF8), Colors.white],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: _mainBody(recordRoundState),
                 ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
               ),
-              child: _mainBody(recordRoundState),
-            ),
+              if (_isParsingScorecard) _buildParsingOverlay(),
+            ],
           );
         },
       ),
@@ -299,6 +299,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(recordRoundState),
+            const SizedBox(height: 8),
+            _buildHoleInfoCard(recordRoundState),
             const SizedBox(height: 12),
             Expanded(child: _buildVoiceCard(isListening)),
             const SizedBox(height: 20),
@@ -310,7 +312,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            if (kDebugMode || kReleaseMode) _buildDebugButtons(),
+            // if (kDebugMode || kReleaseMode) _buildDebugButtons(),
             _buildNavigationButtons(),
           ],
         ),
@@ -327,8 +329,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         // Course card (blue tint)
         _buildCourseCard(state),
         const SizedBox(height: 8),
-        // Date card (green tint)
-        _buildDateCard(state),
+        // Date card (2/3) + Import button (1/3)
+        _buildDateAndImportRow(state),
         const SizedBox(height: 8),
         // Hole Progress Card
         GestureDetector(
@@ -510,17 +512,29 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               );
   }
 
-  Widget _buildDateCard(RecordRoundActive state) {
-    final Widget card = RoundDataInputCard(
-      icon: Icons.access_time,
-      subtitle: _formatDateTime(state.selectedDateTime),
-      onTap: _showDateTimeEditor,
-      accent: _dateAccent,
+  Widget _buildDateAndImportRow(RecordRoundActive state) {
+    final bool hasImportedScores = state.importedScores != null;
+
+    final Widget row = Row(
+      children: [
+        // Date card (takes remaining space)
+        Expanded(
+          child: RoundDataInputCard(
+            icon: Icons.access_time,
+            subtitle: _formatDateTime(state.selectedDateTime),
+            onTap: _showDateTimeEditor,
+            accent: _dateAccent,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Import button (icon only)
+        _buildImportScorecardButton(hasImportedScores),
+      ],
     );
 
     return widget.skipIntroAnimations
-        ? card
-        : card
+        ? row
+        : row
               .animate(delay: 90.ms)
               .fadeIn(duration: 280.ms, curve: Curves.easeOut)
               .slideY(
@@ -529,6 +543,221 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 duration: 280.ms,
                 curve: Curves.easeOut,
               );
+  }
+
+  Widget _buildImportScorecardButton(bool hasImportedScores) {
+    const Color lightPurple = Color(0xFFE1BEE7); // lighter purple for gradient
+
+    return GestureDetector(
+      onTap: _handleImportScorecard,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasImportedScores
+                ? Colors.green.shade300
+                : lightPurple.withValues(alpha: 0.5),
+          ),
+          gradient: LinearGradient(
+            transform: const GradientRotation(0.785), // ~45 degrees
+            colors: [
+              hasImportedScores
+                  ? Colors.green.shade50
+                  : lightPurple.withValues(alpha: 0.3),
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            hasImportedScores ? Icons.check : Icons.photo_camera,
+            size: 20,
+            color: hasImportedScores ? Colors.green : TurbColors.darkGray,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHoleInfoCard(RecordRoundActive state) {
+    final int currentHoleIndex = state.currentHoleIndex;
+
+    // Get course layout for par and distance
+    final CourseLayout? layout =
+        state.selectedCourse?.getLayoutById(state.selectedLayoutId ?? '') ??
+        state.selectedCourse?.defaultLayout;
+
+    // Get par and distance from course layout (authoritative source)
+    int? par;
+    int? feet;
+    if (layout != null && currentHoleIndex < layout.holes.length) {
+      par = layout.holes[currentHoleIndex].par;
+      feet = layout.holes[currentHoleIndex].feet;
+    }
+
+    // Get imported score (if available)
+    final int? score = state.importedScores?[currentHoleIndex];
+
+    // Calculate relative score
+    int? relativeScore;
+    if (score != null && par != null) {
+      relativeScore = score - par;
+    }
+
+    // Semantic colors
+    const Color underPar = Color(0xFF137e66); // green
+    const Color overPar = Color(0xFFFF7A7A); // red
+    const Color atPar = Color(0xFF9E9E9E); // gray
+    final Color naColor = Colors.grey.shade400;
+
+    Color scoreColor = naColor;
+    if (relativeScore != null) {
+      if (relativeScore < 0) {
+        scoreColor = underPar;
+      } else if (relativeScore > 0) {
+        scoreColor = overPar;
+      } else {
+        scoreColor = atPar;
+      }
+    }
+
+    // Format relative score string
+    String relativeScoreStr = '';
+    if (relativeScore != null) {
+      if (relativeScore > 0) {
+        relativeScoreStr = ' (+$relativeScore)';
+      } else if (relativeScore < 0) {
+        relativeScoreStr = ' ($relativeScore)';
+      } else {
+        relativeScoreStr = ' (E)';
+      }
+    }
+
+    // Format display strings with N/A fallbacks
+    final String parStr = par != null ? 'Par $par' : 'Par N/A';
+    final String distanceStr = feet != null ? '$feet ft' : 'N/A ft';
+    final String scoreStr = score != null ? '$score$relativeScoreStr' : 'N/A';
+
+    final Widget card = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Line 1: Hole number
+          Text(
+            'Hole ${currentHoleIndex + 1}',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          // Line 2: Par • Distance • Score
+          Row(
+            children: [
+              Text(
+                parStr,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: par != null ? Colors.grey.shade700 : naColor,
+                ),
+              ),
+              _buildInfoSeparator(),
+              Text(
+                distanceStr,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: feet != null ? Colors.grey.shade700 : naColor,
+                ),
+              ),
+              _buildInfoSeparator(),
+              Text(
+                'Score: ',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+              Text(
+                scoreStr,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: score != null
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: score != null ? scoreColor : naColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return widget.skipIntroAnimations
+        ? card
+        : card
+              .animate(delay: 120.ms)
+              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+              .slideY(
+                begin: 0.08,
+                end: 0.0,
+                duration: 280.ms,
+                curve: Curves.easeOut,
+              );
+  }
+
+  Widget _buildInfoSeparator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text(
+        '•',
+        style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildParsingOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.5),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CupertinoActivityIndicator(radius: 16),
+                const SizedBox(height: 16),
+                Text(
+                  'Parsing scorecard...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildNavigationButtons() {
@@ -584,41 +813,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildDebugButtons() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          PrimaryButton(
-            label: 'Change',
-            width: 100,
-            height: 56,
-            backgroundColor: _createAccent.withValues(alpha: 0.18),
-            labelColor: _createAccent,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            onPressed: _showTestConstantSelector,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: PrimaryButton(
-              label: 'Parse',
-              width: double.infinity,
-              height: 56,
-              backgroundColor: _createAccent,
-              labelColor: Colors.white,
-              icon: Icons.science,
-              iconColor: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              onPressed: _handleTestParse,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -747,6 +941,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     if (showInlineMiniHoleGrid) {
       return;
     }
+    HapticFeedback.lightImpact();
     setState(() => _showingReviewGrid = true);
   }
 
@@ -779,79 +974,132 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _recordRoundCubit.toggleListening();
   }
 
-  void _showTestConstantSelector() {
-    FocusScope.of(context).unfocus();
-    displayBottomSheet(
-      context,
-      SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Select Test Constant',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ...List.generate(
-                _testRoundDescriptionNames.length,
-                (index) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    selected: _selectedTestIndex == index,
-                    selectedTileColor: _createAccent.withValues(alpha: 0.08),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    title: Text(
-                      _testRoundDescriptionNames[index],
-                      style: TextStyle(
-                        fontWeight: _selectedTestIndex == index
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: _selectedTestIndex == index
-                            ? _createAccent
-                            : null,
-                      ),
-                    ),
-                    trailing: _selectedTestIndex == index
-                        ? const Icon(Icons.check_circle, color: _createAccent)
-                        : null,
-                    onTap: () {
-                      setState(() => _selectedTestIndex = index);
-                      Navigator.pop(context);
-                      _focusNode.unfocus();
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _handleClearText() {
     _textEditingController.clear();
     _recordRoundCubit.clearCurrentHoleText();
   }
 
+  Future<void> _handleImportScorecard() async {
+    HapticFeedback.lightImpact();
+    String imagePath;
+
+    // In debug mode with test constant enabled, use test scorecard directly
+    if (kDebugMode && useTestScorecardForImport) {
+      debugPrint('Using test scorecard: $testScorecardPath');
+      // Copy asset to temp file since parseScorecard needs a filesystem path
+      final ByteData data = await rootBundle.load(testScorecardPath);
+      final Directory tempDir = await getTemporaryDirectory();
+      final File tempFile = File('${tempDir.path}/test_scorecard.jpeg');
+      await tempFile.writeAsBytes(data.buffer.asUint8List());
+      imagePath = tempFile.path;
+      debugPrint('Temp file created at: $imagePath');
+    } else {
+      // Show image source selection panel
+      final ImageSource? source = await SelectImageSourcePanel.show(context);
+      if (source == null || !mounted) return;
+
+      // Pick image
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1800,
+        maxHeight: 1800,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
+      if (image == null || !mounted) return;
+      imagePath = image.path;
+    }
+
+    // Show loading overlay
+    setState(() => _isParsingScorecard = true);
+
+    try {
+      List<HoleMetadata> holeMetadata;
+
+      // Use mock data if enabled (skips AI parsing entirely)
+      if (kDebugMode && useMockScorecardData) {
+        debugPrint('Using mock scorecard data (skipping AI parsing)');
+        holeMetadata = testScorecardData.map((Map<String, int> data) {
+          return HoleMetadata(
+            holeNumber: data['holeNumber']!,
+            score: data['score']!,
+            par: data['par']!,
+            distanceFeet: data['distanceFeet'],
+          );
+        }).toList();
+      } else {
+        // Parse the scorecard image using AI
+        holeMetadata = await locator
+            .get<AiParsingService>()
+            .parseScorecard(imagePath: imagePath);
+      }
+
+      if (!mounted) return;
+
+      // Hide loading overlay
+      setState(() => _isParsingScorecard = false);
+
+      // Debug print without truncation for test data extraction
+      if (kDebugMode && useTestScorecardForImport && !useMockScorecardData) {
+        debugPrint('=== PARSED SCORECARD DATA (copy for testing) ===');
+        debugPrint('Total holes parsed: ${holeMetadata.length}');
+        for (final HoleMetadata hole in holeMetadata) {
+          // Using print instead of debugPrint to avoid truncation
+          // ignore: avoid_print
+          print(
+            'Hole ${hole.holeNumber}: score=${hole.score}, '
+            'par=${hole.par}, distanceFeet=${hole.distanceFeet}',
+          );
+        }
+        debugPrint('=== RAW DATA FOR CONSTANT ===');
+        final StringBuffer buffer = StringBuffer();
+        buffer.writeln('const List<Map<String, int>> testScorecardData = [');
+        for (final HoleMetadata hole in holeMetadata) {
+          buffer.writeln(
+            "  {'holeNumber': ${hole.holeNumber}, 'score': ${hole.score}, "
+            "'par': ${hole.par}, 'distanceFeet': ${hole.distanceFeet ?? 0}},",
+          );
+        }
+        buffer.writeln('];');
+        // ignore: avoid_print
+        print(buffer.toString());
+        debugPrint('=== END PARSED DATA ===');
+      }
+
+      if (holeMetadata.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not parse scorecard. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Update state with full metadata (scores, par, distance)
+      _recordRoundCubit.setImportedHoleMetadata(holeMetadata);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Imported ${holeMetadata.length} hole scores'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isParsingScorecard = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error parsing scorecard: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _handleClearAll() async {
+    HapticFeedback.lightImpact();
     // Unfocus keyboard
     FocusScope.of(context).unfocus();
 
@@ -900,42 +1148,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     );
   }
 
-  void _handleTestParse() {
-    final bool useCached = false;
-    debugPrint('Test Parse Constant: Using cached round: $useCached');
-
-    // Create a test Course object
-    final String courseId = testCourseName.toLowerCase().replaceAll(' ', '-');
-    final CourseLayout testLayout = CourseLayout(
-      id: 'default',
-      name: 'Default Layout',
-      isDefault: true,
-      holes: List.generate(
-        18,
-        (int i) => CourseHole(holeNumber: i + 1, par: 3, feet: 300),
-      ),
-    );
-    final Course testCourse = Course(
-      id: courseId,
-      name: testCourseName,
-      layouts: [testLayout],
-    );
-
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        CupertinoPageRoute(
-          builder: (context) => RoundProcessingLoadingScreen(
-            transcript: _selectedTranscript,
-            selectedCourse: testCourse,
-            useSharedPreferences: useCached,
-          ),
-        ),
-      );
-    }
-  }
-
   void _handleClose() {
+    HapticFeedback.lightImpact();
     // Check if any holes have descriptions - if not, reset to inactive state
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is RecordRoundActive) {
@@ -1041,30 +1255,54 @@ class _AnimatedPreviousButton extends StatelessWidget {
 class _MiniHoleIndicator extends StatelessWidget {
   const _MiniHoleIndicator({
     required this.holeNumber,
-    required this.isComplete,
+    required this.hasDescription,
     required this.isCurrent,
     required this.onTap,
+    this.score,
+    this.par,
   });
 
   final int holeNumber;
-  final bool isComplete;
+  final bool hasDescription;
   final bool isCurrent;
   final VoidCallback onTap;
+  final int? score;
+  final int? par;
 
   static const Color _holeAccent = Color(0xFF2196F3); // blue
+  static const Color _descriptionComplete = Color(0xFFE8F5E9); // light green
+  static const Color _underPar = Color(0xFF137e66); // green (birdie/eagle)
+  static const Color _overPar = Color(0xFFFF7A7A); // red (bogey+)
+  static const Color _atPar = Color(0xFF9E9E9E); // gray (par)
+  static const Color _noScore = Color(0xFFE0E0E0); // light gray (no score)
+
+  Color _getScoreColor() {
+    if (score == null || par == null) return _noScore;
+    final int relative = score! - par!;
+    if (relative < 0) return _underPar;
+    if (relative > 0) return _overPar;
+    return _atPar;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final Color circleColor = _getScoreColor();
+    final bool hasScore = score != null;
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 32,
-        height: 40,
+        height: 44,
         padding: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
           color: isCurrent
               ? _holeAccent.withValues(alpha: 0.1)
+              : hasDescription
+              ? _descriptionComplete
               : Colors.transparent,
           border: Border.all(
             color: isCurrent ? _holeAccent : Colors.transparent,
@@ -1074,6 +1312,7 @@ class _MiniHoleIndicator extends StatelessWidget {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               '$holeNumber',
@@ -1084,10 +1323,29 @@ class _MiniHoleIndicator extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Icon(
-              isComplete ? Icons.check_circle : Icons.circle_outlined,
-              size: 14,
-              color: isComplete ? Colors.green : Colors.grey[400],
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: hasScore ? circleColor.withValues(alpha: 0.15) : null,
+                border: Border.all(
+                  color: circleColor,
+                  width: hasScore ? 1.5 : 1,
+                ),
+              ),
+              child: Center(
+                child: hasScore
+                    ? Text(
+                        '$score',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: circleColor,
+                        ),
+                      )
+                    : null,
+              ),
             ),
           ],
         ),
@@ -1096,7 +1354,7 @@ class _MiniHoleIndicator extends StatelessWidget {
   }
 }
 
-/// Mini holes grid for inline display - 9 holes per row
+/// Mini holes grid for inline display - 9 holes per row (2 rows for 18 holes)
 class _MiniHolesGrid extends StatelessWidget {
   const _MiniHolesGrid({
     required this.state,
@@ -1108,22 +1366,59 @@ class _MiniHolesGrid extends StatelessWidget {
   final int currentHoleIndex;
   final Function(int) onHoleTap;
 
+  static const int _holesPerRow = 9;
+
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: List.generate(totalHoles, (index) {
-        final String? description = state.holeDescriptions[index];
-        final bool isComplete =
-            description != null && description.trim().isNotEmpty;
-        final bool isCurrent = index == currentHoleIndex;
+    // Get the layout for par values
+    final CourseLayout? layout =
+        state.selectedCourse?.getLayoutById(state.selectedLayoutId ?? '') ??
+        state.selectedCourse?.defaultLayout;
 
-        return _MiniHoleIndicator(
-          holeNumber: index + 1,
-          isComplete: isComplete,
-          isCurrent: isCurrent,
-          onTap: () => onHoleTap(index),
+    // Calculate number of rows needed
+    final int numRows = (totalHoles / _holesPerRow).ceil();
+
+    return Column(
+      children: List.generate(numRows, (rowIndex) {
+        final int startHole = rowIndex * _holesPerRow;
+        final int endHole = (startHole + _holesPerRow).clamp(0, totalHoles);
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: rowIndex < numRows - 1 ? 4 : 0),
+          child: Row(
+            children: List.generate(endHole - startHole, (colIndex) {
+              final int index = startHole + colIndex;
+              final String? description = state.holeDescriptions[index];
+              final bool hasDescription =
+                  description != null && description.trim().isNotEmpty;
+              final bool isCurrent = index == currentHoleIndex;
+
+              // Get score from imported scorecard (if available)
+              final int? score = state.importedScores?[index];
+
+              // Get par from course layout (if available)
+              int? par;
+              if (layout != null && index < layout.holes.length) {
+                par = layout.holes[index].par;
+              }
+
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: colIndex < _holesPerRow - 1 ? 4 : 0,
+                  ),
+                  child: _MiniHoleIndicator(
+                    holeNumber: index + 1,
+                    hasDescription: hasDescription,
+                    isCurrent: isCurrent,
+                    score: score,
+                    par: par,
+                    onTap: () => onHoleTap(index),
+                  ),
+                ),
+              );
+            }),
+          ),
         );
       }),
     );

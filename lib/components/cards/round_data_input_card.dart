@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Info card with subtle gradient tint and shared icon bubble.
@@ -24,7 +25,12 @@ class RoundDataInputCard extends StatelessWidget {
     final Color baseColor = Colors.grey.shade50;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap != null
+          ? () {
+              HapticFeedback.lightImpact();
+              onTap!();
+            }
+          : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
         height: 48,

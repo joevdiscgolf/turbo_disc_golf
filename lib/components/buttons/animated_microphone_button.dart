@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Animated microphone button with gradient and shadow effects.
 class AnimatedMicrophoneButton extends StatelessWidget {
@@ -18,7 +19,10 @@ class AnimatedMicrophoneButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         width: 70,
         height: 70,

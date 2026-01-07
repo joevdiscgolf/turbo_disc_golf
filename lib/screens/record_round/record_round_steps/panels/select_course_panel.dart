@@ -434,7 +434,10 @@ class _LayoutListItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
