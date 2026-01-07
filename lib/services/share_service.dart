@@ -21,7 +21,8 @@ class ShareService {
   }) async {
     try {
       final RenderRepaintBoundary? boundary =
-          repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+          repaintKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
 
       if (boundary == null) {
         return null;
@@ -57,14 +58,14 @@ class ShareService {
       final File file = File(filePath);
       await file.writeAsBytes(imageBytes);
 
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text: caption,
-      );
+      // Note: We intentionally don't pass text alongside the image because
+      // iOS shows "Plain Text and 1 Document" instead of recognizing it as a photo.
+      // The share card already contains all visual information.
+      await Share.shareXFiles([XFile(filePath, mimeType: 'image/png')]);
       return true;
     } catch (e) {
       // Platform channel errors can occur if native bindings aren't ready
-      // Fall back to text-only sharing
+      // Fall back to text-only sharinggit
       if (caption != null) {
         await Share.share(caption);
         return true;
@@ -97,10 +98,6 @@ class ShareService {
       return false;
     }
 
-    return shareImage(
-      imageBytes,
-      caption: caption,
-      filename: filename,
-    );
+    return shareImage(imageBytes, caption: caption, filename: filename);
   }
 }
