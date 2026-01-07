@@ -30,4 +30,19 @@ const String shareCardQrUrl = 'https://scoresensei.app';
 /// Use this when hitting 2.5-flash quota limits.
 const bool useGeminiFallbackModel = false;
 
+/// When true, always shows the story loading animation for testing/refinement.
+const bool showStoryLoadingAnimation = false;
+
+/// When true, uses the new bottom action bar layout for judgment share.
+/// When false, uses the original inline share button layout.
+const bool useBottomShareActionBar = true;
+
+/// When true, shows the judgment preparing animation while waiting for API.
+/// When false, skips directly to the spinning state.
+const bool showJudgmentPreparingAnimation = false;
+
+/// When true, fire emojis spin as they fall during roast celebration.
+/// When false, they fall straight down without rotation (for performance testing).
+const bool enableFireEmojiSpin = false;
+
 const List<String> adminUids = ['9abVDwf3ZVM8unEzqMcWk95in2F3'];

@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
+import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_confetti_overlay.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_preparing_animation.dart';
@@ -21,6 +22,7 @@ import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/judgment_prompt_service.dart';
@@ -29,6 +31,7 @@ import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 /// State machine for the judgment animation flow.
 enum JudgmentState {
@@ -92,7 +95,16 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     // Extract judgment type from existing content if present
     if (_currentRound.aiJudgment != null) {
       _isGlaze = _extractJudgmentType(_currentRound.aiJudgment!.content);
-      _currentState = JudgmentState.complete;
+
+      // If testing flag is on, show preparing animation first
+      if (showJudgmentPreparingAnimation) {
+        _currentState = JudgmentState.preparing;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showPreparingAnimationForTesting();
+        });
+      } else {
+        _currentState = JudgmentState.complete;
+      }
     }
 
     // Auto-start if no judgment exists
@@ -113,6 +125,17 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   bool _shouldGenerateJudgment() {
     return _currentRound.aiJudgment == null ||
         _currentRound.isAIJudgmentOutdated;
+  }
+
+  /// Shows preparing animation for testing when judgment already exists.
+  Future<void> _showPreparingAnimationForTesting() async {
+    // Show preparing animation for 3 seconds for testing
+    await Future.delayed(const Duration(milliseconds: 3000));
+    if (!mounted) return;
+
+    setState(() {
+      _currentState = JudgmentState.complete;
+    });
   }
 
   bool _extractJudgmentType(String content) {
@@ -190,9 +213,15 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     if (!mounted) return;
 
     // Phase 2: Preparing - wait for API to complete
-    setState(() {
-      _currentState = JudgmentState.preparing;
-    });
+    if (showJudgmentPreparingAnimation) {
+      setState(() {
+        _currentState = JudgmentState.preparing;
+      });
+
+      // Show preparing animation for at least 2 seconds for testing visibility
+      await Future.delayed(const Duration(milliseconds: 2000));
+      if (!mounted) return;
+    }
 
     await _waitForAPIReady();
     if (!mounted) return;
@@ -230,10 +259,17 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     setState(() {
       _currentState = JudgmentState.celebrating;
     });
-    _confettiController.play();
+    // Only play confetti for glaze - fire emojis are triggered directly via fireIsPlaying prop
+    if (_isGlaze) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _confettiController.play();
+        }
+      });
+    }
 
-    // Hold on "YOU GOT ROASTED/GLAZED" for 3.5 seconds to let confetti land
-    await Future.delayed(const Duration(milliseconds: 3500));
+    // Wait for fire to stop entering from top (~3730ms) + 500ms buffer
+    await Future.delayed(const Duration(milliseconds: 4200));
     if (!mounted) return;
 
     // Phase 5: Complete - transition with blur effect
@@ -380,6 +416,8 @@ highlightStats:
             JudgmentConfettiOverlay(
               isGlaze: _isGlaze,
               controller: _confettiController,
+              fireIsPlaying:
+                  !_isGlaze && _currentState == JudgmentState.celebrating,
             ),
         ],
       ),
@@ -513,60 +551,132 @@ highlightStats:
   }
 
   Widget _buildShareButton(String headline) {
-    // Premium gradient colors for roast/glaze
-    final List<Color> gradientColors = _isGlaze
-        ? [const Color(0xFFFFD700), const Color(0xFFFFA500)] // Gold → Amber
-        : [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)]; // Coral → Salmon
+    return PrimaryButton(
+      width: double.infinity,
+      height: 56,
+      label: _isGlaze ? 'Share my glaze' : 'Share my roast',
+      icon: Icons.ios_share,
+      gradientBackground: const [Color(0xFFFF9500), Color(0xFFFFB800)],
+      onPressed: () => _shareJudgmentCard(headline),
+    );
+  }
 
-    return GestureDetector(
-      onTap: () => _shareJudgmentCard(headline),
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: gradientColors,
+  Widget _buildShareActionBar(String headline) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        12 + MediaQuery.of(context).viewPadding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: gradientColors[0].withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Preview button
+          Expanded(
+            child: PrimaryButton(
+              width: double.infinity,
+              height: 56,
+              label: 'Preview',
+              // icon: Icons.visibility_outlined,
+              backgroundColor: Colors.white,
+              labelColor: Colors.grey[800]!,
+              iconColor: Colors.grey[800]!,
+              borderColor: TurbColors.gray[100],
+              onPressed: () => _showShareCardPreview(headline),
             ),
-            BoxShadow(
-              color: gradientColors[1].withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.ios_share, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Share my judgment',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          // Share button (primary gradient)
+          Expanded(flex: 2, child: _buildShareButton(headline)),
+        ],
       ),
     );
+  }
+
+  void _showShareCardPreview(String headline) {
+    final String displayTagline = _getPreviewTagline();
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      _currentRound,
+    );
+    final List<String> highlightStats = _getPreviewHighlightStats();
+
+    pushCupertinoRoute(
+      context,
+      ShareJudgmentPreviewScreen(
+        isGlaze: _isGlaze,
+        headline: headline,
+        tagline: displayTagline,
+        round: _currentRound,
+        analysis: analysis,
+        highlightStats: highlightStats,
+      ),
+      pushFromBottom: true,
+    );
+  }
+
+  String _getPreviewTagline() {
+    if (_currentRound.aiJudgment == null) return _getDefaultTagline(_isGlaze);
+
+    String cleanContent = _currentRound.aiJudgment!.content;
+    if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
+      final int endIndex = cleanContent.indexOf('-->');
+      if (endIndex != -1) {
+        cleanContent = cleanContent.substring(endIndex + 3).trim();
+      }
+    }
+
+    try {
+      final dynamic yaml = loadYaml(cleanContent);
+      if (yaml is YamlMap) {
+        final String headline = _stripAIPrefix(
+          (yaml['headline'] as String?) ?? '',
+        );
+        final String tagline = _stripAIPrefix(
+          (yaml['tagline'] as String?) ?? '',
+        );
+        return (tagline.isNotEmpty && tagline != headline)
+            ? tagline
+            : _getDefaultTagline(_isGlaze);
+      }
+    } catch (e) {
+      // Fall back to default
+    }
+    return _getDefaultTagline(_isGlaze);
+  }
+
+  List<String> _getPreviewHighlightStats() {
+    if (_currentRound.aiJudgment == null) return <String>[];
+
+    String cleanContent = _currentRound.aiJudgment!.content;
+    if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
+      final int endIndex = cleanContent.indexOf('-->');
+      if (endIndex != -1) {
+        cleanContent = cleanContent.substring(endIndex + 3).trim();
+      }
+    }
+
+    try {
+      final dynamic yaml = loadYaml(cleanContent);
+      if (yaml is YamlMap) {
+        final YamlList? stats = yaml['highlightStats'] as YamlList?;
+        if (stats != null) {
+          return stats.map((e) => e.toString()).toList();
+        }
+      }
+    } catch (e) {
+      // Fall back to empty
+    }
+    return <String>[];
   }
 
   Widget _buildResultState(BuildContext context) {
@@ -609,6 +719,11 @@ highlightStats:
   }
 
   Widget _buildResultContent(BuildContext context) {
+    // Feature flag: use new bottom action bar layout
+    if (useBottomShareActionBar) {
+      return _buildResultContentV2(context);
+    }
+
     // Extract clean content (remove metadata comment)
     String cleanContent = _currentRound.aiJudgment!.content;
     if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
@@ -818,6 +933,220 @@ highlightStats:
           shareCard,
         ],
       ),
+    );
+  }
+
+  /// V2 layout with bottom action bar for share functionality.
+  Widget _buildResultContentV2(BuildContext context) {
+    // Extract clean content (remove metadata comment)
+    String cleanContent = _currentRound.aiJudgment!.content;
+    if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
+      final int endIndex = cleanContent.indexOf('-->');
+      if (endIndex != -1) {
+        cleanContent = cleanContent.substring(endIndex + 3).trim();
+      }
+    }
+
+    // Parse YAML content
+    String headline = _isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!';
+    String tagline = '';
+    String content = cleanContent;
+    List<String> highlightStats = <String>[];
+
+    try {
+      final dynamic yaml = loadYaml(cleanContent);
+      if (yaml is YamlMap) {
+        headline = _stripAIPrefix((yaml['headline'] as String?) ?? headline);
+        tagline = _stripAIPrefix((yaml['tagline'] as String?) ?? '');
+        content = (yaml['content'] as String?) ?? cleanContent;
+        final YamlList? stats = yaml['highlightStats'] as YamlList?;
+        if (stats != null) {
+          highlightStats = stats.map((e) => e.toString()).toList();
+        }
+      }
+    } catch (e) {
+      final List<String> lines = cleanContent.split('\n');
+      if (lines.isNotEmpty && lines[0].trim().isNotEmpty) {
+        headline = lines[0].trim();
+        content = lines.skip(1).join('\n').trim();
+      }
+    }
+
+    // Create AIContent with clean content for rendering
+    final AIContent cleanAIContent = AIContent(
+      content: content,
+      roundVersionId: _currentRound.versionId,
+    );
+
+    // Generate analysis for rendering
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      _currentRound,
+    );
+
+    // Ensure tagline is different from headline
+    final String displayTagline = (tagline.isNotEmpty && tagline != headline)
+        ? tagline
+        : _getDefaultTagline(_isGlaze);
+
+    // Hidden share card for capture (using Offstage)
+    final Widget shareCard = Offstage(
+      offstage: true,
+      child: RepaintBoundary(
+        key: _shareCardKey,
+        child: JudgmentShareCard(
+          isGlaze: _isGlaze,
+          headline: headline,
+          tagline: displayTagline,
+          round: _currentRound,
+          analysis: analysis,
+          highlightStats: highlightStats,
+        ),
+      ),
+    );
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            // Scrollable content area
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 12, bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Regenerate button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _currentRound = _currentRound.copyWith(
+                                  aiJudgment: null,
+                                );
+                                _currentState = JudgmentState.idle;
+                              });
+                              _startJudgmentFlow();
+                            },
+                            icon: const Icon(
+                              Icons.refresh,
+                              size: 16,
+                              color: TurbColors.darkGray,
+                            ),
+                            label: const Text(
+                              'Regenerate',
+                              style: TextStyle(color: TurbColors.darkGray),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              textStyle: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Verdict card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: JudgmentVerdictCard(
+                        isGlaze: _isGlaze,
+                        headline: headline,
+                        animate: false,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Content card (no share button in V2 - moved to bottom bar)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(20),
+                        child: DefaultTextStyle(
+                          style: const TextStyle(
+                            color: Color(0xFF1A1A1A),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            height: 1.5,
+                          ),
+                          child: AIContentRenderer(
+                            aiContent: cleanAIContent,
+                            round: _currentRound,
+                            analysis: analysis,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Info card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Card(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 20,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Judgment is permanent for this round. '
+                                  'Each round gets one 50/50 roll!',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // No share card preview in V2 - available via bottom sheet
+                  ],
+                ),
+              ),
+            ),
+            // Fixed bottom action bar
+            _buildShareActionBar(headline),
+          ],
+        ),
+        // Hidden share card for capture
+        shareCard,
+      ],
     );
   }
 

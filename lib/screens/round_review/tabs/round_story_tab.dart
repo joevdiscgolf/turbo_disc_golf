@@ -5,12 +5,14 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_loading_animation.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// AI narrative story tab that tells the story of your round
 /// with embedded visualizations and insights
@@ -115,8 +117,13 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
+    // Full-screen loading state (no scroll wrapper)
+    if (_isGenerating || showStoryLoadingAnimation) {
+      return const StoryLoadingAnimation();
+    }
+
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -134,9 +141,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_isGenerating)
-              _buildLoadingState(context)
-            else if (_errorMessage != null)
+            if (_errorMessage != null)
               _buildErrorState(context)
             else if (_currentRound.aiSummary != null &&
                 _currentRound.aiSummary!.content.isNotEmpty) ...[
@@ -145,31 +150,6 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               _buildStoryContent(context, _analysis),
             ] else
               _buildEmptyState(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingState(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              'Generating your round story...',
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This may take a few moments',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
       ),
