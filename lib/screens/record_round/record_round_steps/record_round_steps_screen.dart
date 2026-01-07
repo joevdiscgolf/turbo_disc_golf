@@ -352,11 +352,20 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         // Hole Progress / Mini Holes Grid
         if (showInlineMiniHoleGrid) ...[
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: _MiniHolesGrid(
-              state: state,
-              currentHoleIndex: currentHoleIndex,
-              onHoleTap: _onHoleTapFromGrid,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: _MiniHolesGrid(
+                state: state,
+                currentHoleIndex: currentHoleIndex,
+                onHoleTap: _onHoleTapFromGrid,
+              ),
             ),
           ),
         ] else ...[
@@ -719,6 +728,12 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         ? scoreColor
         : Colors.grey.shade400;
 
+    // Buttons are disabled when there's no score
+    final bool hasScore = score != null;
+    final Color buttonColor = hasScore
+        ? TurbColors.gray[600]!
+        : Colors.grey.shade300;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -731,39 +746,74 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        SizedBox(
-          width: 40,
-          height: 24,
-          child: TextField(
-            controller: TextEditingController(text: score?.toString() ?? ''),
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: displayColor,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Minus button - flexible to allow shrinking
+            Flexible(
+              child: GestureDetector(
+                onTap: hasScore
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        _recordRoundCubit.decrementHoleScore(holeIndex);
+                      }
+                    : null,
+                behavior: HitTestBehavior.opaque,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 24,
+                    minHeight: 32,
+                    maxWidth: 32,
+                    maxHeight: 32,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.remove,
+                      size: 18,
+                      color: buttonColor,
+                    ),
+                  ),
+                ),
+              ),
             ),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+            // Score display - fixed size
+            Text(
+              score?.toString() ?? '-',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: displayColor,
               ),
             ),
-            onChanged: (value) {
-              final int? newScore = int.tryParse(value);
-              _recordRoundCubit.updateHoleScore(holeIndex, newScore);
-            },
-          ),
+            // Plus button - flexible to allow shrinking
+            Flexible(
+              child: GestureDetector(
+                onTap: hasScore
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        _recordRoundCubit.incrementHoleScore(holeIndex);
+                      }
+                    : null,
+                behavior: HitTestBehavior.opaque,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 24,
+                    minHeight: 32,
+                    maxWidth: 32,
+                    maxHeight: 32,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.add,
+                      size: 18,
+                      color: buttonColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1406,11 +1456,7 @@ class _MiniHoleIndicator extends StatelessWidget {
 
   static const Color _holeAccent = Color(0xFF2196F3); // blue
   static const Color _noScore = Color(0xFFE0E0E0); // light gray (no score)
-  static const Color _defaultBorder = Color(0xFFE0E0E0); // light gray border
-  static const Color _completeDot = Color(0xFF4CAF50); // green dot for complete
-  static const Color _incompleteDot = Color(
-    0xFFEF5350,
-  ); // red dot for incomplete
+  static const Color _completeGreen = Color(0xFF4CAF50); // green for complete
 
   /// Returns the appropriate color for a score based on how far it is from par.
   /// Matches the design from CompactScorecard.
@@ -1440,11 +1486,33 @@ class _MiniHoleIndicator extends StatelessWidget {
     final bool isPar = hasScore && score == par;
     final Color circleColor = _getScoreColor();
 
-    // Border color: blue if current, otherwise default gray
-    final Color borderColor = isCurrent ? _holeAccent : _defaultBorder;
-
-    // Status dot color: green if complete, red if incomplete
-    final Color dotColor = hasDescription ? _completeDot : _incompleteDot;
+    // Background and border: blue for current, green for complete, no border for incomplete
+    BoxDecoration decoration;
+    if (isCurrent) {
+      decoration = BoxDecoration(
+        color: _holeAccent.withValues(alpha: 0.1),
+        border: Border.all(color: _holeAccent, width: 1.5),
+        borderRadius: BorderRadius.circular(6),
+      );
+    } else if (hasDescription) {
+      decoration = BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _completeGreen.withValues(alpha: 0.08),
+            _completeGreen.withValues(alpha: 0.15),
+          ],
+        ),
+        border: Border.all(color: _completeGreen, width: 1),
+        borderRadius: BorderRadius.circular(6),
+      );
+    } else {
+      decoration = BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+      );
+    }
 
     return GestureDetector(
       onTap: () {
@@ -1455,47 +1523,24 @@ class _MiniHoleIndicator extends StatelessWidget {
       child: Container(
         height: 44,
         padding: const EdgeInsets.symmetric(vertical: 2),
-        decoration: BoxDecoration(
-          color: isCurrent ? _holeAccent.withValues(alpha: 0.1) : Colors.white,
-          border: Border.all(color: borderColor, width: 1),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Main content
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '$holeNumber',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: isCurrent ? _holeAccent : Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  _buildScoreIndicator(hasScore, isPar, circleColor),
-                ],
-              ),
-            ),
-            // Status dot badge (top-right corner, inside the border)
-            Positioned(
-              top: 2,
-              right: 2,
-              child: Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: dotColor,
-                  shape: BoxShape.circle,
+        decoration: decoration,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '$holeNumber',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isCurrent ? _holeAccent : Colors.grey[700],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              _buildScoreIndicator(hasScore, isPar, circleColor),
+            ],
+          ),
         ),
       ),
     );
@@ -1587,17 +1632,17 @@ class _MiniHolesGrid extends StatelessWidget {
         return Padding(
           padding: EdgeInsets.only(bottom: rowIndex < numRows - 1 ? 8 : 0),
           child: Row(
-            children: List.generate(_holesPerRow, (colIndex) {
+            children: List.generate(_holesPerRow * 2 - 1, (i) {
+              // Add spacers between items (odd indices)
+              if (i.isOdd) {
+                return const SizedBox(width: 6);
+              }
+
+              final int colIndex = i ~/ 2;
+
               // Add spacer for empty slots in partial rows
               if (colIndex >= holesInRow) {
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      right: colIndex < _holesPerRow - 1 ? 8 : 0,
-                    ),
-                    child: const SizedBox(height: 44),
-                  ),
-                );
+                return const Expanded(child: SizedBox(height: 44));
               }
 
               final int index = startHole + colIndex;
@@ -1616,18 +1661,13 @@ class _MiniHolesGrid extends StatelessWidget {
               }
 
               return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: colIndex < _holesPerRow - 1 ? 8 : 0,
-                  ),
-                  child: _MiniHoleIndicator(
-                    holeNumber: index + 1,
-                    hasDescription: hasDescription,
-                    isCurrent: isCurrent,
-                    score: score,
-                    par: par,
-                    onTap: () => onHoleTap(index),
-                  ),
+                child: _MiniHoleIndicator(
+                  holeNumber: index + 1,
+                  hasDescription: hasDescription,
+                  isCurrent: isCurrent,
+                  score: score,
+                  par: par,
+                  onTap: () => onHoleTap(index),
                 ),
               );
             }),

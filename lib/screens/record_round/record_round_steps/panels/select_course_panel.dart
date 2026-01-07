@@ -72,9 +72,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         } else {
           // Filter courses based on search text
           _localResults = kTestCourses
-              .where(
-                (c) => c.name.toLowerCase().contains(value.toLowerCase()),
-              )
+              .where((c) => c.name.toLowerCase().contains(value.toLowerCase()))
               .toList();
         }
       });
@@ -88,7 +86,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         // Panel header
         PanelHeader(
           title: 'Select Course',
-          onClose: () => Navigator.of(context).pop(),
+          onClose: () {
+            HapticFeedback.lightImpact();
+            Navigator.of(context).pop();
+          },
         ),
 
         // 🔍 Search bar
@@ -194,9 +195,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseLayoutSummary layout,
   ) {
     // Find the full course from kTestCourses
-    final Course? course = kTestCourses
-        .cast<Course?>()
-        .firstWhere((c) => c?.id == courseSearchHit.id, orElse: () => null);
+    final Course? course = kTestCourses.cast<Course?>().firstWhere(
+      (c) => c?.id == courseSearchHit.id,
+      orElse: () => null,
+    );
 
     if (course != null) {
       BlocProvider.of<RecordRoundCubit>(
