@@ -123,6 +123,8 @@ Throw Types: ${_formatThrowTypeComparison(analysis)}
 ${_formatHoleTypePerformance(round, analysis)}
 # Disc Performance (top 5 by usage)
 ${_formatDiscPerformance(analysis)}
+# Disc Usage by Hole (for specific context in explanations)
+${_formatDiscByHole(round)}
 # Shot Shape Performance
 ${_formatShotShapePerformance(round)}
 # CRITICAL: You MUST output ALL sections below. Keep explanations to 1-2 sentences max.
@@ -166,6 +168,7 @@ strategyTips:
 - Strategy tips must be SPECIFIC (reference holes, discs) not generic ("play safer")
 - Keep ALL text SHORT - 1-2 sentences max per explanation
 - CRITICAL: When a hole type has 40%+ birdie rate but high average due to ONE outlier (double/triple bogey), that is NOT a weakness - it's good play with one anomaly. Only flag as weakness if there's a PATTERN of poor scores across multiple holes.
+- DISC BLAME RULE: Only blame a disc for poor performance if: (1) at least 2 bad shots with that disc, AND (2) bad shots account for ≥50% of total shots with that disc. When mentioning a disc weakness, cite specific holes (e.g., "PD2 struggled on Holes 7 and 15 (both OB)").
 ''');
 
     return buffer.toString();
@@ -195,6 +198,73 @@ strategyTips:
     }
 
     return buffer.toString();
+  }
+
+  /// Format disc usage by hole for the prompt - shows which holes each disc was used on
+  /// and what happened (for AI to provide specific context in explanations)
+  String _formatDiscByHole(DGRound round) {
+    final Map<String, List<String>> discHoleResults = {};
+
+    for (final DGHole hole in round.holes) {
+      final int holeScore = hole.holeScore;
+      final int par = hole.par;
+      final int relative = holeScore - par;
+      final String outcome = _getShortOutcome(relative);
+
+      for (int i = 0; i < hole.throws.length; i++) {
+        final throw_ = hole.throws[i];
+        final String discName = throw_.discName ?? 'Unknown';
+        if (discName == 'Unknown') continue;
+
+        // Determine throw type (tee, approach, putt)
+        final String throwType = i == 0
+            ? 'tee'
+            : (i == hole.throws.length - 1 ? 'putt' : 'approach');
+
+        // Get landing result
+        final String landing = throw_.landingSpot?.name ?? '';
+        final bool hasPenalty = throw_.penaltyStrokes > 0;
+
+        // Build result string
+        String result = 'H${hole.number} ($throwType';
+        if (landing.isNotEmpty) result += ', $landing';
+        if (hasPenalty) result += ', OB';
+        result += ', $outcome)';
+
+        discHoleResults.putIfAbsent(discName, () => []).add(result);
+      }
+    }
+
+    // Sort by throw count and format
+    final List<MapEntry<String, List<String>>> sorted =
+        discHoleResults.entries.toList()
+          ..sort((a, b) => b.value.length.compareTo(a.value.length));
+
+    final StringBuffer buffer = StringBuffer();
+    for (final MapEntry<String, List<String>> entry in sorted.take(6)) {
+      buffer.writeln('${entry.key}: ${entry.value.join(', ')}');
+    }
+
+    return buffer.toString();
+  }
+
+  String _getShortOutcome(int relativeToPar) {
+    switch (relativeToPar) {
+      case -2:
+        return 'eagle';
+      case -1:
+        return 'birdie';
+      case 0:
+        return 'par';
+      case 1:
+        return 'bogey';
+      case 2:
+        return 'double';
+      case 3:
+        return 'triple';
+      default:
+        return relativeToPar > 0 ? '+$relativeToPar' : '$relativeToPar';
+    }
   }
 
   /// Format hole type performance data with outlier detection for the prompt

@@ -9,7 +9,9 @@ import 'package:turbo_disc_golf/components/stat_cards/mistakes_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/scoring_stats_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/shot_shape_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/throw_type_story_card.dart';
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
@@ -56,6 +58,16 @@ class StructuredStoryRenderer extends StatelessWidget {
         // Merged: weaknesses + mistakes in a single cohesive section
         if (content.weaknesses.isNotEmpty || content.mistakes != null) ...[
           _buildWeaknesses(context),
+          const SizedBox(height: 12),
+        ],
+        // Blow-up breakdown (calculated from round data)
+        if (_hasBlowUpHoles) ...[
+          _buildBlowUpBreakdown(context),
+          const SizedBox(height: 12),
+        ],
+        // How close to elite (calculated from round data, controlled by testing flag)
+        if (_hasBlowUpHoles && showElitePotentialCard) ...[
+          _buildElitePotential(context),
           const SizedBox(height: 12),
         ],
         if (content.biggestOpportunity != null) ...[
@@ -378,6 +390,289 @@ class StructuredStoryRenderer extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // ============================================================================
+  // BLOW-UP & ELITE POTENTIAL SECTIONS (Calculated from round data)
+  // ============================================================================
+
+  /// Returns true if there are any blow-up holes (double bogey or worse)
+  bool get _hasBlowUpHoles => round.holes.any((h) => h.holeScore - h.par >= 2);
+
+  /// Get all blow-up holes (double bogey or worse)
+  List<DGHole> get _blowUpHoles =>
+      round.holes.where((h) => h.holeScore - h.par >= 2).toList();
+
+  Widget _buildBlowUpBreakdown(BuildContext context) {
+    final List<DGHole> blowUps = _blowUpHoles;
+    if (blowUps.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'Blow-up breakdown',
+                icon: Icons.warning_amber_rounded,
+                accentColor: const Color(0xFFE53935),
+              ),
+              const SizedBox(height: 16),
+              ...blowUps.map((hole) => _buildBlowUpHoleCard(hole)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBlowUpHoleCard(DGHole hole) {
+    final int strokesLost = hole.holeScore - hole.par;
+    final String scoreName = _getScoreName(strokesLost);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF3F3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFFFCDD2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('❌ ', style: TextStyle(fontSize: 16)),
+                Text(
+                  'Hole ${hole.number} — $scoreName (+$strokesLost)',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFB71C1C),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Show throw sequence
+            ...hole.throws.asMap().entries.map((entry) {
+              final int index = entry.key;
+              final throw_ = entry.value;
+              final String throwText = throw_.rawText?.isNotEmpty == true
+                  ? throw_.rawText!
+                  : _formatThrowStructured(throw_);
+              final bool hasPenalty = throw_.penaltyStrokes > 0;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      child: Text(
+                        '${index + 1}.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: hasPenalty
+                              ? const Color(0xFFE53935)
+                              : Colors.black54,
+                          fontWeight: hasPenalty
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        throwText,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: hasPenalty
+                              ? const Color(0xFFE53935)
+                              : Colors.black87,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildElitePotential(BuildContext context) {
+    final List<DGHole> blowUps = _blowUpHoles;
+    if (blowUps.isEmpty) return const SizedBox.shrink();
+
+    final int totalScore = round.holes.fold(0, (sum, h) => sum + h.holeScore);
+    final int coursePar = round.holes.fold(0, (sum, h) => sum + h.par);
+    final int currentRelative = totalScore - coursePar;
+
+    // Calculate strokes lost to blow-ups (beyond bogey)
+    // e.g., triple bogey (+3) loses 2 extra strokes vs bogey (+1)
+    final int strokesLostToBlowUps = blowUps.fold(
+      0,
+      (sum, h) =>
+          sum +
+          (h.holeScore - h.par - 1), // -1 because bogey is "expected" worst
+    );
+
+    // Potential score if all blow-ups were bogeys
+    final int potentialRelative = currentRelative - strokesLostToBlowUps;
+    final String currentStr = currentRelative >= 0
+        ? '+$currentRelative'
+        : '$currentRelative';
+    final String potentialStr = potentialRelative >= 0
+        ? '+$potentialRelative'
+        : '$potentialRelative';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StorySectionHeader(
+                title: 'How close to elite?',
+                icon: Icons.rocket_launch,
+                accentColor: const Color(0xFF7B1FA2),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildScoreBox(
+                      label: 'You shot',
+                      score: currentStr,
+                      color: currentRelative < 0
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFFFF7043),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.arrow_forward, color: Colors.grey),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildScoreBox(
+                      label: 'Potential',
+                      score: potentialStr,
+                      color: const Color(0xFF7B1FA2),
+                      highlight: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'If ${blowUps.length == 1 ? 'that blow-up was' : 'those ${blowUps.length} blow-ups were'} '
+                'just ${blowUps.length == 1 ? 'a bogey' : 'bogeys'}, you\'d be at $potentialStr.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'That\'s $strokesLostToBlowUps stroke${strokesLostToBlowUps == 1 ? '' : 's'} '
+                'lost to decision errors, not skill.',
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: Colors.black54,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoreBox({
+    required String label,
+    required String score,
+    required Color color,
+    bool highlight = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: highlight ? color.withValues(alpha: 0.1) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: highlight ? color : Colors.grey.shade300,
+          width: highlight ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            score,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getScoreName(int relativeToPar) {
+    switch (relativeToPar) {
+      case 2:
+        return 'Double Bogey';
+      case 3:
+        return 'Triple Bogey';
+      case 4:
+        return 'Quadruple Bogey';
+      default:
+        return '+$relativeToPar';
+    }
+  }
+
+  String _formatThrowStructured(DiscThrow throw_) {
+    final String disc = throw_.discName ?? 'Unknown';
+    final String technique = throw_.technique?.name ?? '';
+    final String landing = throw_.landingSpot?.name ?? '';
+    final int penalty = throw_.penaltyStrokes;
+
+    String result = disc;
+    if (technique.isNotEmpty) result += ' ($technique)';
+    if (landing.isNotEmpty) result += ' → $landing';
+    if (penalty > 0) result += ' [+$penalty penalty]';
+
+    return result;
   }
 
   Widget _buildStatWidget(String cardId) {
