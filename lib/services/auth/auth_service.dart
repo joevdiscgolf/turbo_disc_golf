@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
+import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/repositories/auth_repository.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
@@ -119,21 +120,72 @@ class AuthService {
     return true;
   }
 
+  Future<bool> attemptSignInWithGoogle() async {
+    final bool signInSuccess = await _authRepository.signInWithGoogle() ?? false;
+
+    if (!signInSuccess) {
+      errorMessage = _authRepository.exceptionMessage.isNotEmpty
+          ? _authRepository.exceptionMessage
+          : 'Google sign-in failed or was cancelled.';
+      return false;
+    }
+
+    final AuthUser? authUser = currentUser;
+    if (authUser == null) return false;
+
+    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
+
+    if (!isSetUp) {
+      locator.get<AppPhaseController>().setPhase(AppPhase.onboarding);
+      return true;
+    }
+
+    locator.get<SharedPreferencesService>().markUserIsSetUp(true);
+    locator.get<AppPhaseController>().setPhase(AppPhase.home);
+    return true;
+  }
+
+  Future<bool> attemptSignInWithApple() async {
+    final bool signInSuccess = await _authRepository.signInWithApple() ?? false;
+
+    if (!signInSuccess) {
+      errorMessage = _authRepository.exceptionMessage.isNotEmpty
+          ? _authRepository.exceptionMessage
+          : 'Apple sign-in failed or was cancelled.';
+      return false;
+    }
+
+    final AuthUser? authUser = currentUser;
+    if (authUser == null) return false;
+
+    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
+
+    if (!isSetUp) {
+      locator.get<AppPhaseController>().setPhase(AppPhase.onboarding);
+      return true;
+    }
+
+    locator.get<SharedPreferencesService>().markUserIsSetUp(true);
+    locator.get<AppPhaseController>().setPhase(AppPhase.home);
+    return true;
+  }
+
   Future<bool> setupNewUser(
-    String username,
-    String displayName, {
-    int? pdgaNumber,
+    String username, {
+    PDGAMetadata? pdgaMetadata,
   }) async {
     final AuthUser? authUser = currentUser;
     if (authUser == null) return false;
 
-    final TurboUser? newUser = await _authDatabaseService
-        .setUpNewUserInDatabase(
-          authUser,
-          username,
-          displayName,
-          pdgaNumber: pdgaNumber,
-        );
+    // Use username as displayName
+    final String displayName = username;
+
+    final TurboUser? newUser = await _authDatabaseService.setUpNewUserInDatabase(
+      authUser,
+      username,
+      displayName,
+      pdgaMetadata: pdgaMetadata,
+    );
     if (newUser == null) {
       return false;
     }

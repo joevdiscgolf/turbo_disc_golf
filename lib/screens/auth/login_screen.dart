@@ -102,9 +102,9 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 24),
             _signInButton(context, true),
             const SizedBox(height: 12),
-            const GoogleSignInButton(),
+            GoogleSignInButton(onPressed: _handleGoogleSignIn),
             const SizedBox(height: 12),
-            const AppleSignInButton(),
+            AppleSignInButton(onPressed: _handleAppleSignIn),
             const SizedBox(height: 8),
             _forgotPasswordButton(context),
             const SizedBox(height: 36),
@@ -248,5 +248,66 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     if (!mounted) return;
     // reloadCubits(context);
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _errorText = '';
+    });
+
+    try {
+      final bool success = await _authService.attemptSignInWithGoogle();
+
+      if (!success && mounted) {
+        setState(() {
+          _errorText = _authService.errorMessage;
+        });
+      }
+    } catch (e, trace) {
+      log(e.toString());
+      log(trace.toString());
+      if (mounted) {
+        setState(() {
+          _errorText = 'Google sign-in failed. Please try again.';
+        });
+      }
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[LoginScreen][_handleGoogleSignIn] exception',
+      );
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _loading = true;
+      _errorText = '';
+    });
+
+    try {
+      final bool success = await _authService.attemptSignInWithApple();
+
+      if (!success && mounted) {
+        setState(() {
+          _loading = false;
+          _errorText = _authService.errorMessage;
+        });
+      }
+    } catch (e, trace) {
+      log(e.toString());
+      log(trace.toString());
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _errorText = 'Apple sign-in failed. Please try again.';
+        });
+      }
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[LoginScreen][_handleAppleSignIn] exception',
+      );
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 
 part 'user_data.g.dart';
 
@@ -10,18 +11,17 @@ class TurboUser extends Equatable {
     required this.keywords,
     required this.displayName,
     required this.uid,
-    this.pdgaNum,
-    this.pdgaRating,
+    this.pdgaMetadata,
     this.eventIds,
     this.isAdmin,
     this.trebuchets,
   });
+
   final String username;
   final List<String> keywords;
   final String displayName;
   final String uid;
-  final int? pdgaNum;
-  final int? pdgaRating;
+  final PDGAMetadata? pdgaMetadata;
   final List<String>? eventIds;
   final bool? isAdmin;
   final List<String>? trebuchets;
@@ -31,8 +31,7 @@ class TurboUser extends Equatable {
     List<String>? keywords,
     String? displayName,
     String? uid,
-    int? pdgaNum,
-    int? pdgaRating,
+    PDGAMetadata? pdgaMetadata,
     List<String>? eventIds,
     bool? isAdmin,
     List<String>? trebuchets,
@@ -42,9 +41,7 @@ class TurboUser extends Equatable {
       keywords: keywords ?? this.keywords,
       displayName: displayName ?? this.displayName,
       uid: uid ?? this.uid,
-      pdgaNum: pdgaNum ?? this.pdgaNum,
-      pdgaRating: pdgaRating ?? this.pdgaRating,
-
+      pdgaMetadata: pdgaMetadata ?? this.pdgaMetadata,
       eventIds: eventIds ?? this.eventIds,
       isAdmin: isAdmin ?? this.isAdmin,
       trebuchets: trebuchets ?? this.trebuchets,
@@ -58,16 +55,15 @@ class TurboUser extends Equatable {
 
   @override
   List<Object?> get props => [
-    username,
-    keywords,
-    displayName,
-    uid,
-    pdgaNum,
-    pdgaRating,
-    eventIds,
-    isAdmin,
-    trebuchets,
-  ];
+        username,
+        keywords,
+        displayName,
+        uid,
+        pdgaMetadata,
+        eventIds,
+        isAdmin,
+        trebuchets,
+      ];
 }
 
 @JsonSerializable(explicitToJson: true, anyMap: true)
@@ -76,14 +72,13 @@ class TurboUserMetadata {
     required this.username,
     required this.displayName,
     required this.uid,
-    this.pdgaNum,
-    this.pdgaRating,
+    this.pdgaMetadata,
   });
+
   final String username;
   final String displayName;
   final String uid;
-  int? pdgaNum;
-  int? pdgaRating;
+  final PDGAMetadata? pdgaMetadata;
 
   factory TurboUserMetadata.fromJson(Map<String, dynamic> json) =>
       _$TurboUserMetadataFromJson(json);

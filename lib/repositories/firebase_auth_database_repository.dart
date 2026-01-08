@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
+import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/models/data/user_data/username_doc.dart';
 import 'package:turbo_disc_golf/repositories/auth_database_repository.dart';
@@ -16,29 +17,22 @@ class FirebaseAuthDatabaseRepository implements AuthDatabaseRepository {
     AuthUser authUser,
     String username,
     String displayName, {
-    int? pdgaNumber,
+    PDGAMetadata? pdgaMetadata,
   }) async {
-    final userDoc = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(authUser.uid);
-    WriteBatch batch = FirebaseFirestore.instance.batch();
-    final usernameDoc = FirebaseFirestore.instance
-        .collection('Usernames')
-        .doc(username);
-    final TurboUser newUser = pdgaNumber != null
-        ? TurboUser(
-            keywords: getPrefixes(username),
-            username: username,
-            displayName: displayName,
-            uid: authUser.uid,
-            pdgaNum: pdgaNumber,
-          )
-        : TurboUser(
-            keywords: getPrefixes(username),
-            username: username,
-            displayName: displayName,
-            uid: authUser.uid,
-          );
+    final DocumentReference<Map<String, dynamic>> userDoc =
+        FirebaseFirestore.instance.collection('Users').doc(authUser.uid);
+    final WriteBatch batch = FirebaseFirestore.instance.batch();
+    final DocumentReference<Map<String, dynamic>> usernameDoc =
+        FirebaseFirestore.instance.collection('Usernames').doc(username);
+
+    final TurboUser newUser = TurboUser(
+      keywords: getPrefixes(username),
+      username: username,
+      displayName: displayName,
+      uid: authUser.uid,
+      pdgaMetadata: pdgaMetadata,
+    );
+
     batch.set(userDoc, newUser.toJson());
     batch.set(
       usernameDoc,

@@ -9,8 +9,10 @@ import 'package:turbo_disc_golf/animations/page_transitions.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_steps/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/round_history_row_v2.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/welcome_empty_state.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_steps/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -93,14 +95,18 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       // Loaded state
       final List<DGRound> sortedRounds = state.sortedRounds;
       if (sortedRounds.isEmpty) {
-        return SliverFillRemaining(child: _buildEmptyState());
+        return SliverFillRemaining(
+          child: WelcomeEmptyState(onAddRound: _showRecordRoundSheet),
+        );
       }
       return SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final DGRound round = sortedRounds[index];
-            return RoundHistoryRow(round: round);
+            return useRoundHistoryRowV2
+                ? RoundHistoryRowV2(round: round)
+                : RoundHistoryRow(round: round);
           }, childCount: sortedRounds.length),
         ),
       );
@@ -110,31 +116,6 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         child: Center(child: CircularProgressIndicator()),
       );
     }
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.golf_course,
-            size: 80,
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No rounds yet',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add your first round to get started!',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildErrorState(String error) {
@@ -165,21 +146,41 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   }
 
   Widget _buildAddButton() {
-    return BlocBuilder<RecordRoundCubit, RecordRoundState>(
-      builder: (context, recordRoundState) {
-        if (recordRoundState is RecordRoundActive) {
-          return Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ContinueRecordingBanner(
-              state: recordRoundState,
-              bottomViewPadding: widget.bottomViewPadding,
-            ),
-          );
+    return BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
+      builder: (context, historyState) {
+        // Hide FAB when showing empty state (WelcomeEmptyState has its own CTA)
+        final bool isEmptyState =
+            historyState is RoundHistoryLoaded &&
+            historyState.sortedRounds.isEmpty;
+        if (isEmptyState) {
+          return const SizedBox.shrink();
         }
 
-        return Positioned(right: 16, bottom: 16, child: _buildNewRoundButton());
+        return BlocBuilder<RecordRoundCubit, RecordRoundState>(
+          builder: (context, recordRoundState) {
+            if (recordRoundState is RecordRoundActive) {
+              return Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: ContinueRecordingBanner(
+                  state: recordRoundState,
+                  bottomViewPadding: widget.bottomViewPadding,
+                ),
+              );
+            }
+
+            final double bottomViewPadding = MediaQuery.of(
+              context,
+            ).viewPadding.bottom;
+
+            return Positioned(
+              right: bottomViewPadding - 8,
+              bottom: bottomViewPadding - 8,
+              child: _buildNewRoundButton(),
+            );
+          },
+        );
       },
     );
   }

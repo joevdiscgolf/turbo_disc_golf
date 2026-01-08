@@ -1,4 +1,5 @@
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
+import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/repositories/auth_database_repository.dart';
 
@@ -11,12 +12,13 @@ class AuthDatabaseService {
     AuthUser authUser,
     String username,
     String displayName, {
-    int? pdgaNumber,
+    PDGAMetadata? pdgaMetadata,
   }) {
     return _authDatabaseRepository.setUpNewUserInDatabase(
       authUser,
       username,
       displayName,
+      pdgaMetadata: pdgaMetadata,
     );
   }
 

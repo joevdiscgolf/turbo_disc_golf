@@ -8,6 +8,7 @@ abstract class AuthRepository {
   Future<bool> signInWithEmailPassword(String email, String password);
   Future<bool> signUpWithEmailPassword(String email, String password);
   Future<bool>? signInWithGoogle();
+  Future<bool>? signInWithApple();
   Future<void> signOut();
   Future<bool> deleteCurrentUser();
 

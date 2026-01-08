@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
 /// Utility class for determining hole score colors based on relative score (score - par).
 ///
 /// Provides consistent color schemes across the app for displaying hole scores:
@@ -10,31 +12,37 @@ import 'package:flutter/material.dart';
 class HoleScoreColors {
   HoleScoreColors._();
 
+  // Static color constants - SINGLE SOURCE OF TRUTH
+  static const Color birdie = Color(0xFF137e66);
+  static Color par = TurbColors.gray[400]!;
+  static const Color bogey = Color(0xFFFF7A7A);
+  static const Color doubleBogeyPlus = Color(0xFFD32F2F);
+
   /// Returns gradient colors for the hole background based on relative score.
   static List<Color> getGradientColors(int relativeScore) {
     if (relativeScore < 0) {
       // Birdie - green gradient
       return [
-        const Color(0xFF137e66).withValues(alpha: 0.25),
-        const Color(0xFF137e66).withValues(alpha: 0.15),
+        birdie.withValues(alpha: 0.25),
+        birdie.withValues(alpha: 0.15),
       ];
     } else if (relativeScore == 0) {
-      // Par - darker grey gradient
+      // Par - grey gradient
       return [
-        Colors.grey.withValues(alpha: 0.3),
-        Colors.grey.withValues(alpha: 0.2),
+        par.withValues(alpha: 0.3),
+        par.withValues(alpha: 0.2),
       ];
     } else if (relativeScore == 1) {
       // Bogey - light red gradient
       return [
-        const Color(0xFFFF7A7A).withValues(alpha: 0.25),
-        const Color(0xFFFF7A7A).withValues(alpha: 0.15),
+        bogey.withValues(alpha: 0.25),
+        bogey.withValues(alpha: 0.15),
       ];
     } else {
       // Double bogey+ - dark red gradient
       return [
-        const Color(0xFFD32F2F).withValues(alpha: 0.25),
-        const Color(0xFFD32F2F).withValues(alpha: 0.15),
+        doubleBogeyPlus.withValues(alpha: 0.25),
+        doubleBogeyPlus.withValues(alpha: 0.15),
       ];
     }
   }
@@ -42,17 +50,13 @@ class HoleScoreColors {
   /// Returns the solid color for the score circle based on relative score.
   static Color getScoreColor(int relativeScore) {
     if (relativeScore < 0) {
-      // Birdie - green
-      return const Color(0xFF137e66);
+      return birdie;
     } else if (relativeScore == 0) {
-      // Par - grey
-      return Colors.grey;
+      return par;
     } else if (relativeScore == 1) {
-      // Bogey - light red
-      return const Color(0xFFFF7A7A);
+      return bogey;
     } else {
-      // Double bogey+ - dark red
-      return const Color(0xFFD32F2F);
+      return doubleBogeyPlus;
     }
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'package:turbo_disc_golf/components/percentage_distribution_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
+import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
 
 class ScoreDistributionBar extends StatelessWidget {
   const ScoreDistributionBar({
@@ -49,16 +51,19 @@ class ScoreDistributionBar extends StatelessWidget {
     final List<DistributionSegment> segments = [
       DistributionSegment(
         value: birdiePercentage,
-        color: const Color(0xFF137e66),
+        color: HoleScoreColors.birdie,
       ),
-      DistributionSegment(value: parPercentage, color: Colors.grey),
+      DistributionSegment(
+        value: parPercentage,
+        color: HoleScoreColors.par,
+      ),
       DistributionSegment(
         value: bogeyPercentage,
-        color: const Color(0xFFFF7A7A),
+        color: HoleScoreColors.bogey,
       ),
       DistributionSegment(
         value: doubleBogeyPlusPercentage,
-        color: const Color(0xFFD32F2F),
+        color: HoleScoreColors.doubleBogeyPlus,
       ),
     ];
 
