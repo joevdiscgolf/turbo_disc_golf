@@ -117,11 +117,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ],
               const SizedBox(height: 32),
               _buildSubmitButton(),
+              const SizedBox(height: 16),
+              _buildSkipToWalkthroughButton(),
               if (kDebugMode) ...[
-                const SizedBox(height: 16),
-                _buildSkipButton(),
                 const SizedBox(height: 8),
-                _buildSkipToWalkthroughButton(),
+                _buildSkipButton(),
               ],
             ],
           ),
@@ -570,11 +570,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: TextButton(
         onPressed: _onSkipToWalkthrough,
         child: Text(
-          '[DEBUG] Skip to Walkthrough',
+          'Skip to Walkthrough',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.purple,
-            decoration: TextDecoration.underline,
-            decorationColor: Colors.purple,
+            color: Colors.grey,
           ),
         ),
       ),
