@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class PanelHeader extends StatelessWidget {
   const PanelHeader({
@@ -53,6 +54,7 @@ class PanelHeader extends StatelessWidget {
               size: PanelConstants.closeButtonIconSize,
             ),
             onPressed: () {
+              HapticFeedback.lightImpact();
               if (onClose != null) {
                 onClose!();
               } else {

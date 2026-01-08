@@ -12,6 +12,7 @@ class VoiceDescriptionCard extends StatefulWidget {
     required this.accent,
     this.onClear,
     required this.isSingleHole,
+    this.onHelpTap,
   });
 
   final TextEditingController controller;
@@ -20,6 +21,10 @@ class VoiceDescriptionCard extends StatefulWidget {
   final Color accent;
   final VoidCallback? onClear;
   final bool isSingleHole;
+
+  /// Callback when the help icon is tapped.
+  /// If provided, a help icon will be shown next to the title.
+  final VoidCallback? onHelpTap;
 
   @override
   State<VoiceDescriptionCard> createState() => _VoiceDescriptionCardState();
@@ -117,6 +122,24 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
                   context,
                 ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
+              if (widget.onHelpTap != null) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.onHelpTap!();
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.help_outline,
+                      size: 18,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ),
+              ],
               const Spacer(),
               if (widget.isListening)
                 Row(
