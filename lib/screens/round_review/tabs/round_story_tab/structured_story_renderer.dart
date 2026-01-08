@@ -725,21 +725,28 @@ class StructuredStoryRenderer extends StatelessWidget {
   String _formatThrowStructured(DiscThrow throw_) {
     final List<String> parts = [];
 
-    // Disc name
-    final String disc = throw_.discName ?? 'Unknown disc';
+    // Disc name - use 'Putter' as fallback for putts, 'Unknown disc' otherwise
+    String disc;
+    if (throw_.discName != null) {
+      disc = throw_.discName!;
+    } else if (throw_.purpose == ThrowPurpose.putt) {
+      disc = 'Putter';
+    } else {
+      disc = 'Unknown disc';
+    }
     parts.add(disc);
 
-    // Technique in parentheses
+    // Technique in parentheses (using short names for compact display)
     if (throw_.technique != null) {
       final String technique =
-          throwTechniqueToName[throw_.technique] ?? throw_.technique!.name;
+          throwTechniqueToShortName[throw_.technique] ?? throw_.technique!.name;
       parts.add('($technique)');
     }
 
-    // Landing spot with arrow
+    // Landing spot with arrow (using short names for compact display)
     if (throw_.landingSpot != null) {
       final String landing =
-          landingSpotToName[throw_.landingSpot] ?? throw_.landingSpot!.name;
+          landingSpotToShortName[throw_.landingSpot] ?? throw_.landingSpot!.name;
       parts.add('→ $landing');
     }
 

@@ -6,6 +6,14 @@ part of 'structured_story_content.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+ShareHighlightStat _$ShareHighlightStatFromJson(Map json) => ShareHighlightStat(
+  statId: json['statId'] as String,
+  reason: json['reason'] as String?,
+);
+
+Map<String, dynamic> _$ShareHighlightStatToJson(ShareHighlightStat instance) =>
+    <String, dynamic>{'statId': instance.statId, 'reason': instance.reason};
+
 StoryHighlight _$StoryHighlightFromJson(Map json) => StoryHighlight(
   headline: json['headline'] as String?,
   cardId: json['cardId'] as String?,
@@ -52,6 +60,12 @@ StructuredStoryContent _$StructuredStoryContentFromJson(
           ?.map((e) => e as String)
           .toList() ??
       const [],
+  shareHighlightStats: (json['shareHighlightStats'] as List<dynamic>?)
+      ?.map(
+        (e) => ShareHighlightStat.fromJson(Map<String, dynamic>.from(e as Map)),
+      )
+      .toList(),
+  shareableHeadline: json['shareableHeadline'] as String?,
   roundVersionId: (json['roundVersionId'] as num).toInt(),
 );
 
@@ -66,5 +80,9 @@ Map<String, dynamic> _$StructuredStoryContentToJson(
   'biggestOpportunity': instance.biggestOpportunity?.toJson(),
   'practiceAdvice': instance.practiceAdvice,
   'strategyTips': instance.strategyTips,
+  'shareHighlightStats': instance.shareHighlightStats
+      ?.map((e) => e.toJson())
+      .toList(),
+  'shareableHeadline': instance.shareableHeadline,
   'roundVersionId': instance.roundVersionId,
 };

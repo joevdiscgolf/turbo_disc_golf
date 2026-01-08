@@ -254,7 +254,7 @@ class _ScoreBadge extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 2),
           Text(
             '($totalStrokes)',
             style: const TextStyle(

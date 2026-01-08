@@ -12,6 +12,19 @@ const Map<ThrowTechnique, String> throwTechniqueToName = {
   ThrowTechnique.other: 'Other',
 };
 
+/// Shortened names for compact displays (e.g., Blow-up breakdown)
+const Map<ThrowTechnique, String> throwTechniqueToShortName = {
+  ThrowTechnique.backhand: 'BH',
+  ThrowTechnique.forehand: 'FH',
+  ThrowTechnique.tomahawk: 'Tom',
+  ThrowTechnique.thumber: 'Thum',
+  ThrowTechnique.overhand: 'OH',
+  ThrowTechnique.backhandRoller: 'BH Roller',
+  ThrowTechnique.forehandRoller: 'FH Roller',
+  ThrowTechnique.grenade: 'Gren',
+  ThrowTechnique.other: 'Other',
+};
+
 const Map<ThrowPurpose, String> throwPurposeToName = {
   ThrowPurpose.teeDrive: 'Tee shot',
   ThrowPurpose.fairwayDrive: 'Fairway drive',
@@ -30,6 +43,18 @@ const Map<LandingSpot, String> landingSpotToName = {
   LandingSpot.fairway: 'Fairway',
   LandingSpot.offFairway: 'Off fairway',
   LandingSpot.outOfBounds: 'Out of bounds',
+  LandingSpot.other: 'Other',
+};
+
+/// Shortened names for compact displays (e.g., Blow-up breakdown)
+const Map<LandingSpot, String> landingSpotToShortName = {
+  LandingSpot.inBasket: 'Basket',
+  LandingSpot.parked: 'Parked',
+  LandingSpot.circle1: 'C1',
+  LandingSpot.circle2: 'C2',
+  LandingSpot.fairway: 'FW',
+  LandingSpot.offFairway: 'Off FW',
+  LandingSpot.outOfBounds: 'OB',
   LandingSpot.other: 'Other',
 };
 

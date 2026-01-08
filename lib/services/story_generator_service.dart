@@ -132,7 +132,7 @@ ${_formatShotShapePerformance(round)}
 
 Required YAML structure (include ALL fields):
 
-roundTitle: [3-5 word title]
+roundTitle: [3-5 word title summarizing the round's outcome/vibe. Examples: "Birdie Fest at Maple Hill", "Solid Under-Par Round", "Putting Struggles Cost Strokes", "Clean Drives, Missed Putts". Be direct - if putting was bad, say "Putting Woes" not "Putting Focus".]
 overview: [2 sentences, no stats, just context]
 strengths:
   - headline: [short title]
@@ -158,8 +158,15 @@ practiceAdvice:
 strategyTips:
   - [specific non-obvious tip]
   - [specific non-obvious tip]
+shareHighlightStats:
+  - statId: [STAT_ID]
+    reason: [why this stat is notable - 5-10 words]
+  - statId: [STAT_ID]
+    reason: [why this stat is notable - 5-10 words]
+shareableHeadline: [1-2 SHORT sentences for social sharing. Start with "You" not "This round". Use simple words over verbose phrases. Be encouraging but honest. Example: "You crushed it with 5 birdies and 80% C1 putting. A few OBs held you back from going even lower."]
 
 # Card IDs: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED, C1_PUTTING, C1X_PUTTING, C2_PUTTING, MISTAKES, THROW_TYPE_COMPARISON, SHOT_SHAPE_BREAKDOWN, DISC_PERFORMANCE:{name}, HOLE_TYPE:Par {3/4/5}
+# Share Stat IDs (pick 2 most notable): c1PuttPct, c1xPuttPct, c2PuttPct, fairwayPct, parkedPct, c1InRegPct, obPct, birdies, bounceBack
 
 # Rules:
 - Use each card ID only ONCE across all sections

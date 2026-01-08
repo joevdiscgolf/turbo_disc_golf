@@ -127,6 +127,8 @@ class JudgmentShareCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          _buildCourseAndDate(bodyColor),
+                          const SizedBox(height: 12),
                           _buildHeader(headlineColor),
                           const SizedBox(height: 16),
                           _buildTagline(bodyColor, containerBgAlpha),
@@ -230,6 +232,46 @@ class JudgmentShareCard extends StatelessWidget {
         Text(emoji, style: const TextStyle(fontSize: 24)),
         const SizedBox(width: 8),
         Text(verdictText, style: textStyle),
+      ],
+    );
+  }
+
+  Widget _buildCourseAndDate(Color textColor) {
+    String dateStr;
+    try {
+      final DateTime date = round.playedRoundAt.isNotEmpty
+          ? DateTime.parse(round.playedRoundAt)
+          : DateTime.parse(round.createdAt);
+      dateStr = DateFormat('MMM d, yyyy').format(date);
+    } catch (e) {
+      dateStr = round.playedRoundAt.isNotEmpty
+          ? round.playedRoundAt
+          : round.createdAt;
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            round.courseName,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          dateStr,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: textColor.withValues(alpha: 0.85),
+          ),
+        ),
       ],
     );
   }
@@ -375,87 +417,73 @@ class JudgmentShareCard extends StatelessWidget {
   }
 
   Widget _buildFooter(Color textColor, Color subtleColor) {
-    String dateStr;
-    try {
-      final DateTime date = round.playedRoundAt.isNotEmpty
-          ? DateTime.parse(round.playedRoundAt)
-          : DateTime.parse(round.createdAt);
-      dateStr = DateFormat('MMM d, yyyy').format(date);
-    } catch (e) {
-      dateStr = round.playedRoundAt.isNotEmpty
-          ? round.playedRoundAt
-          : round.createdAt;
-    }
-
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        if (showQrCodeOnShareCard) ...[
+          // QR code on left side
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: QrImageView(
+              data: shareCardQrUrl,
+              version: QrVersions.auto,
+              size: 40,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Colors.black,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ] else ...[
+          // Flexible line that scales down if needed
+          Flexible(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 40),
+              height: 1,
+              color: subtleColor.withValues(alpha: 0.4),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        ColorFiltered(
+          colorFilter: const ColorFilter.mode(
+            Colors.white,
+            BlendMode.srcIn,
+          ),
+          child: Image.asset(
+            'assets/icon/app_icon_clear_bg.png',
+            height: 16,
+            width: 16,
+          ),
+        ),
+        const SizedBox(width: 6),
         Text(
-          '${round.courseName} \u{2022} $dateStr',
+          'ScoreSensei disc golf',
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: textColor.withValues(alpha: 0.9),
+            fontWeight: FontWeight.w600,
+            color: subtleColor.withValues(alpha: 0.85),
+            letterSpacing: 1,
           ),
-          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (showQrCodeOnShareCard) ...[
-              // QR code on left side
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: QrImageView(
-                  data: shareCardQrUrl,
-                  version: QrVersions.auto,
-                  size: 40,
-                  backgroundColor: Colors.white,
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: Colors.black,
-                  ),
-                  dataModuleStyle: const QrDataModuleStyle(
-                    dataModuleShape: QrDataModuleShape.square,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-            ] else ...[
-              // Flexible line that scales down if needed
-              Flexible(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 40),
-                  height: 1,
-                  color: subtleColor.withValues(alpha: 0.4),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              'ScoreSensei disc golf',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: subtleColor.withValues(alpha: 0.85),
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Flexible line that scales down if needed
-            Flexible(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 40),
-                height: 1,
-                color: subtleColor.withValues(alpha: 0.4),
-              ),
-            ),
-          ],
+        const SizedBox(width: 8),
+        // Flexible line that scales down if needed
+        Flexible(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 40),
+            height: 1,
+            color: subtleColor.withValues(alpha: 0.4),
+          ),
         ),
       ],
     );

@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
+import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/story/story_highlights_share_card.dart';
+import 'package:turbo_disc_golf/components/story/story_poster_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_loading_animation.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 /// AI narrative story tab that tells the story of your round
 /// with embedded visualizations and insights
@@ -32,6 +42,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   late RoundAnalysis _analysis;
   bool _isGenerating = false;
   String? _errorMessage;
+
+  // Share card key for capturing as image
+  final GlobalKey _shareCardKey = GlobalKey();
 
   @override
   bool get wantKeepAlive => true;
@@ -122,6 +135,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       return const StoryLoadingAnimation();
     }
 
+    final bool hasStory = _currentRound.aiSummary != null &&
+        _currentRound.aiSummary!.content.isNotEmpty;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -136,22 +152,178 @@ class _RoundStoryTabState extends State<RoundStoryTab>
           stops: [0.0, 0.3, 0.7, 1.0],
         ),
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(0, 12, 0, 96),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: hasStory ? _buildContentWithShareBar(context) : _buildScrollableContent(context),
+    );
+  }
+
+  Widget _buildScrollableContent(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 96),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_errorMessage != null)
+            _buildErrorState(context)
+          else
+            _buildEmptyState(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentWithShareBar(BuildContext context) {
+    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
+    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
+
+    return Stack(
+      children: [
+        // Scrollable content
+        Column(
           children: [
-            if (_errorMessage != null)
-              _buildErrorState(context)
-            else if (_currentRound.aiSummary != null &&
-                _currentRound.aiSummary!.content.isNotEmpty) ...[
-              _buildRegenerateButton(),
-              const SizedBox(height: 8),
-              _buildStoryContent(context, _analysis),
-            ] else
-              _buildEmptyState(context),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 12, bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildRegenerateButton(),
+                    const SizedBox(height: 8),
+                    _buildStoryContent(context, _analysis),
+                  ],
+                ),
+              ),
+            ),
+            // Fixed bottom action bar
+            _buildShareActionBar(roundTitle),
           ],
         ),
+        // Hidden share card for capture (using Offstage)
+        Offstage(
+          offstage: true,
+          child: RepaintBoundary(
+            key: _shareCardKey,
+            child: _buildShareCard(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShareCard() {
+    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
+    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
+    final String overview = structuredContent?.overview ?? '';
+
+    if (useStoryPosterShareCard) {
+      return StoryPosterShareCard(
+        round: _currentRound,
+        analysis: _analysis,
+        roundTitle: roundTitle,
+        overview: overview,
+        shareableHeadline: structuredContent?.shareableHeadline,
+        shareHighlightStats: structuredContent?.shareHighlightStats,
+      );
+    } else {
+      return StoryHighlightsShareCard(
+        round: _currentRound,
+        analysis: _analysis,
+        roundTitle: roundTitle,
+        overview: overview,
+        shareableHeadline: structuredContent?.shareableHeadline,
+        shareHighlightStats: structuredContent?.shareHighlightStats,
+      );
+    }
+  }
+
+  Future<void> _shareStoryCard(String roundTitle) async {
+    final ShareService shareService = locator.get<ShareService>();
+
+    final String caption =
+        '\u{1F4D6} $roundTitle\n\n${_currentRound.courseName}\nShared from Turbo Disc Golf';
+
+    final bool success = await shareService.captureAndShare(
+      _shareCardKey,
+      caption: caption,
+      filename: 'round_story',
+    );
+
+    if (!success && mounted) {
+      Clipboard.setData(ClipboardData(text: caption));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Copied to clipboard! Ready to share.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _showShareCardPreview() {
+    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
+    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
+    final String overview = structuredContent?.overview ?? '';
+
+    pushCupertinoRoute(
+      context,
+      ShareStoryPreviewScreen(
+        round: _currentRound,
+        analysis: _analysis,
+        roundTitle: roundTitle,
+        overview: overview,
+        shareableHeadline: structuredContent?.shareableHeadline,
+        shareHighlightStats: structuredContent?.shareHighlightStats,
+      ),
+      pushFromBottom: true,
+    );
+  }
+
+  Widget _buildShareActionBar(String roundTitle) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        12 + MediaQuery.of(context).viewPadding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Preview button
+          Expanded(
+            child: PrimaryButton(
+              width: double.infinity,
+              height: 56,
+              label: 'Preview',
+              backgroundColor: Colors.white,
+              labelColor: TurbColors.gray[800]!,
+              iconColor: TurbColors.gray[800]!,
+              borderColor: TurbColors.gray[100],
+              onPressed: _showShareCardPreview,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Share button (primary gradient)
+          Expanded(
+            flex: 2,
+            child: PrimaryButton(
+              width: double.infinity,
+              height: 56,
+              label: 'Share my story',
+              icon: Icons.ios_share,
+              gradientBackground: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              onPressed: () => _shareStoryCard(roundTitle),
+            ),
+          ),
+        ],
       ),
     );
   }
