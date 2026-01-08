@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 
@@ -328,7 +329,10 @@ class _RoastTabState extends State<RoastTab> {
                         ),
                         const SizedBox(height: 16),
                         FilledButton.icon(
-                          onPressed: _generateRoast,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _generateRoast();
+                          },
                           icon: const Icon(Icons.refresh),
                           label: const Text('Try Again'),
                           style: FilledButton.styleFrom(
@@ -344,7 +348,10 @@ class _RoastTabState extends State<RoastTab> {
                         const SizedBox(height: 24),
                         Center(
                           child: OutlinedButton.icon(
-                            onPressed: _generateRoast,
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              _generateRoast();
+                            },
                             icon: const Icon(Icons.refresh),
                             label: const Text('Roll Again (50-50)'),
                             style: OutlinedButton.styleFrom(

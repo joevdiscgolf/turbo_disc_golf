@@ -14,7 +14,7 @@ class HoleScoreColors {
 
   // Static color constants - SINGLE SOURCE OF TRUTH
   static const Color birdie = Color(0xFF137e66);
-  static Color par = TurbColors.gray[400]!;
+  static Color par = TurbColors.gray[300]!;
   static const Color bogey = Color(0xFFFF7A7A);
   static const Color doubleBogeyPlus = Color(0xFFD32F2F);
 
@@ -22,22 +22,13 @@ class HoleScoreColors {
   static List<Color> getGradientColors(int relativeScore) {
     if (relativeScore < 0) {
       // Birdie - green gradient
-      return [
-        birdie.withValues(alpha: 0.25),
-        birdie.withValues(alpha: 0.15),
-      ];
+      return [birdie.withValues(alpha: 0.25), birdie.withValues(alpha: 0.15)];
     } else if (relativeScore == 0) {
       // Par - grey gradient
-      return [
-        par.withValues(alpha: 0.3),
-        par.withValues(alpha: 0.2),
-      ];
+      return [par.withValues(alpha: 0.3), par.withValues(alpha: 0.2)];
     } else if (relativeScore == 1) {
       // Bogey - light red gradient
-      return [
-        bogey.withValues(alpha: 0.25),
-        bogey.withValues(alpha: 0.15),
-      ];
+      return [bogey.withValues(alpha: 0.25), bogey.withValues(alpha: 0.15)];
     } else {
       // Double bogey+ - dark red gradient
       return [

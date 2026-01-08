@@ -1276,7 +1276,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   void _handleClose() {
     HapticFeedback.lightImpact();
-    // Check if any holes have descriptions - if not, reset to inactive state
+    // Check if any holes have descriptions or course is selected
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is RecordRoundActive) {
       bool anyHolesFilled = false;
@@ -1288,8 +1288,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         }
       }
 
-      // If no holes are filled, reset to inactive state
-      if (!anyHolesFilled) {
+      final bool hasCourseSelected = state.selectedCourse != null;
+
+      // Only reset to inactive if no holes filled AND no course selected
+      if (!anyHolesFilled && !hasCourseSelected) {
         _recordRoundCubit.clearOnLogout();
       }
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 
 class ThrowTypeComparisonCard extends StatelessWidget {
@@ -226,7 +227,10 @@ class _ThrowTypeColumn extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: onBreakdownTap,
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          onBreakdownTap();
+        },
         icon: const Icon(Icons.expand_more, size: 18),
         label: const Text('View Breakdown'),
         style: OutlinedButton.styleFrom(

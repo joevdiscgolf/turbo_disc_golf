@@ -158,7 +158,9 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
         return BlocBuilder<RecordRoundCubit, RecordRoundState>(
           builder: (context, recordRoundState) {
-            if (recordRoundState is RecordRoundActive) {
+            // Show continue banner only when recording is active AND course is selected
+            if (recordRoundState is RecordRoundActive &&
+                recordRoundState.selectedCourse != null) {
               return Positioned(
                 left: 0,
                 right: 0,
