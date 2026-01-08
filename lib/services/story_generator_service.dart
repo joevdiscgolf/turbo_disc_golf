@@ -42,6 +42,15 @@ class StoryGeneratorService {
           continue;
         }
 
+        // Check for likely truncated response - complete YAML should be >1500 chars
+        // and should contain key sections like 'weaknesses' and 'biggestOpportunity'
+        if (response.length < 1500 || !response.contains('weaknesses:')) {
+          debugPrint('Response appears truncated (${response.length} chars, missing key sections). Retrying...');
+          retryCount++;
+          await Future.delayed(Duration(seconds: retryCount));
+          continue;
+        }
+
         // Parse response into AIContent with segments
         final aiContent = _parseStoryResponse(response, round);
 
@@ -89,7 +98,22 @@ class StoryGeneratorService {
     final String date = round.playedRoundAt;
 
     buffer.writeln('''
-You are a knowledgeable disc golf coach analyzing a player's round.
+You are ScoreSensei - a wise, caring disc golf coach who sees your player's potential.
+Your role is to be honest about what happened, but always frame it as opportunity.
+
+TONE GUIDELINES:
+- Be direct about problems but frame them as "strokes left on the course"
+- Always connect weaknesses to specific, achievable improvements
+- Use "you could have" and "next time" language, never "you failed"
+- Celebrate genuine strengths without empty praise
+- End with hope: the path forward is clear
+
+BAD: "Your C2 putting was terrible at 8%."
+GOOD: "C2 putting left ~3 strokes on the course. At your typical 20% rate, those putts become birdies."
+
+BAD: "You made too many mistakes."
+GOOD: "3 OB penalties cost you 3 strokes. Eliminate those, and this is a -2 round."
+
 Your task is to provide a structured breakdown in YAML format with specific sections.
 
 # Round Information
@@ -127,6 +151,8 @@ ${_formatDiscPerformance(analysis)}
 ${_formatDiscByHole(round)}
 # Shot Shape Performance
 ${_formatShotShapePerformance(round)}
+# Stroke Cost Analysis (USE THIS DATA for strokeCostBreakdown and whatCouldHaveBeen)
+${_formatStrokeCostAnalysis(round, analysis)}
 # CRITICAL: You MUST output ALL sections below. Keep explanations to 1-2 sentences max.
 # Output raw YAML only - NO markdown code blocks, NO ``` symbols.
 
@@ -164,6 +190,24 @@ shareHighlightStats:
   - statId: [STAT_ID]
     reason: [why this stat is notable - 5-10 words]
 shareableHeadline: [1-2 SHORT sentences for social sharing. Start with "You" not "This round". Use simple words over verbose phrases. Be encouraging but honest. Example: "You crushed it with 5 birdies and 80% C1 putting. A few OBs held you back from going even lower."]
+strokeCostBreakdown:
+  - area: [area name from Stroke Cost Analysis above]
+    strokesLost: [number]
+    explanation: [1 sentence explaining WHY strokes were lost - use Sensei tone]
+whatCouldHaveBeen:
+  currentScore: [current score relative to par, e.g., "+5" or "-2"]
+  potentialScore: [best potential score if all issues fixed]
+  scenarios:
+    - fix: [area to fix, e.g., "C2 putting"]
+      resultScore: [score if this alone is fixed]
+      strokesSaved: [number of strokes saved]
+    - fix: [another area]
+      resultScore: [score if this alone is fixed]
+      strokesSaved: [number]
+    - fix: "All of the above"
+      resultScore: [best potential score]
+      strokesSaved: [total strokes saveable]
+  encouragement: [1 sentence encouraging message about the path forward. Use Sensei tone - hopeful and actionable. Example: "Your next under-par round is 6 smart decisions away."]
 
 # Card IDs: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED, C1_PUTTING, C1X_PUTTING, C2_PUTTING, MISTAKES, THROW_TYPE_COMPARISON, SHOT_SHAPE_BREAKDOWN, DISC_PERFORMANCE:{name}, HOLE_TYPE:Par {3/4/5}
 # Share Stat IDs (pick 2 most notable): c1PuttPct, c1xPuttPct, c2PuttPct, fairwayPct, parkedPct, c1InRegPct, obPct, birdies, bounceBack
@@ -176,6 +220,14 @@ shareableHeadline: [1-2 SHORT sentences for social sharing. Start with "You" not
 - Keep ALL text SHORT - 1-2 sentences max per explanation
 - CRITICAL: When a hole type has 40%+ birdie rate but high average due to ONE outlier (double/triple bogey), that is NOT a weakness - it's good play with one anomaly. Only flag as weakness if there's a PATTERN of poor scores across multiple holes.
 - DISC BLAME RULE: Only blame a disc for poor performance if: (1) at least 2 bad shots with that disc, AND (2) bad shots account for ≥50% of total shots with that disc. When mentioning a disc weakness, cite specific holes (e.g., "PD2 struggled on Holes 7 and 15 (both OB)").
+- LIMIT: Maximum 2 items in strengths list, maximum 2 items in weaknesses list
+
+# FINAL CRITICAL REMINDER:
+# You MUST output ALL sections in the YAML structure above, including:
+# roundTitle, overview, strengths, weaknesses, mistakes, biggestOpportunity,
+# practiceAdvice, strategyTips, shareHighlightStats, shareableHeadline,
+# strokeCostBreakdown, AND whatCouldHaveBeen.
+# DO NOT stop early. Complete the entire response.
 ''');
 
     return buffer.toString();
@@ -394,6 +446,79 @@ shareableHeadline: [1-2 SHORT sentences for social sharing. Start with "You" not
 
     if (buffer.isEmpty) {
       return 'No throw type comparison data available';
+    }
+
+    return buffer.toString();
+  }
+
+  /// Calculate stroke cost analysis for the prompt
+  /// Uses mutually exclusive categories: C1X putting misses and OB penalties
+  String _formatStrokeCostAnalysis(DGRound round, dynamic analysis) {
+    final StringBuffer buffer = StringBuffer();
+    final List<({String area, int strokes, String detail})> costs = [];
+
+    // C1X putting (11-33ft) - the real differentiator
+    // Each miss = 1 stroke lost (simple count, no benchmarks)
+    // We use C1X instead of C1 because putts inside 11ft are tap-ins that everyone makes
+    final int c1xMisses = analysis.puttingStats.c1xAttempts - analysis.puttingStats.c1xMakes;
+    if (c1xMisses > 0) {
+      costs.add((
+        area: 'C1X Putting',
+        strokes: c1xMisses,
+        detail: '$c1xMisses missed of ${analysis.puttingStats.c1xAttempts} from 11-33 feet',
+      ));
+    }
+
+    // Count OB penalties (always independent, doesn't overlap with putting)
+    int obStrokes = 0;
+    final List<int> obHoles = [];
+    for (final hole in round.holes) {
+      for (final throw_ in hole.throws) {
+        if (throw_.penaltyStrokes > 0) {
+          obStrokes += throw_.penaltyStrokes;
+          if (!obHoles.contains(hole.number)) {
+            obHoles.add(hole.number);
+          }
+        }
+      }
+    }
+    if (obStrokes > 0) {
+      final String holesStr = obHoles.length <= 3
+          ? 'holes ${obHoles.join(', ')}'
+          : '${obHoles.length} holes';
+      costs.add((
+        area: 'OB Penalties',
+        strokes: obStrokes,
+        detail: '$obStrokes penalty strokes on $holesStr',
+      ));
+    }
+
+    // NOTE: We intentionally don't count:
+    // - C1 (0-33ft) separately - C1X is already counted, and tap-ins <11ft are gimmes
+    // - 3-putts - already reflected in C1X misses (the miss that caused the 3-putt)
+    // - C2 (33-66ft) - you're not expected to make these, so missing isn't "losing" strokes
+
+    // Sort by strokes lost (highest first)
+    costs.sort((a, b) => b.strokes.compareTo(a.strokes));
+
+    // Calculate total and potential score
+    final int totalScore = round.holes.fold(0, (sum, h) => sum + h.holeScore);
+    final int coursePar = round.holes.fold(0, (sum, h) => sum + h.par);
+    final int currentRelative = totalScore - coursePar;
+    final int totalStrokesLost = costs.fold(0, (sum, c) => sum + c.strokes);
+    final int potentialRelative = currentRelative - totalStrokesLost;
+
+    buffer.writeln('Current Score: ${currentRelative >= 0 ? '+' : ''}$currentRelative');
+    buffer.writeln('Potential Score (if all fixed): ${potentialRelative >= 0 ? '+' : ''}$potentialRelative');
+    buffer.writeln('Total Strokes Left on Course: $totalStrokesLost');
+    buffer.writeln();
+
+    if (costs.isEmpty) {
+      buffer.writeln('No significant stroke costs identified - clean round!');
+    } else {
+      for (final cost in costs) {
+        buffer.writeln('${cost.area}: ~${cost.strokes} strokes (${cost.detail})');
+      }
     }
 
     return buffer.toString();

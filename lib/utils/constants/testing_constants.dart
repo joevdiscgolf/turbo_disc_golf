@@ -97,3 +97,11 @@ const bool useRoundHistoryRowV2 = true;
 /// When true, uses the Story Poster with Score Journey graph for sharing.
 /// When false, uses the compact Story Highlights Card.
 const bool useStoryPosterShareCard = true;
+
+/// When true, shows the "What Could Have Been" card in the story.
+/// When false, hides the entire card.
+const bool showWhatCouldHaveBeenCard = true;
+
+/// When true, shows the encouragement message in the "What Could Have Been" card.
+/// When false, hides it to save vertical space.
+const bool showWhatCouldHaveBeenEncouragement = false;

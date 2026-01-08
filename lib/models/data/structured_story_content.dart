@@ -33,6 +33,87 @@ class ShareHighlightStat {
   Map<String, dynamic> toJson() => _$ShareHighlightStatToJson(this);
 }
 
+/// Stroke cost breakdown for "What Cost You Strokes" section
+/// Shows how many strokes were lost in each area with explanation
+@JsonSerializable(explicitToJson: true, anyMap: true)
+class StrokeCost {
+  const StrokeCost({
+    required this.area,
+    required this.strokesLost,
+    required this.explanation,
+  });
+
+  /// The area that cost strokes (e.g., "C2 Putting", "OB Penalties")
+  final String area;
+
+  /// Estimated number of strokes lost in this area
+  final int strokesLost;
+
+  /// Detailed explanation of why strokes were lost
+  /// Example: "3 missed C2 putts at 8% vs your 20% average"
+  final String explanation;
+
+  factory StrokeCost.fromJson(Map<String, dynamic> json) =>
+      _$StrokeCostFromJson(json);
+
+  Map<String, dynamic> toJson() => _$StrokeCostToJson(this);
+}
+
+/// Single improvement scenario for "What Could Have Been" section
+/// Shows what score would result from fixing one area
+@JsonSerializable(explicitToJson: true, anyMap: true)
+class ImprovementScenario {
+  const ImprovementScenario({
+    required this.fix,
+    required this.resultScore,
+    required this.strokesSaved,
+  });
+
+  /// What to fix (e.g., "C2 putting", "OB penalties", "All of the above")
+  final String fix;
+
+  /// Resulting score if this area is fixed (e.g., "+2", "-1")
+  final String resultScore;
+
+  /// Number of strokes saved by this fix
+  final int strokesSaved;
+
+  factory ImprovementScenario.fromJson(Map<String, dynamic> json) =>
+      _$ImprovementScenarioFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ImprovementScenarioToJson(this);
+}
+
+/// "What Could Have Been" section showing potential score improvements
+/// Numbers-focused, actionable, forward-looking
+@JsonSerializable(explicitToJson: true, anyMap: true)
+class WhatCouldHaveBeen {
+  const WhatCouldHaveBeen({
+    required this.currentScore,
+    required this.potentialScore,
+    required this.scenarios,
+    required this.encouragement,
+  });
+
+  /// Current round score relative to par (e.g., "+5", "-2")
+  final String currentScore;
+
+  /// Best potential score if all issues fixed (e.g., "-1")
+  final String potentialScore;
+
+  /// List of improvement scenarios showing what each fix would achieve
+  final List<ImprovementScenario> scenarios;
+
+  /// Encouraging message about the path forward
+  /// Example: "Your next under-par round is 6 smart decisions away."
+  final String encouragement;
+
+  factory WhatCouldHaveBeen.fromJson(Map<String, dynamic> json) =>
+      _$WhatCouldHaveBeenFromJson(json);
+
+  Map<String, dynamic> toJson() => _$WhatCouldHaveBeenToJson(this);
+}
+
 /// A single stat highlight in the story with explanation
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class StoryHighlight {
@@ -89,6 +170,8 @@ class StructuredStoryContent {
     this.strategyTips = const [],
     this.shareHighlightStats,
     this.shareableHeadline,
+    this.strokeCostBreakdown,
+    this.whatCouldHaveBeen,
     required this.roundVersionId,
   });
 
@@ -138,6 +221,14 @@ class StructuredStoryContent {
   /// Example: "Crushed it at Maple Hill with 5 birdies and only 1 bogey.
   /// The putting was locked in from C1X. Personal best incoming!"
   final String? shareableHeadline;
+
+  /// Detailed breakdown of strokes lost in each area
+  /// Used in "What Cost You Strokes" section with explanations
+  final List<StrokeCost>? strokeCostBreakdown;
+
+  /// "What Could Have Been" hero card data
+  /// Shows current vs potential score and improvement scenarios
+  final WhatCouldHaveBeen? whatCouldHaveBeen;
 
   /// Version ID of the round this story was generated for
   /// Used to detect if story is outdated
