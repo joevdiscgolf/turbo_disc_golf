@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/what_could_have_been_card.dart';
 import 'package:turbo_disc_golf/components/stat_card_registry.dart';
 import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/hole_type_story_card.dart';
@@ -52,6 +53,11 @@ class StructuredStoryRenderer extends StatelessWidget {
       children: [
         _buildHeadline(context),
         const SizedBox(height: 12),
+        // What Could Have Been - After headline (from AI data)
+        if (showWhatCouldHaveBeenCard && content.whatCouldHaveBeen != null) ...[
+          WhatCouldHaveBeenCard(data: content.whatCouldHaveBeen!),
+          const SizedBox(height: 12),
+        ],
         if (content.strengths.isNotEmpty) ...[
           _buildStrengths(context),
           const SizedBox(height: 12),
@@ -64,11 +70,6 @@ class StructuredStoryRenderer extends StatelessWidget {
         // Blow-up breakdown (calculated from round data)
         if (_hasBlowUpHoles) ...[
           _buildBlowUpBreakdown(context),
-          const SizedBox(height: 12),
-        ],
-        // How close to elite (calculated from round data, controlled by testing flag)
-        if (_hasBlowUpHoles && showElitePotentialCard) ...[
-          _buildElitePotential(context),
           const SizedBox(height: 12),
         ],
         if (content.biggestOpportunity != null) ...[
@@ -502,8 +503,10 @@ class StructuredStoryRenderer extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFEBEE),
                     borderRadius: BorderRadius.circular(12),
@@ -558,8 +561,9 @@ class StructuredStoryRenderer extends StatelessWidget {
                           color: hasPenalty
                               ? const Color(0xFFD32F2F)
                               : Colors.black87,
-                          fontWeight:
-                              hasPenalty ? FontWeight.w500 : FontWeight.normal,
+                          fontWeight: hasPenalty
+                              ? FontWeight.w500
+                              : FontWeight.normal,
                           height: 1.4,
                         ),
                       ),
@@ -570,141 +574,6 @@ class StructuredStoryRenderer extends StatelessWidget {
             }),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildElitePotential(BuildContext context) {
-    final List<DGHole> blowUps = _blowUpHoles;
-    if (blowUps.isEmpty) return const SizedBox.shrink();
-
-    final int totalScore = round.holes.fold(0, (sum, h) => sum + h.holeScore);
-    final int coursePar = round.holes.fold(0, (sum, h) => sum + h.par);
-    final int currentRelative = totalScore - coursePar;
-
-    // Calculate strokes lost to blow-ups (beyond bogey)
-    // e.g., triple bogey (+3) loses 2 extra strokes vs bogey (+1)
-    final int strokesLostToBlowUps = blowUps.fold(
-      0,
-      (sum, h) =>
-          sum +
-          (h.holeScore - h.par - 1), // -1 because bogey is "expected" worst
-    );
-
-    // Potential score if all blow-ups were bogeys
-    final int potentialRelative = currentRelative - strokesLostToBlowUps;
-    final String currentStr = currentRelative >= 0
-        ? '+$currentRelative'
-        : '$currentRelative';
-    final String potentialStr = potentialRelative >= 0
-        ? '+$potentialRelative'
-        : '$potentialRelative';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white,
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              StorySectionHeader(
-                title: 'How close to elite?',
-                icon: Icons.rocket_launch,
-                accentColor: const Color(0xFF7B1FA2),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildScoreBox(
-                      label: 'You shot',
-                      score: currentStr,
-                      color: currentRelative < 0
-                          ? const Color(0xFF4CAF50)
-                          : const Color(0xFFFF7043),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.arrow_forward, color: Colors.grey),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildScoreBox(
-                      label: 'Potential',
-                      score: potentialStr,
-                      color: const Color(0xFF7B1FA2),
-                      highlight: true,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'If ${blowUps.length == 1 ? 'that blow-up was' : 'those ${blowUps.length} blow-ups were'} '
-                'just ${blowUps.length == 1 ? 'a bogey' : 'bogeys'}, you\'d be at $potentialStr.',
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'That\'s $strokesLostToBlowUps stroke${strokesLostToBlowUps == 1 ? '' : 's'} '
-                'lost to decision errors, not skill.',
-                style: const TextStyle(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: Colors.black54,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScoreBox({
-    required String label,
-    required String score,
-    required Color color,
-    bool highlight = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: highlight ? color.withValues(alpha: 0.1) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: highlight ? color : Colors.grey.shade300,
-          width: highlight ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            score,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -746,7 +615,8 @@ class StructuredStoryRenderer extends StatelessWidget {
     // Landing spot with arrow (using short names for compact display)
     if (throw_.landingSpot != null) {
       final String landing =
-          landingSpotToShortName[throw_.landingSpot] ?? throw_.landingSpot!.name;
+          landingSpotToShortName[throw_.landingSpot] ??
+          throw_.landingSpot!.name;
       parts.add('→ $landing');
     }
 

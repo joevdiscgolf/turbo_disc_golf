@@ -14,6 +14,54 @@ ShareHighlightStat _$ShareHighlightStatFromJson(Map json) => ShareHighlightStat(
 Map<String, dynamic> _$ShareHighlightStatToJson(ShareHighlightStat instance) =>
     <String, dynamic>{'statId': instance.statId, 'reason': instance.reason};
 
+StrokeCost _$StrokeCostFromJson(Map json) => StrokeCost(
+  area: json['area'] as String,
+  strokesLost: (json['strokesLost'] as num).toInt(),
+  explanation: json['explanation'] as String,
+);
+
+Map<String, dynamic> _$StrokeCostToJson(StrokeCost instance) =>
+    <String, dynamic>{
+      'area': instance.area,
+      'strokesLost': instance.strokesLost,
+      'explanation': instance.explanation,
+    };
+
+ImprovementScenario _$ImprovementScenarioFromJson(Map json) =>
+    ImprovementScenario(
+      fix: json['fix'] as String,
+      resultScore: json['resultScore'] as String,
+      strokesSaved: (json['strokesSaved'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$ImprovementScenarioToJson(
+  ImprovementScenario instance,
+) => <String, dynamic>{
+  'fix': instance.fix,
+  'resultScore': instance.resultScore,
+  'strokesSaved': instance.strokesSaved,
+};
+
+WhatCouldHaveBeen _$WhatCouldHaveBeenFromJson(Map json) => WhatCouldHaveBeen(
+  currentScore: json['currentScore'] as String,
+  potentialScore: json['potentialScore'] as String,
+  scenarios: (json['scenarios'] as List<dynamic>)
+      .map(
+        (e) =>
+            ImprovementScenario.fromJson(Map<String, dynamic>.from(e as Map)),
+      )
+      .toList(),
+  encouragement: json['encouragement'] as String,
+);
+
+Map<String, dynamic> _$WhatCouldHaveBeenToJson(WhatCouldHaveBeen instance) =>
+    <String, dynamic>{
+      'currentScore': instance.currentScore,
+      'potentialScore': instance.potentialScore,
+      'scenarios': instance.scenarios.map((e) => e.toJson()).toList(),
+      'encouragement': instance.encouragement,
+    };
+
 StoryHighlight _$StoryHighlightFromJson(Map json) => StoryHighlight(
   headline: json['headline'] as String?,
   cardId: json['cardId'] as String?,
@@ -66,6 +114,14 @@ StructuredStoryContent _$StructuredStoryContentFromJson(
       )
       .toList(),
   shareableHeadline: json['shareableHeadline'] as String?,
+  strokeCostBreakdown: (json['strokeCostBreakdown'] as List<dynamic>?)
+      ?.map((e) => StrokeCost.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList(),
+  whatCouldHaveBeen: json['whatCouldHaveBeen'] == null
+      ? null
+      : WhatCouldHaveBeen.fromJson(
+          Map<String, dynamic>.from(json['whatCouldHaveBeen'] as Map),
+        ),
   roundVersionId: (json['roundVersionId'] as num).toInt(),
 );
 
@@ -84,5 +140,9 @@ Map<String, dynamic> _$StructuredStoryContentToJson(
       ?.map((e) => e.toJson())
       .toList(),
   'shareableHeadline': instance.shareableHeadline,
+  'strokeCostBreakdown': instance.strokeCostBreakdown
+      ?.map((e) => e.toJson())
+      .toList(),
+  'whatCouldHaveBeen': instance.whatCouldHaveBeen?.toJson(),
   'roundVersionId': instance.roundVersionId,
 };

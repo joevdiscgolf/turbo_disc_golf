@@ -68,10 +68,10 @@ class GeminiService {
           model: modelToUse,
           apiKey: _apiKey,
           generationConfig: GenerationConfig(
-            temperature: 1.0, // Higher temperature for creative content
+            temperature: 0.8, // Balanced for creative but complete output
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: 4096,
+            maxOutputTokens: 8192, // Increased for complete YAML responses
           ),
         );
         return fullModel
