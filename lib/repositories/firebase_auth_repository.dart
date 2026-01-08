@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
 import 'package:turbo_disc_golf/repositories/auth_repository.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
@@ -82,9 +87,144 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<bool> signInWithGoogle() {
-    // todo: implement signIn
-    throw UnimplementedError();
+  Future<bool> signInWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      // User cancelled the sign-in
+      if (googleUser == null) {
+        return false;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+
+      if (userCredential.user == null) {
+        return false;
+      }
+
+      // Check if this is a new user and create Firestore document if needed
+      final bool isNewUser =
+          userCredential.additionalUserInfo?.isNewUser ?? false;
+      if (isNewUser) {
+        await FirebaseFirestore.instance
+            .collection(kUsersCollection)
+            .doc(userCredential.user!.uid)
+            .set(<String, dynamic>{
+              'uid': userCredential.user!.uid,
+              'createdAt': DateTime.now().toUtc().toIso8601String(),
+            });
+      }
+
+      return true;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Google sign-in Firebase exception: $e');
+      exception = e.message ?? 'Google sign-in failed';
+      return false;
+    } catch (e, trace) {
+      log('Google sign-in error: $e');
+      log(trace.toString());
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[FirebaseAuthRepository][signInWithGoogle] exception',
+      );
+      exception = 'Google sign-in failed. Please try again.';
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> signInWithApple() async {
+    try {
+      // Generate a random nonce for security
+      final String rawNonce = _generateNonce();
+      final String nonce = _sha256ofString(rawNonce);
+
+      final AuthorizationCredentialAppleID appleCredential =
+          await SignInWithApple.getAppleIDCredential(
+            scopes: [
+              AppleIDAuthorizationScopes.email,
+              AppleIDAuthorizationScopes.fullName,
+            ],
+            nonce: nonce,
+          );
+
+      final OAuthCredential oauthCredential = OAuthProvider('apple.com')
+          .credential(
+            idToken: appleCredential.identityToken,
+            rawNonce: rawNonce,
+          );
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(oauthCredential);
+
+      if (userCredential.user == null) {
+        return false;
+      }
+
+      // Check if this is a new user and create Firestore document if needed
+      final bool isNewUser =
+          userCredential.additionalUserInfo?.isNewUser ?? false;
+      if (isNewUser) {
+        await FirebaseFirestore.instance
+            .collection(kUsersCollection)
+            .doc(userCredential.user!.uid)
+            .set(<String, dynamic>{
+              'uid': userCredential.user!.uid,
+              'createdAt': DateTime.now().toUtc().toIso8601String(),
+            });
+      }
+
+      return true;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // User cancelled the sign-in
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return false;
+      }
+      debugPrint('Apple sign-in authorization exception: $e');
+      exception = 'Apple sign-in failed';
+      return false;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Apple sign-in Firebase exception: $e');
+      exception = e.message ?? 'Apple sign-in failed';
+      return false;
+    } catch (e, trace) {
+      log('Apple sign-in error: $e');
+      log(trace.toString());
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[FirebaseAuthRepository][signInWithApple] exception',
+      );
+      exception = 'Apple sign-in failed. Please try again.';
+      return false;
+    }
+  }
+
+  /// Generates a random nonce string for Apple Sign-In security
+  String _generateNonce([int length = 32]) {
+    const String charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final math.Random random = math.Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  /// Returns the SHA256 hash of the input string
+  String _sha256ofString(String input) {
+    final List<int> bytes = utf8.encode(input);
+    final Digest digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
   @override

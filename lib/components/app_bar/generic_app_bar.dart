@@ -6,6 +6,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.topViewPadding,
     required this.title,
+    this.titleIcon,
     this.rightWidget,
     this.leftWidget,
     this.bottomWidget,
@@ -17,6 +18,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   final String title;
+  final Widget? titleIcon;
   final double topViewPadding;
   final Widget? rightWidget;
   final Widget? leftWidget;
@@ -70,12 +72,22 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: SizedBox(
                     height: 40,
                     child: Center(
-                      child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: foregroundColor,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (titleIcon != null) ...[
+                            titleIcon!,
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            title,
+                            style:
+                                Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: foregroundColor,
+                                    ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

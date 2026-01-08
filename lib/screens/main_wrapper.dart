@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/screens/test_roast_screen.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class MainWrapper extends StatefulWidget {
   const MainWrapper({super.key});
@@ -25,10 +29,55 @@ class _MainWrapperState extends State<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    if (!useBottomNavigationBar) {
+      return _buildRoundHistoryOnly(context);
+    }
+    return _buildWithBottomNavigation(context);
+  }
+
+  Widget _buildRoundHistoryOnly(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFEEE8F5),
+            Color(0xFFECECEE),
+            Color(0xFFE8F4E8),
+            Color(0xFFEAE8F0),
+          ],
+          stops: [0.0, 0.3, 0.7, 1.0],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: 'ScoreSensei',
+          titleIcon: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset(
+              'assets/icon/app_icon_clear_bg.png',
+              width: 28,
+              height: 28,
+            ),
+          ),
+          hasBackButton: false,
+          leftWidget: _buildSettingsButton(context),
+        ),
+        body: RoundHistoryScreen(
+          bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWithBottomNavigation(BuildContext context) {
     String appBarTitle;
     switch (_selectedIndex) {
       case 0:
-        appBarTitle = 'Round history';
+        appBarTitle = 'ScoreSensei';
         break;
       case 1:
         appBarTitle = 'Add round';
@@ -48,7 +97,7 @@ class _MainWrapperState extends State<MainWrapper> {
       case 6:
         appBarTitle = 'Settings';
       default:
-        appBarTitle = 'Round history';
+        appBarTitle = 'ScoreSensei';
     }
 
     return Container(
@@ -70,7 +119,18 @@ class _MainWrapperState extends State<MainWrapper> {
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
           title: appBarTitle,
+          titleIcon: _selectedIndex == 0
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.asset(
+                    'assets/icon/app_icon_clear_bg.png',
+                    width: 28,
+                    height: 28,
+                  ),
+                )
+              : null,
           hasBackButton: false,
+          leftWidget: _selectedIndex == 0 ? _buildSettingsButton(context) : null,
         ),
         body: IndexedStack(
           index: _selectedIndex,
@@ -121,6 +181,18 @@ class _MainWrapperState extends State<MainWrapper> {
           onTap: _onItemTapped,
           type: BottomNavigationBarType.fixed,
         ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsButton(BuildContext context) {
+    return Center(
+      child: IconButton(
+        icon: const Icon(Icons.settings, size: 24),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          pushCupertinoRoute(context, const SettingsScreen());
+        },
       ),
     );
   }

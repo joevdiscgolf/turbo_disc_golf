@@ -1,4 +1,5 @@
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
+import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 
 abstract class AuthDatabaseRepository {
@@ -6,7 +7,7 @@ abstract class AuthDatabaseRepository {
     AuthUser authUser,
     String username,
     String displayName, {
-    int? pdgaNumber,
+    PDGAMetadata? pdgaMetadata,
   });
   Future<bool> saveUserInfoInDatabase(
     AuthUser authUser,

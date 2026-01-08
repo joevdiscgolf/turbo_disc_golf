@@ -49,5 +49,16 @@
 	<string>This app needs microphone access to record your disc golf round descriptions</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>This app needs speech recognition to transcribe your round descriptions</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.866559849247-2fao9ruh7l76tp4qljpvo1q2gfaojvjr</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

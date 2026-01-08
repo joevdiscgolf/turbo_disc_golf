@@ -21,6 +21,7 @@ import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
+import 'package:turbo_disc_golf/services/web_scraper_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/voice/ios_voice_service.dart';
 import 'package:turbo_disc_golf/services/voice/speech_to_text_service.dart';
@@ -36,12 +37,12 @@ Future<void> setUpLocator() async {
   );
 
   // Auth / Navigation Services
-  final AuthDatabaseService authDatabaseService = AuthDatabaseService(
-    FirebaseAuthDatabaseRepository(),
+  locator.registerSingleton<AuthDatabaseService>(
+    AuthDatabaseService(FirebaseAuthDatabaseRepository()),
   );
   final AuthService authService = AuthService(
     FirebaseAuthRepository(),
-    authDatabaseService,
+    locator.get<AuthDatabaseService>(),
   );
   locator.registerSingleton<AuthService>(authService);
   locator.registerSingleton(AppPhaseController(authService: authService));
@@ -69,6 +70,7 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());
+  locator.registerSingleton<WebScraperService>(WebScraperService());
   locator.registerLazySingleton<CourseSearchService>(
     () => CourseSearchService(),
   );

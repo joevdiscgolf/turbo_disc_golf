@@ -13,8 +13,11 @@ TurboUser _$TurboUserFromJson(Map json) => TurboUser(
       .toList(),
   displayName: json['displayName'] as String,
   uid: json['uid'] as String,
-  pdgaNum: (json['pdgaNum'] as num?)?.toInt(),
-  pdgaRating: (json['pdgaRating'] as num?)?.toInt(),
+  pdgaMetadata: json['pdgaMetadata'] == null
+      ? null
+      : PDGAMetadata.fromJson(
+          Map<String, dynamic>.from(json['pdgaMetadata'] as Map),
+        ),
   eventIds: (json['eventIds'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
@@ -29,8 +32,7 @@ Map<String, dynamic> _$TurboUserToJson(TurboUser instance) => <String, dynamic>{
   'keywords': instance.keywords,
   'displayName': instance.displayName,
   'uid': instance.uid,
-  'pdgaNum': instance.pdgaNum,
-  'pdgaRating': instance.pdgaRating,
+  'pdgaMetadata': instance.pdgaMetadata?.toJson(),
   'eventIds': instance.eventIds,
   'isAdmin': instance.isAdmin,
   'trebuchets': instance.trebuchets,
@@ -40,8 +42,11 @@ TurboUserMetadata _$TurboUserMetadataFromJson(Map json) => TurboUserMetadata(
   username: json['username'] as String,
   displayName: json['displayName'] as String,
   uid: json['uid'] as String,
-  pdgaNum: (json['pdgaNum'] as num?)?.toInt(),
-  pdgaRating: (json['pdgaRating'] as num?)?.toInt(),
+  pdgaMetadata: json['pdgaMetadata'] == null
+      ? null
+      : PDGAMetadata.fromJson(
+          Map<String, dynamic>.from(json['pdgaMetadata'] as Map),
+        ),
 );
 
 Map<String, dynamic> _$TurboUserMetadataToJson(TurboUserMetadata instance) =>
@@ -49,6 +54,5 @@ Map<String, dynamic> _$TurboUserMetadataToJson(TurboUserMetadata instance) =>
       'username': instance.username,
       'displayName': instance.displayName,
       'uid': instance.uid,
-      'pdgaNum': instance.pdgaNum,
-      'pdgaRating': instance.pdgaRating,
+      'pdgaMetadata': instance.pdgaMetadata?.toJson(),
     };

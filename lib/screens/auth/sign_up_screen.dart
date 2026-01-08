@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -126,9 +128,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
           const SizedBox(height: 24),
           _signUpButton(context),
           const SizedBox(height: 12),
-          const GoogleSignInButton(),
+          GoogleSignInButton(onPressed: _handleGoogleSignIn),
           const SizedBox(height: 12),
-          const AppleSignInButton(),
+          AppleSignInButton(onPressed: _handleAppleSignIn),
           const SizedBox(height: 16),
           if (_errorText != null)
             Center(
@@ -210,5 +212,68 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _confirmPassword == null ||
         _confirmPassword!.isEmpty ||
         _password != _confirmPassword;
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _errorText = null;
+    });
+
+    try {
+      final bool success = await _authService.attemptSignInWithGoogle();
+
+      if (!success && mounted) {
+        setState(() {
+          _errorText = _authService.errorMessage;
+        });
+      }
+    } catch (e, trace) {
+      log(e.toString());
+      log(trace.toString());
+      if (mounted) {
+        setState(() {
+          _errorText = 'Google sign-in failed. Please try again.';
+        });
+      }
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[SignUpScreen][_handleGoogleSignIn] exception',
+      );
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _buttonState = ButtonState.loading;
+      _errorText = null;
+    });
+
+    try {
+      final bool success = await _authService.attemptSignInWithApple();
+
+      if (!success && mounted) {
+        setState(() {
+          _buttonState = ButtonState.retry;
+          _errorText = _authService.errorMessage;
+        });
+      } else if (mounted) {
+        setState(() => _buttonState = ButtonState.success);
+      }
+    } catch (e, trace) {
+      log(e.toString());
+      log(trace.toString());
+      if (mounted) {
+        setState(() {
+          _buttonState = ButtonState.retry;
+          _errorText = 'Apple sign-in failed. Please try again.';
+        });
+      }
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[SignUpScreen][_handleAppleSignIn] exception',
+      );
+    }
   }
 }

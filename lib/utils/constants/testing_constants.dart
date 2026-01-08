@@ -84,4 +84,12 @@ const List<Map<String, int>> testScorecardData = [
   {'holeNumber': 18, 'score': 3, 'par': 3, 'distanceFeet': 373},
 ];
 
+/// When true, shows the bottom navigation bar with all tabs.
+/// When false, the app opens directly to the Round History screen.
+const bool useBottomNavigationBar = false;
+
 const List<String> adminUids = ['9abVDwf3ZVM8unEzqMcWk95in2F3'];
+
+/// When true, uses RoundHistoryRowV2 with score distribution bar and date.
+/// When false, uses the original RoundHistoryRow layout.
+const bool useRoundHistoryRowV2 = true;

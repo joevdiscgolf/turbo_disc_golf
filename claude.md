@@ -68,6 +68,12 @@ These definitions follow PDGA (Professional Disc Golf Association) standards.
    - UI components display and capture user input
    - Don't mix concerns
 
+7. **Never Use Negative Margins**: Negative margins cause layout errors and are a code smell
+   - If you need to extend content past its container bounds, restructure the layout instead
+   - Use proper padding/margin on parent containers
+   - Consider using `Expanded` widgets or adjusting container padding
+   - Negative margins often indicate a flawed layout hierarchy
+
 **Why This Matters**: Complex code with multiple workarounds leads to bugs. Simple, well-architected code is easier to understand, maintain, and extend.
 
 ### Widget Composition Philosophy
@@ -981,3 +987,4 @@ Before submitting code, verify:
 - [ ] Error states and empty states are handled
 - [ ] Analytics tracking is added for user interactions
 - [ ] **Cubits/Blocs are accessed using `BlocProvider.of<T>(context)`, NEVER `locator.get<T>()`**
+- [ ] **Never use negative margins** - restructure layout instead
