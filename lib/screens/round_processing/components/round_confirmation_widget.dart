@@ -7,9 +7,14 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/confirmation_holes_grid.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/description_quality_card.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
+import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/utils/description_quality_analyzer.dart';
+import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundConfirmationWidget extends StatefulWidget {
   const RoundConfirmationWidget({
@@ -122,6 +127,9 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
                     missingHoles,
                     hasRequiredFields,
                   ),
+
+                // Quality feedback card
+                _buildQualityFeedbackCard(currentRound),
 
                 // Instructions
                 Padding(
@@ -265,6 +273,141 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildQualityFeedbackCard(PotentialDGRound round) {
+    final DescriptionQualityReport report =
+        DescriptionQualityAnalyzer.analyzeRound(round);
+
+    return DescriptionQualityCard(
+      report: report,
+      onHoleTap: (holeIndex) => _showEditableHoleSheet(context, holeIndex),
+    );
+  }
+
+  void _showEditableHoleSheet(BuildContext context, int holeIndex) {
+    // Set the current editing hole when opening the panel
+    _roundConfirmationCubit.setCurrentEditingHole(holeIndex);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (builderContext) =>
+          BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+            builder: (context, state) {
+              if (state is! ConfirmingRoundActive) {
+                return const SizedBox();
+              }
+              final PotentialDGHole? currentHole = state.currentEditingHole;
+              if (currentHole == null) {
+                return const SizedBox();
+              }
+
+              return EditableHoleDetailPanel(
+                potentialHole: currentHole,
+                holeIndex: holeIndex,
+                onMetadataChanged: ({int? newPar, int? newDistance}) =>
+                    _handleMetadataChanged(
+                      holeIndex,
+                      newPar: newPar,
+                      newDistance: newDistance,
+                    ),
+                onThrowAdded: (throw_, {int? addThrowAtIndex}) =>
+                    _roundConfirmationCubit.addThrow(
+                      holeIndex,
+                      throw_,
+                      addAfterThrowIndex: addThrowAtIndex,
+                    ),
+                onThrowEdited: (throwIndex, updatedThrow) =>
+                    _roundConfirmationCubit.updateThrow(
+                      holeIndex,
+                      throwIndex,
+                      updatedThrow,
+                    ),
+                onThrowDeleted: (throwIndex) =>
+                    _roundConfirmationCubit.deleteThrow(holeIndex, throwIndex),
+                onReorder: (oldIndex, newIndex) =>
+                    _roundConfirmationCubit.reorderThrows(
+                      holeIndex,
+                      oldIndex,
+                      newIndex,
+                    ),
+                onVoiceRecord: () => _handleVoiceRecord(currentHole, holeIndex),
+              );
+            },
+          ),
+    ).then((_) {
+      _roundConfirmationCubit.clearCurrentEditingHole();
+    });
+  }
+
+  void _handleMetadataChanged(
+    int holeIndex, {
+    int? newPar,
+    int? newDistance,
+  }) {
+    final RoundConfirmationState state = _roundConfirmationCubit.state;
+    if (state is! ConfirmingRoundActive) {
+      return;
+    }
+
+    final PotentialDGHole? currentHole =
+        state.potentialRound.holes?[holeIndex];
+    if (currentHole == null) {
+      return;
+    }
+
+    final PotentialDGHole updatedHole = PotentialDGHole(
+      number: currentHole.number,
+      par: newPar,
+      feet: newDistance,
+      throws: currentHole.throws,
+      holeType: currentHole.holeType,
+    );
+    _roundConfirmationCubit.updatePotentialHole(holeIndex, updatedHole);
+  }
+
+  void _handleVoiceRecord(PotentialDGHole currentHole, int holeIndex) {
+    final RoundConfirmationState state = _roundConfirmationCubit.state;
+    final String courseName = (state is ConfirmingRoundActive)
+        ? (state.potentialRound.courseName ?? 'Unknown Course')
+        : 'Unknown Course';
+
+    displayBottomSheet(
+      context,
+      RecordSingleHolePanel(
+        holeNumber: currentHole.number ?? holeIndex + 1,
+        holePar: currentHole.par,
+        holeFeet: currentHole.feet,
+        courseName: courseName,
+        showTestButton: true,
+        onParseComplete: (parsedHole) =>
+            _handleParseComplete(parsedHole, holeIndex),
+        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+      ),
+    );
+  }
+
+  void _handleParseComplete(PotentialDGHole? parsedHole, int holeIndex) {
+    if (parsedHole == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to parse hole'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    _roundConfirmationCubit.updatePotentialHole(holeIndex, parsedHole);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Hole updated successfully!'),
+        backgroundColor: Color(0xFF137e66),
       ),
     );
   }

@@ -13,8 +13,10 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
+import 'package:turbo_disc_golf/components/education/hole_description_examples_screen.dart';
 import 'package:turbo_disc_golf/components/panels/select_image_source_panel.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
@@ -30,6 +32,7 @@ import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String testCourseName = 'Foxwood';
 const int totalHoles = 18;
+const String _hasSeenEducationKey = 'hasSeenHoleDescriptionEducation';
 
 class RecordRoundStepsScreen extends StatefulWidget {
   const RecordRoundStepsScreen({
@@ -80,6 +83,23 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is RecordRoundActive) {
       _loadTextFromCubit(state.currentHoleIndex);
+    }
+
+    // Check if first-time user and show education screen
+    _checkFirstTimeEducation();
+  }
+
+  Future<void> _checkFirstTimeEducation() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool hasSeenEducation = prefs.getBool(_hasSeenEducationKey) ?? false;
+
+    if (!hasSeenEducation && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) {
+          await HoleDescriptionExamplesScreen.show(context);
+          await prefs.setBool(_hasSeenEducationKey, true);
+        }
+      });
     }
   }
 
@@ -453,6 +473,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       accent: _descAccent,
       onClear: _handleClearText,
       isSingleHole: true,
+      onHelpTap: () => HoleDescriptionExamplesScreen.show(context),
     );
 
     return widget.skipIntroAnimations
