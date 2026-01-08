@@ -93,3 +93,7 @@ const List<String> adminUids = ['9abVDwf3ZVM8unEzqMcWk95in2F3'];
 /// When true, uses RoundHistoryRowV2 with score distribution bar and date.
 /// When false, uses the original RoundHistoryRow layout.
 const bool useRoundHistoryRowV2 = true;
+
+/// When true, uses the Story Poster with Score Journey graph for sharing.
+/// When false, uses the compact Story Highlights Card.
+const bool useStoryPosterShareCard = true;

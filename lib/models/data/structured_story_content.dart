@@ -11,6 +11,28 @@ enum StorySection {
   advice,       // Practice & Strategy - actionable advice
 }
 
+/// A stat selected by AI for the share card
+@JsonSerializable(explicitToJson: true, anyMap: true)
+class ShareHighlightStat {
+  const ShareHighlightStat({
+    required this.statId,
+    this.reason,
+  });
+
+  /// Stat ID for the share card (e.g., 'c1PuttPct', 'fairwayPct', 'birdies')
+  /// Valid values: score, c1PuttPct, c1xPuttPct, c2PuttPct, fairwayPct,
+  /// parkedPct, c1InRegPct, obPct, birdies, bounceBack
+  final String statId;
+
+  /// Optional reason why this stat was selected (for debugging/display)
+  final String? reason;
+
+  factory ShareHighlightStat.fromJson(Map<String, dynamic> json) =>
+      _$ShareHighlightStatFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ShareHighlightStatToJson(this);
+}
+
 /// A single stat highlight in the story with explanation
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class StoryHighlight {
@@ -65,6 +87,8 @@ class StructuredStoryContent {
     this.biggestOpportunity,
     this.practiceAdvice = const [],
     this.strategyTips = const [],
+    this.shareHighlightStats,
+    this.shareableHeadline,
     required this.roundVersionId,
   });
 
@@ -102,6 +126,18 @@ class StructuredStoryContent {
   /// Focus on non-obvious course management and decision-making
   /// Example: "Consider using a stable mid-range on hole 7 instead of overstable driver"
   final List<String> strategyTips;
+
+  /// AI-selected stats to highlight on share card (2-3 stats)
+  /// These are the most notable/impressive stats from the round
+  /// Null for legacy stories - use fallback stats in that case
+  final List<ShareHighlightStat>? shareHighlightStats;
+
+  /// 2-3 sentence shareable headline for social media
+  /// Encouraging, informative, and impactful summary of the round
+  /// Good for sharing - similar to tagline in roast/glaze cards
+  /// Example: "Crushed it at Maple Hill with 5 birdies and only 1 bogey.
+  /// The putting was locked in from C1X. Personal best incoming!"
+  final String? shareableHeadline;
 
   /// Version ID of the round this story was generated for
   /// Used to detect if story is outdated
