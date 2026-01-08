@@ -726,6 +726,19 @@ Selector<AppStateModel, bool>(
 
 4. **Lazy loading**: Use ListView.builder or CustomScrollView for long lists
 
+5. **Use `.withValues(alpha: ...)` instead of `.withOpacity()`**: The `.withOpacity()` method is deprecated. Always use `.withValues(alpha: ...)` for color transparency.
+
+   ✅ **CORRECT:**
+   ```dart
+   color: Colors.black.withValues(alpha: 0.5)
+   color: const Color(0xFF4CAF50).withValues(alpha: 0.8)
+   ```
+
+   ❌ **DEPRECATED:**
+   ```dart
+   color: Colors.black.withOpacity(0.5)  // Don't use - deprecated
+   ```
+
 ### Naming Conventions
 
 - **Classes**: PascalCase (`RoundReviewScreen`, `StatCard`)

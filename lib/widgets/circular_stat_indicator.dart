@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -161,6 +162,7 @@ class _CircularStatIndicatorState extends State<CircularStatIndicator>
     if (widget.onPressed != null) {
       return Bounceable(
         onTap: () {
+          HapticFeedback.lightImpact();
           widget.onPressed!();
         },
         child: _mainBody(),

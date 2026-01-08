@@ -121,7 +121,8 @@ class AuthService {
   }
 
   Future<bool> attemptSignInWithGoogle() async {
-    final bool signInSuccess = await _authRepository.signInWithGoogle() ?? false;
+    final bool signInSuccess =
+        await _authRepository.signInWithGoogle() ?? false;
 
     if (!signInSuccess) {
       errorMessage = _authRepository.exceptionMessage.isNotEmpty
@@ -180,12 +181,14 @@ class AuthService {
     // Use username as displayName
     final String displayName = username;
 
-    final TurboUser? newUser = await _authDatabaseService.setUpNewUserInDatabase(
-      authUser,
-      username,
-      displayName,
-      pdgaMetadata: pdgaMetadata,
-    );
+    final TurboUser? newUser = await _authDatabaseService
+        .setUpNewUserInDatabase(
+          authUser,
+          username,
+          displayName,
+          pdgaMetadata: pdgaMetadata,
+        );
+
     if (newUser == null) {
       return false;
     }

@@ -57,7 +57,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: GenericAppBar(
         topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: 'Turbo Disc Golf',
+        title: 'ScoreSensei',
+        titleIcon: Image.asset(
+          'assets/icon/app_icon_clear_bg.png',
+          height: 32,
+          width: 32,
+        ),
         hasBackButton: false,
       ),
       resizeToAvoidBottomInset: false,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -641,6 +642,7 @@ class _CompactDiscCard extends StatelessWidget {
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
+            onExpansionChanged: (_) => HapticFeedback.lightImpact(),
             tilePadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 4,

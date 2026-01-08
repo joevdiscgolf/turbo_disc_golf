@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
@@ -53,6 +54,7 @@ class _MistakesBarChartCardState extends State<MistakesBarChartCard> {
     return Card(
       child: GestureDetector(
         onTap: () {
+          HapticFeedback.lightImpact();
           setState(() {
             _isExpanded = !_isExpanded;
           });

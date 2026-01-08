@@ -21,6 +21,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
@@ -437,68 +438,128 @@ class StructuredStoryRenderer extends StatelessWidget {
     final String scoreName = _getScoreName(strokesLost);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF3F3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFFFCDD2)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE0E0E0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header row with hole info
             Row(
               children: [
-                const Text('❌ ', style: TextStyle(fontSize: 16)),
-                Text(
-                  'Hole ${hole.number} — $scoreName (+$strokesLost)',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFB71C1C),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${hole.number}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFD32F2F),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hole ${hole.number}',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '$scoreName (+$strokesLost)',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFFD32F2F),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '+$strokesLost',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD32F2F),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            // Show throw sequence
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            const SizedBox(height: 12),
+            // Throw sequence
             ...hole.throws.asMap().entries.map((entry) {
               final int index = entry.key;
-              final throw_ = entry.value;
+              final DiscThrow throw_ = entry.value;
               final String throwText = throw_.rawText?.isNotEmpty == true
                   ? throw_.rawText!
                   : _formatThrowStructured(throw_);
               final bool hasPenalty = throw_.penaltyStrokes > 0;
+              final bool isLastThrow = index == hole.throws.length - 1;
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: EdgeInsets.only(bottom: isLastThrow ? 0 : 8),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Throw number with icon
                     SizedBox(
-                      width: 24,
-                      child: Text(
-                        '${index + 1}.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: hasPenalty
-                              ? const Color(0xFFE53935)
-                              : Colors.black54,
-                          fontWeight: hasPenalty
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
+                      width: 28,
+                      child: Icon(
+                        _getThrowPurposeIcon(throw_.purpose),
+                        size: 16,
+                        color: hasPenalty
+                            ? const Color(0xFFE53935)
+                            : Colors.grey.shade600,
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    // Throw details
                     Expanded(
                       child: Text(
                         throwText,
                         style: TextStyle(
                           fontSize: 13,
                           color: hasPenalty
-                              ? const Color(0xFFE53935)
+                              ? const Color(0xFFD32F2F)
                               : Colors.black87,
+                          fontWeight:
+                              hasPenalty ? FontWeight.w500 : FontWeight.normal,
                           height: 1.4,
                         ),
                       ),
@@ -662,17 +723,51 @@ class StructuredStoryRenderer extends StatelessWidget {
   }
 
   String _formatThrowStructured(DiscThrow throw_) {
-    final String disc = throw_.discName ?? 'Unknown';
-    final String technique = throw_.technique?.name ?? '';
-    final String landing = throw_.landingSpot?.name ?? '';
-    final int penalty = throw_.penaltyStrokes;
+    final List<String> parts = [];
 
-    String result = disc;
-    if (technique.isNotEmpty) result += ' ($technique)';
-    if (landing.isNotEmpty) result += ' → $landing';
-    if (penalty > 0) result += ' [+$penalty penalty]';
+    // Disc name
+    final String disc = throw_.discName ?? 'Unknown disc';
+    parts.add(disc);
 
-    return result;
+    // Technique in parentheses
+    if (throw_.technique != null) {
+      final String technique =
+          throwTechniqueToName[throw_.technique] ?? throw_.technique!.name;
+      parts.add('($technique)');
+    }
+
+    // Landing spot with arrow
+    if (throw_.landingSpot != null) {
+      final String landing =
+          landingSpotToName[throw_.landingSpot] ?? throw_.landingSpot!.name;
+      parts.add('→ $landing');
+    }
+
+    // Penalty strokes
+    if (throw_.penaltyStrokes > 0) {
+      parts.add('(+${throw_.penaltyStrokes} penalty)');
+    }
+
+    return parts.join(' ');
+  }
+
+  IconData _getThrowPurposeIcon(ThrowPurpose? purpose) {
+    switch (purpose) {
+      case ThrowPurpose.teeDrive:
+        return Icons.sports_golf;
+      case ThrowPurpose.fairwayDrive:
+        return Icons.trending_flat;
+      case ThrowPurpose.approach:
+        return Icons.call_made;
+      case ThrowPurpose.putt:
+        return Icons.flag;
+      case ThrowPurpose.scramble:
+        return Icons.refresh;
+      case ThrowPurpose.penalty:
+        return Icons.warning;
+      default:
+        return Icons.sports;
+    }
   }
 
   Widget _buildStatWidget(String cardId) {

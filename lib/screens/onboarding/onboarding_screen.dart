@@ -13,6 +13,7 @@ import 'package:turbo_disc_golf/models/data/user_data/pdga_player_info.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/web_scraper_service.dart';
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/feature_walkthrough_screen.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/pdga_constants.dart';
 
@@ -25,10 +26,9 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final AuthService _authService = locator.get<AuthService>();
-  final AuthDatabaseService _authDatabaseService =
-      locator.get<AuthDatabaseService>();
-  final WebScraperService _webScraperService =
-      locator.get<WebScraperService>();
+  final AuthDatabaseService _authDatabaseService = locator
+      .get<AuthDatabaseService>();
+  final WebScraperService _webScraperService = locator.get<WebScraperService>();
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _pdgaNumController = TextEditingController();
@@ -108,10 +108,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Center(
                   child: Text(
                     _errorText!,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.red),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -121,6 +120,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               if (kDebugMode) ...[
                 const SizedBox(height: 16),
                 _buildSkipButton(),
+                const SizedBox(height: 8),
+                _buildSkipToWalkthroughButton(),
               ],
             ],
           ),
@@ -133,9 +134,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Text(
       label,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: TurbColors.gray[700],
-          ),
+        fontWeight: FontWeight.w600,
+        color: TurbColors.gray[700],
+      ),
     );
   }
 
@@ -152,9 +153,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
           ],
           style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: 'Choose a username',
             contentPadding: const EdgeInsets.symmetric(
@@ -164,10 +165,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             filled: true,
             fillColor: TurbColors.gray[50],
             hintStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
-                  color: Colors.grey[400],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
+              color: Colors.grey[400],
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: TurbColors.gray[200]!, width: 1),
@@ -189,9 +190,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         const SizedBox(height: 4),
         Text(
           'Letters, numbers, and underscores only. Min 3 characters.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: TurbColors.gray[500],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: TurbColors.gray[500]),
         ),
       ],
     );
@@ -202,28 +203,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       UsernameStatus.empty => null,
       UsernameStatus.tooShort => null,
       UsernameStatus.invalid => const Icon(
-          FlutterRemix.close_circle_fill,
-          color: Colors.red,
-          size: 20,
-        ),
+        FlutterRemix.close_circle_fill,
+        color: Colors.red,
+        size: 20,
+      ),
       UsernameStatus.checking => const SizedBox(
-          width: 20,
-          height: 20,
-          child: Padding(
-            padding: EdgeInsets.all(12),
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+        width: 20,
+        height: 20,
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
+      ),
       UsernameStatus.available => const Icon(
-          FlutterRemix.checkbox_circle_fill,
-          color: Colors.green,
-          size: 20,
-        ),
+        FlutterRemix.checkbox_circle_fill,
+        color: Colors.green,
+        size: 20,
+      ),
       UsernameStatus.taken => const Icon(
-          FlutterRemix.close_circle_fill,
-          color: Colors.red,
-          size: 20,
-        ),
+        FlutterRemix.close_circle_fill,
+        color: Colors.red,
+        size: 20,
+      ),
     };
   }
 
@@ -234,9 +235,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       maxLength: 10,
       style: Theme.of(context).textTheme.titleMedium!.copyWith(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: 'PDGA Number',
         contentPadding: const EdgeInsets.symmetric(
@@ -246,10 +247,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         filled: true,
         fillColor: TurbColors.gray[50],
         hintStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: Colors.grey[400],
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
+          color: Colors.grey[400],
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: TurbColors.gray[200]!, width: 1),
@@ -274,28 +275,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return switch (_pdgaFetchStatus) {
       PDGAFetchStatus.idle => null,
       PDGAFetchStatus.fetching => const SizedBox(
-          width: 20,
-          height: 20,
-          child: Padding(
-            padding: EdgeInsets.all(12),
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+        width: 20,
+        height: 20,
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
+      ),
       PDGAFetchStatus.success => const Icon(
-          FlutterRemix.checkbox_circle_fill,
-          color: Colors.green,
-          size: 20,
-        ),
+        FlutterRemix.checkbox_circle_fill,
+        color: Colors.green,
+        size: 20,
+      ),
       PDGAFetchStatus.notFound => const Icon(
-          FlutterRemix.close_circle_fill,
-          color: Colors.orange,
-          size: 20,
-        ),
+        FlutterRemix.close_circle_fill,
+        color: Colors.orange,
+        size: 20,
+      ),
       PDGAFetchStatus.error => const Icon(
-          FlutterRemix.error_warning_fill,
-          color: Colors.red,
-          size: 20,
-        ),
+        FlutterRemix.error_warning_fill,
+        color: Colors.red,
+        size: 20,
+      ),
     };
   }
 
@@ -329,16 +330,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Text(
                       info.name ?? 'PDGA #${info.pdgaNum}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: TurbColors.gray[800],
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: TurbColors.gray[800],
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'PDGA #${info.pdgaNum}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: TurbColors.gray[500],
-                          ),
+                        color: TurbColors.gray[500],
+                      ),
                     ),
                   ],
                 ),
@@ -372,8 +373,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _StatData('Earnings', _formatCurrency(info.careerEarnings!)),
       if (info.memberSince != null)
         _StatData('Member Since', info.memberSince!),
-      if (info.classification != null)
-        _StatData('Class', info.classification!),
+      if (info.classification != null) _StatData('Class', info.classification!),
     ];
 
     // Build rows of 2 items each
@@ -408,19 +408,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         Text(
           label.toUpperCase(),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: TurbColors.gray[400],
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
+            color: TurbColors.gray[400],
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: TurbColors.gray[700],
-              ),
+            fontWeight: FontWeight.w600,
+            color: TurbColors.gray[700],
+          ),
         ),
       ],
     );
@@ -440,9 +440,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       maxLength: 4,
       style: Theme.of(context).textTheme.titleMedium!.copyWith(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: 'PDGA Rating',
         contentPadding: const EdgeInsets.symmetric(
@@ -452,10 +452,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         filled: true,
         fillColor: TurbColors.gray[50],
         hintStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: Colors.grey[400],
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
+          color: Colors.grey[400],
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: TurbColors.gray[200]!, width: 1),
@@ -493,11 +493,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         child: Row(
           children: [
-            const Icon(
-              FlutterRemix.trophy_line,
-              color: Colors.grey,
-              size: 18,
-            ),
+            const Icon(FlutterRemix.trophy_line, color: Colors.grey, size: 18),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -505,10 +501,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ? PDGADivisions.getDisplayName(_selectedDivision!)
                     : 'Select Division',
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                      color: hasSelection ? Colors.black : Colors.grey[400],
-                      fontSize: 16,
-                      fontWeight: hasSelection ? FontWeight.w500 : FontWeight.w400,
-                    ),
+                  color: hasSelection ? Colors.black : Colors.grey[400],
+                  fontSize: 16,
+                  fontWeight: hasSelection ? FontWeight.w500 : FontWeight.w400,
+                ),
               ),
             ),
             Icon(
@@ -530,9 +526,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => _DivisionSelectionPanel(
-        selectedDivision: _selectedDivision,
-      ),
+      builder: (context) =>
+          _DivisionSelectionPanel(selectedDivision: _selectedDivision),
     );
 
     if (result != null && mounted) {
@@ -561,11 +556,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Text(
           '[DEBUG] Skip Onboarding',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.orange,
-                decoration: TextDecoration.underline,
-                decorationColor: Colors.orange,
-              ),
+            color: Colors.orange,
+            decoration: TextDecoration.underline,
+            decorationColor: Colors.orange,
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSkipToWalkthroughButton() {
+    return Center(
+      child: TextButton(
+        onPressed: _onSkipToWalkthrough,
+        child: Text(
+          '[DEBUG] Skip to Walkthrough',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.purple,
+            decoration: TextDecoration.underline,
+            decorationColor: Colors.purple,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onSkipToWalkthrough() {
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const FeatureWalkthroughScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 400),
       ),
     );
   }
@@ -597,15 +622,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _checkUsernameAvailability(String username) async {
-    final bool isAvailable =
-        await _authDatabaseService.usernameIsAvailable(username);
+    final bool isAvailable = await _authDatabaseService.usernameIsAvailable(
+      username,
+    );
 
     if (!mounted) return;
 
     if (_username == username) {
       setState(() {
-        _usernameStatus =
-            isAvailable ? UsernameStatus.available : UsernameStatus.taken;
+        _usernameStatus = isAvailable
+            ? UsernameStatus.available
+            : UsernameStatus.taken;
       });
     }
   }
@@ -633,8 +660,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _fetchPdgaPlayerInfo(int pdgaNum) async {
-    final PDGAPlayerInfo? info =
-        await _webScraperService.getPDGAPlayerInfo(pdgaNum);
+    final PDGAPlayerInfo? info = await _webScraperService.getPDGAPlayerInfo(
+      pdgaNum,
+    );
 
     if (!mounted) return;
 
@@ -697,7 +725,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     if (!mounted) return;
 
-    if (!success) {
+    if (success) {
+      // Navigate to feature walkthrough
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const FeatureWalkthroughScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    } else {
       setState(() {
         _isSubmitting = false;
         _errorText = 'Failed to complete profile. Please try again.';
@@ -711,22 +751,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-enum UsernameStatus {
-  empty,
-  tooShort,
-  invalid,
-  checking,
-  available,
-  taken,
-}
+enum UsernameStatus { empty, tooShort, invalid, checking, available, taken }
 
-enum PDGAFetchStatus {
-  idle,
-  fetching,
-  success,
-  notFound,
-  error,
-}
+enum PDGAFetchStatus { idle, fetching, success, notFound, error }
 
 class _StatData {
   const _StatData(this.label, this.value);
@@ -759,8 +786,9 @@ class _DivisionSelectionPanelState extends State<_DivisionSelectionPanel> {
 
     final String query = _searchQuery.toLowerCase();
     return PDGADivisions.all.where((division) {
-      final String displayName =
-          PDGADivisions.getDisplayName(division).toLowerCase();
+      final String displayName = PDGADivisions.getDisplayName(
+        division,
+      ).toLowerCase();
       return division.toLowerCase().contains(query) ||
           displayName.contains(query);
     }).toList();
@@ -835,8 +863,8 @@ class _DivisionSelectionPanelState extends State<_DivisionSelectionPanel> {
                       child: Text(
                         'No divisions found',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: TurbColors.gray[500],
-                            ),
+                          color: TurbColors.gray[500],
+                        ),
                       ),
                     )
                   : ListView.builder(
@@ -899,17 +927,17 @@ class _DivisionListItem extends StatelessWidget {
                   Text(
                     division,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: isSelected ? Colors.blue : TurbColors.gray[700],
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.blue : TurbColors.gray[700],
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _getFullName(division),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: TurbColors.gray[400],
-                          ),
+                        color: TurbColors.gray[400],
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
