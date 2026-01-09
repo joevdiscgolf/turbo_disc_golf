@@ -1,10 +1,7 @@
-// lib/services/course_search_service.dart
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
+import 'package:turbo_disc_golf/services/search/course_search_provider.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 
 extension CourseToSearchDocument on Course {
@@ -21,10 +18,11 @@ extension CourseToSearchDocument on Course {
   }
 
   Map<String, dynamic> toSearchDocument() {
-    final defaultLayout = this.defaultLayout;
+    final CourseLayout defaultLayout = this.defaultLayout;
 
-    final holeCount = defaultLayout.holes.length;
-    final par = defaultLayout.holes.fold<int>(0, (sum, hole) => sum + hole.par);
+    final int holeCount = defaultLayout.holes.length;
+    final int par =
+        defaultLayout.holes.fold<int>(0, (sum, hole) => sum + hole.par);
 
     return {
       'id': id,
@@ -55,89 +53,50 @@ extension LayoutToSummary on CourseLayout {
 }
 
 class CourseSearchService {
-  static const String _baseUrl = 'http://localhost:7700';
-  static const String _index = 'courses';
-
   static const String _recentKey = 'recent_courses';
   static const String _cacheKey = 'cached_courses';
+
+  CourseSearchProvider get _provider => locator.get<CourseSearchProvider>();
 
   Future<List<CourseSearchHit>> searchCourses(String query) async {
     if (query.trim().length < 2) return [];
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/indexes/$_index/search'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'q': query, 'limit': 25}),
-    );
+    final List<Map<String, dynamic>> hits = await _provider.search(query);
 
-    if (response.statusCode != 200) {
-      throw Exception('Meilisearch query failed');
-    }
-
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final hits = decoded['hits'] as List<dynamic>;
-
-    return hits
-        .map((e) => CourseSearchHit.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return hits.map((e) => CourseSearchHit.fromJson(e)).toList();
   }
 
   Future<void> upsertCourse(Course course) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/indexes/$_index/documents'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode([course.toSearchDocument()]),
-    );
-
-    if (response.statusCode != 202) {
-      throw Exception('Failed to index course ${course.id}');
-    }
+    await _provider.indexDocument(course.toSearchDocument());
   }
 
   Future<void> upsertCourses(List<Course> courses) async {
     if (courses.isEmpty) return;
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/indexes/$_index/documents'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode(courses.map((c) => c.toSearchDocument()).toList()),
+    await _provider.indexDocuments(
+      courses.map((c) => c.toSearchDocument()).toList(),
     );
-
-    if (response.statusCode != 202) {
-      throw Exception('Failed to bulk index courses');
-    }
   }
 
   Future<void> deleteCourse(String courseId) async {
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/indexes/$_index/documents/$courseId'),
-    );
-
-    if (response.statusCode != 202) {
-      throw Exception('Failed to delete course $courseId');
-    }
+    await _provider.deleteDocument(courseId);
   }
 
   Future<void> clearIndex() async {
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/indexes/$_index/documents'),
-    );
-
-    if (response.statusCode != 202) {
-      throw Exception('Failed to clear index');
-    }
+    await _provider.clearIndex();
   }
 
   // ------------------
   // RECENT COURSES
   // ------------------
   Future<List<CourseSearchHit>> getRecentCourses() async {
-    final recentIds = await locator
+    final List<String> recentIds = await locator
         .get<SharedPreferencesService>()
         .getStringList(_recentKey);
-    final cache = await locator.get<SharedPreferencesService>().getJsonMap(
-      _cacheKey,
-    );
+    final Map<String, dynamic> cache =
+        await locator.get<SharedPreferencesService>().getJsonMap(
+              _cacheKey,
+            );
 
     return recentIds
         .map((id) => cache[id])
@@ -150,12 +109,13 @@ class CourseSearchService {
   // CALLED ON COURSE SELECTION
   // ------------------
   Future<void> markCourseAsUsed(CourseSearchHit course) async {
-    final recentIds = await locator
+    final List<String> recentIds = await locator
         .get<SharedPreferencesService>()
         .getStringList(_recentKey);
-    final cache = await locator.get<SharedPreferencesService>().getJsonMap(
-      _cacheKey,
-    );
+    final Map<String, dynamic> cache =
+        await locator.get<SharedPreferencesService>().getJsonMap(
+              _cacheKey,
+            );
 
     // Move to front
     recentIds.remove(course.id);
@@ -169,9 +129,9 @@ class CourseSearchService {
     cache[course.id] = course.toJson();
 
     await locator.get<SharedPreferencesService>().setStringList(
-      _recentKey,
-      recentIds,
-    );
+          _recentKey,
+          recentIds,
+        );
     await locator.get<SharedPreferencesService>().setJsonMap(_cacheKey, cache);
   }
 }

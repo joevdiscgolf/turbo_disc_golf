@@ -173,7 +173,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
     final double topViewPadding = MediaQuery.of(context).viewPadding.top;
 
     return Scaffold(
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       appBar: GenericAppBar(
         topViewPadding: topViewPadding,
         title: 'Record Your Round',
@@ -184,60 +184,59 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
           tooltip: 'Close',
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Subtitle
-            Text(
-              'Import from screenshot or paste description',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: const Color(0xFFB0B0B0)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Subtitle
+              Text(
+                'Import from screenshot or paste description',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: const Color(0xFFB0B0B0)),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
 
-            // Compact Image + Voice Card
-            _buildImageVoiceCard(context),
+              // Compact Image + Voice Card
+              _buildImageVoiceCard(context),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // Compact Divider with "OR"
-            Row(
-              children: [
-                const Expanded(child: Divider(color: Color(0xFF334155))),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: Text(
-                    'OR',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF64748B),
-                      fontWeight: FontWeight.bold,
+              // Compact Divider with "OR"
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: Color(0xFF334155))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Text(
+                      'OR',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                const Expanded(child: Divider(color: Color(0xFF334155))),
-              ],
-            ),
+                  const Expanded(child: Divider(color: Color(0xFF334155))),
+                ],
+              ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // Test Mode Toggles - Compact
-            if (_testMode) _buildTestModeToggles(),
+              // Test Mode Toggles - Compact
+              if (_testMode) _buildTestModeToggles(),
 
-            // Round Description TextField - Prominent
-            _buildRoundDescriptionField(),
+              // Round Description TextField - Expanded to fill remaining space
+              Expanded(child: _buildRoundDescriptionField()),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // Test Buttons - Compact
-            if (_testMode) _buildTestButtons(),
-
-            // Extra bottom padding for keyboard visibility
-            SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 40),
-          ],
+              // Test Buttons - Compact
+              if (_testMode) _buildTestButtons(),
+            ],
+          ),
         ),
       ),
     );
@@ -423,33 +422,35 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
               ],
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: _transcriptController,
-              maxLines: 6,
-              minLines: 4,
-              style: const TextStyle(fontSize: 15),
-              scrollPadding: const EdgeInsets.only(bottom: 300),
-              decoration: InputDecoration(
-                hintText: 'Enter or paste your round description here...',
-                hintStyle: const TextStyle(color: Color(0xFF64748B)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF334155)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF334155)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF137e66),
-                    width: 2,
+            Expanded(
+              child: TextField(
+                controller: _transcriptController,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                style: const TextStyle(fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Enter or paste your round description here...',
+                  hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF334155)),
                   ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF334155)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF137e66),
+                      width: 2,
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF0F172A),
+                  contentPadding: const EdgeInsets.all(12),
                 ),
-                filled: true,
-                fillColor: const Color(0xFF0F172A),
-                contentPadding: const EdgeInsets.all(12),
               ),
             ),
           ],

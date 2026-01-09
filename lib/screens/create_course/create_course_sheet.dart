@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
-import 'package:turbo_disc_golf/screens/create_course/components/create_course_hole_card.dart';
+import 'package:turbo_disc_golf/components/map/location_picker_sheet.dart';
+import 'package:turbo_disc_golf/components/map/mini_map_preview.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
-import 'package:turbo_disc_golf/screens/create_course/components/quick_fill_holes_card.dart';
+import 'package:turbo_disc_golf/screens/create_course/components/holes_section.dart';
+import 'package:turbo_disc_golf/screens/create_course/components/layout_info_section.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/create_course_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// Bottom sheet / modal for creating a course + default layout
 class CreateCourseSheet extends StatefulWidget {
@@ -63,36 +66,70 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
             onTap: () {
               FocusScope.of(context).unfocus();
             },
-            child: ListView(
-              padding: EdgeInsets.only(bottom: widget.bottomViewPadding),
+            child: Column(
               children: [
-                // PanelHeader(
-                //   title: 'Create Course',
-                //   onClose: () => Navigator.of(context).pop(),
-                // ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Scrollable content
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.only(top: 12, bottom: 48),
                     children: [
-                      _buildCourseSection(context, state),
-                      Divider(
-                        height: 32,
-                        color: TurbColors.gray.shade100,
-                        thickness: 1,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCourseSection(context, state),
+                            Divider(
+                              height: 32,
+                              color: TurbColors.gray.shade100,
+                              thickness: 1,
+                            ),
+                            LayoutInfoSection(
+                              headerTitle: 'Default Layout',
+                              layoutName: state.layoutName,
+                              numberOfHoles: state.numberOfHoles,
+                              isParsingImage: state.isParsingImage,
+                              parseError: state.parseError,
+                              onLayoutNameChanged:
+                                  _createCourseCubit.updateLayoutName,
+                              onHoleCountChanged:
+                                  _createCourseCubit.updateHoleCount,
+                              onParseImage: () async {
+                                HapticFeedback.lightImpact();
+                                FocusScope.of(context).unfocus();
+                                await Future.delayed(
+                                  const Duration(milliseconds: 300),
+                                );
+                                if (context.mounted) {
+                                  _createCourseCubit.pickAndParseImage(context);
+                                }
+                              },
+                            ),
+                            Divider(
+                              height: 32,
+                              color: TurbColors.gray.shade100,
+                              thickness: 1,
+                            ),
+                            HolesSection(
+                              holes: state.holes,
+                              onApplyDefaults:
+                                  _createCourseCubit.applyDefaultsToAllHoles,
+                              onHoleParChanged: _createCourseCubit.updateHolePar,
+                              onHoleFeetChanged:
+                                  _createCourseCubit.updateHoleFeet,
+                              onHoleTypeChanged:
+                                  _createCourseCubit.updateHoleType,
+                              onHoleShapeChanged:
+                                  _createCourseCubit.updateHoleShape,
+                            ),
+                          ],
+                        ),
                       ),
-                      _buildLayoutSection(context, state),
-                      Divider(
-                        height: 32,
-                        color: TurbColors.gray.shade100,
-                        thickness: 1,
-                      ),
-                      _buildHolesSection(context, state),
-                      const SizedBox(height: 24),
-                      _buildSaveButton(context),
                     ],
                   ),
                 ),
+                // Fixed bottom footer
+                _buildFooter(context, state),
               ],
             ),
           );
@@ -113,12 +150,33 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
           decoration: const InputDecoration(labelText: 'Course name'),
         ),
         const SizedBox(height: 12),
+        // Map location picker (controlled by feature flag)
+        if (showMapLocationPicker) ...[
+          _buildLocationPickerSection(context, state),
+          const SizedBox(height: 12),
+        ],
         Row(
           children: [
             Expanded(
               child: TextField(
                 onChanged: _createCourseCubit.updateCity,
-                decoration: const InputDecoration(labelText: 'City'),
+                decoration: InputDecoration(
+                  labelText: 'City',
+                  suffixIcon: state.isGeocodingLocation
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : null,
+                ),
+                controller: TextEditingController(text: state.city ?? '')
+                  ..selection = TextSelection.fromPosition(
+                    TextPosition(offset: state.city?.length ?? 0),
+                  ),
               ),
             ),
             const SizedBox(width: 12),
@@ -126,6 +184,10 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
               child: TextField(
                 onChanged: _createCourseCubit.updateState,
                 decoration: const InputDecoration(labelText: 'State'),
+                controller: TextEditingController(text: state.state ?? '')
+                  ..selection = TextSelection.fromPosition(
+                    TextPosition(offset: state.state?.length ?? 0),
+                  ),
               ),
             ),
           ],
@@ -134,294 +196,161 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
         TextField(
           onChanged: _createCourseCubit.updateCountry,
           decoration: const InputDecoration(labelText: 'Country'),
+          controller: TextEditingController(text: state.country ?? '')
+            ..selection = TextSelection.fromPosition(
+              TextPosition(offset: state.country?.length ?? 0),
+            ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLocationPickerSection(
+    BuildContext context,
+    CreateCourseState state,
+  ) {
+    // Show mini map if location is selected
+    if (state.hasLocation) {
+      return MiniMapPreview(
+        latitude: state.latitude!,
+        longitude: state.longitude!,
+        isLoading: state.isGeocodingLocation,
+        onTap: () => _openLocationPicker(context, state),
+        onClear: _createCourseCubit.clearLocation,
+      );
+    }
+
+    // Show "Select location" button
+    return GestureDetector(
+      onTap: () => _openLocationPicker(context, state),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: TurbColors.gray.shade50,
+          border: Border.all(color: TurbColors.gray.shade200),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.map_outlined,
+              color: TurbColors.gray.shade600,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select location on map',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: TurbColors.gray.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Pin your course for easy discovery',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: TurbColors.gray.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: TurbColors.gray.shade400,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openLocationPicker(BuildContext context, CreateCourseState state) {
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => LocationPickerSheet(
+          topViewPadding: widget.topViewPadding,
+          initialLatitude: state.latitude,
+          initialLongitude: state.longitude,
+          onLocationSelected: (double lat, double lng) {
+            _createCourseCubit.updateLocation(lat, lng);
+          },
+        ),
+      ),
     );
   }
 
   // ─────────────────────────────────────────────
-  Widget _buildLayoutSection(BuildContext context, CreateCourseState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader('Default Layout', Icons.grid_view, Colors.teal),
-        const SizedBox(height: 12),
-        TextField(
-          onChanged: _createCourseCubit.updateLayoutName,
-          decoration: const InputDecoration(labelText: 'Layout name'),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Number of holes',
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: Stack(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<int>(
-                  showSelectedIcon: false,
-                  style: ButtonStyle(
-                    side: WidgetStateProperty.all(
-                      BorderSide(color: TurbColors.gray.shade300),
-                    ),
-                    shape: WidgetStateProperty.all(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  segments: [
-                    ButtonSegment<int>(
-                      value: 9,
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: const Text('9', maxLines: 1),
-                      ),
-                    ),
-                    ButtonSegment<int>(
-                      value: 18,
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: const Text('18', maxLines: 1),
-                      ),
-                    ),
-                    ButtonSegment<int>(
-                      value: 0,
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          state.numberOfHoles != 9 && state.numberOfHoles != 18
-                              ? 'Custom (${state.numberOfHoles})'
-                              : 'Custom',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                  selected: {
-                    state.numberOfHoles == 9 || state.numberOfHoles == 18
-                        ? state.numberOfHoles
-                        : 0,
-                  },
-                  onSelectionChanged: (Set<int> selection) {
-                    HapticFeedback.lightImpact();
-                    final int value = selection.first;
-                    if (value == 0) {
-                      _showCustomHoleCountDialog(context);
-                    } else {
-                      _createCourseCubit.updateHoleCount(value);
-                    }
-                  },
-                ),
-              ),
-              // Transparent overlay on custom segment to allow re-tapping
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showCustomHoleCountDialog(context);
-                  },
-                  child: Container(
-                    width: MediaQuery.of(context).size.width / 3 - 16,
-                    color: Colors.transparent,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: state.isParsingImage
-              ? null
-              : () async {
-                  HapticFeedback.lightImpact();
-                  // Unfocus any active text fields first
-                  FocusScope.of(context).unfocus();
-                  // Small delay to ensure keyboard is dismissed
-                  await Future.delayed(const Duration(milliseconds: 300));
-                  if (context.mounted) {
-                    _createCourseCubit.pickAndParseImage(context);
-                  }
-                },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: TurbColors.gray.shade50,
-              border: Border.all(color: TurbColors.gray.shade200),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  state.isParsingImage
-                      ? Icons.hourglass_empty
-                      : Icons.camera_alt,
-                  color: TurbColors.gray.shade600,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        state.isParsingImage
-                            ? 'Parsing Image...'
-                            : 'Upload scorecard image',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: TurbColors.gray.shade800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Auto-fill par & distance from photo',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: TurbColors.gray.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (state.isParsingImage)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        if (state.parseError != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              state.parseError!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  Widget _buildFooter(BuildContext context, CreateCourseState state) {
+    final bool canSave = state.courseName.trim().isNotEmpty;
 
-  Future<void> _showCustomHoleCountDialog(BuildContext context) async {
-    final TextEditingController controller = TextEditingController();
-    final int? customCount = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Custom Hole Count'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Number of holes',
-            hintText: 'Enter 1-99',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final int? value = int.tryParse(controller.text);
-              if (value != null && value >= 1 && value <= 99) {
-                Navigator.pop(context, value);
-              }
-            },
-            child: const Text('OK'),
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        12 + MediaQuery.of(context).viewPadding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-    );
+      child: PrimaryButton(
+        width: double.infinity,
+        height: 56,
+        label: 'Create Course',
+        gradientBackground: canSave
+            ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]
+            : null,
+        backgroundColor: canSave
+            ? Colors.transparent
+            : TurbColors.gray.shade200,
+        labelColor: canSave ? Colors.white : TurbColors.gray.shade400,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        disabled: !canSave,
+        onPressed: () async {
+          await _createCourseCubit.saveCourse(
+            onSuccess: (Course course) {
+              // Call parent callback
+              widget.onCourseCreated(course);
 
-    if (customCount != null) {
-      _createCourseCubit.updateHoleCount(customCount);
-    }
-  }
+              if (context.mounted) {
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Course "${course.name}" created!')),
+                );
 
-  // ─────────────────────────────────────────────
-  Widget _buildHolesSection(BuildContext context, CreateCourseState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader('Holes', Icons.sports_golf, Colors.orange),
-        const SizedBox(height: 8),
-        QuickFillHolesCard(),
-        const SizedBox(height: 8),
-        ...addDividers(
-          state.holes.map((hole) {
-            return CrateCourseHoleCard(
-              hole: hole,
-              onParChanged: (v) =>
-                  _createCourseCubit.updateHolePar(hole.holeNumber, v),
-              onFeetChanged: (v) =>
-                  _createCourseCubit.updateHoleFeet(hole.holeNumber, v),
-              onTypeChanged: (type) =>
-                  _createCourseCubit.updateHoleType(hole.holeNumber, type),
-            );
-          }).toList(),
-          height: 12,
-          dividerColor: TurbColors.gray[50],
-        ),
-      ],
-    );
-  }
-
-  // ─────────────────────────────────────────────
-  Widget _buildSaveButton(BuildContext context) {
-    return PrimaryButton(
-      width: double.infinity,
-      height: 56,
-      label: 'Create Course',
-      gradientBackground: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-      onPressed: () async {
-        await _createCourseCubit.saveCourse(
-          onSuccess: (Course course) {
-            // Call parent callback
-            widget.onCourseCreated(course);
-
-            if (context.mounted) {
-              // Show success message
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Course "${course.name}" created!')),
-              );
-
-              // Close the sheet
-              Navigator.of(context).pop();
-            }
-          },
-          onError: (String errorMessage) {
-            if (context.mounted) {
-              // Show error message
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(errorMessage),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
-        );
-      },
+                // Close the sheet
+                Navigator.of(context).pop();
+              }
+            },
+            onError: (String errorMessage) {
+              if (context.mounted) {
+                // Show error message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(errorMessage),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+          );
+        },
+      ),
     );
   }
 

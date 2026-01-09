@@ -231,7 +231,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).viewPadding.top + 120,
+                    top: MediaQuery.of(context).viewPadding.top + 100,
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
@@ -306,46 +306,40 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final bool isListening = recordRoundState.isListening;
     final bool isStartingListening = recordRoundState.isStartingListening;
 
-    return SingleChildScrollView(
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewPadding.bottom,
-        ),
-        height:
-            MediaQuery.of(context).size.height -
-            (MediaQuery.of(context).viewPadding.top + 64),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(recordRoundState),
-            const SizedBox(height: 8),
-            Padding(
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewPadding.bottom,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(recordRoundState),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildHoleInfoCard(recordRoundState),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildHoleInfoCard(recordRoundState),
+              child: _buildVoiceCard(isListening),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildVoiceCard(isListening),
-              ),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: _buildMicrophoneButton(
+              isListening,
+              recordRoundState.pausingBetweenHoles,
+              isStartingListening,
             ),
-            const SizedBox(height: 20),
-            Center(
-              child: _buildMicrophoneButton(
-                isListening,
-                recordRoundState.pausingBetweenHoles,
-                isStartingListening,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // if (kDebugMode || kReleaseMode) _buildDebugButtons(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildNavigationButtons(),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildNavigationButtons(),
+          ),
+        ],
       ),
     );
   }
@@ -788,11 +782,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     maxHeight: 32,
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.remove,
-                      size: 18,
-                      color: buttonColor,
-                    ),
+                    child: Icon(Icons.remove, size: 18, color: buttonColor),
                   ),
                 ),
               ),
@@ -825,11 +815,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     maxHeight: 32,
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.add,
-                      size: 18,
-                      color: buttonColor,
-                    ),
+                    child: Icon(Icons.add, size: 18, color: buttonColor),
                   ),
                 ),
               ),
@@ -974,6 +960,100 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _showDateTimeEditor() async {
+    if (useCupertinoDatePicker) {
+      await _showCupertinoDateTimePicker();
+    } else {
+      await _showMaterialDateTimePicker();
+    }
+  }
+
+  Future<void> _showCupertinoDateTimePicker() async {
+    DateTime tempDateTime = _selectedDateTime;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Select Date & Time',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black54),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // CupertinoDatePicker
+              SizedBox(
+                height: 200,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.dateAndTime,
+                  initialDateTime: _selectedDateTime,
+                  minimumDate: DateTime(2000),
+                  maximumDate: DateTime(2100),
+                  onDateTimeChanged: (DateTime newDateTime) {
+                    tempDateTime = newDateTime;
+                  },
+                ),
+              ),
+              // Confirm button
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: PrimaryButton(
+                  label: 'Confirm',
+                  width: double.infinity,
+                  height: 52,
+                  backgroundColor: const Color(0xFF137e66),
+                  labelColor: Colors.white,
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateTime = tempDateTime;
+                    });
+                    _recordRoundCubit.setSelectedTime(tempDateTime);
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMaterialDateTimePicker() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDateTime,

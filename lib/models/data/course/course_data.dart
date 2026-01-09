@@ -12,6 +12,7 @@ class CourseHole {
     required this.feet,
     this.pins = const [],
     this.holeType,
+    this.holeShape,
     this.defaultPinId,
   });
 
@@ -27,8 +28,11 @@ class CourseHole {
   /// All possible pin positions for this hole
   final List<HolePin> pins;
 
-  /// Type of terrain/openness for this hole
+  /// Type of terrain/openness (tightness) for this hole
   final HoleType? holeType;
+
+  /// Shape/direction of the fairway
+  final HoleShape? holeShape;
 
   /// Optional default (used if layout doesn't override)
   final String? defaultPinId;
@@ -52,6 +56,7 @@ class CourseHole {
     int? feet,
     List<HolePin>? pins,
     HoleType? holeType,
+    HoleShape? holeShape,
     String? defaultPinId,
   }) {
     return CourseHole(
@@ -60,6 +65,7 @@ class CourseHole {
       feet: feet ?? this.feet,
       pins: pins ?? this.pins,
       holeType: holeType ?? this.holeType,
+      holeShape: holeShape ?? this.holeShape,
       defaultPinId: defaultPinId ?? this.defaultPinId,
     );
   }
@@ -157,6 +163,8 @@ class Course {
     this.city,
     this.state,
     this.country,
+    this.latitude,
+    this.longitude,
     this.description,
     this.uDiscId,
     this.pdgaId,
@@ -177,6 +185,10 @@ class Course {
   final String? city;
   final String? state;
   final String? country;
+
+  /// Geographic coordinates for map display
+  final double? latitude;
+  final double? longitude;
 
   /// Course description or notes
   final String? description;
@@ -216,6 +228,8 @@ class Course {
     String? city,
     String? state,
     String? country,
+    double? latitude,
+    double? longitude,
     String? description,
     String? uDiscId,
     String? pdgaId,
@@ -228,6 +242,8 @@ class Course {
       city: city ?? this.city,
       state: state ?? this.state,
       country: country ?? this.country,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       description: description ?? this.description,
       uDiscId: uDiscId ?? this.uDiscId,
       pdgaId: pdgaId ?? this.pdgaId,

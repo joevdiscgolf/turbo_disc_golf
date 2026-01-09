@@ -74,6 +74,10 @@ dependencies:
   qr_flutter: ^4.1.0
   path: ^1.9.1
   html: ^0.15.5
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  google_maps_flutter: ^2.10.0
+  device_info_plus: ^12.3.0
   # google_fonts: ^6.2.1
 
 dev_dependencies:
