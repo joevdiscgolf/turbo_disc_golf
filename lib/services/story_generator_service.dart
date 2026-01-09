@@ -8,7 +8,6 @@ import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:yaml/yaml.dart';
 
 /// Service for generating AI-powered narrative stories about disc golf rounds
@@ -42,9 +41,9 @@ class StoryGeneratorService {
           continue;
         }
 
-        // Check for likely truncated response - complete YAML should be >1500 chars
-        // and should contain key sections like 'weaknesses' and 'biggestOpportunity'
-        if (response.length < 1500 || !response.contains('weaknesses:')) {
+        // Check for likely truncated response - complete YAML should be >1200 chars
+        // and should contain the 'weaknesses' section (required field)
+        if (response.length < 1200 || !response.contains('weaknesses:')) {
           debugPrint('Response appears truncated (${response.length} chars, missing key sections). Retrying...');
           retryCount++;
           await Future.delayed(Duration(seconds: retryCount));
@@ -86,151 +85,128 @@ class StoryGeneratorService {
     final buffer = StringBuffer();
 
     // Calculate round totals
-    final int totalScore = round.holes.fold(
-      0,
-      (sum, hole) => sum + hole.holeScore,
-    );
+    final int totalScore = round.holes.fold(0, (sum, hole) => sum + hole.holeScore);
     final int coursePar = round.holes.fold(0, (sum, hole) => sum + hole.par);
     final int scoreRelativeToPar = totalScore - coursePar;
     final String scoreRelativeStr = scoreRelativeToPar > 0
         ? '+$scoreRelativeToPar'
         : '$scoreRelativeToPar';
-    final String date = round.playedRoundAt;
+
+    // Calculate scoring summary
+    final String scoringSummary = _formatScoringSummary(round);
 
     buffer.writeln('''
-You are ScoreSensei - a wise, caring disc golf coach who sees your player's potential.
-Your role is to be honest about what happened, but always frame it as opportunity.
+You are ScoreSensei - a wise disc golf coach who frames problems as opportunities.
+TONE: Be direct about strokes lost, use "you could have" language, celebrate genuine strengths.
 
-TONE GUIDELINES:
-- Be direct about problems but frame them as "strokes left on the course"
-- Always connect weaknesses to specific, achievable improvements
-- Use "you could have" and "next time" language, never "you failed"
-- Celebrate genuine strengths without empty praise
-- End with hope: the path forward is clear
-
-BAD: "Your C2 putting was terrible at 8%."
-GOOD: "C2 putting left ~3 strokes on the course. At your typical 20% rate, those putts become birdies."
-
-BAD: "You made too many mistakes."
-GOOD: "3 OB penalties cost you 3 strokes. Eliminate those, and this is a -2 round."
-
-Your task is to provide a structured breakdown in YAML format with specific sections.
-
-# Round Information
-Course: ${round.courseName}
-Date: $date
-Score: $totalScore ($scoreRelativeStr)
-Par: $coursePar
-Holes Played: ${round.holes.length}
-
-# Scoring Breakdown
-''');
-
-    // Add hole-by-hole scores
-    for (final hole in round.holes) {
-      final int score = hole.holeScore;
-      final int par = hole.par;
-      final int relative = score - par;
-      final String relativeStr = relative > 0 ? '+$relative' : '$relative';
-      buffer.writeln('Hole ${hole.number}: $score ($relativeStr) - Par $par');
-    }
-
-    buffer.writeln('''
+# Round: ${round.courseName}
+Score: $totalScore ($scoreRelativeStr) | Par: $coursePar | Holes: ${round.holes.length}
+$scoringSummary
 
 # Stats
 Fairway: ${(analysis.coreStats.fairwayHitPct).toStringAsFixed(1)}% | C1 in Reg: ${(analysis.coreStats.c1InRegPct).toStringAsFixed(1)}% | OB: ${(analysis.coreStats.obPct).toStringAsFixed(1)}% | Parked: ${(analysis.coreStats.parkedPct).toStringAsFixed(1)}%
 C1 Putting: ${(analysis.puttingStats.c1Percentage).toStringAsFixed(1)}% (${analysis.puttingStats.c1Makes}/${analysis.puttingStats.c1Attempts}) | C1X: ${(analysis.puttingStats.c1xPercentage).toStringAsFixed(1)}% (${analysis.puttingStats.c1xMakes}/${analysis.puttingStats.c1xAttempts}) | C2: ${(analysis.puttingStats.c2Percentage).toStringAsFixed(1)}% (${analysis.puttingStats.c2Makes}/${analysis.puttingStats.c2Attempts})
-Mistakes: ${_formatMistakesBreakdown(round)}
 Throw Types: ${_formatThrowTypeComparison(analysis)}
+Mistakes: ${_formatMistakesBreakdown(round)}
 
-# Hole Type Breakdown (with outlier analysis)
+# Hole Type Performance
 ${_formatHoleTypePerformance(round, analysis)}
-# Disc Performance (top 5 by usage)
+# Disc Performance
 ${_formatDiscPerformance(analysis)}
-# Disc Usage by Hole (for specific context in explanations)
-${_formatDiscByHole(round)}
-# Shot Shape Performance
-${_formatShotShapePerformance(round)}
-# Stroke Cost Analysis (USE THIS DATA for strokeCostBreakdown and whatCouldHaveBeen)
+# Stroke Cost Analysis
 ${_formatStrokeCostAnalysis(round, analysis)}
-# CRITICAL: You MUST output ALL sections below. Keep explanations to 1-2 sentences max.
-# Output raw YAML only - NO markdown code blocks, NO ``` symbols.
 
-Required YAML structure (include ALL fields):
+# OUTPUT FORMAT (raw YAML only, no markdown)
 
-roundTitle: [3-5 word title summarizing the round's outcome/vibe. Examples: "Birdie Fest at Maple Hill", "Solid Under-Par Round", "Putting Struggles Cost Strokes", "Clean Drives, Missed Putts". Be direct - if putting was bad, say "Putting Woes" not "Putting Focus".]
+## REQUIRED - Always include these:
+roundTitle: [3-5 words, be direct - "Putting Woes Cost Strokes" not "Putting Focus"]
 overview: [2 sentences, no stats, just context]
-strengths:
+strengths: (max 2 items)
   - headline: [short title]
-    cardId: [CARD_ID or null]
+    cardId: [CARD_ID]
     explanation: [1 sentence with key stat]
-    targetTab: [driving/putting/mistakes]
-weaknesses:
+    targetTab: driving|putting
+weaknesses: (max 2 items)
   - headline: [short title]
-    cardId: [CARD_ID or null]
-    explanation: [1 sentence - expand on mistakes with performance context]
-    targetTab: [driving/putting/mistakes]
-mistakes:
-  cardId: MISTAKES
-  explanation: [1 sentence summarizing key errors and stroke cost]
-  targetTab: mistakes
-biggestOpportunity:
-  cardId: [CARD_ID]
-  explanation: [1 sentence]
-  targetTab: [driving/putting]
-practiceAdvice:
-  - [specific drill]
-  - [specific drill]
-strategyTips:
-  - [specific non-obvious tip]
-  - [specific non-obvious tip]
-shareHighlightStats:
-  - statId: [STAT_ID]
-    reason: [why this stat is notable - 5-10 words]
-  - statId: [STAT_ID]
-    reason: [why this stat is notable - 5-10 words]
-shareableHeadline: [1-2 SHORT sentences for social sharing. Start with "You" not "This round". Use simple words over verbose phrases. Be encouraging but honest. Example: "You crushed it with 5 birdies and 80% C1 putting. A few OBs held you back from going even lower."]
+    cardId: [CARD_ID]
+    explanation: [1 sentence about strokes lost]
+    targetTab: driving|putting|mistakes
+
+## IMPORTANT - For the "What Could Have Been" card:
 strokeCostBreakdown:
-  - area: [area name from Stroke Cost Analysis above]
+  - area: [from Stroke Cost Analysis]
     strokesLost: [number]
-    explanation: [1 sentence explaining WHY strokes were lost - use Sensei tone]
+    explanation: [1 sentence why]
 whatCouldHaveBeen:
-  currentScore: [current score relative to par, e.g., "+5" or "-2"]
-  potentialScore: [best potential score if all issues fixed]
+  currentScore: "$scoreRelativeStr"
+  potentialScore: [best possible if all fixed]
   scenarios:
-    - fix: [area to fix, e.g., "C2 putting"]
-      resultScore: [score if this alone is fixed]
-      strokesSaved: [number of strokes saved]
-    - fix: [another area]
-      resultScore: [score if this alone is fixed]
-      strokesSaved: [number]
-    - fix: "All of the above"
-      resultScore: [best potential score]
-      strokesSaved: [total strokes saveable]
-  encouragement: [1 sentence encouraging message about the path forward. Use Sensei tone - hopeful and actionable. Example: "Your next under-par round is 6 smart decisions away."]
+    - fix: [area], resultScore: [score], strokesSaved: [n]
+    - fix: "All of the above", resultScore: [best], strokesSaved: [total]
+  encouragement: [1 hopeful sentence]
 
-# Card IDs: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED, C1_PUTTING, C1X_PUTTING, C2_PUTTING, MISTAKES, THROW_TYPE_COMPARISON, SHOT_SHAPE_BREAKDOWN, DISC_PERFORMANCE:{name}, HOLE_TYPE:Par {3/4/5}
-# Share Stat IDs (pick 2 most notable): c1PuttPct, c1xPuttPct, c2PuttPct, fairwayPct, parkedPct, c1InRegPct, obPct, birdies, bounceBack
+## OPTIONAL - Include if relevant:
+shareableHeadline: [1-2 sentences for social sharing, start with "You"]
+practiceAdvice: [2 specific drills]
+strategyTips: [2 tips referencing specific holes/discs]
 
-# Rules:
-- Use each card ID only ONCE across all sections
-- Weaknesses should show DIFFERENT stats than the mistakes bar chart (add context, not repeat counts)
-- NO emotional assumptions (no "frustrating", "disappointing") - stick to facts and stroke counts
-- Strategy tips must be SPECIFIC (reference holes, discs) not generic ("play safer")
-- Keep ALL text SHORT - 1-2 sentences max per explanation
-- CRITICAL: When a hole type has 40%+ birdie rate but high average due to ONE outlier (double/triple bogey), that is NOT a weakness - it's good play with one anomaly. Only flag as weakness if there's a PATTERN of poor scores across multiple holes.
-- DISC BLAME RULE: Only blame a disc for poor performance if: (1) at least 2 bad shots with that disc, AND (2) bad shots account for ≥50% of total shots with that disc. When mentioning a disc weakness, cite specific holes (e.g., "PD2 struggled on Holes 7 and 15 (both OB)").
-- LIMIT: Maximum 2 items in strengths list, maximum 2 items in weaknesses list
+# CARD IDs: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED, C1_PUTTING, C1X_PUTTING, C2_PUTTING, MISTAKES, THROW_TYPE_COMPARISON, HOLE_TYPE:Par 3|4|5
 
-# FINAL CRITICAL REMINDER:
-# You MUST output ALL sections in the YAML structure above, including:
-# roundTitle, overview, strengths, weaknesses, mistakes, biggestOpportunity,
-# practiceAdvice, strategyTips, shareHighlightStats, shareableHeadline,
-# strokeCostBreakdown, AND whatCouldHaveBeen.
-# DO NOT stop early. Complete the entire response.
+# RULES:
+- Each cardId used only ONCE across all sections
+- Explanations: 1-2 sentences max, no emotional words
+- Outlier rule: 40%+ birdie rate with ONE bad hole = NOT a weakness
 ''');
 
     return buffer.toString();
+  }
+
+  /// Format scoring summary (replaces verbose hole-by-hole list)
+  String _formatScoringSummary(DGRound round) {
+    int eagles = 0, birdies = 0, pars = 0, bogeys = 0, doubles = 0;
+    int? bestHole, worstHole;
+    int bestScore = 0, worstScore = 0;
+
+    for (final hole in round.holes) {
+      final int relative = hole.holeScore - hole.par;
+      if (relative <= -2) {
+        eagles++;
+      } else if (relative == -1) {
+        birdies++;
+      } else if (relative == 0) {
+        pars++;
+      } else if (relative == 1) {
+        bogeys++;
+      } else {
+        doubles++;
+      }
+
+      if (bestHole == null || relative < bestScore) {
+        bestHole = hole.number;
+        bestScore = relative;
+      }
+      if (worstHole == null || relative > worstScore) {
+        worstHole = hole.number;
+        worstScore = relative;
+      }
+    }
+
+    final List<String> parts = [];
+    if (eagles > 0) parts.add('$eagles eagle${eagles > 1 ? 's' : ''}');
+    if (birdies > 0) parts.add('$birdies birdie${birdies > 1 ? 's' : ''}');
+    if (pars > 0) parts.add('$pars par${pars > 1 ? 's' : ''}');
+    if (bogeys > 0) parts.add('$bogeys bogey${bogeys > 1 ? 's' : ''}');
+    if (doubles > 0) parts.add('$doubles double+');
+
+    String result = 'Scoring: ${parts.join(', ')}';
+    if (bestScore < 0) {
+      result += ' | Best: Hole $bestHole (${bestScore > 0 ? '+' : ''}$bestScore)';
+    }
+    if (worstScore > 0) {
+      result += ' | Worst: Hole $worstHole (+$worstScore)';
+    }
+
+    return result;
   }
 
   /// Format disc performance data for the prompt
@@ -257,73 +233,6 @@ whatCouldHaveBeen:
     }
 
     return buffer.toString();
-  }
-
-  /// Format disc usage by hole for the prompt - shows which holes each disc was used on
-  /// and what happened (for AI to provide specific context in explanations)
-  String _formatDiscByHole(DGRound round) {
-    final Map<String, List<String>> discHoleResults = {};
-
-    for (final DGHole hole in round.holes) {
-      final int holeScore = hole.holeScore;
-      final int par = hole.par;
-      final int relative = holeScore - par;
-      final String outcome = _getShortOutcome(relative);
-
-      for (int i = 0; i < hole.throws.length; i++) {
-        final throw_ = hole.throws[i];
-        final String discName = throw_.discName ?? 'Unknown';
-        if (discName == 'Unknown') continue;
-
-        // Determine throw type (tee, approach, putt)
-        final String throwType = i == 0
-            ? 'tee'
-            : (i == hole.throws.length - 1 ? 'putt' : 'approach');
-
-        // Get landing result
-        final String landing = throw_.landingSpot?.name ?? '';
-        final bool hasPenalty = throw_.penaltyStrokes > 0;
-
-        // Build result string
-        String result = 'H${hole.number} ($throwType';
-        if (landing.isNotEmpty) result += ', $landing';
-        if (hasPenalty) result += ', OB';
-        result += ', $outcome)';
-
-        discHoleResults.putIfAbsent(discName, () => []).add(result);
-      }
-    }
-
-    // Sort by throw count and format
-    final List<MapEntry<String, List<String>>> sorted =
-        discHoleResults.entries.toList()
-          ..sort((a, b) => b.value.length.compareTo(a.value.length));
-
-    final StringBuffer buffer = StringBuffer();
-    for (final MapEntry<String, List<String>> entry in sorted.take(6)) {
-      buffer.writeln('${entry.key}: ${entry.value.join(', ')}');
-    }
-
-    return buffer.toString();
-  }
-
-  String _getShortOutcome(int relativeToPar) {
-    switch (relativeToPar) {
-      case -2:
-        return 'eagle';
-      case -1:
-        return 'birdie';
-      case 0:
-        return 'par';
-      case 1:
-        return 'bogey';
-      case 2:
-        return 'double';
-      case 3:
-        return 'triple';
-      default:
-        return relativeToPar > 0 ? '+$relativeToPar' : '$relativeToPar';
-    }
   }
 
   /// Format hole type performance data with outlier detection for the prompt
@@ -519,42 +428,6 @@ whatCouldHaveBeen:
       for (final cost in costs) {
         buffer.writeln('${cost.area}: ~${cost.strokes} strokes (${cost.detail})');
       }
-    }
-
-    return buffer.toString();
-  }
-
-  /// Format shot shape performance for the prompt
-  String _formatShotShapePerformance(DGRound round) {
-    final RoundStatisticsService statsService = RoundStatisticsService(round);
-    final Map<String, dynamic> shotShapeStats =
-        statsService.getShotShapeBirdieRateStats();
-
-    if (shotShapeStats.isEmpty) {
-      return 'No shot shape data available';
-    }
-
-    final StringBuffer buffer = StringBuffer();
-
-    // Sort by attempts (most used first)
-    final List<MapEntry<String, dynamic>> entries = shotShapeStats.entries
-        .where((e) => (e.value.totalAttempts ?? 0) >= 2) // Min 2 attempts
-        .toList();
-    entries.sort((a, b) =>
-        (b.value.totalAttempts ?? 0).compareTo(a.value.totalAttempts ?? 0));
-
-    for (final MapEntry<String, dynamic> entry in entries.take(6)) {
-      final String shapeName = entry.key;
-      final double birdieRate = entry.value.percentage ?? 0.0;
-      final int attempts = entry.value.totalAttempts ?? 0;
-
-      buffer.writeln(
-        '$shapeName: ${birdieRate.toStringAsFixed(1)}% birdie rate ($attempts attempts)',
-      );
-    }
-
-    if (buffer.isEmpty) {
-      return 'No shot shape data with sufficient attempts';
     }
 
     return buffer.toString();
