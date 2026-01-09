@@ -8,6 +8,9 @@ import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/search/course_search_provider.dart';
+import 'package:turbo_disc_golf/services/search/meilisearch_provider.dart';
+import 'package:turbo_disc_golf/services/geocoding/geocoding_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_rounds_repository.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
@@ -71,9 +74,14 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());
   locator.registerSingleton<WebScraperService>(WebScraperService());
+  // Search provider - swap MeiliSearchProvider for a different implementation here
+  locator.registerLazySingleton<CourseSearchProvider>(
+    () => MeiliSearchProvider(),
+  );
   locator.registerLazySingleton<CourseSearchService>(
     () => CourseSearchService(),
   );
+  locator.registerLazySingleton<GeocodingService>(() => GeocodingService());
 
   // Register RoundsService which depends on FirestoreRoundService
   locator.registerSingleton<RoundsService>(

@@ -3,20 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
-import 'create_course_state.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
-import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
-import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
-import 'package:turbo_disc_golf/services/geocoding/geocoding_service.dart';
+import 'package:turbo_disc_golf/state/create_layout_state.dart';
 
-class CreateCourseCubit extends Cubit<CreateCourseState> {
-  CreateCourseCubit() : super(CreateCourseState.initial()) {
+class CreateLayoutCubit extends Cubit<CreateLayoutState> {
+  /// Creates a new layout (create mode)
+  CreateLayoutCubit() : super(CreateLayoutState.initial()) {
     _initializeDefaultLayout();
   }
+
+  /// Creates a cubit for editing an existing layout (edit mode)
+  CreateLayoutCubit.fromLayout(CourseLayout layout)
+      : super(CreateLayoutState.fromLayout(layout));
 
   final _uuid = const Uuid();
   final _picker = ImagePicker();
@@ -51,84 +53,11 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
   }
 
   // ─────────────────────────────────────────────
-  // Course info (KEEPING YOUR NAMES)
-  // ─────────────────────────────────────────────
-  void updateCourseName(String name) {
-    emit(state.copyWith(courseName: name));
-  }
-
-  void updateCity(String value) {
-    emit(state.copyWith(city: value));
-  }
-
-  void updateState(String value) {
-    emit(state.copyWith(state: value));
-  }
-
-  void updateCountry(String value) {
-    emit(state.copyWith(country: value));
-  }
-
-  // Aliases used by UI (no behavior change)
-  void courseNameChanged(String v) => updateCourseName(v);
-  void cityChanged(String v) => updateCity(v);
-  void stateChanged(String v) => updateState(v);
-  void countryChanged(String v) => updateCountry(v);
-
-  // ─────────────────────────────────────────────
-  // Location (Map Picker)
-  // ─────────────────────────────────────────────
-
-  /// Updates the course location from map selection and triggers reverse geocoding.
-  Future<void> updateLocation(double lat, double lng) async {
-    // Immediately update coordinates
-    emit(state.copyWith(
-      latitude: lat,
-      longitude: lng,
-      isGeocodingLocation: true,
-    ));
-
-    // Perform reverse geocoding to get city/state/country
-    await _reverseGeocodeLocation(lat, lng);
-  }
-
-  /// Clears the selected location and all related fields.
-  void clearLocation() {
-    emit(state.copyWith(clearLocation: true, isGeocodingLocation: false));
-  }
-
-  /// Performs reverse geocoding using Nominatim API.
-  Future<void> _reverseGeocodeLocation(double lat, double lng) async {
-    try {
-      final GeocodingService geocodingService = locator.get<GeocodingService>();
-      final LocationDetails? details = await geocodingService.reverseGeocode(lat, lng);
-
-      if (details != null) {
-        emit(state.copyWith(
-          city: details.city,
-          state: details.state,
-          country: details.country,
-          isGeocodingLocation: false,
-        ));
-      } else {
-        // Geocoding returned no results - just clear the loading state
-        emit(state.copyWith(isGeocodingLocation: false));
-      }
-    } catch (e) {
-      debugPrint('Geocoding error: $e');
-      emit(state.copyWith(isGeocodingLocation: false));
-    }
-  }
-
-  // ─────────────────────────────────────────────
   // Layout
   // ─────────────────────────────────────────────
   void updateLayoutName(String name) {
     emit(state.copyWith(layoutName: name));
   }
-
-  // UI alias
-  void layoutNameChanged(String v) => updateLayoutName(v);
 
   void updateHoleCount(int count) {
     emit(
@@ -340,68 +269,21 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
   }
 
   // ─────────────────────────────────────────────
-  // Validation + Save
+  // Build Layout
   // ─────────────────────────────────────────────
-  bool get canSave {
-    return state.courseName.trim().isNotEmpty && state.holes.isNotEmpty;
+
+  /// Builds and returns a CourseLayout from the current state.
+  /// The UI is responsible for saving this to the course.
+  CourseLayout buildLayout({bool isDefault = false}) {
+    return CourseLayout(
+      id: state.layoutId,
+      name: state.layoutName.trim().isEmpty
+          ? 'New Layout'
+          : state.layoutName.trim(),
+      holes: state.holes,
+      isDefault: isDefault,
+    );
   }
 
-  Future<bool> saveCourse({
-    required void Function(Course) onSuccess,
-    required void Function(String errorMessage) onError,
-  }) async {
-    if (!canSave) {
-      onError('Please fill in all required fields');
-      return false;
-    }
-
-    try {
-      final layout = CourseLayout(
-        id: state.layoutId,
-        name: state.layoutName.trim(),
-        holes: state.holes,
-        isDefault: true,
-      );
-
-      final course = Course(
-        id: _uuid.v4(),
-        name: state.courseName.trim(),
-        layouts: [layout],
-        city: state.city?.trim().isEmpty ?? true ? null : state.city,
-        state: state.state?.trim().isEmpty ?? true ? null : state.state,
-        country: state.country?.trim().isEmpty ?? true ? null : state.country,
-        latitude: state.latitude,
-        longitude: state.longitude,
-      );
-
-      debugPrint('Saving course: ${course.name}');
-
-      // Save to Firestore
-      final bool firestoreSaved = await FBCourseDataLoader.saveCourse(course);
-      if (!firestoreSaved) {
-        onError('Failed to save course to database');
-        return false;
-      }
-      debugPrint('Course saved to Firestore');
-
-      // Save to MeiliSearch
-      try {
-        await locator.get<CourseSearchService>().upsertCourse(course);
-        debugPrint('Course indexed in MeiliSearch');
-      } catch (e) {
-        // MeiliSearch indexing failure shouldn't block course creation
-        debugPrint('Warning: Failed to index course in MeiliSearch: $e');
-      }
-
-      // Call success callback
-      onSuccess(course);
-
-      return true;
-    } catch (e, trace) {
-      debugPrint('Error saving course: $e');
-      debugPrint(trace.toString());
-      onError('Failed to create course: ${e.toString()}');
-      return false;
-    }
-  }
+  bool get canSave => state.canSave;
 }

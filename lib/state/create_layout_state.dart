@@ -1,44 +1,48 @@
 import 'package:equatable/equatable.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 
-class CreateCourseState extends Equatable {
-  const CreateCourseState({
-    required this.courseName,
+class CreateLayoutState extends Equatable {
+  const CreateLayoutState({
     required this.layoutId,
     required this.layoutName,
     required this.holes,
     required this.numberOfHoles,
     required this.isParsingImage,
-    required this.isGeocodingLocation,
+    required this.isEditMode,
     this.parseError,
-    this.city,
-    this.state,
-    this.country,
-    this.latitude,
-    this.longitude,
   });
 
   // ─────────────────────────────────────────────
-  // Initial
+  // Initial state for creating a new layout
   // ─────────────────────────────────────────────
-  factory CreateCourseState.initial() {
-    return const CreateCourseState(
-      courseName: '',
+  factory CreateLayoutState.initial() {
+    return const CreateLayoutState(
       layoutId: '',
       layoutName: '',
       holes: [],
       numberOfHoles: 18,
       isParsingImage: false,
-      isGeocodingLocation: false,
+      isEditMode: false,
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // State from an existing layout (edit mode)
+  // ─────────────────────────────────────────────
+  factory CreateLayoutState.fromLayout(CourseLayout layout) {
+    return CreateLayoutState(
+      layoutId: layout.id,
+      layoutName: layout.name,
+      holes: layout.holes,
+      numberOfHoles: layout.holes.length,
+      isParsingImage: false,
+      isEditMode: true,
     );
   }
 
   // ─────────────────────────────────────────────
   // Core fields
   // ─────────────────────────────────────────────
-  final String courseName;
-
-  /// Single default layout (UI assumes only one)
   final String layoutId;
   final String layoutName;
   final List<CourseHole> holes;
@@ -47,77 +51,53 @@ class CreateCourseState extends Equatable {
   final int numberOfHoles;
 
   // ─────────────────────────────────────────────
-  // Location
-  // ─────────────────────────────────────────────
-  final String? city;
-  final String? state;
-  final String? country;
-  final double? latitude;
-  final double? longitude;
-
-  // ─────────────────────────────────────────────
   // Loading states
   // ─────────────────────────────────────────────
   final bool isParsingImage;
-  final bool isGeocodingLocation;
   final String? parseError;
+
+  // ─────────────────────────────────────────────
+  // Mode
+  // ─────────────────────────────────────────────
+  final bool isEditMode;
 
   // ─────────────────────────────────────────────
   // Derived
   // ─────────────────────────────────────────────
   bool get hasValidLayout => holes.isNotEmpty;
-  bool get hasLocation => latitude != null && longitude != null;
+  bool get canSave => layoutName.trim().isNotEmpty && holes.isNotEmpty;
 
   // ─────────────────────────────────────────────
   // Copy
   // ─────────────────────────────────────────────
-  CreateCourseState copyWith({
-    String? courseName,
+  CreateLayoutState copyWith({
     String? layoutId,
     String? layoutName,
     List<CourseHole>? holes,
     int? numberOfHoles,
     bool? isParsingImage,
-    bool? isGeocodingLocation,
+    bool? isEditMode,
     String? parseError,
-    String? city,
-    String? state,
-    String? country,
-    double? latitude,
-    double? longitude,
-    bool clearLocation = false,
   }) {
-    return CreateCourseState(
-      courseName: courseName ?? this.courseName,
+    return CreateLayoutState(
       layoutId: layoutId ?? this.layoutId,
       layoutName: layoutName ?? this.layoutName,
       holes: holes ?? this.holes,
       numberOfHoles: numberOfHoles ?? this.numberOfHoles,
       isParsingImage: isParsingImage ?? this.isParsingImage,
-      isGeocodingLocation: isGeocodingLocation ?? this.isGeocodingLocation,
+      isEditMode: isEditMode ?? this.isEditMode,
       parseError: parseError,
-      city: clearLocation ? null : (city ?? this.city),
-      state: clearLocation ? null : (state ?? this.state),
-      country: clearLocation ? null : (country ?? this.country),
-      latitude: clearLocation ? null : (latitude ?? this.latitude),
-      longitude: clearLocation ? null : (longitude ?? this.longitude),
     );
   }
 
   @override
   List<Object?> get props => [
-    courseName,
     layoutId,
     layoutName,
     holes,
     numberOfHoles,
     isParsingImage,
-    isGeocodingLocation,
+    isEditMode,
     parseError,
-    city,
-    state,
-    country,
-    latitude,
-    longitude,
   ];
 }

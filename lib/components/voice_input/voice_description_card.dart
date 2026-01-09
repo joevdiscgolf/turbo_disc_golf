@@ -90,9 +90,11 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
           ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 100),
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           // title row with circular icon (matching _InfoCard)
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -209,7 +211,8 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
               ),
             ),
           ),
-        ],
+          ],
+          ),
         ),
       ),
     );

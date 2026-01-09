@@ -105,3 +105,15 @@ const bool showWhatCouldHaveBeenCard = true;
 /// When true, shows the encouragement message in the "What Could Have Been" card.
 /// When false, hides it to save vertical space.
 const bool showWhatCouldHaveBeenEncouragement = false;
+
+/// When true, shows the map location picker in the Create Course screen.
+/// When false, only text fields for city/state/country are shown.
+const bool showMapLocationPicker = true;
+
+/// Map provider to use for the location picker.
+/// Options: 'flutter_map' (free, OpenStreetMap) or 'google_maps' (requires API key).
+const String mapProvider = 'flutter_map';
+
+/// When true, uses a beautiful calendar date/time picker in a bottom sheet.
+/// When false, uses the standard Material showDatePicker/showTimePicker dialogs.
+const bool useBeautifulDatePicker = true;

@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/animations/page_transitions.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
@@ -38,6 +40,18 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
     _roundHistoryCubit = BlocProvider.of<RoundHistoryCubit>(context);
     // Load rounds on initial screen load
     _roundHistoryCubit.loadRounds();
+    // Sync course cache from Firestore (fire and forget)
+    _syncCourseCache();
+  }
+
+  /// Syncs the recent courses cache from Firestore.
+  /// Called once on app startup to ensure cache is up-to-date with Firestore.
+  Future<void> _syncCourseCache() async {
+    try {
+      await locator.get<CourseSearchService>().syncCacheFromFirestore();
+    } catch (e) {
+      debugPrint('[RoundHistoryScreen] Failed to sync course cache: $e');
+    }
   }
 
   Future<void> _showRecordRoundSheet() async {

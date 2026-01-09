@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.da
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/education/hole_description_examples_screen.dart';
+import 'package:turbo_disc_golf/components/panels/date_time_picker_panel.dart';
 import 'package:turbo_disc_golf/components/panels/select_image_source_panel.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -231,7 +232,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).viewPadding.top + 120,
+                    top: MediaQuery.of(context).viewPadding.top + 100,
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
@@ -305,47 +306,38 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
     final bool isListening = recordRoundState.isListening;
     final bool isStartingListening = recordRoundState.isStartingListening;
+    final double bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
     return SingleChildScrollView(
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewPadding.bottom,
-        ),
-        height:
-            MediaQuery.of(context).size.height -
-            (MediaQuery.of(context).viewPadding.top + 64),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(recordRoundState),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildHoleInfoCard(recordRoundState),
+      padding: EdgeInsets.only(bottom: bottomPadding + 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(recordRoundState),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildHoleInfoCard(recordRoundState),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(height: 200, child: _buildVoiceCard(isListening)),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: _buildMicrophoneButton(
+              isListening,
+              recordRoundState.pausingBetweenHoles,
+              isStartingListening,
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildVoiceCard(isListening),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: _buildMicrophoneButton(
-                isListening,
-                recordRoundState.pausingBetweenHoles,
-                isStartingListening,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // if (kDebugMode || kReleaseMode) _buildDebugButtons(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildNavigationButtons(),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildNavigationButtons(),
+          ),
+        ],
       ),
     );
   }
@@ -788,11 +780,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     maxHeight: 32,
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.remove,
-                      size: 18,
-                      color: buttonColor,
-                    ),
+                    child: Icon(Icons.remove, size: 18, color: buttonColor),
                   ),
                 ),
               ),
@@ -825,11 +813,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     maxHeight: 32,
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.add,
-                      size: 18,
-                      color: buttonColor,
-                    ),
+                    child: Icon(Icons.add, size: 18, color: buttonColor),
                   ),
                 ),
               ),
@@ -964,6 +948,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _showCourseSelector() async {
+    // Unfocus the text field before showing the course selector
+    _focusNode.unfocus();
+
     displayBottomSheet(
       context,
       SelectCoursePanel(
@@ -974,6 +961,30 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _showDateTimeEditor() async {
+    // Unfocus the text field before showing the date picker
+    _focusNode.unfocus();
+
+    if (useBeautifulDatePicker) {
+      await _showBeautifulDateTimePicker();
+    } else {
+      await _showMaterialDateTimePicker();
+    }
+  }
+
+  Future<void> _showBeautifulDateTimePicker() async {
+    await DateTimePickerPanel.show(
+      context: context,
+      initialDateTime: _selectedDateTime,
+      onConfirm: (DateTime updatedDateTime) {
+        setState(() {
+          _selectedDateTime = updatedDateTime;
+        });
+        _recordRoundCubit.setSelectedTime(updatedDateTime);
+      },
+    );
+  }
+
+  Future<void> _showMaterialDateTimePicker() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDateTime,

@@ -304,7 +304,7 @@ enum FairwayWidth {
   veryTight,
 }
 
-/// Hole type / terrain characteristics
+/// Hole type / terrain characteristics (tightness)
 enum HoleType {
   @JsonValue('open')
   open,
@@ -312,6 +312,16 @@ enum HoleType {
   slightlyWooded,
   @JsonValue('wooded')
   wooded,
+}
+
+/// Fairway shape / direction the hole bends
+enum HoleShape {
+  @JsonValue('straight')
+  straight,
+  @JsonValue('dogleg_left')
+  doglegLeft,
+  @JsonValue('dogleg_right')
+  doglegRight,
 }
 
 enum PuttingCircle {

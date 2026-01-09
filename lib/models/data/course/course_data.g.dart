@@ -16,6 +16,7 @@ CourseHole _$CourseHoleFromJson(Map json) => CourseHole(
           .toList() ??
       const [],
   holeType: $enumDecodeNullable(_$HoleTypeEnumMap, json['holeType']),
+  holeShape: $enumDecodeNullable(_$HoleShapeEnumMap, json['holeShape']),
   defaultPinId: json['defaultPinId'] as String?,
 );
 
@@ -26,6 +27,7 @@ Map<String, dynamic> _$CourseHoleToJson(CourseHole instance) =>
       'feet': instance.feet,
       'pins': instance.pins.map((e) => e.toJson()).toList(),
       'holeType': _$HoleTypeEnumMap[instance.holeType],
+      'holeShape': _$HoleShapeEnumMap[instance.holeShape],
       'defaultPinId': instance.defaultPinId,
     };
 
@@ -33,6 +35,12 @@ const _$HoleTypeEnumMap = {
   HoleType.open: 'open',
   HoleType.slightlyWooded: 'slightly_wooded',
   HoleType.wooded: 'wooded',
+};
+
+const _$HoleShapeEnumMap = {
+  HoleShape.straight: 'straight',
+  HoleShape.doglegLeft: 'dogleg_left',
+  HoleShape.doglegRight: 'dogleg_right',
 };
 
 CourseLayout _$CourseLayoutFromJson(Map json) => CourseLayout(
@@ -78,6 +86,8 @@ Course _$CourseFromJson(Map json) => Course(
   city: json['city'] as String?,
   state: json['state'] as String?,
   country: json['country'] as String?,
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
   description: json['description'] as String?,
   uDiscId: json['uDiscId'] as String?,
   pdgaId: json['pdgaId'] as String?,
@@ -91,6 +101,8 @@ Map<String, dynamic> _$CourseToJson(Course instance) => <String, dynamic>{
   'city': instance.city,
   'state': instance.state,
   'country': instance.country,
+  'latitude': instance.latitude,
+  'longitude': instance.longitude,
   'description': instance.description,
   'uDiscId': instance.uDiscId,
   'pdgaId': instance.pdgaId,
