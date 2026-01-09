@@ -43,53 +43,80 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   @override
   void initState() {
     super.initState();
-    _syncFirestoreToMeiliSearch();
+    // Testing functions - uncomment to use:
+    // _clearRecentCoursesCache();
+    // _syncCacheFromFirestore(); // Now called once from RoundHistoryScreen on app startup
     _loadRecentCourses();
   }
 
-  /// Syncs all courses from Firestore to MeiliSearch.
-  /// Call this once to populate the search index with existing data.
-  Future<void> _syncFirestoreToMeiliSearch() async {
+  // ==========================================================================
+  // TESTING FUNCTIONS - Call these from initState for debugging
+  // ==========================================================================
+
+  /// Clears the shared preferences recent courses cache.
+  /// Useful for testing the empty state or resetting the cache.
+  Future<void> _clearRecentCoursesCache() async {
     try {
-      debugPrint('[MeiliSearch Sync] Starting sync...');
-
-      // Load all courses from Firestore
-      final List<Course> courses = await FBCourseDataLoader.getAllCourses();
-      debugPrint(
-        '[MeiliSearch Sync] Loaded ${courses.length} courses from Firestore',
-      );
-
-      if (courses.isEmpty) {
-        debugPrint('[MeiliSearch Sync] No courses to sync');
-        return;
-      }
-
-      // Sync to MeiliSearch
-      await _searchService.upsertCourses(courses);
-      debugPrint(
-        '[MeiliSearch Sync] Successfully synced ${courses.length} courses to MeiliSearch',
-      );
+      debugPrint('[Testing] Clearing recent courses cache...');
+      await _searchService.clearRecentCoursesCache();
+      debugPrint('[Testing] Successfully cleared recent courses cache');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Synced ${courses.length} courses to search index'),
-            backgroundColor: Colors.green,
+          const SnackBar(
+            content: Text('Cleared recent courses cache'),
+            backgroundColor: Colors.orange,
           ),
         );
       }
     } catch (e) {
-      debugPrint('[MeiliSearch Sync] Error: $e');
+      debugPrint('[Testing] Failed to clear cache: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to sync courses: $e'),
+            content: Text('Failed to clear cache: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
   }
+
+  /// Syncs the shared preferences cache from Firestore.
+  /// For each course in the cache, fetches the latest version from Firestore
+  /// and updates the cache. Firestore is the source of truth.
+  Future<void> _syncCacheFromFirestore() async {
+    try {
+      debugPrint('[Testing] Syncing cache from Firestore...');
+      final int updatedCount = await _searchService.syncCacheFromFirestore();
+      debugPrint(
+        '[Testing] Successfully synced $updatedCount courses from Firestore',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Synced $updatedCount courses from Firestore'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[Testing] Failed to sync from Firestore: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to sync from Firestore: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ==========================================================================
+  // END TESTING FUNCTIONS
+  // ==========================================================================
 
   @override
   void dispose() {
@@ -105,18 +132,23 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     });
 
     try {
+      debugPrint('[SelectCoursePanel] Loading recent courses...');
       final List<CourseSearchHit> recent = await _searchService
           .getRecentCourses();
+      debugPrint('[SelectCoursePanel] Loaded ${recent.length} recent courses');
       if (mounted) {
         setState(() {
           _searchResults = recent;
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // Gracefully handle errors by showing empty state instead of error
+      debugPrint('[SelectCoursePanel] Failed to load recent courses: $e');
+      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
-          _error = 'Failed to load recent courses';
+          _searchResults = [];
           _isLoading = false;
         });
       }
@@ -148,7 +180,9 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
             _isLoading = false;
           });
         }
-      } catch (e) {
+      } catch (e, trace) {
+        debugPrint(e.toString());
+        debugPrint(trace.toString());
         if (mounted) {
           setState(() {
             _error = 'Search failed. Please try again.';
@@ -193,28 +227,28 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     }
 
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            _error!,
-            style: TextStyle(color: TurbColors.gray.shade500),
-            textAlign: TextAlign.center,
-          ),
-        ),
+      return _EmptyStateWidget(
+        icon: Icons.error_outline,
+        title: 'Something went wrong',
+        subtitle: _error!,
+        onRetry: _controller.text.isEmpty
+            ? _loadRecentCourses
+            : () => _onSearchChanged(_controller.text),
       );
     }
 
     if (_searchResults.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            _controller.text.isEmpty ? 'No recent courses' : 'No courses found',
-            style: TextStyle(color: TurbColors.gray.shade500),
-          ),
-        ),
-      );
+      return _controller.text.isEmpty
+          ? const _EmptyStateWidget(
+              icon: Icons.landscape_outlined,
+              title: 'Ready to play?',
+              subtitle: 'Search for a course above or create your own!',
+            )
+          : const _EmptyStateWidget(
+              icon: Icons.search_outlined,
+              title: 'No matches yet',
+              subtitle: 'Try a different name or location',
+            );
     }
 
     return ListView.separated(
@@ -346,6 +380,11 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseLayout layout, {
     required bool isNew,
   }) async {
+    debugPrint(
+      '[SelectCoursePanel] _handleLayoutSaved called - isNew: $isNew, '
+      'course: ${course.name}, layout: ${layout.name}',
+    );
+
     // Update the course with the new/updated layout
     final Course updatedCourse;
     if (isNew) {
@@ -359,20 +398,55 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     }
 
     // Save to Firestore
-    if (isNew) {
-      await FBCourseDataLoader.addLayoutToCourse(course.id, layout);
-    } else {
-      await FBCourseDataLoader.updateLayoutInCourse(course.id, layout);
+    try {
+      if (isNew) {
+        debugPrint('[SelectCoursePanel] Saving new layout to Firestore...');
+        await FBCourseDataLoader.addLayoutToCourse(course.id, layout);
+        debugPrint(
+          '[SelectCoursePanel] Successfully saved layout to Firestore',
+        );
+      } else {
+        debugPrint('[SelectCoursePanel] Updating layout in Firestore...');
+        await FBCourseDataLoader.updateLayoutInCourse(course.id, layout);
+        debugPrint(
+          '[SelectCoursePanel] Successfully updated layout in Firestore',
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[SelectCoursePanel] Failed to save layout to Firestore: $e');
+      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
     }
 
     // Update MeiliSearch index
-    await _searchService.upsertCourse(updatedCourse);
+    try {
+      debugPrint('[SelectCoursePanel] Updating MeiliSearch index...');
+      await _searchService.upsertCourse(updatedCourse);
+      debugPrint(
+        '[SelectCoursePanel] Successfully updated MeiliSearch with '
+        '${updatedCourse.layouts.length} layouts',
+      );
+    } catch (e, stackTrace) {
+      debugPrint('[SelectCoursePanel] Failed to update MeiliSearch: $e');
+      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
+    }
 
-    // Refresh search results
-    if (_controller.text.isEmpty) {
-      await _loadRecentCourses();
-    } else {
-      _onSearchChanged(_controller.text);
+    // Update shared preferences cache with the updated course
+    try {
+      debugPrint('[SelectCoursePanel] Updating shared preferences cache...');
+      await _searchService.markCourseAsUsed(updatedCourse.toCourseSearchHit());
+      debugPrint('[SelectCoursePanel] Successfully updated shared preferences');
+    } catch (e, stackTrace) {
+      debugPrint('[SelectCoursePanel] Failed to update shared preferences: $e');
+      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
+    }
+
+    // Set the course and layout in RecordRoundCubit and pop back to main screen
+    if (mounted) {
+      BlocProvider.of<RecordRoundCubit>(
+        context,
+      ).setSelectedCourse(updatedCourse, layoutId: layout.id);
+      // Pop this panel to go back to RecordRoundStepsScreen
+      Navigator.pop(context);
     }
   }
 
@@ -406,12 +480,40 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
           pushCupertinoRoute(
             context,
             CreateCourseSheet(
-              onCourseCreated: (course) {
+              onCourseCreated: (course) async {
+                debugPrint(
+                  '[SelectCoursePanel] New course created: ${course.name}',
+                );
+
+                // Capture references before async gap
+                final RecordRoundCubit recordRoundCubit =
+                    BlocProvider.of<RecordRoundCubit>(context);
+
+                // Add to shared preferences cache
+                try {
+                  debugPrint(
+                    '[SelectCoursePanel] Adding new course to shared preferences...',
+                  );
+                  await _searchService.markCourseAsUsed(
+                    course.toCourseSearchHit(),
+                  );
+                  debugPrint(
+                    '[SelectCoursePanel] Successfully added course to shared preferences',
+                  );
+                } catch (e) {
+                  debugPrint(
+                    '[SelectCoursePanel] Failed to add course to shared preferences: $e',
+                  );
+                }
+
                 // MeiliSearch indexing is handled by CreateCourseCubit.saveCourse()
-                BlocProvider.of<RecordRoundCubit>(
-                  context,
-                ).setSelectedCourse(course, layoutId: course.defaultLayout.id);
-                Navigator.pop(context);
+                recordRoundCubit.setSelectedCourse(
+                  course,
+                  layoutId: course.defaultLayout.id,
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
               },
               topViewPadding: widget.topViewPadding,
               bottomViewPadding: widget.bottomViewPadding,
@@ -690,6 +792,78 @@ class _NewLayoutButton extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyStateWidget extends StatelessWidget {
+  const _EmptyStateWidget({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onRetry,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.blue.shade50,
+                    Colors.blue.shade100.withValues(alpha: 0.5),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 36, color: Colors.blue.shade300),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: TurbColors.gray.shade700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 15,
+                color: TurbColors.gray.shade400,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 24),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Try again'),
+                style: TextButton.styleFrom(foregroundColor: TurbColors.blue),
+              ),
+            ],
+          ],
         ),
       ),
     );

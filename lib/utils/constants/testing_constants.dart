@@ -114,6 +114,6 @@ const bool showMapLocationPicker = true;
 /// Options: 'flutter_map' (free, OpenStreetMap) or 'google_maps' (requires API key).
 const String mapProvider = 'flutter_map';
 
-/// When true, uses a beautiful Cupertino-style date/time picker in a bottom sheet.
+/// When true, uses a beautiful calendar date/time picker in a bottom sheet.
 /// When false, uses the standard Material showDatePicker/showTimePicker dialogs.
-const bool useCupertinoDatePicker = true;
+const bool useBeautifulDatePicker = true;

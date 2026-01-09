@@ -34,7 +34,7 @@ class ContinueRecordingBanner extends StatelessWidget {
         left: 20,
         right: 20,
         top: 12,
-        bottom: MediaQuery.of(context).viewPadding.bottom + 12,
+        bottom: MediaQuery.of(context).viewPadding.bottom,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(

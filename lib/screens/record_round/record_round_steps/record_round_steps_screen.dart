@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.da
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/education/hole_description_examples_screen.dart';
+import 'package:turbo_disc_golf/components/panels/date_time_picker_panel.dart';
 import 'package:turbo_disc_golf/components/panels/select_image_source_panel.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -305,11 +306,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
     final bool isListening = recordRoundState.isListening;
     final bool isStartingListening = recordRoundState.isStartingListening;
+    final double bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewPadding.bottom,
-      ),
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: bottomPadding + 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -320,11 +320,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             child: _buildHoleInfoCard(recordRoundState),
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildVoiceCard(isListening),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(height: 200, child: _buildVoiceCard(isListening)),
           ),
           const SizedBox(height: 20),
           Center(
@@ -950,6 +948,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _showCourseSelector() async {
+    // Unfocus the text field before showing the course selector
+    _focusNode.unfocus();
+
     displayBottomSheet(
       context,
       SelectCoursePanel(
@@ -960,96 +961,26 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _showDateTimeEditor() async {
-    if (useCupertinoDatePicker) {
-      await _showCupertinoDateTimePicker();
+    // Unfocus the text field before showing the date picker
+    _focusNode.unfocus();
+
+    if (useBeautifulDatePicker) {
+      await _showBeautifulDateTimePicker();
     } else {
       await _showMaterialDateTimePicker();
     }
   }
 
-  Future<void> _showCupertinoDateTimePicker() async {
-    DateTime tempDateTime = _selectedDateTime;
-
-    await showModalBottomSheet<void>(
+  Future<void> _showBeautifulDateTimePicker() async {
+    await DateTimePickerPanel.show(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (BuildContext context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Select Date & Time',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.black54),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              // CupertinoDatePicker
-              SizedBox(
-                height: 200,
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.dateAndTime,
-                  initialDateTime: _selectedDateTime,
-                  minimumDate: DateTime(2000),
-                  maximumDate: DateTime(2100),
-                  onDateTimeChanged: (DateTime newDateTime) {
-                    tempDateTime = newDateTime;
-                  },
-                ),
-              ),
-              // Confirm button
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: PrimaryButton(
-                  label: 'Confirm',
-                  width: double.infinity,
-                  height: 52,
-                  backgroundColor: const Color(0xFF137e66),
-                  labelColor: Colors.white,
-                  onPressed: () {
-                    setState(() {
-                      _selectedDateTime = tempDateTime;
-                    });
-                    _recordRoundCubit.setSelectedTime(tempDateTime);
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      initialDateTime: _selectedDateTime,
+      onConfirm: (DateTime updatedDateTime) {
+        setState(() {
+          _selectedDateTime = updatedDateTime;
+        });
+        _recordRoundCubit.setSelectedTime(updatedDateTime);
+      },
     );
   }
 
