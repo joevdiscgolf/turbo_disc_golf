@@ -8,7 +8,6 @@ import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/screens/auth/components/apple_sign_in_button.dart';
 import 'package:turbo_disc_golf/screens/auth/components/auth_input_field.dart';
 import 'package:turbo_disc_golf/screens/auth/components/google_sign_in_button.dart';
 import 'package:turbo_disc_golf/screens/auth/sign_up_screen.dart';
@@ -108,8 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
             _signInButton(context, true),
             const SizedBox(height: 12),
             GoogleSignInButton(onPressed: _handleGoogleSignIn),
-            const SizedBox(height: 12),
-            AppleSignInButton(onPressed: _handleAppleSignIn),
+            // const SizedBox(height: 12),
+            // AppleSignInButton(onPressed: _handleAppleSignIn),
             const SizedBox(height: 8),
             _forgotPasswordButton(context),
             const SizedBox(height: 36),
@@ -284,35 +283,35 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleAppleSignIn() async {
-    setState(() {
-      _loading = true;
-      _errorText = '';
-    });
+  // Future<void> _handleAppleSignIn() async {
+  //   setState(() {
+  //     _loading = true;
+  //     _errorText = '';
+  //   });
 
-    try {
-      final bool success = await _authService.attemptSignInWithApple();
+  //   try {
+  //     final bool success = await _authService.attemptSignInWithApple();
 
-      if (!success && mounted) {
-        setState(() {
-          _loading = false;
-          _errorText = _authService.errorMessage;
-        });
-      }
-    } catch (e, trace) {
-      log(e.toString());
-      log(trace.toString());
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _errorText = 'Apple sign-in failed. Please try again.';
-        });
-      }
-      FirebaseCrashlytics.instance.recordError(
-        e,
-        trace,
-        reason: '[LoginScreen][_handleAppleSignIn] exception',
-      );
-    }
-  }
+  //     if (!success && mounted) {
+  //       setState(() {
+  //         _loading = false;
+  //         _errorText = _authService.errorMessage;
+  //       });
+  //     }
+  //   } catch (e, trace) {
+  //     log(e.toString());
+  //     log(trace.toString());
+  //     if (mounted) {
+  //       setState(() {
+  //         _loading = false;
+  //         _errorText = 'Apple sign-in failed. Please try again.';
+  //       });
+  //     }
+  //     FirebaseCrashlytics.instance.recordError(
+  //       e,
+  //       trace,
+  //       reason: '[LoginScreen][_handleAppleSignIn] exception',
+  //     );
+  //   }
+  // }
 }

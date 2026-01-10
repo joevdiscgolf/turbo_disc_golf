@@ -88,6 +88,7 @@ abstract class TurbColors {
   static const Color blue = Colors.blue;
   static const Color darkBlue = Color(0xff0E7DD6);
   static const Color white = Colors.white;
+  static const Color senseiBlue = Color(0xff1F4DB8);
 }
 
 /// Returns a semantic color based on percentage value.
@@ -106,7 +107,9 @@ Color getSemanticColor(double percentage) {
   final double p = percentage.clamp(0.0, 100.0) / 100.0;
 
   // Color stops - all chosen for good contrast against white
-  const Color green = Color(0xFF4CAF50); // Material Green 500 - vibrant, unified
+  const Color green = Color(
+    0xFF4CAF50,
+  ); // Material Green 500 - vibrant, unified
   const Color amber = Color(0xFFEF6C00); // Material Orange 800 - readable amber
   const Color red = Color(0xFFD32F2F); // Material Red 700 - darker for contrast
 
