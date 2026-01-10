@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -231,27 +232,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLogoutConfirmation() {
-    showDialog(
+    showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => CupertinoActionSheet(
         title: const Text('Log out'),
-        content: const Text('Are you sure you want to log out?'),
+        message: const Text('Are you sure you want to log out?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
             onPressed: () {
               Navigator.of(context).pop();
               locator.get<AuthService>().logout();
             },
-            child: const Text(
-              'Log out',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Log out'),
           ),
         ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
       ),
     );
   }

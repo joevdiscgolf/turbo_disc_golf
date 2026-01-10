@@ -8,7 +8,7 @@ import 'package:turbo_disc_golf/firebase_options.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
-import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
+import 'package:turbo_disc_golf/screens/auth/landing_screen.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
 import 'package:turbo_disc_golf/screens/onboarding/onboarding_screen.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
@@ -188,25 +188,14 @@ GoRouter createRouter(AppPhaseController controller) {
           },
         ),
       ),
-      // todo: implement login
       GoRoute(
         path: '/login',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
-          child: const LoginScreen(),
+          child: const LandingScreen(),
           transitionDuration: const Duration(milliseconds: 300),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // Zoom out transition - current screen zooms out while login appears
-            return ScaleTransition(
-              scale:
-                  Tween<double>(
-                    begin: 1.2, // Start slightly zoomed in
-                    end: 1.0, // End at normal size
-                  ).animate(
-                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                  ),
-              child: FadeTransition(opacity: animation, child: child),
-            );
+            return FadeTransition(opacity: animation, child: child);
           },
         ),
       ),

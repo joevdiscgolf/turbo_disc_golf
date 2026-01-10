@@ -55,64 +55,64 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
   /// Clears the shared preferences recent courses cache.
   /// Useful for testing the empty state or resetting the cache.
-  Future<void> _clearRecentCoursesCache() async {
-    try {
-      debugPrint('[Testing] Clearing recent courses cache...');
-      await _searchService.clearRecentCoursesCache();
-      debugPrint('[Testing] Successfully cleared recent courses cache');
+  // Future<void> _clearRecentCoursesCache() async {
+  //   try {
+  //     debugPrint('[Testing] Clearing recent courses cache...');
+  //     await _searchService.clearRecentCoursesCache();
+  //     debugPrint('[Testing] Successfully cleared recent courses cache');
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cleared recent courses cache'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('[Testing] Failed to clear cache: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to clear cache: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Text('Cleared recent courses cache'),
+  //           backgroundColor: Colors.orange,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     debugPrint('[Testing] Failed to clear cache: $e');
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Failed to clear cache: $e'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
-  /// Syncs the shared preferences cache from Firestore.
-  /// For each course in the cache, fetches the latest version from Firestore
-  /// and updates the cache. Firestore is the source of truth.
-  Future<void> _syncCacheFromFirestore() async {
-    try {
-      debugPrint('[Testing] Syncing cache from Firestore...');
-      final int updatedCount = await _searchService.syncCacheFromFirestore();
-      debugPrint(
-        '[Testing] Successfully synced $updatedCount courses from Firestore',
-      );
+  // /// Syncs the shared preferences cache from Firestore.
+  // /// For each course in the cache, fetches the latest version from Firestore
+  // /// and updates the cache. Firestore is the source of truth.
+  // Future<void> _syncCacheFromFirestore() async {
+  //   try {
+  //     debugPrint('[Testing] Syncing cache from Firestore...');
+  //     final int updatedCount = await _searchService.syncCacheFromFirestore();
+  //     debugPrint(
+  //       '[Testing] Successfully synced $updatedCount courses from Firestore',
+  //     );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Synced $updatedCount courses from Firestore'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('[Testing] Failed to sync from Firestore: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to sync from Firestore: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Synced $updatedCount courses from Firestore'),
+  //           backgroundColor: Colors.green,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     debugPrint('[Testing] Failed to sync from Firestore: $e');
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Failed to sync from Firestore: $e'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   // ==========================================================================
   // END TESTING FUNCTIONS

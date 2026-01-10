@@ -1,7 +1,9 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
@@ -63,8 +65,15 @@ class _MainWrapperState extends State<MainWrapper> {
               height: 28,
             ),
           ),
+          titleStyle: GoogleFonts.exo2(
+            fontSize: 20,
+            fontWeight: FontWeight.w700, // SemiBold/Bold
+            fontStyle: FontStyle.italic, // optional sporty slant
+            letterSpacing: 0.5,
+            color: TurbColors.senseiBlue,
+          ),
           hasBackButton: false,
-          leftWidget: _buildSettingsButton(context),
+          rightWidget: _buildSettingsButton(context),
         ),
         body: RoundHistoryScreen(
           bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
@@ -130,7 +139,9 @@ class _MainWrapperState extends State<MainWrapper> {
                 )
               : null,
           hasBackButton: false,
-          leftWidget: _selectedIndex == 0 ? _buildSettingsButton(context) : null,
+          leftWidget: _selectedIndex == 0
+              ? _buildSettingsButton(context)
+              : null,
         ),
         body: IndexedStack(
           index: _selectedIndex,

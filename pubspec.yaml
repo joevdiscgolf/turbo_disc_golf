@@ -78,6 +78,7 @@ dependencies:
   latlong2: ^0.9.1
   google_maps_flutter: ^2.10.0
   device_info_plus: ^12.3.0
+  google_fonts: ^7.0.0
   # google_fonts: ^6.2.1
 
 dev_dependencies:
