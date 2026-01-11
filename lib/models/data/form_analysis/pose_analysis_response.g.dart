@@ -63,6 +63,8 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
   deviationSeverity: json['deviation_severity'] as String,
   comparisonImageBase64: json['comparison_image_base64'] as String?,
   sideBySideImageBase64: json['side_by_side_image_base64'] as String?,
+  userImageBase64: json['user_image_base64'] as String?,
+  referenceImageBase64: json['reference_image_base64'] as String?,
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
@@ -84,6 +86,8 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(CheckpointPoseData instance) =>
       'deviation_severity': instance.deviationSeverity,
       'comparison_image_base64': instance.comparisonImageBase64,
       'side_by_side_image_base64': instance.sideBySideImageBase64,
+      'user_image_base64': instance.userImageBase64,
+      'reference_image_base64': instance.referenceImageBase64,
       'coaching_tips': instance.coachingTips,
     };
 

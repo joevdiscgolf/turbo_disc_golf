@@ -138,4 +138,4 @@ const bool showFormAnalysisTestButton = kDebugMode;
 /// Path to the test video for form analysis testing.
 /// This video is bundled in assets and copied to temp storage for testing.
 const String testFormAnalysisVideoPath =
-    'assets/test_videos/joe_example_throw_1.mov';
+    'assets/test_videos/joe_example_throw_2.mov';

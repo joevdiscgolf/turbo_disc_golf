@@ -17,6 +17,7 @@ class PoseComparisonSection extends StatefulWidget {
 
 class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   int _selectedCheckpointIndex = 0;
+  bool _isTipsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -136,11 +137,13 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Comparison image
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: _buildComparisonImage(checkpoint),
+          // Stacked comparison images
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _buildStackedImages(checkpoint),
           ),
+          // Divider
+          Divider(height: 1, color: Colors.grey[200]),
           // Checkpoint info
           Padding(
             padding: const EdgeInsets.all(16),
@@ -181,14 +184,69 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     );
   }
 
-  Widget _buildComparisonImage(CheckpointPoseData checkpoint) {
-    // Prefer side-by-side image, fall back to comparison overlay
-    final String? imageBase64 = checkpoint.sideBySideImageBase64 ??
-        checkpoint.comparisonImageBase64;
+  Widget _buildStackedImages(CheckpointPoseData checkpoint) {
+    // Check if we have separate images, otherwise fall back to combined
+    final bool hasSeparateImages = checkpoint.userImageBase64 != null &&
+        checkpoint.userImageBase64!.isNotEmpty;
 
+    if (!hasSeparateImages) {
+      // Fall back to the combined side-by-side or comparison image
+      return _buildFallbackImage(checkpoint);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // User's form
+        _buildLabeledImage(
+          label: 'YOUR FORM',
+          imageBase64: checkpoint.userImageBase64,
+        ),
+        const SizedBox(height: 12),
+        // Reference/Ideal form
+        _buildLabeledImage(
+          label: 'PRO REFERENCE',
+          imageBase64: checkpoint.referenceImageBase64,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLabeledImage({
+    required String label,
+    required String? imageBase64,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[600],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 200,
+            width: double.infinity,
+            color: Colors.grey[900],
+            child: _decodeAndDisplayImage(imageBase64),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _decodeAndDisplayImage(String? imageBase64) {
     if (imageBase64 == null || imageBase64.isEmpty) {
       return Container(
-        height: 200,
         color: Colors.grey[200],
         child: const Center(
           child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
@@ -200,12 +258,11 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
       final Uint8List imageBytes = base64Decode(imageBase64);
       return Image.memory(
         imageBytes,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         width: double.infinity,
-        height: 220,
+        height: 200,
         errorBuilder: (context, error, stackTrace) {
           return Container(
-            height: 200,
             color: Colors.grey[200],
             child: const Center(
               child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
@@ -215,7 +272,56 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
       );
     } catch (e) {
       return Container(
-        height: 200,
+        color: Colors.grey[200],
+        child: const Center(
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        ),
+      );
+    }
+  }
+
+  Widget _buildFallbackImage(CheckpointPoseData checkpoint) {
+    // Fall back to existing side-by-side or comparison image
+    final String? imageBase64 =
+        checkpoint.sideBySideImageBase64 ?? checkpoint.comparisonImageBase64;
+
+    if (imageBase64 == null || imageBase64.isEmpty) {
+      return Container(
+        height: 280,
+        color: Colors.grey[200],
+        child: const Center(
+          child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+        ),
+      );
+    }
+
+    try {
+      final Uint8List imageBytes = base64Decode(imageBase64);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 280,
+          color: Colors.grey[900],
+          child: Image.memory(
+            imageBytes,
+            fit: BoxFit.contain,
+            width: double.infinity,
+            height: 280,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                height: 280,
+                color: Colors.grey[200],
+                child: const Center(
+                  child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      return Container(
+        height: 280,
         color: Colors.grey[200],
         child: const Center(
           child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
@@ -268,51 +374,87 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   }
 
   Widget _buildCoachingTips(BuildContext context, List<String> tips) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF137e66).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.tips_and_updates,
-                size: 16,
-                color: Color(0xFF137e66),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Tips',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: const Color(0xFF137e66),
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...tips.map((tip) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('• ', style: TextStyle(color: Color(0xFF137e66))),
-                    Expanded(
-                      child: Text(
-                        tip,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[800],
+    return GestureDetector(
+      onTap: () => setState(() => _isTipsExpanded = !_isTipsExpanded),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF137e66).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.tips_and_updates,
+                  size: 16,
+                  color: Color(0xFF137e66),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Tips',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: const Color(0xFF137e66),
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '(${tips.length})',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: const Color(0xFF137e66).withValues(alpha: 0.7),
+                      ),
+                ),
+                const Spacer(),
+                Icon(
+                  _isTipsExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: const Color(0xFF137e66),
+                ),
+              ],
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  ...tips.map(
+                    (tip) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '• ',
+                            style: TextStyle(color: Color(0xFF137e66)),
+                          ),
+                          Expanded(
+                            child: Text(
+                              tip,
+                              style:
+                                  Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Colors.grey[800],
+                                      ),
                             ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              )),
-        ],
+                  ),
+                ],
+              ),
+              crossFadeState: _isTipsExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ],
+        ),
       ),
     );
   }

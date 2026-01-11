@@ -67,6 +67,8 @@ class CheckpointPoseData {
     required this.deviationSeverity,
     this.comparisonImageBase64,
     this.sideBySideImageBase64,
+    this.userImageBase64,
+    this.referenceImageBase64,
     required this.coachingTips,
   });
 
@@ -107,6 +109,12 @@ class CheckpointPoseData {
   @JsonKey(name: 'side_by_side_image_base64')
   final String? sideBySideImageBase64;
 
+  @JsonKey(name: 'user_image_base64')
+  final String? userImageBase64;
+
+  @JsonKey(name: 'reference_image_base64')
+  final String? referenceImageBase64;
+
   @JsonKey(name: 'coaching_tips')
   final List<String> coachingTips;
 
@@ -114,13 +122,13 @@ class CheckpointPoseData {
   String get checkpointDescription {
     switch (checkpointId) {
       case 'heisman':
-        return 'Peak of backswing, arm extended back like Heisman trophy pose';
+        return 'Player has just stepped onto their back leg on the ball of their foot. Front leg has started to drift in front of their back leg. They are on their back leg but have not started to coil yet, and their elbow is still roughly at 90 degrees and neutral.';
       case 'loaded':
-        return 'Disc loaded close to chest, weight shifted, ready to explode';
+        return 'The player\'s front (plant) foot is about to touch the ground, and they are fully coiled, and their back leg is bowed out.';
       case 'magic':
-        return 'The magic moment of release, arm extending with maximum power transfer';
+        return 'The player has been pulling through for a bit, and their knees have shifted to being both pointed inward, in a symmetrical and athletic position.';
       case 'pro':
-        return 'Professional follow-through, balanced and complete rotation';
+        return 'The pull-through is well in progress, and the elbow is at a 90-degree angle, and the back leg is bent at almost a 90-degree angle, and the front leg is pretty straight.';
       default:
         return checkpointName;
     }
@@ -130,54 +138,65 @@ class CheckpointPoseData {
   List<AngleDeviation> get deviations {
     final List<AngleDeviation> result = [];
 
-    if (deviationsRaw.shoulderRotation != null && userAngles.shoulderRotation != null) {
-      result.add(AngleDeviation(
-        angleName: 'shoulder_rotation',
-        userValue: userAngles.shoulderRotation!,
-        referenceValue: referenceAngles?.shoulderRotation,
-        deviation: deviationsRaw.shoulderRotation,
-        withinTolerance: (deviationsRaw.shoulderRotation?.abs() ?? 0) <= 15,
-      ));
+    if (deviationsRaw.shoulderRotation != null &&
+        userAngles.shoulderRotation != null) {
+      result.add(
+        AngleDeviation(
+          angleName: 'shoulder_rotation',
+          userValue: userAngles.shoulderRotation!,
+          referenceValue: referenceAngles?.shoulderRotation,
+          deviation: deviationsRaw.shoulderRotation,
+          withinTolerance: (deviationsRaw.shoulderRotation?.abs() ?? 0) <= 15,
+        ),
+      );
     }
 
     if (deviationsRaw.elbowAngle != null && userAngles.elbowAngle != null) {
-      result.add(AngleDeviation(
-        angleName: 'elbow_angle',
-        userValue: userAngles.elbowAngle!,
-        referenceValue: referenceAngles?.elbowAngle,
-        deviation: deviationsRaw.elbowAngle,
-        withinTolerance: (deviationsRaw.elbowAngle?.abs() ?? 0) <= 15,
-      ));
+      result.add(
+        AngleDeviation(
+          angleName: 'elbow_angle',
+          userValue: userAngles.elbowAngle!,
+          referenceValue: referenceAngles?.elbowAngle,
+          deviation: deviationsRaw.elbowAngle,
+          withinTolerance: (deviationsRaw.elbowAngle?.abs() ?? 0) <= 15,
+        ),
+      );
     }
 
     if (deviationsRaw.hipRotation != null && userAngles.hipRotation != null) {
-      result.add(AngleDeviation(
-        angleName: 'hip_rotation',
-        userValue: userAngles.hipRotation!,
-        referenceValue: referenceAngles?.hipRotation,
-        deviation: deviationsRaw.hipRotation,
-        withinTolerance: (deviationsRaw.hipRotation?.abs() ?? 0) <= 15,
-      ));
+      result.add(
+        AngleDeviation(
+          angleName: 'hip_rotation',
+          userValue: userAngles.hipRotation!,
+          referenceValue: referenceAngles?.hipRotation,
+          deviation: deviationsRaw.hipRotation,
+          withinTolerance: (deviationsRaw.hipRotation?.abs() ?? 0) <= 15,
+        ),
+      );
     }
 
     if (deviationsRaw.kneeBend != null && userAngles.kneeBend != null) {
-      result.add(AngleDeviation(
-        angleName: 'knee_bend',
-        userValue: userAngles.kneeBend!,
-        referenceValue: referenceAngles?.kneeBend,
-        deviation: deviationsRaw.kneeBend,
-        withinTolerance: (deviationsRaw.kneeBend?.abs() ?? 0) <= 15,
-      ));
+      result.add(
+        AngleDeviation(
+          angleName: 'knee_bend',
+          userValue: userAngles.kneeBend!,
+          referenceValue: referenceAngles?.kneeBend,
+          deviation: deviationsRaw.kneeBend,
+          withinTolerance: (deviationsRaw.kneeBend?.abs() ?? 0) <= 15,
+        ),
+      );
     }
 
     if (deviationsRaw.spineTilt != null && userAngles.spineTilt != null) {
-      result.add(AngleDeviation(
-        angleName: 'spine_tilt',
-        userValue: userAngles.spineTilt!,
-        referenceValue: referenceAngles?.spineTilt,
-        deviation: deviationsRaw.spineTilt,
-        withinTolerance: (deviationsRaw.spineTilt?.abs() ?? 0) <= 15,
-      ));
+      result.add(
+        AngleDeviation(
+          angleName: 'spine_tilt',
+          userValue: userAngles.spineTilt!,
+          referenceValue: referenceAngles?.spineTilt,
+          deviation: deviationsRaw.spineTilt,
+          withinTolerance: (deviationsRaw.spineTilt?.abs() ?? 0) <= 15,
+        ),
+      );
     }
 
     return result;
