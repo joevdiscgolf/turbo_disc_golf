@@ -40,16 +40,16 @@ class GeminiService {
       ),
     );
 
-    // Vision model for scorecard image processing
-    // Using gemini-2.5-flash for image generation
+    // Vision model for scorecard image and video processing
+    // Using gemini-2.5-flash for multimodal tasks
     _visionModel = GenerativeModel(
       model: twoPointFiveFlashModel,
       apiKey: apiKey,
       generationConfig: GenerationConfig(
-        temperature: 0.1, // Very low temperature for accurate data extraction
-        topK: 10,
-        topP: 0.8,
-        maxOutputTokens: 2048,
+        temperature: 0.2, // Low temperature for accurate but complete output
+        topK: 20,
+        topP: 0.9,
+        maxOutputTokens: 8192, // Increased for complete form analysis YAML
       ),
     );
   }
@@ -85,6 +85,70 @@ class GeminiService {
     } catch (e, trace) {
       debugPrint('Error generating content with Gemini');
       debugPrint(e.toString());
+      debugPrint(trace.toString());
+      return null;
+    }
+  }
+
+  /// Generate content with video (multimodal) - uses vision model
+  /// Gemini 2.5 Flash supports video input up to 1 hour
+  Future<String?> generateContentWithVideo({
+    required String prompt,
+    required String videoPath,
+  }) async {
+    try {
+      // Load video bytes
+      final File videoFile = File(videoPath);
+      if (!await videoFile.exists()) {
+        debugPrint('Video file does not exist: $videoPath');
+        return null;
+      }
+
+      final videoBytes = await videoFile.readAsBytes();
+
+      // Determine MIME type based on file extension
+      final String extension = videoPath.split('.').last.toLowerCase();
+      String mimeType;
+      switch (extension) {
+        case 'mp4':
+          mimeType = 'video/mp4';
+          break;
+        case 'mov':
+          mimeType = 'video/quicktime';
+          break;
+        case 'avi':
+          mimeType = 'video/x-msvideo';
+          break;
+        case 'webm':
+          mimeType = 'video/webm';
+          break;
+        case 'm4v':
+          mimeType = 'video/x-m4v';
+          break;
+        case '3gp':
+          mimeType = 'video/3gpp';
+          break;
+        default:
+          mimeType = 'video/mp4'; // Default fallback
+      }
+
+      debugPrint(
+        'Sending video to Gemini: ${videoBytes.length} bytes, $mimeType',
+      );
+
+      // Create multimodal content with video
+      final Content content = Content.multi([
+        TextPart(prompt),
+        DataPart(mimeType, videoBytes),
+      ]);
+
+      // Use vision model which supports video
+      final GenerateContentResponse response =
+          await _visionModel.generateContent([content]);
+      _lastRawResponse = response.text;
+      return response.text;
+    } catch (e, trace) {
+      debugPrint('Error generating content with video: $e');
       debugPrint(trace.toString());
       return null;
     }

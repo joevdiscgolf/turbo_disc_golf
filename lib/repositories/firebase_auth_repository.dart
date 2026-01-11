@@ -286,14 +286,23 @@ class FirebaseAuthRepository implements AuthRepository {
         return false;
       }
 
-      // Get existing display name or empty string
+      // Reload user to ensure fresh session
+      await _auth.currentUser!.reload();
+
+      // Check if already onboarded - no need to update again
       final String currentDisplayName = _auth.currentUser!.displayName ?? '';
+      if (currentDisplayName.contains('has_onboarded')) {
+        return true;
+      }
 
       // Append onboarding marker
       final String newDisplayName = '$currentDisplayName//has_onboarded';
 
       // Update the display name
       await _auth.currentUser!.updateProfile(displayName: newDisplayName);
+
+      // Reload to apply changes
+      await _auth.currentUser!.reload();
 
       return true;
     } catch (e, trace) {

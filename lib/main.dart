@@ -19,6 +19,7 @@ import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
@@ -101,6 +102,7 @@ class _MyAppState extends State<MyApp> {
       locator.get<RoundStorageService>(),
       locator.get<BaseVoiceRecordingService>(),
       locator.get<CourseSearchService>(),
+      locator.get<VideoFormAnalysisService>(),
       AnimationStateService.instance,
     ];
 
