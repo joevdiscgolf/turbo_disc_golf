@@ -32,6 +32,7 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
     (path: 'assets/test_videos/joe_example_throw_5.mov', name: 'Joe #5'),
     (path: 'assets/test_videos/schmidt_example_throw_1.mov', name: 'Schmidt #1'),
     (path: 'assets/test_videos/trent_example_throw_1.mov', name: 'Trent #1'),
+    (path: 'assets/test_videos/mcbeth_example_throw_1.mov', name: 'McBeth #1'),
   ];
 
   String _selectedTestVideoPath =

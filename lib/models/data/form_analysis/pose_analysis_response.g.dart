@@ -68,33 +68,43 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
   userSkeletonOnlyBase64: json['user_skeleton_only_base64'] as String?,
   referenceSkeletonOnlyBase64:
       json['reference_skeleton_only_base64'] as String?,
+  referenceSilhouetteBase64: json['reference_silhouette_base64'] as String?,
+  referenceSilhouetteWithSkeletonBase64:
+      json['reference_silhouette_with_skeleton_base64'] as String?,
+  comparisonWithSilhouetteBase64:
+      json['comparison_with_silhouette_base64'] as String?,
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
 );
 
-Map<String, dynamic> _$CheckpointPoseDataToJson(CheckpointPoseData instance) =>
-    <String, dynamic>{
-      'checkpoint_id': instance.checkpointId,
-      'checkpoint_name': instance.checkpointName,
-      'frame_number': instance.frameNumber,
-      'timestamp_seconds': instance.timestampSeconds,
-      'user_landmarks': instance.userLandmarks.map((e) => e.toJson()).toList(),
-      'user_angles': instance.userAngles.toJson(),
-      'reference_landmarks': instance.referenceLandmarks
-          ?.map((e) => e.toJson())
-          .toList(),
-      'reference_angles': instance.referenceAngles?.toJson(),
-      'deviations': instance.deviationsRaw.toJson(),
-      'deviation_severity': instance.deviationSeverity,
-      'comparison_image_base64': instance.comparisonImageBase64,
-      'side_by_side_image_base64': instance.sideBySideImageBase64,
-      'user_image_base64': instance.userImageBase64,
-      'reference_image_base64': instance.referenceImageBase64,
-      'user_skeleton_only_base64': instance.userSkeletonOnlyBase64,
-      'reference_skeleton_only_base64': instance.referenceSkeletonOnlyBase64,
-      'coaching_tips': instance.coachingTips,
-    };
+Map<String, dynamic> _$CheckpointPoseDataToJson(
+  CheckpointPoseData instance,
+) => <String, dynamic>{
+  'checkpoint_id': instance.checkpointId,
+  'checkpoint_name': instance.checkpointName,
+  'frame_number': instance.frameNumber,
+  'timestamp_seconds': instance.timestampSeconds,
+  'user_landmarks': instance.userLandmarks.map((e) => e.toJson()).toList(),
+  'user_angles': instance.userAngles.toJson(),
+  'reference_landmarks': instance.referenceLandmarks
+      ?.map((e) => e.toJson())
+      .toList(),
+  'reference_angles': instance.referenceAngles?.toJson(),
+  'deviations': instance.deviationsRaw.toJson(),
+  'deviation_severity': instance.deviationSeverity,
+  'comparison_image_base64': instance.comparisonImageBase64,
+  'side_by_side_image_base64': instance.sideBySideImageBase64,
+  'user_image_base64': instance.userImageBase64,
+  'reference_image_base64': instance.referenceImageBase64,
+  'user_skeleton_only_base64': instance.userSkeletonOnlyBase64,
+  'reference_skeleton_only_base64': instance.referenceSkeletonOnlyBase64,
+  'reference_silhouette_base64': instance.referenceSilhouetteBase64,
+  'reference_silhouette_with_skeleton_base64':
+      instance.referenceSilhouetteWithSkeletonBase64,
+  'comparison_with_silhouette_base64': instance.comparisonWithSilhouetteBase64,
+  'coaching_tips': instance.coachingTips,
+};
 
 PoseLandmark _$PoseLandmarkFromJson(Map<String, dynamic> json) => PoseLandmark(
   name: json['name'] as String,

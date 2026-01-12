@@ -287,9 +287,10 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     final String? userImage = _showSkeletonOnly
         ? checkpoint.userSkeletonOnlyBase64
         : checkpoint.userImageBase64;
+    // Pro reference: silhouette+skeleton in video mode, skeleton-only in skeleton mode
     final String? refImage = _showSkeletonOnly
         ? checkpoint.referenceSkeletonOnlyBase64
-        : checkpoint.referenceImageBase64;
+        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ?? checkpoint.referenceImageBase64);
 
     // Check if we have separate images, otherwise fall back to combined
     final bool hasSeparateImages = userImage != null && userImage.isNotEmpty;
@@ -433,9 +434,10 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   }
 
   Widget _buildFallbackImage(CheckpointPoseData checkpoint) {
-    // Fall back to existing side-by-side or comparison image
-    final String? imageBase64 =
-        checkpoint.sideBySideImageBase64 ?? checkpoint.comparisonImageBase64;
+    // Prefer silhouette comparison if available, fall back to existing options
+    final String? imageBase64 = checkpoint.comparisonWithSilhouetteBase64 ??
+        checkpoint.sideBySideImageBase64 ??
+        checkpoint.comparisonImageBase64;
 
     if (imageBase64 == null || imageBase64.isEmpty) {
       return Container(
@@ -967,9 +969,10 @@ class _FullscreenComparisonDialogState
     final String? userImage = _showSkeletonOnly
         ? checkpoint.userSkeletonOnlyBase64
         : checkpoint.userImageBase64;
+    // Pro reference: silhouette+skeleton in video mode, skeleton-only in skeleton mode
     final String? refImage = _showSkeletonOnly
         ? checkpoint.referenceSkeletonOnlyBase64
-        : checkpoint.referenceImageBase64;
+        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ?? checkpoint.referenceImageBase64);
 
     return Column(
       children: [
