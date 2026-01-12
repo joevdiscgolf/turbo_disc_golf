@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/screens/test_roast_screen.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_screen.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class MainWrapper extends StatefulWidget {
@@ -31,6 +32,10 @@ class _MainWrapperState extends State<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // Form Analysis tab mode takes precedence
+    if (useFormAnalysisTab) {
+      return _buildWithFormAnalysisTabs(context);
+    }
     if (!useBottomNavigationBar) {
       return _buildRoundHistoryOnly(context);
     }
@@ -77,6 +82,83 @@ class _MainWrapperState extends State<MainWrapper> {
         ),
         body: RoundHistoryScreen(
           bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        ),
+      ),
+    );
+  }
+
+  /// Build MainWrapper with Form Analysis tab alongside Round History.
+  /// Shows 2 tabs: Rounds and Form Coach.
+  Widget _buildWithFormAnalysisTabs(BuildContext context) {
+    final String appBarTitle = _selectedIndex == 0 ? 'ScoreSensei' : 'Form Coach';
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFEEE8F5),
+            Color(0xFFECECEE),
+            Color(0xFFE8F4E8),
+            Color(0xFFEAE8F0),
+          ],
+          stops: [0.0, 0.3, 0.7, 1.0],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: appBarTitle,
+          titleIcon: _selectedIndex == 0
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.asset(
+                    'assets/icon/app_icon_clear_bg.png',
+                    width: 28,
+                    height: 28,
+                  ),
+                )
+              : null,
+          titleStyle: _selectedIndex == 0
+              ? GoogleFonts.exo2(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: 0.5,
+                  color: TurbColors.senseiBlue,
+                )
+              : null,
+          hasBackButton: false,
+          rightWidget: _selectedIndex == 0 ? _buildSettingsButton(context) : null,
+        ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            RoundHistoryScreen(
+              bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+            ),
+            const FormAnalysisScreen(),
+          ],
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
+          selectedItemColor: const Color(0xFF137e66),
+          unselectedItemColor: const Color(0xFF6B7280),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.play_arrow),
+              label: 'Rounds',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.slow_motion_video),
+              label: 'Form Coach',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
         ),
       ),
     );

@@ -117,3 +117,34 @@ const String mapProvider = 'flutter_map';
 /// When true, uses a beautiful calendar date/time picker in a bottom sheet.
 /// When false, uses the standard Material showDatePicker/showTimePicker dialogs.
 const bool useBeautifulDatePicker = true;
+
+/// When true, shows Form Analysis tab alongside Round History in MainWrapper.
+/// When false, Form Analysis is not accessible (feature hidden).
+const bool useFormAnalysisTab = true;
+
+/// When true, uses the Cloud Run pose analysis backend instead of Gemini-only.
+/// When false, uses only Gemini for form analysis (no pose comparison).
+const bool usePoseAnalysisBackend = true;
+
+/// Base URL for the pose analysis Cloud Run service.
+/// For iOS simulator testing: Use your Mac's IP (localhost doesn't work)
+/// For production: Set to your Cloud Run URL
+const String poseAnalysisBaseUrl = 'http://192.168.0.131:8080';
+
+/// When true (and in debug mode), shows a "Test with Example" button in Form Analysis
+/// that uses a bundled test video instead of requiring gallery selection.
+const bool showFormAnalysisTestButton = kDebugMode;
+
+/// Path to the test video for form analysis testing.
+/// This video is bundled in assets and copied to temp storage for testing.
+const String testFormAnalysisVideoPath =
+    'assets/test_videos/joe_example_throw_2.mov';
+
+/// When true (and in debug mode), skips the Gemini API call for form analysis
+/// and returns a mock response. Use this when testing checkpoint UI without
+/// needing actual AI analysis.
+const bool useMockFormAnalysisResponse = true;
+
+/// When true, shows the overall score header and summary section in form analysis results.
+/// When false, only the pose comparison section is displayed (for focused testing).
+const bool showFormAnalysisScoreAndSummary = false;

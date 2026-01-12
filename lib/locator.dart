@@ -19,6 +19,8 @@ import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.d
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.dart';
+import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
+import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
@@ -65,6 +67,14 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<PuttingAnalysisService>(PuttingAnalysisService());
   locator.registerSingleton<ScoreAnalysisService>(ScoreAnalysisService());
   locator.registerSingleton<ShotAnalysisService>(ShotAnalysisService());
+
+  // Form Analysis Services
+  locator.registerSingleton<VideoFormAnalysisService>(
+    VideoFormAnalysisService(),
+  );
+  locator.registerSingleton<PoseAnalysisApiClient>(
+    PoseAnalysisApiClient(baseUrl: poseAnalysisBaseUrl),
+  );
 
   locator.registerSingleton<AiParsingService>(AiParsingService());
   locator.registerSingleton<GeminiService>(
