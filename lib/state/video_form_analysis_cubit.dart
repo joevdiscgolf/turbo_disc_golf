@@ -226,12 +226,23 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
 
     // Save to history (fire-and-forget, don't block UI)
     if (poseResult != null) {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('💾 SAVING TO HISTORY: Starting save...');
+      debugPrint('💾 User ID: $uid');
+      debugPrint('💾 Session ID: ${session.id}');
+      debugPrint('💾 Checkpoints: ${poseResult.checkpoints.length}');
+      debugPrint('═══════════════════════════════════════════════════════');
       _saveAnalysisToHistory(
         uid: uid,
         sessionId: session.id,
         throwType: throwType,
         poseAnalysis: poseResult,
       );
+    } else {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('⚠️ SKIPPING HISTORY SAVE: poseResult is null');
+      debugPrint('⚠️ Pose analysis warning: $poseAnalysisWarning');
+      debugPrint('═══════════════════════════════════════════════════════');
     }
 
     emit(VideoFormAnalysisComplete(

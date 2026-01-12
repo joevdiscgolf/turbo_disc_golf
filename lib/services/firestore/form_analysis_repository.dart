@@ -27,12 +27,21 @@ class FormAnalysisRepository {
     required PoseAnalysisResponse poseAnalysis,
   }) async {
     try {
-      debugPrint('[FormAnalysisRepo] Saving analysis $analysisId for user $uid');
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FormAnalysisRepo] 💾 SAVE START');
+      debugPrint('[FormAnalysisRepo] Analysis ID: $analysisId');
+      debugPrint('[FormAnalysisRepo] User ID: $uid');
+      debugPrint('[FormAnalysisRepo] Throw type: $throwType');
+      debugPrint('[FormAnalysisRepo] Checkpoints to save: ${poseAnalysis.checkpoints.length}');
+      debugPrint('═══════════════════════════════════════════════════════');
 
       // Build checkpoint records with uploaded image URLs
       final List<CheckpointRecord> checkpointRecords = [];
 
-      for (final checkpoint in poseAnalysis.checkpoints) {
+      for (int i = 0; i < poseAnalysis.checkpoints.length; i++) {
+        final checkpoint = poseAnalysis.checkpoints[i];
+        debugPrint('[FormAnalysisRepo] Processing checkpoint ${i + 1}/${poseAnalysis.checkpoints.length}: ${checkpoint.checkpointId}');
+
         // Upload images to Cloud Storage and get URLs
         final String? userImageUrl = await _uploadImage(
           uid: uid,
@@ -94,6 +103,7 @@ class FormAnalysisRepository {
       );
 
       // Save to Firestore
+      debugPrint('[FormAnalysisRepo] Saving to Firestore at: $kUsersCollection/$uid/$kFormAnalysesCollection/$analysisId');
       await _firestore
           .collection('$kUsersCollection/$uid/$kFormAnalysesCollection')
           .doc(analysisId)
@@ -101,16 +111,22 @@ class FormAnalysisRepository {
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () {
-              debugPrint('[FormAnalysisRepo] Timeout saving to Firestore');
+              debugPrint('[FormAnalysisRepo] ❌ Timeout saving to Firestore');
               throw Exception('Timeout saving analysis');
             },
           );
 
-      debugPrint('[FormAnalysisRepo] Successfully saved analysis $analysisId');
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FormAnalysisRepo] ✅ SUCCESS! Analysis saved: $analysisId');
+      debugPrint('[FormAnalysisRepo] Checkpoints saved: ${checkpointRecords.length}');
+      debugPrint('═══════════════════════════════════════════════════════');
       return true;
     } catch (e, trace) {
-      debugPrint('[FormAnalysisRepo] Error saving analysis: $e');
-      debugPrint(trace.toString());
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FormAnalysisRepo] ❌ SAVE FAILED!');
+      debugPrint('[FormAnalysisRepo] Error: $e');
+      debugPrint('[FormAnalysisRepo] Stack trace: $trace');
+      debugPrint('═══════════════════════════════════════════════════════');
       return false;
     }
   }
