@@ -65,6 +65,9 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
   sideBySideImageBase64: json['side_by_side_image_base64'] as String?,
   userImageBase64: json['user_image_base64'] as String?,
   referenceImageBase64: json['reference_image_base64'] as String?,
+  userSkeletonOnlyBase64: json['user_skeleton_only_base64'] as String?,
+  referenceSkeletonOnlyBase64:
+      json['reference_skeleton_only_base64'] as String?,
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
@@ -88,6 +91,8 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(CheckpointPoseData instance) =>
       'side_by_side_image_base64': instance.sideBySideImageBase64,
       'user_image_base64': instance.userImageBase64,
       'reference_image_base64': instance.referenceImageBase64,
+      'user_skeleton_only_base64': instance.userSkeletonOnlyBase64,
+      'reference_skeleton_only_base64': instance.referenceSkeletonOnlyBase64,
       'coaching_tips': instance.coachingTips,
     };
 

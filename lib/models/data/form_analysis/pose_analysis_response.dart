@@ -69,6 +69,8 @@ class CheckpointPoseData {
     this.sideBySideImageBase64,
     this.userImageBase64,
     this.referenceImageBase64,
+    this.userSkeletonOnlyBase64,
+    this.referenceSkeletonOnlyBase64,
     required this.coachingTips,
   });
 
@@ -114,6 +116,12 @@ class CheckpointPoseData {
 
   @JsonKey(name: 'reference_image_base64')
   final String? referenceImageBase64;
+
+  @JsonKey(name: 'user_skeleton_only_base64')
+  final String? userSkeletonOnlyBase64;
+
+  @JsonKey(name: 'reference_skeleton_only_base64')
+  final String? referenceSkeletonOnlyBase64;
 
   @JsonKey(name: 'coaching_tips')
   final List<String> coachingTips;
