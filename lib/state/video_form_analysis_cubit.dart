@@ -13,7 +13,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
-import 'package:turbo_disc_golf/services/firestore/form_analysis_repository.dart';
+import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
 import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
@@ -264,15 +264,12 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required PoseAnalysisResponse poseAnalysis,
   }) {
     // Fire-and-forget - don't await, just log result
-    locator
-        .get<FormAnalysisRepository>()
-        .saveAnalysis(
-          uid: uid,
-          analysisId: sessionId,
-          throwType: _mapThrowTypeToString(throwType),
-          poseAnalysis: poseAnalysis,
-        )
-        .then((success) {
+    FBFormAnalysisDataLoader.saveAnalysis(
+      uid: uid,
+      analysisId: sessionId,
+      throwType: _mapThrowTypeToString(throwType),
+      poseAnalysis: poseAnalysis,
+    ).then((success) {
       if (success) {
         debugPrint('[VideoFormAnalysisCubit] Analysis saved to history');
       } else {

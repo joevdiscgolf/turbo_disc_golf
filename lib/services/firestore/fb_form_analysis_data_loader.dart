@@ -1,26 +1,15 @@
-import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
-
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
+import 'package:turbo_disc_golf/utils/firebase/firebase_storage_utils.dart';
+import 'package:turbo_disc_golf/utils/firebase/firebase_utils.dart';
 
-final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-final FirebaseStorage _storage = FirebaseStorage.instance;
-
-/// Repository for form analysis history storage.
-/// Stores analysis metadata in Firestore and images in Cloud Storage.
-class FormAnalysisRepository {
-  /// Save a form analysis to Firestore with images in Cloud Storage.
-  ///
-  /// [uid] - User's UID
-  /// [analysisId] - Unique ID for this analysis
-  /// [throwType] - "backhand" or "forehand"
-  /// [poseAnalysis] - The pose analysis response from the backend
-  Future<bool> saveAnalysis({
+abstract class FBFormAnalysisDataLoader {
+  /// Save form analysis with images to Firestore and Cloud Storage.
+  static Future<bool> saveAnalysis({
     required String uid,
     required String analysisId,
     required String throwType,
@@ -28,11 +17,11 @@ class FormAnalysisRepository {
   }) async {
     try {
       debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('[FormAnalysisRepo] 💾 SAVE START');
-      debugPrint('[FormAnalysisRepo] Analysis ID: $analysisId');
-      debugPrint('[FormAnalysisRepo] User ID: $uid');
-      debugPrint('[FormAnalysisRepo] Throw type: $throwType');
-      debugPrint('[FormAnalysisRepo] Checkpoints to save: ${poseAnalysis.checkpoints.length}');
+      debugPrint('[FBFormAnalysisDataLoader] 💾 SAVE START');
+      debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');
+      debugPrint('[FBFormAnalysisDataLoader] User ID: $uid');
+      debugPrint('[FBFormAnalysisDataLoader] Throw type: $throwType');
+      debugPrint('[FBFormAnalysisDataLoader] Checkpoints to save: ${poseAnalysis.checkpoints.length}');
       debugPrint('═══════════════════════════════════════════════════════');
 
       // Build checkpoint records with uploaded image URLs
@@ -40,10 +29,11 @@ class FormAnalysisRepository {
 
       for (int i = 0; i < poseAnalysis.checkpoints.length; i++) {
         final checkpoint = poseAnalysis.checkpoints[i];
-        debugPrint('[FormAnalysisRepo] Processing checkpoint ${i + 1}/${poseAnalysis.checkpoints.length}: ${checkpoint.checkpointId}');
+        debugPrint('');
+        debugPrint('[FBFormAnalysisDataLoader] Processing checkpoint ${i + 1}/${poseAnalysis.checkpoints.length}: ${checkpoint.checkpointId}');
 
-        // Upload images to Cloud Storage and get URLs
-        final String? userImageUrl = await _uploadImage(
+        // Upload images to Cloud Storage
+        final String? userImageUrl = await _uploadCheckpointImage(
           uid: uid,
           analysisId: analysisId,
           checkpointId: checkpoint.checkpointId,
@@ -51,7 +41,7 @@ class FormAnalysisRepository {
           base64Data: checkpoint.userImageBase64,
         );
 
-        final String? userSkeletonUrl = await _uploadImage(
+        final String? userSkeletonUrl = await _uploadCheckpointImage(
           uid: uid,
           analysisId: analysisId,
           checkpointId: checkpoint.checkpointId,
@@ -59,7 +49,7 @@ class FormAnalysisRepository {
           base64Data: checkpoint.userSkeletonOnlyBase64,
         );
 
-        final String? referenceImageUrl = await _uploadImage(
+        final String? referenceImageUrl = await _uploadCheckpointImage(
           uid: uid,
           analysisId: analysisId,
           checkpointId: checkpoint.checkpointId,
@@ -72,6 +62,7 @@ class FormAnalysisRepository {
         final Map<String, double>? angleDeviations =
             _buildAngleDeviationsMap(checkpoint.deviationsRaw);
 
+        // Create checkpoint record
         checkpointRecords.add(CheckpointRecord(
           checkpointId: checkpoint.checkpointId,
           checkpointName: checkpoint.checkpointName,
@@ -102,110 +93,95 @@ class FormAnalysisRepository {
         topCoachingTips: topTips.isEmpty ? null : topTips,
       );
 
-      // Save to Firestore
-      debugPrint('[FormAnalysisRepo] Saving to Firestore at: $kUsersCollection/$uid/$kFormAnalysesCollection/$analysisId');
-      await _firestore
-          .collection('$kUsersCollection/$uid/$kFormAnalysesCollection')
-          .doc(analysisId)
-          .set(record.toJson())
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              debugPrint('[FormAnalysisRepo] ❌ Timeout saving to Firestore');
-              throw Exception('Timeout saving analysis');
-            },
-          );
+      // Save to Firestore using utility
+      final String firestorePath =
+          '$kUsersCollection/$uid/$kFormAnalysesCollection/$analysisId';
+      final bool success = await firestoreWrite(
+        firestorePath,
+        record.toJson(),
+        merge: false,
+        timeoutDuration: shortTimeout,
+      );
 
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('[FormAnalysisRepo] ✅ SUCCESS! Analysis saved: $analysisId');
-      debugPrint('[FormAnalysisRepo] Checkpoints saved: ${checkpointRecords.length}');
-      debugPrint('═══════════════════════════════════════════════════════');
-      return true;
+      if (success) {
+        debugPrint('[FBFormAnalysisDataLoader][saveAnalysis] ✅ Successfully saved analysis: $analysisId');
+      } else {
+        debugPrint('[FBFormAnalysisDataLoader][saveAnalysis] ❌ Failed to save analysis to Firestore: $analysisId');
+      }
+
+      return success;
     } catch (e, trace) {
       debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('[FormAnalysisRepo] ❌ SAVE FAILED!');
-      debugPrint('[FormAnalysisRepo] Error: $e');
-      debugPrint('[FormAnalysisRepo] Stack trace: $trace');
+      debugPrint('[FBFormAnalysisDataLoader] ❌ SAVE FAILED!');
+      debugPrint('[FBFormAnalysisDataLoader] Error: $e');
+      debugPrint('[FBFormAnalysisDataLoader] Stack trace: $trace');
       debugPrint('═══════════════════════════════════════════════════════');
       return false;
     }
   }
 
   /// Load recent form analyses for a user.
-  ///
-  /// [uid] - User's UID
-  /// [limit] - Maximum number of analyses to return (default 5)
-  Future<List<FormAnalysisRecord>> loadRecentAnalyses(
+  static Future<List<FormAnalysisRecord>> loadRecentAnalyses(
     String uid, {
     int limit = 5,
   }) async {
     try {
-      debugPrint('[FormAnalysisRepo] Loading recent analyses for user $uid');
+      final String path = '$kUsersCollection/$uid/$kFormAnalysesCollection';
+      final QuerySnapshot<Map<String, dynamic>>? snapshot =
+          await firestoreQuery(
+        path: path,
+        orderBy: 'created_at',
+        timeoutDuration: shortTimeout,
+      );
 
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
-          .collection('$kUsersCollection/$uid/$kFormAnalysesCollection')
-          .orderBy('created_at', descending: true)
-          .limit(limit)
-          .get()
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              debugPrint('[FormAnalysisRepo] Timeout loading analyses');
-              throw Exception('Timeout loading analyses');
-            },
-          );
+      if (snapshot == null) {
+        debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Query returned null');
+        return [];
+      }
 
+      // Sort descending and limit
       final List<FormAnalysisRecord> records = snapshot.docs
           .map((doc) => FormAnalysisRecord.fromJson(doc.data()))
-          .toList();
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      debugPrint('[FormAnalysisRepo] Loaded ${records.length} analyses');
-      return records;
+      return records.take(limit).toList();
     } catch (e, trace) {
-      debugPrint('[FormAnalysisRepo] Error loading analyses: $e');
-      debugPrint(trace.toString());
+      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Exception: $e');
+      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Stack: $trace');
       return [];
     }
   }
 
   /// Load a specific form analysis by ID.
-  ///
-  /// [uid] - User's UID
-  /// [analysisId] - The analysis ID to load
-  Future<FormAnalysisRecord?> loadAnalysisById(
+  static Future<FormAnalysisRecord?> loadAnalysisById(
     String uid,
     String analysisId,
   ) async {
     try {
-      debugPrint('[FormAnalysisRepo] Loading analysis $analysisId');
+      final String path =
+          '$kUsersCollection/$uid/$kFormAnalysesCollection/$analysisId';
+      final DocumentSnapshot<Map<String, dynamic>>? snapshot =
+          await firestoreFetch(
+        path,
+        timeoutDuration: shortTimeout,
+      );
 
-      final DocumentSnapshot<Map<String, dynamic>> doc = await _firestore
-          .collection('$kUsersCollection/$uid/$kFormAnalysesCollection')
-          .doc(analysisId)
-          .get()
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              debugPrint('[FormAnalysisRepo] Timeout loading analysis');
-              throw Exception('Timeout loading analysis');
-            },
-          );
-
-      if (!doc.exists || doc.data() == null) {
-        debugPrint('[FormAnalysisRepo] Analysis not found');
+      if (snapshot == null || !snapshot.exists || snapshot.data() == null) {
+        debugPrint('[FBFormAnalysisDataLoader][loadAnalysisById] Analysis not found: $analysisId');
         return null;
       }
 
-      return FormAnalysisRecord.fromJson(doc.data()!);
+      return FormAnalysisRecord.fromJson(snapshot.data()!);
     } catch (e, trace) {
-      debugPrint('[FormAnalysisRepo] Error loading analysis: $e');
-      debugPrint(trace.toString());
+      debugPrint('[FBFormAnalysisDataLoader][loadAnalysisById] Exception: $e');
+      debugPrint('[FBFormAnalysisDataLoader][loadAnalysisById] Stack: $trace');
       return null;
     }
   }
 
-  /// Upload an image to Cloud Storage and return the download URL.
-  Future<String?> _uploadImage({
+  /// Upload a checkpoint image to Cloud Storage.
+  static Future<String?> _uploadCheckpointImage({
     required String uid,
     required String analysisId,
     required String checkpointId,
@@ -213,35 +189,33 @@ class FormAnalysisRepository {
     String? base64Data,
   }) async {
     if (base64Data == null || base64Data.isEmpty) {
+      debugPrint('[FBFormAnalysisDataLoader] ⏭️  Skipping $imageName (no data)');
       return null;
     }
 
-    try {
-      // Decode base64 to bytes
-      final Uint8List bytes = base64Decode(base64Data);
+    debugPrint('[FBFormAnalysisDataLoader] ⬆️  Uploading $imageName...');
+    final String path =
+        'form_analyses/$uid/$analysisId/${checkpointId}_$imageName.jpg';
 
-      // Upload to Cloud Storage
-      final String path =
-          'form_analyses/$uid/$analysisId/${checkpointId}_$imageName.jpg';
-      final Reference ref = _storage.ref().child(path);
+    final String? url = await storageUploadImage(
+      path: path,
+      base64Data: base64Data,
+      contentType: 'image/jpeg',
+      timeoutDuration: const Duration(seconds: 5),
+    );
 
-      await ref.putData(
-        bytes,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-
-      // Get download URL
-      final String downloadUrl = await ref.getDownloadURL();
-      debugPrint('[FormAnalysisRepo] Uploaded image: $path');
-      return downloadUrl;
-    } catch (e) {
-      debugPrint('[FormAnalysisRepo] Error uploading image $imageName: $e');
-      return null;
+    if (url != null) {
+      debugPrint('[FBFormAnalysisDataLoader] ✅ Uploaded $imageName');
+    } else {
+      debugPrint('[FBFormAnalysisDataLoader] ❌ Failed to upload $imageName');
     }
+
+    return url;
   }
 
   /// Build angle deviations map from AngleDeviations object.
-  Map<String, double>? _buildAngleDeviationsMap(AngleDeviations deviations) {
+  static Map<String, double>? _buildAngleDeviationsMap(
+      AngleDeviations deviations) {
     final Map<String, double> map = {};
 
     if (deviations.shoulderRotation != null) {
@@ -264,7 +238,7 @@ class FormAnalysisRepository {
   }
 
   /// Get the worst severity from all checkpoints.
-  String? _getWorstSeverity(List<CheckpointRecord> checkpoints) {
+  static String? _getWorstSeverity(List<CheckpointRecord> checkpoints) {
     if (checkpoints.isEmpty) return null;
 
     const List<String> severityOrder = [
@@ -290,7 +264,7 @@ class FormAnalysisRepository {
   }
 
   /// Aggregate top coaching tips from all checkpoints (max 3, unique).
-  List<String> _aggregateTopTips(List<CheckpointRecord> checkpoints) {
+  static List<String> _aggregateTopTips(List<CheckpointRecord> checkpoints) {
     final Set<String> uniqueTips = {};
 
     for (final checkpoint in checkpoints) {

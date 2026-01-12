@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
-import 'package:turbo_disc_golf/services/firestore/form_analysis_repository.dart';
+import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
 
 /// Cubit for managing form analysis history state.
@@ -27,9 +27,8 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         return;
       }
 
-      final List<FormAnalysisRecord> analyses = await locator
-          .get<FormAnalysisRepository>()
-          .loadRecentAnalyses(uid, limit: 5);
+      final List<FormAnalysisRecord> analyses =
+          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 5);
 
       emit(FormAnalysisHistoryLoaded(analyses: analyses));
       debugPrint(
