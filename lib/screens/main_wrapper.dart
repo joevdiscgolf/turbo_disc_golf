@@ -23,6 +23,8 @@ class MainWrapper extends StatefulWidget {
 
 class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
+  final GlobalKey<FormAnalysisScreenState> _formAnalysisKey =
+      GlobalKey<FormAnalysisScreenState>();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -131,6 +133,7 @@ class _MainWrapperState extends State<MainWrapper> {
                 )
               : null,
           hasBackButton: false,
+          leftWidget: _selectedIndex == 1 ? _buildHistoryButton() : null,
           rightWidget: _selectedIndex == 0 ? _buildSettingsButton(context) : null,
         ),
         body: IndexedStack(
@@ -139,7 +142,7 @@ class _MainWrapperState extends State<MainWrapper> {
             RoundHistoryScreen(
               bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             ),
-            const FormAnalysisScreen(),
+            FormAnalysisScreen(key: _formAnalysisKey),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(
@@ -285,6 +288,18 @@ class _MainWrapperState extends State<MainWrapper> {
         onPressed: () {
           HapticFeedback.lightImpact();
           pushCupertinoRoute(context, const SettingsScreen());
+        },
+      ),
+    );
+  }
+
+  Widget _buildHistoryButton() {
+    return Center(
+      child: IconButton(
+        icon: const Icon(Icons.menu, size: 24),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _formAnalysisKey.currentState?.openDrawer();
         },
       ),
     );

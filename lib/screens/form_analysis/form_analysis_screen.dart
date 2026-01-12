@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_progress_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_drawer.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_panel.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 
@@ -18,18 +23,30 @@ class FormAnalysisScreen extends StatefulWidget {
   static const String screenName = 'Form Coach';
 
   @override
-  State<FormAnalysisScreen> createState() => _FormAnalysisScreenState();
+  FormAnalysisScreenState createState() => FormAnalysisScreenState();
 }
 
-class _FormAnalysisScreenState extends State<FormAnalysisScreen> {
+class FormAnalysisScreenState extends State<FormAnalysisScreen> {
   ThrowTechnique _selectedThrowType = ThrowTechnique.backhand;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<VideoFormAnalysisCubit>(
-      create: (context) => VideoFormAnalysisCubit(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<VideoFormAnalysisCubit>(
+          create: (context) => VideoFormAnalysisCubit(),
+        ),
+        BlocProvider<FormAnalysisHistoryCubit>(
+          create: (context) => FormAnalysisHistoryCubit()..loadHistory(),
+        ),
+      ],
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: Colors.transparent,
+        drawer: FormAnalysisDrawer(
+          onAnalysisSelected: _onHistoryAnalysisSelected,
+        ),
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -63,29 +80,58 @@ class _FormAnalysisScreenState extends State<FormAnalysisScreen> {
     );
   }
 
+  void _onHistoryAnalysisSelected(FormAnalysisRecord analysis) {
+    // Select the analysis in the history cubit
+    _scaffoldKey.currentContext
+        ?.read<FormAnalysisHistoryCubit>()
+        .selectAnalysis(analysis);
+  }
+
+  /// Open the history drawer.
+  void openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
   Widget _buildContent(BuildContext context, VideoFormAnalysisState state) {
-    if (state is VideoFormAnalysisInitial) {
-      return VideoInputPanel(
-        selectedThrowType: _selectedThrowType,
-        onThrowTypeChanged: (ThrowTechnique type) {
-          setState(() => _selectedThrowType = type);
-        },
-      );
-    } else if (state is VideoFormAnalysisRecording) {
-      return AnalysisProgressView(message: state.progressMessage);
-    } else if (state is VideoFormAnalysisValidating) {
-      return AnalysisProgressView(message: state.progressMessage);
-    } else if (state is VideoFormAnalysisAnalyzing) {
-      return AnalysisProgressView(message: state.progressMessage);
-    } else if (state is VideoFormAnalysisComplete) {
-      return AnalysisResultsView(
-        result: state.result,
-        poseAnalysis: state.poseAnalysis,
-      );
-    } else if (state is VideoFormAnalysisError) {
-      return _buildErrorView(context, state.message, state.session);
-    }
-    return const SizedBox.shrink();
+    // Check if viewing historical analysis first
+    return BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
+      builder: (context, historyState) {
+        // If a historical analysis is selected, show it
+        if (historyState is FormAnalysisHistoryLoaded &&
+            historyState.selectedAnalysis != null) {
+          return HistoryAnalysisView(
+            analysis: historyState.selectedAnalysis!,
+            onBack: () {
+              context.read<FormAnalysisHistoryCubit>().clearSelection();
+            },
+          );
+        }
+
+        // Otherwise show current analysis state
+        if (state is VideoFormAnalysisInitial) {
+          return VideoInputPanel(
+            selectedThrowType: _selectedThrowType,
+            onThrowTypeChanged: (ThrowTechnique type) {
+              setState(() => _selectedThrowType = type);
+            },
+          );
+        } else if (state is VideoFormAnalysisRecording) {
+          return AnalysisProgressView(message: state.progressMessage);
+        } else if (state is VideoFormAnalysisValidating) {
+          return AnalysisProgressView(message: state.progressMessage);
+        } else if (state is VideoFormAnalysisAnalyzing) {
+          return AnalysisProgressView(message: state.progressMessage);
+        } else if (state is VideoFormAnalysisComplete) {
+          return AnalysisResultsView(
+            result: state.result,
+            poseAnalysis: state.poseAnalysis,
+          );
+        } else if (state is VideoFormAnalysisError) {
+          return _buildErrorView(context, state.message, state.session);
+        }
+        return const SizedBox.shrink();
+      },
+    );
   }
 
   void _showPoseAnalysisWarning(BuildContext context, String message) {
