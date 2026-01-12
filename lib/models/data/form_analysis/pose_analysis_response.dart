@@ -74,6 +74,7 @@ class CheckpointPoseData {
     this.referenceSilhouetteBase64,
     this.referenceSilhouetteWithSkeletonBase64,
     this.comparisonWithSilhouetteBase64,
+    this.referenceHorizontalOffsetPercent,
     required this.coachingTips,
   });
 
@@ -134,6 +135,9 @@ class CheckpointPoseData {
 
   @JsonKey(name: 'comparison_with_silhouette_base64')
   final String? comparisonWithSilhouetteBase64;
+
+  @JsonKey(name: 'reference_horizontal_offset_percent')
+  final double? referenceHorizontalOffsetPercent;
 
   @JsonKey(name: 'coaching_tips')
   final List<String> coachingTips;

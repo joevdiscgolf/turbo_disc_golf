@@ -190,9 +190,13 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
               context,
             ).viewPadding.bottom;
 
+            // When bottom nav bar is present, body ends at nav bar - just need 20px margin
+            // When no nav bar, need to account for safe area
+            final double bottomMargin = useFormAnalysisTab ? 20 : (bottomViewPadding + 20);
+
             return Positioned(
-              right: bottomViewPadding - 8,
-              bottom: bottomViewPadding - 8,
+              right: 20,
+              bottom: bottomMargin,
               child: _buildNewRoundButton(),
             );
           },

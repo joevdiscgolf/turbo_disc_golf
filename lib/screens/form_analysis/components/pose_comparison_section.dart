@@ -283,6 +283,10 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   }
 
   Widget _buildStackedImages(CheckpointPoseData checkpoint) {
+    // Debug: log referenceHorizontalOffsetPercent
+    debugPrint('[PoseComparison] Checkpoint: ${checkpoint.checkpointName}');
+    debugPrint('[PoseComparison] referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}');
+
     // Select images based on view mode
     final String? userImage = _showSkeletonOnly
         ? checkpoint.userSkeletonOnlyBase64
@@ -319,6 +323,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
           label: 'Pro Reference',
           imageBase64: refImage,
           showArrow: false,
+          horizontalOffsetPercent: checkpoint.referenceHorizontalOffsetPercent,
           onTap: () => _showFullscreenComparison(
             userImage: userImage,
             referenceImage: refImage,
@@ -354,6 +359,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     required String label,
     required String? imageBase64,
     required bool showArrow,
+    double? horizontalOffsetPercent,
     VoidCallback? onTap,
   }) {
     return Column(
@@ -388,8 +394,21 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
             child: Container(
               height: 200,
               width: double.infinity,
-              color: Colors.grey[900],
-              child: _decodeAndDisplayImage(imageBase64),
+              color: Colors.black,
+              child: horizontalOffsetPercent != null && horizontalOffsetPercent != 0
+                  ? LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double offsetPixels =
+                            constraints.maxWidth * horizontalOffsetPercent / 100;
+                        return ClipRect(
+                          child: Transform.translate(
+                            offset: Offset(offsetPixels, 0),
+                            child: _decodeAndDisplayImage(imageBase64),
+                          ),
+                        );
+                      },
+                    )
+                  : _decodeAndDisplayImage(imageBase64),
             ),
           ),
         ),
@@ -455,7 +474,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           height: 280,
-          color: Colors.grey[900],
+          color: Colors.black,
           child: Image.memory(
             imageBytes,
             fit: BoxFit.contain,
@@ -981,13 +1000,21 @@ class _FullscreenComparisonDialogState
         ),
         Container(height: 2, color: Colors.grey[800]),
         Expanded(
-          child: _buildFullscreenPanel('Pro Reference', refImage),
+          child: _buildFullscreenPanel(
+            'Pro Reference',
+            refImage,
+            horizontalOffsetPercent: checkpoint.referenceHorizontalOffsetPercent,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildFullscreenPanel(String label, String? imageBase64) {
+  Widget _buildFullscreenPanel(
+    String label,
+    String? imageBase64, {
+    double? horizontalOffsetPercent,
+  }) {
     return Column(
       children: [
         Container(
@@ -1005,14 +1032,31 @@ class _FullscreenComparisonDialogState
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
+              final bool hasOffset =
+                  horizontalOffsetPercent != null && horizontalOffsetPercent != 0;
+              final double offsetPixels = hasOffset
+                  ? constraints.maxWidth * horizontalOffsetPercent / 100
+                  : 0;
+
+              Widget imageWidget = SizedBox(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                child: _decodeAndDisplayImage(imageBase64),
+              );
+
+              if (hasOffset) {
+                imageWidget = ClipRect(
+                  child: Transform.translate(
+                    offset: Offset(offsetPixels, 0),
+                    child: imageWidget,
+                  ),
+                );
+              }
+
               return InteractiveViewer(
                 minScale: 1.0,
                 maxScale: 4.0,
-                child: SizedBox(
-                  width: constraints.maxWidth,
-                  height: constraints.maxHeight,
-                  child: _decodeAndDisplayImage(imageBase64),
-                ),
+                child: imageWidget,
               );
             },
           ),
@@ -1024,7 +1068,7 @@ class _FullscreenComparisonDialogState
   Widget _decodeAndDisplayImage(String? imageBase64) {
     if (imageBase64 == null || imageBase64.isEmpty) {
       return Container(
-        color: Colors.grey[900],
+        color: Colors.black,
         child: const Center(
           child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
         ),
@@ -1038,7 +1082,7 @@ class _FullscreenComparisonDialogState
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           return Container(
-            color: Colors.grey[900],
+            color: Colors.black,
             child: const Center(
               child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
             ),
@@ -1047,7 +1091,7 @@ class _FullscreenComparisonDialogState
       );
     } catch (e) {
       return Container(
-        color: Colors.grey[900],
+        color: Colors.black,
         child: const Center(
           child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
         ),
