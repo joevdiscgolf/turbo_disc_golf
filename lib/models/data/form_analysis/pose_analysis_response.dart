@@ -126,7 +126,7 @@ class CheckpointPoseData {
       case 'loaded':
         return 'The player\'s front (plant) foot is about to touch the ground, and they are fully coiled, and their back leg is bowed out.';
       case 'magic':
-        return 'The player has been pulling through for a bit, and their knees have shifted to being both pointed inward, in a symmetrical and athletic position.';
+        return 'Disc is just starting to move forward, both knees are bent inward, in an athletic position.';
       case 'pro':
         return 'The pull-through is well in progress, and the elbow is at a 90-degree angle, and the back leg is bent at almost a 90-degree angle, and the front leg is pretty straight.';
       default:

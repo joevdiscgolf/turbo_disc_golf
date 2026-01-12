@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/checkpoint_resu
 import 'package:turbo_disc_golf/screens/form_analysis/components/improvement_list.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/pose_comparison_section.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// View displaying the complete form analysis results.
 class AnalysisResultsView extends StatelessWidget {
@@ -25,36 +26,43 @@ class AnalysisResultsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(child: _buildScoreHeader(context)),
-        SliverToBoxAdapter(child: _buildOverallFeedback(context)),
+        if (showFormAnalysisScoreAndSummary) ...[
+          SliverToBoxAdapter(child: _buildScoreHeader(context)),
+          SliverToBoxAdapter(child: _buildOverallFeedback(context)),
+        ],
         // Pose comparison section (if pose analysis is available)
         if (poseAnalysis != null) ...[
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          SliverToBoxAdapter(
+            child: SizedBox(height: showFormAnalysisScoreAndSummary ? 24 : 16),
+          ),
           SliverToBoxAdapter(
             child: PoseComparisonSection(poseAnalysis: poseAnalysis!),
           ),
         ],
-        SliverToBoxAdapter(
-          child: _buildSectionTitle(context, 'Checkpoint Analysis'),
-        ),
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: CheckpointResultCard(
-                result: result.checkpointResults[index],
+        if (showFormAnalysisScoreAndSummary) ...[
+          SliverToBoxAdapter(
+            child: _buildSectionTitle(context, 'Checkpoint Analysis'),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: CheckpointResultCard(
+                  result: result.checkpointResults[index],
+                ),
               ),
+              childCount: result.checkpointResults.length,
             ),
-            childCount: result.checkpointResults.length,
           ),
-        ),
-        if (result.prioritizedImprovements.isNotEmpty) ...[
-          SliverToBoxAdapter(
-            child: _buildSectionTitle(context, 'Prioritized Improvements'),
-          ),
-          SliverToBoxAdapter(
-            child: ImprovementList(improvements: result.prioritizedImprovements),
-          ),
+          if (result.prioritizedImprovements.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(context, 'Prioritized Improvements'),
+            ),
+            SliverToBoxAdapter(
+              child:
+                  ImprovementList(improvements: result.prioritizedImprovements),
+            ),
+          ],
         ],
         SliverToBoxAdapter(child: _buildActionButtons(context)),
         const SliverPadding(padding: EdgeInsets.only(bottom: 32)),

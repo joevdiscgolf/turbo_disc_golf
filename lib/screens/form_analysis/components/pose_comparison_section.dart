@@ -82,39 +82,79 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   }
 
   Widget _buildCheckpointSelector(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: widget.poseAnalysis.checkpoints.length,
-        itemBuilder: (context, index) {
-          final CheckpointPoseData checkpoint =
-              widget.poseAnalysis.checkpoints[index];
-          final bool isSelected = index == _selectedCheckpointIndex;
+    final int checkpointCount = widget.poseAnalysis.checkpoints.length;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ChoiceChip(
-              label: Text(checkpoint.checkpointName),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() => _selectedCheckpointIndex = index);
-                }
-              },
-              selectedColor: const Color(0xFF6B4EFF),
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[700],
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              backgroundColor: Colors.grey[100],
-              side: BorderSide.none,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _buildPositionChip(context, 0),
+              const SizedBox(width: 8),
+              if (checkpointCount > 1)
+                _buildPositionChip(context, 1)
+              else
+                const Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+          if (checkpointCount > 2) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildPositionChip(context, 2),
+                const SizedBox(width: 8),
+                if (checkpointCount > 3)
+                  _buildPositionChip(context, 3)
+                else
+                  const Expanded(child: SizedBox.shrink()),
+              ],
             ),
-          );
-        },
+          ],
+        ],
       ),
     );
+  }
+
+  Widget _buildPositionChip(BuildContext context, int index) {
+    if (index >= widget.poseAnalysis.checkpoints.length) {
+      return const Expanded(child: SizedBox.shrink());
+    }
+
+    final CheckpointPoseData checkpoint =
+        widget.poseAnalysis.checkpoints[index];
+    final bool isSelected = index == _selectedCheckpointIndex;
+    final String displayName = _formatChipLabel(checkpoint.checkpointName);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedCheckpointIndex = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF6B4EFF) : Colors.grey[100],
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            displayName,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[700],
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Removes "Position" from checkpoint names for cleaner chip labels.
+  String _formatChipLabel(String name) {
+    return name
+        .replaceAll(' Position', '')
+        .replaceAll(' position', '')
+        .trim();
   }
 
   Widget _buildComparisonCard(BuildContext context) {
@@ -199,13 +239,13 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
       children: [
         // User's form
         _buildLabeledImage(
-          label: 'YOUR FORM',
+          label: 'Your Form',
           imageBase64: checkpoint.userImageBase64,
         ),
         const SizedBox(height: 12),
         // Reference/Ideal form
         _buildLabeledImage(
-          label: 'PRO REFERENCE',
+          label: 'Pro Reference',
           imageBase64: checkpoint.referenceImageBase64,
         ),
       ],

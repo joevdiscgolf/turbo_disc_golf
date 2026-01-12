@@ -8,7 +8,7 @@ import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// Panel for selecting throw type and initiating video capture/import.
-class VideoInputPanel extends StatelessWidget {
+class VideoInputPanel extends StatefulWidget {
   const VideoInputPanel({
     super.key,
     required this.selectedThrowType,
@@ -17,6 +17,13 @@ class VideoInputPanel extends StatelessWidget {
 
   final ThrowTechnique selectedThrowType;
   final ValueChanged<ThrowTechnique> onThrowTypeChanged;
+
+  @override
+  State<VideoInputPanel> createState() => _VideoInputPanelState();
+}
+
+class _VideoInputPanelState extends State<VideoInputPanel> {
+  int _selectedTestVideoNumber = 2; // Default to joe_example_throw_2
 
   @override
   Widget build(BuildContext context) {
@@ -97,10 +104,10 @@ class VideoInputPanel extends StatelessWidget {
               child: _ThrowTypeCard(
                 label: 'Backhand',
                 icon: Icons.sports_golf,
-                isSelected: selectedThrowType == ThrowTechnique.backhand,
+                isSelected: widget.selectedThrowType == ThrowTechnique.backhand,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  onThrowTypeChanged(ThrowTechnique.backhand);
+                  widget.onThrowTypeChanged(ThrowTechnique.backhand);
                 },
               ),
             ),
@@ -109,10 +116,10 @@ class VideoInputPanel extends StatelessWidget {
               child: _ThrowTypeCard(
                 label: 'Forehand',
                 icon: Icons.sports_handball,
-                isSelected: selectedThrowType == ThrowTechnique.forehand,
+                isSelected: widget.selectedThrowType == ThrowTechnique.forehand,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  onThrowTypeChanged(ThrowTechnique.forehand);
+                  widget.onThrowTypeChanged(ThrowTechnique.forehand);
                 },
               ),
             ),
@@ -138,7 +145,7 @@ class VideoInputPanel extends StatelessWidget {
           fontSize: 16,
           fontWeight: FontWeight.w600,
           onPressed: () {
-            cubit.recordVideo(throwType: selectedThrowType);
+            cubit.recordVideo(throwType: widget.selectedThrowType);
           },
         ),
         const SizedBox(height: 16),
@@ -151,26 +158,39 @@ class VideoInputPanel extends StatelessWidget {
           fontSize: 16,
           fontWeight: FontWeight.w600,
           onPressed: () {
-            cubit.importVideo(throwType: selectedThrowType);
+            cubit.importVideo(throwType: widget.selectedThrowType);
           },
         ),
         // Test button - only visible in debug mode
         if (showFormAnalysisTestButton) ...[
           const SizedBox(height: 16),
-          PrimaryButton(
-            width: double.infinity,
-            height: 56,
-            label: 'Test with Example',
-            icon: Icons.bug_report,
-            gradientBackground: const [Color(0xFFFF9800), Color(0xFFFF5722)],
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            onPressed: () {
-              cubit.testWithAssetVideo(
-                throwType: selectedThrowType,
-                assetPath: testFormAnalysisVideoPath,
-              );
-            },
+          Row(
+            children: [
+              Expanded(
+                child: PrimaryButton(
+                  width: double.infinity,
+                  height: 56,
+                  label: 'Test with Example',
+                  icon: Icons.bug_report,
+                  gradientBackground: const [
+                    Color(0xFFFF9800),
+                    Color(0xFFFF5722),
+                  ],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  onPressed: () {
+                    final String assetPath =
+                        'assets/test_videos/joe_example_throw_$_selectedTestVideoNumber.mov';
+                    cubit.testWithAssetVideo(
+                      throwType: widget.selectedThrowType,
+                      assetPath: assetPath,
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildTestVideoSelector(),
+            ],
           ),
         ],
       ],
@@ -219,6 +239,50 @@ class VideoInputPanel extends StatelessWidget {
           const _TipItem(text: 'Keep your phone steady or use a tripod'),
           const _TipItem(text: 'Video should be 5-30 seconds'),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTestVideoSelector() {
+    return PopupMenuButton<int>(
+      initialValue: _selectedTestVideoNumber,
+      onSelected: (int value) {
+        setState(() => _selectedTestVideoNumber = value);
+        HapticFeedback.lightImpact();
+      },
+      itemBuilder: (BuildContext context) => List.generate(
+        5,
+        (index) => PopupMenuItem<int>(
+          value: index + 1,
+          child: Text(
+            'Example ${index + 1}',
+            style: TextStyle(
+              fontWeight: (index + 1) == _selectedTestVideoNumber
+                  ? FontWeight.w600
+                  : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Text(
+            '$_selectedTestVideoNumber',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
     );
   }

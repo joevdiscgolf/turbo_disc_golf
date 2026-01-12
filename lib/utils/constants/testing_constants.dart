@@ -139,3 +139,12 @@ const bool showFormAnalysisTestButton = kDebugMode;
 /// This video is bundled in assets and copied to temp storage for testing.
 const String testFormAnalysisVideoPath =
     'assets/test_videos/joe_example_throw_2.mov';
+
+/// When true (and in debug mode), skips the Gemini API call for form analysis
+/// and returns a mock response. Use this when testing checkpoint UI without
+/// needing actual AI analysis.
+const bool useMockFormAnalysisResponse = true;
+
+/// When true, shows the overall score header and summary section in form analysis results.
+/// When false, only the pose comparison section is displayed (for focused testing).
+const bool showFormAnalysisScoreAndSummary = false;

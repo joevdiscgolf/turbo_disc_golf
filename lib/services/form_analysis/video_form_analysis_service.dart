@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
 
@@ -72,8 +73,6 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     PoseAnalysisResponse? poseAnalysis,
     void Function(String)? onProgressUpdate,
   }) async {
-    final GeminiService geminiService = locator.get<GeminiService>();
-
     try {
       onProgressUpdate?.call('Validating video...');
 
@@ -83,6 +82,16 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
         debugPrint('Video validation failed: ${validation.errorMessage}');
         return null;
       }
+
+      // Return mock response in debug mode when flag is enabled
+      if (kDebugMode && useMockFormAnalysisResponse) {
+        debugPrint('Using mock form analysis response (Gemini skipped)');
+        onProgressUpdate?.call('Processing results...');
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        return _getMockFormAnalysisResult(throwType);
+      }
+
+      final GeminiService geminiService = locator.get<GeminiService>();
 
       onProgressUpdate?.call('Preparing analysis...');
 
@@ -119,6 +128,70 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
       debugPrint(stackTrace.toString());
       return null;
     }
+  }
+
+  /// Returns a mock FormAnalysisResult for testing UI without hitting Gemini.
+  FormAnalysisResult _getMockFormAnalysisResult(ThrowTechnique throwType) {
+    final List<FormCheckpoint> checkpoints =
+        FormReferencePositions.getCheckpointsForThrowType(throwType);
+
+    final List<CheckpointAnalysisResult> checkpointResults =
+        checkpoints.map((FormCheckpoint cp) {
+      return CheckpointAnalysisResult(
+        checkpointId: cp.id,
+        checkpointName: cp.name,
+        score: 75,
+        feedback: 'Mock feedback for ${cp.name}. This is placeholder text '
+            'for testing the UI layout without hitting the Gemini API.',
+        timestampSeconds: (cp.orderIndex + 1) * 0.5,
+        comparisonToReference: 'Mock comparison - your form looks reasonable '
+            'but there is room for improvement in this area.',
+        keyPointResults: cp.keyPoints.map((FormKeyPoint kp) {
+          return KeyPointResult(
+            keyPointId: kp.id,
+            keyPointName: kp.name,
+            status: KeyPointStatus.needsImprovement,
+            observation: 'Mock observation for ${kp.name}.',
+            suggestion: 'Mock suggestion: Focus on improving this aspect.',
+          );
+        }).toList(),
+      );
+    }).toList();
+
+    return FormAnalysisResult(
+      id: const Uuid().v4(),
+      sessionId: '',
+      createdAt: DateTime.now().toIso8601String(),
+      checkpointResults: checkpointResults,
+      overallScore: 72,
+      overallFeedback: 'This is a mock response for testing the form analysis '
+          'UI. The Gemini API was skipped because useMockFormAnalysisResponse '
+          'is enabled in testing_constants.dart.',
+      prioritizedImprovements: [
+        const FormImprovement(
+          priority: 1,
+          checkpointId: 'reachback',
+          title: 'Improve Reachback',
+          description: 'Mock improvement #1: Work on your reachback extension.',
+          drillSuggestion: 'Practice slow-motion reachbacks in front of a mirror.',
+        ),
+        const FormImprovement(
+          priority: 2,
+          checkpointId: 'power_pocket',
+          title: 'Tighten Power Pocket',
+          description: 'Mock improvement #2: Keep the disc closer to your body.',
+          drillSuggestion: 'Do standstill throws focusing on elbow position.',
+        ),
+        const FormImprovement(
+          priority: 3,
+          checkpointId: 'follow_through',
+          title: 'Complete Follow Through',
+          description: 'Mock improvement #3: Let your arm finish naturally.',
+          drillSuggestion: 'Practice full rotation drills without a disc.',
+        ),
+      ],
+      rawGeminiResponse: 'MOCK_RESPONSE',
+    );
   }
 
   String _buildAnalysisPrompt(
