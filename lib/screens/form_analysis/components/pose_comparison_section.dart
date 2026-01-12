@@ -66,15 +66,15 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
               children: [
                 Text(
                   'Pose Comparison',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Compare your form to pro reference',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -209,10 +209,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
 
   /// Removes "Position" from checkpoint names for cleaner chip labels.
   String _formatChipLabel(String name) {
-    return name
-        .replaceAll(' Position', '')
-        .replaceAll(' position', '')
-        .trim();
+    return name.replaceAll(' Position', '').replaceAll(' position', '').trim();
   }
 
   Widget _buildComparisonCard(BuildContext context) {
@@ -253,10 +250,8 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
                     Expanded(
                       child: Text(
                         checkpoint.checkpointName,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
                     _buildSeverityBadge(checkpoint.deviationSeverity),
@@ -266,9 +261,9 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
                 Text(
                   checkpoint.checkpointDescription,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                        height: 1.4,
-                      ),
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
                 ),
                 if (checkpoint.coachingTips.isNotEmpty) ...[
                   const SizedBox(height: 12),
@@ -284,8 +279,6 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
 
   Widget _buildStackedImages(CheckpointPoseData checkpoint) {
     // Debug: log referenceHorizontalOffsetPercent
-    debugPrint('[PoseComparison] Checkpoint: ${checkpoint.checkpointName}');
-    debugPrint('[PoseComparison] referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}');
 
     // Select images based on view mode
     final String? userImage = _showSkeletonOnly
@@ -294,7 +287,8 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     // Pro reference: silhouette+skeleton in video mode, skeleton-only in skeleton mode
     final String? refImage = _showSkeletonOnly
         ? checkpoint.referenceSkeletonOnlyBase64
-        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ?? checkpoint.referenceImageBase64);
+        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ??
+              checkpoint.referenceImageBase64);
 
     // Check if we have separate images, otherwise fall back to combined
     final bool hasSeparateImages = userImage != null && userImage.isNotEmpty;
@@ -395,11 +389,15 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
               height: 200,
               width: double.infinity,
               color: Colors.black,
-              child: horizontalOffsetPercent != null && horizontalOffsetPercent != 0
+              child:
+                  horizontalOffsetPercent != null &&
+                      horizontalOffsetPercent != 0
                   ? LayoutBuilder(
                       builder: (context, constraints) {
                         final double offsetPixels =
-                            constraints.maxWidth * horizontalOffsetPercent / 100;
+                            constraints.maxWidth *
+                            horizontalOffsetPercent /
+                            100;
                         return ClipRect(
                           child: Transform.translate(
                             offset: Offset(offsetPixels, 0),
@@ -454,7 +452,8 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
 
   Widget _buildFallbackImage(CheckpointPoseData checkpoint) {
     // Prefer silhouette comparison if available, fall back to existing options
-    final String? imageBase64 = checkpoint.comparisonWithSilhouetteBase64 ??
+    final String? imageBase64 =
+        checkpoint.comparisonWithSilhouetteBase64 ??
         checkpoint.sideBySideImageBase64 ??
         checkpoint.comparisonImageBase64;
 
@@ -569,16 +568,16 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
                 Text(
                   'Tips',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: const Color(0xFF137e66),
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: const Color(0xFF137e66),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '(${tips.length})',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: const Color(0xFF137e66).withValues(alpha: 0.7),
-                      ),
+                    color: const Color(0xFF137e66).withValues(alpha: 0.7),
+                  ),
                 ),
                 const Spacer(),
                 Icon(
@@ -609,10 +608,8 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
                           Expanded(
                             child: Text(
                               tip,
-                              style:
-                                  Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Colors.grey[800],
-                                      ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[800]),
                             ),
                           ),
                         ],
@@ -659,9 +656,9 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
         children: [
           Text(
             'Angle Analysis',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           ...checkpoint.deviations.map(
@@ -677,8 +674,8 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     final Color statusColor = isGood
         ? const Color(0xFF4CAF50)
         : (deviation.deviation != null && deviation.deviation!.abs() > 20)
-            ? const Color(0xFFF44336)
-            : const Color(0xFFFF9800);
+        ? const Color(0xFFF44336)
+        : const Color(0xFFFF9800);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -704,16 +701,16 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
               children: [
                 Text(
                   _formatAngleName(deviation.angleName),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
                 Text(
                   'You: ${deviation.userValue.toStringAsFixed(0)}° • '
                   'Pro: ${deviation.referenceValue?.toStringAsFixed(0) ?? '--'}°',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -743,9 +740,11 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     return name
         .replaceAll('_', ' ')
         .split(' ')
-        .map((word) => word.isNotEmpty
-            ? '${word[0].toUpperCase()}${word.substring(1)}'
-            : word)
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1)}'
+              : word,
+        )
         .join(' ');
   }
 }
@@ -828,9 +827,7 @@ class _FullscreenComparisonDialogState
           style: const TextStyle(color: Colors.white, fontSize: 16),
         ),
         centerTitle: true,
-        actions: [
-          _buildToggleButton(),
-        ],
+        actions: [_buildToggleButton()],
       ),
       body: SafeArea(
         child: Stack(
@@ -848,15 +845,9 @@ class _FullscreenComparisonDialogState
             ),
             // Navigation arrows (only show if can navigate in that direction)
             if (_currentIndex > 0)
-              _buildNavigationArrow(
-                isLeft: true,
-                onTap: _goToPrevious,
-              ),
+              _buildNavigationArrow(isLeft: true, onTap: _goToPrevious),
             if (_currentIndex < widget.checkpoints.length - 1)
-              _buildNavigationArrow(
-                isLeft: false,
-                onTap: _goToNext,
-              ),
+              _buildNavigationArrow(isLeft: false, onTap: _goToNext),
             // Page indicator
             if (widget.checkpoints.length > 1)
               Positioned(
@@ -991,19 +982,19 @@ class _FullscreenComparisonDialogState
     // Pro reference: silhouette+skeleton in video mode, skeleton-only in skeleton mode
     final String? refImage = _showSkeletonOnly
         ? checkpoint.referenceSkeletonOnlyBase64
-        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ?? checkpoint.referenceImageBase64);
+        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ??
+              checkpoint.referenceImageBase64);
 
     return Column(
       children: [
-        Expanded(
-          child: _buildFullscreenPanel('Your Form', userImage),
-        ),
+        Expanded(child: _buildFullscreenPanel('Your Form', userImage)),
         Container(height: 2, color: Colors.grey[800]),
         Expanded(
           child: _buildFullscreenPanel(
             'Pro Reference',
             refImage,
-            horizontalOffsetPercent: checkpoint.referenceHorizontalOffsetPercent,
+            horizontalOffsetPercent:
+                checkpoint.referenceHorizontalOffsetPercent,
           ),
         ),
       ],
@@ -1033,7 +1024,8 @@ class _FullscreenComparisonDialogState
           child: LayoutBuilder(
             builder: (context, constraints) {
               final bool hasOffset =
-                  horizontalOffsetPercent != null && horizontalOffsetPercent != 0;
+                  horizontalOffsetPercent != null &&
+                  horizontalOffsetPercent != 0;
               final double offsetPixels = hasOffset
                   ? constraints.maxWidth * horizontalOffsetPercent / 100
                   : 0;
