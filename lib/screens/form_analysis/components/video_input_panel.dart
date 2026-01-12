@@ -23,7 +23,20 @@ class VideoInputPanel extends StatefulWidget {
 }
 
 class _VideoInputPanelState extends State<VideoInputPanel> {
-  int _selectedTestVideoNumber = 2; // Default to joe_example_throw_2
+  // Available test videos with display names
+  static const List<({String path, String name})> _testVideos = [
+    (path: 'assets/test_videos/joe_example_throw_1.mov', name: 'Joe #1'),
+    (path: 'assets/test_videos/joe_example_throw_2.mov', name: 'Joe #2'),
+    (path: 'assets/test_videos/joe_example_throw_3.mov', name: 'Joe #3'),
+    (path: 'assets/test_videos/joe_example_throw_4.mov', name: 'Joe #4'),
+    (path: 'assets/test_videos/joe_example_throw_5.mov', name: 'Joe #5'),
+    (path: 'assets/test_videos/schmidt_example_throw_1.mov', name: 'Schmidt #1'),
+    (path: 'assets/test_videos/trent_example_throw_1.mov', name: 'Trent #1'),
+    (path: 'assets/test_videos/mcbeth_example_throw_1.mov', name: 'McBeth #1'),
+  ];
+
+  String _selectedTestVideoPath =
+      'assets/test_videos/joe_example_throw_2.mov'; // Default to joe #2
 
   @override
   Widget build(BuildContext context) {
@@ -179,11 +192,9 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   onPressed: () {
-                    final String assetPath =
-                        'assets/test_videos/joe_example_throw_$_selectedTestVideoNumber.mov';
                     cubit.testWithAssetVideo(
                       throwType: widget.selectedThrowType,
-                      assetPath: assetPath,
+                      assetPath: _selectedTestVideoPath,
                     );
                   },
                 ),
@@ -244,44 +255,67 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
   }
 
   Widget _buildTestVideoSelector() {
-    return PopupMenuButton<int>(
-      initialValue: _selectedTestVideoNumber,
-      onSelected: (int value) {
-        setState(() => _selectedTestVideoNumber = value);
+    // Find the display name for the currently selected video
+    final String selectedName = _testVideos
+        .firstWhere(
+          (v) => v.path == _selectedTestVideoPath,
+          orElse: () => _testVideos[1],
+        )
+        .name;
+
+    return PopupMenuButton<String>(
+      initialValue: _selectedTestVideoPath,
+      onSelected: (String value) {
+        setState(() => _selectedTestVideoPath = value);
         HapticFeedback.lightImpact();
       },
-      itemBuilder: (BuildContext context) => List.generate(
-        5,
-        (index) => PopupMenuItem<int>(
-          value: index + 1,
-          child: Text(
-            'Example ${index + 1}',
-            style: TextStyle(
-              fontWeight: (index + 1) == _selectedTestVideoNumber
-                  ? FontWeight.w600
-                  : FontWeight.normal,
+      itemBuilder: (BuildContext context) => _testVideos
+          .map(
+            (video) => PopupMenuItem<String>(
+              value: video.path,
+              child: Row(
+                children: [
+                  if (video.path == _selectedTestVideoPath)
+                    const Icon(Icons.check, size: 18, color: Color(0xFF137e66))
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    video.name,
+                    style: TextStyle(
+                      fontWeight: video.path == _selectedTestVideoPath
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
+          )
+          .toList(),
       child: Container(
-        width: 56,
         height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
           ),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Center(
-          child: Text(
-            '$_selectedTestVideoNumber',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              selectedName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, color: Colors.white),
+          ],
         ),
       ),
     );

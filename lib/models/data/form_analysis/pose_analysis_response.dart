@@ -69,6 +69,12 @@ class CheckpointPoseData {
     this.sideBySideImageBase64,
     this.userImageBase64,
     this.referenceImageBase64,
+    this.userSkeletonOnlyBase64,
+    this.referenceSkeletonOnlyBase64,
+    this.referenceSilhouetteBase64,
+    this.referenceSilhouetteWithSkeletonBase64,
+    this.comparisonWithSilhouetteBase64,
+    this.referenceHorizontalOffsetPercent,
     required this.coachingTips,
   });
 
@@ -114,6 +120,24 @@ class CheckpointPoseData {
 
   @JsonKey(name: 'reference_image_base64')
   final String? referenceImageBase64;
+
+  @JsonKey(name: 'user_skeleton_only_base64')
+  final String? userSkeletonOnlyBase64;
+
+  @JsonKey(name: 'reference_skeleton_only_base64')
+  final String? referenceSkeletonOnlyBase64;
+
+  @JsonKey(name: 'reference_silhouette_base64')
+  final String? referenceSilhouetteBase64;
+
+  @JsonKey(name: 'reference_silhouette_with_skeleton_base64')
+  final String? referenceSilhouetteWithSkeletonBase64;
+
+  @JsonKey(name: 'comparison_with_silhouette_base64')
+  final String? comparisonWithSilhouetteBase64;
+
+  @JsonKey(name: 'reference_horizontal_offset_percent')
+  final double? referenceHorizontalOffsetPercent;
 
   @JsonKey(name: 'coaching_tips')
   final List<String> coachingTips;
