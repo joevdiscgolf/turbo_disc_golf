@@ -157,4 +157,4 @@ const bool saveFormAnalysisToFirestore = true;
 /// When true, always shows the Force Upgrade screen regardless of version check.
 /// This is useful for testing the upgrade UI without modifying Firestore.
 /// Set to false in production.
-const bool alwaysShowForceUpgradeScreen = true;
+const bool alwaysShowForceUpgradeScreen = false;
