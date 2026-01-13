@@ -1,18 +1,20 @@
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_history_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/screens/test_roast_screen.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_screen.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class MainWrapper extends StatefulWidget {
   const MainWrapper({super.key});
@@ -23,8 +25,6 @@ class MainWrapper extends StatefulWidget {
 
 class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
-  final GlobalKey<FormAnalysisScreenState> _formAnalysisKey =
-      GlobalKey<FormAnalysisScreenState>();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -94,21 +94,23 @@ class _MainWrapperState extends State<MainWrapper> {
   Widget _buildWithFormAnalysisTabs(BuildContext context) {
     final String appBarTitle = _selectedIndex == 0 ? 'ScoreSensei' : 'Form Coach';
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5),
-            Color(0xFFECECEE),
-            Color(0xFFE8F4E8),
-            Color(0xFFEAE8F0),
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
+    return BlocProvider<FormAnalysisHistoryCubit>(
+      create: (context) => FormAnalysisHistoryCubit(),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEEE8F5),
+              Color(0xFFECECEE),
+              Color(0xFFE8F4E8),
+              Color(0xFFEAE8F0),
+            ],
+            stops: [0.0, 0.3, 0.7, 1.0],
+          ),
         ),
-      ),
-      child: Scaffold(
+        child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
@@ -133,7 +135,6 @@ class _MainWrapperState extends State<MainWrapper> {
                 )
               : null,
           hasBackButton: false,
-          leftWidget: _selectedIndex == 1 ? _buildHistoryButton() : null,
           rightWidget: _selectedIndex == 0 ? _buildSettingsButton(context) : null,
         ),
         body: IndexedStack(
@@ -142,7 +143,9 @@ class _MainWrapperState extends State<MainWrapper> {
             RoundHistoryScreen(
               bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             ),
-            FormAnalysisScreen(key: _formAnalysisKey),
+            FormAnalysisHistoryScreen(
+              bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+            ),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(
@@ -163,6 +166,7 @@ class _MainWrapperState extends State<MainWrapper> {
           onTap: _onItemTapped,
           type: BottomNavigationBarType.fixed,
         ),
+      ),
       ),
     );
   }
@@ -288,18 +292,6 @@ class _MainWrapperState extends State<MainWrapper> {
         onPressed: () {
           HapticFeedback.lightImpact();
           pushCupertinoRoute(context, const SettingsScreen());
-        },
-      ),
-    );
-  }
-
-  Widget _buildHistoryButton() {
-    return Center(
-      child: IconButton(
-        icon: const Icon(Icons.menu, size: 24),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          _formAnalysisKey.currentState?.openDrawer();
         },
       ),
     );

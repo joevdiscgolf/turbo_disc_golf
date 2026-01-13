@@ -65,6 +65,7 @@ class CheckpointRecord {
     this.userImageUrl,
     this.userSkeletonUrl,
     this.referenceImageUrl,
+    this.referenceSkeletonUrl,
   });
 
   /// Checkpoint identifier: "heisman", "loaded", "magic", "pro"
@@ -100,6 +101,10 @@ class CheckpointRecord {
   /// Cloud Storage URL for pro reference image (silhouette + skeleton)
   @JsonKey(name: 'reference_image_url')
   final String? referenceImageUrl;
+
+  /// Cloud Storage URL for pro reference skeleton-only image
+  @JsonKey(name: 'reference_skeleton_url')
+  final String? referenceSkeletonUrl;
 
   factory CheckpointRecord.fromJson(Map<String, dynamic> json) =>
       _$CheckpointRecordFromJson(json);

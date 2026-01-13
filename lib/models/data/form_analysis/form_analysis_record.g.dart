@@ -48,6 +48,7 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
       userImageUrl: json['user_image_url'] as String?,
       userSkeletonUrl: json['user_skeleton_url'] as String?,
       referenceImageUrl: json['reference_image_url'] as String?,
+      referenceSkeletonUrl: json['reference_skeleton_url'] as String?,
     );
 
 Map<String, dynamic> _$CheckpointRecordToJson(CheckpointRecord instance) =>
@@ -60,4 +61,5 @@ Map<String, dynamic> _$CheckpointRecordToJson(CheckpointRecord instance) =>
       'user_image_url': instance.userImageUrl,
       'user_skeleton_url': instance.userSkeletonUrl,
       'reference_image_url': instance.referenceImageUrl,
+      'reference_skeleton_url': instance.referenceSkeletonUrl,
     };

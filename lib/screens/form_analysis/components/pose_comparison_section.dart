@@ -280,7 +280,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   Widget _buildStackedImages(CheckpointPoseData checkpoint) {
     // Debug: log referenceHorizontalOffsetPercent
 
-    // Select images based on view mode
+    // Select images based on view modex
     final String? userImage = _showSkeletonOnly
         ? checkpoint.userSkeletonOnlyBase64
         : checkpoint.userImageBase64;

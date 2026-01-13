@@ -1,5 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_remix/flutter_remix.dart';
 import 'package:intl/intl.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
@@ -329,20 +332,22 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final CheckpointRecord checkpoint =
         widget.analysis.checkpoints[_selectedCheckpointIndex];
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
+    return GestureDetector(
+      onTap: () => _showFullscreenComparison(checkpoint),
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -399,6 +404,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -408,7 +414,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final String? userImageUrl = _showSkeletonOnly
         ? checkpoint.userSkeletonUrl
         : checkpoint.userImageUrl;
-    final String? refImageUrl = checkpoint.referenceImageUrl;
+    final String? refImageUrl = _showSkeletonOnly
+        ? checkpoint.referenceSkeletonUrl
+        : checkpoint.referenceImageUrl;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,65 +424,113 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         _buildLabeledImage(
           label: 'Your Form',
           imageUrl: userImageUrl,
+          showArrow: true,
+          onTap: () => _showFullscreenComparison(checkpoint),
         ),
         const SizedBox(height: 12),
         _buildLabeledImage(
           label: 'Pro Reference',
           imageUrl: refImageUrl,
+          showArrow: false,
+          onTap: () => _showFullscreenComparison(checkpoint),
         ),
       ],
+    );
+  }
+
+  void _showFullscreenComparison(CheckpointRecord checkpoint) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black,
+      useSafeArea: false,
+      builder: (dialogContext) => _FullscreenComparisonDialog(
+        checkpoints: widget.analysis.checkpoints,
+        initialIndex: _selectedCheckpointIndex,
+        showSkeletonOnly: _showSkeletonOnly,
+        onToggleMode: (bool newMode) {
+          setState(() => _showSkeletonOnly = newMode);
+        },
+        onIndexChanged: (int newIndex) {
+          setState(() => _selectedCheckpointIndex = newIndex);
+        },
+      ),
     );
   }
 
   Widget _buildLabeledImage({
     required String label,
     required String? imageUrl,
+    required bool showArrow,
+    VoidCallback? onTap,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: TurbColors.darkGray,
-            ),
+          child: Row(
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: TurbColors.darkGray,
+                ),
+              ),
+              const Spacer(),
+              if (showArrow)
+                Icon(
+                  FlutterRemix.arrow_right_s_line,
+                  size: 20,
+                  color: Colors.grey[400],
+                ),
+            ],
           ),
         ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
+        GestureDetector(
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
             height: 200,
             width: double.infinity,
             color: Colors.black,
             child: imageUrl != null && imageUrl.isNotEmpty
-                ? Image.network(
-                    imageUrl,
+                ? CachedNetworkImage(
+                    key: ValueKey(imageUrl),
+                    imageUrl: imageUrl,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                          color: Colors.white,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[900],
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Colors.grey[800]!,
+                              Colors.grey[700]!,
+                              Colors.grey[800]!,
+                            ],
+                          ),
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          size: 48,
-                          color: Colors.grey,
+                      ),
+                    )
+                        .animate(
+                          onPlay: (controller) => controller.repeat(),
+                        )
+                        .shimmer(
+                          duration: 1500.ms,
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
-                      );
-                    },
+                    errorWidget: (context, url, error) => const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    ),
                   )
                 : const Center(
                     child: Icon(
@@ -483,6 +539,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                       color: Colors.grey,
                     ),
                   ),
+            ),
           ),
         ),
       ],
@@ -572,5 +629,317 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     if (score >= 60) return const Color(0xFF2196F3);
     if (score >= 40) return const Color(0xFFFF9800);
     return const Color(0xFFF44336);
+  }
+}
+
+/// Fullscreen dialog for comparing user form to pro reference with PageView.
+class _FullscreenComparisonDialog extends StatefulWidget {
+  const _FullscreenComparisonDialog({
+    required this.checkpoints,
+    required this.initialIndex,
+    required this.showSkeletonOnly,
+    required this.onToggleMode,
+    required this.onIndexChanged,
+  });
+
+  final List<CheckpointRecord> checkpoints;
+  final int initialIndex;
+  final bool showSkeletonOnly;
+  final ValueChanged<bool> onToggleMode;
+  final ValueChanged<int> onIndexChanged;
+
+  @override
+  State<_FullscreenComparisonDialog> createState() =>
+      _FullscreenComparisonDialogState();
+}
+
+class _FullscreenComparisonDialogState
+    extends State<_FullscreenComparisonDialog> {
+  late PageController _pageController;
+  late int _currentIndex;
+  late bool _showSkeletonOnly;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _showSkeletonOnly = widget.showSkeletonOnly;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _goToPrevious() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _goToNext() {
+    if (_currentIndex < widget.checkpoints.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final CheckpointRecord currentCheckpoint =
+        widget.checkpoints[_currentIndex];
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          currentCheckpoint.checkpointName,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        centerTitle: true,
+        actions: [_buildToggleButton()],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: widget.checkpoints.length,
+              onPageChanged: (index) {
+                setState(() => _currentIndex = index);
+                widget.onIndexChanged(index);
+              },
+              itemBuilder: (context, index) {
+                return _buildCheckpointPage(widget.checkpoints[index]);
+              },
+            ),
+            // Navigation arrows
+            if (_currentIndex > 0)
+              _buildNavigationArrow(isLeft: true, onTap: _goToPrevious),
+            if (_currentIndex < widget.checkpoints.length - 1)
+              _buildNavigationArrow(isLeft: false, onTap: _goToNext),
+            // Page indicator
+            if (widget.checkpoints.length > 1)
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: _buildPageIndicator(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleButton() {
+    return Container(
+      margin: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: _showSkeletonOnly
+                ? () {
+                    setState(() => _showSkeletonOnly = false);
+                    widget.onToggleMode(false);
+                  }
+                : null,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: !_showSkeletonOnly
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: !_showSkeletonOnly ? 1.0 : 0.5,
+                  child: const Text('📹', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: !_showSkeletonOnly
+                ? () {
+                    setState(() => _showSkeletonOnly = true);
+                    widget.onToggleMode(true);
+                  }
+                : null,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _showSkeletonOnly
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: _showSkeletonOnly ? 1.0 : 0.5,
+                  child: const Text('💀', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationArrow({
+    required bool isLeft,
+    required VoidCallback onTap,
+  }) {
+    return Positioned(
+      left: isLeft ? 8 : null,
+      right: isLeft ? null : 8,
+      top: 0,
+      bottom: 0,
+      child: Center(
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isLeft ? Icons.chevron_left : Icons.chevron_right,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        widget.checkpoints.length,
+        (index) => Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: index == _currentIndex
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckpointPage(CheckpointRecord checkpoint) {
+    final String? userImageUrl = _showSkeletonOnly
+        ? checkpoint.userSkeletonUrl
+        : checkpoint.userImageUrl;
+    final String? refImageUrl = _showSkeletonOnly
+        ? checkpoint.referenceSkeletonUrl
+        : checkpoint.referenceImageUrl;
+
+    return Column(
+      children: [
+        Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
+        Container(height: 2, color: Colors.grey[800]),
+        Expanded(child: _buildFullscreenPanel('Pro Reference', refImageUrl)),
+      ],
+    );
+  }
+
+  Widget _buildFullscreenPanel(String label, String? imageUrl) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[400],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Expanded(
+          child: InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? CachedNetworkImage(
+                    key: ValueKey(imageUrl),
+                    imageUrl: imageUrl,
+                    fit: BoxFit.contain,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[900],
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Colors.grey[800]!,
+                              Colors.grey[700]!,
+                              Colors.grey[800]!,
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                        .animate(
+                          onPlay: (controller) => controller.repeat(),
+                        )
+                        .shimmer(
+                          duration: 1500.ms,
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                    errorWidget: (context, url, error) => const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                : const Center(
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
   }
 }

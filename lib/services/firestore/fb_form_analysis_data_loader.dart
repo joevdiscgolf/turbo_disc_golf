@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
 import 'package:turbo_disc_golf/utils/firebase/firebase_storage_utils.dart';
 import 'package:turbo_disc_golf/utils/firebase/firebase_utils.dart';
@@ -15,6 +16,16 @@ abstract class FBFormAnalysisDataLoader {
     required String throwType,
     required PoseAnalysisResponse poseAnalysis,
   }) async {
+    // Check if saving is enabled
+    if (!saveFormAnalysisToFirestore) {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FBFormAnalysisDataLoader] ⏭️  SAVE SKIPPED (saveFormAnalysisToFirestore = false)');
+      debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');
+      debugPrint('[FBFormAnalysisDataLoader] Analysis will be shown in UI but not saved to Firestore');
+      debugPrint('═══════════════════════════════════════════════════════');
+      return true; // Return true so the UI flow continues normally
+    }
+
     try {
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[FBFormAnalysisDataLoader] 💾 SAVE START');
@@ -58,6 +69,24 @@ abstract class FBFormAnalysisDataLoader {
               checkpoint.referenceImageBase64,
         );
 
+        final String? referenceSkeletonUrl = await _uploadCheckpointImage(
+          uid: uid,
+          analysisId: analysisId,
+          checkpointId: checkpoint.checkpointId,
+          imageName: 'reference_skeleton',
+          base64Data: checkpoint.referenceSkeletonOnlyBase64,
+        );
+
+        // Validate that critical images uploaded successfully
+        // Require at least userSkeletonUrl and referenceImageUrl
+        if (userSkeletonUrl == null || referenceImageUrl == null) {
+          debugPrint('[FBFormAnalysisDataLoader] ❌ Critical image upload failed for checkpoint ${checkpoint.checkpointId}');
+          debugPrint('[FBFormAnalysisDataLoader] userSkeletonUrl: ${userSkeletonUrl != null ? "✅" : "❌"}');
+          debugPrint('[FBFormAnalysisDataLoader] referenceImageUrl: ${referenceImageUrl != null ? "✅" : "❌"}');
+          debugPrint('[FBFormAnalysisDataLoader] ⚠️  Aborting save - will not save to Firestore with missing images');
+          return false;
+        }
+
         // Build angle deviations map
         final Map<String, double>? angleDeviations =
             _buildAngleDeviationsMap(checkpoint.deviationsRaw);
@@ -72,8 +101,13 @@ abstract class FBFormAnalysisDataLoader {
           userImageUrl: userImageUrl,
           userSkeletonUrl: userSkeletonUrl,
           referenceImageUrl: referenceImageUrl,
+          referenceSkeletonUrl: referenceSkeletonUrl,
         ));
+
+        debugPrint('[FBFormAnalysisDataLoader] ✅ Checkpoint ${checkpoint.checkpointId} images uploaded successfully');
       }
+
+      debugPrint('[FBFormAnalysisDataLoader] ✅ All checkpoint images uploaded successfully');
 
       // Determine worst deviation severity
       final String? worstSeverity = _getWorstSeverity(checkpointRecords);
@@ -94,8 +128,9 @@ abstract class FBFormAnalysisDataLoader {
       );
 
       // Save to Firestore using utility
+      // Path: FormAnalyses/{uid}/FormAnalyses/{analysisId}
       final String firestorePath =
-          '$kUsersCollection/$uid/$kFormAnalysesCollection/$analysisId';
+          '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection/$analysisId';
       final bool success = await firestoreWrite(
         firestorePath,
         record.toJson(),
@@ -126,7 +161,8 @@ abstract class FBFormAnalysisDataLoader {
     int limit = 5,
   }) async {
     try {
-      final String path = '$kUsersCollection/$uid/$kFormAnalysesCollection';
+      // Path: FormAnalyses/{uid}/FormAnalyses
+      final String path = '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection';
       final QuerySnapshot<Map<String, dynamic>>? snapshot =
           await firestoreQuery(
         path: path,
@@ -159,8 +195,9 @@ abstract class FBFormAnalysisDataLoader {
     String analysisId,
   ) async {
     try {
+      // Path: FormAnalyses/{uid}/FormAnalyses/{analysisId}
       final String path =
-          '$kUsersCollection/$uid/$kFormAnalysesCollection/$analysisId';
+          '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection/$analysisId';
       final DocumentSnapshot<Map<String, dynamic>>? snapshot =
           await firestoreFetch(
         path,

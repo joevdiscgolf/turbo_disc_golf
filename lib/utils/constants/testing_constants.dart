@@ -148,3 +148,8 @@ const bool useMockFormAnalysisResponse = true;
 /// When true, shows the overall score header and summary section in form analysis results.
 /// When false, only the pose comparison section is displayed (for focused testing).
 const bool showFormAnalysisScoreAndSummary = false;
+
+/// When true, saves form analyses to Firestore and uploads images to Cloud Storage.
+/// When false, skips saving to prevent cluttering the database during testing.
+/// Analysis results will still be shown in the UI, just not persisted.
+const bool saveFormAnalysisToFirestore = false;

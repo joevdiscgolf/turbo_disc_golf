@@ -39,6 +39,28 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
     }
   }
 
+  /// Refresh the analysis history from Firestore without showing loading state.
+  /// Used for pull-to-refresh functionality.
+  Future<void> refreshHistory() async {
+    try {
+      final String? uid = locator.get<AuthService>().currentUid;
+      if (uid == null) {
+        debugPrint('[FormAnalysisHistoryCubit] No user logged in');
+        return;
+      }
+
+      final List<FormAnalysisRecord> analyses =
+          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 5);
+
+      emit(FormAnalysisHistoryLoaded(analyses: analyses));
+      debugPrint(
+          '[FormAnalysisHistoryCubit] Refreshed ${analyses.length} analyses');
+    } catch (e) {
+      debugPrint('[FormAnalysisHistoryCubit] Error refreshing history: $e');
+      emit(FormAnalysisHistoryError(message: e.toString()));
+    }
+  }
+
   /// Select a historical analysis for viewing.
   /// Updates the state to include the selected analysis.
   void selectAnalysis(FormAnalysisRecord analysis) {
