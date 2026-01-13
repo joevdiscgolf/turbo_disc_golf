@@ -192,7 +192,7 @@ Future<bool> firestoreWrite(
 /// Delete a single Firestore document
 Future<bool> firestoreDelete(
   String path, {
-  Duration timeoutDuration = defaultTimeout,
+  Duration timeoutDuration = standardTimeout,
 }) async {
   try {
     await FirebaseFirestore.instance

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -136,7 +137,7 @@ class _MainWrapperState extends State<MainWrapper> {
                 )
               : null,
           hasBackButton: false,
-          rightWidget: _selectedIndex == 0 ? _buildSettingsButton(context) : null,
+          rightWidget: _buildRightWidget(context),
         ),
         body: IndexedStack(
           index: _selectedIndex,
@@ -297,6 +298,15 @@ class _MainWrapperState extends State<MainWrapper> {
     );
   }
 
+  Widget? _buildRightWidget(BuildContext context) {
+    if (_selectedIndex == 0) {
+      return _buildSettingsButton(context);
+    } else if (_selectedIndex == 1 && kDebugMode) {
+      return _buildDeleteButton(context);
+    }
+    return null;
+  }
+
   Widget _buildSettingsButton(BuildContext context) {
     return Center(
       child: IconButton(
@@ -305,6 +315,51 @@ class _MainWrapperState extends State<MainWrapper> {
           HapticFeedback.lightImpact();
           pushCupertinoRoute(context, const SettingsScreen());
         },
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton(BuildContext context) {
+    return Center(
+      child: IconButton(
+        icon: const Icon(Icons.delete_forever, size: 24),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _showDeleteConfirmation(context);
+        },
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete All Analysis Data?'),
+        content: const Text(
+          'This will permanently delete:\n\n'
+          '• All form analysis records\n'
+          '• All Cloud Storage images\n'
+          '• Cannot be undone\n\n'
+          'DEBUG MODE ONLY',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              final FormAnalysisHistoryCubit historyCubit =
+                  locator.get<FormAnalysisHistoryCubit>();
+              historyCubit.deleteAllAnalyses();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('DELETE ALL'),
+          ),
+        ],
       ),
     );
   }
