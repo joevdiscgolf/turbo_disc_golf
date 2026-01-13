@@ -1221,6 +1221,9 @@ PODS:
   - Firebase/Firestore (12.4.0):
     - Firebase/CoreOnly
     - FirebaseFirestore (~> 12.4.0)
+  - Firebase/Storage (12.4.0):
+    - Firebase/CoreOnly
+    - FirebaseStorage (~> 12.4.0)
   - firebase_auth (6.1.0):
     - Firebase/Auth (= 12.4.0)
     - firebase_core
@@ -1230,6 +1233,10 @@ PODS:
     - Flutter
   - firebase_crashlytics (5.0.5):
     - Firebase/Crashlytics (= 12.4.0)
+    - firebase_core
+    - Flutter
+  - firebase_storage (13.0.4):
+    - Firebase/Storage (= 12.4.0)
     - firebase_core
     - Flutter
   - FirebaseAppCheckInterop (12.4.0)
@@ -1296,6 +1303,13 @@ PODS:
     - nanopb (~> 3.30910.0)
     - PromisesSwift (~> 2.1)
   - FirebaseSharedSwift (12.4.0)
+  - FirebaseStorage (12.4.0):
+    - FirebaseAppCheckInterop (~> 12.4.0)
+    - FirebaseAuthInterop (~> 12.4.0)
+    - FirebaseCore (~> 12.4.0)
+    - FirebaseCoreExtension (~> 12.4.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GTMSessionFetcher/Core (< 6.0, >= 3.4)
   - Flutter (1.0.0)
   - Google-Maps-iOS-Utils (6.1.3):
     - GoogleMaps (~> 10.0)
@@ -1511,6 +1525,9 @@ PODS:
   - speech_to_text (0.0.1):
     - Flutter
     - Try
+  - sqflite_darwin (0.0.4):
+    - Flutter
+    - FlutterMacOS
   - Try (2.1.1)
   - url_launcher_ios (0.0.1):
     - Flutter
@@ -1521,6 +1538,7 @@ DEPENDENCIES:
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_crashlytics (from `.symlinks/plugins/firebase_crashlytics/ios`)
+  - firebase_storage (from `.symlinks/plugins/firebase_storage/ios`)
   - Flutter (from `Flutter`)
   - google_maps_flutter_ios (from `.symlinks/plugins/google_maps_flutter_ios/ios`)
   - google_mlkit_commons (from `.symlinks/plugins/google_mlkit_commons/ios`)
@@ -1534,6 +1552,7 @@ DEPENDENCIES:
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
   - speech_to_text (from `.symlinks/plugins/speech_to_text/ios`)
+  - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
@@ -1556,6 +1575,7 @@ SPEC REPOS:
     - FirebaseRemoteConfigInterop
     - FirebaseSessions
     - FirebaseSharedSwift
+    - FirebaseStorage
     - Google-Maps-iOS-Utils
     - GoogleDataTransport
     - GoogleMaps
@@ -1590,6 +1610,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_core/ios"
   firebase_crashlytics:
     :path: ".symlinks/plugins/firebase_crashlytics/ios"
+  firebase_storage:
+    :path: ".symlinks/plugins/firebase_storage/ios"
   Flutter:
     :path: Flutter
   google_maps_flutter_ios:
@@ -1616,6 +1638,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sign_in_with_apple/ios"
   speech_to_text:
     :path: ".symlinks/plugins/speech_to_text/ios"
+  sqflite_darwin:
+    :path: ".symlinks/plugins/sqflite_darwin/darwin"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
 
@@ -1630,6 +1654,7 @@ SPEC CHECKSUMS:
   firebase_auth: 0cd3d5376d52d28525092fce90a36b8bd53f1e6e
   firebase_core: f1aafb21c14f497e5498f7ffc4dc63cbb52b2594
   firebase_crashlytics: c039028126cb45e32f4c217aa392408b0963d081
+  firebase_storage: d558bbfa99449fff39352db83c466c8515fa1afa
   FirebaseAppCheckInterop: f734c802f21fe1da0837708f0f9a27218c8a4ed0
   FirebaseAuth: 4a2aed737c84114a9d9b33d11ae1b147d6b94889
   FirebaseAuthInterop: 858e6b754966e70740a4370dd1503dfffe6dbb49
@@ -1643,6 +1668,7 @@ SPEC CHECKSUMS:
   FirebaseRemoteConfigInterop: 1e31ec72b89c9924367c59bfb5ec9ab60d1d6766
   FirebaseSessions: ba7c7a7ca8696a8d540eb3fe3800fbe98c79786d
   FirebaseSharedSwift: 93426a1de92f19e1199fac5295a4f8df16458daa
+  FirebaseStorage: 20d6b56fb8a40ebaa03d6a2889fe33dac64adb73
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   Google-Maps-iOS-Utils: bed22fa703c919259b3901449434d60d994fae20
   google_maps_flutter_ios: 3213e1e5f5588b6134935cb8fc59acb4e6d88377
@@ -1677,6 +1703,7 @@ SPEC CHECKSUMS:
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
   sign_in_with_apple: c5dcc141574c8c54d5ac99dd2163c0c72ad22418
   speech_to_text: ae2abc312e619ff1c53e675a9fc4d785a15c03bb
+  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   Try: 5ef669ae832617b3cee58cb2c6f99fb767a4ff96
   url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
 

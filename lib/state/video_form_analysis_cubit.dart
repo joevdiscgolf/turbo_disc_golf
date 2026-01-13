@@ -13,8 +13,10 @@ import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
 import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:uuid/uuid.dart';
@@ -223,6 +225,27 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       return;
     }
 
+    // Save to history (fire-and-forget, don't block UI)
+    if (poseResult != null) {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('💾 SAVING TO HISTORY: Starting save...');
+      debugPrint('💾 User ID: $uid');
+      debugPrint('💾 Session ID: ${session.id}');
+      debugPrint('💾 Checkpoints: ${poseResult.checkpoints.length}');
+      debugPrint('═══════════════════════════════════════════════════════');
+      _saveAnalysisToHistory(
+        uid: uid,
+        sessionId: session.id,
+        throwType: throwType,
+        poseAnalysis: poseResult,
+      );
+    } else {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('⚠️ SKIPPING HISTORY SAVE: poseResult is null');
+      debugPrint('⚠️ Pose analysis warning: $poseAnalysisWarning');
+      debugPrint('═══════════════════════════════════════════════════════');
+    }
+
     emit(VideoFormAnalysisComplete(
       session: session.copyWith(
         status: SessionStatus.completed,
@@ -232,6 +255,38 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       poseAnalysis: poseResult,
       poseAnalysisWarning: poseAnalysisWarning,
     ));
+  }
+
+  /// Save analysis to Firestore history and automatically update history list.
+  void _saveAnalysisToHistory({
+    required String uid,
+    required String sessionId,
+    required ThrowTechnique throwType,
+    required PoseAnalysisResponse poseAnalysis,
+  }) {
+    // Fire-and-forget - don't await, just log result and update history
+    FBFormAnalysisDataLoader.saveAnalysis(
+      uid: uid,
+      analysisId: sessionId,
+      throwType: _mapThrowTypeToString(throwType),
+      poseAnalysis: poseAnalysis,
+    ).then((savedRecord) {
+      if (savedRecord != null) {
+        debugPrint('[VideoFormAnalysisCubit] Analysis saved to history: ${savedRecord.id}');
+
+        // Automatically add to history list for instant UI update
+        try {
+          final FormAnalysisHistoryCubit historyCubit =
+              locator.get<FormAnalysisHistoryCubit>();
+          historyCubit.addAnalysis(savedRecord);
+          debugPrint('[VideoFormAnalysisCubit] ✅ Analysis added to history list');
+        } catch (e) {
+          debugPrint('[VideoFormAnalysisCubit] ⚠️  Failed to add analysis to history list: $e');
+        }
+      } else {
+        debugPrint('[VideoFormAnalysisCubit] Failed to save analysis to history');
+      }
+    });
   }
 
   /// Run pose analysis using Cloud Run backend

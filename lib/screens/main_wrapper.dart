@@ -1,18 +1,22 @@
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_history_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/screens/test_roast_screen.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_screen.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class MainWrapper extends StatefulWidget {
   const MainWrapper({super.key});
@@ -92,21 +96,23 @@ class _MainWrapperState extends State<MainWrapper> {
   Widget _buildWithFormAnalysisTabs(BuildContext context) {
     final String appBarTitle = _selectedIndex == 0 ? 'ScoreSensei' : 'Form Coach';
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5),
-            Color(0xFFECECEE),
-            Color(0xFFE8F4E8),
-            Color(0xFFEAE8F0),
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
+    return BlocProvider<FormAnalysisHistoryCubit>.value(
+      value: locator.get<FormAnalysisHistoryCubit>(),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEEE8F5),
+              Color(0xFFECECEE),
+              Color(0xFFE8F4E8),
+              Color(0xFFEAE8F0),
+            ],
+            stops: [0.0, 0.3, 0.7, 1.0],
+          ),
         ),
-      ),
-      child: Scaffold(
+        child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
@@ -131,7 +137,7 @@ class _MainWrapperState extends State<MainWrapper> {
                 )
               : null,
           hasBackButton: false,
-          rightWidget: _selectedIndex == 0 ? _buildSettingsButton(context) : null,
+          rightWidget: _buildRightWidget(context),
         ),
         body: IndexedStack(
           index: _selectedIndex,
@@ -139,27 +145,41 @@ class _MainWrapperState extends State<MainWrapper> {
             RoundHistoryScreen(
               bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             ),
-            const FormAnalysisScreen(),
-          ],
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
-          selectedItemColor: const Color(0xFF137e66),
-          unselectedItemColor: const Color(0xFF6B7280),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.play_arrow),
-              label: 'Rounds',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.slow_motion_video),
-              label: 'Form Coach',
+            FormAnalysisHistoryScreen(
+              bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             ),
           ],
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
         ),
+        bottomNavigationBar: Theme(
+          data: Theme.of(context).copyWith(
+            splashFactory: NoSplash.splashFactory,
+            highlightColor: Colors.transparent,
+          ),
+          child: BottomNavigationBar(
+            backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
+            selectedItemColor: Colors.blue,
+            unselectedItemColor: const Color(0xFF6B7280),
+            selectedLabelStyle: const TextStyle(fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontSize: 12),
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            enableFeedback: false,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Text('🥏', style: TextStyle(fontSize: 20)),
+                label: 'Rounds',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.school, size: 24),
+                label: 'Form Coach',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+          ),
+        ),
+      ),
       ),
     );
   }
@@ -278,6 +298,15 @@ class _MainWrapperState extends State<MainWrapper> {
     );
   }
 
+  Widget? _buildRightWidget(BuildContext context) {
+    if (_selectedIndex == 0) {
+      return _buildSettingsButton(context);
+    } else if (_selectedIndex == 1 && kDebugMode) {
+      return _buildDeleteButton(context);
+    }
+    return null;
+  }
+
   Widget _buildSettingsButton(BuildContext context) {
     return Center(
       child: IconButton(
@@ -286,6 +315,51 @@ class _MainWrapperState extends State<MainWrapper> {
           HapticFeedback.lightImpact();
           pushCupertinoRoute(context, const SettingsScreen());
         },
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton(BuildContext context) {
+    return Center(
+      child: IconButton(
+        icon: const Icon(Icons.delete_forever, size: 24),
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _showDeleteConfirmation(context);
+        },
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete All Analysis Data?'),
+        content: const Text(
+          'This will permanently delete:\n\n'
+          '• All form analysis records\n'
+          '• All Cloud Storage images\n'
+          '• Cannot be undone\n\n'
+          'DEBUG MODE ONLY',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              final FormAnalysisHistoryCubit historyCubit =
+                  locator.get<FormAnalysisHistoryCubit>();
+              historyCubit.deleteAllAnalyses();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('DELETE ALL'),
+          ),
+        ],
       ),
     );
   }

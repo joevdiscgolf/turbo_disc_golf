@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_progress_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
@@ -8,43 +9,48 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_pan
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 
-/// Main screen for AI-powered video form analysis.
-/// Allows users to record or import throwing videos and receive
-/// personalized coaching feedback.
-class FormAnalysisScreen extends StatefulWidget {
-  const FormAnalysisScreen({super.key});
-
-  static const String routeName = '/form-analysis';
-  static const String screenName = 'Form Coach';
+/// Screen for recording/importing videos and analyzing form.
+/// Keeps the exact same UI/UX as the original FormAnalysisScreen.
+class FormAnalysisRecordingScreen extends StatefulWidget {
+  const FormAnalysisRecordingScreen({super.key});
 
   @override
-  State<FormAnalysisScreen> createState() => _FormAnalysisScreenState();
+  State<FormAnalysisRecordingScreen> createState() =>
+      _FormAnalysisRecordingScreenState();
 }
 
-class _FormAnalysisScreenState extends State<FormAnalysisScreen> {
+class _FormAnalysisRecordingScreenState
+    extends State<FormAnalysisRecordingScreen> {
   ThrowTechnique _selectedThrowType = ThrowTechnique.backhand;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<VideoFormAnalysisCubit>(
       create: (context) => VideoFormAnalysisCubit(),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFEEE8F5),
-                Color(0xFFECECEE),
-                Color(0xFFE8F4E8),
-                Color(0xFFEAE8F0),
-              ],
-              stops: [0.0, 0.3, 0.7, 1.0],
-            ),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEEE8F5),
+              Color(0xFFECECEE),
+              Color(0xFFE8F4E8),
+              Color(0xFFEAE8F0),
+            ],
+            stops: [0.0, 0.3, 0.7, 1.0],
           ),
-          child: SafeArea(
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: GenericAppBar(
+            topViewPadding: MediaQuery.of(context).viewPadding.top,
+            title: 'Form Coach',
+            hasBackButton: true,
+            onBackPressed: () => Navigator.pop(context),
+          ),
+          body: SafeArea(
+            top: false,
             child: BlocConsumer<VideoFormAnalysisCubit, VideoFormAnalysisState>(
               listener: (context, state) {
                 // Show warning snackbar if pose analysis failed

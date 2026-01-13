@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Section displaying pose comparison between user and reference.
@@ -21,6 +22,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   int _selectedCheckpointIndex = 0;
   bool _isTipsExpanded = false;
   bool _showSkeletonOnly = false;
+  final ProReferenceLoader _proRefLoader = ProReferenceLoader();
 
   @override
   Widget build(BuildContext context) {
@@ -278,22 +280,15 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   }
 
   Widget _buildStackedImages(CheckpointPoseData checkpoint) {
-    // Debug: log referenceHorizontalOffsetPercent
-
-    // Select images based on view mode
+    // Select user image based on view mode
     final String? userImage = _showSkeletonOnly
         ? checkpoint.userSkeletonOnlyBase64
         : checkpoint.userImageBase64;
-    // Pro reference: silhouette+skeleton in video mode, skeleton-only in skeleton mode
-    final String? refImage = _showSkeletonOnly
-        ? checkpoint.referenceSkeletonOnlyBase64
-        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ??
-              checkpoint.referenceImageBase64);
 
-    // Check if we have separate images, otherwise fall back to combined
-    final bool hasSeparateImages = userImage != null && userImage.isNotEmpty;
+    // Check if we have user image
+    final bool hasUserImage = userImage != null && userImage.isNotEmpty;
 
-    if (!hasSeparateImages) {
+    if (!hasUserImage) {
       // Fall back to the combined side-by-side or comparison image
       return _buildFallbackImage(checkpoint);
     }
@@ -301,35 +296,152 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // User's form
+        // User's form (base64 from backend)
         _buildLabeledImage(
           label: 'Your Form',
           imageBase64: userImage,
           showArrow: true,
           onTap: () => _showFullscreenComparison(
-            userImage: userImage,
-            referenceImage: refImage,
+            checkpoint: checkpoint,
           ),
         ),
         const SizedBox(height: 12),
-        // Reference/Ideal form
-        _buildLabeledImage(
-          label: 'Pro Reference',
-          imageBase64: refImage,
-          showArrow: false,
-          horizontalOffsetPercent: checkpoint.referenceHorizontalOffsetPercent,
+        // Pro Reference (hybrid loading: assets/cache/cloud)
+        _buildProReferenceImage(
+          checkpoint: checkpoint,
           onTap: () => _showFullscreenComparison(
-            userImage: userImage,
-            referenceImage: refImage,
+            checkpoint: checkpoint,
           ),
         ),
       ],
     );
   }
 
+  Widget _buildProReferenceImage({
+    required CheckpointPoseData checkpoint,
+    VoidCallback? onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            'Pro Reference',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: TurbColors.darkGray,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.black,
+              child: _buildProReferenceImageContent(checkpoint),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProReferenceImageContent(CheckpointPoseData checkpoint) {
+    // New approach: Use ProReferenceLoader with proPlayerId
+    if (checkpoint.proPlayerId != null) {
+      return FutureBuilder<ImageProvider>(
+        future: _proRefLoader.loadReferenceImage(
+          proPlayerId: checkpoint.proPlayerId!,
+          throwType: widget.poseAnalysis.throwType,
+          checkpoint: checkpoint.checkpointId,
+          isSkeleton: _showSkeletonOnly,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            debugPrint('Failed to load pro reference: ${snapshot.error}');
+            return const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 48,
+                color: Colors.grey,
+              ),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return Container(
+              color: Colors.grey[200],
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          // Apply alignment transformation
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final double offsetPixels = constraints.maxWidth *
+                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+                  100;
+              return ClipRect(
+                child: Transform.translate(
+                  offset: Offset(offsetPixels, 0),
+                  child: Image(
+                    image: snapshot.data!,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: 200,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    }
+
+    // Legacy approach: Use base64 from backend (transition period)
+    final String? refImage = _showSkeletonOnly
+        ? checkpoint.referenceSkeletonOnlyBase64
+        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ??
+            checkpoint.referenceImageBase64);
+
+    if (refImage != null && refImage.isNotEmpty) {
+      final double horizontalOffsetPercent =
+          checkpoint.referenceHorizontalOffsetPercent ?? 0;
+      if (horizontalOffsetPercent != 0) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final double offsetPixels =
+                constraints.maxWidth * horizontalOffsetPercent / 100;
+            return ClipRect(
+              child: Transform.translate(
+                offset: Offset(offsetPixels, 0),
+                child: _decodeAndDisplayImage(refImage),
+              ),
+            );
+          },
+        );
+      }
+      return _decodeAndDisplayImage(refImage);
+    }
+
+    // Fallback: No pro reference available
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+      ),
+    );
+  }
+
   void _showFullscreenComparison({
-    required String? userImage,
-    required String? referenceImage,
+    required CheckpointPoseData checkpoint,
   }) {
     showDialog(
       context: context,
@@ -337,8 +449,10 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
       useSafeArea: false,
       builder: (dialogContext) => _FullscreenComparisonDialog(
         checkpoints: widget.poseAnalysis.checkpoints,
+        throwType: widget.poseAnalysis.throwType,
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
+        proRefLoader: _proRefLoader,
         onToggleMode: (bool newMode) {
           setState(() => _showSkeletonOnly = newMode);
         },
@@ -753,15 +867,19 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
 class _FullscreenComparisonDialog extends StatefulWidget {
   const _FullscreenComparisonDialog({
     required this.checkpoints,
+    required this.throwType,
     required this.initialIndex,
     required this.showSkeletonOnly,
+    required this.proRefLoader,
     required this.onToggleMode,
     required this.onIndexChanged,
   });
 
   final List<CheckpointPoseData> checkpoints;
+  final String throwType;
   final int initialIndex;
   final bool showSkeletonOnly;
+  final ProReferenceLoader proRefLoader;
   final ValueChanged<bool> onToggleMode;
   final ValueChanged<int> onIndexChanged;
 
@@ -979,25 +1097,124 @@ class _FullscreenComparisonDialogState
     final String? userImage = _showSkeletonOnly
         ? checkpoint.userSkeletonOnlyBase64
         : checkpoint.userImageBase64;
-    // Pro reference: silhouette+skeleton in video mode, skeleton-only in skeleton mode
-    final String? refImage = _showSkeletonOnly
-        ? checkpoint.referenceSkeletonOnlyBase64
-        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ??
-              checkpoint.referenceImageBase64);
 
     return Column(
       children: [
         Expanded(child: _buildFullscreenPanel('Your Form', userImage)),
         Container(height: 2, color: Colors.grey[800]),
-        Expanded(
-          child: _buildFullscreenPanel(
+        Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
+      ],
+    );
+  }
+
+  Widget _buildFullscreenProReferencePanel(CheckpointPoseData checkpoint) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
             'Pro Reference',
-            refImage,
-            horizontalOffsetPercent:
-                checkpoint.referenceHorizontalOffsetPercent,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[400],
+              letterSpacing: 0.5,
+            ),
           ),
         ),
+        Expanded(
+          child: _buildFullscreenProReferenceContent(checkpoint),
+        ),
       ],
+    );
+  }
+
+  Widget _buildFullscreenProReferenceContent(CheckpointPoseData checkpoint) {
+    // New approach: Use ProReferenceLoader with proPlayerId
+    if (checkpoint.proPlayerId != null) {
+      return FutureBuilder<ImageProvider>(
+        future: widget.proRefLoader.loadReferenceImage(
+          proPlayerId: checkpoint.proPlayerId!,
+          throwType: widget.throwType,
+          checkpoint: checkpoint.checkpointId,
+          isSkeleton: _showSkeletonOnly,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            debugPrint('Failed to load pro reference: ${snapshot.error}');
+            return const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 48,
+                color: Colors.grey,
+              ),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return Container(
+              color: Colors.black,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            );
+          }
+
+          // Apply alignment transformation
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final double offsetPixels = constraints.maxWidth *
+                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+                  100;
+              return ClipRect(
+                child: Transform.translate(
+                  offset: Offset(offsetPixels, 0),
+                  child: Image(
+                    image: snapshot.data!,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    }
+
+    // Legacy approach: Use base64 from backend (transition period)
+    final String? refImage = _showSkeletonOnly
+        ? checkpoint.referenceSkeletonOnlyBase64
+        : (checkpoint.referenceSilhouetteWithSkeletonBase64 ??
+            checkpoint.referenceImageBase64);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double offsetPixels = constraints.maxWidth *
+            (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+            100;
+        final Widget imageWidget = refImage != null && refImage.isNotEmpty
+            ? _decodeAndDisplayImage(refImage)
+            : Container(
+                color: Colors.black,
+                child: const Center(
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 48,
+                    color: Colors.grey,
+                  ),
+                ),
+              );
+
+        if (offsetPixels != 0) {
+          return ClipRect(
+            child: Transform.translate(
+              offset: Offset(offsetPixels, 0),
+              child: imageWidget,
+            ),
+          );
+        }
+        return imageWidget;
+      },
     );
   }
 

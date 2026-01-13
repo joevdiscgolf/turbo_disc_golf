@@ -72,6 +72,29 @@ class PoseAnalysisApiClient {
         debugPrint('📥 RAW POSE ANALYSIS RESPONSE:');
         debugPrint('Status: ${json['status']}');
         debugPrint('Checkpoints count: ${(json['checkpoints'] as List?)?.length ?? 0}');
+
+        // 🔍 CHECK FOR THUMBNAIL - THIS IS CRITICAL
+        debugPrint('');
+        debugPrint('🖼️  THUMBNAIL CHECK:');
+        debugPrint('   - round_thumbnail_base64 exists: ${json.containsKey('round_thumbnail_base64')}');
+        if (json.containsKey('round_thumbnail_base64')) {
+          final dynamic thumbnailValue = json['round_thumbnail_base64'];
+          if (thumbnailValue == null) {
+            debugPrint('   - Value: NULL');
+          } else if (thumbnailValue is String) {
+            debugPrint('   - Value type: String');
+            debugPrint('   - Length: ${thumbnailValue.length} characters');
+            debugPrint('   - First 50 chars: ${thumbnailValue.substring(0, thumbnailValue.length > 50 ? 50 : thumbnailValue.length)}...');
+            debugPrint('   - Looks like base64: ${thumbnailValue.startsWith('/9j/') || thumbnailValue.startsWith('iVBORw')}');
+          } else {
+            debugPrint('   - Value type: ${thumbnailValue.runtimeType}');
+          }
+        } else {
+          debugPrint('   - ❌ KEY NOT FOUND IN RESPONSE!');
+          debugPrint('   - Available top-level keys: ${json.keys.toList()}');
+        }
+        debugPrint('');
+
         if (json['checkpoints'] != null && (json['checkpoints'] as List).isNotEmpty) {
           final Map<String, dynamic> firstCheckpoint = (json['checkpoints'] as List).first as Map<String, dynamic>;
           debugPrint('First checkpoint keys: ${firstCheckpoint.keys.toList()}');

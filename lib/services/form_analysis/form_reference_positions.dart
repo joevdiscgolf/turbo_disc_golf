@@ -38,227 +38,280 @@ class FormReferencePositions {
   }
 
   /// Backhand throw checkpoints (Slingshot methodology)
-  /// TODO: Replace placeholder content with actual Slingshot rules
+  /// These checkpoints match the pose analysis backend detection system.
   static const List<FormCheckpoint> backhandCheckpoints = [
-    // 1. Reachback Position
+    // 1. Heisman Position
     FormCheckpoint(
-      id: 'reachback',
-      name: 'Reachback Position',
+      id: 'heisman',
+      name: 'Heisman Position',
       description:
-          'The moment of maximum extension before the pull-through begins',
+          'Player has just stepped onto their back leg on the ball of their '
+          'foot. Front leg has started to drift in front of their back leg. '
+          'They are on their back leg but have not started to coil yet, and '
+          'their elbow is still roughly at 90 degrees and neutral.',
       orderIndex: 0,
       referenceDescription:
-          'Disc should be extended away from target, elbow slightly bent, '
-          'shoulders turned away from target, weight on back foot',
+          'Step onto the ball of your back foot. Front leg should start '
+          'drifting in front of your back leg. You are on your back leg but '
+          'have not started to coil yet. Elbow is still roughly at 90 degrees '
+          'and neutral. Target elbow angle: ~115°, hip rotation: ~80°.',
       keyPoints: [
         FormKeyPoint(
-          id: 'reachback_extension',
-          name: 'Arm Extension',
-          description: 'How far the disc is extended away from the body',
+          id: 'heisman_foot_placement',
+          name: 'Back Foot Placement',
+          description: 'Position of the back foot during the x-step',
           idealState:
-              'Disc at chest height, arm extended but not locked, '
-              'elbow slightly bent for power loading',
+              'Stepped onto the ball of your back foot, weight centered, '
+              'ready to begin the coil',
           commonMistakes: [
-            'Reaching too far behind (rounding)',
-            'Disc too high or too low',
-            'Elbow completely locked out',
+            'Stepping flat-footed instead of ball of foot',
+            'Weight too far forward already',
+            'Back foot pointed wrong direction',
           ],
         ),
         FormKeyPoint(
-          id: 'reachback_shoulders',
-          name: 'Shoulder Turn',
-          description: 'Rotation of shoulders away from target',
+          id: 'heisman_front_leg',
+          name: 'Front Leg Position',
+          description: 'Position of the front leg as it drifts',
           idealState:
-              'Shoulders turned 90 degrees or more from target, '
-              'creating coil for power generation',
+              'Front leg has started to drift in front of the back leg, '
+              'preparing for the plant step',
           commonMistakes: [
-            'Insufficient shoulder turn',
-            'Opening shoulders too early',
-            'Shoulders tilted instead of rotated',
+            'Front leg too far behind',
+            'Front leg stepping too wide',
+            'Rushing the front leg forward',
           ],
         ),
         FormKeyPoint(
-          id: 'reachback_weight',
-          name: 'Weight Distribution',
-          description: 'Where body weight is positioned',
+          id: 'heisman_elbow',
+          name: 'Elbow Angle',
+          description: 'Angle of the throwing elbow',
           idealState:
-              '60-70% of weight on back foot, '
-              'knee bent and ready to drive forward',
+              'Elbow at roughly 90-115 degrees, neutral position, '
+              'not yet loaded for the pull',
           commonMistakes: [
-            'Weight already shifted forward',
-            'Standing too upright',
-            'Weight on heels instead of balls of feet',
+            'Elbow too straight (arm barring early)',
+            'Elbow too bent (losing reach)',
+            'Elbow dropped below disc plane',
           ],
         ),
         FormKeyPoint(
-          id: 'reachback_disc_angle',
-          name: 'Disc Angle',
-          description: 'Angle of the disc during reachback',
+          id: 'heisman_coil',
+          name: 'Body Coil',
+          description: 'Amount of shoulder/hip separation',
           idealState:
-              'Disc nose slightly down, matching intended release angle',
+              'Have not started to coil yet - shoulders and hips relatively '
+              'aligned, saving the coil for the loaded position',
           commonMistakes: [
-            'Nose up (causes disc to fade early)',
-            'Disc wobbling or unstable',
-            'Wrist rolled over too much',
+            'Coiling too early (losing timing)',
+            'Already opening toward target',
+            'Upper body ahead of lower body',
           ],
         ),
       ],
     ),
 
-    // 2. Power Pocket Position
+    // 2. Loaded Position
     FormCheckpoint(
-      id: 'power_pocket',
-      name: 'Power Pocket',
+      id: 'loaded',
+      name: 'Loaded Position',
       description:
-          'The critical moment when the disc passes close to the body, '
-          'storing maximum rotational energy',
+          'The player\'s front (plant) foot is about to touch the ground, '
+          'and they are fully coiled, and their back leg is bowed out.',
       orderIndex: 1,
       referenceDescription:
-          'Elbow leads the hand, disc tight to chest/core, '
-          'hips have fired and are opening toward target',
+          'Front (plant) foot is about to touch the ground. You should be '
+          'fully coiled at this point. Back leg should be bowed out. '
+          'Target elbow angle: ~143°, hip rotation: ~79°.',
       keyPoints: [
         FormKeyPoint(
-          id: 'power_pocket_elbow',
-          name: 'Elbow Position',
-          description: 'Position of the throwing elbow',
+          id: 'loaded_plant_foot',
+          name: 'Plant Foot Timing',
+          description: 'Position of the front foot as it plants',
           idealState:
-              'Elbow leading the hand, bent at approximately 90 degrees, '
-              'driving forward before the disc',
+              'Front (plant) foot is about to touch the ground, '
+              'heel leading, preparing for weight transfer',
           commonMistakes: [
-            'Elbow too straight (arm barring)',
-            'Elbow dropping below disc plane',
-            'Elbow behind the body instead of leading',
+            'Planting too early (losing coil)',
+            'Planting too late (rushing)',
+            'Foot landing toe-first instead of heel',
           ],
         ),
         FormKeyPoint(
-          id: 'power_pocket_disc_path',
-          name: 'Disc Path',
-          description: 'How close the disc travels to the body',
+          id: 'loaded_coil',
+          name: 'Full Coil',
+          description: 'Maximum shoulder-hip separation',
           idealState:
-              'Disc passes within 6 inches of chest/core, '
-              'on a straight line to target',
+              'Fully coiled - maximum separation between shoulders and hips, '
+              'storing rotational energy for the pull',
           commonMistakes: [
-            'Disc arcing around body (rounding)',
-            'Disc too far from body',
-            'Inconsistent disc path',
+            'Insufficient coil (losing power)',
+            'Opening shoulders too early',
+            'Coil in wrong direction',
           ],
         ),
         FormKeyPoint(
-          id: 'power_pocket_hips',
-          name: 'Hip Rotation',
-          description: 'Timing and degree of hip opening',
+          id: 'loaded_back_leg',
+          name: 'Back Leg Position',
+          description: 'Shape of the back leg',
           idealState:
-              'Hips have begun opening toward target, '
-              'leading the upper body rotation',
+              'Back leg is bowed out, creating a stable base and '
+              'allowing hip rotation to drive forward',
           commonMistakes: [
-            'Hips open too late',
-            'Hips open too early (leaking power)',
-            'Hips not rotating at all (arm throwing)',
+            'Back leg too straight',
+            'Back knee collapsing inward',
+            'Weight stuck on back leg',
+          ],
+        ),
+        FormKeyPoint(
+          id: 'loaded_disc_position',
+          name: 'Disc Position',
+          description: 'Where the disc is relative to the body',
+          idealState:
+              'Disc extended away from body, wrist-chest distance maximized, '
+              'ready for the pull-through',
+          commonMistakes: [
+            'Disc too close to body',
+            'Disc wrapped behind body (rounding)',
+            'Disc too high or low',
           ],
         ),
       ],
     ),
 
-    // 3. Release Point
+    // 3. Magic Position
     FormCheckpoint(
-      id: 'release_point',
-      name: 'Release Point',
-      description: 'The moment the disc leaves the hand',
+      id: 'magic',
+      name: 'Magic Position',
+      description:
+          'Disc is just starting to move forward, both knees are bent '
+          'inward, in an athletic position.',
       orderIndex: 2,
       referenceDescription:
-          'Arm fully extended toward target, '
-          'disc released at chest height with clean snap',
+          'Disc is just starting to move forward. Both knees are bent inward. '
+          'Position should be athletic. Target elbow angle: ~148°, '
+          'hip rotation: ~77°, spine should be nearly vertical.',
       keyPoints: [
         FormKeyPoint(
-          id: 'release_timing',
-          name: 'Release Timing',
-          description:
-              'When the disc leaves the hand relative to arm extension',
+          id: 'magic_disc_movement',
+          name: 'Disc Movement',
+          description: 'The disc beginning its forward motion',
           idealState:
-              'Disc releases as arm reaches full extension, '
-              'not before or significantly after',
+              'Disc is just starting to move forward toward the target, '
+              'initiated by hip rotation, not arm pulling',
           commonMistakes: [
-            'Early release (disc goes right for RHBH)',
-            'Late release/grip lock (disc goes left for RHBH)',
-            'Inconsistent release point',
+            'Disc moving forward too early (arm throwing)',
+            'Disc lagging behind hip rotation',
+            'Disc path arcing around body',
           ],
         ),
         FormKeyPoint(
-          id: 'release_angle',
-          name: 'Release Angle',
-          description: 'The angle of the disc at release',
+          id: 'magic_knees',
+          name: 'Knee Position',
+          description: 'Both knees bent and driving',
           idealState:
-              'Disc flat or with intended hyzer/anhyzer angle, '
-              'nose angle appropriate for shot',
+              'Both knees are bent inward, creating an athletic, powerful '
+              'stance that drives rotation through the ground',
           commonMistakes: [
-            'Off-axis torque (wobble)',
-            'Unintended nose up release',
-            'Inconsistent release angle',
+            'Knees too straight (losing power)',
+            'Knees collapsing outward',
+            'Front knee not bracing properly',
           ],
         ),
         FormKeyPoint(
-          id: 'release_height',
-          name: 'Release Height',
-          description: 'Height of the disc at release',
+          id: 'magic_athletic_position',
+          name: 'Athletic Stance',
+          description: 'Overall body position',
           idealState:
-              'Release at chest height or slightly below, '
-              'consistent with target line',
+              'Athletic position - spine nearly vertical, balanced, '
+              'weight transferring from back to front foot',
           commonMistakes: [
-            'Release too high (causes nose up)',
-            'Release too low (causes upward angle)',
-            'Inconsistent release height',
+            'Spine tilted too far forward or back',
+            'Off balance during weight transfer',
+            'Rising up instead of staying low',
+          ],
+        ),
+        FormKeyPoint(
+          id: 'magic_hip_lead',
+          name: 'Hip Lead',
+          description: 'Hips leading the rotation',
+          idealState:
+              'Hips are driving the rotation, pulling the upper body '
+              'and arm through the power pocket',
+          commonMistakes: [
+            'Upper body leading hips (arm throwing)',
+            'Hips stalling out',
+            'Hips spinning instead of driving forward',
           ],
         ),
       ],
     ),
 
-    // 4. Follow Through
+    // 4. Pro Position
     FormCheckpoint(
-      id: 'follow_through',
-      name: 'Follow Through',
-      description: 'The motion after the disc is released',
+      id: 'pro',
+      name: 'Pro Position',
+      description:
+          'The pull-through is well in progress, and the elbow is at a '
+          '90-degree angle, and the back leg is bent at almost a 90-degree '
+          'angle, and the front leg is pretty straight.',
       orderIndex: 3,
       referenceDescription:
-          'Arm continues naturally across body, '
-          'body rotates fully, balanced finish',
+          'Pull-through is well in progress. Elbow is at a 90-degree angle '
+          '(tightest point). Back leg is bent at almost a 90-degree angle. '
+          'Front leg is pretty straight, bracing the rotation. '
+          'Target elbow angle: ~50°.',
       keyPoints: [
         FormKeyPoint(
-          id: 'follow_through_arm',
-          name: 'Arm Follow Through',
-          description: 'Path of the arm after release',
+          id: 'pro_elbow',
+          name: 'Elbow Angle',
+          description: 'The tightest elbow position in the throw',
           idealState:
-              'Arm continues naturally across body and wraps around, '
-              'not stopped abruptly',
+              'Elbow at approximately 90 degrees (actually ~50° measured), '
+              'this is the tightest elbow angle in the entire throw',
           commonMistakes: [
-            'Stopping arm abruptly after release',
-            'Arm going too high or too low',
-            'Follow through not on line with target',
+            'Elbow too straight (arm barring)',
+            'Elbow opening too early',
+            'Elbow dropping below disc plane',
           ],
         ),
         FormKeyPoint(
-          id: 'follow_through_balance',
-          name: 'Balance',
-          description: 'Body balance after the throw',
+          id: 'pro_back_leg',
+          name: 'Back Leg',
+          description: 'Back leg driving the rotation',
           idealState:
-              'Balanced on front foot, controlled finish, '
-              'able to watch disc flight without stumbling',
+              'Back leg bent at almost a 90-degree angle, actively driving '
+              'hip rotation and weight transfer',
           commonMistakes: [
-            'Falling off to one side',
-            'Spinning out uncontrolled',
-            'Stepping forward after release',
+            'Back leg too straight (not driving)',
+            'Back leg collapsing',
+            'Weight still stuck on back leg',
           ],
         ),
         FormKeyPoint(
-          id: 'follow_through_rotation',
-          name: 'Body Rotation',
-          description: 'Completion of body rotation',
+          id: 'pro_front_leg',
+          name: 'Front Leg',
+          description: 'Front leg bracing',
           idealState:
-              'Hips and shoulders complete full rotation toward target, '
-              'chest facing target at finish',
+              'Front leg is pretty straight, bracing against the ground '
+              'to convert linear momentum into rotational power',
           commonMistakes: [
-            'Incomplete rotation',
-            'Over-rotation',
-            'Upper body ahead of lower body',
+            'Front knee collapsing (leaking power)',
+            'Front leg too bent (not bracing)',
+            'Spinning around front leg instead of bracing',
+          ],
+        ),
+        FormKeyPoint(
+          id: 'pro_pull_through',
+          name: 'Pull-Through Path',
+          description: 'Disc path through the power pocket',
+          idealState:
+              'Pull-through is well in progress, disc moving on a straight '
+              'line close to the chest toward the target',
+          commonMistakes: [
+            'Disc path rounding away from body',
+            'Disc path too high or low',
+            'Early release before full extension',
           ],
         ),
       ],

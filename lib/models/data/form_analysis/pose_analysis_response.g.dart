@@ -23,6 +23,7 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
       .toList(),
   overallFormScore: (json['overall_form_score'] as num?)?.toInt(),
   errorMessage: json['error_message'] as String?,
+  roundThumbnailBase64: json['round_thumbnail_base64'] as String?,
 );
 
 Map<String, dynamic> _$PoseAnalysisResponseToJson(
@@ -38,6 +39,7 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'frame_poses': instance.framePoses.map((e) => e.toJson()).toList(),
   'overall_form_score': instance.overallFormScore,
   'error_message': instance.errorMessage,
+  'round_thumbnail_base64': instance.roundThumbnailBase64,
 };
 
 CheckpointPoseData _$CheckpointPoseDataFromJson(
@@ -75,6 +77,7 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
       json['comparison_with_silhouette_base64'] as String?,
   referenceHorizontalOffsetPercent:
       (json['reference_horizontal_offset_percent'] as num?)?.toDouble(),
+  proPlayerId: json['pro_player_id'] as String?,
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
@@ -107,6 +110,7 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'comparison_with_silhouette_base64': instance.comparisonWithSilhouetteBase64,
   'reference_horizontal_offset_percent':
       instance.referenceHorizontalOffsetPercent,
+  'pro_player_id': instance.proPlayerId,
   'coaching_tips': instance.coachingTips,
 };
 
