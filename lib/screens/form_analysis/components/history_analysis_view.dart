@@ -56,7 +56,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -68,50 +67,145 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
         children: [
-          _buildInfoChip(
-            label: isBackhand ? 'Backhand' : 'Forehand',
-            icon: Icons.sports_golf,
-            color: isBackhand
-                ? const Color(0xFF2196F3)
-                : const Color(0xFF9C27B0),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              formattedDateTime,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontSize: 13,
-                  ),
-            ),
-          ),
-          if (widget.analysis.overallFormScore != null)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
+          _buildHeroScore(context),
+          Divider(height: 1, color: Colors.grey[300]),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Text(
-                  'Overall Score',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[500],
-                        fontSize: 10,
-                      ),
+                _buildInfoChip(
+                  label: isBackhand ? 'Backhand' : 'Forehand',
+                  icon: Icons.sports_golf,
+                  color: isBackhand
+                      ? const Color(0xFF2196F3)
+                      : const Color(0xFF9C27B0),
                 ),
-                Text(
-                  '${widget.analysis.overallFormScore}',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 32,
-                        color: _getScoreColor(widget.analysis.overallFormScore!),
-                      ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    formattedDateTime,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                          fontSize: 13,
+                        ),
+                  ),
                 ),
+                if (widget.analysis.worstDeviationSeverity != null)
+                  _buildSeverityChip(widget.analysis.worstDeviationSeverity!),
               ],
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeroScore(BuildContext context) {
+    final int? score = widget.analysis.overallFormScore;
+
+    if (score == null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        child: Column(
+          children: [
+            Text(
+              '--',
+              style: TextStyle(
+                fontSize: 64,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[400],
+                height: 1.0,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Overall Form Score',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final Color scoreColor = _getScoreColor(score);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$score',
+                style: TextStyle(
+                  fontSize: 64,
+                  fontWeight: FontWeight.bold,
+                  color: scoreColor,
+                  height: 1.0,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8, left: 3),
+                child: Text(
+                  '/100',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Overall Form Score',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildProgressBar(score, scoreColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(int score, Color color) {
+    final double progress = (score / 100).clamp(0.0, 1.0);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          height: 8,
+          width: constraints.maxWidth,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              height: 8,
+              width: constraints.maxWidth * progress,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -389,14 +483,14 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       child: Container(
         margin: const EdgeInsets.only(top: 4),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.transparent,
+              Colors.white.withValues(alpha: 0.0),
               Colors.white,
             ],
-            stops: [0.0, 0.15],
+            stops: const [0.0, 0.25],
           ),
           boxShadow: [
             BoxShadow(
