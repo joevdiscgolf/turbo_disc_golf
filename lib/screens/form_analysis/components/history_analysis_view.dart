@@ -50,7 +50,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
   Widget _buildHeader(BuildContext context) {
     final DateTime createdAt = DateTime.parse(widget.analysis.createdAt);
-    final String formattedDateTime = DateFormat('EEEE, MMM d \'at\' h:mm a').format(createdAt);
+    final String formattedDateTime = DateFormat(
+      'EEEE, MMM d \'at\' h:mm a',
+    ).format(createdAt);
     final bool isBackhand =
         widget.analysis.throwType.toLowerCase() == 'backhand';
 
@@ -87,9 +89,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                   child: Text(
                     formattedDateTime,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                          fontSize: 13,
-                        ),
+                      color: Colors.grey[600],
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 if (widget.analysis.worstDeviationSeverity != null)
@@ -295,10 +297,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFD8B4FE),
-                Color(0xFFC084FC),
-              ],
+              colors: [Color(0xFFD8B4FE), Color(0xFFC084FC)],
             ),
             borderRadius: BorderRadius.circular(26),
             boxShadow: [
@@ -322,7 +321,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               AnimatedAlign(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
-                alignment: _showSkeletonOnly ? Alignment.centerRight : Alignment.centerLeft,
+                alignment: _showSkeletonOnly
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
                 child: Container(
                   width: 52,
                   height: 44,
@@ -330,10 +331,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF9333EA),
-                        Color(0xFF7C3AED),
-                      ],
+                      colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
                     ),
                     borderRadius: BorderRadius.circular(22),
                   ),
@@ -404,7 +402,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         children: List.generate(checkpointCount, (index) {
           return Expanded(
             child: _buildTabSegment(
-              _formatChipLabel(widget.analysis.checkpoints[index].checkpointName),
+              _formatChipLabel(
+                widget.analysis.checkpoints[index].checkpointName,
+              ),
               index == _selectedCheckpointIndex,
               () {
                 HapticFeedback.selectionClick();
@@ -434,10 +434,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF8B5CF6),
-                    Color(0xFF6B4EFF),
-                  ],
+                  colors: [Color(0xFF8B5CF6), Color(0xFF6B4EFF)],
                 )
               : null,
           color: isSelected ? null : Colors.white,
@@ -464,10 +461,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
   }
 
   String _formatChipLabel(String name) {
-    return name
-        .replaceAll(' Position', '')
-        .replaceAll(' position', '')
-        .trim();
+    return name.replaceAll(' Position', '').replaceAll(' position', '').trim();
   }
 
   Widget _buildComparisonCard(BuildContext context) {
@@ -486,10 +480,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.white.withValues(alpha: 0.0),
-              Colors.white,
-            ],
+            colors: [Colors.white.withValues(alpha: 0.0), Colors.white],
             stops: const [0.0, 0.25],
           ),
           boxShadow: [
@@ -501,64 +492,60 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           ],
         ),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildImageComparison(checkpoint),
-          ),
-          const SizedBox(height: 16),
-          Divider(height: 1, color: Colors.grey[200]),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        checkpoint.checkpointName,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                    ),
-                    _buildSeverityChip(checkpoint.deviationSeverity),
-                  ],
-                ),
-                if (checkpoint.coachingTips.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  ...checkpoint.coachingTips.map(
-                    (tip) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '• ',
-                            style: TextStyle(color: Color(0xFF137e66)),
-                          ),
-                          Expanded(
-                            child: Text(
-                              tip,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: Colors.grey[800]),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildImageComparison(checkpoint),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Divider(height: 1, color: Colors.grey[200]),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          checkpoint.checkpointName,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      _buildSeverityChip(checkpoint.deviationSeverity),
+                    ],
+                  ),
+                  if (checkpoint.coachingTips.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    ...checkpoint.coachingTips.map(
+                      (tip) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '• ',
+                              style: TextStyle(color: Color(0xFF137e66)),
+                            ),
+                            Expanded(
+                              child: Text(
+                                tip,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: Colors.grey[800]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -636,34 +623,28 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           if (snapshot.hasError) {
             debugPrint('Failed to load pro reference: ${snapshot.error}');
             return const Center(
-              child: Icon(
-                Icons.broken_image,
-                size: 48,
-                color: Colors.grey,
-              ),
+              child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
             );
           }
 
           if (!snapshot.hasData) {
             return Container(
-              color: Colors.grey[900],
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.grey[800]!,
-                      Colors.grey[700]!,
-                      Colors.grey[800]!,
-                    ],
+                  color: Colors.grey[900],
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.grey[800]!,
+                          Colors.grey[700]!,
+                          Colors.grey[800]!,
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            )
-                .animate(
-                  onPlay: (controller) => controller.repeat(),
                 )
+                .animate(onPlay: (controller) => controller.repeat())
                 .shimmer(
                   duration: 1500.ms,
                   color: Colors.white.withValues(alpha: 0.3),
@@ -674,13 +655,11 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           return Transform.translate(
             offset: Offset(
               MediaQuery.of(context).size.width *
-                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100,
+                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+                  100,
               0,
             ),
-            child: Image(
-              image: snapshot.data!,
-              fit: BoxFit.contain,
-            ),
+            child: Image(image: snapshot.data!, fit: BoxFit.contain),
           );
         },
       );
@@ -698,46 +677,37 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         fit: BoxFit.contain,
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
-        placeholder: (context, url) => Container(
-          color: Colors.grey[900],
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Colors.grey[800]!,
-                  Colors.grey[700]!,
-                  Colors.grey[800]!,
-                ],
-              ),
-            ),
-          ),
-        )
-            .animate(
-              onPlay: (controller) => controller.repeat(),
-            )
-            .shimmer(
-              duration: 1500.ms,
-              color: Colors.white.withValues(alpha: 0.3),
-            ),
+        placeholder: (context, url) =>
+            Container(
+                  color: Colors.grey[900],
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.grey[800]!,
+                          Colors.grey[700]!,
+                          Colors.grey[800]!,
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .animate(onPlay: (controller) => controller.repeat())
+                .shimmer(
+                  duration: 1500.ms,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
         errorWidget: (context, url, error) => const Center(
-          child: Icon(
-            Icons.broken_image,
-            size: 48,
-            color: Colors.grey,
-          ),
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
         ),
       );
     }
 
     // Fallback: No image available
     return const Center(
-      child: Icon(
-        Icons.image_not_supported,
-        size: 48,
-        color: Colors.grey,
-      ),
+      child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
     );
   }
 
@@ -798,54 +768,55 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Container(
-            height: 200,
-            width: double.infinity,
-            color: Colors.black,
-            child: imageUrl != null && imageUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    key: ValueKey(imageUrl),
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[900],
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Colors.grey[800]!,
-                              Colors.grey[700]!,
-                              Colors.grey[800]!,
-                            ],
-                          ),
+              height: 200,
+              width: double.infinity,
+              color: Colors.black,
+              child: imageUrl != null && imageUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      key: ValueKey(imageUrl),
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      fadeInDuration: Duration.zero,
+                      fadeOutDuration: Duration.zero,
+                      placeholder: (context, url) =>
+                          Container(
+                                color: Colors.grey[900],
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                      colors: [
+                                        Colors.grey[800]!,
+                                        Colors.grey[700]!,
+                                        Colors.grey[800]!,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .animate(
+                                onPlay: (controller) => controller.repeat(),
+                              )
+                              .shimmer(
+                                duration: 1500.ms,
+                                color: Colors.white.withValues(alpha: 0.3),
+                              ),
+                      errorWidget: (context, url, error) => const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          size: 48,
+                          color: Colors.grey,
                         ),
                       ),
                     )
-                        .animate(
-                          onPlay: (controller) => controller.repeat(),
-                        )
-                        .shimmer(
-                          duration: 1500.ms,
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                    errorWidget: (context, url, error) => const Center(
+                  : const Center(
                       child: Icon(
-                        Icons.broken_image,
+                        Icons.image_not_supported,
                         size: 48,
                         color: Colors.grey,
                       ),
                     ),
-                  )
-                : const Center(
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 48,
-                      color: Colors.grey,
-                    ),
-                  ),
             ),
           ),
         ),
@@ -878,9 +849,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               Text(
                 'Top Tips',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: const Color(0xFF137e66),
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: const Color(0xFF137e66),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -891,16 +862,13 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '• ',
-                    style: TextStyle(color: Color(0xFF137e66)),
-                  ),
+                  const Text('• ', style: TextStyle(color: Color(0xFF137e66))),
                   Expanded(
                     child: Text(
                       tip,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[800],
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[800]),
                     ),
                   ),
                 ],
@@ -1204,34 +1172,28 @@ class _FullscreenComparisonDialogState
           if (snapshot.hasError) {
             debugPrint('Failed to load pro reference: ${snapshot.error}');
             return const Center(
-              child: Icon(
-                Icons.broken_image,
-                size: 48,
-                color: Colors.grey,
-              ),
+              child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
             );
           }
 
           if (!snapshot.hasData) {
             return Container(
-              color: Colors.grey[900],
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.grey[800]!,
-                      Colors.grey[700]!,
-                      Colors.grey[800]!,
-                    ],
+                  color: Colors.grey[900],
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.grey[800]!,
+                          Colors.grey[700]!,
+                          Colors.grey[800]!,
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            )
-                .animate(
-                  onPlay: (controller) => controller.repeat(),
                 )
+                .animate(onPlay: (controller) => controller.repeat())
                 .shimmer(
                   duration: 1500.ms,
                   color: Colors.white.withValues(alpha: 0.3),
@@ -1242,13 +1204,11 @@ class _FullscreenComparisonDialogState
           return Transform.translate(
             offset: Offset(
               MediaQuery.of(context).size.width *
-                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100,
+                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+                  100,
               0,
             ),
-            child: Image(
-              image: snapshot.data!,
-              fit: BoxFit.contain,
-            ),
+            child: Image(image: snapshot.data!, fit: BoxFit.contain),
           );
         },
       );
@@ -1266,46 +1226,37 @@ class _FullscreenComparisonDialogState
         fit: BoxFit.contain,
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
-        placeholder: (context, url) => Container(
-          color: Colors.grey[900],
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Colors.grey[800]!,
-                  Colors.grey[700]!,
-                  Colors.grey[800]!,
-                ],
-              ),
-            ),
-          ),
-        )
-            .animate(
-              onPlay: (controller) => controller.repeat(),
-            )
-            .shimmer(
-              duration: 1500.ms,
-              color: Colors.white.withValues(alpha: 0.3),
-            ),
+        placeholder: (context, url) =>
+            Container(
+                  color: Colors.grey[900],
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.grey[800]!,
+                          Colors.grey[700]!,
+                          Colors.grey[800]!,
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .animate(onPlay: (controller) => controller.repeat())
+                .shimmer(
+                  duration: 1500.ms,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
         errorWidget: (context, url, error) => const Center(
-          child: Icon(
-            Icons.broken_image,
-            size: 48,
-            color: Colors.grey,
-          ),
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
         ),
       );
     }
 
     // Fallback: No image available
     return const Center(
-      child: Icon(
-        Icons.image_not_supported,
-        size: 48,
-        color: Colors.grey,
-      ),
+      child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
     );
   }
 
@@ -1335,29 +1286,30 @@ class _FullscreenComparisonDialogState
                     fit: BoxFit.contain,
                     fadeInDuration: Duration.zero,
                     fadeOutDuration: Duration.zero,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[900],
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Colors.grey[800]!,
-                              Colors.grey[700]!,
-                              Colors.grey[800]!,
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                        .animate(
-                          onPlay: (controller) => controller.repeat(),
-                        )
-                        .shimmer(
-                          duration: 1500.ms,
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
+                    placeholder: (context, url) =>
+                        Container(
+                              color: Colors.grey[900],
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [
+                                      Colors.grey[800]!,
+                                      Colors.grey[700]!,
+                                      Colors.grey[800]!,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                            .animate(
+                              onPlay: (controller) => controller.repeat(),
+                            )
+                            .shimmer(
+                              duration: 1500.ms,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
                     errorWidget: (context, url, error) => const Center(
                       child: Icon(
                         Icons.broken_image,
