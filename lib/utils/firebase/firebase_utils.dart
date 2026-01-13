@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
 
 class FirestoreQueryInstruction {
@@ -183,6 +184,67 @@ Future<bool> firestoreWrite(
       e,
       trace,
       reason: '[firestore][utils][firestoreWrite] exception, path: $path',
+    );
+    return false;
+  }
+}
+
+/// Delete a single Firestore document
+Future<bool> firestoreDelete(
+  String path, {
+  Duration timeoutDuration = defaultTimeout,
+}) async {
+  try {
+    await FirebaseFirestore.instance
+        .doc(path)
+        .delete()
+        .timeout(timeoutDuration);
+    return true;
+  } catch (e, trace) {
+    debugPrint('[FirestoreUtils] Delete error: $e');
+    FirebaseCrashlytics.instance.recordError(
+      e,
+      trace,
+      reason: '[firestore][utils][firestoreDelete] exception, path: $path',
+    );
+    return false;
+  }
+}
+
+/// Delete all documents in a collection
+Future<bool> firestoreDeleteCollection(
+  String collectionPath, {
+  int batchSize = 500,
+  Duration timeoutDuration = longTimeout,
+}) async {
+  try {
+    final QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection(collectionPath)
+        .get()
+        .timeout(timeoutDuration);
+
+    // Delete in batches to avoid limits
+    final List<List<DocumentSnapshot>> batches = [];
+    for (int i = 0; i < snapshot.docs.length; i += batchSize) {
+      batches.add(snapshot.docs.skip(i).take(batchSize).toList());
+    }
+
+    for (final batch in batches) {
+      final WriteBatch writeBatch = FirebaseFirestore.instance.batch();
+      for (final doc in batch) {
+        writeBatch.delete(doc.reference);
+      }
+      await writeBatch.commit().timeout(timeoutDuration);
+    }
+
+    debugPrint('[FirestoreUtils] Deleted ${snapshot.docs.length} documents from $collectionPath');
+    return true;
+  } catch (e, trace) {
+    debugPrint('[FirestoreUtils] Delete collection error: $e');
+    FirebaseCrashlytics.instance.recordError(
+      e,
+      trace,
+      reason: '[firestore][utils][firestoreDeleteCollection] exception, path: $collectionPath',
     );
     return false;
   }

@@ -114,6 +114,42 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
     }
   }
 
+  /// Delete all form analyses for the current user (debug only).
+  /// Clears both Firestore data and Cloud Storage images.
+  Future<void> deleteAllAnalyses() async {
+    try {
+      emit(const FormAnalysisHistoryLoading());
+
+      // Get current user ID
+      final AuthService authService = locator.get<AuthService>();
+      final String? uid = authService.currentUid;
+
+      if (uid == null) {
+        emit(const FormAnalysisHistoryError(message: 'User not authenticated'));
+        return;
+      }
+
+      debugPrint('[FormAnalysisHistoryCubit] Deleting all analyses for user: $uid');
+
+      // Delete all data
+      final bool success = await FBFormAnalysisDataLoader.deleteAllAnalysesForUser(uid);
+
+      if (success) {
+        // Emit empty state
+        emit(const FormAnalysisHistoryLoaded(
+          analyses: [],
+          selectedAnalysis: null,
+        ));
+        debugPrint('[FormAnalysisHistoryCubit] ✅ All analyses deleted successfully');
+      } else {
+        emit(const FormAnalysisHistoryError(message: 'Failed to delete analyses'));
+      }
+    } catch (e) {
+      debugPrint('[FormAnalysisHistoryCubit] Delete all error: $e');
+      emit(FormAnalysisHistoryError(message: 'Error deleting analyses: $e'));
+    }
+  }
+
   @override
   Future<void> clearOnLogout() async {
     emit(const FormAnalysisHistoryInitial());

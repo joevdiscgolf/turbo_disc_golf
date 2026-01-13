@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_history_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
@@ -94,8 +95,8 @@ class _MainWrapperState extends State<MainWrapper> {
   Widget _buildWithFormAnalysisTabs(BuildContext context) {
     final String appBarTitle = _selectedIndex == 0 ? 'ScoreSensei' : 'Form Coach';
 
-    return BlocProvider<FormAnalysisHistoryCubit>(
-      create: (context) => FormAnalysisHistoryCubit(),
+    return BlocProvider<FormAnalysisHistoryCubit>.value(
+      value: locator.get<FormAnalysisHistoryCubit>(),
       child: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -148,23 +149,34 @@ class _MainWrapperState extends State<MainWrapper> {
             ),
           ],
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
-          selectedItemColor: const Color(0xFF137e66),
-          unselectedItemColor: const Color(0xFF6B7280),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.play_arrow),
-              label: 'Rounds',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.slow_motion_video),
-              label: 'Form Coach',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
+        bottomNavigationBar: Theme(
+          data: Theme.of(context).copyWith(
+            splashFactory: NoSplash.splashFactory,
+            highlightColor: Colors.transparent,
+          ),
+          child: BottomNavigationBar(
+            backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
+            selectedItemColor: Colors.blue,
+            unselectedItemColor: const Color(0xFF6B7280),
+            selectedLabelStyle: const TextStyle(fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontSize: 12),
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            enableFeedback: false,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Text('🥏', style: TextStyle(fontSize: 20)),
+                label: 'Rounds',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.school, size: 24),
+                label: 'Form Coach',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+          ),
         ),
       ),
       ),

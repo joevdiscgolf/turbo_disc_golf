@@ -30,6 +30,7 @@ import 'package:turbo_disc_golf/services/web_scraper_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/voice/ios_voice_service.dart';
 import 'package:turbo_disc_golf/services/voice/speech_to_text_service.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 final locator = GetIt.instance;
@@ -74,6 +75,9 @@ Future<void> setUpLocator() async {
   );
   locator.registerSingleton<PoseAnalysisApiClient>(
     PoseAnalysisApiClient(baseUrl: poseAnalysisBaseUrl),
+  );
+  locator.registerSingleton<FormAnalysisHistoryCubit>(
+    FormAnalysisHistoryCubit(),
   );
 
   locator.registerSingleton<AiParsingService>(AiParsingService());

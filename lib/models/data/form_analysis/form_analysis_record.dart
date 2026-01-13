@@ -15,6 +15,7 @@ class FormAnalysisRecord {
     this.overallFormScore,
     this.worstDeviationSeverity,
     this.topCoachingTips,
+    this.thumbnailBase64,
   });
 
   /// Unique identifier for this analysis
@@ -46,6 +47,11 @@ class FormAnalysisRecord {
   /// Top coaching tips aggregated from all checkpoints (max 3)
   @JsonKey(name: 'top_coaching_tips')
   final List<String>? topCoachingTips;
+
+  /// Compressed thumbnail image (base64-encoded JPEG, ~15-25 KB)
+  /// Generated from first checkpoint's skeleton image
+  @JsonKey(name: 'thumbnail_base64')
+  final String? thumbnailBase64;
 
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);

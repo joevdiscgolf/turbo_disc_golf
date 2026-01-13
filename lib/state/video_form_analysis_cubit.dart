@@ -16,6 +16,7 @@ import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
 import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:uuid/uuid.dart';
@@ -256,22 +257,32 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     ));
   }
 
-  /// Save analysis to Firestore history (fire-and-forget).
+  /// Save analysis to Firestore history and automatically update history list.
   void _saveAnalysisToHistory({
     required String uid,
     required String sessionId,
     required ThrowTechnique throwType,
     required PoseAnalysisResponse poseAnalysis,
   }) {
-    // Fire-and-forget - don't await, just log result
+    // Fire-and-forget - don't await, just log result and update history
     FBFormAnalysisDataLoader.saveAnalysis(
       uid: uid,
       analysisId: sessionId,
       throwType: _mapThrowTypeToString(throwType),
       poseAnalysis: poseAnalysis,
-    ).then((success) {
-      if (success) {
-        debugPrint('[VideoFormAnalysisCubit] Analysis saved to history');
+    ).then((savedRecord) {
+      if (savedRecord != null) {
+        debugPrint('[VideoFormAnalysisCubit] Analysis saved to history: ${savedRecord.id}');
+
+        // Automatically add to history list for instant UI update
+        try {
+          final FormAnalysisHistoryCubit historyCubit =
+              locator.get<FormAnalysisHistoryCubit>();
+          historyCubit.addAnalysis(savedRecord);
+          debugPrint('[VideoFormAnalysisCubit] ✅ Analysis added to history list');
+        } catch (e) {
+          debugPrint('[VideoFormAnalysisCubit] ⚠️  Failed to add analysis to history list: $e');
+        }
       } else {
         debugPrint('[VideoFormAnalysisCubit] Failed to save analysis to history');
       }

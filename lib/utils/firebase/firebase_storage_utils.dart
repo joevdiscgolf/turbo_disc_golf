@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
 
 /// Upload base64 image to Cloud Storage.
 ///
@@ -81,5 +82,48 @@ Future<String?> storageUploadImage({
       reason: '[firebase][storage][storageUploadImage] exception, path: $path',
     );
     return null;
+  }
+}
+
+/// Delete all files in a Cloud Storage folder (prefix-based deletion).
+///
+/// [folderPath]: Storage folder path (e.g., 'form_analyses/userId')
+/// [timeoutDuration]: Timeout for operations (default: longTimeout)
+///
+/// Returns true if deletion succeeded, false on failure.
+/// This function recursively deletes all files and subfolders.
+Future<bool> storageDeleteFolder(
+  String folderPath, {
+  Duration timeoutDuration = longTimeout,
+}) async {
+  try {
+    final Reference folderRef = FirebaseStorage.instance.ref().child(folderPath);
+    final ListResult result = await folderRef.listAll().timeout(timeoutDuration);
+
+    // Delete all files
+    for (final Reference fileRef in result.items) {
+      try {
+        await fileRef.delete().timeout(const Duration(seconds: 5));
+        debugPrint('[StorageUtils] Deleted: ${fileRef.fullPath}');
+      } catch (e) {
+        debugPrint('[StorageUtils] Failed to delete file ${fileRef.fullPath}: $e');
+      }
+    }
+
+    // Recursively delete subfolders
+    for (final Reference subfolderRef in result.prefixes) {
+      await storageDeleteFolder(subfolderRef.fullPath, timeoutDuration: timeoutDuration);
+    }
+
+    debugPrint('[StorageUtils] Deleted folder: $folderPath');
+    return true;
+  } catch (e, trace) {
+    debugPrint('[StorageUtils] Delete folder error: $e');
+    FirebaseCrashlytics.instance.recordError(
+      e,
+      trace,
+      reason: '[firebase][storage][storageDeleteFolder] exception, path: $folderPath',
+    );
+    return false;
   }
 }

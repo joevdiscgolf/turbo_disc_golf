@@ -20,6 +20,7 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
       topCoachingTips: (json['top_coaching_tips'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      thumbnailBase64: json['thumbnail_base64'] as String?,
     );
 
 Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
@@ -32,6 +33,7 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
       'worst_deviation_severity': instance.worstDeviationSeverity,
       'checkpoints': instance.checkpoints.map((e) => e.toJson()).toList(),
       'top_coaching_tips': instance.topCoachingTips,
+      'thumbnail_base64': instance.thumbnailBase64,
     };
 
 CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>

@@ -501,6 +501,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                     key: ValueKey(imageUrl),
                     imageUrl: imageUrl,
                     fit: BoxFit.cover,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
                     placeholder: (context, url) => Container(
                       color: Colors.grey[900],
                       child: Container(
@@ -899,6 +901,8 @@ class _FullscreenComparisonDialogState
                     key: ValueKey(imageUrl),
                     imageUrl: imageUrl,
                     fit: BoxFit.contain,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
                     placeholder: (context, url) => Container(
                       color: Colors.grey[900],
                       child: Container(

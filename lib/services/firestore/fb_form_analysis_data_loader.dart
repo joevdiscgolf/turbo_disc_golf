@@ -10,7 +10,8 @@ import 'package:turbo_disc_golf/utils/firebase/firebase_utils.dart';
 
 abstract class FBFormAnalysisDataLoader {
   /// Save form analysis with images to Firestore and Cloud Storage.
-  static Future<bool> saveAnalysis({
+  /// Returns the saved FormAnalysisRecord on success, null on failure.
+  static Future<FormAnalysisRecord?> saveAnalysis({
     required String uid,
     required String analysisId,
     required String throwType,
@@ -23,7 +24,8 @@ abstract class FBFormAnalysisDataLoader {
       debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');
       debugPrint('[FBFormAnalysisDataLoader] Analysis will be shown in UI but not saved to Firestore');
       debugPrint('═══════════════════════════════════════════════════════');
-      return true; // Return true so the UI flow continues normally
+      // Return null since nothing was saved (testing mode)
+      return null;
     }
 
     try {
@@ -84,7 +86,7 @@ abstract class FBFormAnalysisDataLoader {
           debugPrint('[FBFormAnalysisDataLoader] userSkeletonUrl: ${userSkeletonUrl != null ? "✅" : "❌"}');
           debugPrint('[FBFormAnalysisDataLoader] referenceImageUrl: ${referenceImageUrl != null ? "✅" : "❌"}');
           debugPrint('[FBFormAnalysisDataLoader] ⚠️  Aborting save - will not save to Firestore with missing images');
-          return false;
+          return null;
         }
 
         // Build angle deviations map
@@ -115,6 +117,32 @@ abstract class FBFormAnalysisDataLoader {
       // Aggregate top coaching tips (max 3, unique)
       final List<String> topTips = _aggregateTopTips(checkpointRecords);
 
+      // Use ONLY backend-generated thumbnail (256x256, centered on body, Heisman position with skeleton overlay)
+      debugPrint('');
+      debugPrint('[FBFormAnalysisDataLoader] ═══ THUMBNAIL HANDLING ═══');
+      debugPrint('[FBFormAnalysisDataLoader] Checking poseAnalysis.roundThumbnailBase64...');
+      debugPrint('[FBFormAnalysisDataLoader] - Is null: ${poseAnalysis.roundThumbnailBase64 == null}');
+      if (poseAnalysis.roundThumbnailBase64 != null) {
+        debugPrint('[FBFormAnalysisDataLoader] - Length: ${poseAnalysis.roundThumbnailBase64!.length} chars');
+        debugPrint('[FBFormAnalysisDataLoader] - First 30 chars: ${poseAnalysis.roundThumbnailBase64!.substring(0, poseAnalysis.roundThumbnailBase64!.length > 30 ? 30 : poseAnalysis.roundThumbnailBase64!.length)}');
+      }
+
+      String? thumbnailBase64;
+
+      if (poseAnalysis.roundThumbnailBase64 != null &&
+          poseAnalysis.roundThumbnailBase64!.isNotEmpty) {
+        thumbnailBase64 = poseAnalysis.roundThumbnailBase64;
+        final int thumbnailSize = poseAnalysis.roundThumbnailBase64!.length;
+        debugPrint('[FBFormAnalysisDataLoader] ✅ Using backend-generated thumbnail (~${(thumbnailSize / 1024).toStringAsFixed(1)} KB)');
+      } else {
+        // Backend didn't provide thumbnail - log warning and continue without thumbnail
+        debugPrint('[FBFormAnalysisDataLoader] ❌ Backend thumbnail NOT available');
+        debugPrint('[FBFormAnalysisDataLoader] - roundThumbnailBase64 is ${poseAnalysis.roundThumbnailBase64 == null ? "NULL" : "EMPTY STRING"}');
+        debugPrint('[FBFormAnalysisDataLoader] ⚠️  Analysis will be saved WITHOUT thumbnail');
+        debugPrint('[FBFormAnalysisDataLoader] ⚠️  Frontend no longer generates fallback thumbnails');
+      }
+      debugPrint('[FBFormAnalysisDataLoader] ═══════════════════════════');
+
       // Create the record
       final FormAnalysisRecord record = FormAnalysisRecord(
         id: analysisId,
@@ -125,6 +153,7 @@ abstract class FBFormAnalysisDataLoader {
         worstDeviationSeverity: worstSeverity,
         checkpoints: checkpointRecords,
         topCoachingTips: topTips.isEmpty ? null : topTips,
+        thumbnailBase64: thumbnailBase64,
       );
 
       // Save to Firestore using utility
@@ -140,18 +169,18 @@ abstract class FBFormAnalysisDataLoader {
 
       if (success) {
         debugPrint('[FBFormAnalysisDataLoader][saveAnalysis] ✅ Successfully saved analysis: $analysisId');
+        return record; // Return the saved record
       } else {
         debugPrint('[FBFormAnalysisDataLoader][saveAnalysis] ❌ Failed to save analysis to Firestore: $analysisId');
+        return null;
       }
-
-      return success;
     } catch (e, trace) {
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[FBFormAnalysisDataLoader] ❌ SAVE FAILED!');
       debugPrint('[FBFormAnalysisDataLoader] Error: $e');
       debugPrint('[FBFormAnalysisDataLoader] Stack trace: $trace');
       debugPrint('═══════════════════════════════════════════════════════');
-      return false;
+      return null;
     }
   }
 
@@ -313,5 +342,60 @@ abstract class FBFormAnalysisDataLoader {
     }
 
     return uniqueTips.toList();
+  }
+
+  /// Delete all form analyses and associated images for a user.
+  /// This is a DESTRUCTIVE operation - use only in debug mode.
+  static Future<bool> deleteAllAnalysesForUser(String uid) async {
+    try {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FBFormAnalysisDataLoader] 🗑️  DELETE ALL START');
+      debugPrint('[FBFormAnalysisDataLoader] User ID: $uid');
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      // Step 1: Delete all Firestore documents
+      final String firestorePath = '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection';
+      debugPrint('[FBFormAnalysisDataLoader] Deleting Firestore collection: $firestorePath');
+
+      final bool firestoreSuccess = await firestoreDeleteCollection(
+        firestorePath,
+        timeoutDuration: longTimeout,
+      );
+
+      if (!firestoreSuccess) {
+        debugPrint('[FBFormAnalysisDataLoader] ❌ Firestore deletion failed');
+        return false;
+      }
+
+      debugPrint('[FBFormAnalysisDataLoader] ✅ Firestore deletion complete');
+
+      // Step 2: Delete all Cloud Storage images
+      final String storagePath = 'form_analyses/$uid';
+      debugPrint('[FBFormAnalysisDataLoader] Deleting Cloud Storage folder: $storagePath');
+
+      final bool storageSuccess = await storageDeleteFolder(
+        storagePath,
+        timeoutDuration: longTimeout,
+      );
+
+      if (!storageSuccess) {
+        debugPrint('[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors (may be partial)');
+      } else {
+        debugPrint('[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete');
+      }
+
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FBFormAnalysisDataLoader] ✅ DELETE ALL COMPLETE');
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      return true;
+    } catch (e, trace) {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FBFormAnalysisDataLoader] ❌ DELETE ALL FAILED!');
+      debugPrint('[FBFormAnalysisDataLoader] Error: $e');
+      debugPrint('[FBFormAnalysisDataLoader] Stack trace: $trace');
+      debugPrint('═══════════════════════════════════════════════════════');
+      return false;
+    }
   }
 }

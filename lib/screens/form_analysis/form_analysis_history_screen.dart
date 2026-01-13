@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,12 +13,10 @@ import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_sc
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class FormAnalysisHistoryScreen extends StatefulWidget {
-  const FormAnalysisHistoryScreen({
-    super.key,
-    required this.bottomViewPadding,
-  });
+  const FormAnalysisHistoryScreen({super.key, required this.bottomViewPadding});
 
   final double bottomViewPadding;
 
@@ -38,10 +37,10 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   }
 
   Future<void> _showRecordingScreen() async {
-    await Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (context) => const FormAnalysisRecordingScreen(),
-      ),
+    pushCupertinoRoute(
+      context,
+      const FormAnalysisRecordingScreen(),
+      pushFromBottom: true,
     );
     // Refresh list after returning from recording screen
     _historyCubit.refreshHistory();
@@ -65,6 +64,8 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
           },
         ),
         _buildAddButton(),
+        // Debug delete button (only in debug mode)
+        if (kDebugMode) _buildDebugDeleteButton(context),
       ],
     );
   }
@@ -90,25 +91,22 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
       return SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final analysis = state.analyses[index];
-              return FormAnalysisCard(
-                analysis: analysis,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.push(
-                    context,
-                    CupertinoPageRoute(
-                      builder: (context) =>
-                          FormAnalysisDetailScreen(analysis: analysis),
-                    ),
-                  );
-                },
-              );
-            },
-            childCount: state.analyses.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final analysis = state.analyses[index];
+            return FormAnalysisCard(
+              analysis: analysis,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) =>
+                        FormAnalysisDetailScreen(analysis: analysis),
+                  ),
+                );
+              },
+            );
+          }, childCount: state.analyses.length),
         ),
       );
     } else {
@@ -150,17 +148,21 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
     return BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
       builder: (context, state) {
         // Hide FAB when showing empty state
-        final bool isEmptyState = state is FormAnalysisHistoryLoaded &&
-            state.analyses.isEmpty;
+        final bool isEmptyState =
+            state is FormAnalysisHistoryLoaded && state.analyses.isEmpty;
         if (isEmptyState) {
           return const SizedBox.shrink();
         }
 
-        final double bottomViewPadding = MediaQuery.of(context).viewPadding.bottom;
+        final double bottomViewPadding = MediaQuery.of(
+          context,
+        ).viewPadding.bottom;
 
         // When bottom nav bar is present, body ends at nav bar - just need 20px margin
         // When no nav bar, need to account for safe area
-        final double bottomMargin = useFormAnalysisTab ? 20 : (bottomViewPadding + 20);
+        final double bottomMargin = useFormAnalysisTab
+            ? 20
+            : (bottomViewPadding + 20);
 
         return Positioned(
           right: 20,

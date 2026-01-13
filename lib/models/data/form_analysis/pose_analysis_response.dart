@@ -16,6 +16,7 @@ class PoseAnalysisResponse {
     required this.framePoses,
     this.overallFormScore,
     this.errorMessage,
+    this.roundThumbnailBase64,
   });
 
   @JsonKey(name: 'session_id')
@@ -45,6 +46,9 @@ class PoseAnalysisResponse {
 
   @JsonKey(name: 'error_message')
   final String? errorMessage;
+
+  @JsonKey(name: 'round_thumbnail_base64')
+  final String? roundThumbnailBase64;
 
   factory PoseAnalysisResponse.fromJson(Map<String, dynamic> json) =>
       _$PoseAnalysisResponseFromJson(json);
