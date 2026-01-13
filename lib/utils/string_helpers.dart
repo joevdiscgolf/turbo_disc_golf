@@ -5,6 +5,18 @@ int versionToNumber(String version) {
   return int.parse(withoutDots);
 }
 
+/// Checks if a version string is valid (numeric with dots)
+/// Returns false for null, empty, "unknown", or non-numeric versions
+bool isValidVersionString(String? version) {
+  if (version == null || version.isEmpty || version.toLowerCase() == 'unknown') {
+    return false;
+  }
+
+  // Check if version matches pattern like "1.2.3" (numbers separated by dots)
+  final RegExp versionPattern = RegExp(r'^\d+(\.\d+)*$');
+  return versionPattern.hasMatch(version);
+}
+
 String getEnumValuesAsString<T>(List<T> values) {
   return values
       .map((e) {

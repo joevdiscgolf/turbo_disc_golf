@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
@@ -31,6 +32,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   /// Start a new analysis session by recording video
   Future<void> recordVideo({
     required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
   }) async {
     emit(
       const VideoFormAnalysisRecording(progressMessage: 'Opening camera...'),
@@ -53,6 +55,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         videoPath: video.path,
         videoSource: VideoSource.camera,
         throwType: throwType,
+        cameraAngle: cameraAngle,
       );
     } catch (e) {
       emit(VideoFormAnalysisError(
@@ -64,6 +67,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   /// Start a new analysis session by importing video from gallery
   Future<void> importVideo({
     required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
   }) async {
     emit(const VideoFormAnalysisRecording(
       progressMessage: 'Opening gallery...',
@@ -86,6 +90,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         videoPath: video.path,
         videoSource: VideoSource.gallery,
         throwType: throwType,
+        cameraAngle: cameraAngle,
       );
     } catch (e) {
       emit(VideoFormAnalysisError(
@@ -97,6 +102,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   /// Test with a bundled asset video (for development/testing only)
   Future<void> testWithAssetVideo({
     required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
     required String assetPath,
   }) async {
     emit(const VideoFormAnalysisRecording(
@@ -119,6 +125,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         videoPath: tempPath,
         videoSource: VideoSource.gallery,
         throwType: throwType,
+        cameraAngle: cameraAngle,
       );
     } catch (e) {
       emit(VideoFormAnalysisError(
@@ -131,6 +138,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required String videoPath,
     required VideoSource videoSource,
     required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
   }) async {
     final VideoFormAnalysisService analysisService =
         locator.get<VideoFormAnalysisService>();
@@ -190,6 +198,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
           await _runPoseAnalysis(
         videoPath: videoPath,
         throwType: throwType,
+        cameraAngle: cameraAngle,
         sessionId: session.id,
         userId: uid,
       );
@@ -294,6 +303,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   Future<(PoseAnalysisResponse?, String?)> _runPoseAnalysis({
     required String videoPath,
     required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
     required String sessionId,
     required String userId,
   }) async {
@@ -314,7 +324,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       final PoseAnalysisResponse response = await poseClient.analyzeVideo(
         videoFile: File(videoPath),
         throwType: throwTypeStr,
-        cameraAngle: 'side', // Currently only side angle is supported
+        cameraAngle: cameraAngle.apiValue, // Dynamic based on user selection
         sessionId: sessionId,
         userId: userId,
       );
@@ -387,6 +397,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         videoPath: session.videoPath,
         videoSource: session.videoSource,
         throwType: session.throwType,
+        cameraAngle: CameraAngle.side, // Default to side view for retry
       );
     }
   }

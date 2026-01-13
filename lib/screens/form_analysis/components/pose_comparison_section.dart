@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -23,6 +24,15 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
   bool _isTipsExpanded = false;
   bool _showSkeletonOnly = false;
   final ProReferenceLoader _proRefLoader = ProReferenceLoader();
+
+  /// Helper method to convert string camera angle to CameraAngle enum
+  CameraAngle _getCameraAngle() {
+    final String cameraAngleStr = widget.poseAnalysis.cameraAngle.toLowerCase();
+    if (cameraAngleStr == 'rear') {
+      return CameraAngle.rear;
+    }
+    return CameraAngle.side; // Default to side view
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -360,6 +370,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
           throwType: widget.poseAnalysis.throwType,
           checkpoint: checkpoint.checkpointId,
           isSkeleton: _showSkeletonOnly,
+          cameraAngle: _getCameraAngle(),
         ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -450,6 +461,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
       builder: (dialogContext) => _FullscreenComparisonDialog(
         checkpoints: widget.poseAnalysis.checkpoints,
         throwType: widget.poseAnalysis.throwType,
+        cameraAngle: _getCameraAngle(),
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
         proRefLoader: _proRefLoader,
@@ -868,6 +880,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
   const _FullscreenComparisonDialog({
     required this.checkpoints,
     required this.throwType,
+    required this.cameraAngle,
     required this.initialIndex,
     required this.showSkeletonOnly,
     required this.proRefLoader,
@@ -877,6 +890,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
 
   final List<CheckpointPoseData> checkpoints;
   final String throwType;
+  final CameraAngle cameraAngle;
   final int initialIndex;
   final bool showSkeletonOnly;
   final ProReferenceLoader proRefLoader;
@@ -1138,6 +1152,7 @@ class _FullscreenComparisonDialogState
           throwType: widget.throwType,
           checkpoint: checkpoint.checkpointId,
           isSkeleton: _showSkeletonOnly,
+          cameraAngle: widget.cameraAngle,
         ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {

@@ -31,77 +31,133 @@ class AppPhaseController extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    // Testing override: always show force upgrade screen if enabled
-    if (alwaysShowForceUpgradeScreen) {
-      debugPrint('[AppPhaseCubit][init] Testing mode - forcing upgrade screen');
-      setPhase(AppPhase.forceUpgrade);
-      return;
-    }
+    debugPrint('[AppPhaseCubit][init] 🚀 Starting initialization...');
 
-    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    final String version = packageInfo.version;
-
-    final AuthUser? currentAuthUser = _authService.currentUser;
-    if (currentAuthUser == null) {
-      setPhase(AppPhase.loggedOut);
-      return;
-    }
-
-    TurboUser? currentTurboUser;
-    AppVersionInfo? appVersionInfo;
-
-    debugPrint(
-      '[AppPhaseCubit][init] loading app version info and current user...',
-    );
     try {
-      await Future.wait([
-            FBAppInfoDataLoader.getAppVersionInfo(),
-            FBUserDataLoader.getCurrentUser(currentAuthUser.uid),
-          ])
-          .then((results) {
-            appVersionInfo = results[0] as AppVersionInfo?;
-            currentTurboUser = results[1] as TurboUser?;
-          })
-          .timeout(
-            tinyTimeout,
-            onTimeout: () {
-              debugPrint(
-                '[AppPhaseCubit][init] load version info and user on timeout',
+      // Testing override: always show force upgrade screen if enabled
+      if (alwaysShowForceUpgradeScreen) {
+        debugPrint('[AppPhaseCubit][init] Testing mode - forcing upgrade screen');
+        setPhase(AppPhase.forceUpgrade);
+        return;
+      }
+
+      debugPrint('[AppPhaseCubit][init] Getting package info...');
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      final String version = packageInfo.version;
+      debugPrint('[AppPhaseCubit][init] Current app version: $version');
+
+      final AuthUser? currentAuthUser = _authService.currentUser;
+      if (currentAuthUser == null) {
+        debugPrint('[AppPhaseCubit][init] No auth user, setting loggedOut phase');
+        setPhase(AppPhase.loggedOut);
+        return;
+      }
+
+      debugPrint('[AppPhaseCubit][init] Auth user found: ${currentAuthUser.uid}');
+
+      TurboUser? currentTurboUser;
+      AppVersionInfo? appVersionInfo;
+
+      debugPrint(
+        '[AppPhaseCubit][init] Loading app version info and current user...',
+      );
+      try {
+        await Future.wait([
+              FBAppInfoDataLoader.getAppVersionInfo(),
+              FBUserDataLoader.getCurrentUser(currentAuthUser.uid),
+            ])
+            .then((results) {
+              appVersionInfo = results[0] as AppVersionInfo?;
+              currentTurboUser = results[1] as TurboUser?;
+              debugPrint('[AppPhaseCubit][init] Successfully loaded app version info and user');
+            })
+            .timeout(
+              tinyTimeout,
+              onTimeout: () {
+                debugPrint(
+                  '[AppPhaseCubit][init] ⏱️ Load version info and user timed out',
+                );
+              },
+            )
+            .catchError((e, trace) {
+              debugPrint('[AppPhaseCubit][init] ❌ Error loading data: $e');
+              FirebaseCrashlytics.instance.recordError(
+                e,
+                trace,
+                reason:
+                    '[AppPhaseCubit][init] app version info and current user timeout',
               );
-            },
-          )
-          .catchError((e, trace) {
-            FirebaseCrashlytics.instance.recordError(
-              e,
-              trace,
-              reason:
-                  '[AppPhaseCubit][init] app version info and current user timeout',
+            });
+      } catch (e, trace) {
+        debugPrint('[AppPhaseCubit][init] ❌ Exception loading data: $e');
+        FirebaseCrashlytics.instance.recordError(
+          e,
+          trace,
+          reason:
+              '[AppPhaseCubit][init] app version info and current user error',
+        );
+      }
+
+      _appVersionInfo = appVersionInfo;
+
+      debugPrint(
+        '[AppPhaseCubit][init] Minimum version: ${appVersionInfo?.minimumVersion}, Current version: $version, User: ${currentTurboUser?.displayName}',
+      );
+
+      // Only trigger force upgrade if BOTH versions are valid (not null, not empty, not "unknown")
+      final String? minimumVersion = appVersionInfo?.minimumVersion;
+      final bool canCheckVersion = minimumVersion != null &&
+          isValidVersionString(minimumVersion) &&
+          isValidVersionString(version);
+
+      debugPrint('[AppPhaseCubit][init] Can check version: $canCheckVersion');
+
+      if (canCheckVersion) {
+        debugPrint(
+          '[AppPhaseCubit][init] Checking version: minimum $minimumVersion vs current $version',
+        );
+        try {
+          final int minVersionNum = versionToNumber(minimumVersion);
+          final int currentVersionNum = versionToNumber(version);
+          debugPrint('[AppPhaseCubit][init] Version numbers: min=$minVersionNum, current=$currentVersionNum');
+
+          if (minVersionNum > currentVersionNum) {
+            debugPrint(
+              '[AppPhaseCubit][init] ⚠️ Force upgrade required: minimum $minimumVersion > current $version',
             );
-          });
-    } catch (e, trace) {
+            setPhase(AppPhase.forceUpgrade);
+            return;
+          } else {
+            debugPrint(
+              '[AppPhaseCubit][init] ✅ Version check passed: current $version is acceptable',
+            );
+          }
+        } catch (e) {
+          debugPrint('[AppPhaseCubit][init] ❌ Error parsing version numbers: $e');
+          debugPrint('[AppPhaseCubit][init] Skipping version check due to parsing error');
+        }
+      } else {
+        debugPrint(
+          '[AppPhaseCubit][init] ⏭️ Skipping version check - invalid version strings (minimum: $minimumVersion, current: $version)',
+        );
+      }
+
+      final bool hasOnboarded = _authService.userHasOnboarded();
+      debugPrint('[AppPhaseCubit][init] Has onboarded: $hasOnboarded');
+      debugPrint('[AppPhaseCubit][init] Setting phase to: ${hasOnboarded ? "home" : "onboarding"}');
+      setPhase(hasOnboarded ? AppPhase.home : AppPhase.onboarding);
+      debugPrint('[AppPhaseCubit][init] ✅ Initialization complete');
+    } catch (e, stackTrace) {
+      debugPrint('[AppPhaseCubit][init] ❌ FATAL ERROR during initialization: $e');
+      debugPrint('[AppPhaseCubit][init] Stack trace: $stackTrace');
       FirebaseCrashlytics.instance.recordError(
         e,
-        trace,
-        reason:
-            '[AppPhaseCubit][init] app version info and current user timeout',
+        stackTrace,
+        reason: '[AppPhaseCubit][init] Fatal error during initialization',
       );
+      // Fallback to logged out state on fatal error
+      setPhase(AppPhase.loggedOut);
     }
-
-    _appVersionInfo = appVersionInfo;
-
-    debugPrint(
-      '[AppPhaseCubit][init] minimum version: ${appVersionInfo?.minimumVersion}, current user: $currentTurboUser',
-    );
-
-    if (appVersionInfo != null &&
-        versionToNumber(appVersionInfo!.minimumVersion) > versionToNumber(version)) {
-      setPhase(AppPhase.forceUpgrade);
-
-      return;
-    }
-
-    final bool hasOnboarded = _authService.userHasOnboarded();
-    setPhase(hasOnboarded ? AppPhase.home : AppPhase.onboarding);
   }
 
   // called from AuthService

@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_toggle.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
@@ -38,6 +40,8 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
   String _selectedTestVideoPath =
       'assets/test_videos/joe_example_throw_2.mov'; // Default to joe #2
 
+  CameraAngle _selectedCameraAngle = CameraAngle.side; // Default to side view
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -48,6 +52,8 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
           _buildHeader(context),
           const SizedBox(height: 32),
           _buildThrowTypeSelector(context),
+          const SizedBox(height: 32),
+          _buildCameraAngleSelector(context),
           const SizedBox(height: 32),
           _buildVideoOptions(context),
           const SizedBox(height: 32),
@@ -142,6 +148,36 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
     );
   }
 
+  Widget _buildCameraAngleSelector(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Camera Angle',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 12),
+        CameraAngleToggle(
+          selectedAngle: _selectedCameraAngle,
+          onAngleChanged: (CameraAngle angle) {
+            setState(() {
+              _selectedCameraAngle = angle;
+            });
+          },
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _selectedCameraAngle.description,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildVideoOptions(BuildContext context) {
     final VideoFormAnalysisCubit cubit =
         BlocProvider.of<VideoFormAnalysisCubit>(context);
@@ -158,7 +194,10 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
           fontSize: 16,
           fontWeight: FontWeight.w600,
           onPressed: () {
-            cubit.recordVideo(throwType: widget.selectedThrowType);
+            cubit.recordVideo(
+              throwType: widget.selectedThrowType,
+              cameraAngle: _selectedCameraAngle,
+            );
           },
         ),
         const SizedBox(height: 16),
@@ -171,7 +210,10 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
           fontSize: 16,
           fontWeight: FontWeight.w600,
           onPressed: () {
-            cubit.importVideo(throwType: widget.selectedThrowType);
+            cubit.importVideo(
+              throwType: widget.selectedThrowType,
+              cameraAngle: _selectedCameraAngle,
+            );
           },
         ),
         // Test button - only visible in debug mode
@@ -194,6 +236,7 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
                   onPressed: () {
                     cubit.testWithAssetVideo(
                       throwType: widget.selectedThrowType,
+                      cameraAngle: _selectedCameraAngle,
                       assetPath: _selectedTestVideoPath,
                     );
                   },
