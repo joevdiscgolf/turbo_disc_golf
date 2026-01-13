@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 
@@ -14,6 +14,8 @@ class FormAnalysisDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double topViewPadding = MediaQuery.of(context).padding.top;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -30,14 +32,11 @@ class FormAnalysisDetailScreen extends StatelessWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
+        appBar: GenericAppBar(
+          topViewPadding: topViewPadding,
+          title: 'Form Analysis',
           backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: const Text('Form Analysis'),
-          leading: IconButton(
-            icon: const Icon(CupertinoIcons.back),
-            onPressed: () => Navigator.pop(context),
-          ),
+          hasBackButton: true,
         ),
         body: HistoryAnalysisView(
           analysis: analysis,

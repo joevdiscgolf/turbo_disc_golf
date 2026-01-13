@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:intl/intl.dart';
 
-import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -32,29 +31,32 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(child: _buildHeader(context)),
-        SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
-        SliverToBoxAdapter(child: _buildComparisonCard(context)),
-        if (widget.analysis.topCoachingTips?.isNotEmpty ?? false)
-          SliverToBoxAdapter(child: _buildCoachingTips(context)),
-        SliverToBoxAdapter(child: _buildBackButton(context)),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+    return Stack(
+      children: [
+        CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildHeader(context)),
+            SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
+            SliverToBoxAdapter(child: _buildComparisonCard(context)),
+            if (widget.analysis.topCoachingTips?.isNotEmpty ?? false)
+              SliverToBoxAdapter(child: _buildCoachingTips(context)),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+          ],
+        ),
+        _buildFloatingViewToggle(),
       ],
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     final DateTime createdAt = DateTime.parse(widget.analysis.createdAt);
-    final String dateStr = DateFormat.yMMMMd().format(createdAt);
-    final String timeStr = DateFormat.jm().format(createdAt);
+    final String formattedDateTime = DateFormat('EEEE, MMM d \'at\' h:mm a').format(createdAt);
     final bool isBackhand =
         widget.analysis.throwType.toLowerCase() == 'backhand';
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -66,68 +68,48 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6B4EFF).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.history,
-                  color: Color(0xFF6B4EFF),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Analysis History',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    Text(
-                      '$dateStr at $timeStr',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              _buildViewModeToggle(),
-            ],
+          _buildInfoChip(
+            label: isBackhand ? 'Backhand' : 'Forehand',
+            icon: Icons.sports_golf,
+            color: isBackhand
+                ? const Color(0xFF2196F3)
+                : const Color(0xFF9C27B0),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildInfoChip(
-                label: isBackhand ? 'Backhand' : 'Forehand',
-                icon: Icons.sports_golf,
-                color: isBackhand
-                    ? const Color(0xFF2196F3)
-                    : const Color(0xFF9C27B0),
-              ),
-              const SizedBox(width: 8),
-              if (widget.analysis.overallFormScore != null)
-                _buildInfoChip(
-                  label: 'Score: ${widget.analysis.overallFormScore}',
-                  icon: Icons.star,
-                  color: _getScoreColor(widget.analysis.overallFormScore!),
-                ),
-              const SizedBox(width: 8),
-              if (widget.analysis.worstDeviationSeverity != null)
-                _buildSeverityChip(widget.analysis.worstDeviationSeverity!),
-            ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              formattedDateTime,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                    fontSize: 13,
+                  ),
+            ),
           ),
+          if (widget.analysis.overallFormScore != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Overall Score',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[500],
+                        fontSize: 10,
+                      ),
+                ),
+                Text(
+                  '${widget.analysis.overallFormScore}',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 32,
+                        color: _getScoreColor(widget.analysis.overallFormScore!),
+                      ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -205,48 +187,92 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     );
   }
 
-  Widget _buildViewModeToggle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(10),
+  Widget _buildFloatingViewToggle() {
+    return Positioned(
+      bottom: 32,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildViewToggleButton(
+                icon: Icons.videocam_outlined,
+                label: 'Video',
+                isSelected: !_showSkeletonOnly,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _showSkeletonOnly = false);
+                },
+              ),
+              Container(
+                width: 1,
+                height: 24,
+                color: Colors.grey[300],
+              ),
+              _buildViewToggleButton(
+                icon: Icons.accessibility_new,
+                label: 'Skeleton',
+                isSelected: _showSkeletonOnly,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _showSkeletonOnly = true);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () => setState(() => _showSkeletonOnly = false),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: !_showSkeletonOnly
-                    ? const Color(0xFF6B4EFF).withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Text('📹', style: TextStyle(fontSize: 18)),
+    );
+  }
+
+  Widget _buildViewToggleButton({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF6B4EFF).withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? const Color(0xFF6B4EFF) : Colors.grey[600],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? const Color(0xFF6B4EFF) : Colors.grey[600],
               ),
             ),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _showSkeletonOnly = true),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _showSkeletonOnly
-                    ? const Color(0xFF6B4EFF).withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Text('💀', style: TextStyle(fontSize: 18)),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -255,64 +281,69 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final int checkpointCount = widget.analysis.checkpoints.length;
     if (checkpointCount == 0) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _buildPositionChip(context, 0),
-              const SizedBox(width: 8),
-              if (checkpointCount > 1)
-                _buildPositionChip(context, 1)
-              else
-                const Expanded(child: SizedBox.shrink()),
-            ],
-          ),
-          if (checkpointCount > 2) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildPositionChip(context, 2),
-                const SizedBox(width: 8),
-                if (checkpointCount > 3)
-                  _buildPositionChip(context, 3)
-                else
-                  const Expanded(child: SizedBox.shrink()),
-              ],
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: List.generate(checkpointCount, (index) {
+          return Expanded(
+            child: _buildTabSegment(
+              _formatChipLabel(widget.analysis.checkpoints[index].checkpointName),
+              index == _selectedCheckpointIndex,
+              () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedCheckpointIndex = index);
+              },
+              isFirst: index == 0,
+              isLast: index == checkpointCount - 1,
             ),
-          ],
-        ],
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildPositionChip(BuildContext context, int index) {
-    if (index >= widget.analysis.checkpoints.length) {
-      return const Expanded(child: SizedBox.shrink());
-    }
-
-    final CheckpointRecord checkpoint = widget.analysis.checkpoints[index];
-    final bool isSelected = index == _selectedCheckpointIndex;
-    final String displayName = _formatChipLabel(checkpoint.checkpointName);
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedCheckpointIndex = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF6B4EFF) : Colors.grey[100],
-            borderRadius: BorderRadius.circular(10),
+  Widget _buildTabSegment(
+    String name,
+    bool isSelected,
+    VoidCallback onTap, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF8B5CF6),
+                    Color(0xFF6B4EFF),
+                  ],
+                )
+              : null,
+          borderRadius: BorderRadius.only(
+            topLeft: isFirst ? const Radius.circular(11) : Radius.zero,
+            bottomLeft: isFirst ? const Radius.circular(11) : Radius.zero,
+            topRight: isLast ? const Radius.circular(11) : Radius.zero,
+            bottomRight: isLast ? const Radius.circular(11) : Radius.zero,
           ),
+        ),
+        child: Center(
           child: Text(
-            '$displayName (${index + 1})',
-            textAlign: TextAlign.center,
+            name,
             style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               color: isSelected ? Colors.white : Colors.grey[700],
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 14,
             ),
+            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -755,25 +786,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBackButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: PrimaryButton(
-        width: double.infinity,
-        height: 56,
-        label: 'Back to Form Coach',
-        icon: Icons.arrow_back,
-        gradientBackground: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          widget.onBack();
-        },
       ),
     );
   }

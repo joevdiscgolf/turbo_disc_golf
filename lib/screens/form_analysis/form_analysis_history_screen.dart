@@ -91,6 +91,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
           delegate: SliverChildBuilderDelegate((context, index) {
             final analysis = state.analyses[index];
             return FormAnalysisCard(
+              key: ValueKey(analysis.id),
               analysis: analysis,
               onTap: () {
                 HapticFeedback.lightImpact();

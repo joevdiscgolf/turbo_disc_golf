@@ -125,7 +125,7 @@ class FormAnalysisCard extends StatelessWidget {
     }
 
     try {
-      final DateTime dateTime = DateTime.parse(isoString);
+      final DateTime dateTime = DateTime.parse(isoString).toLocal();
       final DateFormat formatter = DateFormat('MMM d, yyyy • h:mm a');
       return formatter.format(dateTime);
     } catch (e) {
@@ -142,6 +142,7 @@ class FormAnalysisCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         width: 70,
+        height: 70,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey[300]!, width: 1),
           borderRadius: BorderRadius.circular(8),
@@ -149,6 +150,7 @@ class FormAnalysisCard extends StatelessWidget {
         child: Image.memory(
           base64Decode(analysis.thumbnailBase64!),
           fit: BoxFit.cover,
+          gaplessPlayback: true,
           errorBuilder: (context, error, stackTrace) {
             return _buildPlaceholderThumbnail();
           },
@@ -160,6 +162,7 @@ class FormAnalysisCard extends StatelessWidget {
   Widget _buildPlaceholderThumbnail() {
     return Container(
       width: 70,
+      height: 70,
       decoration: BoxDecoration(
         color: Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
