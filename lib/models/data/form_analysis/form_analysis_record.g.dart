@@ -51,6 +51,9 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
       userSkeletonUrl: json['user_skeleton_url'] as String?,
       referenceImageUrl: json['reference_image_url'] as String?,
       referenceSkeletonUrl: json['reference_skeleton_url'] as String?,
+      proPlayerId: json['pro_player_id'] as String?,
+      referenceHorizontalOffsetPercent:
+          (json['reference_horizontal_offset_percent'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$CheckpointRecordToJson(CheckpointRecord instance) =>
@@ -64,4 +67,7 @@ Map<String, dynamic> _$CheckpointRecordToJson(CheckpointRecord instance) =>
       'user_skeleton_url': instance.userSkeletonUrl,
       'reference_image_url': instance.referenceImageUrl,
       'reference_skeleton_url': instance.referenceSkeletonUrl,
+      'pro_player_id': instance.proPlayerId,
+      'reference_horizontal_offset_percent':
+          instance.referenceHorizontalOffsetPercent,
     };

@@ -77,6 +77,7 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
       json['comparison_with_silhouette_base64'] as String?,
   referenceHorizontalOffsetPercent:
       (json['reference_horizontal_offset_percent'] as num?)?.toDouble(),
+  proPlayerId: json['pro_player_id'] as String?,
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
@@ -109,6 +110,7 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'comparison_with_silhouette_base64': instance.comparisonWithSilhouetteBase64,
   'reference_horizontal_offset_percent':
       instance.referenceHorizontalOffsetPercent,
+  'pro_player_id': instance.proPlayerId,
   'coaching_tips': instance.coachingTips,
 };
 

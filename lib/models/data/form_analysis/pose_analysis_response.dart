@@ -79,6 +79,7 @@ class CheckpointPoseData {
     this.referenceSilhouetteWithSkeletonBase64,
     this.comparisonWithSilhouetteBase64,
     this.referenceHorizontalOffsetPercent,
+    this.proPlayerId,
     required this.coachingTips,
   });
 
@@ -142,6 +143,11 @@ class CheckpointPoseData {
 
   @JsonKey(name: 'reference_horizontal_offset_percent')
   final double? referenceHorizontalOffsetPercent;
+
+  /// Pro player ID for reference images (e.g., "paul_mcbeth")
+  /// Used to load reference from bundled assets, cache, or cloud storage
+  @JsonKey(name: 'pro_player_id')
+  final String? proPlayerId;
 
   @JsonKey(name: 'coaching_tips')
   final List<String> coachingTips;

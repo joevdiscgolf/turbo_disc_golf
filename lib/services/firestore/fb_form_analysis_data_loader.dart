@@ -45,48 +45,63 @@ abstract class FBFormAnalysisDataLoader {
         debugPrint('');
         debugPrint('[FBFormAnalysisDataLoader] Processing checkpoint ${i + 1}/${poseAnalysis.checkpoints.length}: ${checkpoint.checkpointId}');
 
-        // Upload images to Cloud Storage
-        final String? userImageUrl = await _uploadCheckpointImage(
-          uid: uid,
-          analysisId: analysisId,
-          checkpointId: checkpoint.checkpointId,
-          imageName: 'user',
-          base64Data: checkpoint.userImageBase64,
-        );
+        // Upload images to Cloud Storage in parallel for better performance
+        // Pro reference images are loaded via ProReferenceLoader (bundled assets/cache/cloud)
+        // They are NOT uploaded per-analysis to save bandwidth and storage
+        // Legacy analyses may still have uploaded reference images
+        final List<String?> uploadResults = await Future.wait([
+          _uploadCheckpointImage(
+            uid: uid,
+            analysisId: analysisId,
+            checkpointId: checkpoint.checkpointId,
+            imageName: 'user',
+            base64Data: checkpoint.userImageBase64,
+          ),
+          _uploadCheckpointImage(
+            uid: uid,
+            analysisId: analysisId,
+            checkpointId: checkpoint.checkpointId,
+            imageName: 'user_skeleton',
+            base64Data: checkpoint.userSkeletonOnlyBase64,
+          ),
+          _uploadCheckpointImage(
+            uid: uid,
+            analysisId: analysisId,
+            checkpointId: checkpoint.checkpointId,
+            imageName: 'reference',
+            base64Data: checkpoint.referenceSilhouetteWithSkeletonBase64 ??
+                checkpoint.referenceImageBase64,
+          ),
+          _uploadCheckpointImage(
+            uid: uid,
+            analysisId: analysisId,
+            checkpointId: checkpoint.checkpointId,
+            imageName: 'reference_skeleton',
+            base64Data: checkpoint.referenceSkeletonOnlyBase64,
+          ),
+        ]);
 
-        final String? userSkeletonUrl = await _uploadCheckpointImage(
-          uid: uid,
-          analysisId: analysisId,
-          checkpointId: checkpoint.checkpointId,
-          imageName: 'user_skeleton',
-          base64Data: checkpoint.userSkeletonOnlyBase64,
-        );
+        final String? userImageUrl = uploadResults[0];
+        final String? userSkeletonUrl = uploadResults[1];
+        final String? referenceImageUrl = uploadResults[2];
+        final String? referenceSkeletonUrl = uploadResults[3];
 
-        final String? referenceImageUrl = await _uploadCheckpointImage(
-          uid: uid,
-          analysisId: analysisId,
-          checkpointId: checkpoint.checkpointId,
-          imageName: 'reference',
-          base64Data: checkpoint.referenceSilhouetteWithSkeletonBase64 ??
-              checkpoint.referenceImageBase64,
-        );
-
-        final String? referenceSkeletonUrl = await _uploadCheckpointImage(
-          uid: uid,
-          analysisId: analysisId,
-          checkpointId: checkpoint.checkpointId,
-          imageName: 'reference_skeleton',
-          base64Data: checkpoint.referenceSkeletonOnlyBase64,
-        );
-
-        // Validate that critical images uploaded successfully
-        // Require at least userSkeletonUrl and referenceImageUrl
-        if (userSkeletonUrl == null || referenceImageUrl == null) {
+        // Validate that critical user skeleton image uploaded successfully
+        // Note: Pro reference images are NOT uploaded - they are loaded via ProReferenceLoader
+        if (userSkeletonUrl == null) {
           debugPrint('[FBFormAnalysisDataLoader] ❌ Critical image upload failed for checkpoint ${checkpoint.checkpointId}');
-          debugPrint('[FBFormAnalysisDataLoader] userSkeletonUrl: ${userSkeletonUrl != null ? "✅" : "❌"}');
-          debugPrint('[FBFormAnalysisDataLoader] referenceImageUrl: ${referenceImageUrl != null ? "✅" : "❌"}');
+          debugPrint('[FBFormAnalysisDataLoader] userSkeletonUrl is null - this is required');
           debugPrint('[FBFormAnalysisDataLoader] ⚠️  Aborting save - will not save to Firestore with missing images');
           return null;
+        }
+
+        // Log the reference loading strategy being used
+        if (checkpoint.proPlayerId != null) {
+          debugPrint('[FBFormAnalysisDataLoader] ✅ Using ProReferenceLoader with proPlayerId: ${checkpoint.proPlayerId}');
+        } else if (referenceImageUrl != null) {
+          debugPrint('[FBFormAnalysisDataLoader] ✅ Using legacy referenceImageUrl (uploaded to Cloud Storage)');
+        } else {
+          debugPrint('[FBFormAnalysisDataLoader] ⚠️  No reference image strategy - checkpoint will have no pro comparison');
         }
 
         // Build angle deviations map
@@ -104,6 +119,10 @@ abstract class FBFormAnalysisDataLoader {
           userSkeletonUrl: userSkeletonUrl,
           referenceImageUrl: referenceImageUrl,
           referenceSkeletonUrl: referenceSkeletonUrl,
+          // New hybrid asset loading fields
+          proPlayerId: checkpoint.proPlayerId ?? 'paul_mcbeth', // Default to Paul McBeth
+          referenceHorizontalOffsetPercent:
+              checkpoint.referenceHorizontalOffsetPercent,
         ));
 
         debugPrint('[FBFormAnalysisDataLoader] ✅ Checkpoint ${checkpoint.checkpointId} images uploaded successfully');

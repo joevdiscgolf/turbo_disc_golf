@@ -72,6 +72,8 @@ class CheckpointRecord {
     this.userSkeletonUrl,
     this.referenceImageUrl,
     this.referenceSkeletonUrl,
+    this.proPlayerId,
+    this.referenceHorizontalOffsetPercent,
   });
 
   /// Checkpoint identifier: "heisman", "loaded", "magic", "pro"
@@ -111,6 +113,16 @@ class CheckpointRecord {
   /// Cloud Storage URL for pro reference skeleton-only image
   @JsonKey(name: 'reference_skeleton_url')
   final String? referenceSkeletonUrl;
+
+  /// Pro player ID for reference images (e.g., "paul_mcbeth")
+  /// Used with hybrid asset loading: bundled assets, cache, or cloud storage
+  @JsonKey(name: 'pro_player_id')
+  final String? proPlayerId;
+
+  /// Horizontal offset percentage for aligning pro reference with user pose
+  /// Positive values shift right, negative values shift left
+  @JsonKey(name: 'reference_horizontal_offset_percent')
+  final double? referenceHorizontalOffsetPercent;
 
   factory CheckpointRecord.fromJson(Map<String, dynamic> json) =>
       _$CheckpointRecordFromJson(json);

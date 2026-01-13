@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// View for displaying a historical form analysis from Firestore.
@@ -27,6 +28,7 @@ class HistoryAnalysisView extends StatefulWidget {
 class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
   int _selectedCheckpointIndex = 0;
   bool _showSkeletonOnly = false;
+  final ProReferenceLoader _proRefLoader = ProReferenceLoader();
 
   @override
   Widget build(BuildContext context) {
@@ -414,9 +416,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final String? userImageUrl = _showSkeletonOnly
         ? checkpoint.userSkeletonUrl
         : checkpoint.userImageUrl;
-    final String? refImageUrl = _showSkeletonOnly
-        ? checkpoint.referenceSkeletonUrl
-        : checkpoint.referenceImageUrl;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,13 +427,164 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           onTap: () => _showFullscreenComparison(checkpoint),
         ),
         const SizedBox(height: 12),
-        _buildLabeledImage(
-          label: 'Pro Reference',
-          imageUrl: refImageUrl,
-          showArrow: false,
+        _buildProReferenceImage(
+          checkpoint: checkpoint,
           onTap: () => _showFullscreenComparison(checkpoint),
         ),
       ],
+    );
+  }
+
+  Widget _buildProReferenceImage({
+    required CheckpointRecord checkpoint,
+    VoidCallback? onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            'Pro Reference',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: TurbColors.darkGray,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.black,
+              child: _buildProReferenceImageContent(checkpoint),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProReferenceImageContent(CheckpointRecord checkpoint) {
+    // New records with proPlayerId: Use hybrid asset loading
+    if (checkpoint.proPlayerId != null) {
+      return FutureBuilder<ImageProvider>(
+        future: _proRefLoader.loadReferenceImage(
+          proPlayerId: checkpoint.proPlayerId!,
+          throwType: widget.analysis.throwType,
+          checkpoint: checkpoint.checkpointId,
+          isSkeleton: _showSkeletonOnly,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            debugPrint('Failed to load pro reference: ${snapshot.error}');
+            return const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 48,
+                color: Colors.grey,
+              ),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return Container(
+              color: Colors.grey[900],
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.grey[800]!,
+                      Colors.grey[700]!,
+                      Colors.grey[800]!,
+                    ],
+                  ),
+                ),
+              ),
+            )
+                .animate(
+                  onPlay: (controller) => controller.repeat(),
+                )
+                .shimmer(
+                  duration: 1500.ms,
+                  color: Colors.white.withValues(alpha: 0.3),
+                );
+          }
+
+          // Apply alignment transformation
+          return Transform.translate(
+            offset: Offset(
+              MediaQuery.of(context).size.width *
+                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100,
+              0,
+            ),
+            child: Image(
+              image: snapshot.data!,
+              fit: BoxFit.contain,
+            ),
+          );
+        },
+      );
+    }
+
+    // Legacy records with referenceImageUrl: Use CachedNetworkImage
+    final String? refImageUrl = _showSkeletonOnly
+        ? checkpoint.referenceSkeletonUrl
+        : checkpoint.referenceImageUrl;
+
+    if (refImageUrl != null && refImageUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        key: ValueKey(refImageUrl),
+        imageUrl: refImageUrl,
+        fit: BoxFit.contain,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        placeholder: (context, url) => Container(
+          color: Colors.grey[900],
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Colors.grey[800]!,
+                  Colors.grey[700]!,
+                  Colors.grey[800]!,
+                ],
+              ),
+            ),
+          ),
+        )
+            .animate(
+              onPlay: (controller) => controller.repeat(),
+            )
+            .shimmer(
+              duration: 1500.ms,
+              color: Colors.white.withValues(alpha: 0.3),
+            ),
+        errorWidget: (context, url, error) => const Center(
+          child: Icon(
+            Icons.broken_image,
+            size: 48,
+            color: Colors.grey,
+          ),
+        ),
+      );
+    }
+
+    // Fallback: No image available
+    return const Center(
+      child: Icon(
+        Icons.image_not_supported,
+        size: 48,
+        color: Colors.grey,
+      ),
     );
   }
 
@@ -445,6 +595,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       useSafeArea: false,
       builder: (dialogContext) => _FullscreenComparisonDialog(
         checkpoints: widget.analysis.checkpoints,
+        throwType: widget.analysis.throwType,
+        proRefLoader: _proRefLoader,
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
         onToggleMode: (bool newMode) {
@@ -638,6 +790,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 class _FullscreenComparisonDialog extends StatefulWidget {
   const _FullscreenComparisonDialog({
     required this.checkpoints,
+    required this.throwType,
+    required this.proRefLoader,
     required this.initialIndex,
     required this.showSkeletonOnly,
     required this.onToggleMode,
@@ -645,6 +799,8 @@ class _FullscreenComparisonDialog extends StatefulWidget {
   });
 
   final List<CheckpointRecord> checkpoints;
+  final String throwType;
+  final ProReferenceLoader proRefLoader;
   final int initialIndex;
   final bool showSkeletonOnly;
   final ValueChanged<bool> onToggleMode;
@@ -864,16 +1020,158 @@ class _FullscreenComparisonDialogState
     final String? userImageUrl = _showSkeletonOnly
         ? checkpoint.userSkeletonUrl
         : checkpoint.userImageUrl;
-    final String? refImageUrl = _showSkeletonOnly
-        ? checkpoint.referenceSkeletonUrl
-        : checkpoint.referenceImageUrl;
 
     return Column(
       children: [
         Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
         Container(height: 2, color: Colors.grey[800]),
-        Expanded(child: _buildFullscreenPanel('Pro Reference', refImageUrl)),
+        Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
       ],
+    );
+  }
+
+  Widget _buildFullscreenProReferencePanel(CheckpointRecord checkpoint) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Pro Reference',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[400],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Expanded(
+          child: InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: _buildFullscreenProReferenceContent(checkpoint),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFullscreenProReferenceContent(CheckpointRecord checkpoint) {
+    // New records with proPlayerId: Use hybrid asset loading
+    if (checkpoint.proPlayerId != null) {
+      return FutureBuilder<ImageProvider>(
+        future: widget.proRefLoader.loadReferenceImage(
+          proPlayerId: checkpoint.proPlayerId!,
+          throwType: widget.throwType,
+          checkpoint: checkpoint.checkpointId,
+          isSkeleton: _showSkeletonOnly,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            debugPrint('Failed to load pro reference: ${snapshot.error}');
+            return const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 48,
+                color: Colors.grey,
+              ),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return Container(
+              color: Colors.grey[900],
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.grey[800]!,
+                      Colors.grey[700]!,
+                      Colors.grey[800]!,
+                    ],
+                  ),
+                ),
+              ),
+            )
+                .animate(
+                  onPlay: (controller) => controller.repeat(),
+                )
+                .shimmer(
+                  duration: 1500.ms,
+                  color: Colors.white.withValues(alpha: 0.3),
+                );
+          }
+
+          // Apply alignment transformation
+          return Transform.translate(
+            offset: Offset(
+              MediaQuery.of(context).size.width *
+                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100,
+              0,
+            ),
+            child: Image(
+              image: snapshot.data!,
+              fit: BoxFit.contain,
+            ),
+          );
+        },
+      );
+    }
+
+    // Legacy records with referenceImageUrl: Use CachedNetworkImage
+    final String? refImageUrl = _showSkeletonOnly
+        ? checkpoint.referenceSkeletonUrl
+        : checkpoint.referenceImageUrl;
+
+    if (refImageUrl != null && refImageUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        key: ValueKey(refImageUrl),
+        imageUrl: refImageUrl,
+        fit: BoxFit.contain,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        placeholder: (context, url) => Container(
+          color: Colors.grey[900],
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Colors.grey[800]!,
+                  Colors.grey[700]!,
+                  Colors.grey[800]!,
+                ],
+              ),
+            ),
+          ),
+        )
+            .animate(
+              onPlay: (controller) => controller.repeat(),
+            )
+            .shimmer(
+              duration: 1500.ms,
+              color: Colors.white.withValues(alpha: 0.3),
+            ),
+        errorWidget: (context, url, error) => const Center(
+          child: Icon(
+            Icons.broken_image,
+            size: 48,
+            color: Colors.grey,
+          ),
+        ),
+      );
+    }
+
+    // Fallback: No image available
+    return const Center(
+      child: Icon(
+        Icons.image_not_supported,
+        size: 48,
+        color: Colors.grey,
+      ),
     );
   }
 

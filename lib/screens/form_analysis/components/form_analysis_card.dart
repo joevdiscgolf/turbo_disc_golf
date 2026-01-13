@@ -46,7 +46,7 @@ class FormAnalysisCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeader(context, formattedDateTime),
-                      const SizedBox(height: 8),
+                      const Spacer(),
                       _buildBottomRow(context, throwTypeDisplay),
                     ],
                   ),
@@ -62,10 +62,7 @@ class FormAnalysisCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(
-    BuildContext context,
-    String? formattedDateTime,
-  ) {
+  Widget _buildHeader(BuildContext context, String? formattedDateTime) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
