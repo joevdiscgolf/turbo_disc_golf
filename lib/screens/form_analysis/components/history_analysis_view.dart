@@ -194,42 +194,78 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       right: 0,
       child: Center(
         child: Container(
+          width: 112,
+          height: 52,
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFD8B4FE),
+                Color(0xFFC084FC),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 12,
+                color: const Color(0xFF9333EA).withValues(alpha: 0.25),
+                blurRadius: 16,
+                spreadRadius: 1,
                 offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
             children: [
-              _buildViewToggleButton(
-                icon: Icons.videocam_outlined,
-                label: 'Video',
-                isSelected: !_showSkeletonOnly,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _showSkeletonOnly = false);
-                },
+              // Animated slider background
+              AnimatedAlign(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                alignment: _showSkeletonOnly ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 52,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF9333EA),
+                        Color(0xFF7C3AED),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                ),
               ),
-              Container(
-                width: 1,
-                height: 24,
-                color: Colors.grey[300],
-              ),
-              _buildViewToggleButton(
-                icon: Icons.accessibility_new,
-                label: 'Skeleton',
-                isSelected: _showSkeletonOnly,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _showSkeletonOnly = true);
-                },
+              // Buttons
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildViewToggleButton(
+                    icon: Icons.videocam_outlined,
+                    isSelected: !_showSkeletonOnly,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _showSkeletonOnly = false);
+                    },
+                  ),
+                  _buildViewToggleButton(
+                    icon: Icons.accessibility_new,
+                    isSelected: _showSkeletonOnly,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _showSkeletonOnly = true);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -240,38 +276,20 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
   Widget _buildViewToggleButton({
     required IconData icon,
-    required String label,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF6B4EFF).withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? const Color(0xFF6B4EFF) : Colors.grey[600],
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? const Color(0xFF6B4EFF) : Colors.grey[600],
-              ),
-            ),
-          ],
+      child: SizedBox(
+        width: 52,
+        height: 44,
+        child: Center(
+          child: Icon(
+            icon,
+            size: 22,
+            color: isSelected ? Colors.white : const Color(0xFF6B21B6),
+          ),
         ),
       ),
     );
@@ -328,6 +346,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                   ],
                 )
               : null,
+          color: isSelected ? null : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: isFirst ? const Radius.circular(11) : Radius.zero,
             bottomLeft: isFirst ? const Radius.circular(11) : Radius.zero,
@@ -368,10 +387,17 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     return GestureDetector(
       onTap: () => _showFullscreenComparison(checkpoint),
       child: Container(
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(top: 4),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.white,
+            ],
+            stops: [0.0, 0.15],
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -383,10 +409,12 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 24),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildImageComparison(checkpoint),
           ),
+          const SizedBox(height: 16),
           Divider(height: 1, color: Colors.grey[200]),
           Padding(
             padding: const EdgeInsets.all(16),
