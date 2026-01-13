@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/screens/auth/landing_screen.dart';
+import 'package:turbo_disc_golf/screens/force_upgrade/force_upgrade_screen.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
 import 'package:turbo_disc_golf/screens/onboarding/onboarding_screen.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
@@ -246,19 +247,10 @@ GoRouter createRouter(AppPhaseController controller) {
         path: '/force_upgrade',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
-          child: const Scaffold(body: Center(child: Text('Force upgrade'))),
+          child: const ForceUpgradeScreen(),
           transitionDuration: const Duration(milliseconds: 300),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: const Offset(1.0, 0.0), // Slide from right
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-                  ),
-              child: child,
-            );
+            return FadeTransition(opacity: animation, child: child);
           },
         ),
       ),
