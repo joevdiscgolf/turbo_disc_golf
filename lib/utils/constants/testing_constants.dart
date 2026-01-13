@@ -153,3 +153,8 @@ const bool showFormAnalysisScoreAndSummary = false;
 /// When false, skips saving to prevent cluttering the database during testing.
 /// Analysis results will still be shown in the UI, just not persisted.
 const bool saveFormAnalysisToFirestore = true;
+
+/// When true, always shows the Force Upgrade screen regardless of version check.
+/// This is useful for testing the upgrade UI without modifying Firestore.
+/// Set to false in production.
+const bool alwaysShowForceUpgradeScreen = true;

@@ -7,14 +7,17 @@ import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_app_info_data_loader.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_user_data_loader.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 class AppPhaseController extends ChangeNotifier {
   final AuthService _authService;
   AppPhase _phase = AppPhase.initial;
+  AppVersionInfo? _appVersionInfo;
 
   AppPhase get phase => _phase;
+  AppVersionInfo? get appVersionInfo => _appVersionInfo;
 
   AppPhaseController({required AuthService authService})
     : _authService = authService {
@@ -28,10 +31,15 @@ class AppPhaseController extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    // Testing override: always show force upgrade screen if enabled
+    if (alwaysShowForceUpgradeScreen) {
+      debugPrint('[AppPhaseCubit][init] Testing mode - forcing upgrade screen');
+      setPhase(AppPhase.forceUpgrade);
+      return;
+    }
+
     final PackageInfo packageInfo = await PackageInfo.fromPlatform();
     final String version = packageInfo.version;
-
-    String? minimumVersion;
 
     final AuthUser? currentAuthUser = _authService.currentUser;
     if (currentAuthUser == null) {
@@ -40,24 +48,25 @@ class AppPhaseController extends ChangeNotifier {
     }
 
     TurboUser? currentTurboUser;
+    AppVersionInfo? appVersionInfo;
 
     debugPrint(
-      '[AppPhaseCubit][init] loading minimum version and current user...',
+      '[AppPhaseCubit][init] loading app version info and current user...',
     );
     try {
       await Future.wait([
-            FBAppInfoDataLoader.getMinimumAppVersion(),
+            FBAppInfoDataLoader.getAppVersionInfo(),
             FBUserDataLoader.getCurrentUser(currentAuthUser.uid),
           ])
           .then((results) {
-            minimumVersion = results[0] as String?;
+            appVersionInfo = results[0] as AppVersionInfo?;
             currentTurboUser = results[1] as TurboUser?;
           })
           .timeout(
             tinyTimeout,
             onTimeout: () {
               debugPrint(
-                '[AppPhaseCubit][init] load version and user on timeout',
+                '[AppPhaseCubit][init] load version info and user on timeout',
               );
             },
           )
@@ -66,7 +75,7 @@ class AppPhaseController extends ChangeNotifier {
               e,
               trace,
               reason:
-                  '[AppPhaseCubit][init] minimum version and current user timeout',
+                  '[AppPhaseCubit][init] app version info and current user timeout',
             );
           });
     } catch (e, trace) {
@@ -74,16 +83,18 @@ class AppPhaseController extends ChangeNotifier {
         e,
         trace,
         reason:
-            '[AppPhaseCubit][init] minimum version and current user timeout',
+            '[AppPhaseCubit][init] app version info and current user timeout',
       );
     }
 
+    _appVersionInfo = appVersionInfo;
+
     debugPrint(
-      '[AppPhaseCubit][init] minimum version: $minimumVersion, current user: $currentTurboUser',
+      '[AppPhaseCubit][init] minimum version: ${appVersionInfo?.minimumVersion}, current user: $currentTurboUser',
     );
 
-    if (minimumVersion != null &&
-        versionToNumber(minimumVersion!) > versionToNumber(version)) {
+    if (appVersionInfo != null &&
+        versionToNumber(appVersionInfo!.minimumVersion) > versionToNumber(version)) {
       setPhase(AppPhase.forceUpgrade);
 
       return;
@@ -99,6 +110,12 @@ class AppPhaseController extends ChangeNotifier {
   }
 
   void _handleAuthStateChange(AuthUser? user) async {
+    // Testing override: always show force upgrade screen if enabled
+    if (alwaysShowForceUpgradeScreen) {
+      setPhase(AppPhase.forceUpgrade);
+      return;
+    }
+
     if (user == null) {
       setPhase(AppPhase.loggedOut);
     } else {
