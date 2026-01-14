@@ -23,6 +23,8 @@ class FormAnalysisHistoryLoaded extends FormAnalysisHistoryState {
   const FormAnalysisHistoryLoaded({
     required this.analyses,
     this.selectedAnalysis,
+    this.hasMore = false,
+    this.isLoadingMore = false,
   });
 
   /// List of recent form analyses (newest first).
@@ -30,6 +32,12 @@ class FormAnalysisHistoryLoaded extends FormAnalysisHistoryState {
 
   /// Currently selected analysis for viewing (if any).
   final FormAnalysisRecord? selectedAnalysis;
+
+  /// Whether there are more analyses to load.
+  final bool hasMore;
+
+  /// Whether currently loading more analyses (pagination).
+  final bool isLoadingMore;
 }
 
 /// Error loading history.

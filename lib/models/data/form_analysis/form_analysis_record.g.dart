@@ -21,6 +21,7 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
           ?.map((e) => e as String)
           .toList(),
       thumbnailBase64: json['thumbnail_base64'] as String?,
+      cameraAngle: json['camera_angle'] as String?,
     );
 
 Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
@@ -34,6 +35,7 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
       'checkpoints': instance.checkpoints.map((e) => e.toJson()).toList(),
       'top_coaching_tips': instance.topCoachingTips,
       'thumbnail_base64': instance.thumbnailBase64,
+      'camera_angle': instance.cameraAngle,
     };
 
 CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>

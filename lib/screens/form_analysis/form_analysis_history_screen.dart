@@ -26,6 +26,7 @@ class FormAnalysisHistoryScreen extends StatefulWidget {
 
 class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   late FormAnalysisHistoryCubit _historyCubit;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -33,6 +34,24 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
     _historyCubit = BlocProvider.of<FormAnalysisHistoryCubit>(context);
     // Load analyses on initial screen load
     _historyCubit.loadHistory();
+
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Check if scrolled near bottom (within 200 pixels)
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _historyCubit.loadMore();
+    }
   }
 
   Future<void> _showRecordingScreen() async {
@@ -52,6 +71,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
         BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
           builder: (context, state) {
             return CustomScrollView(
+              controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 CupertinoSliverRefreshControl(
@@ -85,26 +105,53 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
           ),
         );
       }
-      return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final analysis = state.analyses[index];
-            return FormAnalysisCard(
-              key: ValueKey(analysis.id),
-              analysis: analysis,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder: (context) =>
-                        FormAnalysisDetailScreen(analysis: analysis),
-                  ),
-                );
-              },
-            );
-          }, childCount: state.analyses.length),
+      return SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            // Show list items
+            if (index < state.analyses.length) {
+              final analysis = state.analyses[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: index == 0 ? 12 : 0,
+                ),
+                child: FormAnalysisCard(
+                  key: ValueKey(analysis.id),
+                  analysis: analysis,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (context) => BlocProvider.value(
+                          value: _historyCubit,
+                          child: FormAnalysisDetailScreen(analysis: analysis),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
+            // Show loading indicator at bottom when loading more
+            else if (state.isLoadingMore) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            // Show end-of-list padding
+            else {
+              return const SizedBox(height: 112);
+            }
+          },
+          childCount: state.analyses.length +
+              (state.isLoadingMore ? 1 : 0) +
+              1, // +1 for bottom padding
         ),
       );
     } else {

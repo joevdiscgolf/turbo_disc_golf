@@ -16,6 +16,7 @@ class FormAnalysisRecord {
     this.worstDeviationSeverity,
     this.topCoachingTips,
     this.thumbnailBase64,
+    this.cameraAngle,
   });
 
   /// Unique identifier for this analysis
@@ -52,6 +53,10 @@ class FormAnalysisRecord {
   /// Generated from first checkpoint's skeleton image
   @JsonKey(name: 'thumbnail_base64')
   final String? thumbnailBase64;
+
+  /// Camera angle used for recording: "side" or "rear"
+  @JsonKey(name: 'camera_angle')
+  final String? cameraAngle;
 
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);

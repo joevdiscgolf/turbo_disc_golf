@@ -246,6 +246,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         uid: uid,
         sessionId: session.id,
         throwType: throwType,
+        cameraAngle: cameraAngle,
         poseAnalysis: poseResult,
       );
     } else {
@@ -271,6 +272,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required String uid,
     required String sessionId,
     required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
     required PoseAnalysisResponse poseAnalysis,
   }) {
     // Fire-and-forget - don't await, just log result and update history
@@ -278,6 +280,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       uid: uid,
       analysisId: sessionId,
       throwType: _mapThrowTypeToString(throwType),
+      cameraAngle: cameraAngle.apiValue,
       poseAnalysis: poseAnalysis,
     ).then((savedRecord) {
       if (savedRecord != null) {

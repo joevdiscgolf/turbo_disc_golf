@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
@@ -15,6 +17,7 @@ abstract class FBFormAnalysisDataLoader {
     required String uid,
     required String analysisId,
     required String throwType,
+    required String cameraAngle,
     required PoseAnalysisResponse poseAnalysis,
   }) async {
     // Check if saving is enabled
@@ -173,6 +176,7 @@ abstract class FBFormAnalysisDataLoader {
         checkpoints: checkpointRecords,
         topCoachingTips: topTips.isEmpty ? null : topTips,
         thumbnailBase64: thumbnailBase64,
+        cameraAngle: cameraAngle,
       );
 
       // Save to Firestore using utility
@@ -203,37 +207,63 @@ abstract class FBFormAnalysisDataLoader {
     }
   }
 
-  /// Load recent form analyses for a user.
-  static Future<List<FormAnalysisRecord>> loadRecentAnalyses(
+  /// Load recent form analyses for a user with pagination support.
+  /// Returns a tuple of (analyses, hasMore) where hasMore indicates if there are more documents.
+  static Future<(List<FormAnalysisRecord>, bool)> loadRecentAnalyses(
     String uid, {
-    int limit = 5,
+    int limit = 15,
+    String? startAfterTimestamp,
   }) async {
     try {
       // Path: FormAnalyses/{uid}/FormAnalyses
       final String path = '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection';
-      final QuerySnapshot<Map<String, dynamic>>? snapshot =
-          await firestoreQuery(
-        path: path,
-        orderBy: 'created_at',
-        timeoutDuration: shortTimeout,
-      );
 
-      if (snapshot == null) {
-        debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Query returned null');
-        return [];
+      // Build the query
+      Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+          .collection(path)
+          .orderBy('created_at', descending: true)
+          .limit(limit + 1); // Request one extra to check if there are more
+
+      // If we have a cursor, start after it
+      if (startAfterTimestamp != null && startAfterTimestamp.isNotEmpty) {
+        query = query.startAfter([startAfterTimestamp]);
       }
 
-      // Sort descending and limit
-      final List<FormAnalysisRecord> records = snapshot.docs
-          .map((doc) => FormAnalysisRecord.fromJson(doc.data()))
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await query
+          .get()
+          .timeout(
+            shortTimeout,
+            onTimeout: () => throw TimeoutException(
+              'Query timed out for path: $path',
+            ),
+          );
 
-      return records.take(limit).toList();
+      if (snapshot.docs.isEmpty) {
+        debugPrint(
+            '[FBFormAnalysisDataLoader][loadRecentAnalyses] No documents found');
+        return (<FormAnalysisRecord>[], false);
+      }
+
+      // Parse documents
+      final List<FormAnalysisRecord> allRecords = snapshot.docs
+          .map((doc) => FormAnalysisRecord.fromJson(doc.data()))
+          .toList();
+
+      // Check if there are more documents
+      final bool hasMore = allRecords.length > limit;
+
+      // Return only the requested limit
+      final List<FormAnalysisRecord> records =
+          hasMore ? allRecords.take(limit).toList() : allRecords;
+
+      debugPrint(
+          '[FBFormAnalysisDataLoader][loadRecentAnalyses] Loaded ${records.length} analyses, hasMore: $hasMore');
+
+      return (records, hasMore);
     } catch (e, trace) {
       debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Exception: $e');
       debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Stack: $trace');
-      return [];
+      return (<FormAnalysisRecord>[], false);
     }
   }
 
@@ -361,6 +391,70 @@ abstract class FBFormAnalysisDataLoader {
     }
 
     return uniqueTips.toList();
+  }
+
+  /// Delete a single form analysis and its associated images.
+  /// Returns true on success, false on failure.
+  static Future<bool> deleteAnalysis({
+    required String uid,
+    required String analysisId,
+  }) async {
+    try {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FBFormAnalysisDataLoader] 🗑️  DELETE SINGLE ANALYSIS');
+      debugPrint('[FBFormAnalysisDataLoader] User ID: $uid');
+      debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      // Step 1: Delete Firestore document
+      final String firestorePath =
+          '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection/$analysisId';
+      debugPrint(
+          '[FBFormAnalysisDataLoader] Deleting Firestore doc: $firestorePath');
+
+      final bool firestoreSuccess = await firestoreDelete(
+        firestorePath,
+        timeoutDuration: shortTimeout,
+      );
+
+      if (!firestoreSuccess) {
+        debugPrint('[FBFormAnalysisDataLoader] ❌ Firestore deletion failed');
+        return false;
+      }
+
+      debugPrint('[FBFormAnalysisDataLoader] ✅ Firestore deletion complete');
+
+      // Step 2: Delete Cloud Storage images for this analysis
+      final String storagePath = 'form_analyses/$uid/$analysisId';
+      debugPrint(
+          '[FBFormAnalysisDataLoader] Deleting Cloud Storage folder: $storagePath');
+
+      final bool storageSuccess = await storageDeleteFolder(
+        storagePath,
+        timeoutDuration: shortTimeout,
+      );
+
+      if (!storageSuccess) {
+        debugPrint(
+            '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors');
+      } else {
+        debugPrint(
+            '[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete');
+      }
+
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FBFormAnalysisDataLoader] ✅ DELETE COMPLETE');
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      return true;
+    } catch (e, trace) {
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[FBFormAnalysisDataLoader] ❌ DELETE FAILED!');
+      debugPrint('[FBFormAnalysisDataLoader] Error: $e');
+      debugPrint('[FBFormAnalysisDataLoader] Stack trace: $trace');
+      debugPrint('═══════════════════════════════════════════════════════');
+      return false;
+    }
   }
 
   /// Delete all form analyses and associated images for a user.

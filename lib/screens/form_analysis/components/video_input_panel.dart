@@ -19,22 +19,64 @@ class VideoInputPanel extends StatefulWidget {
 }
 
 class _VideoInputPanelState extends State<VideoInputPanel> {
-  // Available test videos with display names
-  static const List<({String path, String name})> _testVideos = [
-    (path: 'assets/test_videos/joe_example_throw_1.mov', name: 'Joe #1'),
-    (path: 'assets/test_videos/joe_example_throw_2.mov', name: 'Joe #2'),
-    (path: 'assets/test_videos/joe_example_throw_3.mov', name: 'Joe #3'),
-    (path: 'assets/test_videos/joe_example_throw_4.mov', name: 'Joe #4'),
-    (path: 'assets/test_videos/joe_example_throw_5.mov', name: 'Joe #5'),
+  // Available test videos with display names and camera angles
+  static const List<({String path, String name, CameraAngle angle})>
+      _testVideos = [
+    (
+      path: 'assets/test_videos/joe_example_throw_1.mov',
+      name: 'Joe #1',
+      angle: CameraAngle.side,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_2.mov',
+      name: 'Joe #2',
+      angle: CameraAngle.side,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_3.mov',
+      name: 'Joe #3',
+      angle: CameraAngle.side,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_4.mov',
+      name: 'Joe #4',
+      angle: CameraAngle.side,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_5.mov',
+      name: 'Joe #5',
+      angle: CameraAngle.side,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_6.mov',
+      name: 'Joe #6',
+      angle: CameraAngle.side,
+    ),
     (
       path: 'assets/test_videos/joe_example_throw_rear_1.mov',
       name: 'Joe Rear #1',
+      angle: CameraAngle.rear,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_rear_2.mov',
+      name: 'Joe Rear #2',
+      angle: CameraAngle.rear,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_rear_3.mp4',
+      name: 'Joe Rear #3',
+      angle: CameraAngle.rear,
     ),
     (
       path: 'assets/test_videos/schmidt_example_throw_1.mov',
       name: 'Schmidt #1',
+      angle: CameraAngle.side,
     ),
-    (path: 'assets/test_videos/trent_example_throw_1.mov', name: 'Trent #1'),
+    (
+      path: 'assets/test_videos/trent_example_throw_1.mov',
+      name: 'Trent #1',
+      angle: CameraAngle.side,
+    ),
   ];
 
   String _selectedTestVideoPath =
@@ -120,6 +162,8 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
           onAngleChanged: (CameraAngle angle) {
             setState(() {
               _selectedCameraAngle = angle;
+              // Update selected video to match the new camera angle
+              _updateSelectedVideoForCameraAngle();
             });
           },
         ),
@@ -253,12 +297,42 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
     );
   }
 
+  /// Update selected video when camera angle changes to ensure it matches
+  void _updateSelectedVideoForCameraAngle() {
+    final List<({String path, String name, CameraAngle angle})>
+        availableVideos = _getFilteredTestVideos();
+
+    // Check if current selection is still valid for the new angle
+    final bool isCurrentVideoValid = availableVideos.any(
+      (v) => v.path == _selectedTestVideoPath,
+    );
+
+    // If current video doesn't match new angle, select the first available video
+    if (!isCurrentVideoValid && availableVideos.isNotEmpty) {
+      _selectedTestVideoPath = availableVideos.first.path;
+    }
+  }
+
+  /// Get test videos filtered by the selected camera angle
+  List<({String path, String name, CameraAngle angle})>
+      _getFilteredTestVideos() {
+    return _testVideos
+        .where((video) => video.angle == _selectedCameraAngle)
+        .toList();
+  }
+
   Widget _buildTestVideoSelector() {
+    // Get videos filtered by current camera angle
+    final List<({String path, String name, CameraAngle angle})>
+        availableVideos = _getFilteredTestVideos();
+
     // Find the display name for the currently selected video
-    final String selectedName = _testVideos
+    final String selectedName = availableVideos
         .firstWhere(
           (v) => v.path == _selectedTestVideoPath,
-          orElse: () => _testVideos[1],
+          orElse: () => availableVideos.isNotEmpty
+              ? availableVideos.first
+              : _testVideos.first,
         )
         .name;
 
@@ -268,7 +342,7 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
         setState(() => _selectedTestVideoPath = value);
         HapticFeedback.lightImpact();
       },
-      itemBuilder: (BuildContext context) => _testVideos
+      itemBuilder: (BuildContext context) => availableVideos
           .map(
             (video) => PopupMenuItem<String>(
               value: video.path,

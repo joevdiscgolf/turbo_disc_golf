@@ -91,6 +91,10 @@ class FormAnalysisCard extends StatelessWidget {
     return Row(
       children: [
         _ThrowTypeBadge(throwType: throwTypeDisplay),
+        if (analysis.cameraAngle != null) ...[
+          const SizedBox(width: 8),
+          _CameraAngleBadge(angle: analysis.cameraAngle!),
+        ],
         if (analysis.overallFormScore != null) ...[
           const SizedBox(width: 8),
           _buildScoreChip(context),
@@ -303,6 +307,62 @@ class _SeverityBadge extends StatelessWidget {
       default:
         return severity;
     }
+  }
+}
+
+/// Camera angle badge with icon and label
+class _CameraAngleBadge extends StatelessWidget {
+  const _CameraAngleBadge({required this.angle});
+
+  final String angle;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isSideView = angle.toLowerCase() == 'side';
+    final Color color1 = isSideView
+        ? const Color(0xFF1976D2)
+        : const Color(0xFF00897B);
+    final Color color2 = isSideView
+        ? const Color(0xFF2196F3)
+        : const Color(0xFF26A69A);
+    final IconData icon = isSideView
+        ? Icons.photo_camera
+        : Icons.videocam;
+    final String label = isSideView ? 'Side' : 'Rear';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color1, color2],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color1.withValues(alpha: 0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
