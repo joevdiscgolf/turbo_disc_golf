@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Brain nucleus + 2 orbitals (left/right) with orbiting particles.
 ///
@@ -12,15 +13,23 @@ import 'package:flutter/material.dart';
 /// ✅ Particles are ~2x smaller
 /// ✅ Background green morphing circles NOT rendered (code kept)
 /// ✅ Whole brain + orbitals 1.5x bigger (internal scale)
+/// ✅ Accepts ValueNotifier for dynamic speed changes without position jumps
 class GPTAtomicNucleusLoaderV3 extends StatefulWidget {
   const GPTAtomicNucleusLoaderV3({
     super.key,
     this.size = 240.0,
     this.particleCount = 3,
+    this.speedMultiplier = 1.0,
+    this.speedMultiplierNotifier,
   });
 
   final double size;
   final int particleCount;
+  final double speedMultiplier;
+
+  /// Optional notifier for dynamic speed changes.
+  /// If provided, this overrides the static speedMultiplier.
+  final ValueNotifier<double>? speedMultiplierNotifier;
 
   @override
   State<GPTAtomicNucleusLoaderV3> createState() =>
@@ -75,9 +84,8 @@ class _GPTAtomicNucleusLoaderV3State extends State<GPTAtomicNucleusLoaderV3>
                   size: widget.size,
                   radius: widget.size * 0.395,
                   particleCount: widget.particleCount,
-                  orbitDuration: const Duration(milliseconds: 7000),
-                  baseSpeedTurnsPerLoop:
-                      2, // integer => seamless loop (~33% slower)
+                  speedMultiplierNotifier: widget.speedMultiplierNotifier,
+                  initialSpeedMultiplier: widget.speedMultiplier,
                   pitchDeg: 78,
                   baseYawDeg: -30,
                   yScale: 0.45,
@@ -93,9 +101,8 @@ class _GPTAtomicNucleusLoaderV3State extends State<GPTAtomicNucleusLoaderV3>
                   size: widget.size,
                   radius: (widget.size * 0.395) * 1.02,
                   particleCount: widget.particleCount,
-                  orbitDuration: const Duration(milliseconds: 7000),
-                  baseSpeedTurnsPerLoop:
-                      2, // integer => seamless loop (~33% slower)
+                  speedMultiplierNotifier: widget.speedMultiplierNotifier,
+                  initialSpeedMultiplier: widget.speedMultiplier,
                   pitchDeg: 78,
                   baseYawDeg: 30,
                   yScale: 0.45,
@@ -152,7 +159,7 @@ class _GPTAtomicNucleusLoaderV3State extends State<GPTAtomicNucleusLoaderV3>
 // class _MorphingBackground extends StatelessWidget {
 //   const _MorphingBackground({required this.size});
 //   final double size;
-
+//
 //   @override
 //   Widget build(BuildContext context) {
 //     return SizedBox(
@@ -204,8 +211,8 @@ class _AtomicOrbit extends StatefulWidget {
     required this.size,
     required this.radius,
     required this.particleCount,
-    required this.orbitDuration,
-    required this.baseSpeedTurnsPerLoop,
+    required this.speedMultiplierNotifier,
+    required this.initialSpeedMultiplier,
     required this.pitchDeg,
     required this.baseYawDeg,
     required this.yScale,
@@ -219,11 +226,12 @@ class _AtomicOrbit extends StatefulWidget {
   final double size;
   final double radius;
   final int particleCount;
-  final Duration orbitDuration;
 
-  /// IMPORTANT: integer turns-per-loop => particles return to the exact same spot
-  /// when controller repeats (perfect seamless looping).
-  final int baseSpeedTurnsPerLoop;
+  /// Optional notifier for dynamic speed changes.
+  final ValueNotifier<double>? speedMultiplierNotifier;
+
+  /// Initial speed multiplier (1.0 = normal speed)
+  final double initialSpeedMultiplier;
 
   final double pitchDeg;
   final double baseYawDeg;
@@ -246,49 +254,67 @@ class _AtomicOrbit extends StatefulWidget {
 
 class _AtomicOrbitState extends State<_AtomicOrbit>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  late Ticker _ticker;
+  Duration _lastElapsed = Duration.zero;
+
+  // Cumulative rotation angles for smooth speed changes
+  double _cumulativeRotation = 0.0;
+  double _orbitRotation = 0.0; // For the orbital plane animation
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.orbitDuration,
-    )..repeat();
+    _ticker = createTicker(_onTick)..start();
+  }
+
+  void _onTick(Duration elapsed) {
+    final Duration delta = elapsed - _lastElapsed;
+    _lastElapsed = elapsed;
+
+    final double deltaSeconds = delta.inMicroseconds / 1000000.0;
+
+    // Get current speed multiplier
+    final double speedMultiplier =
+        widget.speedMultiplierNotifier?.value ?? widget.initialSpeedMultiplier;
+
+    // Base angular velocity: 2 full rotations per 7 seconds
+    // = (2 * 2π) / 7 = 4π/7 radians per second
+    const double baseAngularVelocity = (4 * math.pi) / 7.0;
+
+    // Update cumulative rotation based on current speed
+    _cumulativeRotation += baseAngularVelocity * speedMultiplier * deltaSeconds;
+
+    // Update orbital plane rotation (slow wobble, independent of speed)
+    _orbitRotation += (2 * math.pi / 7.0) * deltaSeconds; // One cycle per 7 seconds
+
+    setState(() {});
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final double t = _controller.value; // 0..1 loops
-
-        return CustomPaint(
-          size: Size(widget.size, widget.size),
-          painter: _AtomicOrbitPainter(
-            t: t,
-            radius: widget.radius,
-            particleCount: widget.particleCount,
-            baseSpeedTurnsPerLoop: widget.baseSpeedTurnsPerLoop,
-            pitchDeg: widget.pitchDeg,
-            baseYawDeg: widget.baseYawDeg,
-            yScale: widget.yScale,
-            yOffset: widget.yOffset,
-            direction: widget.direction,
-            particleColor: widget.particleColor,
-            ringColor: widget.ringColor,
-            orbitSeed: widget.orbitSeed,
-            nucleusVisualRadius: 56,
-          ),
-        );
-      },
+    return CustomPaint(
+      size: Size(widget.size, widget.size),
+      painter: _AtomicOrbitPainter(
+        cumulativeRotation: _cumulativeRotation,
+        orbitRotation: _orbitRotation,
+        radius: widget.radius,
+        particleCount: widget.particleCount,
+        pitchDeg: widget.pitchDeg,
+        baseYawDeg: widget.baseYawDeg,
+        yScale: widget.yScale,
+        yOffset: widget.yOffset,
+        direction: widget.direction,
+        particleColor: widget.particleColor,
+        ringColor: widget.ringColor,
+        orbitSeed: widget.orbitSeed,
+        nucleusVisualRadius: 56,
+      ),
     );
   }
 }
@@ -311,10 +337,10 @@ class _ParticleDrawData {
 
 class _AtomicOrbitPainter extends CustomPainter {
   _AtomicOrbitPainter({
-    required this.t,
+    required this.cumulativeRotation,
+    required this.orbitRotation,
     required this.radius,
     required this.particleCount,
-    required this.baseSpeedTurnsPerLoop,
     required this.pitchDeg,
     required this.baseYawDeg,
     required this.yScale,
@@ -326,10 +352,10 @@ class _AtomicOrbitPainter extends CustomPainter {
     required this.nucleusVisualRadius,
   });
 
-  final double t; // 0..1
+  final double cumulativeRotation;
+  final double orbitRotation;
   final double radius;
   final int particleCount;
-  final int baseSpeedTurnsPerLoop;
 
   final double pitchDeg;
   final double baseYawDeg;
@@ -349,9 +375,9 @@ class _AtomicOrbitPainter extends CustomPainter {
     final double cx = size.width / 2;
     final double cy = size.height / 2;
 
-    // --- Dynamic orbital rotation (loops perfectly because it uses sin/cos of 2πt) ---
+    // --- Dynamic orbital rotation (loops perfectly because it uses sin/cos) ---
     // Gives the orbital planes a slow, constant "precession" look.
-    final double wobble = 2 * math.pi * t;
+    final double wobble = orbitRotation;
 
     // Make yaw and pitch gently vary. These amplitudes are tuned to look dynamic
     // without breaking the "two main orbitals" feel.
@@ -383,14 +409,11 @@ class _AtomicOrbitPainter extends CustomPainter {
     final List<_ParticleDrawData> particles = [];
 
     for (int i = 0; i < particleCount; i++) {
-      // All particles move at the same speed for a predictable, comfortable pattern
-      final int turns = baseSpeedTurnsPerLoop;
-
+      // Each particle starts at a different position around the orbit
       final double a0 = (2 * math.pi / particleCount) * i;
 
-      // This is the key for perfectly smooth looping:
-      // angle = 2π * (turns * t) (turns is integer).
-      final double a = a0 + direction * (2 * math.pi * turns * t);
+      // Use cumulative rotation for smooth speed changes
+      final double a = a0 + direction * cumulativeRotation;
 
       final _Projected p = _projectOrbitPoint(
         a: a,
