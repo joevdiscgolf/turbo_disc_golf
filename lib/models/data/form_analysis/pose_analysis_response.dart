@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 
 part 'pose_analysis_response.g.dart';
 
@@ -28,7 +29,7 @@ class PoseAnalysisResponse {
   final String throwType;
 
   @JsonKey(name: 'camera_angle')
-  final String cameraAngle;
+  final CameraAngle cameraAngle;
 
   @JsonKey(name: 'video_duration_seconds')
   final double videoDurationSeconds;
@@ -79,6 +80,7 @@ class CheckpointPoseData {
     this.referenceSilhouetteWithSkeletonBase64,
     this.comparisonWithSilhouetteBase64,
     this.referenceHorizontalOffsetPercent,
+    this.referenceScale,
     this.proPlayerId,
     required this.coachingTips,
   });
@@ -143,6 +145,10 @@ class CheckpointPoseData {
 
   @JsonKey(name: 'reference_horizontal_offset_percent')
   final double? referenceHorizontalOffsetPercent;
+
+  /// Scale factor for reference image to match user form size
+  @JsonKey(name: 'reference_scale')
+  final double? referenceScale;
 
   /// Pro player ID for reference images (e.g., "paul_mcbeth")
   /// Used to load reference from bundled assets, cache, or cloud storage

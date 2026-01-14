@@ -15,7 +15,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
   FormAnalysisHistoryCubit() : super(const FormAnalysisHistoryInitial());
 
   /// Load recent form analyses from Firestore.
-  /// Loads the 5 most recent analyses for the current user.
+  /// Loads the first 15 analyses for the current user.
   Future<void> loadHistory() async {
     try {
       emit(const FormAnalysisHistoryLoading());
@@ -27,15 +27,78 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         return;
       }
 
-      final List<FormAnalysisRecord> analyses =
-          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 5);
+      final (List<FormAnalysisRecord> analyses, bool hasMore) =
+          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 15);
 
-      emit(FormAnalysisHistoryLoaded(analyses: analyses));
+      emit(FormAnalysisHistoryLoaded(
+        analyses: analyses,
+        hasMore: hasMore,
+      ));
       debugPrint(
-          '[FormAnalysisHistoryCubit] Loaded ${analyses.length} analyses');
+          '[FormAnalysisHistoryCubit] Loaded ${analyses.length} analyses, hasMore: $hasMore');
     } catch (e) {
       debugPrint('[FormAnalysisHistoryCubit] Error loading history: $e');
       emit(FormAnalysisHistoryError(message: e.toString()));
+    }
+  }
+
+  /// Load more analyses (pagination).
+  /// Loads the next 15 analyses after the current list.
+  Future<void> loadMore() async {
+    final FormAnalysisHistoryState currentState = state;
+    if (currentState is! FormAnalysisHistoryLoaded) return;
+    if (!currentState.hasMore || currentState.isLoadingMore) return;
+
+    try {
+      // Set loading more state
+      emit(FormAnalysisHistoryLoaded(
+        analyses: currentState.analyses,
+        selectedAnalysis: currentState.selectedAnalysis,
+        hasMore: currentState.hasMore,
+        isLoadingMore: true,
+      ));
+
+      final String? uid = locator.get<AuthService>().currentUid;
+      if (uid == null) {
+        debugPrint('[FormAnalysisHistoryCubit] No user logged in');
+        return;
+      }
+
+      // Get the timestamp of the last loaded analysis for pagination
+      final String? lastTimestamp = currentState.analyses.isNotEmpty
+          ? currentState.analyses.last.createdAt
+          : null;
+
+      final (List<FormAnalysisRecord> moreAnalyses, bool hasMore) =
+          await FBFormAnalysisDataLoader.loadRecentAnalyses(
+        uid,
+        limit: 15,
+        startAfterTimestamp: lastTimestamp,
+      );
+
+      // Append new analyses to existing list
+      final List<FormAnalysisRecord> allAnalyses = [
+        ...currentState.analyses,
+        ...moreAnalyses,
+      ];
+
+      emit(FormAnalysisHistoryLoaded(
+        analyses: allAnalyses,
+        selectedAnalysis: currentState.selectedAnalysis,
+        hasMore: hasMore,
+        isLoadingMore: false,
+      ));
+      debugPrint(
+          '[FormAnalysisHistoryCubit] Loaded ${moreAnalyses.length} more analyses, total: ${allAnalyses.length}, hasMore: $hasMore');
+    } catch (e) {
+      debugPrint('[FormAnalysisHistoryCubit] Error loading more: $e');
+      // Restore previous state without loading flag
+      emit(FormAnalysisHistoryLoaded(
+        analyses: currentState.analyses,
+        selectedAnalysis: currentState.selectedAnalysis,
+        hasMore: currentState.hasMore,
+        isLoadingMore: false,
+      ));
     }
   }
 
@@ -49,12 +112,15 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         return;
       }
 
-      final List<FormAnalysisRecord> analyses =
-          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 5);
+      final (List<FormAnalysisRecord> analyses, bool hasMore) =
+          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 15);
 
-      emit(FormAnalysisHistoryLoaded(analyses: analyses));
+      emit(FormAnalysisHistoryLoaded(
+        analyses: analyses,
+        hasMore: hasMore,
+      ));
       debugPrint(
-          '[FormAnalysisHistoryCubit] Refreshed ${analyses.length} analyses');
+          '[FormAnalysisHistoryCubit] Refreshed ${analyses.length} analyses, hasMore: $hasMore');
     } catch (e) {
       debugPrint('[FormAnalysisHistoryCubit] Error refreshing history: $e');
       emit(FormAnalysisHistoryError(message: e.toString()));
@@ -70,6 +136,8 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
       emit(FormAnalysisHistoryLoaded(
         analyses: loadedState.analyses,
         selectedAnalysis: analysis,
+        hasMore: loadedState.hasMore,
+        isLoadingMore: loadedState.isLoadingMore,
       ));
       debugPrint(
           '[FormAnalysisHistoryCubit] Selected analysis ${analysis.id}');
@@ -84,6 +152,8 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
       emit(FormAnalysisHistoryLoaded(
         analyses: loadedState.analyses,
         selectedAnalysis: null,
+        hasMore: loadedState.hasMore,
+        isLoadingMore: loadedState.isLoadingMore,
       ));
       debugPrint('[FormAnalysisHistoryCubit] Cleared selection');
     }
@@ -99,18 +169,66 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         analysis,
         ...loadedState.analyses,
       ];
-      // Keep only the most recent 5
-      final List<FormAnalysisRecord> trimmedAnalyses =
-          updatedAnalyses.take(5).toList();
 
       emit(FormAnalysisHistoryLoaded(
-        analyses: trimmedAnalyses,
+        analyses: updatedAnalyses,
         selectedAnalysis: loadedState.selectedAnalysis,
+        hasMore: loadedState.hasMore,
+        isLoadingMore: loadedState.isLoadingMore,
       ));
       debugPrint('[FormAnalysisHistoryCubit] Added analysis ${analysis.id}');
     } else {
       // If not loaded yet, just load everything
       loadHistory();
+    }
+  }
+
+  /// Delete a specific form analysis.
+  /// Removes from both Firestore and Cloud Storage, then updates local state.
+  Future<bool> deleteAnalysis(String analysisId) async {
+    try {
+      // Get current user ID
+      final AuthService authService = locator.get<AuthService>();
+      final String? uid = authService.currentUid;
+
+      if (uid == null) {
+        debugPrint('[FormAnalysisHistoryCubit] No user logged in');
+        return false;
+      }
+
+      debugPrint('[FormAnalysisHistoryCubit] Deleting analysis: $analysisId');
+
+      // Delete from Firestore and Cloud Storage
+      final bool success = await FBFormAnalysisDataLoader.deleteAnalysis(
+        uid: uid,
+        analysisId: analysisId,
+      );
+
+      if (success) {
+        // Update local state by removing the deleted analysis
+        if (state is FormAnalysisHistoryLoaded) {
+          final FormAnalysisHistoryLoaded loadedState =
+              state as FormAnalysisHistoryLoaded;
+          final List<FormAnalysisRecord> updatedAnalyses =
+              loadedState.analyses.where((a) => a.id != analysisId).toList();
+
+          emit(FormAnalysisHistoryLoaded(
+            analyses: updatedAnalyses,
+            selectedAnalysis: null,
+            hasMore: loadedState.hasMore,
+            isLoadingMore: loadedState.isLoadingMore,
+          ));
+          debugPrint(
+              '[FormAnalysisHistoryCubit] ✅ Analysis deleted: $analysisId');
+        }
+        return true;
+      } else {
+        debugPrint('[FormAnalysisHistoryCubit] ❌ Failed to delete analysis');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('[FormAnalysisHistoryCubit] Delete error: $e');
+      return false;
     }
   }
 

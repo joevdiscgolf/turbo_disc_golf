@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_progress_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_panel.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Screen for recording/importing videos and analyzing form.
 /// Keeps the exact same UI/UX as the original FormAnalysisScreen.
 class FormAnalysisRecordingScreen extends StatefulWidget {
-  const FormAnalysisRecordingScreen({super.key});
+  const FormAnalysisRecordingScreen({super.key, required this.topViewPadding});
+
+  final double topViewPadding;
 
   @override
   State<FormAnalysisRecordingScreen> createState() =>
@@ -21,62 +23,83 @@ class FormAnalysisRecordingScreen extends StatefulWidget {
 
 class _FormAnalysisRecordingScreenState
     extends State<FormAnalysisRecordingScreen> {
-  ThrowTechnique _selectedThrowType = ThrowTechnique.backhand;
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider<VideoFormAnalysisCubit>(
       create: (context) => VideoFormAnalysisCubit(),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFEEE8F5),
-              Color(0xFFECECEE),
-              Color(0xFFE8F4E8),
-              Color(0xFFEAE8F0),
-            ],
-            stops: [0.0, 0.3, 0.7, 1.0],
-          ),
-        ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: GenericAppBar(
-            topViewPadding: MediaQuery.of(context).viewPadding.top,
-            title: 'Form Coach',
-            hasBackButton: true,
-            onBackPressed: () => Navigator.pop(context),
-          ),
-          body: SafeArea(
-            top: false,
-            child: BlocConsumer<VideoFormAnalysisCubit, VideoFormAnalysisState>(
-              listener: (context, state) {
-                // Show warning snackbar if pose analysis failed
-                if (state is VideoFormAnalysisComplete &&
-                    state.poseAnalysisWarning != null) {
-                  _showPoseAnalysisWarning(context, state.poseAnalysisWarning!);
-                }
-              },
-              builder: (context, state) {
-                return _buildContent(context, state);
-              },
+      child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
+        builder: (context, state) {
+          // Determine colors based on state
+          final bool isCompleted = state is VideoFormAnalysisComplete;
+          final Color foregroundColor = isCompleted
+              ? TurbColors.darkGray
+              : Colors.white;
+
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            extendBodyBehindAppBar: true,
+            appBar: GenericAppBar(
+              topViewPadding: MediaQuery.of(context).viewPadding.top,
+              title: '',
+              hasBackButton: false,
+              backgroundColor: Colors.transparent,
+              foregroundColor: foregroundColor,
+              rightWidget: IconButton(
+                icon: Icon(Icons.close, color: foregroundColor),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
-          ),
-        ),
+            body: Stack(
+              children: [
+                // Conditional background based on state
+                if (!isCompleted)
+                  const Positioned.fill(child: FormAnalysisBackground())
+                else
+                  Positioned.fill(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFEEE8F5),
+                            Color(0xFFECECEE),
+                            Color(0xFFE8F4E8),
+                            Color(0xFFEAE8F0),
+                          ],
+                          stops: [0.0, 0.3, 0.7, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Main content
+                BlocConsumer<VideoFormAnalysisCubit, VideoFormAnalysisState>(
+                  listener: (context, state) {
+                    // Show warning snackbar if pose analysis failed
+                    if (state is VideoFormAnalysisComplete &&
+                        state.poseAnalysisWarning != null) {
+                      _showPoseAnalysisWarning(
+                        context,
+                        state.poseAnalysisWarning!,
+                      );
+                    }
+                  },
+                  builder: (context, state) {
+                    return _buildContent(context, state);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildContent(BuildContext context, VideoFormAnalysisState state) {
     if (state is VideoFormAnalysisInitial) {
-      return VideoInputPanel(
-        selectedThrowType: _selectedThrowType,
-        onThrowTypeChanged: (ThrowTechnique type) {
-          setState(() => _selectedThrowType = type);
-        },
-      );
+      return VideoInputBody(topViewpadding: widget.topViewPadding);
     } else if (state is VideoFormAnalysisRecording) {
       return AnalysisProgressView(message: state.progressMessage);
     } else if (state is VideoFormAnalysisValidating) {
@@ -87,6 +110,7 @@ class _FormAnalysisRecordingScreenState
       return AnalysisResultsView(
         result: state.result,
         poseAnalysis: state.poseAnalysis,
+        topViewPadding: widget.topViewPadding,
       );
     } else if (state is VideoFormAnalysisError) {
       return _buildErrorView(context, state.message, state.session);
@@ -102,10 +126,7 @@ class _FormAnalysisRecordingScreenState
             const Icon(Icons.warning_amber, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: Colors.white),
-              ),
+              child: Text(message, style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -145,16 +166,17 @@ class _FormAnalysisRecordingScreenState
             Text(
               'Analysis Failed',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
             ),
             const SizedBox(height: 32),
             Row(
@@ -163,8 +185,9 @@ class _FormAnalysisRecordingScreenState
                 if (session != null)
                   ElevatedButton.icon(
                     onPressed: () {
-                      BlocProvider.of<VideoFormAnalysisCubit>(context)
-                          .retryAnalysis();
+                      BlocProvider.of<VideoFormAnalysisCubit>(
+                        context,
+                      ).retryAnalysis();
                     },
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Retry'),

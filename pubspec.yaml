@@ -111,12 +111,14 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/logos/
+    - assets/emojis/
     - assets/mascots/turbo_mascot.png
     - assets/test_scorecards/
     - assets/test_videos/
     - assets/judge_tab/
     - assets/icon/
-    - assets/pro_references/paul_mcbeth/backhand/
+    - assets/pro_references/paul_mcbeth/backhand/side/
+    - assets/pro_references/paul_mcbeth/backhand/rear/
     - assets/pro_references/paul_mcbeth/forehand/
     - .env
 

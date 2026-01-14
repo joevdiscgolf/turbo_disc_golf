@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 
+import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -70,13 +72,18 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
                   'Pose Comparison',
                   style: Theme.of(
                     context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  ).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: TurbColors.darkGray,
+                  ),
                 ),
                 Text(
                   'Compare your form to pro reference',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                  ).textTheme.bodySmall?.copyWith(
+                    color: TurbColors.darkGray.withValues(alpha: 0.75),
+                  ),
                 ),
               ],
             ),
@@ -256,7 +263,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    _buildSeverityBadge(checkpoint.deviationSeverity),
+                    SeverityBadge(severity: checkpoint.deviationSeverity),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -360,6 +367,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
           throwType: widget.poseAnalysis.throwType,
           checkpoint: checkpoint.checkpointId,
           isSkeleton: _showSkeletonOnly,
+          cameraAngle: widget.poseAnalysis.cameraAngle,
         ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -382,20 +390,26 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
             );
           }
 
-          // Apply alignment transformation
+          // Apply alignment transformation (translate + scale)
           return LayoutBuilder(
             builder: (context, constraints) {
               final double offsetPixels = constraints.maxWidth *
                   (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
                   100;
+              final double scale = checkpoint.referenceScale ?? 1.0;
+
               return ClipRect(
                 child: Transform.translate(
                   offset: Offset(offsetPixels, 0),
-                  child: Image(
-                    image: snapshot.data!,
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                    height: 200,
+                  child: Transform.scale(
+                    scale: scale,
+                    alignment: Alignment.center,
+                    child: Image(
+                      image: snapshot.data!,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: 200,
+                    ),
                   ),
                 ),
               );
@@ -414,7 +428,9 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
     if (refImage != null && refImage.isNotEmpty) {
       final double horizontalOffsetPercent =
           checkpoint.referenceHorizontalOffsetPercent ?? 0;
-      if (horizontalOffsetPercent != 0) {
+      final double scale = checkpoint.referenceScale ?? 1.0;
+
+      if (horizontalOffsetPercent != 0 || scale != 1.0) {
         return LayoutBuilder(
           builder: (context, constraints) {
             final double offsetPixels =
@@ -422,7 +438,11 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
             return ClipRect(
               child: Transform.translate(
                 offset: Offset(offsetPixels, 0),
-                child: _decodeAndDisplayImage(refImage),
+                child: Transform.scale(
+                  scale: scale,
+                  alignment: Alignment.center,
+                  child: _decodeAndDisplayImage(refImage),
+                ),
               ),
             );
           },
@@ -450,6 +470,7 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
       builder: (dialogContext) => _FullscreenComparisonDialog(
         checkpoints: widget.poseAnalysis.checkpoints,
         throwType: widget.poseAnalysis.throwType,
+        cameraAngle: widget.poseAnalysis.cameraAngle,
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
         proRefLoader: _proRefLoader,
@@ -614,49 +635,6 @@ class _PoseComparisonSectionState extends State<PoseComparisonSection> {
         ),
       );
     }
-  }
-
-  Widget _buildSeverityBadge(String severity) {
-    Color color;
-    String label;
-
-    switch (severity.toLowerCase()) {
-      case 'good':
-        color = const Color(0xFF4CAF50);
-        label = 'Good';
-        break;
-      case 'minor':
-        color = const Color(0xFFFF9800);
-        label = 'Minor Issues';
-        break;
-      case 'moderate':
-        color = const Color(0xFFFF5722);
-        label = 'Moderate';
-        break;
-      case 'significant':
-        color = const Color(0xFFF44336);
-        label = 'Needs Work';
-        break;
-      default:
-        color = Colors.grey;
-        label = severity;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
   }
 
   Widget _buildCoachingTips(BuildContext context, List<String> tips) {
@@ -868,6 +846,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
   const _FullscreenComparisonDialog({
     required this.checkpoints,
     required this.throwType,
+    required this.cameraAngle,
     required this.initialIndex,
     required this.showSkeletonOnly,
     required this.proRefLoader,
@@ -877,6 +856,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
 
   final List<CheckpointPoseData> checkpoints;
   final String throwType;
+  final CameraAngle cameraAngle;
   final int initialIndex;
   final bool showSkeletonOnly;
   final ProReferenceLoader proRefLoader;
@@ -1138,6 +1118,7 @@ class _FullscreenComparisonDialogState
           throwType: widget.throwType,
           checkpoint: checkpoint.checkpointId,
           isSkeleton: _showSkeletonOnly,
+          cameraAngle: widget.cameraAngle,
         ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {

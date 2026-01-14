@@ -17,15 +17,20 @@ class AnalysisResultsView extends StatelessWidget {
     super.key,
     required this.result,
     this.poseAnalysis,
+    required this.topViewPadding,
   });
 
   final FormAnalysisResult result;
   final PoseAnalysisResponse? poseAnalysis;
+  final double topViewPadding;
 
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
+        SliverPadding(
+          padding: EdgeInsets.only(top: topViewPadding + 40),
+        ),
         if (showFormAnalysisScoreAndSummary) ...[
           SliverToBoxAdapter(child: _buildScoreHeader(context)),
           SliverToBoxAdapter(child: _buildOverallFeedback(context)),
@@ -65,7 +70,6 @@ class AnalysisResultsView extends StatelessWidget {
           ],
         ],
         SliverToBoxAdapter(child: _buildActionButtons(context)),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
       ],
     );
   }
@@ -193,6 +197,7 @@ class AnalysisResultsView extends StatelessWidget {
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
       ),
     );

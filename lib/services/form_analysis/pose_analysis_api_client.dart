@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 
 /// Client for the Cloud Run pose analysis API
@@ -24,13 +25,13 @@ class PoseAnalysisApiClient {
   ///
   /// [videoFile] - The video file to analyze
   /// [throwType] - Type of throw (currently only 'backhand' supported)
-  /// [cameraAngle] - Camera angle (currently only 'side' supported)
+  /// [cameraAngle] - Camera angle enum value
   /// [sessionId] - Unique session identifier
   /// [userId] - User identifier
   Future<PoseAnalysisResponse> analyzeVideo({
     required File videoFile,
     required String throwType,
-    required String cameraAngle,
+    required CameraAngle cameraAngle,
     required String sessionId,
     required String userId,
   }) async {
@@ -46,7 +47,7 @@ class PoseAnalysisApiClient {
 
     // Add form fields
     request.fields['throw_type'] = throwType;
-    request.fields['camera_angle'] = cameraAngle;
+    request.fields['camera_angle'] = cameraAngle.toApiString();
     request.fields['session_id'] = sessionId;
     request.fields['user_id'] = userId;
 
@@ -132,7 +133,7 @@ class PoseAnalysisApiClient {
   Future<PoseAnalysisResponse> analyzeVideoBase64({
     required File videoFile,
     required String throwType,
-    required String cameraAngle,
+    required CameraAngle cameraAngle,
     required String sessionId,
     required String userId,
   }) async {
@@ -150,7 +151,7 @@ class PoseAnalysisApiClient {
       'video_base64': videoBase64,
       'video_format': videoFormat,
       'throw_type': throwType,
-      'camera_angle': cameraAngle,
+      'camera_angle': cameraAngle.toApiString(),
       'session_id': sessionId,
       'user_id': userId,
     };

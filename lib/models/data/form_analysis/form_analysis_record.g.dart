@@ -21,6 +21,10 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
           ?.map((e) => e as String)
           .toList(),
       thumbnailBase64: json['thumbnail_base64'] as String?,
+      cameraAngle: $enumDecodeNullable(
+        _$CameraAngleEnumMap,
+        json['camera_angle'],
+      ),
     );
 
 Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
@@ -34,7 +38,13 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
       'checkpoints': instance.checkpoints.map((e) => e.toJson()).toList(),
       'top_coaching_tips': instance.topCoachingTips,
       'thumbnail_base64': instance.thumbnailBase64,
+      'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle],
     };
+
+const _$CameraAngleEnumMap = {
+  CameraAngle.side: 'side',
+  CameraAngle.rear: 'rear',
+};
 
 CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
     CheckpointRecord(
@@ -54,6 +64,7 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
       proPlayerId: json['pro_player_id'] as String?,
       referenceHorizontalOffsetPercent:
           (json['reference_horizontal_offset_percent'] as num?)?.toDouble(),
+      referenceScale: (json['reference_scale'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$CheckpointRecordToJson(CheckpointRecord instance) =>
@@ -70,4 +81,5 @@ Map<String, dynamic> _$CheckpointRecordToJson(CheckpointRecord instance) =>
       'pro_player_id': instance.proPlayerId,
       'reference_horizontal_offset_percent':
           instance.referenceHorizontalOffsetPercent,
+      'reference_scale': instance.referenceScale,
     };
