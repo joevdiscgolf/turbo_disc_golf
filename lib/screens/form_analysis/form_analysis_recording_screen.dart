@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_progress_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
@@ -99,26 +98,24 @@ class _FormAnalysisRecordingScreenState
   }
 
   Widget _buildContent(BuildContext context, VideoFormAnalysisState state) {
-    return AnalysisProgressView(message: 'testing message');
-
-    // if (state is VideoFormAnalysisInitial) {
-    //   return VideoInputBody(topViewpadding: widget.topViewPadding);
-    // } else if (state is VideoFormAnalysisRecording) {
-    //   return AnalysisProgressView(message: state.progressMessage);
-    // } else if (state is VideoFormAnalysisValidating) {
-    //   return AnalysisProgressView(message: state.progressMessage);
-    // } else if (state is VideoFormAnalysisAnalyzing) {
-    //   return AnalysisProgressView(message: state.progressMessage);
-    // } else if (state is VideoFormAnalysisComplete) {
-    //   return AnalysisResultsView(
-    //     result: state.result,
-    //     poseAnalysis: state.poseAnalysis,
-    //     topViewPadding: widget.topViewPadding,
-    //   );
-    // } else if (state is VideoFormAnalysisError) {
-    //   return _buildErrorView(context, state.message, state.session);
-    // }
-    // return const SizedBox.shrink();
+    if (state is VideoFormAnalysisInitial) {
+      return VideoInputBody(topViewpadding: widget.topViewPadding);
+    } else if (state is VideoFormAnalysisRecording) {
+      return AnalysisProgressView(message: state.progressMessage);
+    } else if (state is VideoFormAnalysisValidating) {
+      return AnalysisProgressView(message: state.progressMessage);
+    } else if (state is VideoFormAnalysisAnalyzing) {
+      return AnalysisProgressView(message: state.progressMessage);
+    } else if (state is VideoFormAnalysisComplete) {
+      return AnalysisResultsView(
+        result: state.result,
+        poseAnalysis: state.poseAnalysis,
+        topViewPadding: widget.topViewPadding,
+      );
+    } else if (state is VideoFormAnalysisError) {
+      return _buildErrorView(context, state.message, state.session);
+    }
+    return const SizedBox.shrink();
   }
 
   void _showPoseAnalysisWarning(BuildContext context, String message) {

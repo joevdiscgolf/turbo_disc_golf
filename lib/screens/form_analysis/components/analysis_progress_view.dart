@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-
-import 'package:turbo_disc_golf/components/loaders/atomic_nucleus_loader.dart';
-import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nucleus_loader.dart';
-import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nucleus_loader_v2.dart';
 import 'package:turbo_disc_golf/components/loaders/gpt_atominc_nuclear_loader_v3.dart';
 
 /// View showing progress during video analysis.
@@ -19,7 +15,7 @@ class AnalysisProgressView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildAnimatedIcon(),
+            const GPTAtomicNucleusLoaderV3(),
             const SizedBox(height: 32),
             Text(
               message,
@@ -41,15 +37,5 @@ class AnalysisProgressView extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildAnimatedIcon() {
-    // return const GPTAtomicNucleusLoader();
-    // return const GPTAtomicNucleusLoaderV2();
-    return const GPTAtomicNucleusLoaderV3();
-    // return const AtomicNucleusLoader(
-    //   size: 240,
-    //   particleCount: 3, // 3 particles per orbit = 6 total
-    // );
   }
 }

@@ -122,55 +122,55 @@ class GPTAtomicNucleusLoaderV2 extends StatelessWidget {
   }
 }
 
-class _MorphingBackground extends StatelessWidget {
-  const _MorphingBackground({required this.size});
-  final double size;
+// class _MorphingBackground extends StatelessWidget {
+//   const _MorphingBackground({required this.size});
+//   final double size;
 
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        children: [
-          _buildBlob(
-            colors: const [Color(0xFF0C5349), Color(0xFF137e66)],
-            duration: 5000.ms,
-            scaleBegin: 1.0,
-            scaleEnd: 1.25,
-          ),
-          _buildBlob(
-            colors: const [Color(0xFF137e66), Color(0xFF26B39D)],
-            duration: 4200.ms,
-            scaleBegin: 0.95,
-            scaleEnd: 1.15,
-          ),
-        ],
-      ),
-    );
-  }
+//   @override
+//   Widget build(BuildContext context) {
+//     return SizedBox(
+//       width: size,
+//       height: size,
+//       child: Stack(
+//         children: [
+//           _buildBlob(
+//             colors: const [Color(0xFF0C5349), Color(0xFF137e66)],
+//             duration: 5000.ms,
+//             scaleBegin: 1.0,
+//             scaleEnd: 1.25,
+//           ),
+//           _buildBlob(
+//             colors: const [Color(0xFF137e66), Color(0xFF26B39D)],
+//             duration: 4200.ms,
+//             scaleBegin: 0.95,
+//             scaleEnd: 1.15,
+//           ),
+//         ],
+//       ),
+//     );
+//   }
 
-  Widget _buildBlob({
-    required List<Color> colors,
-    required Duration duration,
-    required double scaleBegin,
-    required double scaleEnd,
-  }) {
-    return Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: colors, stops: const [0.0, 1.0]),
-          ),
-        )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .scale(
-          duration: duration,
-          begin: Offset(scaleBegin, scaleBegin),
-          end: Offset(scaleEnd, scaleEnd),
-          curve: Curves.easeInOut,
-        );
-  }
-}
+//   Widget _buildBlob({
+//     required List<Color> colors,
+//     required Duration duration,
+//     required double scaleBegin,
+//     required double scaleEnd,
+//   }) {
+//     return Container(
+//           decoration: BoxDecoration(
+//             shape: BoxShape.circle,
+//             gradient: RadialGradient(colors: colors, stops: const [0.0, 1.0]),
+//           ),
+//         )
+//         .animate(onPlay: (controller) => controller.repeat(reverse: true))
+//         .scale(
+//           duration: duration,
+//           begin: Offset(scaleBegin, scaleBegin),
+//           end: Offset(scaleEnd, scaleEnd),
+//           curve: Curves.easeInOut,
+//         );
+//   }
+// }
 
 class _AtomicOrbit extends StatefulWidget {
   const _AtomicOrbit({
@@ -256,10 +256,11 @@ class _AtomicOrbitState extends State<_AtomicOrbit>
 
         // Calculate animated pitch and yaw angles
         final double rotationProgress = _rotationController.value;
-        final double pitchDeg = widget.basePitchDeg +
+        final double pitchDeg =
+            widget.basePitchDeg +
             (math.sin(rotationProgress * 2 * math.pi) * 15);
-        final double yawDeg = widget.baseYawDeg +
-            (math.cos(rotationProgress * 2 * math.pi) * 20);
+        final double yawDeg =
+            widget.baseYawDeg + (math.cos(rotationProgress * 2 * math.pi) * 20);
 
         return CustomPaint(
           size: Size(widget.size, widget.size),

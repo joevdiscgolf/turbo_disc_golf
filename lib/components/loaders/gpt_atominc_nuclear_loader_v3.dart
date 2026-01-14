@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 /// Brain nucleus + 2 orbitals (left/right) with orbiting particles.
 ///
@@ -13,7 +12,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 /// ✅ Particles are ~2x smaller
 /// ✅ Background green morphing circles NOT rendered (code kept)
 /// ✅ Whole brain + orbitals 1.5x bigger (internal scale)
-class GPTAtomicNucleusLoaderV3 extends StatelessWidget {
+class GPTAtomicNucleusLoaderV3 extends StatefulWidget {
   const GPTAtomicNucleusLoaderV3({
     super.key,
     this.size = 240.0,
@@ -24,31 +23,61 @@ class GPTAtomicNucleusLoaderV3 extends StatelessWidget {
   final int particleCount;
 
   @override
+  State<GPTAtomicNucleusLoaderV3> createState() =>
+      _GPTAtomicNucleusLoaderV3State();
+}
+
+class _GPTAtomicNucleusLoaderV3State extends State<GPTAtomicNucleusLoaderV3>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _brainController;
+  late final Animation<double> _brainScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _brainController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+
+    _brainScale = Tween<double>(begin: 1.0, end: 1.096).animate(
+      CurvedAnimation(parent: _brainController, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _brainController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     const double overallScale = 1.5;
 
     return SizedBox(
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       child: Center(
         child: Transform.scale(
           scale: overallScale,
           child: SizedBox(
-            width: size,
-            height: size,
+            width: widget.size,
+            height: widget.size,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // Keep the code, but do NOT render for now:
-                // _MorphingBackground(size: size),
+                // _MorphingBackground(size: widget.size),
 
                 // Orbital A: tilted left
                 _AtomicOrbit(
-                  size: size,
-                  radius: size * 0.395,
-                  particleCount: particleCount,
+                  size: widget.size,
+                  radius: widget.size * 0.395,
+                  particleCount: widget.particleCount,
                   orbitDuration: const Duration(milliseconds: 7000),
-                  baseSpeedTurnsPerLoop: 5, // integer => seamless loop (50% slower)
+                  baseSpeedTurnsPerLoop:
+                      2, // integer => seamless loop (~33% slower)
                   pitchDeg: 78,
                   baseYawDeg: -30,
                   yScale: 0.45,
@@ -61,11 +90,12 @@ class GPTAtomicNucleusLoaderV3 extends StatelessWidget {
 
                 // Orbital B: tilted right
                 _AtomicOrbit(
-                  size: size,
-                  radius: (size * 0.395) * 1.02,
-                  particleCount: particleCount,
+                  size: widget.size,
+                  radius: (widget.size * 0.395) * 1.02,
+                  particleCount: widget.particleCount,
                   orbitDuration: const Duration(milliseconds: 7000),
-                  baseSpeedTurnsPerLoop: 5, // integer => seamless loop (50% slower)
+                  baseSpeedTurnsPerLoop:
+                      2, // integer => seamless loop (~33% slower)
                   pitchDeg: 78,
                   baseYawDeg: 30,
                   yScale: 0.45,
@@ -86,85 +116,88 @@ class GPTAtomicNucleusLoaderV3 extends StatelessWidget {
   }
 
   Widget _buildNucleus() {
-    return Container(
-          width: 110,
-          height: 110,
+    return AnimatedBuilder(
+      animation: _brainScale,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _brainScale.value,
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF4DA6).withValues(alpha: 0.45),
-                blurRadius: 30,
-                spreadRadius: 6,
-              ),
-            ],
-          ),
-          child: const Text('🧠', style: TextStyle(fontSize: 78)),
-        )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .scale(
-          duration: 2400.ms,
-          begin: const Offset(1.0, 1.0),
-          end: const Offset(1.12, 1.12),
-          curve: Curves.easeInOut,
-        )
-        .then()
-        .shimmer(
-          duration: 1800.ms,
-          color: const Color(0xFFFF4DA6).withValues(alpha: 0.28),
+          child: child,
         );
-  }
-}
-
-class _MorphingBackground extends StatelessWidget {
-  const _MorphingBackground({required this.size});
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        children: [
-          _buildBlob(
-            colors: const [Color(0xFF0C5349), Color(0xFF137e66)],
-            duration: 5000.ms,
-            scaleBegin: 1.0,
-            scaleEnd: 1.25,
-          ),
-          _buildBlob(
-            colors: const [Color(0xFF137e66), Color(0xFF26B39D)],
-            duration: 4200.ms,
-            scaleBegin: 0.95,
-            scaleEnd: 1.15,
-          ),
-        ],
+      },
+      child: Container(
+        width: 110,
+        height: 110,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF4DA6).withValues(alpha: 0.45),
+              blurRadius: 30,
+              spreadRadius: 6,
+            ),
+          ],
+        ),
+        child: Image.asset(
+          'assets/emojis/brain_emoji.png',
+          width: 78,
+          height: 78,
+          filterQuality: FilterQuality.high,
+        ),
       ),
     );
   }
-
-  Widget _buildBlob({
-    required List<Color> colors,
-    required Duration duration,
-    required double scaleBegin,
-    required double scaleEnd,
-  }) {
-    return Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: colors, stops: const [0.0, 1.0]),
-          ),
-        )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .scale(
-          duration: duration,
-          begin: Offset(scaleBegin, scaleBegin),
-          end: Offset(scaleEnd, scaleEnd),
-          curve: Curves.easeInOut,
-        );
-  }
 }
+
+// class _MorphingBackground extends StatelessWidget {
+//   const _MorphingBackground({required this.size});
+//   final double size;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return SizedBox(
+//       width: size,
+//       height: size,
+//       child: Stack(
+//         children: [
+//           _buildBlob(
+//             colors: const [Color(0xFF0C5349), Color(0xFF137e66)],
+//             duration: 5000.ms,
+//             scaleBegin: 1.0,
+//             scaleEnd: 1.25,
+//           ),
+//           _buildBlob(
+//             colors: const [Color(0xFF137e66), Color(0xFF26B39D)],
+//             duration: 4200.ms,
+//             scaleBegin: 0.95,
+//             scaleEnd: 1.15,
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildBlob({
+//     required List<Color> colors,
+//     required Duration duration,
+//     required double scaleBegin,
+//     required double scaleEnd,
+//   }) {
+//     return Container(
+//           decoration: BoxDecoration(
+//             shape: BoxShape.circle,
+//             gradient: RadialGradient(colors: colors, stops: const [0.0, 1.0]),
+//           ),
+//         )
+//         .animate(onPlay: (controller) => controller.repeat(reverse: true))
+//         .scale(
+//           duration: duration,
+//           begin: Offset(scaleBegin, scaleBegin),
+//           end: Offset(scaleEnd, scaleEnd),
+//           curve: Curves.easeInOut,
+//         );
+//   }
+// }
 
 class _AtomicOrbit extends StatefulWidget {
   const _AtomicOrbit({
@@ -322,9 +355,9 @@ class _AtomicOrbitPainter extends CustomPainter {
 
     // Make yaw and pitch gently vary. These amplitudes are tuned to look dynamic
     // without breaking the "two main orbitals" feel.
-    final double dynamicYawDeg = baseYawDeg + 20.0 * math.sin(wobble);
+    final double dynamicYawDeg = baseYawDeg + 15.0 * math.sin(wobble);
     final double dynamicPitchDeg =
-        pitchDeg + 12.0 * math.sin(wobble + math.pi / 2);
+        pitchDeg + 15.0 * math.sin(wobble + math.pi / 2);
 
     final double pitch = dynamicPitchDeg * math.pi / 180.0;
     final double yaw = dynamicYawDeg * math.pi / 180.0;
@@ -350,10 +383,8 @@ class _AtomicOrbitPainter extends CustomPainter {
     final List<_ParticleDrawData> particles = [];
 
     for (int i = 0; i < particleCount; i++) {
-      // Constant per-particle speed offsets, but ALWAYS integer turns-per-loop => seamless.
-      // Example: base=9 turns/loop, particles become {8, 9, 10} turns/loop (or similar).
-      final int deltaTurns = _speedDeltaTurns(i);
-      final int turns = math.max(1, baseSpeedTurnsPerLoop + deltaTurns);
+      // All particles move at the same speed for a predictable, comfortable pattern
+      final int turns = baseSpeedTurnsPerLoop;
 
       final double a0 = (2 * math.pi / particleCount) * i;
 
@@ -375,29 +406,8 @@ class _AtomicOrbitPainter extends CustomPainter {
       final double zNorm = (p.z / radius).clamp(-1.0, 1.0);
       final double depthT = (zNorm + 1.0) / 2.0; // 0 back -> 1 front
 
-      // Opacity (front brighter)
-      double opacity = _lerp(0.20, 1.00, depthT);
-
-      // Smooth fade behind nucleus region
-      if (zNorm < 0.0) {
-        final double behindT = (-zNorm).clamp(0.0, 1.0);
-        final double behindFade = 1.0 - _smoothStep(0.10, 0.90, behindT);
-
-        final double dx = p.x - cx;
-        final double dy = p.y - cy;
-        final double dist = math.sqrt(dx * dx + dy * dy);
-
-        final double fadeBand = nucleusVisualRadius * 0.32;
-        final double nucleusFade = _smoothStep(
-          nucleusVisualRadius - fadeBand,
-          nucleusVisualRadius + fadeBand,
-          dist,
-        );
-
-        opacity *= (0.25 + 0.75 * nucleusFade) * (0.25 + 0.75 * behindFade);
-      }
-
-      opacity = opacity.clamp(0.0, 1.0);
+      // Smooth opacity oscillation between 50% and 100% based on depth
+      final double opacity = _lerp(0.50, 1.00, depthT);
 
       // Particle size (slightly bigger in front, but still small overall)
       final double pr = baseParticleRadius * _lerp(0.95, 1.25, depthT);
@@ -448,23 +458,6 @@ class _AtomicOrbitPainter extends CustomPainter {
         highlight,
       );
     }
-  }
-
-  // Returns a small integer offset in {-1, 0, +1, +2} depending on index/seed,
-  // but stable forever (no jitter) AND still seamless because turns remain integer.
-  int _speedDeltaTurns(int particleIndex) {
-    final int h = _hash32(orbitSeed ^ (particleIndex * 0x9E3779B9));
-    final int r = h & 3; // 0..3
-    // Map 0..3 -> -1, 0, +1, +2 (adds variety while staying smooth)
-    return r - 1;
-  }
-
-  int _hash32(int x) {
-    int v = x;
-    v ^= (v << 13);
-    v ^= (v >> 17);
-    v ^= (v << 5);
-    return v;
   }
 
   void _drawOrbitRing({
