@@ -3,18 +3,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-/// Brain nucleus + 2 orbital rings (left-tilt + right-tilt) with orbiting particles.
-/// Latest tweaks:
-/// ✅ One orbital tilted left, one tilted right (±30° yaw base angles)
-/// ✅ Orbitals continuously rotate and change angles for dynamic motion
-/// ✅ Smooth particle motion along orbital paths (each particle has constant speed)
-/// ✅ Per-particle speed variation (0.85-1.15x) for natural look
-/// ✅ Particles flare brighter/more luminous at max opacity
-/// ✅ Background green pulsing circles NOT rendered (code kept)
-/// ✅ Whole brain + orbitals 1.5x bigger (via internal scale)
-/// ✅ Perfect seamless looping animation
-class GPTAtomicNucleusLoaderV2 extends StatelessWidget {
-  const GPTAtomicNucleusLoaderV2({
+/// Brain nucleus + 2 orbitals (left/right) with orbiting particles.
+///
+/// What this version does (per your request):
+/// ✅ Orbitals themselves slowly rotate and change angle over time (dynamic / alive)
+/// ✅ Particle motion is smooth + predictable + constant direction
+/// ✅ Each particle has a different *constant* speed (but chosen so the loop is perfectly seamless)
+/// ✅ No jarring spawn/jumps (no random phase jitter, no non-looping speeds)
+/// ✅ Particles are ~2x smaller
+/// ✅ Background green morphing circles NOT rendered (code kept)
+/// ✅ Whole brain + orbitals 1.5x bigger (internal scale)
+class GPTAtomicNucleusLoaderV3 extends StatelessWidget {
+  const GPTAtomicNucleusLoaderV3({
     super.key,
     this.size = 240.0,
     this.particleCount = 3,
@@ -25,8 +25,6 @@ class GPTAtomicNucleusLoaderV2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1.5x bigger brain + orbitals *inside* the same outer box.
-    // If you want the widget to also take up more layout space, increase [size] where you use it.
     const double overallScale = 1.5;
 
     return SizedBox(
@@ -41,17 +39,17 @@ class GPTAtomicNucleusLoaderV2 extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Keep the code, but do NOT render for now
+                // Keep the code, but do NOT render for now:
                 // _MorphingBackground(size: size),
 
-                // Orbit LEFT tilt, clockwise-ish with slow rotation
+                // Orbital A: tilted left
                 _AtomicOrbit(
                   size: size,
                   radius: size * 0.395,
                   particleCount: particleCount,
                   orbitDuration: const Duration(milliseconds: 7000),
-                  speedMultiplier: 3.0,
-                  basePitchDeg: 78,
+                  baseSpeedTurnsPerLoop: 5, // integer => seamless loop (50% slower)
+                  pitchDeg: 78,
                   baseYawDeg: -30,
                   yScale: 0.45,
                   yOffset: -3,
@@ -59,17 +57,16 @@ class GPTAtomicNucleusLoaderV2 extends StatelessWidget {
                   particleColor: const Color(0xFF4DD0E1),
                   ringColor: const Color(0xFF7FE9F5),
                   orbitSeed: 101,
-                  orbitRotationDuration: const Duration(milliseconds: 12000),
                 ),
 
-                // Orbit RIGHT tilt, opposite direction with slow rotation
+                // Orbital B: tilted right
                 _AtomicOrbit(
                   size: size,
                   radius: (size * 0.395) * 1.02,
                   particleCount: particleCount,
-                  orbitDuration: const Duration(milliseconds: 6500),
-                  speedMultiplier: 3.0,
-                  basePitchDeg: 78,
+                  orbitDuration: const Duration(milliseconds: 7000),
+                  baseSpeedTurnsPerLoop: 5, // integer => seamless loop (50% slower)
+                  pitchDeg: 78,
                   baseYawDeg: 30,
                   yScale: 0.45,
                   yOffset: 3,
@@ -77,7 +74,6 @@ class GPTAtomicNucleusLoaderV2 extends StatelessWidget {
                   particleColor: const Color(0xFF4DD0E1),
                   ringColor: const Color(0xFF7FE9F5),
                   orbitSeed: 202,
-                  orbitRotationDuration: const Duration(milliseconds: 10000),
                 ),
 
                 _buildNucleus(),
@@ -90,8 +86,6 @@ class GPTAtomicNucleusLoaderV2 extends StatelessWidget {
   }
 
   Widget _buildNucleus() {
-    // Slightly larger nucleus so the glow matches the increased scale.
-    // (Remember: everything is inside a Transform.scale(1.5) too.)
     return Container(
           width: 110,
           height: 110,
@@ -178,8 +172,8 @@ class _AtomicOrbit extends StatefulWidget {
     required this.radius,
     required this.particleCount,
     required this.orbitDuration,
-    required this.speedMultiplier,
-    required this.basePitchDeg,
+    required this.baseSpeedTurnsPerLoop,
+    required this.pitchDeg,
     required this.baseYawDeg,
     required this.yScale,
     required this.yOffset,
@@ -187,7 +181,6 @@ class _AtomicOrbit extends StatefulWidget {
     required this.particleColor,
     required this.ringColor,
     required this.orbitSeed,
-    required this.orbitRotationDuration,
   });
 
   final double size;
@@ -195,11 +188,13 @@ class _AtomicOrbit extends StatefulWidget {
   final int particleCount;
   final Duration orbitDuration;
 
-  /// Base speed multiplier for the whole orbit.
-  final double speedMultiplier;
+  /// IMPORTANT: integer turns-per-loop => particles return to the exact same spot
+  /// when controller repeats (perfect seamless looping).
+  final int baseSpeedTurnsPerLoop;
 
-  final double basePitchDeg;
+  final double pitchDeg;
   final double baseYawDeg;
+
   final double yScale;
   final double yOffset;
 
@@ -209,66 +204,48 @@ class _AtomicOrbit extends StatefulWidget {
   final Color particleColor;
   final Color ringColor;
 
-  /// Used to generate deterministic "random" per-particle speeds.
+  /// For deterministic per-particle speed offsets (still seamless).
   final int orbitSeed;
-
-  /// Duration for the orbital angle rotation animation
-  final Duration orbitRotationDuration;
 
   @override
   State<_AtomicOrbit> createState() => _AtomicOrbitState();
 }
 
 class _AtomicOrbitState extends State<_AtomicOrbit>
-    with TickerProviderStateMixin {
-  late final AnimationController _particleController;
-  late final AnimationController _rotationController;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _particleController = AnimationController(
+    _controller = AnimationController(
       vsync: this,
       duration: widget.orbitDuration,
-    )..repeat();
-
-    _rotationController = AnimationController(
-      vsync: this,
-      duration: widget.orbitRotationDuration,
     )..repeat();
   }
 
   @override
   void dispose() {
-    _particleController.dispose();
-    _rotationController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([_particleController, _rotationController]),
+      animation: _controller,
       builder: (context, child) {
-        // Use controller value as base time; painter applies per-particle speed.
-        final double baseTime =
-            (_particleController.value * widget.speedMultiplier) % 1.0;
-
-        // Calculate animated pitch and yaw angles
-        final double rotationProgress = _rotationController.value;
-        final double pitchDeg = widget.basePitchDeg +
-            (math.sin(rotationProgress * 2 * math.pi) * 15);
-        final double yawDeg = widget.baseYawDeg +
-            (math.cos(rotationProgress * 2 * math.pi) * 20);
+        final double t = _controller.value; // 0..1 loops
 
         return CustomPaint(
           size: Size(widget.size, widget.size),
           painter: _AtomicOrbitPainter(
-            time: baseTime,
+            t: t,
             radius: widget.radius,
             particleCount: widget.particleCount,
-            pitchDeg: pitchDeg,
-            yawDeg: yawDeg,
+            baseSpeedTurnsPerLoop: widget.baseSpeedTurnsPerLoop,
+            pitchDeg: widget.pitchDeg,
+            baseYawDeg: widget.baseYawDeg,
             yScale: widget.yScale,
             yOffset: widget.yOffset,
             direction: widget.direction,
@@ -290,7 +267,6 @@ class _ParticleDrawData {
     required this.z,
     required this.opacity,
     required this.size,
-    required this.depthT,
   });
 
   final double x;
@@ -298,16 +274,16 @@ class _ParticleDrawData {
   final double z;
   final double opacity;
   final double size;
-  final double depthT;
 }
 
 class _AtomicOrbitPainter extends CustomPainter {
   _AtomicOrbitPainter({
-    required this.time,
+    required this.t,
     required this.radius,
     required this.particleCount,
+    required this.baseSpeedTurnsPerLoop,
     required this.pitchDeg,
-    required this.yawDeg,
+    required this.baseYawDeg,
     required this.yScale,
     required this.yOffset,
     required this.direction,
@@ -317,14 +293,16 @@ class _AtomicOrbitPainter extends CustomPainter {
     required this.nucleusVisualRadius,
   });
 
-  final double time;
+  final double t; // 0..1
   final double radius;
   final int particleCount;
+  final int baseSpeedTurnsPerLoop;
 
   final double pitchDeg;
-  final double yawDeg;
+  final double baseYawDeg;
   final double yScale;
   final double yOffset;
+
   final int direction;
 
   final Color particleColor;
@@ -338,10 +316,20 @@ class _AtomicOrbitPainter extends CustomPainter {
     final double cx = size.width / 2;
     final double cy = size.height / 2;
 
-    final double pitch = pitchDeg * math.pi / 180.0;
-    final double yaw = yawDeg * math.pi / 180.0;
+    // --- Dynamic orbital rotation (loops perfectly because it uses sin/cos of 2πt) ---
+    // Gives the orbital planes a slow, constant "precession" look.
+    final double wobble = 2 * math.pi * t;
 
-    // Visible ring
+    // Make yaw and pitch gently vary. These amplitudes are tuned to look dynamic
+    // without breaking the "two main orbitals" feel.
+    final double dynamicYawDeg = baseYawDeg + 20.0 * math.sin(wobble);
+    final double dynamicPitchDeg =
+        pitchDeg + 12.0 * math.sin(wobble + math.pi / 2);
+
+    final double pitch = dynamicPitchDeg * math.pi / 180.0;
+    final double yaw = dynamicYawDeg * math.pi / 180.0;
+
+    // 1) Draw the orbital ring
     _drawOrbitRing(
       canvas: canvas,
       cx: cx,
@@ -355,21 +343,23 @@ class _AtomicOrbitPainter extends CustomPainter {
       nucleusRadius: nucleusVisualRadius,
     );
 
-    // Particles
-    const double baseParticleRadius = 6.0;
+    // 2) Particles (smaller by ~2x)
+    // Previously ~6.0; now ~3.0 (2x smaller)
+    const double baseParticleRadius = 3.0;
+
     final List<_ParticleDrawData> particles = [];
 
     for (int i = 0; i < particleCount; i++) {
-      // Deterministic per-particle speed variation in ~[0.85..1.15]
-      // More subtle variation for smoother, more predictable motion
-      final double speed = _rand01(oribtSeeded(i)) * 0.30 + 0.85;
+      // Constant per-particle speed offsets, but ALWAYS integer turns-per-loop => seamless.
+      // Example: base=9 turns/loop, particles become {8, 9, 10} turns/loop (or similar).
+      final int deltaTurns = _speedDeltaTurns(i);
+      final int turns = math.max(1, baseSpeedTurnsPerLoop + deltaTurns);
 
-      // Initial position offset - evenly spaced around the orbit
       final double a0 = (2 * math.pi / particleCount) * i;
 
-      // Smooth, continuous motion along the orbital path
-      // Each particle moves at its own constant speed
-      final double a = a0 + direction * ((time * speed) * 2 * math.pi);
+      // This is the key for perfectly smooth looping:
+      // angle = 2π * (turns * t) (turns is integer).
+      final double a = a0 + direction * (2 * math.pi * turns * t);
 
       final _Projected p = _projectOrbitPoint(
         a: a,
@@ -383,12 +373,12 @@ class _AtomicOrbitPainter extends CustomPainter {
       );
 
       final double zNorm = (p.z / radius).clamp(-1.0, 1.0);
-      final double depthT = (zNorm + 1.0) / 2.0;
+      final double depthT = (zNorm + 1.0) / 2.0; // 0 back -> 1 front
 
-      // Base opacity from depth
-      double opacity = _lerp(0.22, 1.00, depthT);
+      // Opacity (front brighter)
+      double opacity = _lerp(0.20, 1.00, depthT);
 
-      // Smooth fade behind the nucleus region (no popping)
+      // Smooth fade behind nucleus region
       if (zNorm < 0.0) {
         final double behindT = (-zNorm).clamp(0.0, 1.0);
         final double behindFade = 1.0 - _smoothStep(0.10, 0.90, behindT);
@@ -409,30 +399,25 @@ class _AtomicOrbitPainter extends CustomPainter {
 
       opacity = opacity.clamp(0.0, 1.0);
 
-      final double pr = baseParticleRadius * _lerp(0.95, 1.45, depthT);
+      // Particle size (slightly bigger in front, but still small overall)
+      final double pr = baseParticleRadius * _lerp(0.95, 1.25, depthT);
 
       particles.add(
-        _ParticleDrawData(
-          x: p.x,
-          y: p.y,
-          z: p.z,
-          opacity: opacity,
-          size: pr,
-          depthT: depthT,
-        ),
+        _ParticleDrawData(x: p.x, y: p.y, z: p.z, opacity: opacity, size: pr),
       );
     }
 
+    // Back-to-front layering
     particles.sort((a, b) => a.z.compareTo(b.z));
 
     for (final p in particles) {
-      // Flare intensely near max opacity
+      // Make them much more luminous near max opacity
       final double peak = _smoothStep(0.82, 1.0, p.opacity);
-      final double glowBoost = _lerp(1.0, 2.4, peak);
+      final double glowBoost = _lerp(1.0, 2.6, peak);
 
       final Paint outerGlow = Paint()
         ..color = particleColor.withValues(
-          alpha: (p.opacity * 0.85).clamp(0.0, 1.0),
+          alpha: (p.opacity * 0.90).clamp(0.0, 1.0),
         )
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18)
         ..style = PaintingStyle.fill;
@@ -448,13 +433,13 @@ class _AtomicOrbitPainter extends CustomPainter {
 
       final Paint highlight = Paint()
         ..color = Colors.white.withValues(
-          alpha: (p.opacity * 0.90).clamp(0.0, 1.0),
+          alpha: (p.opacity * 0.95).clamp(0.0, 1.0),
         )
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2)
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(p.x, p.y), p.size * 3.0 * glowBoost, outerGlow);
-      canvas.drawCircle(Offset(p.x, p.y), p.size * 1.95 * glowBoost, innerGlow);
+      canvas.drawCircle(Offset(p.x, p.y), p.size * 3.2 * glowBoost, outerGlow);
+      canvas.drawCircle(Offset(p.x, p.y), p.size * 2.0 * glowBoost, innerGlow);
       canvas.drawCircle(Offset(p.x, p.y), p.size, core);
 
       canvas.drawCircle(
@@ -465,18 +450,21 @@ class _AtomicOrbitPainter extends CustomPainter {
     }
   }
 
-  // NOTE: "Random" helpers — deterministic per orbit + per particle.
-  int oribtSeeded(int particleIndex) =>
-      orbitSeed ^ (particleIndex * 0x9E3779B9);
+  // Returns a small integer offset in {-1, 0, +1, +2} depending on index/seed,
+  // but stable forever (no jitter) AND still seamless because turns remain integer.
+  int _speedDeltaTurns(int particleIndex) {
+    final int h = _hash32(orbitSeed ^ (particleIndex * 0x9E3779B9));
+    final int r = h & 3; // 0..3
+    // Map 0..3 -> -1, 0, +1, +2 (adds variety while staying smooth)
+    return r - 1;
+  }
 
-  double _rand01(int seed) {
-    // Simple integer hash -> 0..1
-    int x = seed;
-    x ^= (x << 13);
-    x ^= (x >> 17);
-    x ^= (x << 5);
-    final int u = x & 0x7fffffff;
-    return u / 0x7fffffff;
+  int _hash32(int x) {
+    int v = x;
+    v ^= (v << 13);
+    v ^= (v >> 17);
+    v ^= (v << 5);
+    return v;
   }
 
   void _drawOrbitRing({
@@ -527,7 +515,7 @@ class _AtomicOrbitPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..color = ringColor.withValues(alpha: 0.30);
 
-    // Clip out a hole so ring doesn't slice through the emoji area
+    // Clip a hole so the ring doesn't slice through the emoji area
     canvas.save();
     final Path clip = Path()
       ..addRect(Rect.fromLTWH(0, 0, cx * 2, cy * 2))
@@ -552,14 +540,17 @@ class _AtomicOrbitPainter extends CustomPainter {
     required double cy,
     required double yOffset,
   }) {
+    // Ring in XZ plane
     final double x0 = r * math.cos(a);
     final double y0 = 0.0;
     final double z0 = r * math.sin(a);
 
+    // Pitch about X
     final double y1 = y0 * math.cos(pitch) - z0 * math.sin(pitch);
     final double z1 = y0 * math.sin(pitch) + z0 * math.cos(pitch);
     final double x1 = x0;
 
+    // Yaw about Y
     final double x2 = x1 * math.cos(yaw) + z1 * math.sin(yaw);
     final double z2 = -x1 * math.sin(yaw) + z1 * math.cos(yaw);
     final double y2 = y1;
