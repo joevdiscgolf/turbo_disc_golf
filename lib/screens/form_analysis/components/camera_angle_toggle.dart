@@ -29,8 +29,7 @@ class CameraAngleToggle extends StatelessWidget {
         children: [
           Expanded(
             child: _ToggleButton(
-              label: 'Side View',
-              icon: Icons.photo_camera,
+              label: 'Side',
               isSelected: selectedAngle == CameraAngle.side,
               onTap: () => onAngleChanged(CameraAngle.side),
             ),
@@ -38,8 +37,7 @@ class CameraAngleToggle extends StatelessWidget {
           const SizedBox(width: 3),
           Expanded(
             child: _ToggleButton(
-              label: 'Rear View',
-              icon: Icons.video_camera_back,
+              label: 'Rear',
               isSelected: selectedAngle == CameraAngle.rear,
               onTap: () => onAngleChanged(CameraAngle.rear),
             ),
@@ -53,13 +51,11 @@ class CameraAngleToggle extends StatelessWidget {
 class _ToggleButton extends StatelessWidget {
   const _ToggleButton({
     required this.label,
-    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
 
   final String label;
-  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -87,28 +83,17 @@ class _ToggleButton extends StatelessWidget {
                 ]
               : [],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected
-                  ? const Color(0xFF111827)
-                  : const Color(0xFF9CA3AF),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 14,
-                    color: isSelected
-                        ? const Color(0xFF111827)
-                        : const Color(0xFF6B7280),
-                  ),
-            ),
-          ],
+        child: Center(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 14,
+                  color: isSelected
+                      ? const Color(0xFF111827)
+                      : const Color(0xFF6B7280),
+                ),
+          ),
         ),
       ),
     );

@@ -5,6 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:intl/intl.dart';
 
+import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -48,6 +50,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     );
   }
 
+
   Widget _buildHeader(BuildContext context) {
     final DateTime createdAt = DateTime.parse(widget.analysis.createdAt);
     final String formattedDateTime = DateFormat(
@@ -75,31 +78,44 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           Divider(height: 1, color: Colors.grey[300]),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoChip(
-                  label: isBackhand ? 'Backhand' : 'Forehand',
-                  icon: Icons.sports_golf,
-                  color: isBackhand
-                      ? const Color(0xFF2196F3)
-                      : const Color(0xFF9C27B0),
-                ),
-                if (widget.analysis.cameraAngle != null) ...[
-                  const SizedBox(width: 8),
-                  _buildCameraAngleChip(widget.analysis.cameraAngle!),
-                ],
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    formattedDateTime,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                      fontSize: 13,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoChip(
+                        label: isBackhand ? 'Backhand' : 'Forehand',
+                        icon: Icons.sports_golf,
+                        color: isBackhand
+                            ? const Color(0xFF2196F3)
+                            : const Color(0xFF9C27B0),
+                      ),
                     ),
+                    if (widget.analysis.cameraAngle != null) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildCameraAngleChip(widget.analysis.cameraAngle!),
+                      ),
+                    ],
+                    if (widget.analysis.worstDeviationSeverity != null) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SeverityBadge(
+                          severity: widget.analysis.worstDeviationSeverity!,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  formattedDateTime,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                    fontSize: 13,
                   ),
                 ),
-                if (widget.analysis.worstDeviationSeverity != null)
-                  _buildSeverityChip(widget.analysis.worstDeviationSeverity!),
               ],
             ),
           ),
@@ -221,105 +237,71 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCameraAngleChip(String cameraAngle) {
-    final bool isSideView = cameraAngle.toLowerCase() == 'side';
+  Widget _buildCameraAngleChip(CameraAngle cameraAngle) {
+    final bool isSideView = cameraAngle == CameraAngle.side;
     final Color color = isSideView
         ? const Color(0xFF1976D2)
         : const Color(0xFF00897B);
     final IconData icon = isSideView
         ? Icons.photo_camera
         : Icons.videocam;
-    final String label = isSideView ? 'Side' : 'Rear';
+    final String label = cameraAngle.displayName;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSeverityChip(String severity) {
-    Color color;
-    String label;
-
-    switch (severity.toLowerCase()) {
-      case 'good':
-        color = const Color(0xFF4CAF50);
-        label = 'Good';
-        break;
-      case 'minor':
-        color = const Color(0xFFFF9800);
-        label = 'Minor Issues';
-        break;
-      case 'moderate':
-        color = const Color(0xFFFF5722);
-        label = 'Moderate';
-        break;
-      case 'significant':
-        color = const Color(0xFFF44336);
-        label = 'Needs Work';
-        break;
-      default:
-        color = Colors.grey;
-        label = severity;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          ],
         ),
       ),
     );
   }
+
 
   Widget _buildFloatingViewToggle() {
     return Positioned(
@@ -553,7 +535,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      _buildSeverityChip(checkpoint.deviationSeverity),
+                      SeverityBadge(severity: checkpoint.deviationSeverity),
                     ],
                   ),
                   if (checkpoint.coachingTips.isNotEmpty) ...[
@@ -656,6 +638,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           throwType: widget.analysis.throwType,
           checkpoint: checkpoint.checkpointId,
           isSkeleton: _showSkeletonOnly,
+          cameraAngle: widget.analysis.cameraAngle ?? CameraAngle.side,
         ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -689,15 +672,26 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                 );
           }
 
-          // Apply alignment transformation
+          // Apply alignment transformation (translate + scale)
+          final double horizontalOffset = MediaQuery.of(context).size.width *
+              (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
+          final double scale = checkpoint.referenceScale ?? 1.0;
+
+          debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
+          debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
+          debugPrint('   - referenceScale from backend: ${checkpoint.referenceScale}');
+          debugPrint('   - Applied scale: $scale');
+          debugPrint('   - referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}');
+          debugPrint('   - Calculated horizontalOffset (pixels): $horizontalOffset');
+          debugPrint('   - Screen width: ${MediaQuery.of(context).size.width}');
+
           return Transform.translate(
-            offset: Offset(
-              MediaQuery.of(context).size.width *
-                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
-                  100,
-              0,
+            offset: Offset(horizontalOffset, 0),
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: Image(image: snapshot.data!, fit: BoxFit.contain),
             ),
-            child: Image(image: snapshot.data!, fit: BoxFit.contain),
           );
         },
       );
@@ -760,6 +754,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         proRefLoader: _proRefLoader,
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
+        cameraAngle: widget.analysis.cameraAngle ?? CameraAngle.side,
         onToggleMode: (bool newMode) {
           setState(() => _showSkeletonOnly = newMode);
         },
@@ -936,6 +931,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
     required this.showSkeletonOnly,
     required this.onToggleMode,
     required this.onIndexChanged,
+    required this.cameraAngle,
   });
 
   final List<CheckpointRecord> checkpoints;
@@ -945,6 +941,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
   final bool showSkeletonOnly;
   final ValueChanged<bool> onToggleMode;
   final ValueChanged<int> onIndexChanged;
+  final CameraAngle cameraAngle;
 
   @override
   State<_FullscreenComparisonDialog> createState() =>
@@ -1205,6 +1202,7 @@ class _FullscreenComparisonDialogState
           throwType: widget.throwType,
           checkpoint: checkpoint.checkpointId,
           isSkeleton: _showSkeletonOnly,
+          cameraAngle: widget.cameraAngle,
         ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -1238,15 +1236,26 @@ class _FullscreenComparisonDialogState
                 );
           }
 
-          // Apply alignment transformation
+          // Apply alignment transformation (translate + scale)
+          final double horizontalOffset = MediaQuery.of(context).size.width *
+              (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
+          final double scale = checkpoint.referenceScale ?? 1.0;
+
+          debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
+          debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
+          debugPrint('   - referenceScale from backend: ${checkpoint.referenceScale}');
+          debugPrint('   - Applied scale: $scale');
+          debugPrint('   - referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}');
+          debugPrint('   - Calculated horizontalOffset (pixels): $horizontalOffset');
+          debugPrint('   - Screen width: ${MediaQuery.of(context).size.width}');
+
           return Transform.translate(
-            offset: Offset(
-              MediaQuery.of(context).size.width *
-                  (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
-                  100,
-              0,
+            offset: Offset(horizontalOffset, 0),
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.center,
+              child: Image(image: snapshot.data!, fit: BoxFit.contain),
             ),
-            child: Image(image: snapshot.data!, fit: BoxFit.contain),
           );
         },
       );

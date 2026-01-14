@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
@@ -17,7 +18,7 @@ abstract class FBFormAnalysisDataLoader {
     required String uid,
     required String analysisId,
     required String throwType,
-    required String cameraAngle,
+    required CameraAngle cameraAngle,
     required PoseAnalysisResponse poseAnalysis,
   }) async {
     // Check if saving is enabled

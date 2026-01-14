@@ -232,7 +232,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).viewPadding.top + 100,
+                    top: MediaQuery.of(context).viewPadding.top + 112,
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 
 class FormAnalysisCard extends StatelessWidget {
@@ -314,11 +315,11 @@ class _SeverityBadge extends StatelessWidget {
 class _CameraAngleBadge extends StatelessWidget {
   const _CameraAngleBadge({required this.angle});
 
-  final String angle;
+  final CameraAngle angle;
 
   @override
   Widget build(BuildContext context) {
-    final bool isSideView = angle.toLowerCase() == 'side';
+    final bool isSideView = angle == CameraAngle.side;
     final Color color1 = isSideView
         ? const Color(0xFF1976D2)
         : const Color(0xFF00897B);
@@ -328,7 +329,7 @@ class _CameraAngleBadge extends StatelessWidget {
     final IconData icon = isSideView
         ? Icons.photo_camera
         : Icons.videocam;
-    final String label = isSideView ? 'Side' : 'Rear';
+    final String label = angle.displayName;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

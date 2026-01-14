@@ -12,7 +12,7 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   sessionId: json['session_id'] as String,
   status: json['status'] as String,
   throwType: json['throw_type'] as String,
-  cameraAngle: json['camera_angle'] as String,
+  cameraAngle: $enumDecode(_$CameraAngleEnumMap, json['camera_angle']),
   videoDurationSeconds: (json['video_duration_seconds'] as num).toDouble(),
   totalFrames: (json['total_frames'] as num).toInt(),
   checkpoints: (json['checkpoints'] as List<dynamic>)
@@ -32,7 +32,7 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'session_id': instance.sessionId,
   'status': instance.status,
   'throw_type': instance.throwType,
-  'camera_angle': instance.cameraAngle,
+  'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle]!,
   'video_duration_seconds': instance.videoDurationSeconds,
   'total_frames': instance.totalFrames,
   'checkpoints': instance.checkpoints.map((e) => e.toJson()).toList(),
@@ -40,6 +40,11 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'overall_form_score': instance.overallFormScore,
   'error_message': instance.errorMessage,
   'round_thumbnail_base64': instance.roundThumbnailBase64,
+};
+
+const _$CameraAngleEnumMap = {
+  CameraAngle.side: 'side',
+  CameraAngle.rear: 'rear',
 };
 
 CheckpointPoseData _$CheckpointPoseDataFromJson(
@@ -77,6 +82,7 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
       json['comparison_with_silhouette_base64'] as String?,
   referenceHorizontalOffsetPercent:
       (json['reference_horizontal_offset_percent'] as num?)?.toDouble(),
+  referenceScale: (json['reference_scale'] as num?)?.toDouble(),
   proPlayerId: json['pro_player_id'] as String?,
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
@@ -110,6 +116,7 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'comparison_with_silhouette_base64': instance.comparisonWithSilhouetteBase64,
   'reference_horizontal_offset_percent':
       instance.referenceHorizontalOffsetPercent,
+  'reference_scale': instance.referenceScale,
   'pro_player_id': instance.proPlayerId,
   'coaching_tips': instance.coachingTips,
 };

@@ -1,3 +1,5 @@
+import 'package:json_annotation/json_annotation.dart';
+
 /// Represents the camera angle for form analysis videos.
 ///
 /// Used to specify whether the video was recorded from the side of the thrower
@@ -5,10 +7,12 @@
 enum CameraAngle {
   /// Camera positioned to the side of the throwing motion.
   /// This is the default and most common angle for form analysis.
+  @JsonValue('side')
   side,
 
   /// Camera positioned behind the thrower.
   /// Useful for analyzing follow-through and hip rotation.
+  @JsonValue('rear')
   rear;
 
   /// Returns a human-readable display name for the camera angle.
@@ -31,7 +35,14 @@ enum CameraAngle {
     }
   }
 
-  /// Returns the API value to send to the backend.
-  /// This matches the expected format of 'side' or 'rear'.
-  String get apiValue => name;
+  /// Returns the API/JSON string value.
+  /// This is the value sent to the backend and stored in Firestore.
+  String toApiString() {
+    switch (this) {
+      case CameraAngle.side:
+        return 'side';
+      case CameraAngle.rear:
+        return 'rear';
+    }
+  }
 }

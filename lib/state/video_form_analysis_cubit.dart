@@ -280,7 +280,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       uid: uid,
       analysisId: sessionId,
       throwType: _mapThrowTypeToString(throwType),
-      cameraAngle: cameraAngle.apiValue,
+      cameraAngle: cameraAngle,
       poseAnalysis: poseAnalysis,
     ).then((savedRecord) {
       if (savedRecord != null) {
@@ -327,7 +327,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       final PoseAnalysisResponse response = await poseClient.analyzeVideo(
         videoFile: File(videoPath),
         throwType: throwTypeStr,
-        cameraAngle: cameraAngle.apiValue, // Dynamic based on user selection
+        cameraAngle: cameraAngle, // Dynamic based on user selection
         sessionId: sessionId,
         userId: userId,
       );

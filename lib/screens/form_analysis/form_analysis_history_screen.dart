@@ -15,9 +15,14 @@ import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class FormAnalysisHistoryScreen extends StatefulWidget {
-  const FormAnalysisHistoryScreen({super.key, required this.bottomViewPadding});
+  const FormAnalysisHistoryScreen({
+    super.key,
+    required this.bottomViewPadding,
+    required this.topViewPadding,
+  });
 
   final double bottomViewPadding;
+  final double topViewPadding;
 
   @override
   State<FormAnalysisHistoryScreen> createState() =>
@@ -57,7 +62,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   Future<void> _showRecordingScreen() async {
     pushCupertinoRoute(
       context,
-      const FormAnalysisRecordingScreen(),
+      FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding),
       pushFromBottom: true,
     );
     // Refresh list after returning from recording screen
@@ -139,9 +144,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
             else if (state.isLoadingMore) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
+                child: Center(child: CircularProgressIndicator()),
               );
             }
             // Show end-of-list padding
@@ -149,7 +152,8 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
               return const SizedBox(height: 112);
             }
           },
-          childCount: state.analyses.length +
+          childCount:
+              state.analyses.length +
               (state.isLoadingMore ? 1 : 0) +
               1, // +1 for bottom padding
         ),

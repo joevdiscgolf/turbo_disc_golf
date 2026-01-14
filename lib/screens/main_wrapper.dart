@@ -94,7 +94,9 @@ class _MainWrapperState extends State<MainWrapper> {
   /// Build MainWrapper with Form Analysis tab alongside Round History.
   /// Shows 2 tabs: Rounds and Form Coach.
   Widget _buildWithFormAnalysisTabs(BuildContext context) {
-    final String appBarTitle = _selectedIndex == 0 ? 'ScoreSensei' : 'Form Coach';
+    final String appBarTitle = _selectedIndex == 0
+        ? 'ScoreSensei'
+        : 'Form Coach';
 
     return BlocProvider<FormAnalysisHistoryCubit>.value(
       value: locator.get<FormAnalysisHistoryCubit>(),
@@ -113,73 +115,74 @@ class _MainWrapperState extends State<MainWrapper> {
           ),
         ),
         child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: GenericAppBar(
-          topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: appBarTitle,
-          titleIcon: _selectedIndex == 0
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.asset(
-                    'assets/icon/app_icon_clear_bg.png',
-                    width: 28,
-                    height: 28,
-                  ),
-                )
-              : null,
-          titleStyle: _selectedIndex == 0
-              ? GoogleFonts.exo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: 0.5,
-                  color: TurbColors.senseiBlue,
-                )
-              : null,
-          hasBackButton: false,
-          rightWidget: _buildRightWidget(context),
-        ),
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            RoundHistoryScreen(
-              bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
-            ),
-            FormAnalysisHistoryScreen(
-              bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
-            ),
-          ],
-        ),
-        bottomNavigationBar: Theme(
-          data: Theme.of(context).copyWith(
-            splashFactory: NoSplash.splashFactory,
-            highlightColor: Colors.transparent,
+          backgroundColor: Colors.transparent,
+          appBar: GenericAppBar(
+            topViewPadding: MediaQuery.of(context).viewPadding.top,
+            title: appBarTitle,
+            titleIcon: _selectedIndex == 0
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.asset(
+                      'assets/icon/app_icon_clear_bg.png',
+                      width: 28,
+                      height: 28,
+                    ),
+                  )
+                : null,
+            titleStyle: _selectedIndex == 0
+                ? GoogleFonts.exo2(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    fontStyle: FontStyle.italic,
+                    letterSpacing: 0.5,
+                    color: TurbColors.senseiBlue,
+                  )
+                : null,
+            hasBackButton: false,
+            rightWidget: _buildRightWidget(context),
           ),
-          child: BottomNavigationBar(
-            backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
-            selectedItemColor: Colors.blue,
-            unselectedItemColor: const Color(0xFF6B7280),
-            selectedLabelStyle: const TextStyle(fontSize: 12),
-            unselectedLabelStyle: const TextStyle(fontSize: 12),
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            enableFeedback: false,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Text('🥏', style: TextStyle(fontSize: 20)),
-                label: 'Rounds',
+          body: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              RoundHistoryScreen(
+                bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.school, size: 24),
-                label: 'Form Coach',
+              FormAnalysisHistoryScreen(
+                bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+                topViewPadding: MediaQuery.of(context).viewPadding.top,
               ),
             ],
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            type: BottomNavigationBarType.fixed,
+          ),
+          bottomNavigationBar: Theme(
+            data: Theme.of(context).copyWith(
+              splashFactory: NoSplash.splashFactory,
+              highlightColor: Colors.transparent,
+            ),
+            child: BottomNavigationBar(
+              backgroundColor: const Color(0xFFFFFFFF).withValues(alpha: 0.95),
+              selectedItemColor: Colors.blue,
+              unselectedItemColor: const Color(0xFF6B7280),
+              selectedLabelStyle: const TextStyle(fontSize: 12),
+              unselectedLabelStyle: const TextStyle(fontSize: 12),
+              showSelectedLabels: true,
+              showUnselectedLabels: true,
+              enableFeedback: false,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Text('🥏', style: TextStyle(fontSize: 20)),
+                  label: 'Rounds',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.school, size: 24),
+                  label: 'Form Coach',
+                ),
+              ],
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              type: BottomNavigationBarType.fixed,
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -352,8 +355,8 @@ class _MainWrapperState extends State<MainWrapper> {
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              final FormAnalysisHistoryCubit historyCubit =
-                  locator.get<FormAnalysisHistoryCubit>();
+              final FormAnalysisHistoryCubit historyCubit = locator
+                  .get<FormAnalysisHistoryCubit>();
               historyCubit.deleteAllAnalyses();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

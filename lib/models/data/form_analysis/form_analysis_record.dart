@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 
 part 'form_analysis_record.g.dart';
 
@@ -54,9 +55,9 @@ class FormAnalysisRecord {
   @JsonKey(name: 'thumbnail_base64')
   final String? thumbnailBase64;
 
-  /// Camera angle used for recording: "side" or "rear"
+  /// Camera angle used for recording: side or rear
   @JsonKey(name: 'camera_angle')
-  final String? cameraAngle;
+  final CameraAngle? cameraAngle;
 
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);
@@ -79,6 +80,7 @@ class CheckpointRecord {
     this.referenceSkeletonUrl,
     this.proPlayerId,
     this.referenceHorizontalOffsetPercent,
+    this.referenceScale,
   });
 
   /// Checkpoint identifier: "heisman", "loaded", "magic", "pro"
@@ -128,6 +130,11 @@ class CheckpointRecord {
   /// Positive values shift right, negative values shift left
   @JsonKey(name: 'reference_horizontal_offset_percent')
   final double? referenceHorizontalOffsetPercent;
+
+  /// Scale factor for aligning pro reference with user pose
+  /// Values typically range from 0.7 to 1.3 (e.g., 1.2 = scale up 20%, 0.8 = scale down 20%)
+  @JsonKey(name: 'reference_scale')
+  final double? referenceScale;
 
   factory CheckpointRecord.fromJson(Map<String, dynamic> json) =>
       _$CheckpointRecordFromJson(json);

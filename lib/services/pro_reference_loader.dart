@@ -20,7 +20,7 @@ class ProReferenceLoader {
   ///
   /// Returns 'side' or 'rear' based on the camera angle
   static String _getAngleFolderName(CameraAngle cameraAngle) {
-    return cameraAngle.apiValue; // 'side' or 'rear'
+    return cameraAngle.toApiString(); // 'side' or 'rear'
   }
 
   /// Main method to load a reference image with fallback strategy
