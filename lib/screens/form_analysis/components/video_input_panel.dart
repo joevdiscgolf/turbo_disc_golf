@@ -9,16 +9,10 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_to
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
-/// Panel for selecting throw type and initiating video capture/import.
+/// Panel for initiating video capture/import.
+/// Always uses backhand throw type.
 class VideoInputPanel extends StatefulWidget {
-  const VideoInputPanel({
-    super.key,
-    required this.selectedThrowType,
-    required this.onThrowTypeChanged,
-  });
-
-  final ThrowTechnique selectedThrowType;
-  final ValueChanged<ThrowTechnique> onThrowTypeChanged;
+  const VideoInputPanel({super.key});
 
   @override
   State<VideoInputPanel> createState() => _VideoInputPanelState();
@@ -32,9 +26,15 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
     (path: 'assets/test_videos/joe_example_throw_3.mov', name: 'Joe #3'),
     (path: 'assets/test_videos/joe_example_throw_4.mov', name: 'Joe #4'),
     (path: 'assets/test_videos/joe_example_throw_5.mov', name: 'Joe #5'),
-    (path: 'assets/test_videos/schmidt_example_throw_1.mov', name: 'Schmidt #1'),
+    (
+      path: 'assets/test_videos/joe_example_throw_rear_1.mov',
+      name: 'Joe Rear #1',
+    ),
+    (
+      path: 'assets/test_videos/schmidt_example_throw_1.mov',
+      name: 'Schmidt #1',
+    ),
     (path: 'assets/test_videos/trent_example_throw_1.mov', name: 'Trent #1'),
-    (path: 'assets/test_videos/mcbeth_example_throw_1.mov', name: 'McBeth #1'),
   ];
 
   String _selectedTestVideoPath =
@@ -50,8 +50,6 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildHeader(context),
-          const SizedBox(height: 32),
-          _buildThrowTypeSelector(context),
           const SizedBox(height: 32),
           _buildCameraAngleSelector(context),
           const SizedBox(height: 32),
@@ -90,59 +88,17 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
         const SizedBox(height: 24),
         Text(
           'Analyze Your Form',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
           'Get AI-powered feedback on your throwing technique',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildThrowTypeSelector(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Throw Type',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _ThrowTypeCard(
-                label: 'Backhand',
-                icon: Icons.sports_golf,
-                isSelected: widget.selectedThrowType == ThrowTechnique.backhand,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  widget.onThrowTypeChanged(ThrowTechnique.backhand);
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _ThrowTypeCard(
-                label: 'Forehand',
-                icon: Icons.sports_handball,
-                isSelected: widget.selectedThrowType == ThrowTechnique.forehand,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  widget.onThrowTypeChanged(ThrowTechnique.forehand);
-                },
-              ),
-            ),
-          ],
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
       ],
     );
@@ -154,9 +110,9 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
       children: [
         Text(
           'Camera Angle',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         CameraAngleToggle(
@@ -170,9 +126,9 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
         const SizedBox(height: 8),
         Text(
           _selectedCameraAngle.description,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
         ),
       ],
     );
@@ -195,7 +151,7 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
           fontWeight: FontWeight.w600,
           onPressed: () {
             cubit.recordVideo(
-              throwType: widget.selectedThrowType,
+              throwType: ThrowTechnique.backhand,
               cameraAngle: _selectedCameraAngle,
             );
           },
@@ -211,7 +167,7 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
           fontWeight: FontWeight.w600,
           onPressed: () {
             cubit.importVideo(
-              throwType: widget.selectedThrowType,
+              throwType: ThrowTechnique.backhand,
               cameraAngle: _selectedCameraAngle,
             );
           },
@@ -235,7 +191,7 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
                   fontWeight: FontWeight.w600,
                   onPressed: () {
                     cubit.testWithAssetVideo(
-                      throwType: widget.selectedThrowType,
+                      throwType: ThrowTechnique.backhand,
                       cameraAngle: _selectedCameraAngle,
                       assetPath: _selectedTestVideoPath,
                     );
@@ -280,9 +236,9 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
               Text(
                 'Recording Tips',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue[700],
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue[700],
+                ),
               ),
             ],
           ),
@@ -365,66 +321,6 @@ class _VideoInputPanelState extends State<VideoInputPanel> {
   }
 }
 
-class _ThrowTypeCard extends StatelessWidget {
-  const _ThrowTypeCard({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF137e66) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color:
-                isSelected ? const Color(0xFF137e66) : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF137e66).withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: isSelected ? Colors.white : Colors.grey[700],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.grey[800],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _TipItem extends StatelessWidget {
   const _TipItem({required this.text});
 
@@ -450,9 +346,9 @@ class _TipItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[700],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
             ),
           ),
         ],

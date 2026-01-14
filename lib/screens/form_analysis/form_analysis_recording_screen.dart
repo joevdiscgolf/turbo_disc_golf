@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_progress_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_panel.dart';
@@ -21,8 +20,6 @@ class FormAnalysisRecordingScreen extends StatefulWidget {
 
 class _FormAnalysisRecordingScreenState
     extends State<FormAnalysisRecordingScreen> {
-  ThrowTechnique _selectedThrowType = ThrowTechnique.backhand;
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider<VideoFormAnalysisCubit>(
@@ -71,12 +68,7 @@ class _FormAnalysisRecordingScreenState
 
   Widget _buildContent(BuildContext context, VideoFormAnalysisState state) {
     if (state is VideoFormAnalysisInitial) {
-      return VideoInputPanel(
-        selectedThrowType: _selectedThrowType,
-        onThrowTypeChanged: (ThrowTechnique type) {
-          setState(() => _selectedThrowType = type);
-        },
-      );
+      return const VideoInputPanel();
     } else if (state is VideoFormAnalysisRecording) {
       return AnalysisProgressView(message: state.progressMessage);
     } else if (state is VideoFormAnalysisValidating) {
