@@ -233,7 +233,7 @@ abstract class FBFormAnalysisDataLoader {
       final QuerySnapshot<Map<String, dynamic>> snapshot = await query
           .get()
           .timeout(
-            shortTimeout,
+            standardTimeout,
             onTimeout: () => throw TimeoutException(
               'Query timed out for path: $path',
             ),

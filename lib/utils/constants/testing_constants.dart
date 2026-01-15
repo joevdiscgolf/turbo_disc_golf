@@ -152,7 +152,7 @@ const bool showFormAnalysisScoreAndSummary = true;
 /// When true, saves form analyses to Firestore and uploads images to Cloud Storage.
 /// When false, skips saving to prevent cluttering the database during testing.
 /// Analysis results will still be shown in the UI, just not persisted.
-const bool saveFormAnalysisToFirestore = true;
+const bool saveFormAnalysisToFirestore = false;
 
 /// When true, always shows the Force Upgrade screen regardless of version check.
 /// This is useful for testing the upgrade UI without modifying Firestore.

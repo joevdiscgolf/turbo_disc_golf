@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_progress_view.dart';
+import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nuclear_loader_v3.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_completion_transition.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body.dart';
@@ -23,17 +27,97 @@ class FormAnalysisRecordingScreen extends StatefulWidget {
 
 class _FormAnalysisRecordingScreenState
     extends State<FormAnalysisRecordingScreen> {
+  bool _showingTransition = false;
+  VideoFormAnalysisComplete? _pendingResults;
+
+  // Persistent speed notifier for the loader
+  final ValueNotifier<double> _loaderSpeedNotifier = ValueNotifier<double>(1.0);
+
+  // Brain opacity notifier for smooth fade out during transition
+  final ValueNotifier<double> _brainOpacityNotifier = ValueNotifier<double>(1.0);
+
+  // DEBUG MODE: Set to true to automatically test the transition
+  // When enabled, the screen will show the loader for 2 seconds, then play the transition
+  // Set to FALSE when done testing to restore normal behavior
+  static const bool _debugAutoTransition = true;
+  bool _debugLoadingStarted = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Debug mode: automatically trigger loading and transition
+    if (_debugAutoTransition) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startDebugTransition();
+      });
+    }
+  }
+
+  void _startDebugTransition() async {
+    if (_debugLoadingStarted) return;
+    _debugLoadingStarted = true;
+
+    // Wait 2 seconds in loading state
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    // Create minimal mock data for testing
+    final mockSession = VideoAnalysisSession(
+      id: 'debug-session-id',
+      uid: 'debug-uid',
+      createdAt: DateTime.now().toIso8601String(),
+      videoPath: '/debug/path/video.mp4',
+      videoSource: VideoSource.camera,
+      throwType: ThrowTechnique.backhand,
+    );
+
+    final mockResult = FormAnalysisResult(
+      id: 'debug-result-id',
+      sessionId: 'debug-session-id',
+      createdAt: DateTime.now().toIso8601String(),
+      checkpointResults: const [],
+      overallScore: 85,
+      overallFeedback: 'Debug test feedback',
+      prioritizedImprovements: const [],
+    );
+
+    // Trigger the transition with mock data
+    setState(() {
+      _showingTransition = true;
+      _pendingResults = VideoFormAnalysisComplete(
+        session: mockSession,
+        result: mockResult,
+        poseAnalysis: null,
+        poseAnalysisWarning: null,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _loaderSpeedNotifier.dispose();
+    _brainOpacityNotifier.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider<VideoFormAnalysisCubit>(
       create: (context) => VideoFormAnalysisCubit(),
       child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
         builder: (context, state) {
-          // Determine colors based on state
-          final bool isCompleted = state is VideoFormAnalysisComplete;
-          final Color foregroundColor = isCompleted
-              ? TurbColors.darkGray
-              : Colors.white;
+          // Determine colors based on state and transition
+          final bool isCompleted =
+              state is VideoFormAnalysisComplete && !_showingTransition;
+          final Color foregroundColor =
+              isCompleted ? TurbColors.darkGray : Colors.white;
+
+          final bool isLoadingOrAnalyzing = state is VideoFormAnalysisRecording ||
+              state is VideoFormAnalysisValidating ||
+              state is VideoFormAnalysisAnalyzing ||
+              (_debugAutoTransition && !_showingTransition && _debugLoadingStarted);
 
           return Scaffold(
             backgroundColor: Colors.transparent,
@@ -50,11 +134,17 @@ class _FormAnalysisRecordingScreenState
               ),
             ),
             body: Stack(
+              fit: StackFit.expand,
               children: [
-                // Conditional background based on state
-                if (!isCompleted)
+                // Background layer
+                if (_showingTransition)
+                  // During transition, the transition widget handles background
+                  const SizedBox.shrink()
+                else if (!isCompleted || (_debugAutoTransition && _debugLoadingStarted && !_showingTransition))
+                  // Before transition: dark background
                   const Positioned.fill(child: FormAnalysisBackground())
                 else
+                  // After transition: light background
                   Positioned.fill(
                     child: Container(
                       decoration: const BoxDecoration(
@@ -73,22 +163,76 @@ class _FormAnalysisRecordingScreenState
                     ),
                   ),
 
-                // Main content
-                BlocConsumer<VideoFormAnalysisCubit, VideoFormAnalysisState>(
-                  listener: (context, state) {
-                    // Show warning snackbar if pose analysis failed
-                    if (state is VideoFormAnalysisComplete &&
-                        state.poseAnalysisWarning != null) {
-                      _showPoseAnalysisWarning(
-                        context,
-                        state.poseAnalysisWarning!,
-                      );
-                    }
-                  },
-                  builder: (context, state) {
-                    return _buildContent(context, state);
-                  },
+                // Main content - positioned to fill
+                Positioned.fill(
+                  child: BlocConsumer<VideoFormAnalysisCubit, VideoFormAnalysisState>(
+                    listener: (context, state) {
+                      // Trigger transition when analysis completes
+                      if (state is VideoFormAnalysisComplete &&
+                          !_showingTransition) {
+                        setState(() {
+                          _showingTransition = true;
+                          _pendingResults = state;
+                        });
+
+                        // Show warning snackbar if pose analysis failed
+                        if (state.poseAnalysisWarning != null) {
+                          _showPoseAnalysisWarning(
+                            context,
+                            state.poseAnalysisWarning!,
+                          );
+                        }
+                      }
+                    },
+                    builder: (context, state) {
+                      // Show transition if triggered
+                      if (_showingTransition && _pendingResults != null) {
+                        return AnalysisCompletionTransition(
+                          speedMultiplierNotifier: _loaderSpeedNotifier,
+                          brainOpacityNotifier: _brainOpacityNotifier,
+                          onComplete: () {
+                            setState(() {
+                              _showingTransition = false;
+                              // Reset debug flag so loader hides after transition
+                              if (_debugAutoTransition) {
+                                _debugLoadingStarted = false;
+                              }
+                              // Reset brain opacity for next time
+                              _brainOpacityNotifier.value = 1.0;
+                            });
+                          },
+                          child: AnalysisResultsView(
+                            result: _pendingResults!.result,
+                            poseAnalysis: _pendingResults!.poseAnalysis,
+                            topViewPadding: widget.topViewPadding,
+                          ),
+                        );
+                      }
+
+                      return _buildContent(context, state);
+                    },
+                  ),
                 ),
+
+                // Persistent loader layer - only during loading or transition
+                if (isLoadingOrAnalyzing || _showingTransition)
+                  Positioned.fill(
+                    child: Center(
+                      child: ValueListenableBuilder<double>(
+                        valueListenable: _brainOpacityNotifier,
+                        builder: (context, opacity, child) {
+                          return Opacity(
+                            opacity: opacity,
+                            child: child,
+                          );
+                        },
+                        child: GPTAtomicNucleusLoaderV3(
+                          key: const ValueKey('persistent-analysis-loader'),
+                          speedMultiplierNotifier: _loaderSpeedNotifier,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           );
@@ -100,12 +244,11 @@ class _FormAnalysisRecordingScreenState
   Widget _buildContent(BuildContext context, VideoFormAnalysisState state) {
     if (state is VideoFormAnalysisInitial) {
       return VideoInputBody(topViewpadding: widget.topViewPadding);
-    } else if (state is VideoFormAnalysisRecording) {
-      return AnalysisProgressView(message: state.progressMessage);
-    } else if (state is VideoFormAnalysisValidating) {
-      return AnalysisProgressView(message: state.progressMessage);
-    } else if (state is VideoFormAnalysisAnalyzing) {
-      return AnalysisProgressView(message: state.progressMessage);
+    } else if (state is VideoFormAnalysisRecording ||
+        state is VideoFormAnalysisValidating ||
+        state is VideoFormAnalysisAnalyzing) {
+      // Just show empty space - the loader is rendered separately
+      return const SizedBox.shrink();
     } else if (state is VideoFormAnalysisComplete) {
       return AnalysisResultsView(
         result: state.result,
@@ -121,20 +264,9 @@ class _FormAnalysisRecordingScreenState
   void _showPoseAnalysisWarning(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.warning_amber, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(message, style: const TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.orange[700],
-        duration: const Duration(seconds: 6),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        content: Text(message),
+        duration: const Duration(seconds: 5),
+        backgroundColor: Colors.orange,
       ),
     );
   }
@@ -146,75 +278,33 @@ class _FormAnalysisRecordingScreenState
   ) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
-              ),
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 24),
             Text(
               'Analysis Failed',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white.withValues(alpha: 0.85),
-              ),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
             ),
             const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (session != null)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      BlocProvider.of<VideoFormAnalysisCubit>(
-                        context,
-                      ).retryAnalysis();
-                    },
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Retry'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF137e66),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                if (session != null) const SizedBox(width: 16),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    BlocProvider.of<VideoFormAnalysisCubit>(context).reset();
-                  },
-                  icon: const Icon(Icons.arrow_back, size: 18),
-                  label: const Text('Start Over'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
+            ElevatedButton(
+              onPressed: () {
+                BlocProvider.of<VideoFormAnalysisCubit>(context).reset();
+              },
+              child: const Text('Try Again'),
             ),
           ],
         ),
