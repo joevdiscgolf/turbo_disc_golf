@@ -132,6 +132,11 @@ class _FormAnalysisRecordingScreenState
                   !_showingTransition &&
                   _debugLoadingStarted);
 
+          // App bar background should match the light background when completed
+          final Color appBarBackgroundColor = isCompleted
+              ? const Color(0xFFEEE8F5)
+              : Colors.transparent;
+
           return Scaffold(
             backgroundColor: Colors.transparent,
             extendBodyBehindAppBar: true,
@@ -139,12 +144,14 @@ class _FormAnalysisRecordingScreenState
               topViewPadding: MediaQuery.of(context).viewPadding.top,
               title: '',
               hasBackButton: false,
-              backgroundColor: Colors.transparent,
+              backgroundColor: appBarBackgroundColor,
               foregroundColor: foregroundColor,
-              rightWidget: IconButton(
-                icon: Icon(Icons.close, color: foregroundColor),
-                onPressed: () => Navigator.pop(context),
-              ),
+              rightWidget: (isLoadingOrAnalyzing || _showingTransition)
+                  ? null
+                  : IconButton(
+                      icon: Icon(Icons.close, color: foregroundColor),
+                      onPressed: () => Navigator.pop(context),
+                    ),
             ),
             body: Stack(
               fit: StackFit.expand,

@@ -76,6 +76,8 @@ dependencies:
   path_provider: ^2.1.0
   qr_flutter: ^4.1.0
   path: ^1.9.1
+  video_player: ^2.9.2
+  chewie: ^1.8.5
   html: ^0.15.5
   flutter_map: ^7.0.2
   latlong2: ^0.9.1

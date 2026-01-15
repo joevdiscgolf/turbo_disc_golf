@@ -74,6 +74,11 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       angle: CameraAngle.rear,
     ),
     (
+      path: 'assets/test_videos/wes_example_throw_rear_1.mov',
+      name: 'Wes Rear #1',
+      angle: CameraAngle.rear,
+    ),
+    (
       path: 'assets/test_videos/schmidt_example_throw_1.mov',
       name: 'Schmidt #1',
       angle: CameraAngle.side,

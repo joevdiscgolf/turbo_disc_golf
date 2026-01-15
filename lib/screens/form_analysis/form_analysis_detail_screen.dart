@@ -7,10 +7,7 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysi
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 
 class FormAnalysisDetailScreen extends StatefulWidget {
-  const FormAnalysisDetailScreen({
-    super.key,
-    required this.analysis,
-  });
+  const FormAnalysisDetailScreen({super.key, required this.analysis});
 
   final FormAnalysisRecord analysis;
 

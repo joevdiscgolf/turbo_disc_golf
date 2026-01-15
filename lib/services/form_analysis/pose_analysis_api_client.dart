@@ -28,12 +28,14 @@ class PoseAnalysisApiClient {
   /// [cameraAngle] - Camera angle enum value
   /// [sessionId] - Unique session identifier
   /// [userId] - User identifier
+  /// [proPlayerId] - Optional pro player ID for reference comparison (e.g., 'paul_mcbeth')
   Future<PoseAnalysisResponse> analyzeVideo({
     required File videoFile,
     required String throwType,
     required CameraAngle cameraAngle,
     required String sessionId,
     required String userId,
+    String? proPlayerId,
   }) async {
     final Uri uri = Uri.parse('$_baseUrl/api/v1/form-analysis/analyze-file');
 
@@ -50,6 +52,9 @@ class PoseAnalysisApiClient {
     request.fields['camera_angle'] = cameraAngle.toApiString();
     request.fields['session_id'] = sessionId;
     request.fields['user_id'] = userId;
+    if (proPlayerId != null) {
+      request.fields['pro_player_id'] = proPlayerId;
+    }
 
     try {
       // Send request with timeout
@@ -136,6 +141,7 @@ class PoseAnalysisApiClient {
     required CameraAngle cameraAngle,
     required String sessionId,
     required String userId,
+    String? proPlayerId,
   }) async {
     final Uri uri = Uri.parse('$_baseUrl/api/v1/form-analysis/analyze');
 
@@ -154,6 +160,7 @@ class PoseAnalysisApiClient {
       'camera_angle': cameraAngle.toApiString(),
       'session_id': sessionId,
       'user_id': userId,
+      if (proPlayerId != null) 'pro_player_id': proPlayerId,
     };
 
     try {

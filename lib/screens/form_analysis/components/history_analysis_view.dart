@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
@@ -40,6 +41,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             SliverToBoxAdapter(child: _buildHeader(context)),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
+            SliverToBoxAdapter(child: _buildAngleDeviations(context)),
             if (widget.analysis.topCoachingTips?.isNotEmpty ?? false)
               SliverToBoxAdapter(child: _buildCoachingTips(context)),
             const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
@@ -918,6 +920,298 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     if (score >= 60) return const Color(0xFF2196F3);
     if (score >= 40) return const Color(0xFFFF9800);
     return const Color(0xFFF44336);
+  }
+
+  Widget _buildAngleDeviations(BuildContext context) {
+    if (widget.analysis.checkpoints.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final CheckpointRecord checkpoint =
+        widget.analysis.checkpoints[_selectedCheckpointIndex];
+
+    // Convert angleDeviations map to List<AngleDeviation> format
+    final List<AngleDeviation> deviations =
+        _convertAngleDeviationsToList(checkpoint);
+
+    if (deviations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Angle Analysis',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          ...deviations.map((deviation) {
+            // For knee_bend, add back leg detail if available
+            if (deviation.angleName == 'knee_bend') {
+              return _buildKneeDeviationWithBackLegDetail(
+                context,
+                deviation,
+                checkpoint,
+              );
+            }
+            // Other angles use existing row
+            return _buildDeviationRow(context, deviation);
+          }),
+        ],
+      ),
+    );
+  }
+
+  List<AngleDeviation> _convertAngleDeviationsToList(CheckpointRecord checkpoint) {
+    final List<AngleDeviation> deviations = [];
+    final Map<String, double>? angleDeviations = checkpoint.angleDeviations;
+
+    if (angleDeviations == null) return deviations;
+
+    // For each angle deviation, we need to look up the user and reference values
+    // Since we don't have them stored separately in the old format, we'll calculate them
+    angleDeviations.forEach((angleName, deviationValue) {
+      // We can't get the exact user and reference values from the old format
+      // So we'll just show a simplified version
+      deviations.add(
+        AngleDeviation(
+          angleName: angleName,
+          userValue: 0, // Not available in old format
+          referenceValue: 0, // Not available in old format
+          deviation: deviationValue,
+          withinTolerance: deviationValue.abs() < 10,
+        ),
+      );
+    });
+
+    return deviations;
+  }
+
+  Widget _buildDeviationRow(BuildContext context, AngleDeviation deviation) {
+    final bool isGood = deviation.withinTolerance;
+    final Color statusColor = isGood
+        ? const Color(0xFF4CAF50)
+        : (deviation.deviation != null && deviation.deviation!.abs() > 20)
+            ? const Color(0xFFF44336)
+            : const Color(0xFFFF9800);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isGood ? Icons.check : Icons.warning_amber,
+              size: 18,
+              color: statusColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _formatAngleName(deviation.angleName),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w500),
+                ),
+                if (deviation.userValue != 0 && deviation.referenceValue != 0)
+                  Text(
+                    'You: ${deviation.userValue.toStringAsFixed(0)}° • '
+                    'Pro: ${deviation.referenceValue?.toStringAsFixed(0) ?? '--'}°',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.grey[600]),
+                  ),
+              ],
+            ),
+          ),
+          if (deviation.deviation != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: statusColor, width: 1),
+              ),
+              child: Text(
+                '${deviation.deviation! >= 0 ? '+' : ''}${deviation.deviation!.toStringAsFixed(1)}°',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKneeDeviationWithBackLegDetail(
+    BuildContext context,
+    AngleDeviation deviation,
+    CheckpointRecord checkpoint,
+  ) {
+    return Column(
+      children: [
+        // Existing aggregate knee bend row
+        _buildDeviationRow(context, deviation),
+
+        // Add back leg (left knee) detail if available
+        if (checkpoint.userIndividualAngles?.leftKneeBendAngle != null) ...[
+          const SizedBox(height: 6),
+          _buildBackLegKneeDetail(context, checkpoint),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBackLegKneeDetail(
+    BuildContext context,
+    CheckpointRecord checkpoint,
+  ) {
+    final double? userLeftKnee =
+        checkpoint.userIndividualAngles?.leftKneeBendAngle;
+    final double? refLeftKnee =
+        checkpoint.referenceIndividualAngles?.leftKneeBendAngle;
+    final double? deviation = checkpoint.individualDeviations?.leftKneeBendAngle;
+
+    if (userLeftKnee == null) return const SizedBox.shrink();
+
+    final Color deviationColor = _getDeviationColor(deviation?.abs());
+    final String deviationText = deviation != null
+        ? '${deviation >= 0 ? '+' : ''}${deviation.toStringAsFixed(1)}°'
+        : 'N/A';
+
+    return Container(
+      margin: const EdgeInsets.only(left: 16, top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Back leg label
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Back Leg (Left)',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          // User angle
+          Text(
+            '${userLeftKnee.toStringAsFixed(1)}°',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          // "vs" separator
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              'vs',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
+            ),
+          ),
+
+          // Reference angle
+          Text(
+            refLeftKnee != null ? '${refLeftKnee.toStringAsFixed(1)}°' : 'N/A',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Deviation badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: deviationColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: deviationColor, width: 1),
+            ),
+            child: Text(
+              deviationText,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: deviationColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getDeviationColor(double? deviationAbs) {
+    if (deviationAbs == null) return Colors.grey;
+
+    if (deviationAbs < 5) return Colors.green; // Excellent
+    if (deviationAbs < 15) return Colors.lightGreen; // Good
+    if (deviationAbs < 20) return Colors.orange; // Moderate
+    return Colors.red; // Significant
+  }
+
+  String _formatAngleName(String name) {
+    return name
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1)}'
+              : word,
+        )
+        .join(' ');
   }
 }
 
