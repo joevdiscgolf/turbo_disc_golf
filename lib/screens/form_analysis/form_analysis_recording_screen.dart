@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nuclear_loader_v3.dart';
+import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nuclear_loader.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_completion_transition.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/cycling_analysis_text.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
@@ -34,12 +35,16 @@ class _FormAnalysisRecordingScreenState
   final ValueNotifier<double> _loaderSpeedNotifier = ValueNotifier<double>(1.0);
 
   // Brain opacity notifier for smooth fade out during transition
-  final ValueNotifier<double> _brainOpacityNotifier = ValueNotifier<double>(1.0);
+  final ValueNotifier<double> _brainOpacityNotifier = ValueNotifier<double>(
+    1.0,
+  );
 
-  // DEBUG MODE: Set to true to automatically test the transition
-  // When enabled, the screen will show the loader for 2 seconds, then play the transition
-  // Set to FALSE when done testing to restore normal behavior
-  static const bool _debugAutoTransition = true;
+  // DEBUG MODE: Set to true to automatically test the finalization animation
+  // When enabled, the screen will show:
+  //   - 4 seconds of loading (brain orbiting, messages cycling)
+  //   - Then the 5-second finalization animation
+  // Set to FALSE when done testing to require actual video upload
+  static const bool _debugAutoFinalization = false;
   bool _debugLoadingStarted = false;
 
   @override
@@ -47,7 +52,7 @@ class _FormAnalysisRecordingScreenState
     super.initState();
 
     // Debug mode: automatically trigger loading and transition
-    if (_debugAutoTransition) {
+    if (_debugAutoFinalization) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _startDebugTransition();
       });
@@ -56,10 +61,14 @@ class _FormAnalysisRecordingScreenState
 
   void _startDebugTransition() async {
     if (_debugLoadingStarted) return;
-    _debugLoadingStarted = true;
 
-    // Wait 2 seconds in loading state
-    await Future.delayed(const Duration(seconds: 2));
+    // Start showing the loader in loading state (not transition yet)
+    setState(() {
+      _debugLoadingStarted = true;
+    });
+
+    // Wait 4 seconds in loading state (brain orbiting, messages cycling)
+    await Future.delayed(const Duration(seconds: 4));
 
     if (!mounted) return;
 
@@ -111,13 +120,17 @@ class _FormAnalysisRecordingScreenState
           // Determine colors based on state and transition
           final bool isCompleted =
               state is VideoFormAnalysisComplete && !_showingTransition;
-          final Color foregroundColor =
-              isCompleted ? TurbColors.darkGray : Colors.white;
+          final Color foregroundColor = isCompleted
+              ? TurbColors.darkGray
+              : Colors.white;
 
-          final bool isLoadingOrAnalyzing = state is VideoFormAnalysisRecording ||
+          final bool isLoadingOrAnalyzing =
+              state is VideoFormAnalysisRecording ||
               state is VideoFormAnalysisValidating ||
               state is VideoFormAnalysisAnalyzing ||
-              (_debugAutoTransition && !_showingTransition && _debugLoadingStarted);
+              (_debugAutoFinalization &&
+                  !_showingTransition &&
+                  _debugLoadingStarted);
 
           return Scaffold(
             backgroundColor: Colors.transparent,
@@ -137,11 +150,8 @@ class _FormAnalysisRecordingScreenState
               fit: StackFit.expand,
               children: [
                 // Background layer
-                if (_showingTransition)
-                  // During transition, the transition widget handles background
-                  const SizedBox.shrink()
-                else if (!isCompleted || (_debugAutoTransition && _debugLoadingStarted && !_showingTransition))
-                  // Before transition: dark background
+                if (!isCompleted || _showingTransition)
+                  // Before and during transition: dark background
                   const Positioned.fill(child: FormAnalysisBackground())
                 else
                   // After transition: light background
@@ -165,71 +175,82 @@ class _FormAnalysisRecordingScreenState
 
                 // Main content - positioned to fill
                 Positioned.fill(
-                  child: BlocConsumer<VideoFormAnalysisCubit, VideoFormAnalysisState>(
-                    listener: (context, state) {
-                      // Trigger transition when analysis completes
-                      if (state is VideoFormAnalysisComplete &&
-                          !_showingTransition) {
-                        setState(() {
-                          _showingTransition = true;
-                          _pendingResults = state;
-                        });
-
-                        // Show warning snackbar if pose analysis failed
-                        if (state.poseAnalysisWarning != null) {
-                          _showPoseAnalysisWarning(
-                            context,
-                            state.poseAnalysisWarning!,
-                          );
-                        }
-                      }
-                    },
-                    builder: (context, state) {
-                      // Show transition if triggered
-                      if (_showingTransition && _pendingResults != null) {
-                        return AnalysisCompletionTransition(
-                          speedMultiplierNotifier: _loaderSpeedNotifier,
-                          brainOpacityNotifier: _brainOpacityNotifier,
-                          onComplete: () {
+                  child:
+                      BlocConsumer<
+                        VideoFormAnalysisCubit,
+                        VideoFormAnalysisState
+                      >(
+                        listener: (context, state) {
+                          // Trigger transition when analysis completes
+                          if (state is VideoFormAnalysisComplete &&
+                              !_showingTransition) {
                             setState(() {
-                              _showingTransition = false;
-                              // Reset debug flag so loader hides after transition
-                              if (_debugAutoTransition) {
-                                _debugLoadingStarted = false;
-                              }
-                              // Reset brain opacity for next time
-                              _brainOpacityNotifier.value = 1.0;
+                              _showingTransition = true;
+                              _pendingResults = state;
                             });
-                          },
-                          child: AnalysisResultsView(
-                            result: _pendingResults!.result,
-                            poseAnalysis: _pendingResults!.poseAnalysis,
-                            topViewPadding: widget.topViewPadding,
-                          ),
-                        );
-                      }
 
-                      return _buildContent(context, state);
-                    },
-                  ),
+                            // Show warning snackbar if pose analysis failed
+                            if (state.poseAnalysisWarning != null) {
+                              _showPoseAnalysisWarning(
+                                context,
+                                state.poseAnalysisWarning!,
+                              );
+                            }
+                          }
+                        },
+                        builder: (context, state) {
+                          // Show transition if triggered
+                          if (_showingTransition && _pendingResults != null) {
+                            return AnalysisCompletionTransition(
+                              speedMultiplierNotifier: _loaderSpeedNotifier,
+                              brainOpacityNotifier: _brainOpacityNotifier,
+                              onComplete: () {
+                                setState(() {
+                                  _showingTransition = false;
+                                  // Reset debug flag so loader hides after transition
+                                  if (_debugAutoFinalization) {
+                                    _debugLoadingStarted = false;
+                                  }
+                                  // Reset brain opacity for next time
+                                  _brainOpacityNotifier.value = 1.0;
+                                });
+                              },
+                              child: AnalysisResultsView(
+                                result: _pendingResults!.result,
+                                poseAnalysis: _pendingResults!.poseAnalysis,
+                                topViewPadding: widget.topViewPadding,
+                              ),
+                            );
+                          }
+
+                          return _buildContent(context, state);
+                        },
+                      ),
                 ),
 
                 // Persistent loader layer - only during loading or transition
                 if (isLoadingOrAnalyzing || _showingTransition)
                   Positioned.fill(
                     child: Center(
-                      child: ValueListenableBuilder<double>(
-                        valueListenable: _brainOpacityNotifier,
-                        builder: (context, opacity, child) {
-                          return Opacity(
-                            opacity: opacity,
-                            child: child,
-                          );
-                        },
-                        child: GPTAtomicNucleusLoaderV3(
-                          key: const ValueKey('persistent-analysis-loader'),
-                          speedMultiplierNotifier: _loaderSpeedNotifier,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ValueListenableBuilder<double>(
+                            valueListenable: _brainOpacityNotifier,
+                            builder: (context, opacity, child) {
+                              return Opacity(opacity: opacity, child: child);
+                            },
+                            child: GPTAtomicNucleusLoader(
+                              key: const ValueKey('persistent-analysis-loader'),
+                              speedMultiplierNotifier: _loaderSpeedNotifier,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          CyclingAnalysisText(
+                            brainOpacityNotifier: _brainOpacityNotifier,
+                            shouldShow: !_showingTransition,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -242,6 +263,11 @@ class _FormAnalysisRecordingScreenState
   }
 
   Widget _buildContent(BuildContext context, VideoFormAnalysisState state) {
+    // During debug loading, hide the upload screen
+    if (_debugAutoFinalization && _debugLoadingStarted && !_showingTransition) {
+      return const SizedBox.shrink();
+    }
+
     if (state is VideoFormAnalysisInitial) {
       return VideoInputBody(topViewpadding: widget.topViewPadding);
     } else if (state is VideoFormAnalysisRecording ||
@@ -287,17 +313,17 @@ class _FormAnalysisRecordingScreenState
             Text(
               'Analysis Failed',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
