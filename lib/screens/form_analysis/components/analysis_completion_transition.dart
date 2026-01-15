@@ -8,21 +8,23 @@ import 'package:flutter/material.dart';
 /// This widget controls the transition overlays and speed of a persistent
 /// loader that lives at a higher level in the widget tree.
 ///
-/// Timeline (6800ms total):
-/// - 0-4800ms: Particles accelerate
-/// - 4800-5800ms: Particles at max speed (1000ms hold)
-/// - 5800-6700ms: Content fades/blurs in behind brain (900ms)
-/// - 6100-6800ms: Brain fades out (700ms, starts 300ms after content)
-/// - 6500-6800ms: Background transitions from dark to light (300ms)
+/// Timeline (5000ms total):
+/// - 0-3000ms: Particles accelerate
+/// - 3000-4000ms: Particles at max speed (1000ms hold)
+/// - 4000-4900ms: Content fades/blurs in behind brain (900ms)
+/// - 4300-5000ms: Brain fades out (700ms, starts 300ms after content)
+/// - 4700-5000ms: Background transitions from dark to light (300ms)
 class AnalysisCompletionTransition extends StatefulWidget {
   const AnalysisCompletionTransition({
     super.key,
     required this.speedMultiplierNotifier,
+    required this.brainOpacityNotifier,
     required this.onComplete,
     required this.child,
   });
 
   final ValueNotifier<double> speedMultiplierNotifier;
+  final ValueNotifier<double> brainOpacityNotifier;
   final VoidCallback onComplete;
   final Widget child;
 
@@ -37,11 +39,11 @@ class _AnalysisCompletionTransitionState
   late AnimationController _controller;
 
   // Animation phase boundaries (normalized to 0.0-1.0)
-  static const double speedUpEnd = 0.706; // 4800ms / 6800ms
-  static const double maxSpeedEnd = 0.853; // 5800ms / 6800ms
-  static const double contentFadeEnd = 0.985; // 6700ms / 6800ms
-  static const double brainFadeStart = 0.897; // 6100ms / 6800ms
-  static const double bgTransitionStart = 0.956; // 6500ms / 6800ms (300ms duration)
+  static const double speedUpEnd = 0.600; // 3000ms / 5000ms
+  static const double maxSpeedEnd = 0.800; // 4000ms / 5000ms
+  static const double contentFadeEnd = 0.980; // 4900ms / 5000ms
+  static const double brainFadeStart = 0.860; // 4300ms / 5000ms
+  static const double bgTransitionStart = 0.940; // 4700ms / 5000ms (300ms duration)
 
   // Background colors
   static const List<Color> _startGradient = [
@@ -62,7 +64,7 @@ class _AnalysisCompletionTransitionState
     super.initState();
 
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 6800),
+      duration: const Duration(milliseconds: 5000),
       vsync: this,
     )..forward();
 
@@ -79,14 +81,25 @@ class _AnalysisCompletionTransitionState
   void _updateSpeed() {
     final double progress = _controller.value;
 
+    // Update speed multiplier
     if (progress < speedUpEnd) {
-      // Accelerate from 1.0 to 3.5
+      // Accelerate from 1.0 to 7.875 (5.25 × 1.5)
       final double phaseProgress = progress / speedUpEnd;
       widget.speedMultiplierNotifier.value =
-          1.0 + (phaseProgress * phaseProgress * 2.5);
+          1.0 + (phaseProgress * phaseProgress * 6.875);
     } else {
       // Hold at max speed - never slow down!
-      widget.speedMultiplierNotifier.value = 3.5;
+      widget.speedMultiplierNotifier.value = 7.875;
+    }
+
+    // Update brain opacity (fade out smoothly starting at brainFadeStart)
+    if (progress < brainFadeStart) {
+      widget.brainOpacityNotifier.value = 1.0;
+    } else {
+      final double fadeProgress =
+          (progress - brainFadeStart) / (1.0 - brainFadeStart);
+      widget.brainOpacityNotifier.value =
+          1.0 - Curves.easeOut.transform(fadeProgress);
     }
   }
 
@@ -111,9 +124,6 @@ class _AnalysisCompletionTransitionState
 
             // Emitted particles (keep moving while brain fades)
             _buildEmittedParticles(progress),
-
-            // Brain fade overlay (darkens the brain)
-            _buildBrainFadeOverlay(progress),
 
             // Results reveal layer (fades in behind brain)
             _buildContentLayer(progress),
@@ -164,46 +174,31 @@ class _AnalysisCompletionTransitionState
       return const SizedBox.shrink();
     }
 
-    // Particles keep full opacity even while brain fades
-    // Calculate particle emission progress (from 0.15 to maxSpeedEnd)
-    final double particleProgress =
+    // Emission progress: clamped to stop spawning at maxSpeedEnd
+    final double emissionProgress =
         ((progress - 0.15) / (maxSpeedEnd - 0.15)).clamp(0.0, 1.0);
 
-    return Positioned.fill(
-      child: CustomPaint(
-        painter: _RandomParticlesPainter(
-          progress: particleProgress,
-          particleColor: const Color(0xFF4DD0E1),
-        ),
-      ),
-    );
-  }
+    // Animation progress: unclamped to keep particles moving
+    final double animationProgress = (progress - 0.15) / (maxSpeedEnd - 0.15);
 
-  Widget _buildBrainFadeOverlay(double progress) {
-    // Brain starts fading at brainFadeStart (6100ms)
-    if (progress < brainFadeStart) {
-      return const SizedBox.shrink();
-    }
-
-    final double fadeProgress =
-        (progress - brainFadeStart) / (1.0 - brainFadeStart);
-    final double overlayOpacity = Curves.easeOut.transform(fadeProgress);
+    // Get current speed multiplier for particle velocity
+    final double currentSpeed = widget.speedMultiplierNotifier.value;
 
     return Positioned.fill(
-      child: Center(
-        child: Container(
-          width: 400,
-          height: 400,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                _endGradient[0].withValues(alpha: overlayOpacity),
-                _endGradient[0].withValues(alpha: overlayOpacity * 0.5),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
+      child: ValueListenableBuilder<double>(
+        valueListenable: widget.brainOpacityNotifier,
+        builder: (context, brainOpacity, child) {
+          return Opacity(
+            opacity: brainOpacity,
+            child: child!,
+          );
+        },
+        child: CustomPaint(
+          painter: _RandomParticlesPainter(
+            emissionProgress: emissionProgress,
+            animationProgress: animationProgress,
+            particleColor: const Color(0xFF4DD0E1),
+            speedMultiplier: currentSpeed,
           ),
         ),
       ),
@@ -240,20 +235,30 @@ class _AnalysisCompletionTransitionState
 /// Painter for random particles flying off one by one
 class _RandomParticlesPainter extends CustomPainter {
   _RandomParticlesPainter({
-    required this.progress,
+    required this.emissionProgress,
+    required this.animationProgress,
     required this.particleColor,
+    required this.speedMultiplier,
   });
 
-  final double progress;
+  final double emissionProgress; // Clamped to control spawning
+  final double animationProgress; // Unclamped to control movement
   final Color particleColor;
+  final double speedMultiplier;
 
   @override
   void paint(Canvas canvas, Size size) {
     final Offset center = Offset(size.width / 2, size.height / 2);
 
-    // Total number of particles to emit
-    final int totalParticles = 60;
-    final int particlesToShow = (progress * totalParticles).toInt();
+    // Total number of particles increases with speed for more intensity
+    // Start with 40 particles at speed 1.0, scale up to 150 at max speed (7.875)
+    final int baseParticles = 40;
+    final int maxParticles = 150;
+    final double speedFactor = (speedMultiplier - 1.0) / 6.875; // Normalize to 0.0-1.0
+    final int totalParticles =
+        (baseParticles + (speedFactor * (maxParticles - baseParticles))).round();
+    // Use emissionProgress (clamped) to control particle count
+    final int particlesToShow = (emissionProgress * totalParticles).toInt();
 
     for (int i = 0; i < particlesToShow; i++) {
       // Each particle has a unique seed for consistent behavior
@@ -265,13 +270,14 @@ class _RandomParticlesPainter extends CustomPainter {
 
       // Particle spawn time (staggered)
       final double spawnTime = i / totalParticles;
-      final double particleLifetime = progress - spawnTime;
+      // Use animationProgress (unclamped) for movement calculation
+      final double particleLifetime = animationProgress - spawnTime;
 
       if (particleLifetime <= 0) continue;
 
-      // Distance increases over particle lifetime
+      // Distance increases over particle lifetime, scaled by speed multiplier
       final double maxDistance = 800.0;
-      final double distance = maxDistance * particleLifetime * 1.5;
+      final double distance = maxDistance * particleLifetime * 1.5 * speedMultiplier;
 
       // Calculate position
       final double x = center.dx + distance * cos(angle);
@@ -285,29 +291,29 @@ class _RandomParticlesPainter extends CustomPainter {
       // Particle size
       final double particleSize = 4.0 - (particleLifetime * 2.0).clamp(0, 2);
 
-      // Opacity fades over time
-      final double opacity = (1.0 - particleLifetime).clamp(0.0, 1.0);
+      // Keep particles at constant opacity - brain opacity controls overall fade
+      final double opacity = 0.8;
 
-      if (particleSize > 0 && opacity > 0) {
+      if (particleSize > 0) {
         final Paint paint = Paint()
-          ..color = particleColor.withValues(alpha: opacity * 0.8)
+          ..color = particleColor.withValues(alpha: opacity)
           ..style = PaintingStyle.fill;
 
         canvas.drawCircle(Offset(x, y), particleSize, paint);
 
         // Glow
-        if (opacity > 0.3) {
-          final Paint glowPaint = Paint()
-            ..color = particleColor.withValues(alpha: opacity * 0.3)
-            ..style = PaintingStyle.fill;
-          canvas.drawCircle(Offset(x, y), particleSize + 2, glowPaint);
-        }
+        final Paint glowPaint = Paint()
+          ..color = particleColor.withValues(alpha: opacity * 0.3)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(Offset(x, y), particleSize + 2, glowPaint);
       }
     }
   }
 
   @override
   bool shouldRepaint(_RandomParticlesPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.emissionProgress != emissionProgress ||
+        oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.speedMultiplier != speedMultiplier;
   }
 }
