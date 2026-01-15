@@ -119,8 +119,10 @@ class _AnalysisCompletionTransitionState
 
         return Stack(
           children: [
-            // Animated background color transition (only over last 300ms)
-            _buildBackgroundTransition(progress),
+            // Only render transition background when actually transitioning (after 4700ms)
+            // Before this, FormAnalysisBackground shows through with animated particles
+            if (progress >= bgTransitionStart)
+              _buildBackgroundTransition(progress),
 
             // Emitted particles (keep moving while brain fades)
             _buildEmittedParticles(progress),

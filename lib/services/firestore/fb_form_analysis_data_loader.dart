@@ -261,6 +261,11 @@ abstract class FBFormAnalysisDataLoader {
           '[FBFormAnalysisDataLoader][loadRecentAnalyses] Loaded ${records.length} analyses, hasMore: $hasMore');
 
       return (records, hasMore);
+    } on TimeoutException catch (e) {
+      // Handle timeout gracefully - likely Firebase emulator not running or no data
+      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Timeout: ${e.message}');
+      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] This is normal if Firebase emulator is not running or no data exists');
+      return (<FormAnalysisRecord>[], false);
     } catch (e, trace) {
       debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Exception: $e');
       debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Stack: $trace');
