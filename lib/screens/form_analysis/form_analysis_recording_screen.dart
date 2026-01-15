@@ -44,7 +44,7 @@ class _FormAnalysisRecordingScreenState
   //   - 4 seconds of loading (brain orbiting, messages cycling)
   //   - Then the 5-second finalization animation
   // Set to FALSE when done testing to require actual video upload
-  static const bool _debugAutoFinalization = true;
+  static const bool _debugAutoFinalization = false;
   bool _debugLoadingStarted = false;
 
   @override
