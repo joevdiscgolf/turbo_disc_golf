@@ -110,6 +110,17 @@ Future<void> setUpLocator() async {
     StoryGeneratorService(locator.get<LLMService>(instanceName: 'story')),
   );
 
+  // Register default LLMService for general AI parsing/analysis
+  // This allows swapping providers via configuration
+  final LLMService defaultLLMService = storyGenerationLLMProvider == 'openai'
+      ? locator.get<ChatGPTService>()
+      : locator.get<GeminiService>();
+
+  locator.registerSingleton<LLMService>(
+    defaultLLMService,
+    // No instanceName - this is the default LLMService
+  );
+
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());

@@ -42,6 +42,9 @@ class AnalysisResultsView extends StatelessWidget {
       videoUrl: poseAnalysis!.videoUrl,
       throwType: _parseThrowTechnique(poseAnalysis!.throwType),
       cameraAngle: poseAnalysis!.cameraAngle,
+      videoAspectRatio: poseAnalysis!.videoAspectRatio,
+      // Pass full pose analysis for video sync metadata
+      poseAnalysisResponse: poseAnalysis,
     );
   }
 

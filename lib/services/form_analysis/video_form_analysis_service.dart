@@ -7,8 +7,8 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_checkpoint.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
@@ -91,7 +91,7 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
         return _getMockFormAnalysisResult(throwType);
       }
 
-      final GeminiService geminiService = locator.get<GeminiService>();
+      final LLMService llmService = locator.get<LLMService>();
 
       onProgressUpdate?.call('Preparing analysis...');
 
@@ -108,8 +108,8 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
       onProgressUpdate?.call('Analyzing your form...');
 
-      // Call Gemini with video
-      final String? response = await geminiService.generateContentWithVideo(
+      // Call LLM service with video
+      final String? response = await llmService.generateContentWithVideo(
         prompt: prompt,
         videoPath: videoPath,
       );

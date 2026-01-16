@@ -218,6 +218,10 @@ abstract class FBFormAnalysisDataLoader {
         topCoachingTips: topTips.isEmpty ? null : topTips,
         thumbnailBase64: thumbnailBase64,
         cameraAngle: cameraAngle,
+        videoUrl: poseAnalysis.videoUrl,
+        videoOrientation: poseAnalysis.videoOrientation,
+        videoAspectRatio: poseAnalysis.videoAspectRatio,
+        videoSyncMetadata: poseAnalysis.videoSyncMetadata,
       );
 
       // Save to Firestore using utility

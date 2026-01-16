@@ -29,6 +29,8 @@ class HistoryAnalysisView extends StatefulWidget {
     this.videoUrl,
     this.throwType,
     this.cameraAngle,
+    this.videoAspectRatio,
+    this.poseAnalysisResponse,
   });
 
   final FormAnalysisRecord analysis;
@@ -44,6 +46,14 @@ class HistoryAnalysisView extends StatefulWidget {
   /// Optional: Camera angle for selecting correct pro reference video
   final CameraAngle? cameraAngle;
 
+  /// Optional: Video aspect ratio for layout decisions (width/height)
+  /// Examples: 0.5625 for 9:16 portrait, 1.778 for 16:9 landscape
+  final double? videoAspectRatio;
+
+  /// Optional: Full pose analysis response with video sync metadata
+  /// Required for video synchronization to work properly
+  final PoseAnalysisResponse? poseAnalysisResponse;
+
   @override
   State<HistoryAnalysisView> createState() => _HistoryAnalysisViewState();
 }
@@ -52,6 +62,39 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
   int _selectedCheckpointIndex = 0;
   bool _showSkeletonOnly = false;
   final ProReferenceLoader _proRefLoader = ProReferenceLoader();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Debug log video sync metadata from both sources
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('[HistoryAnalysisView] 🎬 VIDEO SYNC METADATA DEBUG');
+    debugPrint('[HistoryAnalysisView] Analysis ID: ${widget.analysis.id}');
+
+    // Check FormAnalysisRecord (loaded from Firestore)
+    debugPrint('[HistoryAnalysisView] From FormAnalysisRecord:');
+    if (widget.analysis.videoSyncMetadata != null) {
+      final metadata = widget.analysis.videoSyncMetadata!;
+      debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
+      debugPrint('[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x');
+      debugPrint('[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}');
+    } else {
+      debugPrint('[HistoryAnalysisView]   ❌ videoSyncMetadata is NULL (not saved to Firestore)');
+    }
+
+    // Check PoseAnalysisResponse (if provided)
+    debugPrint('[HistoryAnalysisView] From PoseAnalysisResponse:');
+    if (widget.poseAnalysisResponse?.videoSyncMetadata != null) {
+      final metadata = widget.poseAnalysisResponse!.videoSyncMetadata!;
+      debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
+      debugPrint('[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x');
+      debugPrint('[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}');
+    } else {
+      debugPrint('[HistoryAnalysisView]   ${widget.poseAnalysisResponse == null ? "⏭️  PoseAnalysisResponse not provided" : "❌ videoSyncMetadata is NULL"}');
+    }
+    debugPrint('═══════════════════════════════════════════════════════');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +215,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           child: SynchronizedVideoPlayer(
             userVideoUrl: widget.videoUrl!,
             proVideoAssetPath: proVideoPath,
+            videoSyncMetadata: widget.poseAnalysisResponse?.videoSyncMetadata ??
+                widget.analysis.videoSyncMetadata,
+            videoAspectRatio: widget.videoAspectRatio,
           ),
         ),
       );

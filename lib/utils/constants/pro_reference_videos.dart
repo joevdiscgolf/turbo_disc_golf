@@ -1,10 +1,10 @@
 /// Pro reference video paths for form analysis comparison.
 /// These videos are bundled in the app under assets/pro_references/paul_mcbeth/videos/
-/// Videos are in slow motion (12.5% speed) for detailed form analysis.
+/// Videos are at normal speed for synchronized playback with user videos.
 class ProReferenceVideos {
-  /// Paul McBeth backhand side view reference video (12 seconds at 12.5% speed)
+  /// Paul McBeth backhand side view reference video (normal speed)
   static const String paulMcBethBackhandSide =
-      'assets/pro_references/paul_mcbeth/videos/backhand_side.mov';
+      'assets/pro_references/paul_mcbeth/videos/backhand_side.mp4';
 
   /// Paul McBeth backhand rear view reference video
   static const String paulMcBethBackhandRear =

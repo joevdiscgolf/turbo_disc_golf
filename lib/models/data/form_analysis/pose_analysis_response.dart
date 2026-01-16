@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
 
 part 'pose_analysis_response.g.dart';
 
@@ -22,6 +23,8 @@ class PoseAnalysisResponse {
     this.errorMessage,
     this.roundThumbnailBase64,
     this.videoUrl,
+    this.videoSyncMetadata,
+    this.proVideoReference,
   });
 
   @JsonKey(name: 'session_id')
@@ -63,6 +66,12 @@ class PoseAnalysisResponse {
 
   @JsonKey(name: 'video_url')
   final String? videoUrl;
+
+  @JsonKey(name: 'video_sync_metadata')
+  final VideoSyncMetadata? videoSyncMetadata;
+
+  @JsonKey(name: 'pro_video_reference')
+  final String? proVideoReference;
 
   factory PoseAnalysisResponse.fromJson(Map<String, dynamic> json) =>
       _$PoseAnalysisResponseFromJson(json);
