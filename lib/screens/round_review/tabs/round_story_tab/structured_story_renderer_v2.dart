@@ -6,7 +6,6 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
@@ -26,68 +25,58 @@ class StructuredStoryRendererV2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeadline(context),
-        const SizedBox(height: 12),
-
-        // Main story paragraphs with callouts
-        ..._buildStoryParagraphs(context),
-
-        // What Could Have Been section
-        const SizedBox(height: 12),
-        _buildWhatCouldHaveBeen(context),
-
-        // Optional: Practice advice
-        if (content.practiceAdvice.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildPracticeAdvice(context),
-        ],
-
-        // Optional: Strategy tips
-        if (content.strategyTips.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildStrategyTips(context),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildHeadline(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                content.roundTitle.capitalizeFirst(),
-                style: kStorySectionHeaderStyle.copyWith(
-                  color: const Color(0xFF6366F1),
-                  fontSize: 22,
-                ),
+    return Container(
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              content.roundTitle.capitalizeFirst(),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF6366F1),
               ),
-              const SizedBox(height: 12),
-              Text(
-                content.overview,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.5,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+
+          // Overview
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              content.overview,
+              style: const TextStyle(
+                fontSize: 16,
+                height: 1.6,
+                color: Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Main story paragraphs with callouts
+          ..._buildStoryParagraphs(context),
+
+          // What Could Have Been section (integrated)
+          _buildWhatCouldHaveBeen(context),
+
+          // Practice advice (integrated)
+          if (content.practiceAdvice.isNotEmpty)
+            _buildPracticeAdvice(context),
+
+          // Strategy tips (integrated)
+          if (content.strategyTips.isNotEmpty)
+            _buildStrategyTips(context),
+        ],
       ),
     );
   }
+
 
   List<Widget> _buildStoryParagraphs(BuildContext context) {
     final List<Widget> widgets = [];
@@ -96,53 +85,49 @@ class StructuredStoryRendererV2 extends StatelessWidget {
     for (int i = 0; i < content.story.length; i++) {
       final StoryParagraph paragraph = content.story[i];
 
+      // Add paragraph text with horizontal padding
       widgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Card(
-            elevation: 1,
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Paragraph text
-                  Text(
-                    paragraph.text,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  // Callout cards (0-2 per paragraph)
-                  ...paragraph.callouts.map((callout) {
-                    final Widget? statWidget = _buildStatWidget(callout.cardId, analysis);
-                    if (statWidget == null) {
-                      debugPrint('⚠️  Unknown cardId: ${callout.cardId}');
-                      return const SizedBox.shrink();
-                    }
-
-                    return InkWell(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        // TODO: Add navigation to detail screen if needed
-                      },
-                      child: StoryCalloutCard(
-                        statWidget: statWidget,
-                        reason: callout.reason,
-                      ),
-                    );
-                  }),
-                ],
-              ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            paragraph.text,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.7,
+              color: Colors.black87,
             ),
           ),
         ),
       );
+
+      // Add spacing after paragraph
+      widgets.add(const SizedBox(height: 16));
+
+      // Add callout cards (0-2 per paragraph) - with 16px horizontal padding
+      for (final callout in paragraph.callouts) {
+        final Widget? statWidget = _buildStatWidget(callout.cardId, analysis);
+        if (statWidget == null) {
+          debugPrint('⚠️  Unknown cardId: ${callout.cardId}');
+          continue;
+        }
+
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                // TODO: Add navigation to detail screen if needed
+              },
+              child: StoryCalloutCard(
+                statWidget: statWidget,
+                reason: callout.reason,
+              ),
+            ),
+          ),
+        );
+        widgets.add(const SizedBox(height: 16));
+      }
     }
 
     return widgets;
@@ -153,75 +138,75 @@ class StructuredStoryRendererV2 extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        elevation: 2,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF6366F1).withValues(alpha: 0.05),
-                const Color(0xFF8B5CF6).withValues(alpha: 0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Divider
+          Container(
+            height: 1,
+            color: TurbColors.gray[200],
+            margin: const EdgeInsets.symmetric(vertical: 24),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+
+          // Section header
+          Row(
+            children: [
+              const Icon(
+                Icons.insights,
+                color: Color(0xFF6366F1),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'What Could Have Been',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6366F1),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Current vs Potential Score
+          _buildScoreComparison(data.currentScore, data.potentialScore),
+
+          const SizedBox(height: 16),
+
+          // Improvement scenarios
+          ...data.scenarios.map((scenario) => _buildScenarioRow(scenario)),
+
+          // Encouragement message
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
               children: [
-                StorySectionHeader(
-                  title: 'What Could Have Been',
-                  icon: Icons.insights,
-                  accentColor: const Color(0xFF6366F1),
+                const Icon(
+                  Icons.emoji_events,
+                  color: Color(0xFF6366F1),
+                  size: 20,
                 ),
-                const SizedBox(height: 16),
-
-                // Current vs Potential Score
-                _buildScoreComparison(data.currentScore, data.potentialScore),
-
-                const SizedBox(height: 16),
-
-                // Improvement scenarios
-                ...data.scenarios.map((scenario) => _buildScenarioRow(scenario)),
-
-                // Encouragement message
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.emoji_events,
-                        color: Color(0xFF6366F1),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          data.encouragement,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                    ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    data.encouragement,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -306,25 +291,38 @@ class StructuredStoryRendererV2 extends StatelessWidget {
   Widget _buildPracticeAdvice(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Divider
+          Container(
+            height: 1,
+            color: TurbColors.gray[200],
+            margin: const EdgeInsets.symmetric(vertical: 24),
+          ),
+
+          // Section header
+          Row(
             children: [
-              StorySectionHeader(
-                title: 'Practice Focus',
-                icon: Icons.sports_handball,
-                accentColor: const Color(0xFFFFA726),
+              const Icon(
+                Icons.sports_handball,
+                color: Color(0xFFFFA726),
+                size: 20,
               ),
-              const SizedBox(height: 12),
-              PracticeAdviceList(advice: content.practiceAdvice),
+              const SizedBox(width: 8),
+              Text(
+                'Practice Focus',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFFA726),
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          PracticeAdviceList(advice: content.practiceAdvice),
+        ],
       ),
     );
   }
@@ -332,25 +330,38 @@ class StructuredStoryRendererV2 extends StatelessWidget {
   Widget _buildStrategyTips(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Divider
+          Container(
+            height: 1,
+            color: TurbColors.gray[200],
+            margin: const EdgeInsets.symmetric(vertical: 24),
+          ),
+
+          // Section header
+          Row(
             children: [
-              StorySectionHeader(
-                title: 'Strategy Tips',
-                icon: Icons.psychology,
-                accentColor: const Color(0xFF2196F3),
+              const Icon(
+                Icons.psychology,
+                color: Color(0xFF2196F3),
+                size: 20,
               ),
-              const SizedBox(height: 12),
-              PracticeAdviceList(advice: content.strategyTips),
+              const SizedBox(width: 8),
+              Text(
+                'Strategy Tips',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2196F3),
+                ),
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          PracticeAdviceList(advice: content.strategyTips),
+        ],
       ),
     );
   }

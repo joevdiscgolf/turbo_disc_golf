@@ -93,6 +93,14 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       debugPrint('🎬 Video sync: simple constant offset');
       debugPrint('   Disc release: user=${releaseCheckpoint.userTimestamp}s, pro=${releaseCheckpoint.proTimestamp}s');
       debugPrint('   Sync offset: ${_syncOffsetSeconds}s');
+
+      // Log all checkpoints for debugging
+      debugPrint('📍 All checkpoints:');
+      for (final checkpoint in metadata.checkpointSyncPoints) {
+        final double proCalc = checkpoint.userTimestamp + _syncOffsetSeconds;
+        final double diff = (checkpoint.proTimestamp - proCalc).abs();
+        debugPrint('   ${checkpoint.checkpointId}: user=${checkpoint.userTimestamp.toStringAsFixed(3)}s, pro=${checkpoint.proTimestamp.toStringAsFixed(3)}s, calculated=${proCalc.toStringAsFixed(3)}s, diff=${diff.toStringAsFixed(3)}s');
+      }
     } else {
       _syncOffsetSeconds = 0.0;
       debugPrint('🎬 Video sync: mechanical (no offset)');
@@ -248,7 +256,8 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       _isPlaying = true;
     });
 
-    debugPrint('▶️ Play: user=${(userPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${_playbackSpeed}x speed');
+    debugPrint('▶️ Play: user=${(userPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s, pro=${(proPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${_playbackSpeed}x speed');
+    debugPrint('   Sync verification: offset=${_syncOffsetSeconds.toStringAsFixed(3)}s, calculated correctly: ${((userPosition.inMilliseconds / 1000.0) + _syncOffsetSeconds - (proPosition.inMilliseconds / 1000.0)).abs() < 0.001}');
 
     // Start playback simulation timer
     _playbackSimulationTimer = Timer.periodic(_playbackFrameInterval, (_) {
@@ -367,6 +376,14 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     setState(() {
       _currentPosition = userPosition;
     });
+
+    // Log sync status at key moments (every 0.5s for debugging)
+    final double userSec = userPosition.inMilliseconds / 1000.0;
+    final double proSec = proPosition.inMilliseconds / 1000.0;
+    if ((userSec * 2).round() == userSec * 2) {
+      // Log at 0.0s, 0.5s, 1.0s, 1.5s, etc.
+      debugPrint('🎬 Seek: user=${userSec.toStringAsFixed(2)}s → pro=${proSec.toStringAsFixed(2)}s (offset=${_syncOffsetSeconds.toStringAsFixed(3)}s)');
+    }
   }
 
   Future<void> _changePlaybackSpeed(double speed) async {

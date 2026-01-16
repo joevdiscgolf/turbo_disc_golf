@@ -19,10 +19,9 @@ class StoryCalloutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 12, bottom: 8),
       decoration: BoxDecoration(
         color: TurbColors.gray[50],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: TurbColors.gray[200]!,
           width: 1,
@@ -33,7 +32,7 @@ class StoryCalloutCard extends StatelessWidget {
         children: [
           // Stat widget (slightly smaller than normal)
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: statWidget,
           ),
 
@@ -46,21 +45,21 @@ class StoryCalloutCard extends StatelessWidget {
 
           // Reason text (interpretation/impact)
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Icon indicator
                 Container(
                   margin: const EdgeInsets.only(top: 2, right: 8),
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Icon(
                     Icons.insights,
-                    size: 14,
+                    size: 12,
                     color: Color(0xFF6366F1),
                   ),
                 ),
@@ -73,7 +72,6 @@ class StoryCalloutCard extends StatelessWidget {
                       fontSize: 13,
                       height: 1.4,
                       color: TurbColors.gray[700],
-                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ),

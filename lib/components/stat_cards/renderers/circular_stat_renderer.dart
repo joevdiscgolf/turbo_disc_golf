@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
-/// Reusable component for rendering stats as circular indicators
+/// Reusable component for rendering stats as horizontal progress bars
 ///
 /// Displays a stat with:
 /// - Header row with icon, label, and count badge
-/// - Large 88px circular indicator with animation
+/// - Horizontal progress bar with percentage
 /// - Optional subtitle text
 ///
-/// Used by all single-stat story cards in circle rendering mode.
+/// Used by all single-stat story cards in horizontal rendering mode.
 class CircularStatRenderer extends StatelessWidget {
   const CircularStatRenderer({
     super.key,
@@ -33,27 +32,17 @@ class CircularStatRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _buildHeader(context),
-          const SizedBox(height: 16),
-          _buildCircularIndicator(),
-          if (subtitle != null) ...[
-            const SizedBox(height: 8),
-            _buildSubtitle(context),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(context),
+        const SizedBox(height: 12),
+        _buildHorizontalProgressBar(context),
+        if (subtitle != null) ...[
+          const SizedBox(height: 8),
+          _buildSubtitle(context),
         ],
-      ),
+      ],
     );
   }
 
@@ -93,17 +82,47 @@ class CircularStatRenderer extends StatelessWidget {
     );
   }
 
-  Widget _buildCircularIndicator() {
-    return CircularStatIndicator(
-      percentage: percentage,
-      label: '',
-      color: color,
-      size: 88,
-      labelFontSize: 11,
-      shouldAnimate: true,
-      shouldGlow: true,
-      shouldScale: true,
-      roundId: roundId,
+  Widget _buildHorizontalProgressBar(BuildContext context) {
+    return Column(
+      children: [
+        // Progress bar
+        Stack(
+          children: [
+            // Background bar
+            Container(
+              height: 8,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            // Filled bar
+            FractionallySizedBox(
+              widthFactor: percentage / 100,
+              child: Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Percentage text
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            '${percentage.toStringAsFixed(0)}%',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -114,7 +133,7 @@ class CircularStatRenderer extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 11,
           ),
-      textAlign: TextAlign.center,
+      textAlign: TextAlign.left,
     );
   }
 }

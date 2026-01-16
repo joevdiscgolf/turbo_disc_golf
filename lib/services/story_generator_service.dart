@@ -736,13 +736,13 @@ strategyTips:
         throw Exception('Missing required V2 fields');
       }
 
-      // Validate story structure
+      // Validate story structure (story should be a direct list, not story.paragraphs)
       final dynamic storyData = parsedData['story'];
-      if (storyData is! Map || !storyData.containsKey('paragraphs')) {
-        throw Exception('Invalid V2 story structure');
+      if (storyData is! List) {
+        throw Exception('Invalid V2 story structure: story must be a list');
       }
 
-      final List<dynamic> paragraphs = storyData['paragraphs'] as List<dynamic>;
+      final List<dynamic> paragraphs = storyData;
       if (paragraphs.length < 3 || paragraphs.length > 6) {
         debugPrint('⚠️  V2 paragraph count (${paragraphs.length}) outside 3-6 range');
       }
