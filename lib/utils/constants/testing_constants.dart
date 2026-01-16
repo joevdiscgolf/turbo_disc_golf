@@ -29,7 +29,7 @@ const String shareCardQrUrl = 'https://scoresensei.app';
 /// Which LLM service to use for story generation.
 /// Options: 'gemini' or 'openai'
 /// Default: 'openai' (GPT-4o-mini provides best value - GPT-4 quality at 2x Gemini cost)
-const String storyGenerationLLMProvider = 'gemini';
+const String storyGenerationLLMProvider = 'openai';
 
 /// When true, uses gemini-2.0-flash-exp instead of gemini-2.5-flash for story generation.
 /// Use this when hitting 2.5-flash quota limits.
@@ -110,6 +110,11 @@ const bool showWhatCouldHaveBeenCard = true;
 /// When true, shows the encouragement message in the "What Could Have Been" card.
 /// When false, hides it to save vertical space.
 const bool showWhatCouldHaveBeenEncouragement = false;
+
+/// When true, uses the new Story V2 engine with narrative paragraphs and inline callout cards.
+/// When false, uses the current V1 StructuredStoryRenderer.
+/// Note: V1 and V2 stories are stored separately (aiSummary vs aiSummaryV2).
+const bool storyV2Enabled = true;
 
 /// When true, shows the map location picker in the Create Course screen.
 /// When false, only text fields for city/state/country are shown.

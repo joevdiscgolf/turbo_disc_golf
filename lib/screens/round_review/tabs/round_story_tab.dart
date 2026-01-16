@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,7 @@ import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_loading_animation.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer_v2.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
@@ -80,10 +82,10 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       final StoryGeneratorService storyService =
           locator.get<StoryGeneratorService>();
 
-      // Generate story using current round state
-      final AIContent? story = await storyService.generateRoundStory(
-        _currentRound,
-      );
+      // Generate story based on feature flag
+      final AIContent? story = storyV2Enabled
+          ? await storyService.generateRoundStoryV2(_currentRound)  // V2
+          : await storyService.generateRoundStory(_currentRound);   // V1
 
       if (story == null) {
         throw Exception('Failed to generate story content');
@@ -400,19 +402,56 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     );
   }
 
+  void _showDebugYamlOutput() {
+    final String? rawContent = _currentRound.aiSummary?.content;
+    if (rawContent == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Raw YAML Output'),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            rawContent,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: rawContent));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied to clipboard')),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRegenerateButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Align(
         alignment: Alignment.centerRight,
-        child: OutlinedButton.icon(
-          onPressed: _isGenerating ? null : _generateStory,
-          icon: const Icon(Icons.refresh, size: 16),
-          label: const Text('Regenerate'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            textStyle: const TextStyle(fontSize: 12),
+        child: GestureDetector(
+          onLongPress: kDebugMode ? _showDebugYamlOutput : null,
+          child: OutlinedButton.icon(
+            onPressed: _isGenerating ? null : _generateStory,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Regenerate'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12),
+            ),
           ),
         ),
       ),
@@ -472,14 +511,21 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Render structured story if available (new format)
-        if (story?.structuredContent != null)
+        // V2: Render if structuredContentV2 exists
+        if (story?.structuredContentV2 != null)
+          StructuredStoryRendererV2(
+            content: story!.structuredContentV2!,
+            round: _currentRound,
+            tabController: widget.tabController,
+          )
+        // V1: Render if structuredContent exists
+        else if (story?.structuredContent != null)
           StructuredStoryRenderer(
             content: story!.structuredContent!,
             round: _currentRound,
             tabController: widget.tabController,
           )
-        // Fallback: render old format with AIContentRenderer
+        // Old format: render with AIContentRenderer
         else if (story?.segments != null)
           Card(
             elevation: 2,
