@@ -29,6 +29,8 @@ class HistoryAnalysisView extends StatefulWidget {
     this.videoUrl,
     this.throwType,
     this.cameraAngle,
+    this.videoAspectRatio,
+    this.poseAnalysisResponse,
   });
 
   final FormAnalysisRecord analysis;
@@ -43,6 +45,14 @@ class HistoryAnalysisView extends StatefulWidget {
 
   /// Optional: Camera angle for selecting correct pro reference video
   final CameraAngle? cameraAngle;
+
+  /// Optional: Video aspect ratio for layout decisions (width/height)
+  /// Examples: 0.5625 for 9:16 portrait, 1.778 for 16:9 landscape
+  final double? videoAspectRatio;
+
+  /// Optional: Full pose analysis response with video sync metadata
+  /// Required for video synchronization to work properly
+  final PoseAnalysisResponse? poseAnalysisResponse;
 
   @override
   State<HistoryAnalysisView> createState() => _HistoryAnalysisViewState();
@@ -172,6 +182,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           child: SynchronizedVideoPlayer(
             userVideoUrl: widget.videoUrl!,
             proVideoAssetPath: proVideoPath,
+            analysisResult: widget.poseAnalysisResponse,
+            videoAspectRatio: widget.videoAspectRatio,
           ),
         ),
       );

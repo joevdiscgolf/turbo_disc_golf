@@ -30,6 +30,12 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   errorMessage: json['error_message'] as String?,
   roundThumbnailBase64: json['round_thumbnail_base64'] as String?,
   videoUrl: json['video_url'] as String?,
+  videoSyncMetadata: json['video_sync_metadata'] == null
+      ? null
+      : VideoSyncMetadata.fromJson(
+          json['video_sync_metadata'] as Map<String, dynamic>,
+        ),
+  proVideoReference: json['pro_video_reference'] as String?,
 );
 
 Map<String, dynamic> _$PoseAnalysisResponseToJson(
@@ -49,6 +55,8 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'error_message': instance.errorMessage,
   'round_thumbnail_base64': instance.roundThumbnailBase64,
   'video_url': instance.videoUrl,
+  'video_sync_metadata': instance.videoSyncMetadata?.toJson(),
+  'pro_video_reference': instance.proVideoReference,
 };
 
 const _$CameraAngleEnumMap = {

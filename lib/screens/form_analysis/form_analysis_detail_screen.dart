@@ -55,6 +55,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           videoUrl: widget.analysis.videoUrl,
           throwType: _parseThrowTechnique(widget.analysis.throwType),
           cameraAngle: widget.analysis.cameraAngle,
+          videoAspectRatio: widget.analysis.videoAspectRatio,
         ),
       ),
     );
