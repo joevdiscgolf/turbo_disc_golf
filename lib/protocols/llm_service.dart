@@ -11,10 +11,7 @@ abstract class LLMService {
   /// [prompt] - The text prompt to send to the LLM
   /// [useFullModel] - Whether to use the full/flagship model vs lite version
   /// Returns generated text or null on failure
-  Future<String?> generateContent({
-    required String prompt,
-    bool useFullModel = false,
-  });
+  Future<String?> generateContent({required String prompt});
 
   /// Generate content with a video file
   ///

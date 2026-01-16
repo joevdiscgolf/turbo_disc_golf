@@ -270,10 +270,7 @@ class _TestRoastScreenState extends State<TestRoastScreen> {
       final prompt = _buildRoastPrompt(_cachedRound!);
       debugPrint('🔄 Calling LLM service to generate roast...');
 
-      final roast = await _llmService.generateContent(
-        prompt: prompt,
-        useFullModel: true,
-      );
+      final roast = await _llmService.generateContent(prompt: prompt);
 
       debugPrint('==========================================');
       debugPrint('🔥 ${_shouldGlaze ? 'GLAZE' : 'ROAST'} RESULT:');

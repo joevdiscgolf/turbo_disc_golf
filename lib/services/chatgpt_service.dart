@@ -14,9 +14,6 @@ class ChatGPTService implements LLMService {
   /// Default model for stories - best value (GPT-4 quality at 2x Gemini cost)
   static const String gptFourOMini = 'gpt-4o-mini';
 
-  /// Premium model for exceptional quality (25x Gemini cost)
-  static const String gptFourO = 'gpt-4o';
-
   String? _lastRawResponse;
 
   @override
@@ -27,28 +24,27 @@ class ChatGPTService implements LLMService {
   }
 
   @override
-  Future<String?> generateContent({
-    required String prompt,
-    bool useFullModel = false,
-  }) async {
+  Future<String?> generateContent({required String prompt}) async {
     try {
       // Use gpt-4o for premium quality, gpt-4o-mini for default
-      final String model = useFullModel ? gptFourO : gptFourOMini;
+      final String model = gptFourOMini;
 
-      final OpenAIChatCompletionModel completion =
-          await OpenAI.instance.chat.create(
-        model: model,
-        messages: [
-          OpenAIChatCompletionChoiceMessageModel(
-            role: OpenAIChatMessageRole.user,
-            content: [
-              OpenAIChatCompletionChoiceMessageContentItemModel.text(prompt),
+      final OpenAIChatCompletionModel completion = await OpenAI.instance.chat
+          .create(
+            model: model,
+            messages: [
+              OpenAIChatCompletionChoiceMessageModel(
+                role: OpenAIChatMessageRole.user,
+                content: [
+                  OpenAIChatCompletionChoiceMessageContentItemModel.text(
+                    prompt,
+                  ),
+                ],
+              ),
             ],
-          ),
-        ],
-        temperature: 0.8, // Creative, storytelling
-        maxTokens: 8192,
-      );
+            temperature: 0.8, // Creative, storytelling
+            maxTokens: 8192,
+          );
 
       final String? content =
           completion.choices.first.message.content?.first.text;
@@ -113,23 +109,25 @@ class ChatGPTService implements LLMService {
       // Create image URL for OpenAI
       final String imageUrl = 'data:$mimeType;base64,$base64Image';
 
-      final OpenAIChatCompletionModel completion =
-          await OpenAI.instance.chat.create(
-        model: gptFourO, // Use gpt-4o for vision tasks
-        messages: [
-          OpenAIChatCompletionChoiceMessageModel(
-            role: OpenAIChatMessageRole.user,
-            content: [
-              OpenAIChatCompletionChoiceMessageContentItemModel.text(prompt),
-              OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(
-                imageUrl,
+      final OpenAIChatCompletionModel completion = await OpenAI.instance.chat
+          .create(
+            model: gptFourOMini, // Use gpt-4o for vision tasks
+            messages: [
+              OpenAIChatCompletionChoiceMessageModel(
+                role: OpenAIChatMessageRole.user,
+                content: [
+                  OpenAIChatCompletionChoiceMessageContentItemModel.text(
+                    prompt,
+                  ),
+                  OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(
+                    imageUrl,
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
-        temperature: 0.2, // Lower temperature for accurate analysis
-        maxTokens: 8192,
-      );
+            temperature: 0.2, // Lower temperature for accurate analysis
+            maxTokens: 8192,
+          );
 
       final String? content =
           completion.choices.first.message.content?.first.text;
@@ -147,7 +145,6 @@ class ChatGPTService implements LLMService {
     try {
       final String? response = await generateContent(
         prompt: 'Reply with just "OK" to confirm the connection works.',
-        useFullModel: false,
       );
       return response?.contains('OK') ?? false;
     } catch (e) {
