@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 
 part 'form_analysis_record.g.dart';
@@ -23,6 +24,7 @@ class FormAnalysisRecord {
     this.videoOrientation,
     this.videoAspectRatio,
     this.videoUrl,
+    this.videoSyncMetadata,
   });
 
   /// Unique identifier for this analysis
@@ -77,6 +79,11 @@ class FormAnalysisRecord {
   /// Network URL returned from pose analysis backend
   @JsonKey(name: 'video_url')
   final String? videoUrl;
+
+  /// Video synchronization metadata for frame-perfect alignment with pro reference
+  /// Contains playback speed multiplier and checkpoint sync points
+  @JsonKey(name: 'video_sync_metadata')
+  final VideoSyncMetadata? videoSyncMetadata;
 
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);

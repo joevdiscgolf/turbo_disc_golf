@@ -221,6 +221,7 @@ abstract class FBFormAnalysisDataLoader {
         videoUrl: poseAnalysis.videoUrl,
         videoOrientation: poseAnalysis.videoOrientation,
         videoAspectRatio: poseAnalysis.videoAspectRatio,
+        videoSyncMetadata: poseAnalysis.videoSyncMetadata,
       );
 
       // Save to Firestore using utility

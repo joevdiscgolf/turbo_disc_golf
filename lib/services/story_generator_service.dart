@@ -27,7 +27,7 @@ class StoryGeneratorService {
         final analysis = RoundAnalysisGenerator.generateAnalysis(round);
 
         // Build the story generation prompt
-        final prompt = _buildStoryPrompt(round, analysis);
+        final prompt = _buildDefaultStoryPrompt(round, analysis);
 
         // Generate story using full model for creative content
         final response = await _llmService.generateContent(
@@ -81,7 +81,7 @@ class StoryGeneratorService {
   }
 
   /// Build the prompt for story generation
-  String _buildStoryPrompt(DGRound round, dynamic analysis) {
+  String _buildDefaultStoryPrompt(DGRound round, dynamic analysis) {
     final buffer = StringBuffer();
 
     // Calculate round totals

@@ -64,6 +64,39 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
   final ProReferenceLoader _proRefLoader = ProReferenceLoader();
 
   @override
+  void initState() {
+    super.initState();
+
+    // Debug log video sync metadata from both sources
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('[HistoryAnalysisView] 🎬 VIDEO SYNC METADATA DEBUG');
+    debugPrint('[HistoryAnalysisView] Analysis ID: ${widget.analysis.id}');
+
+    // Check FormAnalysisRecord (loaded from Firestore)
+    debugPrint('[HistoryAnalysisView] From FormAnalysisRecord:');
+    if (widget.analysis.videoSyncMetadata != null) {
+      final metadata = widget.analysis.videoSyncMetadata!;
+      debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
+      debugPrint('[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x');
+      debugPrint('[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}');
+    } else {
+      debugPrint('[HistoryAnalysisView]   ❌ videoSyncMetadata is NULL (not saved to Firestore)');
+    }
+
+    // Check PoseAnalysisResponse (if provided)
+    debugPrint('[HistoryAnalysisView] From PoseAnalysisResponse:');
+    if (widget.poseAnalysisResponse?.videoSyncMetadata != null) {
+      final metadata = widget.poseAnalysisResponse!.videoSyncMetadata!;
+      debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
+      debugPrint('[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x');
+      debugPrint('[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}');
+    } else {
+      debugPrint('[HistoryAnalysisView]   ${widget.poseAnalysisResponse == null ? "⏭️  PoseAnalysisResponse not provided" : "❌ videoSyncMetadata is NULL"}');
+    }
+    debugPrint('═══════════════════════════════════════════════════════');
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
@@ -182,7 +215,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           child: SynchronizedVideoPlayer(
             userVideoUrl: widget.videoUrl!,
             proVideoAssetPath: proVideoPath,
-            analysisResult: widget.poseAnalysisResponse,
+            videoSyncMetadata: widget.poseAnalysisResponse?.videoSyncMetadata ??
+                widget.analysis.videoSyncMetadata,
             videoAspectRatio: widget.videoAspectRatio,
           ),
         ),

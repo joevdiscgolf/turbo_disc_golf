@@ -3,7 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 part 'video_sync_metadata.g.dart';
 
 /// Represents a checkpoint synchronization point between user and pro videos
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class CheckpointSyncPoint {
   /// Checkpoint identifier (e.g., "heisman", "loaded", "magic", "pro")
   @JsonKey(name: 'checkpoint_id')
@@ -35,7 +35,7 @@ class CheckpointSyncPoint {
 }
 
 /// Video synchronization metadata for aligning user and pro videos
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class VideoSyncMetadata {
   /// Synchronization strategy: "checkpoint_warp", "single_point", or "linear"
   @JsonKey(name: 'sync_strategy')

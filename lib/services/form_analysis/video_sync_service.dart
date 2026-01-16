@@ -36,7 +36,7 @@ class VideoSyncService {
 
     // Clamp to valid range
     final clampedSeconds = proSeconds.clamp(0.0, syncMetadata.proVideoDuration);
-    return Duration(milliseconds: (clampedSeconds * 1000).toInt());
+    return Duration(milliseconds: (clampedSeconds * 1000).round());
   }
 
   /// Multi-point sync: Interpolate between checkpoint pairs
@@ -74,7 +74,7 @@ class VideoSyncService {
       );
 
       final clampedSeconds = proSeconds.clamp(0.0, syncMetadata.proVideoDuration);
-      return Duration(milliseconds: (clampedSeconds * 1000).toInt());
+      return Duration(milliseconds: (clampedSeconds * 1000).round());
     }
 
     // After last checkpoint: extrapolate forward
@@ -94,7 +94,7 @@ class VideoSyncService {
       );
 
       final clampedSeconds = proSeconds.clamp(0.0, syncMetadata.proVideoDuration);
-      return Duration(milliseconds: (clampedSeconds * 1000).toInt());
+      return Duration(milliseconds: (clampedSeconds * 1000).round());
     }
 
     // Find segment containing current user time
@@ -110,7 +110,7 @@ class VideoSyncService {
             progress * (cp2.proTimestamp - cp1.proTimestamp);
 
         final clampedSeconds = proSeconds.clamp(0.0, syncMetadata.proVideoDuration);
-        return Duration(milliseconds: (clampedSeconds * 1000).toInt());
+        return Duration(milliseconds: (clampedSeconds * 1000).round());
       }
     }
 
@@ -126,7 +126,7 @@ class VideoSyncService {
     final userSeconds = userPosition.inMilliseconds / 1000.0;
     final proSeconds = userSeconds * syncMetadata.timeCompressionRatio;
     final clampedSeconds = proSeconds.clamp(0.0, syncMetadata.proVideoDuration);
-    return Duration(milliseconds: (clampedSeconds * 1000).toInt());
+    return Duration(milliseconds: (clampedSeconds * 1000).round());
   }
 
   /// Extrapolate a point outside the checkpoint range

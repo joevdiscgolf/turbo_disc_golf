@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:video_player/video_player.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+
+import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
+import 'package:turbo_disc_golf/services/form_analysis/video_sync_service.dart';
 
 /// Synchronized dual video player for comparing user's form with pro reference.
 ///
@@ -25,7 +27,7 @@ class SynchronizedVideoPlayer extends StatefulWidget {
     super.key,
     required this.userVideoUrl,
     required this.proVideoAssetPath,
-    this.analysisResult,
+    this.videoSyncMetadata,
     this.videoAspectRatio,
   });
 
@@ -35,9 +37,9 @@ class SynchronizedVideoPlayer extends StatefulWidget {
   /// Asset path for pro reference video
   final String proVideoAssetPath;
 
-  /// Analysis result containing video sync metadata (optional)
+  /// Video sync metadata for synchronization (optional)
   /// When null, videos will use mechanical sync (same timeline positions)
-  final PoseAnalysisResponse? analysisResult;
+  final VideoSyncMetadata? videoSyncMetadata;
 
   /// Aspect ratio of user's video (width/height)
   /// Used to determine layout: <1.0 = portrait (side-by-side), >1.0 = landscape (stacked)
@@ -65,38 +67,40 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   double _playbackSpeed = 1.0;
 
   Timer? _positionUpdateTimer;
-  double _timeOffset = 0.0; // Offset in seconds to align disc release
-  double _proSpeedMultiplier = 1.0; // Speed multiplier for pro video
+  Timer? _playbackSimulationTimer;
+  VideoSyncService? _videoSyncService;
+  double _timeOffset = 0.0;
+  double _proSpeedMultiplier = 1.0;
+
+  // Frame interval for playback simulation (~30fps)
+  static const Duration _playbackFrameInterval = Duration(milliseconds: 33);
 
   @override
   void initState() {
     super.initState();
 
-    // Calculate sync parameters from backend metadata
-    if (widget.analysisResult?.videoSyncMetadata != null) {
-      final metadata = widget.analysisResult!.videoSyncMetadata!;
+    // Initialize VideoSyncService to handle all synchronization
+    if (widget.videoSyncMetadata != null) {
+      final VideoSyncMetadata metadata = widget.videoSyncMetadata!;
+      _videoSyncService = VideoSyncService(metadata);
 
-      // Find the "pro" checkpoint (disc release)
+      // Extract speed multiplier from backend
+      _proSpeedMultiplier = metadata.proPlaybackSpeedMultiplier;
+
+      // Find disc release checkpoint
       final releaseCheckpoint = metadata.checkpointSyncPoints.firstWhere(
         (cp) => cp.checkpointId == 'pro',
         orElse: () => metadata.checkpointSyncPoints.first,
       );
 
-      // Get the speed multiplier from backend
-      _proSpeedMultiplier = metadata.proPlaybackSpeedMultiplier;
+      // Calculate time offset for disc release alignment
+      _timeOffset =
+          releaseCheckpoint.proTimestamp -
+          (releaseCheckpoint.userTimestamp * _proSpeedMultiplier);
 
-      // Calculate offset constant using the sync formula:
-      // pro_position = user_position * speed_multiplier + constant
-      // At disc release: pro_release = user_release * multiplier + constant
-      // Therefore: constant = pro_release - (user_release * multiplier)
-      _timeOffset = releaseCheckpoint.proTimestamp -
-                    (releaseCheckpoint.userTimestamp * _proSpeedMultiplier);
-
-      debugPrint('🎬 Video sync: disc release alignment');
-      debugPrint('   User release at: ${releaseCheckpoint.userTimestamp}s');
-      debugPrint('   Pro release at: ${releaseCheckpoint.proTimestamp}s');
+      debugPrint('🎬 Video sync: using VideoSyncService');
       debugPrint('   Pro speed multiplier: ${_proSpeedMultiplier}x');
-      debugPrint('   Time offset constant: ${_timeOffset}s');
+      debugPrint('   Time offset: ${_timeOffset}s');
     } else {
       _timeOffset = 0.0;
       _proSpeedMultiplier = 1.0;
@@ -109,6 +113,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   @override
   void dispose() {
     _positionUpdateTimer?.cancel();
+    _playbackSimulationTimer?.cancel();
     _userController.removeListener(_onVideoPositionChanged);
     _userController.dispose();
     _proController.dispose();
@@ -134,10 +139,6 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       // Mute both videos
       _userController.setVolume(0.0);
       _proController.setVolume(0.0);
-
-      // Set initial playback speeds (1.0x for user, multiplier for pro)
-      _userController.setPlaybackSpeed(1.0);
-      _proController.setPlaybackSpeed(_proSpeedMultiplier);
 
       // Store video durations
       _userDuration = _userController.value.duration;
@@ -175,38 +176,15 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   }
 
   void _onVideoPositionChanged() {
-    // Auto-pause when reaching end of shortest video
-    if (_userController.value.position >= _shortestDuration && _isPlaying) {
-      _pause();
-    }
+    // Listener for video controller state changes
+    // Note: End-of-video detection is now handled by playback simulation timer
   }
 
   void _updatePosition() {
-    if (mounted && _isUserVideoInitialized) {
-      final userPosition = _userController.value.position;
-
-      // Drift correction during playback when using speed multiplier
-      if (_isPlaying && _proSpeedMultiplier != 1.0) {
-        final double userSeconds = userPosition.inMilliseconds / 1000.0;
-
-        // Calculate expected pro position using the sync formula:
-        // pro_position = user_position * speed_multiplier + constant
-        // where constant = pro_release - (user_release * speed_multiplier)
-        final double expectedProSeconds = (userSeconds * _proSpeedMultiplier) + _timeOffset;
-        final double actualProSeconds = _proController.value.position.inMilliseconds / 1000.0;
-        final double drift = (actualProSeconds - expectedProSeconds).abs();
-
-        // Re-sync if drift exceeds 150ms
-        if (drift > 0.15) {
-          // Clamp expected position to valid range
-          final double clampedExpectedProSeconds = expectedProSeconds.clamp(0.0, _proDuration.inMilliseconds / 1000.0);
-          final Duration expectedProPosition = Duration(
-            milliseconds: (clampedExpectedProSeconds * 1000).toInt(),
-          );
-          _proController.seekTo(expectedProPosition);
-          debugPrint('🔄 Re-sync: drift ${(drift * 1000).toInt()}ms, expected ${clampedExpectedProSeconds.toStringAsFixed(2)}s, actual ${actualProSeconds.toStringAsFixed(2)}s');
-        }
-      }
+    // During playback simulation, _currentPosition is updated by _onSeek()
+    // This timer only updates position when not playing (for paused state display)
+    if (mounted && _isUserVideoInitialized && !_isPlaying) {
+      final Duration userPosition = _userController.value.position;
 
       setState(() {
         _currentPosition = userPosition;
@@ -223,55 +201,141 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   }
 
   Future<void> _play() async {
-    // Calculate correct pro video position using sync formula
-    final double userSeconds = _userController.value.position.inMilliseconds / 1000.0;
-    final double proSeconds = (userSeconds * _proSpeedMultiplier) + _timeOffset;
+    // If at end of video, reset to beginning
+    final Duration userPosition = _currentPosition >= _shortestDuration
+        ? Duration.zero
+        : _userController.value.position;
 
-    // Clamp pro position to valid range [0, proDuration]
-    final double clampedProSeconds = proSeconds.clamp(0.0, _proDuration.inMilliseconds / 1000.0);
-    final Duration proPosition = Duration(
-      milliseconds: (clampedProSeconds * 1000).toInt(),
-    );
+    // Sync both videos to starting position
+    final Duration proPosition =
+        _videoSyncService?.calculateProPosition(userPosition) ?? userPosition;
+    await Future.wait([
+      _userController.seekTo(userPosition),
+      _proController.seekTo(proPosition),
+    ]);
 
-    debugPrint('▶️ Play: user=${userSeconds.toStringAsFixed(2)}s → pro=${clampedProSeconds.toStringAsFixed(2)}s');
+    // Update current position
+    setState(() {
+      _currentPosition = userPosition;
+      _isPlaying = true;
+    });
 
-    // Wait for pro video seek to complete before starting playback
-    await _proController.seekTo(proPosition);
+    debugPrint('▶️ Play: user=${(userPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${_playbackSpeed}x speed');
 
-    // Start both videos simultaneously at their respective speeds
-    _userController.play();
-    _proController.play();
-    setState(() => _isPlaying = true);
+    // Start playback simulation timer
+    _playbackSimulationTimer = Timer.periodic(_playbackFrameInterval, (_) {
+      if (!_isPlaying || !mounted) {
+        _playbackSimulationTimer?.cancel();
+        return;
+      }
+
+      // Calculate next position based on playback speed
+      final Duration nextPosition = _currentPosition +
+          Duration(
+            milliseconds: (_playbackFrameInterval.inMilliseconds * _playbackSpeed).round(),
+          );
+
+      // Check if reached end of video
+      if (nextPosition >= _shortestDuration) {
+        _pause();
+        return;
+      }
+
+      // Seek to next position (triggers VideoSyncService calculation)
+      final double normalizedValue = nextPosition.inMilliseconds / _shortestDuration.inMilliseconds;
+      _onSeek(normalizedValue);
+    });
   }
+
+  // NOTE: Checkpoint jump methods below are preserved but commented out.
+  // They were removed from _play() to fix unwanted jumping behavior, but may be useful in the future.
+  // The original issue: pressing play from position 0 would jump to ~40% instead of playing from start.
+
+  // bool _shouldJumpToFirstCheckpoint(Duration userPosition) {
+  //   if (_videoSyncService == null) return false;
+
+  //   final checkpoints = _videoSyncService!.syncMetadata.checkpointSyncPoints;
+  //   if (checkpoints.isEmpty) return false;
+
+  //   // Get first checkpoint
+  //   final firstCheckpoint = checkpoints.first;
+  //   final Duration firstCheckpointUserTime = Duration(
+  //     milliseconds: (firstCheckpoint.userTimestamp * 1000).toInt(),
+  //   );
+
+  //   // Jump to checkpoint if we're before it (or very close to start)
+  //   // Use a small threshold (e.g., 100ms) to handle play from position 0
+  //   const Duration threshold = Duration(milliseconds: 100);
+
+  //   return userPosition < firstCheckpointUserTime || userPosition < threshold;
+  // }
+
+  // Future<void> _jumpToFirstCheckpoint() async {
+  //   if (_videoSyncService == null) return;
+
+  //   final checkpoints = _videoSyncService!.syncMetadata.checkpointSyncPoints;
+  //   if (checkpoints.isEmpty) return;
+
+  //   final firstCheckpoint = checkpoints.first;
+
+  //   // Convert timestamps to Duration
+  //   final Duration userCheckpointTime = Duration(
+  //     milliseconds: (firstCheckpoint.userTimestamp * 1000).toInt(),
+  //   );
+  //   final Duration proCheckpointTime = Duration(
+  //     milliseconds: (firstCheckpoint.proTimestamp * 1000).toInt(),
+  //   );
+
+  //   // Safety: don't jump beyond video duration
+  //   if (userCheckpointTime >= _userDuration || proCheckpointTime >= _proDuration) {
+  //     debugPrint('⚠️ First checkpoint beyond video duration, skipping jump');
+  //     return;
+  //   }
+
+  //   debugPrint('🎯 Jumping to first checkpoint (${firstCheckpoint.checkpointId}):');
+  //   debugPrint('   User: ${firstCheckpoint.userTimestamp.toStringAsFixed(2)}s');
+  //   debugPrint('   Pro: ${firstCheckpoint.proTimestamp.toStringAsFixed(2)}s');
+
+  //   // Seek both videos to checkpoint positions
+  //   await Future.wait([
+  //     _userController.seekTo(userCheckpointTime),
+  //     _proController.seekTo(proCheckpointTime),
+  //   ]);
+
+  //   // Update current position to reflect the jump
+  //   setState(() {
+  //     _currentPosition = userCheckpointTime;
+  //   });
+  // }
 
   void _pause() {
+    // Cancel playback simulation timer
+    _playbackSimulationTimer?.cancel();
+    _playbackSimulationTimer = null;
+
+    // Pause both controllers to save resources
     _userController.pause();
     _proController.pause();
+
     setState(() => _isPlaying = false);
+
+    debugPrint('⏸️ Pause: user=${(_currentPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s');
   }
 
-  void _onSeek(double value) {
+  Future<void> _onSeek(double value) async {
     final Duration userPosition = Duration(
       milliseconds: (value * _shortestDuration.inMilliseconds).toInt(),
     );
 
-    final double userSeconds = userPosition.inMilliseconds / 1000.0;
+    // Calculate pro position using VideoSyncService
+    final Duration proPosition =
+        _videoSyncService?.calculateProPosition(userPosition) ?? userPosition;
 
-    // Calculate pro position using sync formula:
-    // pro_position = user_position * speed_multiplier + constant
-    final double proSeconds = (userSeconds * _proSpeedMultiplier) + _timeOffset;
-
-    // Clamp pro position to valid range [0, proDuration]
-    final double clampedProSeconds = proSeconds.clamp(0.0, _proDuration.inMilliseconds / 1000.0);
-    final Duration proPosition = Duration(
-      milliseconds: (clampedProSeconds * 1000).toInt(),
-    );
-
-    debugPrint('🔍 Seek: user=${userSeconds.toStringAsFixed(2)}s → pro=${clampedProSeconds.toStringAsFixed(2)}s');
-
-    // Seek both videos
-    _userController.seekTo(userPosition);
-    _proController.seekTo(proPosition);
+    // Seek both videos and wait for completion
+    await Future.wait([
+      _userController.seekTo(userPosition),
+      _proController.seekTo(proPosition),
+    ]);
 
     setState(() {
       _currentPosition = userPosition;
@@ -281,26 +345,19 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   Future<void> _changePlaybackSpeed(double speed) async {
     final bool wasPlaying = _isPlaying;
 
-    // Pause if playing
+    // Pause if playing (cancels simulation timer)
     if (wasPlaying) {
       _pause();
     }
 
-    // Change speed: user video at selected speed, pro video at speed * multiplier
-    await Future.wait([
-      _userController.setPlaybackSpeed(speed),
-      _proController.setPlaybackSpeed(speed * _proSpeedMultiplier),
-    ]);
-
-    debugPrint('🎬 Playback speed changed:');
-    debugPrint('   User: ${speed}x');
-    debugPrint('   Pro: ${speed * _proSpeedMultiplier}x (${speed}x * $_proSpeedMultiplier)');
-
+    // Update playback speed
     setState(() {
       _playbackSpeed = speed;
     });
 
-    // Resume playback if it was playing
+    debugPrint('🎬 Playback speed changed to ${speed}x');
+
+    // Resume playback if it was playing (restarts simulation with new speed)
     if (wasPlaying) {
       await _play();
     }
@@ -422,7 +479,8 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
         Slider(
           value: _shortestDuration.inMilliseconds > 0
               ? (_currentPosition.inMilliseconds /
-                    _shortestDuration.inMilliseconds).clamp(0.0, 1.0)
+                        _shortestDuration.inMilliseconds)
+                    .clamp(0.0, 1.0)
               : 0.0,
           min: 0.0,
           max: 1.0,
@@ -435,7 +493,11 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _formatDuration(_currentPosition > _shortestDuration ? _shortestDuration : _currentPosition),
+                _formatDuration(
+                  _currentPosition > _shortestDuration
+                      ? _shortestDuration
+                      : _currentPosition,
+                ),
                 style: const TextStyle(fontSize: 12),
               ),
               Text(
@@ -495,7 +557,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
                     '${speed}x',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: isSelected
                           ? Theme.of(context).colorScheme.onPrimaryContainer
                           : null,
@@ -520,41 +584,41 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     final double loadingHeight = isLandscapeVideo ? 200.0 : 400.0;
 
     return Container(
-      height: loadingHeight,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: Colors.grey[900],
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              Colors.grey[800]!,
-              Colors.grey[700]!,
-              Colors.grey[800]!,
-            ],
+          height: loadingHeight,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey[900],
           ),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Colors.grey[800]!,
+                  Colors.grey[700]!,
+                  Colors.grey[800]!,
+                ],
               ),
-              SizedBox(height: 16),
-              Text(
-                'Loading videos...',
-                style: TextStyle(color: Colors.white70),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading videos...',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    )
+        )
         .animate(onPlay: (controller) => controller.repeat())
         .shimmer(
           duration: const Duration(milliseconds: 1500),

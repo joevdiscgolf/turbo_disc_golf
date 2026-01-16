@@ -24,7 +24,7 @@ import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/judgment_prompt_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
@@ -303,8 +303,8 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
           _isGlaze,
         );
 
-        final GeminiService geminiService = locator.get<GeminiService>();
-        final String? judgment = await geminiService.generateContent(
+        final LLMService llmService = locator.get<LLMService>();
+        final String? judgment = await llmService.generateContent(
           prompt: prompt,
           useFullModel: true,
         );

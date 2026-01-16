@@ -8,8 +8,8 @@ import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
 import 'package:turbo_disc_golf/utils/gemini_helpers.dart';
 import 'package:uuid/uuid.dart';
@@ -425,7 +425,7 @@ class AiParsingService {
       switch (_selectedModel) {
         case AiParsingModel.gemini:
           responseText = await locator
-              .get<GeminiService>()
+              .get<LLMService>()
               .generateContentWithImage(prompt: prompt, imagePath: imagePath);
       }
 
@@ -484,7 +484,7 @@ class AiParsingService {
     try {
       switch (_selectedModel) {
         case AiParsingModel.gemini:
-          return locator.get<GeminiService>().testConnection();
+          return locator.get<LLMService>().testConnection();
       }
     } catch (e) {
       debugPrint('Gemini connection test failed: $e');
@@ -536,7 +536,7 @@ class AiParsingService {
   Future<String?> _getContentFromModel({required String prompt}) async {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
-        return locator.get<GeminiService>().generateContent(prompt: prompt);
+        return locator.get<LLMService>().generateContent(prompt: prompt);
     }
   }
 
@@ -548,7 +548,7 @@ class AiParsingService {
   }) {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
-        return locator.get<GeminiService>().buildGeminiParsingPrompt(
+        return GeminiHelpers.buildGeminiParsingPrompt(
           voiceTranscript,
           userBag,
           courseName,

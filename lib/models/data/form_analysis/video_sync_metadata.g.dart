@@ -46,7 +46,9 @@ Map<String, dynamic> _$VideoSyncMetadataToJson(VideoSyncMetadata instance) =>
       'pro_video_duration': instance.proVideoDuration,
       'user_playback_speed': instance.userPlaybackSpeed,
       'pro_playback_speed_multiplier': instance.proPlaybackSpeedMultiplier,
-      'checkpoint_sync_points': instance.checkpointSyncPoints,
+      'checkpoint_sync_points': instance.checkpointSyncPoints
+          .map((e) => e.toJson())
+          .toList(),
       'recommended_playback_rate': instance.recommendedPlaybackRate,
       'time_compression_ratio': instance.timeCompressionRatio,
     };

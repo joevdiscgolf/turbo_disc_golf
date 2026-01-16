@@ -3,7 +3,7 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 
@@ -16,7 +16,7 @@ class TestRoastScreen extends StatefulWidget {
 
 class _TestRoastScreenState extends State<TestRoastScreen> {
   final RoundStorageService _storageService = RoundStorageService();
-  final GeminiService _geminiService = locator.get<GeminiService>();
+  final LLMService _llmService = locator.get<LLMService>();
 
   bool _isLoading = false;
   String? _roast;
@@ -268,9 +268,9 @@ class _TestRoastScreenState extends State<TestRoastScreen> {
       debugPrint('Holes: ${_cachedRound!.holes.length}');
 
       final prompt = _buildRoastPrompt(_cachedRound!);
-      debugPrint('🔄 Calling Gemini to generate roast...');
+      debugPrint('🔄 Calling LLM service to generate roast...');
 
-      final roast = await _geminiService.generateContent(
+      final roast = await _llmService.generateContent(
         prompt: prompt,
         useFullModel: true,
       );
