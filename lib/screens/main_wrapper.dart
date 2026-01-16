@@ -29,6 +29,7 @@ class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
+    HapticFeedback.lightImpact();
     setState(() {
       _selectedIndex = index;
     });

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nuclear_loader.dart';
@@ -150,7 +151,10 @@ class _FormAnalysisRecordingScreenState
                   ? null
                   : IconButton(
                       icon: Icon(Icons.close, color: foregroundColor),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(context);
+                      },
                     ),
             ),
             body: Stack(
