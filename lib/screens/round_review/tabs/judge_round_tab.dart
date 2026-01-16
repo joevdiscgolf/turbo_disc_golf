@@ -306,7 +306,6 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
         final LLMService llmService = locator.get<LLMService>();
         final String? judgment = await llmService.generateContent(
           prompt: prompt,
-          useFullModel: true,
         );
 
         if (judgment == null) {

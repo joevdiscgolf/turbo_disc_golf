@@ -11,7 +11,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
-import 'package:turbo_disc_golf/utils/gemini_helpers.dart';
+import 'package:turbo_disc_golf/utils/llm_helpers/gemini_helpers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
 

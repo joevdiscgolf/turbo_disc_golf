@@ -83,6 +83,14 @@ class DGRound {
     return getTotalScore() - getTotalPar();
   }
 
+  /// Get the score relative to par as a formatted string (e.g., "+3", "-2", "E")
+  String getScoreRelativeToParString() {
+    final int scoreRelativeToPar = getRelativeToPar();
+    if (scoreRelativeToPar == 0) return 'E';
+    if (scoreRelativeToPar > 0) return '+$scoreRelativeToPar';
+    return '$scoreRelativeToPar';
+  }
+
   /// Get the layout that was played in this round
   CourseLayout get playedLayout {
     return course.getLayoutById(layoutId) ?? course.defaultLayout;

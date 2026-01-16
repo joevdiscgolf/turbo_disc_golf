@@ -1,7 +1,4 @@
 // lib/services/analysis_service.dart
-import 'dart:math';
-
-import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 
@@ -106,54 +103,6 @@ class HoleAnalysis {
           : 0.0;
 }
 
-/// Per-round aggregated analysis and coaching suggestions
-class RoundAnalysis {
-  final DGRound round;
-  final List<HoleAnalysis> holeAnalyses;
-
-  final double weightedLoss;
-  final double weightedGain;
-  final double netObvious;
-  final int obviousLossCount;
-  final int obviousGainCount;
-  final Map<LossReason, double> impactByReason;
-  final Map<LossReason, int> countByReason;
-  final List<CoachingCard> coachingCards;
-
-  RoundAnalysis({required this.round, required this.holeAnalyses})
-    : weightedLoss = holeAnalyses.fold(0.0, (p, h) => p + h.weightedLoss),
-      weightedGain = holeAnalyses.fold(0.0, (p, h) => p + h.weightedGain),
-      netObvious = holeAnalyses.fold(
-        0.0,
-        (p, h) => p + (h.weightedGain - h.weightedLoss),
-      ),
-      obviousLossCount = holeAnalyses.fold(0, (p, h) => p + h.obviousLossCount),
-      obviousGainCount = holeAnalyses.fold(0, (p, h) => p + h.obviousGainCount),
-      impactByReason = _aggregateImpact(holeAnalyses).$1,
-      countByReason = _aggregateImpact(holeAnalyses).$2,
-      coachingCards = GPTAnalysisService.generateCoachingCards(
-        _aggregateImpact(holeAnalyses).$1,
-        _aggregateImpact(holeAnalyses).$2,
-      );
-
-  static (_MapDouble, _MapInt) _aggregateImpact(List<HoleAnalysis> holes) {
-    final impact = <LossReason, double>{};
-    final counts = <LossReason, int>{};
-    for (final h in holes) {
-      for (final ta in h.throwAnalyses) {
-        final reason = ta.lossReason;
-        if (reason == LossReason.none) continue;
-        impact[reason] = (impact[reason] ?? 0) + ta.weight;
-        counts[reason] = (counts[reason] ?? 0) + 1;
-      }
-    }
-    return (impact, counts);
-  }
-}
-
-typedef _MapDouble = Map<LossReason, double>;
-typedef _MapInt = Map<LossReason, int>;
-
 /// Coaching card / suggestion
 class CoachingCard {
   final LossReason reason;
@@ -184,55 +133,6 @@ class GPTAnalysisService {
   static const double moderateWeight = 0.5;
   static const double goodWeight = 1.0;
   static const int shrinkageK = 10; // for priority confidence blending
-
-  /// Analyze a whole round
-  static RoundAnalysis analyzeRound(DGRound round) {
-    final holes = <HoleAnalysis>[];
-    for (final hole in round.holes) {
-      final throwAnalyses = <ThrowAnalysis>[];
-      for (final t in hole.throws) {
-        final ta = analyzeThrow(t);
-        throwAnalyses.add(ta);
-      }
-
-      // post-process scramble attribution or approach->scramble inference:
-      // If an approach missed green and final hole score <= par => treat later throws as successful scrambles (reduce loss or add gain)
-      final missedGreen = hole.throws.any(
-        (t) =>
-            t.purpose == ThrowPurpose.approach &&
-            t.landingSpot != LandingSpot.circle1 &&
-            t.landingSpot != LandingSpot.circle2,
-      );
-      if (missedGreen && hole.holeScore <= hole.par) {
-        // find the throw that landed on green or in basket after the miss and mark it as a small positive gain (if not already good)
-        for (int i = 0; i < hole.throws.length; i++) {
-          final t = hole.throws[i];
-          if (t.landingSpot == LandingSpot.circle1 ||
-              t.landingSpot == LandingSpot.circle2 ||
-              t.landingSpot == LandingSpot.inBasket) {
-            // find existing throwAnalysis and, if it's neutral or bad, nudge it to a "good" scramble save
-            final taIndex = throwAnalyses.indexWhere((ta) => ta.discThrow == t);
-            if (taIndex >= 0) {
-              final current = throwAnalyses[taIndex];
-              if (current.execCategory != ExecCategory.good) {
-                throwAnalyses[taIndex] = ThrowAnalysis(
-                  discThrow: current.discThrow,
-                  execCategory: ExecCategory.good,
-                  lossReason: LossReason.none,
-                  weight: goodWeight,
-                  confidence: max(0.5, current.confidence),
-                  note: 'Scramble save credited',
-                );
-              }
-            }
-            break;
-          }
-        }
-      }
-      holes.add(HoleAnalysis(hole: hole, throwAnalyses: throwAnalyses));
-    }
-    return RoundAnalysis(round: round, holeAnalyses: holes);
-  }
 
   /// Analyze one throw deterministically
   static ThrowAnalysis analyzeThrow(DiscThrow t) {

@@ -29,7 +29,7 @@ const String shareCardQrUrl = 'https://scoresensei.app';
 /// Which LLM service to use for story generation.
 /// Options: 'gemini' or 'openai'
 /// Default: 'openai' (GPT-4o-mini provides best value - GPT-4 quality at 2x Gemini cost)
-const String storyGenerationLLMProvider = 'openai';
+const String storyGenerationLLMProvider = 'gemini';
 
 /// When true, uses gemini-2.0-flash-exp instead of gemini-2.5-flash for story generation.
 /// Use this when hitting 2.5-flash quota limits.

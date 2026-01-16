@@ -2,6 +2,7 @@ import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 abstract class GeminiHelpers {
@@ -182,7 +183,10 @@ $schemaExample
 ''';
   }
 
-  static String buildGeminiInsightsPrompt(DGRound round, dynamic analysis) {
+  static String buildGeminiInsightsPrompt(
+    DGRound round,
+    RoundAnalysis analysis,
+  ) {
     // Format disc performance data
     final discPerf = (analysis.discPerformances as List)
         .take(5)
