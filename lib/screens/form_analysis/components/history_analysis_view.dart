@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +11,7 @@ import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
@@ -18,10 +21,12 @@ class HistoryAnalysisView extends StatefulWidget {
     super.key,
     required this.analysis,
     required this.onBack,
+    this.topViewPadding = 0,
   });
 
   final FormAnalysisRecord analysis;
   final VoidCallback onBack;
+  final double topViewPadding;
 
   @override
   State<HistoryAnalysisView> createState() => _HistoryAnalysisViewState();
@@ -38,6 +43,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       children: [
         CustomScrollView(
           slivers: [
+            SliverPadding(padding: EdgeInsets.only(top: widget.topViewPadding)),
             SliverToBoxAdapter(child: _buildHeader(context)),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
@@ -494,6 +500,11 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final CheckpointRecord checkpoint =
         widget.analysis.checkpoints[_selectedCheckpointIndex];
 
+    // Use smaller horizontal padding for portrait mode
+    final bool isPortrait =
+        widget.analysis.videoOrientation == VideoOrientation.portrait;
+    final double horizontalPadding = isPortrait ? 8.0 : 16.0;
+
     return GestureDetector(
       onTap: () => _showFullscreenComparison(checkpoint),
       child: Container(
@@ -518,7 +529,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           children: [
             const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: _buildImageComparison(checkpoint),
             ),
             const SizedBox(height: 16),
@@ -579,6 +590,35 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ? checkpoint.userSkeletonUrl
         : checkpoint.userImageUrl;
 
+    // Check if video is portrait orientation
+    final bool isPortrait =
+        widget.analysis.videoOrientation == VideoOrientation.portrait;
+
+    // Portrait: side-by-side layout
+    if (isPortrait) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _buildLabeledImage(
+              label: 'Your Form',
+              imageUrl: userImageUrl,
+              showArrow: false,
+              onTap: () => _showFullscreenComparison(checkpoint),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildProReferenceImage(
+              checkpoint: checkpoint,
+              onTap: () => _showFullscreenComparison(checkpoint),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Landscape: vertical stack layout (default)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -677,7 +717,18 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           // Apply alignment transformation (translate + scale)
           final double horizontalOffset = MediaQuery.of(context).size.width *
               (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
-          final double scale = checkpoint.referenceScale ?? 1.0;
+
+          // WORKAROUND: Clamp scale to prevent backend bugs from making pro reference too small/large
+          final double rawScale = checkpoint.referenceScale ?? 1.0;
+          final double scale = rawScale.clamp(0.7, 1.5);
+
+          if (rawScale != scale) {
+            debugPrint('⚠️  [HistoryAnalysisView] Backend scale out of range!');
+            debugPrint('   - Backend returned: $rawScale');
+            debugPrint('   - Clamped to: $scale');
+            debugPrint('   - Expected range: 0.7 - 1.3');
+            debugPrint('   - THIS IS A BACKEND BUG - PLEASE FIX!');
+          }
 
           debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
           debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
@@ -757,6 +808,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
         cameraAngle: widget.analysis.cameraAngle ?? CameraAngle.side,
+        videoOrientation: widget.analysis.videoOrientation,
         onToggleMode: (bool newMode) {
           setState(() => _showSkeletonOnly = newMode);
         },
@@ -807,44 +859,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               width: double.infinity,
               color: Colors.black,
               child: imageUrl != null && imageUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      key: ValueKey(imageUrl),
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      fadeInDuration: Duration.zero,
-                      fadeOutDuration: Duration.zero,
-                      placeholder: (context, url) =>
-                          Container(
-                                color: Colors.grey[900],
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.centerLeft,
-                                      end: Alignment.centerRight,
-                                      colors: [
-                                        Colors.grey[800]!,
-                                        Colors.grey[700]!,
-                                        Colors.grey[800]!,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .animate(
-                                onPlay: (controller) => controller.repeat(),
-                              )
-                              .shimmer(
-                                duration: 1500.ms,
-                                color: Colors.white.withValues(alpha: 0.3),
-                              ),
-                      errorWidget: (context, url, error) => const Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          size: 48,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    )
+                  ? _buildImageWidget(imageUrl, BoxFit.cover)
                   : const Center(
                       child: Icon(
                         Icons.image_not_supported,
@@ -1213,6 +1228,69 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         )
         .join(' ');
   }
+
+  Widget _buildImageWidget(String imageUrl, BoxFit fit) {
+    // Check if it's a data URL (base64)
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        // Extract base64 data from data URL
+        final String base64String = imageUrl.split(',')[1];
+        final Uint8List imageBytes = base64Decode(base64String);
+        return Image.memory(
+          imageBytes,
+          fit: fit,
+          width: double.infinity,
+          height: 200,
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(
+              child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+            );
+          },
+        );
+      } catch (e) {
+        debugPrint('Error decoding base64 image: $e');
+        return const Center(
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        );
+      }
+    }
+
+    // Otherwise use CachedNetworkImage for Cloud Storage URLs
+    return CachedNetworkImage(
+      key: ValueKey(imageUrl),
+      imageUrl: imageUrl,
+      fit: fit,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      placeholder: (context, url) =>
+          Container(
+                color: Colors.grey[900],
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.grey[800]!,
+                        Colors.grey[700]!,
+                        Colors.grey[800]!,
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .animate(
+                onPlay: (controller) => controller.repeat(),
+              )
+              .shimmer(
+                duration: 1500.ms,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+      errorWidget: (context, url, error) => const Center(
+        child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      ),
+    );
+  }
 }
 
 /// Fullscreen dialog for comparing user form to pro reference with PageView.
@@ -1226,6 +1304,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
     required this.onToggleMode,
     required this.onIndexChanged,
     required this.cameraAngle,
+    this.videoOrientation,
   });
 
   final List<CheckpointRecord> checkpoints;
@@ -1236,6 +1315,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
   final ValueChanged<bool> onToggleMode;
   final ValueChanged<int> onIndexChanged;
   final CameraAngle cameraAngle;
+  final VideoOrientation? videoOrientation;
 
   @override
   State<_FullscreenComparisonDialog> createState() =>
@@ -1452,6 +1532,22 @@ class _FullscreenComparisonDialogState
         ? checkpoint.userSkeletonUrl
         : checkpoint.userImageUrl;
 
+    // Check if video is portrait orientation
+    final bool isPortrait =
+        widget.videoOrientation == VideoOrientation.portrait;
+
+    // Portrait: side-by-side layout
+    if (isPortrait) {
+      return Row(
+        children: [
+          Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
+          const SizedBox(width: 4),
+          Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
+        ],
+      );
+    }
+
+    // Landscape: vertical stack layout (default)
     return Column(
       children: [
         Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
@@ -1533,7 +1629,18 @@ class _FullscreenComparisonDialogState
           // Apply alignment transformation (translate + scale)
           final double horizontalOffset = MediaQuery.of(context).size.width *
               (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
-          final double scale = checkpoint.referenceScale ?? 1.0;
+
+          // WORKAROUND: Clamp scale to prevent backend bugs from making pro reference too small/large
+          final double rawScale = checkpoint.referenceScale ?? 1.0;
+          final double scale = rawScale.clamp(0.7, 1.5);
+
+          if (rawScale != scale) {
+            debugPrint('⚠️  [HistoryAnalysisView] Backend scale out of range!');
+            debugPrint('   - Backend returned: $rawScale');
+            debugPrint('   - Clamped to: $scale');
+            debugPrint('   - Expected range: 0.7 - 1.3');
+            debugPrint('   - THIS IS A BACKEND BUG - PLEASE FIX!');
+          }
 
           debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
           debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
@@ -1621,44 +1728,7 @@ class _FullscreenComparisonDialogState
             minScale: 1.0,
             maxScale: 4.0,
             child: imageUrl != null && imageUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    key: ValueKey(imageUrl),
-                    imageUrl: imageUrl,
-                    fit: BoxFit.contain,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder: (context, url) =>
-                        Container(
-                              color: Colors.grey[900],
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                    colors: [
-                                      Colors.grey[800]!,
-                                      Colors.grey[700]!,
-                                      Colors.grey[800]!,
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            )
-                            .animate(
-                              onPlay: (controller) => controller.repeat(),
-                            )
-                            .shimmer(
-                              duration: 1500.ms,
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                    errorWidget: (context, url, error) => const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 48,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  )
+                ? _buildFullscreenImageWidget(imageUrl)
                 : const Center(
                     child: Icon(
                       Icons.image_not_supported,
@@ -1669,6 +1739,67 @@ class _FullscreenComparisonDialogState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFullscreenImageWidget(String imageUrl) {
+    // Check if it's a data URL (base64)
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        // Extract base64 data from data URL
+        final String base64String = imageUrl.split(',')[1];
+        final Uint8List imageBytes = base64Decode(base64String);
+        return Image.memory(
+          imageBytes,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(
+              child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+            );
+          },
+        );
+      } catch (e) {
+        debugPrint('Error decoding base64 image: $e');
+        return const Center(
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        );
+      }
+    }
+
+    // Otherwise use CachedNetworkImage for Cloud Storage URLs
+    return CachedNetworkImage(
+      key: ValueKey(imageUrl),
+      imageUrl: imageUrl,
+      fit: BoxFit.contain,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      placeholder: (context, url) =>
+          Container(
+                color: Colors.grey[900],
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.grey[800]!,
+                        Colors.grey[700]!,
+                        Colors.grey[800]!,
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .animate(
+                onPlay: (controller) => controller.repeat(),
+              )
+              .shimmer(
+                duration: 1500.ms,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+      errorWidget: (context, url, error) => const Center(
+        child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      ),
     );
   }
 }

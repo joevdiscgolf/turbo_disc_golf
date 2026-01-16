@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/video_orientation.dart';
 
 part 'pose_analysis_response.g.dart';
 
@@ -11,6 +12,8 @@ class PoseAnalysisResponse {
     required this.status,
     required this.throwType,
     required this.cameraAngle,
+    this.videoOrientation,
+    this.videoAspectRatio,
     required this.videoDurationSeconds,
     required this.totalFrames,
     required this.checkpoints,
@@ -31,6 +34,12 @@ class PoseAnalysisResponse {
 
   @JsonKey(name: 'camera_angle')
   final CameraAngle cameraAngle;
+
+  @JsonKey(name: 'video_orientation')
+  final VideoOrientation? videoOrientation;
+
+  @JsonKey(name: 'video_aspect_ratio')
+  final double? videoAspectRatio;
 
   @JsonKey(name: 'video_duration_seconds')
   final double videoDurationSeconds;

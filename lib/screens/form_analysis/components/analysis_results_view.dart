@@ -31,9 +31,12 @@ class AnalysisResultsView extends StatelessWidget {
     final FormAnalysisRecord analysisRecord = _convertToRecord(poseAnalysis!);
 
     // Use HistoryAnalysisView to display (no-op for onBack since we're in fresh analysis)
+    // Add 48px for GenericAppBar height since FormAnalysisRecordingScreen uses extendBodyBehindAppBar
+    const double appBarHeight = 48.0;
     return HistoryAnalysisView(
       analysis: analysisRecord,
       onBack: () {}, // No-op for fresh analysis
+      topViewPadding: topViewPadding + appBarHeight,
     );
   }
 
@@ -182,6 +185,8 @@ class AnalysisResultsView extends StatelessWidget {
           ? result.prioritizedImprovements.map((imp) => imp.description).toList()
           : null,
       cameraAngle: poseAnalysis.cameraAngle,
+      videoOrientation: poseAnalysis.videoOrientation,
+      videoAspectRatio: poseAnalysis.videoAspectRatio,
     );
   }
 

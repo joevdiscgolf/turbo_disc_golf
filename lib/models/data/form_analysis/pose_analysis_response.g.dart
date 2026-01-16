@@ -13,6 +13,11 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   status: json['status'] as String,
   throwType: json['throw_type'] as String,
   cameraAngle: $enumDecode(_$CameraAngleEnumMap, json['camera_angle']),
+  videoOrientation: $enumDecodeNullable(
+    _$VideoOrientationEnumMap,
+    json['video_orientation'],
+  ),
+  videoAspectRatio: (json['video_aspect_ratio'] as num?)?.toDouble(),
   videoDurationSeconds: (json['video_duration_seconds'] as num).toDouble(),
   totalFrames: (json['total_frames'] as num).toInt(),
   checkpoints: (json['checkpoints'] as List<dynamic>)
@@ -34,6 +39,8 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'status': instance.status,
   'throw_type': instance.throwType,
   'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle]!,
+  'video_orientation': _$VideoOrientationEnumMap[instance.videoOrientation],
+  'video_aspect_ratio': instance.videoAspectRatio,
   'video_duration_seconds': instance.videoDurationSeconds,
   'total_frames': instance.totalFrames,
   'checkpoints': instance.checkpoints.map((e) => e.toJson()).toList(),
@@ -47,6 +54,11 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
 const _$CameraAngleEnumMap = {
   CameraAngle.side: 'side',
   CameraAngle.rear: 'rear',
+};
+
+const _$VideoOrientationEnumMap = {
+  VideoOrientation.portrait: 'portrait',
+  VideoOrientation.landscape: 'landscape',
 };
 
 CheckpointPoseData _$CheckpointPoseDataFromJson(

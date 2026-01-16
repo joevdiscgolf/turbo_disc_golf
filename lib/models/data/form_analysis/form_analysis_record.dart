@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/video_orientation.dart';
 
 part 'form_analysis_record.g.dart';
 
@@ -19,6 +20,8 @@ class FormAnalysisRecord {
     this.topCoachingTips,
     this.thumbnailBase64,
     this.cameraAngle,
+    this.videoOrientation,
+    this.videoAspectRatio,
   });
 
   /// Unique identifier for this analysis
@@ -59,6 +62,15 @@ class FormAnalysisRecord {
   /// Camera angle used for recording: side or rear
   @JsonKey(name: 'camera_angle')
   final CameraAngle? cameraAngle;
+
+  /// Video orientation: portrait or landscape
+  @JsonKey(name: 'video_orientation')
+  final VideoOrientation? videoOrientation;
+
+  /// Video aspect ratio (width/height)
+  /// Examples: 0.5625 for 9:16 portrait, 1.778 for 16:9 landscape
+  @JsonKey(name: 'video_aspect_ratio')
+  final double? videoAspectRatio;
 
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);

@@ -25,6 +25,11 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
         _$CameraAngleEnumMap,
         json['camera_angle'],
       ),
+      videoOrientation: $enumDecodeNullable(
+        _$VideoOrientationEnumMap,
+        json['video_orientation'],
+      ),
+      videoAspectRatio: (json['video_aspect_ratio'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
@@ -39,11 +44,18 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
       'top_coaching_tips': instance.topCoachingTips,
       'thumbnail_base64': instance.thumbnailBase64,
       'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle],
+      'video_orientation': _$VideoOrientationEnumMap[instance.videoOrientation],
+      'video_aspect_ratio': instance.videoAspectRatio,
     };
 
 const _$CameraAngleEnumMap = {
   CameraAngle.side: 'side',
   CameraAngle.rear: 'rear',
+};
+
+const _$VideoOrientationEnumMap = {
+  VideoOrientation.portrait: 'portrait',
+  VideoOrientation.landscape: 'landscape',
 };
 
 CheckpointRecord _$CheckpointRecordFromJson(

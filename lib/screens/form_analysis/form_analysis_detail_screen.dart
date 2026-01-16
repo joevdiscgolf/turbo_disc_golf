@@ -49,6 +49,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
         body: HistoryAnalysisView(
           analysis: widget.analysis,
           onBack: () => Navigator.pop(context),
+          topViewPadding: topViewPadding,
         ),
       ),
     );
