@@ -13,6 +13,9 @@ import 'package:turbo_disc_golf/services/search/meilisearch_provider.dart';
 import 'package:turbo_disc_golf/services/geocoding/geocoding_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_rounds_repository.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/services/chatgpt_service.dart';
+import 'package:turbo_disc_golf/services/story_generator_service.dart';
+import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
@@ -37,6 +40,7 @@ final locator = GetIt.instance;
 Future<void> setUpLocator() async {
   await dotenv.load();
   final String? geminiApiKey = dotenv.env['GEMINI_API_KEY'];
+  final String? openaiApiKey = dotenv.env['OPENAI_API_KEY'];
   // Register core services first
   locator.registerSingleton<SharedPreferencesService>(
     SharedPreferencesService(),
@@ -81,9 +85,31 @@ Future<void> setUpLocator() async {
   );
 
   locator.registerSingleton<AiParsingService>(AiParsingService());
+
+  // Register both LLM services
   locator.registerSingleton<GeminiService>(
     GeminiService(apiKey: geminiApiKey ?? ''),
   );
+  locator.registerSingleton<ChatGPTService>(
+    ChatGPTService(apiKey: openaiApiKey ?? ''),
+  );
+
+  // Register the LLMService based on configuration
+  // This allows swapping providers via testing_constants.dart
+  final LLMService storyLLMService = storyGenerationLLMProvider == 'openai'
+      ? locator.get<ChatGPTService>()
+      : locator.get<GeminiService>();
+
+  locator.registerSingleton<LLMService>(
+    storyLLMService,
+    instanceName: 'story',
+  );
+
+  // Register StoryGeneratorService with the configured LLM service
+  locator.registerSingleton<StoryGeneratorService>(
+    StoryGeneratorService(locator.get<LLMService>(instanceName: 'story')),
+  );
+
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());

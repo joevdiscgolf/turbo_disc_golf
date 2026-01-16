@@ -26,6 +26,11 @@ const bool useVerdictImages = true;
 /// The URL encoded in the share card QR code (placeholder for now).
 const String shareCardQrUrl = 'https://scoresensei.app';
 
+/// Which LLM service to use for story generation.
+/// Options: 'gemini' or 'openai'
+/// Default: 'openai' (GPT-4o-mini provides best value - GPT-4 quality at 2x Gemini cost)
+const String storyGenerationLLMProvider = 'openai';
+
 /// When true, uses gemini-2.0-flash-exp instead of gemini-2.5-flash for story generation.
 /// Use this when hitting 2.5-flash quota limits.
 const bool useGeminiFallbackModel = false;
@@ -152,7 +157,7 @@ const bool showFormAnalysisScoreAndSummary = true;
 /// When true, saves form analyses to Firestore and uploads images to Cloud Storage.
 /// When false, skips saving to prevent cluttering the database during testing.
 /// Analysis results will still be shown in the UI, just not persisted.
-const bool saveFormAnalysisToFirestore = false;
+const bool saveFormAnalysisToFirestore = true;
 
 /// When true, always shows the Force Upgrade screen regardless of version check.
 /// This is useful for testing the upgrade UI without modifying Firestore.

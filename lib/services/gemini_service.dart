@@ -5,11 +5,12 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/gemini_helpers.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
-class GeminiService {
+class GeminiService implements LLMService {
   late final GenerativeModel _textModel; // For text parsing
   late final GenerativeModel _visionModel; // For image + text (multimodal)
 
@@ -23,6 +24,8 @@ class GeminiService {
   late final String _apiKey;
 
   String? _lastRawResponse; // Store the last raw response
+
+  @override
   String? get lastRawResponse => _lastRawResponse;
 
   GeminiService({required String apiKey}) {
@@ -54,6 +57,7 @@ class GeminiService {
     );
   }
 
+  @override
   Future<String?> generateContent({
     required String prompt,
     bool useFullModel = false,
@@ -92,6 +96,7 @@ class GeminiService {
 
   /// Generate content with video (multimodal) - uses vision model
   /// Gemini 2.5 Flash supports video input up to 1 hour
+  @override
   Future<String?> generateContentWithVideo({
     required String prompt,
     required String videoPath,
@@ -155,6 +160,7 @@ class GeminiService {
   }
 
   /// Generate content with image (multimodal) - uses vision model
+  @override
   Future<String?> generateContentWithImage({
     required String prompt,
     required String imagePath,
@@ -206,6 +212,7 @@ class GeminiService {
   }
 
   // Test method to validate the service
+  @override
   Future<bool> testConnection() async {
     try {
       final response = await _textModel.generateContent([

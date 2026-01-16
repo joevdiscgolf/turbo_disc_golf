@@ -14,7 +14,6 @@ import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_loading_animation.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
@@ -77,11 +76,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     });
 
     try {
-      // Get services
-      final GeminiService geminiService = locator.get<GeminiService>();
-      final StoryGeneratorService storyService = StoryGeneratorService(
-        geminiService,
-      );
+      // Get service from locator
+      final StoryGeneratorService storyService =
+          locator.get<StoryGeneratorService>();
 
       // Generate story using current round state
       final AIContent? story = await storyService.generateRoundStory(

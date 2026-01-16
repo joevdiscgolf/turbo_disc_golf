@@ -5,16 +5,16 @@ import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:yaml/yaml.dart';
 
 /// Service for generating AI-powered narrative stories about disc golf rounds
 class StoryGeneratorService {
-  final GeminiService _geminiService;
+  final LLMService _llmService;
 
-  StoryGeneratorService(this._geminiService);
+  StoryGeneratorService(this._llmService);
 
   /// Generate a narrative story for a round with embedded stat visualizations
   Future<AIContent?> generateRoundStory(DGRound round) async {
@@ -29,8 +29,8 @@ class StoryGeneratorService {
         // Build the story generation prompt
         final prompt = _buildStoryPrompt(round, analysis);
 
-        // Generate story using full Gemini model for creative content
-        final response = await _geminiService.generateContent(
+        // Generate story using full model for creative content
+        final response = await _llmService.generateContent(
           prompt: prompt,
           useFullModel: true,
         );

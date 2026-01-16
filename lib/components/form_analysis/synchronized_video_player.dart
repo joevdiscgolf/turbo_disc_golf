@@ -56,6 +56,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   @override
   void dispose() {
     _positionUpdateTimer?.cancel();
+    _userController.removeListener(_onVideoPositionChanged);
     _userController.dispose();
     _proController.dispose();
     super.dispose();
@@ -64,12 +65,12 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   Future<void> _initializeControllers() async {
     try {
       // Initialize user video from network URL
-      _userController =
-          VideoPlayerController.networkUrl(Uri.parse(widget.userVideoUrl));
+      _userController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.userVideoUrl),
+      );
 
       // Initialize pro video from assets
-      _proController =
-          VideoPlayerController.asset(widget.proVideoAssetPath);
+      _proController = VideoPlayerController.asset(widget.proVideoAssetPath);
 
       // Initialize both controllers
       await Future.wait([
@@ -80,8 +81,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       // Calculate shortest duration to stop playback
       final Duration userDuration = _userController.value.duration;
       final Duration proDuration = _proController.value.duration;
-      _shortestDuration =
-          userDuration < proDuration ? userDuration : proDuration;
+      _shortestDuration = userDuration < proDuration
+          ? userDuration
+          : proDuration;
 
       // Add listener to track playback position
       _userController.addListener(_onVideoPositionChanged);
@@ -99,6 +101,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
         });
       }
     } catch (e) {
+      debugPrint('Failed to load videos: ${e.toString()}');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -208,10 +211,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       children: [
         Text(
           'Your Form',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         _buildVideoContainer(_userController),
@@ -224,10 +224,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       children: [
         Text(
           'Pro Reference (Paul McBeth)',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         _buildVideoContainer(_proController),
@@ -252,7 +249,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
         Slider(
           value: _shortestDuration.inMilliseconds > 0
               ? _currentPosition.inMilliseconds /
-                  _shortestDuration.inMilliseconds
+                    _shortestDuration.inMilliseconds
               : 0.0,
           min: 0.0,
           max: 1.0,
@@ -318,10 +315,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
           const SizedBox(height: 8),
           const Text(
             'Failed to load videos',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 4),
@@ -338,8 +332,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
 
   String _formatDuration(Duration duration) {
     final String minutes = duration.inMinutes.toString().padLeft(2, '0');
-    final String seconds =
-        (duration.inSeconds % 60).toString().padLeft(2, '0');
+    final String seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
 }
