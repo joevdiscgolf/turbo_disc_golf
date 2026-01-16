@@ -201,8 +201,11 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   }
 
   Future<void> _play() async {
-    // If at end of video, reset to beginning
-    final Duration userPosition = _currentPosition >= _shortestDuration
+    // If at or near end of video (within 100ms), reset to beginning
+    const Duration endThreshold = Duration(milliseconds: 100);
+    final bool isAtEnd = _currentPosition >= _shortestDuration - endThreshold;
+
+    final Duration userPosition = isAtEnd
         ? Duration.zero
         : _userController.value.position;
 
