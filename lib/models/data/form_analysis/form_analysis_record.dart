@@ -22,6 +22,7 @@ class FormAnalysisRecord {
     this.cameraAngle,
     this.videoOrientation,
     this.videoAspectRatio,
+    this.videoUrl,
   });
 
   /// Unique identifier for this analysis
@@ -71,6 +72,11 @@ class FormAnalysisRecord {
   /// Examples: 0.5625 for 9:16 portrait, 1.778 for 16:9 landscape
   @JsonKey(name: 'video_aspect_ratio')
   final double? videoAspectRatio;
+
+  /// URL of the user's form video (for video comparison feature)
+  /// Network URL returned from pose analysis backend
+  @JsonKey(name: 'video_url')
+  final String? videoUrl;
 
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);

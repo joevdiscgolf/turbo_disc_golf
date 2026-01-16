@@ -8,12 +8,16 @@ import 'package:flutter_remix/flutter_remix.dart';
 import 'package:intl/intl.dart';
 
 import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
+import 'package:turbo_disc_golf/components/form_analysis/synchronized_video_player.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/form_analysis_video_helper.dart';
 
 /// View for displaying a historical form analysis from Firestore.
 class HistoryAnalysisView extends StatefulWidget {
@@ -22,11 +26,23 @@ class HistoryAnalysisView extends StatefulWidget {
     required this.analysis,
     required this.onBack,
     this.topViewPadding = 0,
+    this.videoUrl,
+    this.throwType,
+    this.cameraAngle,
   });
 
   final FormAnalysisRecord analysis;
   final VoidCallback onBack;
   final double topViewPadding;
+
+  /// Optional: URL of user's form video for video comparison feature
+  final String? videoUrl;
+
+  /// Optional: Throw type for selecting correct pro reference video
+  final ThrowTechnique? throwType;
+
+  /// Optional: Camera angle for selecting correct pro reference video
+  final CameraAngle? cameraAngle;
 
   @override
   State<HistoryAnalysisView> createState() => _HistoryAnalysisViewState();
@@ -45,6 +61,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           slivers: [
             SliverPadding(padding: EdgeInsets.only(top: widget.topViewPadding)),
             SliverToBoxAdapter(child: _buildHeader(context)),
+            if (showFormAnalysisVideoComparison) _buildVideoComparisonSliver(),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
             SliverToBoxAdapter(child: _buildAngleDeviations(context)),
@@ -130,6 +147,68 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ],
       ),
     );
+  }
+
+  Widget _buildVideoComparisonSliver() {
+    // Check if we have all required data for video comparison
+    if (widget.videoUrl == null ||
+        widget.videoUrl!.isEmpty ||
+        widget.throwType == null ||
+        widget.cameraAngle == null) {
+      // Return empty sliver if data missing
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    try {
+      // Get the correct pro reference video path
+      final String proVideoPath = getProReferenceVideoPath(
+        throwType: widget.throwType!,
+        cameraAngle: widget.cameraAngle!,
+      );
+
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: SynchronizedVideoPlayer(
+            userVideoUrl: widget.videoUrl!,
+            proVideoAssetPath: proVideoPath,
+          ),
+        ),
+      );
+    } catch (e) {
+      // If pro video not supported (e.g., forehand), show informative message
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.grey[700],
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Video comparison not yet available for this throw type.',
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildHeroScore(BuildContext context) {

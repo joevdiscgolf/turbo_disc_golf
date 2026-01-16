@@ -158,3 +158,7 @@ const bool saveFormAnalysisToFirestore = false;
 /// This is useful for testing the upgrade UI without modifying Firestore.
 /// Set to false in production.
 const bool alwaysShowForceUpgradeScreen = false;
+
+/// When true, shows the synchronized dual video player (user vs. pro) below the overall form score.
+/// When false, hides the video comparison player.
+const bool showFormAnalysisVideoComparison = true;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 
 /// View displaying the complete form analysis results.
@@ -37,6 +38,10 @@ class AnalysisResultsView extends StatelessWidget {
       analysis: analysisRecord,
       onBack: () {}, // No-op for fresh analysis
       topViewPadding: topViewPadding + appBarHeight,
+      // Pass video data for video comparison feature
+      videoUrl: poseAnalysis!.videoUrl,
+      throwType: _parseThrowTechnique(poseAnalysis!.throwType),
+      cameraAngle: poseAnalysis!.cameraAngle,
     );
   }
 
@@ -187,6 +192,7 @@ class AnalysisResultsView extends StatelessWidget {
       cameraAngle: poseAnalysis.cameraAngle,
       videoOrientation: poseAnalysis.videoOrientation,
       videoAspectRatio: poseAnalysis.videoAspectRatio,
+      videoUrl: poseAnalysis.videoUrl,
     );
   }
 
@@ -213,5 +219,24 @@ class AnalysisResultsView extends StatelessWidget {
     }
 
     return worstSeverity;
+  }
+
+  /// Parse throw technique string to enum (for video comparison feature)
+  ThrowTechnique? _parseThrowTechnique(String throwTypeStr) {
+    final String lowerCase = throwTypeStr.toLowerCase();
+    switch (lowerCase) {
+      case 'backhand':
+        return ThrowTechnique.backhand;
+      case 'forehand':
+        return ThrowTechnique.forehand;
+      case 'tomahawk':
+        return ThrowTechnique.tomahawk;
+      case 'thumber':
+        return ThrowTechnique.thumber;
+      case 'overhand':
+        return ThrowTechnique.overhand;
+      default:
+        return null; // Unknown throw type
+    }
   }
 }

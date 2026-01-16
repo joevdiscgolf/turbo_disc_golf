@@ -30,6 +30,7 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
         json['video_orientation'],
       ),
       videoAspectRatio: (json['video_aspect_ratio'] as num?)?.toDouble(),
+      videoUrl: json['video_url'] as String?,
     );
 
 Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
@@ -46,6 +47,7 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
       'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle],
       'video_orientation': _$VideoOrientationEnumMap[instance.videoOrientation],
       'video_aspect_ratio': instance.videoAspectRatio,
+      'video_url': instance.videoUrl,
     };
 
 const _$CameraAngleEnumMap = {
