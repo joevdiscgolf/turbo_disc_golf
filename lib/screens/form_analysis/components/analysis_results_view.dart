@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/checkpoint_result_card.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/improvement_list.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/pose_comparison_section.dart';
-import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 
 /// View displaying the complete form analysis results.
+/// Converts PoseAnalysisResponse to FormAnalysisRecord format and uses HistoryAnalysisView for display.
 class AnalysisResultsView extends StatelessWidget {
   const AnalysisResultsView({
     super.key,
@@ -26,216 +22,221 @@ class AnalysisResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: EdgeInsets.only(top: topViewPadding + 40),
-        ),
-        if (showFormAnalysisScoreAndSummary) ...[
-          SliverToBoxAdapter(child: _buildScoreHeader(context)),
-          SliverToBoxAdapter(child: _buildOverallFeedback(context)),
-        ],
-        // Pose comparison section (if pose analysis is available)
-        if (poseAnalysis != null) ...[
-          SliverToBoxAdapter(
-            child: SizedBox(height: showFormAnalysisScoreAndSummary ? 24 : 16),
-          ),
-          SliverToBoxAdapter(
-            child: PoseComparisonSection(poseAnalysis: poseAnalysis!),
-          ),
-        ],
-        if (showFormAnalysisScoreAndSummary) ...[
-          SliverToBoxAdapter(
-            child: _buildSectionTitle(context, 'Checkpoint Analysis'),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: CheckpointResultCard(
-                  result: result.checkpointResults[index],
-                ),
-              ),
-              childCount: result.checkpointResults.length,
-            ),
-          ),
-          if (result.prioritizedImprovements.isNotEmpty) ...[
-            SliverToBoxAdapter(
-              child: _buildSectionTitle(context, 'Prioritized Improvements'),
-            ),
-            SliverToBoxAdapter(
-              child:
-                  ImprovementList(improvements: result.prioritizedImprovements),
-            ),
-          ],
-        ],
-        SliverToBoxAdapter(child: _buildActionButtons(context)),
-      ],
+    if (poseAnalysis == null) {
+      return const Center(
+        child: Text('No pose analysis data available'),
+      );
+    }
+
+    // Convert PoseAnalysisResponse to FormAnalysisRecord format
+    final FormAnalysisRecord analysisRecord = _convertToRecord(poseAnalysis!);
+
+    // Use HistoryAnalysisView to display (no-op for onBack since we're in fresh analysis)
+    // Add 48px for GenericAppBar height since FormAnalysisRecordingScreen uses extendBodyBehindAppBar
+    const double appBarHeight = 48.0;
+    return HistoryAnalysisView(
+      analysis: analysisRecord,
+      onBack: () {}, // No-op for fresh analysis
+      topViewPadding: topViewPadding + appBarHeight,
+      // Pass video data for video comparison feature
+      videoUrl: poseAnalysis!.videoUrl,
+      throwType: _parseThrowTechnique(poseAnalysis!.throwType),
+      cameraAngle: poseAnalysis!.cameraAngle,
     );
   }
 
-  Widget _buildScoreHeader(BuildContext context) {
-    final Color scoreColor = _getScoreColor(result.overallScore);
+  FormAnalysisRecord _convertToRecord(PoseAnalysisResponse poseAnalysis) {
+    // Convert checkpoints from CheckpointPoseData to CheckpointRecord
+    final List<CheckpointRecord> checkpoints =
+        poseAnalysis.checkpoints.map((cp) {
+      // Use base64 as data URLs (they'll be converted inline by the display code)
+      final String? userImageUrl = cp.userImageBase64 != null
+          ? 'data:image/jpeg;base64,${cp.userImageBase64}'
+          : null;
+      final String? userSkeletonUrl = cp.userSkeletonOnlyBase64 != null
+          ? 'data:image/jpeg;base64,${cp.userSkeletonOnlyBase64}'
+          : null;
+      final String? referenceImageUrl =
+          cp.referenceSilhouetteWithSkeletonBase64 != null
+              ? 'data:image/jpeg;base64,${cp.referenceSilhouetteWithSkeletonBase64}'
+              : (cp.referenceImageBase64 != null
+                  ? 'data:image/jpeg;base64,${cp.referenceImageBase64}'
+                  : null);
+      final String? referenceSkeletonUrl =
+          cp.referenceSkeletonOnlyBase64 != null
+              ? 'data:image/jpeg;base64,${cp.referenceSkeletonOnlyBase64}'
+              : null;
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scoreColor,
-            scoreColor.withValues(alpha: 0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: scoreColor.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Overall Score',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${result.overallScore}',
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 72,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _getScoreLabel(result.overallScore),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ),
-        ],
-      ),
+      // Convert angle deviations from AngleDeviations object to Map
+      final Map<String, double> angleDeviations = {};
+      if (cp.deviationsRaw.shoulderRotation != null) {
+        angleDeviations['shoulder_rotation'] = cp.deviationsRaw.shoulderRotation!;
+      }
+      if (cp.deviationsRaw.elbowAngle != null) {
+        angleDeviations['elbow_angle'] = cp.deviationsRaw.elbowAngle!;
+      }
+      if (cp.deviationsRaw.hipRotation != null) {
+        angleDeviations['hip_rotation'] = cp.deviationsRaw.hipRotation!;
+      }
+      if (cp.deviationsRaw.kneeBend != null) {
+        angleDeviations['knee_bend'] = cp.deviationsRaw.kneeBend!;
+      }
+      if (cp.deviationsRaw.spineTilt != null) {
+        angleDeviations['spine_tilt'] = cp.deviationsRaw.spineTilt!;
+      }
+
+      return CheckpointRecord(
+        checkpointId: cp.checkpointId,
+        checkpointName: cp.checkpointName,
+        deviationSeverity: cp.deviationSeverity,
+        coachingTips: cp.coachingTips,
+        angleDeviations:
+            angleDeviations.isNotEmpty ? angleDeviations : null,
+        userImageUrl: userImageUrl,
+        userSkeletonUrl: userSkeletonUrl,
+        referenceImageUrl: referenceImageUrl,
+        referenceSkeletonUrl: referenceSkeletonUrl,
+        proPlayerId: cp.proPlayerId,
+        referenceHorizontalOffsetPercent: cp.referenceHorizontalOffsetPercent,
+        referenceScale: cp.referenceScale,
+        // Individual joint angles - User
+        userLeftKneeBendAngle:
+            cp.userIndividualAngles?.leftKneeBendAngle,
+        userRightKneeBendAngle:
+            cp.userIndividualAngles?.rightKneeBendAngle,
+        userLeftElbowFlexionAngle:
+            cp.userIndividualAngles?.leftElbowFlexionAngle,
+        userRightElbowFlexionAngle:
+            cp.userIndividualAngles?.rightElbowFlexionAngle,
+        userLeftShoulderAbductionAngle:
+            cp.userIndividualAngles?.leftShoulderAbductionAngle,
+        userRightShoulderAbductionAngle:
+            cp.userIndividualAngles?.rightShoulderAbductionAngle,
+        userLeftWristExtensionAngle:
+            cp.userIndividualAngles?.leftWristExtensionAngle,
+        userRightWristExtensionAngle:
+            cp.userIndividualAngles?.rightWristExtensionAngle,
+        userLeftHipFlexionAngle:
+            cp.userIndividualAngles?.leftHipFlexionAngle,
+        userRightHipFlexionAngle:
+            cp.userIndividualAngles?.rightHipFlexionAngle,
+        userLeftAnkleAngle: cp.userIndividualAngles?.leftAnkleAngle,
+        userRightAnkleAngle:
+            cp.userIndividualAngles?.rightAnkleAngle,
+        // Individual joint angles - Reference
+        refLeftKneeBendAngle:
+            cp.referenceIndividualAngles?.leftKneeBendAngle,
+        refRightKneeBendAngle:
+            cp.referenceIndividualAngles?.rightKneeBendAngle,
+        refLeftElbowFlexionAngle:
+            cp.referenceIndividualAngles?.leftElbowFlexionAngle,
+        refRightElbowFlexionAngle:
+            cp.referenceIndividualAngles?.rightElbowFlexionAngle,
+        refLeftShoulderAbductionAngle:
+            cp.referenceIndividualAngles?.leftShoulderAbductionAngle,
+        refRightShoulderAbductionAngle:
+            cp.referenceIndividualAngles?.rightShoulderAbductionAngle,
+        refLeftWristExtensionAngle:
+            cp.referenceIndividualAngles?.leftWristExtensionAngle,
+        refRightWristExtensionAngle:
+            cp.referenceIndividualAngles?.rightWristExtensionAngle,
+        refLeftHipFlexionAngle:
+            cp.referenceIndividualAngles?.leftHipFlexionAngle,
+        refRightHipFlexionAngle:
+            cp.referenceIndividualAngles?.rightHipFlexionAngle,
+        refLeftAnkleAngle:
+            cp.referenceIndividualAngles?.leftAnkleAngle,
+        refRightAnkleAngle:
+            cp.referenceIndividualAngles?.rightAnkleAngle,
+        // Individual joint angle deviations
+        devLeftKneeBendAngle:
+            cp.individualDeviations?.leftKneeBendAngle,
+        devRightKneeBendAngle:
+            cp.individualDeviations?.rightKneeBendAngle,
+        devLeftElbowFlexionAngle:
+            cp.individualDeviations?.leftElbowFlexionAngle,
+        devRightElbowFlexionAngle:
+            cp.individualDeviations?.rightElbowFlexionAngle,
+        devLeftShoulderAbductionAngle:
+            cp.individualDeviations?.leftShoulderAbductionAngle,
+        devRightShoulderAbductionAngle:
+            cp.individualDeviations?.rightShoulderAbductionAngle,
+        devLeftWristExtensionAngle:
+            cp.individualDeviations?.leftWristExtensionAngle,
+        devRightWristExtensionAngle:
+            cp.individualDeviations?.rightWristExtensionAngle,
+        devLeftHipFlexionAngle:
+            cp.individualDeviations?.leftHipFlexionAngle,
+        devRightHipFlexionAngle:
+            cp.individualDeviations?.rightHipFlexionAngle,
+        devLeftAnkleAngle: cp.individualDeviations?.leftAnkleAngle,
+        devRightAnkleAngle:
+            cp.individualDeviations?.rightAnkleAngle,
+      );
+    }).toList();
+
+    // Calculate worst deviation severity from checkpoints
+    final String? worstSeverity = _calculateWorstSeverity(checkpoints);
+
+    return FormAnalysisRecord(
+      id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+      uid: 'temp',
+      createdAt: DateTime.now().toIso8601String(),
+      throwType: poseAnalysis.throwType,
+      overallFormScore: poseAnalysis.overallFormScore,
+      worstDeviationSeverity: worstSeverity,
+      checkpoints: checkpoints,
+      topCoachingTips: result.prioritizedImprovements.isNotEmpty
+          ? result.prioritizedImprovements.map((imp) => imp.description).toList()
+          : null,
+      cameraAngle: poseAnalysis.cameraAngle,
+      videoOrientation: poseAnalysis.videoOrientation,
+      videoAspectRatio: poseAnalysis.videoAspectRatio,
+      videoUrl: poseAnalysis.videoUrl,
     );
   }
 
-  Widget _buildOverallFeedback(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF137e66).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.summarize,
-                  size: 20,
-                  color: Color(0xFF137e66),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Summary',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            result.overallFeedback,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.5,
-                  color: Colors.grey[800],
-                ),
-          ),
-        ],
-      ),
-    );
+  String? _calculateWorstSeverity(List<CheckpointRecord> checkpoints) {
+    if (checkpoints.isEmpty) return null;
+
+    const List<String> severityOrder = [
+      'good',
+      'minor',
+      'moderate',
+      'significant',
+    ];
+
+    String? worstSeverity;
+    int worstIndex = -1;
+
+    for (final checkpoint in checkpoints) {
+      final int index =
+          severityOrder.indexOf(checkpoint.deviationSeverity.toLowerCase());
+      if (index > worstIndex) {
+        worstIndex = index;
+        worstSeverity = checkpoint.deviationSeverity;
+      }
+    }
+
+    return worstSeverity;
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: PrimaryButton(
-        width: double.infinity,
-        height: 56,
-        label: 'Analyze Another Video',
-        icon: Icons.replay,
-        gradientBackground: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          BlocProvider.of<VideoFormAnalysisCubit>(context).reset();
-        },
-      ),
-    );
-  }
-
-  Color _getScoreColor(int score) {
-    if (score >= 80) return const Color(0xFF4CAF50);
-    if (score >= 60) return const Color(0xFF2196F3);
-    if (score >= 40) return const Color(0xFFFF9800);
-    return const Color(0xFFF44336);
-  }
-
-  String _getScoreLabel(int score) {
-    if (score >= 90) return 'Excellent';
-    if (score >= 80) return 'Great';
-    if (score >= 70) return 'Good';
-    if (score >= 60) return 'Solid';
-    if (score >= 50) return 'Developing';
-    if (score >= 40) return 'Needs Work';
-    return 'Keep Practicing';
+  /// Parse throw technique string to enum (for video comparison feature)
+  ThrowTechnique? _parseThrowTechnique(String throwTypeStr) {
+    final String lowerCase = throwTypeStr.toLowerCase();
+    switch (lowerCase) {
+      case 'backhand':
+        return ThrowTechnique.backhand;
+      case 'forehand':
+        return ThrowTechnique.forehand;
+      case 'tomahawk':
+        return ThrowTechnique.tomahawk;
+      case 'thumber':
+        return ThrowTechnique.thumber;
+      case 'overhand':
+        return ThrowTechnique.overhand;
+      default:
+        return null; // Unknown throw type
+    }
   }
 }

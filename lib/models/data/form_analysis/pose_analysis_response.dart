@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/video_orientation.dart';
 
 part 'pose_analysis_response.g.dart';
 
@@ -11,6 +12,8 @@ class PoseAnalysisResponse {
     required this.status,
     required this.throwType,
     required this.cameraAngle,
+    this.videoOrientation,
+    this.videoAspectRatio,
     required this.videoDurationSeconds,
     required this.totalFrames,
     required this.checkpoints,
@@ -18,6 +21,7 @@ class PoseAnalysisResponse {
     this.overallFormScore,
     this.errorMessage,
     this.roundThumbnailBase64,
+    this.videoUrl,
   });
 
   @JsonKey(name: 'session_id')
@@ -30,6 +34,12 @@ class PoseAnalysisResponse {
 
   @JsonKey(name: 'camera_angle')
   final CameraAngle cameraAngle;
+
+  @JsonKey(name: 'video_orientation')
+  final VideoOrientation? videoOrientation;
+
+  @JsonKey(name: 'video_aspect_ratio')
+  final double? videoAspectRatio;
 
   @JsonKey(name: 'video_duration_seconds')
   final double videoDurationSeconds;
@@ -50,6 +60,9 @@ class PoseAnalysisResponse {
 
   @JsonKey(name: 'round_thumbnail_base64')
   final String? roundThumbnailBase64;
+
+  @JsonKey(name: 'video_url')
+  final String? videoUrl;
 
   factory PoseAnalysisResponse.fromJson(Map<String, dynamic> json) =>
       _$PoseAnalysisResponseFromJson(json);
@@ -83,6 +96,9 @@ class CheckpointPoseData {
     this.referenceScale,
     this.proPlayerId,
     required this.coachingTips,
+    this.userIndividualAngles,
+    this.referenceIndividualAngles,
+    this.individualDeviations,
   });
 
   @JsonKey(name: 'checkpoint_id')
@@ -157,6 +173,18 @@ class CheckpointPoseData {
 
   @JsonKey(name: 'coaching_tips')
   final List<String> coachingTips;
+
+  /// Individual joint angles for user (left/right body parts)
+  @JsonKey(name: 'user_individual_angles')
+  final IndividualJointAngles? userIndividualAngles;
+
+  /// Individual joint angles for reference/pro (left/right body parts)
+  @JsonKey(name: 'reference_individual_angles')
+  final IndividualJointAngles? referenceIndividualAngles;
+
+  /// Individual joint deviations (user - reference)
+  @JsonKey(name: 'individual_deviations')
+  final IndividualJointDeviations? individualDeviations;
 
   /// Get checkpoint description based on checkpoint ID
   String get checkpointDescription {
@@ -302,6 +330,124 @@ class PoseAngles {
   factory PoseAngles.fromJson(Map<String, dynamic> json) =>
       _$PoseAnglesFromJson(json);
   Map<String, dynamic> toJson() => _$PoseAnglesToJson(this);
+}
+
+/// Individual joint angles for left/right body parts
+@JsonSerializable()
+class IndividualJointAngles {
+  const IndividualJointAngles({
+    this.leftKneeBendAngle,
+    this.rightKneeBendAngle,
+    this.leftElbowFlexionAngle,
+    this.rightElbowFlexionAngle,
+    this.leftShoulderAbductionAngle,
+    this.rightShoulderAbductionAngle,
+    this.leftWristExtensionAngle,
+    this.rightWristExtensionAngle,
+    this.leftHipFlexionAngle,
+    this.rightHipFlexionAngle,
+    this.leftAnkleAngle,
+    this.rightAnkleAngle,
+  });
+
+  @JsonKey(name: 'left_knee_bend_angle')
+  final double? leftKneeBendAngle;
+
+  @JsonKey(name: 'right_knee_bend_angle')
+  final double? rightKneeBendAngle;
+
+  @JsonKey(name: 'left_elbow_flexion_angle')
+  final double? leftElbowFlexionAngle;
+
+  @JsonKey(name: 'right_elbow_flexion_angle')
+  final double? rightElbowFlexionAngle;
+
+  @JsonKey(name: 'left_shoulder_abduction_angle')
+  final double? leftShoulderAbductionAngle;
+
+  @JsonKey(name: 'right_shoulder_abduction_angle')
+  final double? rightShoulderAbductionAngle;
+
+  @JsonKey(name: 'left_wrist_extension_angle')
+  final double? leftWristExtensionAngle;
+
+  @JsonKey(name: 'right_wrist_extension_angle')
+  final double? rightWristExtensionAngle;
+
+  @JsonKey(name: 'left_hip_flexion_angle')
+  final double? leftHipFlexionAngle;
+
+  @JsonKey(name: 'right_hip_flexion_angle')
+  final double? rightHipFlexionAngle;
+
+  @JsonKey(name: 'left_ankle_angle')
+  final double? leftAnkleAngle;
+
+  @JsonKey(name: 'right_ankle_angle')
+  final double? rightAnkleAngle;
+
+  factory IndividualJointAngles.fromJson(Map<String, dynamic> json) =>
+      _$IndividualJointAnglesFromJson(json);
+  Map<String, dynamic> toJson() => _$IndividualJointAnglesToJson(this);
+}
+
+/// Individual joint deviations for left/right body parts
+@JsonSerializable()
+class IndividualJointDeviations {
+  const IndividualJointDeviations({
+    this.leftKneeBendAngle,
+    this.rightKneeBendAngle,
+    this.leftElbowFlexionAngle,
+    this.rightElbowFlexionAngle,
+    this.leftShoulderAbductionAngle,
+    this.rightShoulderAbductionAngle,
+    this.leftWristExtensionAngle,
+    this.rightWristExtensionAngle,
+    this.leftHipFlexionAngle,
+    this.rightHipFlexionAngle,
+    this.leftAnkleAngle,
+    this.rightAnkleAngle,
+  });
+
+  @JsonKey(name: 'left_knee_bend_angle')
+  final double? leftKneeBendAngle;
+
+  @JsonKey(name: 'right_knee_bend_angle')
+  final double? rightKneeBendAngle;
+
+  @JsonKey(name: 'left_elbow_flexion_angle')
+  final double? leftElbowFlexionAngle;
+
+  @JsonKey(name: 'right_elbow_flexion_angle')
+  final double? rightElbowFlexionAngle;
+
+  @JsonKey(name: 'left_shoulder_abduction_angle')
+  final double? leftShoulderAbductionAngle;
+
+  @JsonKey(name: 'right_shoulder_abduction_angle')
+  final double? rightShoulderAbductionAngle;
+
+  @JsonKey(name: 'left_wrist_extension_angle')
+  final double? leftWristExtensionAngle;
+
+  @JsonKey(name: 'right_wrist_extension_angle')
+  final double? rightWristExtensionAngle;
+
+  @JsonKey(name: 'left_hip_flexion_angle')
+  final double? leftHipFlexionAngle;
+
+  @JsonKey(name: 'right_hip_flexion_angle')
+  final double? rightHipFlexionAngle;
+
+  @JsonKey(name: 'left_ankle_angle')
+  final double? leftAnkleAngle;
+
+  @JsonKey(name: 'right_ankle_angle')
+  final double? rightAnkleAngle;
+
+  factory IndividualJointDeviations.fromJson(Map<String, dynamic> json) =>
+      _$IndividualJointDeviationsFromJson(json);
+  Map<String, dynamic> toJson() => _$IndividualJointDeviationsToJson(this);
 }
 
 /// Angle deviations from reference (matches backend AngleDeviations)

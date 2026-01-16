@@ -13,6 +13,11 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   status: json['status'] as String,
   throwType: json['throw_type'] as String,
   cameraAngle: $enumDecode(_$CameraAngleEnumMap, json['camera_angle']),
+  videoOrientation: $enumDecodeNullable(
+    _$VideoOrientationEnumMap,
+    json['video_orientation'],
+  ),
+  videoAspectRatio: (json['video_aspect_ratio'] as num?)?.toDouble(),
   videoDurationSeconds: (json['video_duration_seconds'] as num).toDouble(),
   totalFrames: (json['total_frames'] as num).toInt(),
   checkpoints: (json['checkpoints'] as List<dynamic>)
@@ -24,6 +29,7 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   overallFormScore: (json['overall_form_score'] as num?)?.toInt(),
   errorMessage: json['error_message'] as String?,
   roundThumbnailBase64: json['round_thumbnail_base64'] as String?,
+  videoUrl: json['video_url'] as String?,
 );
 
 Map<String, dynamic> _$PoseAnalysisResponseToJson(
@@ -33,6 +39,8 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'status': instance.status,
   'throw_type': instance.throwType,
   'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle]!,
+  'video_orientation': _$VideoOrientationEnumMap[instance.videoOrientation],
+  'video_aspect_ratio': instance.videoAspectRatio,
   'video_duration_seconds': instance.videoDurationSeconds,
   'total_frames': instance.totalFrames,
   'checkpoints': instance.checkpoints.map((e) => e.toJson()).toList(),
@@ -40,11 +48,17 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'overall_form_score': instance.overallFormScore,
   'error_message': instance.errorMessage,
   'round_thumbnail_base64': instance.roundThumbnailBase64,
+  'video_url': instance.videoUrl,
 };
 
 const _$CameraAngleEnumMap = {
   CameraAngle.side: 'side',
   CameraAngle.rear: 'rear',
+};
+
+const _$VideoOrientationEnumMap = {
+  VideoOrientation.portrait: 'portrait',
+  VideoOrientation.landscape: 'landscape',
 };
 
 CheckpointPoseData _$CheckpointPoseDataFromJson(
@@ -87,6 +101,21 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
+  userIndividualAngles: json['user_individual_angles'] == null
+      ? null
+      : IndividualJointAngles.fromJson(
+          json['user_individual_angles'] as Map<String, dynamic>,
+        ),
+  referenceIndividualAngles: json['reference_individual_angles'] == null
+      ? null
+      : IndividualJointAngles.fromJson(
+          json['reference_individual_angles'] as Map<String, dynamic>,
+        ),
+  individualDeviations: json['individual_deviations'] == null
+      ? null
+      : IndividualJointDeviations.fromJson(
+          json['individual_deviations'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$CheckpointPoseDataToJson(
@@ -119,6 +148,9 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'reference_scale': instance.referenceScale,
   'pro_player_id': instance.proPlayerId,
   'coaching_tips': instance.coachingTips,
+  'user_individual_angles': instance.userIndividualAngles?.toJson(),
+  'reference_individual_angles': instance.referenceIndividualAngles?.toJson(),
+  'individual_deviations': instance.individualDeviations?.toJson(),
 };
 
 PoseLandmark _$PoseLandmarkFromJson(Map<String, dynamic> json) => PoseLandmark(
@@ -156,6 +188,84 @@ Map<String, dynamic> _$PoseAnglesToJson(PoseAngles instance) =>
       'spine_tilt': instance.spineTilt,
       'wrist_angle': instance.wristAngle,
     };
+
+IndividualJointAngles _$IndividualJointAnglesFromJson(
+  Map<String, dynamic> json,
+) => IndividualJointAngles(
+  leftKneeBendAngle: (json['left_knee_bend_angle'] as num?)?.toDouble(),
+  rightKneeBendAngle: (json['right_knee_bend_angle'] as num?)?.toDouble(),
+  leftElbowFlexionAngle: (json['left_elbow_flexion_angle'] as num?)?.toDouble(),
+  rightElbowFlexionAngle: (json['right_elbow_flexion_angle'] as num?)
+      ?.toDouble(),
+  leftShoulderAbductionAngle: (json['left_shoulder_abduction_angle'] as num?)
+      ?.toDouble(),
+  rightShoulderAbductionAngle: (json['right_shoulder_abduction_angle'] as num?)
+      ?.toDouble(),
+  leftWristExtensionAngle: (json['left_wrist_extension_angle'] as num?)
+      ?.toDouble(),
+  rightWristExtensionAngle: (json['right_wrist_extension_angle'] as num?)
+      ?.toDouble(),
+  leftHipFlexionAngle: (json['left_hip_flexion_angle'] as num?)?.toDouble(),
+  rightHipFlexionAngle: (json['right_hip_flexion_angle'] as num?)?.toDouble(),
+  leftAnkleAngle: (json['left_ankle_angle'] as num?)?.toDouble(),
+  rightAnkleAngle: (json['right_ankle_angle'] as num?)?.toDouble(),
+);
+
+Map<String, dynamic> _$IndividualJointAnglesToJson(
+  IndividualJointAngles instance,
+) => <String, dynamic>{
+  'left_knee_bend_angle': instance.leftKneeBendAngle,
+  'right_knee_bend_angle': instance.rightKneeBendAngle,
+  'left_elbow_flexion_angle': instance.leftElbowFlexionAngle,
+  'right_elbow_flexion_angle': instance.rightElbowFlexionAngle,
+  'left_shoulder_abduction_angle': instance.leftShoulderAbductionAngle,
+  'right_shoulder_abduction_angle': instance.rightShoulderAbductionAngle,
+  'left_wrist_extension_angle': instance.leftWristExtensionAngle,
+  'right_wrist_extension_angle': instance.rightWristExtensionAngle,
+  'left_hip_flexion_angle': instance.leftHipFlexionAngle,
+  'right_hip_flexion_angle': instance.rightHipFlexionAngle,
+  'left_ankle_angle': instance.leftAnkleAngle,
+  'right_ankle_angle': instance.rightAnkleAngle,
+};
+
+IndividualJointDeviations _$IndividualJointDeviationsFromJson(
+  Map<String, dynamic> json,
+) => IndividualJointDeviations(
+  leftKneeBendAngle: (json['left_knee_bend_angle'] as num?)?.toDouble(),
+  rightKneeBendAngle: (json['right_knee_bend_angle'] as num?)?.toDouble(),
+  leftElbowFlexionAngle: (json['left_elbow_flexion_angle'] as num?)?.toDouble(),
+  rightElbowFlexionAngle: (json['right_elbow_flexion_angle'] as num?)
+      ?.toDouble(),
+  leftShoulderAbductionAngle: (json['left_shoulder_abduction_angle'] as num?)
+      ?.toDouble(),
+  rightShoulderAbductionAngle: (json['right_shoulder_abduction_angle'] as num?)
+      ?.toDouble(),
+  leftWristExtensionAngle: (json['left_wrist_extension_angle'] as num?)
+      ?.toDouble(),
+  rightWristExtensionAngle: (json['right_wrist_extension_angle'] as num?)
+      ?.toDouble(),
+  leftHipFlexionAngle: (json['left_hip_flexion_angle'] as num?)?.toDouble(),
+  rightHipFlexionAngle: (json['right_hip_flexion_angle'] as num?)?.toDouble(),
+  leftAnkleAngle: (json['left_ankle_angle'] as num?)?.toDouble(),
+  rightAnkleAngle: (json['right_ankle_angle'] as num?)?.toDouble(),
+);
+
+Map<String, dynamic> _$IndividualJointDeviationsToJson(
+  IndividualJointDeviations instance,
+) => <String, dynamic>{
+  'left_knee_bend_angle': instance.leftKneeBendAngle,
+  'right_knee_bend_angle': instance.rightKneeBendAngle,
+  'left_elbow_flexion_angle': instance.leftElbowFlexionAngle,
+  'right_elbow_flexion_angle': instance.rightElbowFlexionAngle,
+  'left_shoulder_abduction_angle': instance.leftShoulderAbductionAngle,
+  'right_shoulder_abduction_angle': instance.rightShoulderAbductionAngle,
+  'left_wrist_extension_angle': instance.leftWristExtensionAngle,
+  'right_wrist_extension_angle': instance.rightWristExtensionAngle,
+  'left_hip_flexion_angle': instance.leftHipFlexionAngle,
+  'right_hip_flexion_angle': instance.rightHipFlexionAngle,
+  'left_ankle_angle': instance.leftAnkleAngle,
+  'right_ankle_angle': instance.rightAnkleAngle,
+};
 
 AngleDeviations _$AngleDeviationsFromJson(Map<String, dynamic> json) =>
     AngleDeviations(

@@ -5,17 +5,17 @@ import 'package:flutter/material.dart';
 
 /// Messages shown during form analysis processing.
 /// These cycle through in a random order.
-const List<String> kAnalysisMessages = [
-  'Analyzing throwing motion',
-  'Detecting body positioning',
-  'Measuring arm acceleration',
-  'Evaluating weight transfer',
-  'Checking hip rotation',
-  'Assessing release angle',
-  'Analyzing follow-through',
-  'Measuring timing sequences',
-  'Detecting balance points',
-  'Evaluating power generation',
+const List<String> kAnalysisMessages = <String>[
+  'Tracking',
+  'Segmenting',
+  'Aligning',
+  'Indexing',
+  'Timing',
+  'Comparing',
+  'Modeling',
+  'Estimating',
+  'Evaluating',
+  'Summarizing',
 ];
 
 /// Cycles through analysis messages in a random order with fade animations.
@@ -62,7 +62,7 @@ class _CyclingAnalysisTextState extends State<CyclingAnalysisText>
     );
 
     // Cycle through messages every 2.5 seconds
-    _cycleTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
+    _cycleTimer = Timer.periodic(const Duration(milliseconds: 4000), (_) {
       _nextMessage();
     });
   }

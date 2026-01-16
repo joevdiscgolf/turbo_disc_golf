@@ -3,14 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 
 class FormAnalysisDetailScreen extends StatefulWidget {
-  const FormAnalysisDetailScreen({
-    super.key,
-    required this.analysis,
-  });
+  const FormAnalysisDetailScreen({super.key, required this.analysis});
 
   final FormAnalysisRecord analysis;
 
@@ -52,9 +50,33 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
         body: HistoryAnalysisView(
           analysis: widget.analysis,
           onBack: () => Navigator.pop(context),
+          topViewPadding: topViewPadding,
+          // Pass video data for video comparison feature (if available)
+          videoUrl: widget.analysis.videoUrl,
+          throwType: _parseThrowTechnique(widget.analysis.throwType),
+          cameraAngle: widget.analysis.cameraAngle,
         ),
       ),
     );
+  }
+
+  /// Parse throw technique string to enum (for video comparison feature)
+  ThrowTechnique? _parseThrowTechnique(String throwTypeStr) {
+    final String lowerCase = throwTypeStr.toLowerCase();
+    switch (lowerCase) {
+      case 'backhand':
+        return ThrowTechnique.backhand;
+      case 'forehand':
+        return ThrowTechnique.forehand;
+      case 'tomahawk':
+        return ThrowTechnique.tomahawk;
+      case 'thumber':
+        return ThrowTechnique.thumber;
+      case 'overhand':
+        return ThrowTechnique.overhand;
+      default:
+        return null; // Unknown throw type
+    }
   }
 
   Widget _buildMenuButton() {

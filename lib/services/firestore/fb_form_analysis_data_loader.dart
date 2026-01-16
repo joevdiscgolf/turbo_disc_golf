@@ -127,6 +127,46 @@ abstract class FBFormAnalysisDataLoader {
           proPlayerId: checkpoint.proPlayerId ?? 'paul_mcbeth', // Default to Paul McBeth
           referenceHorizontalOffsetPercent:
               checkpoint.referenceHorizontalOffsetPercent,
+          referenceScale: checkpoint.referenceScale,
+          // Individual joint angles - User
+          userLeftKneeBendAngle: checkpoint.userIndividualAngles?.leftKneeBendAngle,
+          userRightKneeBendAngle: checkpoint.userIndividualAngles?.rightKneeBendAngle,
+          userLeftElbowFlexionAngle: checkpoint.userIndividualAngles?.leftElbowFlexionAngle,
+          userRightElbowFlexionAngle: checkpoint.userIndividualAngles?.rightElbowFlexionAngle,
+          userLeftShoulderAbductionAngle: checkpoint.userIndividualAngles?.leftShoulderAbductionAngle,
+          userRightShoulderAbductionAngle: checkpoint.userIndividualAngles?.rightShoulderAbductionAngle,
+          userLeftWristExtensionAngle: checkpoint.userIndividualAngles?.leftWristExtensionAngle,
+          userRightWristExtensionAngle: checkpoint.userIndividualAngles?.rightWristExtensionAngle,
+          userLeftHipFlexionAngle: checkpoint.userIndividualAngles?.leftHipFlexionAngle,
+          userRightHipFlexionAngle: checkpoint.userIndividualAngles?.rightHipFlexionAngle,
+          userLeftAnkleAngle: checkpoint.userIndividualAngles?.leftAnkleAngle,
+          userRightAnkleAngle: checkpoint.userIndividualAngles?.rightAnkleAngle,
+          // Individual joint angles - Reference
+          refLeftKneeBendAngle: checkpoint.referenceIndividualAngles?.leftKneeBendAngle,
+          refRightKneeBendAngle: checkpoint.referenceIndividualAngles?.rightKneeBendAngle,
+          refLeftElbowFlexionAngle: checkpoint.referenceIndividualAngles?.leftElbowFlexionAngle,
+          refRightElbowFlexionAngle: checkpoint.referenceIndividualAngles?.rightElbowFlexionAngle,
+          refLeftShoulderAbductionAngle: checkpoint.referenceIndividualAngles?.leftShoulderAbductionAngle,
+          refRightShoulderAbductionAngle: checkpoint.referenceIndividualAngles?.rightShoulderAbductionAngle,
+          refLeftWristExtensionAngle: checkpoint.referenceIndividualAngles?.leftWristExtensionAngle,
+          refRightWristExtensionAngle: checkpoint.referenceIndividualAngles?.rightWristExtensionAngle,
+          refLeftHipFlexionAngle: checkpoint.referenceIndividualAngles?.leftHipFlexionAngle,
+          refRightHipFlexionAngle: checkpoint.referenceIndividualAngles?.rightHipFlexionAngle,
+          refLeftAnkleAngle: checkpoint.referenceIndividualAngles?.leftAnkleAngle,
+          refRightAnkleAngle: checkpoint.referenceIndividualAngles?.rightAnkleAngle,
+          // Individual joint angle deviations
+          devLeftKneeBendAngle: checkpoint.individualDeviations?.leftKneeBendAngle,
+          devRightKneeBendAngle: checkpoint.individualDeviations?.rightKneeBendAngle,
+          devLeftElbowFlexionAngle: checkpoint.individualDeviations?.leftElbowFlexionAngle,
+          devRightElbowFlexionAngle: checkpoint.individualDeviations?.rightElbowFlexionAngle,
+          devLeftShoulderAbductionAngle: checkpoint.individualDeviations?.leftShoulderAbductionAngle,
+          devRightShoulderAbductionAngle: checkpoint.individualDeviations?.rightShoulderAbductionAngle,
+          devLeftWristExtensionAngle: checkpoint.individualDeviations?.leftWristExtensionAngle,
+          devRightWristExtensionAngle: checkpoint.individualDeviations?.rightWristExtensionAngle,
+          devLeftHipFlexionAngle: checkpoint.individualDeviations?.leftHipFlexionAngle,
+          devRightHipFlexionAngle: checkpoint.individualDeviations?.rightHipFlexionAngle,
+          devLeftAnkleAngle: checkpoint.individualDeviations?.leftAnkleAngle,
+          devRightAnkleAngle: checkpoint.individualDeviations?.rightAnkleAngle,
         ));
 
         debugPrint('[FBFormAnalysisDataLoader] ✅ Checkpoint ${checkpoint.checkpointId} images uploaded successfully');

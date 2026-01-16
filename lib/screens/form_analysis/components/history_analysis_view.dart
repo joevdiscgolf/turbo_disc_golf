@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,10 +8,16 @@ import 'package:flutter_remix/flutter_remix.dart';
 import 'package:intl/intl.dart';
 
 import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
+import 'package:turbo_disc_golf/components/form_analysis/synchronized_video_player.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/utils/form_analysis_video_helper.dart';
 
 /// View for displaying a historical form analysis from Firestore.
 class HistoryAnalysisView extends StatefulWidget {
@@ -17,10 +25,24 @@ class HistoryAnalysisView extends StatefulWidget {
     super.key,
     required this.analysis,
     required this.onBack,
+    this.topViewPadding = 0,
+    this.videoUrl,
+    this.throwType,
+    this.cameraAngle,
   });
 
   final FormAnalysisRecord analysis;
   final VoidCallback onBack;
+  final double topViewPadding;
+
+  /// Optional: URL of user's form video for video comparison feature
+  final String? videoUrl;
+
+  /// Optional: Throw type for selecting correct pro reference video
+  final ThrowTechnique? throwType;
+
+  /// Optional: Camera angle for selecting correct pro reference video
+  final CameraAngle? cameraAngle;
 
   @override
   State<HistoryAnalysisView> createState() => _HistoryAnalysisViewState();
@@ -37,9 +59,12 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       children: [
         CustomScrollView(
           slivers: [
+            SliverPadding(padding: EdgeInsets.only(top: widget.topViewPadding)),
             SliverToBoxAdapter(child: _buildHeader(context)),
+            if (showFormAnalysisVideoComparison) _buildVideoComparisonSliver(),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
+            SliverToBoxAdapter(child: _buildAngleDeviations(context)),
             if (widget.analysis.topCoachingTips?.isNotEmpty ?? false)
               SliverToBoxAdapter(child: _buildCoachingTips(context)),
             const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
@@ -122,6 +147,68 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ],
       ),
     );
+  }
+
+  Widget _buildVideoComparisonSliver() {
+    // Check if we have all required data for video comparison
+    if (widget.videoUrl == null ||
+        widget.videoUrl!.isEmpty ||
+        widget.throwType == null ||
+        widget.cameraAngle == null) {
+      // Return empty sliver if data missing
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    try {
+      // Get the correct pro reference video path
+      final String proVideoPath = getProReferenceVideoPath(
+        throwType: widget.throwType!,
+        cameraAngle: widget.cameraAngle!,
+      );
+
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: SynchronizedVideoPlayer(
+            userVideoUrl: widget.videoUrl!,
+            proVideoAssetPath: proVideoPath,
+          ),
+        ),
+      );
+    } catch (e) {
+      // If pro video not supported (e.g., forehand), show informative message
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.grey[700],
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Video comparison not yet available for this throw type.',
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildHeroScore(BuildContext context) {
@@ -492,6 +579,11 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final CheckpointRecord checkpoint =
         widget.analysis.checkpoints[_selectedCheckpointIndex];
 
+    // Use smaller horizontal padding for portrait mode
+    final bool isPortrait =
+        widget.analysis.videoOrientation == VideoOrientation.portrait;
+    final double horizontalPadding = isPortrait ? 8.0 : 16.0;
+
     return GestureDetector(
       onTap: () => _showFullscreenComparison(checkpoint),
       child: Container(
@@ -516,7 +608,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           children: [
             const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: _buildImageComparison(checkpoint),
             ),
             const SizedBox(height: 16),
@@ -577,6 +669,35 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ? checkpoint.userSkeletonUrl
         : checkpoint.userImageUrl;
 
+    // Check if video is portrait orientation
+    final bool isPortrait =
+        widget.analysis.videoOrientation == VideoOrientation.portrait;
+
+    // Portrait: side-by-side layout
+    if (isPortrait) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _buildLabeledImage(
+              label: 'Your Form',
+              imageUrl: userImageUrl,
+              showArrow: false,
+              onTap: () => _showFullscreenComparison(checkpoint),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildProReferenceImage(
+              checkpoint: checkpoint,
+              onTap: () => _showFullscreenComparison(checkpoint),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Landscape: vertical stack layout (default)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -675,7 +796,18 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           // Apply alignment transformation (translate + scale)
           final double horizontalOffset = MediaQuery.of(context).size.width *
               (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
-          final double scale = checkpoint.referenceScale ?? 1.0;
+
+          // WORKAROUND: Clamp scale to prevent backend bugs from making pro reference too small/large
+          final double rawScale = checkpoint.referenceScale ?? 1.0;
+          final double scale = rawScale.clamp(0.7, 1.5);
+
+          if (rawScale != scale) {
+            debugPrint('⚠️  [HistoryAnalysisView] Backend scale out of range!');
+            debugPrint('   - Backend returned: $rawScale');
+            debugPrint('   - Clamped to: $scale');
+            debugPrint('   - Expected range: 0.7 - 1.3');
+            debugPrint('   - THIS IS A BACKEND BUG - PLEASE FIX!');
+          }
 
           debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
           debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
@@ -755,6 +887,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
         cameraAngle: widget.analysis.cameraAngle ?? CameraAngle.side,
+        videoOrientation: widget.analysis.videoOrientation,
         onToggleMode: (bool newMode) {
           setState(() => _showSkeletonOnly = newMode);
         },
@@ -805,44 +938,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               width: double.infinity,
               color: Colors.black,
               child: imageUrl != null && imageUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      key: ValueKey(imageUrl),
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      fadeInDuration: Duration.zero,
-                      fadeOutDuration: Duration.zero,
-                      placeholder: (context, url) =>
-                          Container(
-                                color: Colors.grey[900],
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.centerLeft,
-                                      end: Alignment.centerRight,
-                                      colors: [
-                                        Colors.grey[800]!,
-                                        Colors.grey[700]!,
-                                        Colors.grey[800]!,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .animate(
-                                onPlay: (controller) => controller.repeat(),
-                              )
-                              .shimmer(
-                                duration: 1500.ms,
-                                color: Colors.white.withValues(alpha: 0.3),
-                              ),
-                      errorWidget: (context, url, error) => const Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          size: 48,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    )
+                  ? _buildImageWidget(imageUrl, BoxFit.cover)
                   : const Center(
                       child: Icon(
                         Icons.image_not_supported,
@@ -919,6 +1015,361 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     if (score >= 40) return const Color(0xFFFF9800);
     return const Color(0xFFF44336);
   }
+
+  Widget _buildAngleDeviations(BuildContext context) {
+    if (widget.analysis.checkpoints.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final CheckpointRecord checkpoint =
+        widget.analysis.checkpoints[_selectedCheckpointIndex];
+
+    // Convert angleDeviations map to List<AngleDeviation> format
+    final List<AngleDeviation> deviations =
+        _convertAngleDeviationsToList(checkpoint);
+
+    if (deviations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Angle Analysis',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          ...deviations.map((deviation) {
+            // For knee_bend, add back leg detail if available
+            if (deviation.angleName == 'knee_bend') {
+              return _buildKneeDeviationWithBackLegDetail(
+                context,
+                deviation,
+                checkpoint,
+              );
+            }
+            // Other angles use existing row
+            return _buildDeviationRow(context, deviation);
+          }),
+        ],
+      ),
+    );
+  }
+
+  List<AngleDeviation> _convertAngleDeviationsToList(CheckpointRecord checkpoint) {
+    final List<AngleDeviation> deviations = [];
+    final Map<String, double>? angleDeviations = checkpoint.angleDeviations;
+
+    if (angleDeviations == null) return deviations;
+
+    // For each angle deviation, we need to look up the user and reference values
+    // Since we don't have them stored separately in the old format, we'll calculate them
+    angleDeviations.forEach((angleName, deviationValue) {
+      // We can't get the exact user and reference values from the old format
+      // So we'll just show a simplified version
+      deviations.add(
+        AngleDeviation(
+          angleName: angleName,
+          userValue: 0, // Not available in old format
+          referenceValue: 0, // Not available in old format
+          deviation: deviationValue,
+          withinTolerance: deviationValue.abs() < 10,
+        ),
+      );
+    });
+
+    return deviations;
+  }
+
+  Widget _buildDeviationRow(BuildContext context, AngleDeviation deviation) {
+    final bool isGood = deviation.withinTolerance;
+    final Color statusColor = isGood
+        ? const Color(0xFF4CAF50)
+        : (deviation.deviation != null && deviation.deviation!.abs() > 20)
+            ? const Color(0xFFF44336)
+            : const Color(0xFFFF9800);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isGood ? Icons.check : Icons.warning_amber,
+              size: 18,
+              color: statusColor,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _formatAngleName(deviation.angleName),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w500),
+                ),
+                if (deviation.userValue != 0 && deviation.referenceValue != 0)
+                  Text(
+                    'You: ${deviation.userValue.toStringAsFixed(0)}° • '
+                    'Pro: ${deviation.referenceValue?.toStringAsFixed(0) ?? '--'}°',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.grey[600]),
+                  ),
+              ],
+            ),
+          ),
+          if (deviation.deviation != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: statusColor, width: 1),
+              ),
+              child: Text(
+                '${deviation.deviation! >= 0 ? '+' : ''}${deviation.deviation!.toStringAsFixed(1)}°',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKneeDeviationWithBackLegDetail(
+    BuildContext context,
+    AngleDeviation deviation,
+    CheckpointRecord checkpoint,
+  ) {
+    return Column(
+      children: [
+        // Existing aggregate knee bend row
+        _buildDeviationRow(context, deviation),
+
+        // Add back leg (left knee) detail if available
+        if (checkpoint.userIndividualAngles?.leftKneeBendAngle != null) ...[
+          const SizedBox(height: 6),
+          _buildBackLegKneeDetail(context, checkpoint),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBackLegKneeDetail(
+    BuildContext context,
+    CheckpointRecord checkpoint,
+  ) {
+    final double? userLeftKnee =
+        checkpoint.userIndividualAngles?.leftKneeBendAngle;
+    final double? refLeftKnee =
+        checkpoint.referenceIndividualAngles?.leftKneeBendAngle;
+    final double? deviation = checkpoint.individualDeviations?.leftKneeBendAngle;
+
+    if (userLeftKnee == null) return const SizedBox.shrink();
+
+    final Color deviationColor = _getDeviationColor(deviation?.abs());
+    final String deviationText = deviation != null
+        ? '${deviation >= 0 ? '+' : ''}${deviation.toStringAsFixed(1)}°'
+        : 'N/A';
+
+    return Container(
+      margin: const EdgeInsets.only(left: 16, top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Back leg label
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Back Leg (Left)',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          // User angle
+          Text(
+            '${userLeftKnee.toStringAsFixed(1)}°',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          // "vs" separator
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              'vs',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
+            ),
+          ),
+
+          // Reference angle
+          Text(
+            refLeftKnee != null ? '${refLeftKnee.toStringAsFixed(1)}°' : 'N/A',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Deviation badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: deviationColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: deviationColor, width: 1),
+            ),
+            child: Text(
+              deviationText,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: deviationColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getDeviationColor(double? deviationAbs) {
+    if (deviationAbs == null) return Colors.grey;
+
+    if (deviationAbs < 5) return Colors.green; // Excellent
+    if (deviationAbs < 15) return Colors.lightGreen; // Good
+    if (deviationAbs < 20) return Colors.orange; // Moderate
+    return Colors.red; // Significant
+  }
+
+  String _formatAngleName(String name) {
+    return name
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1)}'
+              : word,
+        )
+        .join(' ');
+  }
+
+  Widget _buildImageWidget(String imageUrl, BoxFit fit) {
+    // Check if it's a data URL (base64)
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        // Extract base64 data from data URL
+        final String base64String = imageUrl.split(',')[1];
+        final Uint8List imageBytes = base64Decode(base64String);
+        return Image.memory(
+          imageBytes,
+          fit: fit,
+          width: double.infinity,
+          height: 200,
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(
+              child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+            );
+          },
+        );
+      } catch (e) {
+        debugPrint('Error decoding base64 image: $e');
+        return const Center(
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        );
+      }
+    }
+
+    // Otherwise use CachedNetworkImage for Cloud Storage URLs
+    return CachedNetworkImage(
+      key: ValueKey(imageUrl),
+      imageUrl: imageUrl,
+      fit: fit,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      placeholder: (context, url) =>
+          Container(
+                color: Colors.grey[900],
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.grey[800]!,
+                        Colors.grey[700]!,
+                        Colors.grey[800]!,
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .animate(
+                onPlay: (controller) => controller.repeat(),
+              )
+              .shimmer(
+                duration: 1500.ms,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+      errorWidget: (context, url, error) => const Center(
+        child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      ),
+    );
+  }
 }
 
 /// Fullscreen dialog for comparing user form to pro reference with PageView.
@@ -932,6 +1383,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
     required this.onToggleMode,
     required this.onIndexChanged,
     required this.cameraAngle,
+    this.videoOrientation,
   });
 
   final List<CheckpointRecord> checkpoints;
@@ -942,6 +1394,7 @@ class _FullscreenComparisonDialog extends StatefulWidget {
   final ValueChanged<bool> onToggleMode;
   final ValueChanged<int> onIndexChanged;
   final CameraAngle cameraAngle;
+  final VideoOrientation? videoOrientation;
 
   @override
   State<_FullscreenComparisonDialog> createState() =>
@@ -1158,6 +1611,22 @@ class _FullscreenComparisonDialogState
         ? checkpoint.userSkeletonUrl
         : checkpoint.userImageUrl;
 
+    // Check if video is portrait orientation
+    final bool isPortrait =
+        widget.videoOrientation == VideoOrientation.portrait;
+
+    // Portrait: side-by-side layout
+    if (isPortrait) {
+      return Row(
+        children: [
+          Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
+          const SizedBox(width: 4),
+          Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
+        ],
+      );
+    }
+
+    // Landscape: vertical stack layout (default)
     return Column(
       children: [
         Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
@@ -1239,7 +1708,18 @@ class _FullscreenComparisonDialogState
           // Apply alignment transformation (translate + scale)
           final double horizontalOffset = MediaQuery.of(context).size.width *
               (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
-          final double scale = checkpoint.referenceScale ?? 1.0;
+
+          // WORKAROUND: Clamp scale to prevent backend bugs from making pro reference too small/large
+          final double rawScale = checkpoint.referenceScale ?? 1.0;
+          final double scale = rawScale.clamp(0.7, 1.5);
+
+          if (rawScale != scale) {
+            debugPrint('⚠️  [HistoryAnalysisView] Backend scale out of range!');
+            debugPrint('   - Backend returned: $rawScale');
+            debugPrint('   - Clamped to: $scale');
+            debugPrint('   - Expected range: 0.7 - 1.3');
+            debugPrint('   - THIS IS A BACKEND BUG - PLEASE FIX!');
+          }
 
           debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
           debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
@@ -1327,44 +1807,7 @@ class _FullscreenComparisonDialogState
             minScale: 1.0,
             maxScale: 4.0,
             child: imageUrl != null && imageUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    key: ValueKey(imageUrl),
-                    imageUrl: imageUrl,
-                    fit: BoxFit.contain,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder: (context, url) =>
-                        Container(
-                              color: Colors.grey[900],
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                    colors: [
-                                      Colors.grey[800]!,
-                                      Colors.grey[700]!,
-                                      Colors.grey[800]!,
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            )
-                            .animate(
-                              onPlay: (controller) => controller.repeat(),
-                            )
-                            .shimmer(
-                              duration: 1500.ms,
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                    errorWidget: (context, url, error) => const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 48,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  )
+                ? _buildFullscreenImageWidget(imageUrl)
                 : const Center(
                     child: Icon(
                       Icons.image_not_supported,
@@ -1375,6 +1818,67 @@ class _FullscreenComparisonDialogState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFullscreenImageWidget(String imageUrl) {
+    // Check if it's a data URL (base64)
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        // Extract base64 data from data URL
+        final String base64String = imageUrl.split(',')[1];
+        final Uint8List imageBytes = base64Decode(base64String);
+        return Image.memory(
+          imageBytes,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(
+              child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+            );
+          },
+        );
+      } catch (e) {
+        debugPrint('Error decoding base64 image: $e');
+        return const Center(
+          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        );
+      }
+    }
+
+    // Otherwise use CachedNetworkImage for Cloud Storage URLs
+    return CachedNetworkImage(
+      key: ValueKey(imageUrl),
+      imageUrl: imageUrl,
+      fit: BoxFit.contain,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      placeholder: (context, url) =>
+          Container(
+                color: Colors.grey[900],
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.grey[800]!,
+                        Colors.grey[700]!,
+                        Colors.grey[800]!,
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .animate(
+                onPlay: (controller) => controller.repeat(),
+              )
+              .shimmer(
+                duration: 1500.ms,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+      errorWidget: (context, url, error) => const Center(
+        child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      ),
     );
   }
 }
