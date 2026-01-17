@@ -10,6 +10,7 @@ import 'package:turbo_disc_golf/components/story/story_poster_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
@@ -170,10 +171,31 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     );
   }
 
-  Widget _buildContentWithShareBar(BuildContext context) {
-    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
-    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
+  /// Extract share data with V2/V1 fallback logic
+  (String, String, String?) _getShareData() {
+    final AIContent? aiSummary = _currentRound.aiSummary;
 
+    if (aiSummary == null) {
+      return ('Round Story', '', null);
+    }
+
+    // Check V2 first (current branch)
+    if (aiSummary.structuredContentV2 != null) {
+      final RoundStoryV2Content v2 = aiSummary.structuredContentV2!;
+      return (v2.roundTitle, v2.overview, v2.shareableHeadline);
+    }
+
+    // Fall back to V1
+    if (aiSummary.structuredContent != null) {
+      final StructuredStoryContent v1 = aiSummary.structuredContent!;
+      return (v1.roundTitle, v1.overview, v1.shareableHeadline);
+    }
+
+    // No story data available
+    return ('Round Story', '', null);
+  }
+
+  Widget _buildContentWithShareBar(BuildContext context) {
     return Stack(
       children: [
         // Scrollable content
@@ -193,7 +215,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               ),
             ),
             // Fixed bottom action bar
-            _buildShareActionBar(roundTitle),
+            _buildShareActionBar(),
           ],
         ),
         // Hidden share card for capture (using Offstage)
@@ -209,9 +231,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildShareCard() {
-    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
-    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
-    final String overview = structuredContent?.overview ?? '';
+    final (roundTitle, overview, shareableHeadline) = _getShareData();
 
     if (useStoryPosterShareCard) {
       return StoryPosterShareCard(
@@ -219,8 +239,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         analysis: _analysis,
         roundTitle: roundTitle,
         overview: overview,
-        shareableHeadline: structuredContent?.shareableHeadline,
-        shareHighlightStats: structuredContent?.shareHighlightStats,
+        shareableHeadline: shareableHeadline,
+        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
       );
     } else {
       return StoryHighlightsShareCard(
@@ -228,13 +248,14 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         analysis: _analysis,
         roundTitle: roundTitle,
         overview: overview,
-        shareableHeadline: structuredContent?.shareableHeadline,
-        shareHighlightStats: structuredContent?.shareHighlightStats,
+        shareableHeadline: shareableHeadline,
+        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
       );
     }
   }
 
-  Future<void> _shareStoryCard(String roundTitle) async {
+  Future<void> _shareStoryCard() async {
+    final (roundTitle, _, _) = _getShareData();
     final ShareService shareService = locator.get<ShareService>();
 
     final String caption =
@@ -258,9 +279,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   void _showShareCardPreview() {
-    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
-    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
-    final String overview = structuredContent?.overview ?? '';
+    final (roundTitle, overview, shareableHeadline) = _getShareData();
 
     pushCupertinoRoute(
       context,
@@ -269,14 +288,14 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         analysis: _analysis,
         roundTitle: roundTitle,
         overview: overview,
-        shareableHeadline: structuredContent?.shareableHeadline,
-        shareHighlightStats: structuredContent?.shareHighlightStats,
+        shareableHeadline: shareableHeadline,
+        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
       ),
       pushFromBottom: true,
     );
   }
 
-  Widget _buildShareActionBar(String roundTitle) {
+  Widget _buildShareActionBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -319,7 +338,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               label: 'Share my story',
               icon: Icons.ios_share,
               gradientBackground: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              onPressed: () => _shareStoryCard(roundTitle),
+              onPressed: _shareStoryCard,
             ),
           ),
         ],

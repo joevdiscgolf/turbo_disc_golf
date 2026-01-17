@@ -37,9 +37,8 @@ class ChatGPTService implements LLMService {
   Future<String?> generateContent({required String prompt}) async {
     try {
       // Use gpt-4o for premium quality, gpt-4o-mini for default
-      final String model =
-          //  gptFour1Mini;
-          gptFourOMini;
+      final String model = gptFour1Mini;
+      // gptFourOMini;
 
       final OpenAIChatCompletionModel completion = await OpenAI.instance.chat
           .create(

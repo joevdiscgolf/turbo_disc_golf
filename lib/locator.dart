@@ -96,14 +96,12 @@ Future<void> setUpLocator() async {
 
   // Register the LLMService based on configuration
   // This allows swapping providers via testing_constants.dart
-  final LLMService storyLLMService = storyGenerationLLMProvider == 'openai'
+  final LLMService storyLLMService =
+      storyGenerationLLMProvider == LLMProvider.chatGPT
       ? locator.get<ChatGPTService>()
       : locator.get<GeminiService>();
 
-  locator.registerSingleton<LLMService>(
-    storyLLMService,
-    instanceName: 'story',
-  );
+  locator.registerSingleton<LLMService>(storyLLMService, instanceName: 'story');
 
   // Register StoryGeneratorService with the configured LLM service
   locator.registerSingleton<StoryGeneratorService>(
@@ -112,7 +110,8 @@ Future<void> setUpLocator() async {
 
   // Register default LLMService for general AI parsing/analysis
   // This allows swapping providers via configuration
-  final LLMService defaultLLMService = storyGenerationLLMProvider == 'openai'
+  final LLMService defaultLLMService =
+      storyGenerationLLMProvider == LLMProvider.chatGPT
       ? locator.get<ChatGPTService>()
       : locator.get<GeminiService>();
 

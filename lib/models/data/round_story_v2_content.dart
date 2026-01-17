@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'round_story_v2_content.g.dart';
@@ -145,34 +146,66 @@ class RoundStoryV2Content {
 
     // Validate callout uniqueness and limits
     final Set<String> seenCardIds = {};
+    final List<StoryParagraph> cleanedParagraphs = [];
     int totalCallouts = 0;
 
     for (int i = 0; i < content.story.length; i++) {
       final StoryParagraph paragraph = content.story[i];
-      final int calloutCount = paragraph.callouts.length;
-      totalCallouts += calloutCount;
+      final List<StoryCallout> validCallouts = [];
 
-      if (calloutCount > 2) {
-        throw Exception(
-          'Paragraph $i has $calloutCount callouts (max 2 per paragraph)',
-        );
-      }
-
+      // Deduplicate callouts - keep first occurrence only
       for (final StoryCallout callout in paragraph.callouts) {
         if (seenCardIds.contains(callout.cardId)) {
-          throw Exception('Duplicate cardId in V2 story: ${callout.cardId}');
+          debugPrint(
+            '⚠️  Duplicate cardId "${callout.cardId}" in paragraph $i - removing duplicate',
+          );
+          continue; // Skip duplicate
         }
         seenCardIds.add(callout.cardId);
+        validCallouts.add(callout);
+      }
+
+      // Enforce max 2 callouts per paragraph
+      if (validCallouts.length > 2) {
+        debugPrint(
+          '⚠️  Paragraph $i has ${validCallouts.length} callouts (max 2) - keeping first 2',
+        );
+        cleanedParagraphs.add(
+          StoryParagraph(
+            text: paragraph.text,
+            callouts: validCallouts.take(2).toList(),
+          ),
+        );
+        totalCallouts += 2;
+      } else {
+        cleanedParagraphs.add(
+          StoryParagraph(
+            text: paragraph.text,
+            callouts: validCallouts,
+          ),
+        );
+        totalCallouts += validCallouts.length;
       }
     }
 
+    // Enforce max 6 total callouts (already handled above, but log if needed)
     if (totalCallouts > 6) {
-      throw Exception(
-        'Total callouts ($totalCallouts) exceeds maximum of 6',
+      debugPrint(
+        '⚠️  Total callouts ($totalCallouts) exceeds recommended maximum of 6',
       );
     }
 
-    return content;
+    // Return cleaned content with deduplicated callouts
+    return RoundStoryV2Content(
+      roundTitle: content.roundTitle,
+      overview: content.overview,
+      story: cleanedParagraphs,
+      whatCouldHaveBeen: content.whatCouldHaveBeen,
+      shareableHeadline: content.shareableHeadline,
+      practiceAdvice: content.practiceAdvice,
+      strategyTips: content.strategyTips,
+      roundVersionId: content.roundVersionId,
+    );
   }
 
   Map<String, dynamic> toJson() => _$RoundStoryV2ContentToJson(this);

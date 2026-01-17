@@ -9,9 +9,12 @@ import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/chatgpt_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/chat_gpt_helpers.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/story_service_helpers.dart';
 import 'package:yaml/yaml.dart';
+
+enum LLMProvider { chatGPT, gemini }
 
 /// Service for generating AI-powered narrative stories about disc golf rounds
 class StoryGeneratorService {
@@ -43,13 +46,21 @@ class StoryGeneratorService {
             : _buildDefaultStoryPrompt(round, analysis);
 
         // Generate story using full model for creative content
-        final response = await _llmService.generateContent(prompt: prompt);
+        final String? response = await _llmService.generateContent(
+          prompt: prompt,
+        );
 
         // Debug log the entire response
-        debugPrint('📖 Story Generator Response (${response?.length ?? 0} chars):');
-        debugPrint('═══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '📖 Story Generator Response (${response?.length ?? 0} chars):',
+        );
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
         debugPrint(response ?? '(null response)');
-        debugPrint('═══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
 
         if (response == null || response.isEmpty) {
           debugPrint('Failed to generate story: empty response');
@@ -110,25 +121,36 @@ class StoryGeneratorService {
     while (retryCount < maxRetries) {
       try {
         // Generate round analysis
-        final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(round);
+        final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+          round,
+        );
+
+        late final String prompt;
 
         // Build V2 prompt (ChatGPT only for now)
-        final bool isOpenAI = _llmService is ChatGPTService;
-        if (!isOpenAI) {
-          debugPrint('⚠️  V2 story generation only supports ChatGPT currently');
-          return null;
+        switch (storyGenerationLLMProvider) {
+          case LLMProvider.chatGPT:
+            prompt = ChatGPTHelpers.buildStoryPromptV2(round, analysis);
+          // will use gemini-specific prompt later if needed.
+          case LLMProvider.gemini:
+            prompt = ChatGPTHelpers.buildStoryPromptV2(round, analysis);
         }
 
         debugPrint('📝 Using ChatGPT V2 prompt strategy');
-        final String prompt = ChatGPTHelpers.buildStoryPromptV2(round, analysis);
 
         // Generate story
         final response = await _llmService.generateContent(prompt: prompt);
 
-        debugPrint('📖 Story V2 Generator Response (${response?.length ?? 0} chars):');
-        debugPrint('═══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '📖 Story V2 Generator Response (${response?.length ?? 0} chars):',
+        );
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
         debugPrint(response ?? '(null response)');
-        debugPrint('═══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
 
         if (response == null || response.isEmpty) {
           debugPrint('Failed to generate V2 story: empty response');
@@ -137,7 +159,8 @@ class StoryGeneratorService {
         }
 
         // Check for truncation (V2 should be >1500 chars with story paragraphs)
-        if (response.length < 1500 || !response.contains('whatCouldHaveBeen:')) {
+        if (response.length < 1500 ||
+            !response.contains('whatCouldHaveBeen:')) {
           debugPrint(
             'Response appears truncated (${response.length} chars). Retrying...',
           );
@@ -156,7 +179,9 @@ class StoryGeneratorService {
         debugPrint('Failed to parse V2 story, retry $retryCount/$maxRetries');
         retryCount++;
       } catch (e, trace) {
-        debugPrint('Error generating V2 story (attempt ${retryCount + 1}/$maxRetries): $e');
+        debugPrint(
+          'Error generating V2 story (attempt ${retryCount + 1}/$maxRetries): $e',
+        );
         debugPrint(trace.toString());
         retryCount++;
 
@@ -689,17 +714,24 @@ strategyTips:
       String cleanedResponse = response.trim();
 
       // Remove markdown code blocks
-      if (cleanedResponse.startsWith('```yaml') || cleanedResponse.startsWith('```YAML')) {
-        cleanedResponse = cleanedResponse.substring(cleanedResponse.indexOf('\n') + 1);
+      if (cleanedResponse.startsWith('```yaml') ||
+          cleanedResponse.startsWith('```YAML')) {
+        cleanedResponse = cleanedResponse.substring(
+          cleanedResponse.indexOf('\n') + 1,
+        );
       }
-      if (cleanedResponse.startsWith('yaml\n') || cleanedResponse.startsWith('YAML\n')) {
+      if (cleanedResponse.startsWith('yaml\n') ||
+          cleanedResponse.startsWith('YAML\n')) {
         cleanedResponse = cleanedResponse.substring(5);
       }
       if (cleanedResponse.startsWith('```')) {
         cleanedResponse = cleanedResponse.substring(3);
       }
       if (cleanedResponse.endsWith('```')) {
-        cleanedResponse = cleanedResponse.substring(0, cleanedResponse.length - 3);
+        cleanedResponse = cleanedResponse.substring(
+          0,
+          cleanedResponse.length - 3,
+        );
       }
       cleanedResponse = cleanedResponse.trim();
 
@@ -722,7 +754,8 @@ strategyTips:
       }
 
       // Convert to Map
-      final Map<String, dynamic> parsedData = json.decode(json.encode(yamlDoc)) as Map<String, dynamic>;
+      final Map<String, dynamic> parsedData =
+          json.decode(json.encode(yamlDoc)) as Map<String, dynamic>;
       debugPrint('Parsed V2 fields: ${parsedData.keys.toList()}');
 
       // Normalize score types
@@ -736,6 +769,34 @@ strategyTips:
         throw Exception('Missing required V2 fields');
       }
 
+      // Validate and fix whatCouldHaveBeen structure
+      if (parsedData['whatCouldHaveBeen'] is Map) {
+        final Map<String, dynamic> whatCouldHaveBeen =
+            parsedData['whatCouldHaveBeen'] as Map<String, dynamic>;
+
+        // Ensure required fields exist with defaults
+        if (!whatCouldHaveBeen.containsKey('currentScore') ||
+            whatCouldHaveBeen['currentScore'] == null) {
+          debugPrint('⚠️  Missing currentScore in whatCouldHaveBeen, using default');
+          whatCouldHaveBeen['currentScore'] = '0';
+        }
+        if (!whatCouldHaveBeen.containsKey('potentialScore') ||
+            whatCouldHaveBeen['potentialScore'] == null) {
+          debugPrint('⚠️  Missing potentialScore in whatCouldHaveBeen, using default');
+          whatCouldHaveBeen['potentialScore'] = '0';
+        }
+        if (!whatCouldHaveBeen.containsKey('scenarios') ||
+            whatCouldHaveBeen['scenarios'] == null) {
+          debugPrint('⚠️  Missing scenarios in whatCouldHaveBeen, using empty list');
+          whatCouldHaveBeen['scenarios'] = [];
+        }
+        if (!whatCouldHaveBeen.containsKey('encouragement') ||
+            whatCouldHaveBeen['encouragement'] == null) {
+          debugPrint('⚠️  Missing encouragement in whatCouldHaveBeen, using default');
+          whatCouldHaveBeen['encouragement'] = 'Keep working on your game!';
+        }
+      }
+
       // Validate story structure (story should be a direct list, not story.paragraphs)
       final dynamic storyData = parsedData['story'];
       if (storyData is! List) {
@@ -744,7 +805,9 @@ strategyTips:
 
       final List<dynamic> paragraphs = storyData;
       if (paragraphs.length < 3 || paragraphs.length > 6) {
-        debugPrint('⚠️  V2 paragraph count (${paragraphs.length}) outside 3-6 range');
+        debugPrint(
+          '⚠️  V2 paragraph count (${paragraphs.length}) outside 3-6 range',
+        );
       }
 
       // Validate callout uniqueness and limits
@@ -764,7 +827,9 @@ strategyTips:
         'roundVersionId': round.versionId,
       });
 
-      debugPrint('✅ Successfully parsed V2 story with ${v2Content.story.length} paragraphs');
+      debugPrint(
+        '✅ Successfully parsed V2 story with ${v2Content.story.length} paragraphs',
+      );
 
       return AIContent(
         content: response,
@@ -812,10 +877,14 @@ strategyTips:
     }
 
     if (totalCallouts > 6) {
-      debugPrint('⚠️  Total callouts ($totalCallouts) exceeds recommended max of 6');
+      debugPrint(
+        '⚠️  Total callouts ($totalCallouts) exceeds recommended max of 6',
+      );
     }
 
-    debugPrint('✅ V2 callout validation passed: $totalCallouts unique callouts');
+    debugPrint(
+      '✅ V2 callout validation passed: $totalCallouts unique callouts',
+    );
   }
 
   /// Parse old markdown format with {{PLACEHOLDER}} syntax

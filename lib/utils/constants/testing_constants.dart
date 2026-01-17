@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:turbo_disc_golf/services/story_generator_service.dart';
 
 const bool shouldAnimateProgressIndicators = true;
 const bool useRoundReviewScreenV2 = true;
@@ -28,8 +29,8 @@ const String shareCardQrUrl = 'https://scoresensei.app';
 
 /// Which LLM service to use for story generation.
 /// Options: 'gemini' or 'openai'
-/// Default: 'openai' (GPT-4o-mini provides best value - GPT-4 quality at 2x Gemini cost)
-const String storyGenerationLLMProvider = 'openai';
+/// Default: 'chatGPT' (GPT-4o-mini provides best value - GPT-4 quality at 2x Gemini cost)
+const LLMProvider storyGenerationLLMProvider = LLMProvider.chatGPT;
 
 /// When true, uses gemini-2.0-flash-exp instead of gemini-2.5-flash for story generation.
 /// Use this when hitting 2.5-flash quota limits.
