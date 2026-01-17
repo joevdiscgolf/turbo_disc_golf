@@ -64,6 +64,15 @@ class CircularStatRenderer extends StatelessWidget {
                 ),
           ),
         ),
+        Text(
+          '${percentage.toStringAsFixed(0)}%',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -83,42 +92,24 @@ class CircularStatRenderer extends StatelessWidget {
   }
 
   Widget _buildHorizontalProgressBar(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
-        // Progress bar
-        Stack(
-          children: [
-            // Background bar
-            Container(
-              height: 8,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            // Filled bar
-            FractionallySizedBox(
-              widthFactor: percentage / 100,
-              child: Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ],
+        // Background bar
+        Container(
+          height: 8,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(4),
+          ),
         ),
-        const SizedBox(height: 8),
-        // Percentage text
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            '${percentage.toStringAsFixed(0)}%',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+        // Filled bar
+        FractionallySizedBox(
+          widthFactor: percentage / 100,
+          child: Container(
+            height: 8,
+            decoration: BoxDecoration(
               color: color,
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
         ),

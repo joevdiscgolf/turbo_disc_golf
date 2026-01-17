@@ -205,12 +205,24 @@ Cards are evidence, not content.
 - 0–2 callouts per paragraph
 - Max ~6 callouts total
 - Each cardId used only once
+- Never include a callout card unless the paragraph text already explains the pattern the card will visualize.
 
 Callout reasons must:
 - start with consequence
 - explain why
 - then cite the stat if needed
 - never restate what’s visually obvious
+
+====================
+CARD-SPECIFIC RULES (IMPORTANT)
+====================
+
+If you use cardId: MISTAKES, you MUST reference the mistake breakdown categories shown in the Mistakes data.
+- Mention the top 2–4 mistake types by name (and counts if available).
+- Connect those types to scoring impact (e.g., "missed C1X putts + missed C2 putts were the bulk of the damage").
+- Do not show the MISTAKES card unless the paragraph text already discusses the mistake mix.
+
+If you cannot name at least two mistake categories, do NOT use the MISTAKES card.
 
 ====================
 LANGUAGE BANS
@@ -269,21 +281,38 @@ CRITICAL YAML RULES:
 
 # REQUIRED STRUCTURE:
 
-roundTitle: "[3-6 words, direct title that captures round essence]"
-overview: "[2-3 sentences setting context. NO raw stats like '88%' or '5/10'. Paint the picture.]"
+roundTitle: "[3–6 words. Name the true story of the round, not the score. Avoid generic titles.]"
+
+overview: "[2–3 sentences that set context for the round as a whole.
+Follow the tone of a coach explaining how the day unfolded.
+You MAY include a key stat if it clarifies why the round played out this way.
+Avoid vague phrases without evidence.]"
+
 story:
-  - text: "[2-5 sentences. Tell what happened. Stats go in callouts, not here.]"
+  - text: "[Narrative segment 1. Begin at the start of the round.
+    Describe the first notable moment or stretch that mattered.
+    Follow the round in chronological order.
+    Use stats or hole references in-line when they strengthen cause-and-effect.
+    Write as much as needed to fully explain the moment—do not pad or summarize.]"
     callouts:
       - cardId: [CARD_ID from list below]
-        reason: "[1-2 sentences. Explain IMPACT and CAUSE-EFFECT. Not stat repetition.]"
-      - cardId: [DIFFERENT_CARD_ID]
-        reason: "[Why this mattered to the round outcome.]"
-  - text: "[Next paragraph of narrative.]"
-    callouts: []  # Empty is fine! Only add if strengthens the point.
-  - text: "[Continue story. 3-6 paragraphs total.]"
+        reason: "[1–3 sentences. Explain consequence → why → evidence if needed.
+        Do not restate what the card visually shows.]"
+
+  - text: "[Narrative segment 2. Continue forward in time.
+    Describe the next notable moment, hole, or stretch.
+    Only include this segment if something meaningful happened.
+    If there is a blow-up hole (double bogey or worse), it MUST be explained in detail here.]"
+    callouts: []
+
+  - text: "[Narrative segment 3+. Continue in chronological order.
+    Select only notable moments as the round progresses.
+    If there is a birdie streak or scoring surge (3+ birdies close together), it MUST be identified and explained.
+    Continue adding segments until the round feels fully explained.
+    There is no fixed limit—stop when the story is complete.]"
     callouts:
       - cardId: [ANOTHER_UNIQUE_CARD_ID]
-        reason: "[Interpret the impact of this stat.]"
+        reason: "[Explain why this mattered to the score or decisions.]"
 
 whatCouldHaveBeen:
   currentScore: "$scoreRelativeStr"
@@ -297,7 +326,7 @@ whatCouldHaveBeen:
       strokesSaved: 5
   encouragement: "[1 sentence, calm and realistic, no hype]"
 
-shareableHeadline: "[Optional. 1-2 sentences for social sharing. Start with 'You'. Example: 'You shot +3 with strong drives but struggled on long putts.']"
+shareableHeadline: "[Required. 1-2 sentences for social sharing. Start with 'You'. Example: 'You shot +3 with strong drives but struggled on long putts.']"
 practiceAdvice:
   - "[Specific drill or practice focus]"
   - "[Another practice item]"
@@ -306,11 +335,38 @@ strategyTips:
   - "[Another strategy insight]"
 
 # VALID CARD IDs:
+
+## V2 Story Cards (supports _CIRCLE or _BAR suffix for rendering mode):
 Driving: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED
 Putting: C1_PUTTING, C1X_PUTTING, C2_PUTTING
 Scoring: BIRDIE_RATE, PAR_RATE, BOGEY_RATE
-Special: MISTAKES, THROW_TYPE_COMPARISON, SHOT_SHAPE_BREAKDOWN
-Parameterized: DISC_PERFORMANCE:DiscName, HOLE_TYPE:Par 3|4|5
+Mental: BOUNCE_BACK, HOT_STREAK, FLOW_STATE
+Performance: MISTAKES, SKILLS_SCORE
+Special: THROW_TYPE_COMPARISON, SHOT_SHAPE_BREAKDOWN
+
+## V1 Legacy Composite Cards (comprehensive multi-stat visuals):
+PUTTING_STATS, DRIVING_STATS, SCORE_BREAKDOWN, MISTAKES_CHART
+
+## V1 Legacy Compact Cards (simple single-stat cards):
+PUTTING_COMPARISON, BIRDIES, BOGEYS, SCORING_MIX
+TOTAL_MISTAKES, DRIVING_MISTAKES, PUTTING_MISTAKES, APPROACH_MISTAKES
+COLD_STREAK, TOP_DISC, DISC_COUNT
+
+## Parameterized Cards:
+HOLE_TYPE:Par 3|4|5, DISC_PERFORMANCE:DiscName
+
+# Card Usage Notes:
+- V2 cards default to CIRCLE rendering. Add _CIRCLE or _BAR suffix to specify (e.g., FAIRWAY_HIT_CIRCLE or FAIRWAY_HIT_BAR)
+- V1 composite cards show multiple related stats together in one visual
+- V1 compact cards are smaller, single-stat cards
+- Use V2 cards for modern, clean story integration
+- Use V1 cards when you need specific legacy formats or multi-stat composites
+
+# Examples of parameterized cards:
+- HOLE_TYPE:Par 3 - Stats for all Par 3 holes
+- HOLE_TYPE:Par 4 - Stats for all Par 4 holes
+- HOLE_TYPE:Par 5 - Stats for all Par 5 holes
+- DISC_PERFORMANCE:Destroyer - Stats for throws with that disc
 
 # VALIDATION RULES:
 - Min 3 paragraphs, max 6 paragraphs

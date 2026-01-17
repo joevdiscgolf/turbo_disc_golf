@@ -14,7 +14,11 @@ import 'package:turbo_disc_golf/components/stat_cards/mistakes_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/ob_rate_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/par_rate_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/parked_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/shot_shape_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/skills_score_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/throw_type_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/hole_type_story_card.dart';
+import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
@@ -46,6 +50,32 @@ class StatCardRegistry {
     } else if (id.endsWith('_BAR')) {
       renderMode = StatRenderMode.bar;
       baseId = id.substring(0, id.length - 4); // Remove '_BAR'
+    }
+
+    // Handle parameterized card IDs (HOLE_TYPE:Par 3, DISC_PERFORMANCE:Destroyer)
+    if (baseId.contains(':')) {
+      final List<String> parts = baseId.split(':');
+      final String paramType = parts[0];
+      final String paramValue = parts.length > 1 ? parts.sublist(1).join(':') : '';
+
+      switch (paramType) {
+        case 'HOLE_TYPE':
+          // Validate the hole type format
+          final int? parNum = _extractParNumber(paramValue);
+          if (parNum != null) {
+            return HoleTypeStoryCard(round: round, holeType: paramValue);
+          }
+          debugPrint('⚠️  Invalid HOLE_TYPE format: $paramValue');
+          return null;
+
+        case 'DISC_PERFORMANCE':
+          // Use the disc name directly
+          return DiscPerformanceStoryCard(round: round, discName: paramValue);
+
+        default:
+          debugPrint('⚠️  Unknown parameterized card type: $paramType');
+          return null;
+      }
     }
 
     // Handle new suffix-based story cards
@@ -94,6 +124,13 @@ class StatCardRegistry {
         );
       case 'SKILLS_SCORE':
         return SkillsScoreStoryCard(round: round, renderMode: renderMode);
+
+      // ===== SPECIAL ANALYSIS CARDS =====
+      case 'THROW_TYPE_COMPARISON':
+        return ThrowTypeStoryCard(round: round);
+
+      case 'SHOT_SHAPE_BREAKDOWN':
+        return ShotShapeStoryCard(round: round);
     }
 
     // Fall back to original switch statement for legacy cards
@@ -627,6 +664,17 @@ class StatCardRegistry {
         ],
       ),
     );
+  }
+
+  /// Extracts par number from strings like "Par 3", "Par 4", "Par 5"
+  static int? _extractParNumber(String parString) {
+    final RegExp regex = RegExp(r'Par\s*(\d+)', caseSensitive: false);
+    final Match? match = regex.firstMatch(parString);
+    if (match != null && match.groupCount >= 1) {
+      return int.tryParse(match.group(1)!);
+    }
+    // Try parsing just the number if it's a plain "3", "4", "5"
+    return int.tryParse(parString);
   }
 
   /// Get list of all supported card IDs

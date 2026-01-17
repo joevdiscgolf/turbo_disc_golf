@@ -27,58 +27,23 @@ class StoryCalloutCard extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Stat widget (slightly smaller than normal)
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: statWidget,
-          ),
-
-          // Divider
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: TurbColors.gray[200],
-          ),
-
-          // Reason text (interpretation/impact)
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon indicator
-                Container(
-                  margin: const EdgeInsets.only(top: 2, right: 8),
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.insights,
-                    size: 12,
-                    color: Color(0xFF6366F1),
-                  ),
-                ),
-
-                // Reason text
-                Expanded(
-                  child: Text(
-                    reason,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: TurbColors.gray[700],
-                    ),
-                  ),
-                ),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            statWidget,
+            const SizedBox(height: 8),
+            Text(
+              reason,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: TurbColors.gray[600],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

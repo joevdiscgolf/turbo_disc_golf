@@ -94,36 +94,36 @@ abstract class TurbColors {
 /// Returns a semantic color based on percentage value.
 ///
 /// For "higher is better" stats (putting %, fairway hits, etc.):
-/// - 70-100% → Green (excellent)
-/// - 40-70% → Blue (good/moderate)
-/// - 20-40% → Orange (below average)
-/// - 0-20% → Red (poor)
+/// - 75-100% → Green (excellent)
+/// - 50-75% → Teal/Cyan (good)
+/// - 25-50% → Gold (below average)
+/// - 0-25% → Red (poor)
 ///
 /// For "lower is better" stats (bogey rate, etc.), pass `100 - percentage`
 /// to invert the scale.
 ///
 /// Uses smooth linear interpolation between color stops.
-/// All colors are chosen for good contrast and visual appeal against white backgrounds.
+/// All colors are chosen for good contrast and visual appeal, avoiding muddy browns.
 Color getSemanticColor(double percentage) {
   final double p = percentage.clamp(0.0, 100.0) / 100.0;
 
-  // Beautiful color gradient: Red → Orange → Blue → Green
+  // Clean color gradient: Red → Gold → Teal → Green
   const Color red = Color(0xFFEF4444); // Bright red (Tailwind red-500)
-  const Color orange = Color(0xFFF59E0B); // Vibrant orange (Tailwind amber-500)
-  const Color blue = Color(0xFF3B82F6); // Bright blue (Tailwind blue-500)
+  const Color gold = Color(0xFFFBBF24); // Vibrant gold (Tailwind yellow-400)
+  const Color teal = Color(0xFF14B8A6); // Bright teal (Tailwind teal-500)
   const Color green = Color(0xFF10B981); // Vibrant green (Tailwind emerald-500)
 
-  if (p >= 0.7) {
-    // Blue to Green (70-100%)
-    return Color.lerp(blue, green, (p - 0.7) / 0.3)!;
-  } else if (p >= 0.4) {
-    // Orange to Blue (40-70%)
-    return Color.lerp(orange, blue, (p - 0.4) / 0.3)!;
-  } else if (p >= 0.2) {
-    // Red to Orange (20-40%)
-    return Color.lerp(red, orange, (p - 0.2) / 0.2)!;
+  if (p >= 0.75) {
+    // Teal to Green (75-100%)
+    return Color.lerp(teal, green, (p - 0.75) / 0.25)!;
+  } else if (p >= 0.5) {
+    // Gold to Teal (50-75%)
+    return Color.lerp(gold, teal, (p - 0.5) / 0.25)!;
+  } else if (p >= 0.25) {
+    // Red to Gold (25-50%)
+    return Color.lerp(red, gold, (p - 0.25) / 0.25)!;
   } else {
-    // Pure red (0-20%)
+    // Pure red (0-25%)
     return red;
   }
 }
