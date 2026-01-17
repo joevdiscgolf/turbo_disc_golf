@@ -304,12 +304,33 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
         );
 
         final LLMService llmService = locator.get<LLMService>();
-        final String? judgment = await llmService.generateContent(
+        // Use full model for judge generation (roasts/glazes require creative output)
+        // Full model uses gemini-2.5-flash with temperature 0.8 vs lite model's 0.3
+        String? judgment = await llmService.generateContent(
           prompt: prompt,
+          useFullModel: true,
         );
 
         if (judgment == null) {
           throw Exception('Failed to generate judgment');
+        }
+
+        // Clean up the response - remove markdown code blocks if present
+        judgment = judgment.trim();
+
+        // Remove ```yaml or ```YAML at the beginning
+        if (judgment.startsWith('```yaml') || judgment.startsWith('```YAML')) {
+          judgment = judgment.substring(judgment.indexOf('\n') + 1);
+        }
+
+        // Remove just 'yaml' or 'YAML' at the beginning
+        if (judgment.startsWith('yaml\n') || judgment.startsWith('YAML\n')) {
+          judgment = judgment.substring(5);
+        }
+
+        // Remove closing ``` at the end
+        if (judgment.endsWith('```')) {
+          judgment = judgment.substring(0, judgment.length - 3).trim();
         }
 
         _generatedJudgment = judgment;
@@ -555,7 +576,9 @@ highlightStats:
       height: 56,
       label: _isGlaze ? 'Share my glaze' : 'Share my roast',
       icon: Icons.ios_share,
-      gradientBackground: const [Color(0xFFFF9500), Color(0xFFFFB800)],
+      gradientBackground: _isGlaze
+          ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]
+          : const [Color(0xFFFF6B6B), Color(0xFFFF8A8A)],
       onPressed: () => _shareJudgmentCard(headline),
     );
   }

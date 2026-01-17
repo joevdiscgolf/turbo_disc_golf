@@ -34,7 +34,10 @@ class ChatGPTService implements LLMService {
   }
 
   @override
-  Future<String?> generateContent({required String prompt}) async {
+  Future<String?> generateContent({
+    required String prompt,
+    bool useFullModel = false, // Ignored - ChatGPT only has one model config
+  }) async {
     try {
       // Use gpt-4o for premium quality, gpt-4o-mini for default
       final String model = gptFour1Mini;
