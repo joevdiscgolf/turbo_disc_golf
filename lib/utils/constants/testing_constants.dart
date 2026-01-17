@@ -17,6 +17,10 @@ const bool showHoleProgressLabel = false;
 const bool useIosVoiceService = true;
 const bool kUseMeiliCourseSearch = kDebugMode;
 
+/// When true, uses hardcoded test courses instead of MeiliSearch for course search.
+/// Useful for testing on physical devices when MeiliSearch production isn't available.
+const bool useTestCourseProvider = true;
+
 /// When true (and in debug mode on simulator), uses local Meili server instead of production.
 /// Set your local Meili URL in meiliLocalServerUrl below.
 /// On iOS simulator, use your Mac's IP address (localhost won't work).

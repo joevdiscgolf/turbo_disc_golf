@@ -10,6 +10,7 @@ import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/search/course_search_provider.dart';
 import 'package:turbo_disc_golf/services/search/meilisearch_provider.dart';
+import 'package:turbo_disc_golf/services/search/test_course_provider.dart';
 import 'package:turbo_disc_golf/services/geocoding/geocoding_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_rounds_repository.dart';
 import 'package:turbo_disc_golf/services/gemini_service.dart';
@@ -126,7 +127,7 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<WebScraperService>(WebScraperService());
   // Search provider - swap MeiliSearchProvider for a different implementation here
   locator.registerLazySingleton<CourseSearchProvider>(
-    () => MeiliSearchProvider(),
+    () => useTestCourseProvider ? TestCourseProvider() : MeiliSearchProvider(),
   );
   locator.registerLazySingleton<CourseSearchService>(
     () => CourseSearchService(),
