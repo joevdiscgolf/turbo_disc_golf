@@ -118,9 +118,11 @@ class _ShareJudgmentPreviewScreenState
         child: PrimaryButton(
           width: double.infinity,
           height: 56,
-          label: 'Share my judgment',
+          label: widget.isGlaze ? 'Share my glaze' : 'Share my roast',
           icon: Icons.ios_share,
-          gradientBackground: const [Color(0xFFFF9500), Color(0xFFFFB800)],
+          gradientBackground: widget.isGlaze
+              ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]
+              : const [Color(0xFFFF6B6B), Color(0xFFFF8A8A)],
           loading: _isSharing,
           onPressed: _shareCard,
         ),

@@ -302,7 +302,7 @@ class JudgmentPromptService {
     buffer.writeln('The stats on the share card should match what you roasted/glazed about!');
     buffer.writeln('');
     buffer.writeln(
-      'IMPORTANT: Return ONLY the YAML, no additional text or markdown code fences.',
+      'CRITICAL: Return ONLY the raw YAML text. DO NOT wrap it in ```yaml or ``` code blocks. DO NOT add any markdown formatting. Start directly with "headline:" and nothing else.',
     );
 
     return buffer.toString();
