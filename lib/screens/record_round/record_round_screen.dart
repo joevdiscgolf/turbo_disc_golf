@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
@@ -7,6 +8,7 @@ import 'package:turbo_disc_golf/screens/import_score/import_score_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
+import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
 const testRoundDescriptions = [
@@ -83,13 +85,20 @@ class _RecordRoundScreenState extends State<RecordRoundScreen>
     // Show loading screen
     if (!mounted) return;
 
+    // Update cubit state with test data before navigating
+    final RecordRoundCubit cubit = context.read<RecordRoundCubit>();
+    cubit.startRecordingRound();
+    if (selectedCourse != null) {
+      cubit.setSelectedCourse(selectedCourse);
+    }
+    // Set the full test transcript in hole 0
+    cubit.setHoleDescription(transcript, index: 0);
+
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: true,
         barrierDismissible: false,
         pageBuilder: (context, _, __) => RoundProcessingLoadingScreen(
-          transcript: transcript,
-          selectedCourse: selectedCourse,
           useSharedPreferences: useSharedPreferences,
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

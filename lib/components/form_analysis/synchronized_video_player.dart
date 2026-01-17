@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
-import 'package:turbo_disc_golf/services/form_analysis/video_sync_service.dart';
 
 /// Synchronized dual video player for comparing user's form with pro reference.
 ///
@@ -68,9 +67,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
 
   Timer? _positionUpdateTimer;
   Timer? _playbackSimulationTimer;
-  VideoSyncService? _videoSyncService;
-  double _timeOffset = 0.0;
-  double _proSpeedMultiplier = 1.0;
+  double _syncOffsetSeconds = 0.0;
 
   // Frame interval for playback simulation (~30fps)
   static const Duration _playbackFrameInterval = Duration(milliseconds: 33);
@@ -79,31 +76,33 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   void initState() {
     super.initState();
 
-    // Initialize VideoSyncService to handle all synchronization
+    // Calculate simple sync offset based on disc release checkpoint
     if (widget.videoSyncMetadata != null) {
       final VideoSyncMetadata metadata = widget.videoSyncMetadata!;
-      _videoSyncService = VideoSyncService(metadata);
 
-      // Extract speed multiplier from backend
-      _proSpeedMultiplier = metadata.proPlaybackSpeedMultiplier;
-
-      // Find disc release checkpoint
+      // Find disc release checkpoint (ID: 'pro')
       final releaseCheckpoint = metadata.checkpointSyncPoints.firstWhere(
         (cp) => cp.checkpointId == 'pro',
         orElse: () => metadata.checkpointSyncPoints.first,
       );
 
-      // Calculate time offset for disc release alignment
-      _timeOffset =
-          releaseCheckpoint.proTimestamp -
-          (releaseCheckpoint.userTimestamp * _proSpeedMultiplier);
+      // Calculate constant offset: proPosition = userPosition + offset
+      _syncOffsetSeconds =
+          releaseCheckpoint.proTimestamp - releaseCheckpoint.userTimestamp;
 
-      debugPrint('🎬 Video sync: using VideoSyncService');
-      debugPrint('   Pro speed multiplier: ${_proSpeedMultiplier}x');
-      debugPrint('   Time offset: ${_timeOffset}s');
+      debugPrint('🎬 Video sync: simple constant offset');
+      debugPrint('   Disc release: user=${releaseCheckpoint.userTimestamp}s, pro=${releaseCheckpoint.proTimestamp}s');
+      debugPrint('   Sync offset: ${_syncOffsetSeconds}s');
+
+      // Log all checkpoints for debugging
+      debugPrint('📍 All checkpoints:');
+      for (final checkpoint in metadata.checkpointSyncPoints) {
+        final double proCalc = checkpoint.userTimestamp + _syncOffsetSeconds;
+        final double diff = (checkpoint.proTimestamp - proCalc).abs();
+        debugPrint('   ${checkpoint.checkpointId}: user=${checkpoint.userTimestamp.toStringAsFixed(3)}s, pro=${checkpoint.proTimestamp.toStringAsFixed(3)}s, calculated=${proCalc.toStringAsFixed(3)}s, diff=${diff.toStringAsFixed(3)}s');
+      }
     } else {
-      _timeOffset = 0.0;
-      _proSpeedMultiplier = 1.0;
+      _syncOffsetSeconds = 0.0;
       debugPrint('🎬 Video sync: mechanical (no offset)');
     }
 
@@ -192,6 +191,41 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     }
   }
 
+  /// Calculate pro video position using simple constant offset formula.
+  ///
+  /// Formula: proPosition = userPosition + offset
+  /// where: offset = proReleaseTime - userReleaseTime
+  ///
+  /// This ensures both videos advance at the same rate (1.0x speed),
+  /// with perfect sync at the disc release moment.
+  Duration _calculateProPosition(Duration userPosition) {
+    if (widget.videoSyncMetadata == null) {
+      // No sync metadata, play in parallel
+      return userPosition;
+    }
+
+    // Apply constant offset (in seconds)
+    final double userSeconds = userPosition.inMilliseconds / 1000.0;
+    final double proSeconds = userSeconds + _syncOffsetSeconds;
+
+    // Clamp to valid range [0, proDuration]
+    final double clampedProSeconds = proSeconds.clamp(
+      0.0,
+      _proDuration.inMilliseconds / 1000.0,
+    );
+
+    final bool wasClamped = proSeconds != clampedProSeconds;
+    if (wasClamped && userSeconds == 0.0) {
+      debugPrint('🎬 Sync calculation (at start):');
+      debugPrint('   User: ${userSeconds.toStringAsFixed(2)}s');
+      debugPrint('   Pro (calculated): ${proSeconds.toStringAsFixed(2)}s');
+      debugPrint('   Pro (clamped): ${clampedProSeconds.toStringAsFixed(2)}s');
+      debugPrint('   Status: Pro video clamped to 0 (will start when user reaches ${(-_syncOffsetSeconds).toStringAsFixed(2)}s)');
+    }
+
+    return Duration(milliseconds: (clampedProSeconds * 1000).toInt());
+  }
+
   void _togglePlayPause() {
     if (_isPlaying) {
       _pause();
@@ -210,8 +244,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
         : _userController.value.position;
 
     // Sync both videos to starting position
-    final Duration proPosition =
-        _videoSyncService?.calculateProPosition(userPosition) ?? userPosition;
+    final Duration proPosition = _calculateProPosition(userPosition);
     await Future.wait([
       _userController.seekTo(userPosition),
       _proController.seekTo(proPosition),
@@ -223,7 +256,8 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       _isPlaying = true;
     });
 
-    debugPrint('▶️ Play: user=${(userPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${_playbackSpeed}x speed');
+    debugPrint('▶️ Play: user=${(userPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s, pro=${(proPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${_playbackSpeed}x speed');
+    debugPrint('   Sync verification: offset=${_syncOffsetSeconds.toStringAsFixed(3)}s, calculated correctly: ${((userPosition.inMilliseconds / 1000.0) + _syncOffsetSeconds - (proPosition.inMilliseconds / 1000.0)).abs() < 0.001}');
 
     // Start playback simulation timer
     _playbackSimulationTimer = Timer.periodic(_playbackFrameInterval, (_) {
@@ -330,9 +364,8 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       milliseconds: (value * _shortestDuration.inMilliseconds).toInt(),
     );
 
-    // Calculate pro position using VideoSyncService
-    final Duration proPosition =
-        _videoSyncService?.calculateProPosition(userPosition) ?? userPosition;
+    // Calculate pro position using simple constant offset
+    final Duration proPosition = _calculateProPosition(userPosition);
 
     // Seek both videos and wait for completion
     await Future.wait([
@@ -343,6 +376,14 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     setState(() {
       _currentPosition = userPosition;
     });
+
+    // Log sync status at key moments (every 0.5s for debugging)
+    final double userSec = userPosition.inMilliseconds / 1000.0;
+    final double proSec = proPosition.inMilliseconds / 1000.0;
+    if ((userSec * 2).round() == userSec * 2) {
+      // Log at 0.0s, 0.5s, 1.0s, 1.5s, etc.
+      debugPrint('🎬 Seek: user=${userSec.toStringAsFixed(2)}s → pro=${proSec.toStringAsFixed(2)}s (offset=${_syncOffsetSeconds.toStringAsFixed(3)}s)');
+    }
   }
 
   Future<void> _changePlaybackSpeed(double speed) async {

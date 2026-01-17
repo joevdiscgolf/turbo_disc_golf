@@ -52,6 +52,28 @@ class FirestoreRoundsRepository implements RoundsRepository {
   }
 
   @override
+  Future<bool> deleteRound(String uid, String roundId) async {
+    try {
+      debugPrint('Deleting round with id: $roundId');
+      await _firestore
+          .collection('$kRoundsCollection/$uid/$kRoundsCollection')
+          .doc(roundId)
+          .delete()
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('Timeout deleting round from Firestore');
+              throw Exception('Timeout deleting round');
+            },
+          );
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting round: $e');
+      return false;
+    }
+  }
+
+  @override
   Future<List<DGRound>?> loadRoundsForUser(String uid) async {
     try {
       final snapshot = await _firestore

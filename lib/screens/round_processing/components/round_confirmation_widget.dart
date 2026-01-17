@@ -412,13 +412,17 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     );
   }
 
-  List<PotentialDGHole> _validHoles(PotentialDGRound round) =>
+  /// Get holes that have all required fields
+  /// These are the only holes that can be finalized
+  List<PotentialDGHole> _completeHoles(PotentialDGRound round) =>
       round.holes!.where((hole) => hole.hasRequiredFields).toList();
 
   int _calculateTotalScoreForValidHoles(PotentialDGRound round) {
     if (round.holes == null) return 0;
 
-    return _validHoles(round).fold<int>(0, (sum, hole) {
+    // Calculate score ONLY for complete holes (have par, feet, throws with basket)
+    // This matches what will be finalized - incomplete holes shouldn't be counted
+    return _completeHoles(round).fold<int>(0, (sum, hole) {
       // Calculate hole score: throws count + penalty strokes
       final int throwsCount = hole.throws?.length ?? 0;
       final int penaltyStrokes =
@@ -435,9 +439,11 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
   int _calculateTotalParForValidHoles(PotentialDGRound round) {
     if (round.holes == null) return 0;
 
-    return _validHoles(round).fold(
+    // Calculate par ONLY for complete holes (have par, feet, throws with basket)
+    // No defaulting needed since all complete holes have par defined
+    return _completeHoles(round).fold(
       0,
-      (sum, hole) => sum + (hole.par ?? 3), // Default to par 3 if missing
+      (sum, hole) => sum + (hole.par!), // Complete holes always have par
     );
   }
 

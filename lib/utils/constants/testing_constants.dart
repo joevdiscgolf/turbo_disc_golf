@@ -1,9 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:turbo_disc_golf/services/story_generator_service.dart';
 
 const bool shouldAnimateProgressIndicators = true;
 const bool useRoundReviewScreenV2 = true;
 const bool useHeroAnimationsForRoundReview = false;
 const bool useCustomPageTransitionsForRoundReview = true;
+
+/// When true, shows round metadata (layout, date, holes) in an info bar below the AppBar.
+/// When false, shows the course name in the AppBar title instead.
+const bool showRoundMetadataInfoBar = true;
 const bool useAddThrowPanelV2 = true;
 const bool useAddRoundStepsPanel = true;
 const bool autoStartListeningOnNextHole = false;
@@ -11,6 +16,17 @@ const bool showInlineMiniHoleGrid = true;
 const bool showHoleProgressLabel = false;
 const bool useIosVoiceService = true;
 const bool kUseMeiliCourseSearch = kDebugMode;
+
+/// When true (and in debug mode on simulator), uses local Meili server instead of production.
+/// Set your local Meili URL in meiliLocalServerUrl below.
+/// On iOS simulator, use your Mac's IP address (localhost won't work).
+const bool useLocalMeiliSearchOnSimulator = true;
+
+/// Local Meili search server URL (for simulator testing).
+/// For iOS simulator: Use your Mac's IP address (e.g., 'http://192.168.0.131:7700')
+/// For Android emulator: Use 'http://10.0.2.2:7700' (maps to host machine's localhost)
+const String meiliLocalServerUrl = 'http://192.168.0.131:7700';
+
 const bool useMockJudgment = false;
 
 /// Force judgment type for testing. Set to 'roast', 'glaze', or null for random.
@@ -26,10 +42,17 @@ const bool useVerdictImages = true;
 /// The URL encoded in the share card QR code (placeholder for now).
 const String shareCardQrUrl = 'https://scoresensei.app';
 
-/// Which LLM service to use for story generation.
-/// Options: 'gemini' or 'openai'
-/// Default: 'openai' (GPT-4o-mini provides best value - GPT-4 quality at 2x Gemini cost)
-const String storyGenerationLLMProvider = 'gemini';
+/// Which LLM service to use for DEFAULT AI features (Judge/Roast, round parsing, analysis, etc.).
+/// This does NOT affect story generation - see storyGenerationLLMProvider below.
+/// Options: LLMProvider.gemini or LLMProvider.chatGPT
+/// Default: LLMProvider.gemini (free, reliable, good at structured output)
+const LLMProvider defaultLLMProvider = LLMProvider.gemini;
+
+/// Which LLM service to use for STORY GENERATION ONLY.
+/// IMPORTANT: This ONLY affects the Round Story tab (StoryGeneratorService).
+/// Options: LLMProvider.gemini or LLMProvider.chatGPT
+/// Default: LLMProvider.chatGPT (GPT-4.1-mini provides best value - GPT-4 quality at 2x Gemini cost)
+const LLMProvider storyGenerationLLMProvider = LLMProvider.chatGPT;
 
 /// When true, uses gemini-2.0-flash-exp instead of gemini-2.5-flash for story generation.
 /// Use this when hitting 2.5-flash quota limits.
@@ -111,6 +134,11 @@ const bool showWhatCouldHaveBeenCard = true;
 /// When false, hides it to save vertical space.
 const bool showWhatCouldHaveBeenEncouragement = false;
 
+/// When true, uses the new Story V2 engine with narrative paragraphs and inline callout cards.
+/// When false, uses the current V1 StructuredStoryRenderer.
+/// Note: V1 and V2 stories are stored separately (aiSummary vs aiSummaryV2).
+const bool storyV2Enabled = true;
+
 /// When true, shows the map location picker in the Create Course screen.
 /// When false, only text fields for city/state/country are shown.
 const bool showMapLocationPicker = true;
@@ -167,3 +195,7 @@ const bool alwaysShowForceUpgradeScreen = false;
 /// When true, shows the synchronized dual video player (user vs. pro) below the overall form score.
 /// When false, hides the video comparison player.
 const bool showFormAnalysisVideoComparison = true;
+
+/// When true, shows hole distances in the compact scorecard below the hole number.
+/// The distance is displayed in the same font size as the hole number.
+const bool showHoleDistancesInScorecard = true;

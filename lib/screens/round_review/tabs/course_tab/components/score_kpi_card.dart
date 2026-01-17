@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:turbo_disc_golf/components/compact_scorecard.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -14,11 +15,13 @@ class ScoreKPICard extends StatelessWidget {
     required this.round,
     required this.isDetailScreen,
     this.onTap,
+    this.showMetadata = false,
   });
 
   final DGRound round;
   final bool isDetailScreen;
   final VoidCallback? onTap;
+  final bool showMetadata;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +61,15 @@ class ScoreKPICard extends StatelessWidget {
           children: [
             Column(
               children: [
+                if (showMetadata) ...[
+                  _buildMetadata(),
+                  Divider(
+                    height: 8,
+                    thickness: 1,
+                    color: TurbColors.gray.shade100,
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _kpiRow(context),
                 const SizedBox(height: 12),
                 if (!isDetailScreen) ...[
@@ -200,5 +212,58 @@ class ScoreKPICard extends StatelessWidget {
     } else {
       return const Color(0xFFF5F5F5);
     }
+  }
+
+  Widget _buildMetadata() {
+    final layout = round.playedLayout;
+    final playedDate = DateTime.parse(round.playedRoundAt);
+    final formattedDate = DateFormat('MMM d, yyyy').format(playedDate);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(
+            round.courseName,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: TurbColors.darkGray,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              '•',
+              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+            ),
+          ),
+          Text(
+            layout.name,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.normal,
+              color: Colors.grey[600],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              '•',
+              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+            ),
+          ),
+          Text(
+            formattedDate,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.normal,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

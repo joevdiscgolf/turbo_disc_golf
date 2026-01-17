@@ -1,7 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/what_could_have_been_card.dart';
 import 'package:turbo_disc_golf/components/stat_card_registry.dart';
 import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
@@ -15,12 +13,9 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_navigation_helper.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
@@ -166,7 +161,11 @@ class StructuredStoryRenderer extends StatelessWidget {
                         InkWell(
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            _navigateToDetailScreen(context, highlight.cardId!);
+                            StoryNavigationHelper.navigateToDetailScreen(
+                              context,
+                              highlight.cardId!,
+                              round,
+                            );
                           },
                           child: _buildStatWidget(highlight.cardId!),
                         ),
@@ -222,7 +221,11 @@ class StructuredStoryRenderer extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _navigateToDetailScreen(context, 'MISTAKES');
+                    StoryNavigationHelper.navigateToDetailScreen(
+                      context,
+                      'MISTAKES',
+                      round,
+                    );
                   },
                   child: MistakesCard(
                     round: round,
@@ -261,7 +264,11 @@ class StructuredStoryRenderer extends StatelessWidget {
                         InkWell(
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            _navigateToDetailScreen(context, highlight.cardId!);
+                            StoryNavigationHelper.navigateToDetailScreen(
+                              context,
+                              highlight.cardId!,
+                              round,
+                            );
                           },
                           child: _buildStatWidget(highlight.cardId!),
                         ),
@@ -312,7 +319,11 @@ class StructuredStoryRenderer extends StatelessWidget {
                 onTap: opportunity.cardId != null
                     ? () {
                         HapticFeedback.lightImpact();
-                        _navigateToDetailScreen(context, opportunity.cardId!);
+                        StoryNavigationHelper.navigateToDetailScreen(
+                          context,
+                          opportunity.cardId!,
+                          round,
+                        );
                       }
                     : null,
                 child: Column(
@@ -731,133 +742,5 @@ class StructuredStoryRenderer extends StatelessWidget {
           ),
         );
     }
-  }
-
-  /// Maps card ID to detail screen widget and title
-  ({Widget screen, String title})? _getDetailScreenForCardId(String cardId) {
-    // Handle parameterized cards - no specific detail screen yet
-    if (cardId.startsWith('DISC_PERFORMANCE:') ||
-        cardId.startsWith('HOLE_TYPE:')) {
-      return null;
-    }
-
-    switch (cardId) {
-      // Putting cards -> Putting detail screen
-      case 'C1X_PUTTING':
-      case 'C1_PUTTING':
-      case 'C2_PUTTING':
-        return (screen: PuttingTab(round: round), title: 'Putting');
-
-      // Driving cards -> Driving detail screen
-      case 'FAIRWAY_HIT':
-      case 'C1_IN_REG':
-      case 'OB_RATE':
-      case 'PARKED':
-        return (screen: DrivesTab(round: round), title: 'Driving');
-
-      // Scoring cards -> Score detail screen
-      case 'BIRDIES':
-      case 'SCORING':
-      case 'EAGLES':
-      case 'PARS':
-        return (screen: ScoreDetailScreen(round: round), title: 'Scores');
-
-      // Mistakes card -> Mistakes detail screen
-      case 'MISTAKES':
-        return (screen: MistakesTab(round: round), title: 'Mistakes');
-
-      // NEW: Throw type and shot shape -> Drives tab
-      case 'THROW_TYPE_COMPARISON':
-      case 'SHOT_SHAPE_BREAKDOWN':
-        return (screen: DrivesTab(round: round), title: 'Driving');
-
-      default:
-        return null;
-    }
-  }
-
-  /// Navigate to detail screen for the given card ID
-  void _navigateToDetailScreen(BuildContext context, String cardId) {
-    final detailScreen = _getDetailScreenForCardId(cardId);
-    if (detailScreen == null) {
-      debugPrint('No detail screen configured for card ID: $cardId');
-      return;
-    }
-
-    if (!context.mounted) return;
-
-    final Widget screenWithAppBar = _DetailScreenWrapper(
-      title: detailScreen.title,
-      child: detailScreen.screen,
-    );
-
-    if (useCustomPageTransitionsForRoundReview) {
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              screenWithAppBar,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // Fade + scale animation for card expansion effect
-            const begin = 0.92;
-            const end = 1.0;
-            const curve = Curves.easeInOut;
-
-            final tween = Tween(
-              begin: begin,
-              end: end,
-            ).chain(CurveTween(curve: curve));
-            final scaleAnimation = animation.drive(tween);
-
-            final fadeAnimation = animation.drive(CurveTween(curve: curve));
-
-            return FadeTransition(
-              opacity: fadeAnimation,
-              child: ScaleTransition(scale: scaleAnimation, child: child),
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 350),
-        ),
-      );
-    } else {
-      Navigator.of(
-        context,
-      ).push(CupertinoPageRoute(builder: (context) => screenWithAppBar));
-    }
-  }
-}
-
-/// Detail Screen Wrapper for V2 navigation
-class _DetailScreenWrapper extends StatelessWidget {
-  final String title;
-  final Widget child;
-
-  const _DetailScreenWrapper({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5), // Light gray with faint purple tint
-            Color(0xFFECECEE), // Light gray
-            Color(0xFFE8F4E8), // Light gray with faint green tint
-            Color(0xFFEAE8F0), // Light gray with subtle purple
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: GenericAppBar(
-          topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: title,
-          backgroundColor: Colors.transparent,
-        ),
-        body: child,
-      ),
-    );
   }
 }

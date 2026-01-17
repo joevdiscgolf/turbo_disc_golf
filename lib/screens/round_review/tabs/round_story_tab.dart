@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,11 +10,14 @@ import 'package:turbo_disc_golf/components/story/story_poster_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_empty_state.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_loading_animation.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer_v2.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
@@ -80,10 +84,10 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       final StoryGeneratorService storyService =
           locator.get<StoryGeneratorService>();
 
-      // Generate story using current round state
-      final AIContent? story = await storyService.generateRoundStory(
-        _currentRound,
-      );
+      // Generate story based on feature flag
+      final AIContent? story = storyV2Enabled
+          ? await storyService.generateRoundStoryV2(_currentRound)  // V2
+          : await storyService.generateRoundStory(_currentRound);   // V1
 
       if (story == null) {
         throw Exception('Failed to generate story content');
@@ -127,7 +131,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    // Full-screen loading state (no scroll wrapper)
+    // Loading state
     if (_isGenerating || showStoryLoadingAnimation) {
       return const StoryLoadingAnimation();
     }
@@ -135,43 +139,66 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     final bool hasStory = _currentRound.aiSummary != null &&
         _currentRound.aiSummary!.content.isNotEmpty;
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5), // Light gray with faint purple tint
-            Color(0xFFECECEE), // Light gray
-            Color(0xFFE8F4E8), // Light gray with faint green tint
-            Color(0xFFEAE8F0), // Light gray with subtle purple
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
+    // Three distinct rendering paths:
+    if (hasStory) {
+      // Story exists - show content with share bar
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEEE8F5), // Light gray with faint purple tint
+              Color(0xFFECECEE), // Light gray
+              Color(0xFFE8F4E8), // Light gray with faint green tint
+              Color(0xFFEAE8F0), // Light gray with subtle purple
+            ],
+            stops: [0.0, 0.3, 0.7, 1.0],
+          ),
         ),
-      ),
-      child: hasStory ? _buildContentWithShareBar(context) : _buildScrollableContent(context),
-    );
+        child: _buildContentWithShareBar(context),
+      );
+    } else if (_errorMessage != null) {
+      // Error occurred - show error in scrollable container
+      return _buildScrollableContent(context);
+    } else {
+      // No story yet - show full-screen empty state
+      return _buildEmptyState(context);
+    }
   }
 
   Widget _buildScrollableContent(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 96),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_errorMessage != null)
-            _buildErrorState(context)
-          else
-            _buildEmptyState(context),
-        ],
-      ),
+      child: _buildErrorState(context),
     );
   }
 
-  Widget _buildContentWithShareBar(BuildContext context) {
-    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
-    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
+  /// Extract share data with V2/V1 fallback logic
+  (String, String, String?) _getShareData() {
+    final AIContent? aiSummary = _currentRound.aiSummary;
 
+    if (aiSummary == null) {
+      return ('Round Story', '', null);
+    }
+
+    // Check V2 first (current branch)
+    if (aiSummary.structuredContentV2 != null) {
+      final RoundStoryV2Content v2 = aiSummary.structuredContentV2!;
+      return (v2.roundTitle, v2.overview, v2.shareableHeadline);
+    }
+
+    // Fall back to V1
+    if (aiSummary.structuredContent != null) {
+      final StructuredStoryContent v1 = aiSummary.structuredContent!;
+      return (v1.roundTitle, v1.overview, v1.shareableHeadline);
+    }
+
+    // No story data available
+    return ('Round Story', '', null);
+  }
+
+  Widget _buildContentWithShareBar(BuildContext context) {
     return Stack(
       children: [
         // Scrollable content
@@ -191,7 +218,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               ),
             ),
             // Fixed bottom action bar
-            _buildShareActionBar(roundTitle),
+            _buildShareActionBar(),
           ],
         ),
         // Hidden share card for capture (using Offstage)
@@ -207,9 +234,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildShareCard() {
-    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
-    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
-    final String overview = structuredContent?.overview ?? '';
+    final (roundTitle, overview, shareableHeadline) = _getShareData();
 
     if (useStoryPosterShareCard) {
       return StoryPosterShareCard(
@@ -217,8 +242,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         analysis: _analysis,
         roundTitle: roundTitle,
         overview: overview,
-        shareableHeadline: structuredContent?.shareableHeadline,
-        shareHighlightStats: structuredContent?.shareHighlightStats,
+        shareableHeadline: shareableHeadline,
+        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
       );
     } else {
       return StoryHighlightsShareCard(
@@ -226,13 +251,14 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         analysis: _analysis,
         roundTitle: roundTitle,
         overview: overview,
-        shareableHeadline: structuredContent?.shareableHeadline,
-        shareHighlightStats: structuredContent?.shareHighlightStats,
+        shareableHeadline: shareableHeadline,
+        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
       );
     }
   }
 
-  Future<void> _shareStoryCard(String roundTitle) async {
+  Future<void> _shareStoryCard() async {
+    final (roundTitle, _, _) = _getShareData();
     final ShareService shareService = locator.get<ShareService>();
 
     final String caption =
@@ -256,9 +282,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   void _showShareCardPreview() {
-    final StructuredStoryContent? structuredContent = _currentRound.aiSummary?.structuredContent;
-    final String roundTitle = structuredContent?.roundTitle ?? 'Round Story';
-    final String overview = structuredContent?.overview ?? '';
+    final (roundTitle, overview, shareableHeadline) = _getShareData();
 
     pushCupertinoRoute(
       context,
@@ -267,14 +291,14 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         analysis: _analysis,
         roundTitle: roundTitle,
         overview: overview,
-        shareableHeadline: structuredContent?.shareableHeadline,
-        shareHighlightStats: structuredContent?.shareHighlightStats,
+        shareableHeadline: shareableHeadline,
+        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
       ),
       pushFromBottom: true,
     );
   }
 
-  Widget _buildShareActionBar(String roundTitle) {
+  Widget _buildShareActionBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -317,7 +341,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               label: 'Share my story',
               icon: Icons.ios_share,
               gradientBackground: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              onPressed: () => _shareStoryCard(roundTitle),
+              onPressed: _shareStoryCard,
             ),
           ),
         ],
@@ -360,42 +384,39 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(
-              Icons.auto_stories_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.secondary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No story available yet',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Generate an AI-powered narrative that tells the story of your round with embedded visualizations and insights.',
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _generateStory,
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Generate Story'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ],
+    return StoryEmptyState(onGenerateStory: _generateStory);
+  }
+
+  void _showDebugYamlOutput() {
+    final String? rawContent = _currentRound.aiSummary?.content;
+    if (rawContent == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Raw YAML Output'),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            rawContent,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: rawContent));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied to clipboard')),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -405,14 +426,17 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Align(
         alignment: Alignment.centerRight,
-        child: OutlinedButton.icon(
-          onPressed: _isGenerating ? null : _generateStory,
-          icon: const Icon(Icons.refresh, size: 16),
-          label: const Text('Regenerate'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            textStyle: const TextStyle(fontSize: 12),
+        child: GestureDetector(
+          onLongPress: kDebugMode ? _showDebugYamlOutput : null,
+          child: OutlinedButton.icon(
+            onPressed: _isGenerating ? null : _generateStory,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Regenerate'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12),
+            ),
           ),
         ),
       ),
@@ -472,14 +496,21 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Render structured story if available (new format)
-        if (story?.structuredContent != null)
+        // V2: Render if structuredContentV2 exists
+        if (story?.structuredContentV2 != null)
+          StructuredStoryRendererV2(
+            content: story!.structuredContentV2!,
+            round: _currentRound,
+            tabController: widget.tabController,
+          )
+        // V1: Render if structuredContent exists
+        else if (story?.structuredContent != null)
           StructuredStoryRenderer(
             content: story!.structuredContent!,
             round: _currentRound,
             tabController: widget.tabController,
           )
-        // Fallback: render old format with AIContentRenderer
+        // Old format: render with AIContentRenderer
         else if (story?.segments != null)
           Card(
             elevation: 2,

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
@@ -11,6 +12,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
+import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -343,14 +345,22 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
                                   );
 
                                   if (context.mounted) {
+                                    // Update cubit state with test data before navigating
+                                    final RecordRoundCubit cubit =
+                                        context.read<RecordRoundCubit>();
+                                    cubit.startRecordingRound();
+                                    cubit.setSelectedCourse(testCourse);
+                                    cubit.setHoleDescription(
+                                      _selectedTranscript,
+                                      index: 0,
+                                    );
+
                                     Navigator.pushReplacement(
                                       context,
                                       CupertinoPageRoute(
                                         builder: (context) =>
-                                            RoundProcessingLoadingScreen(
-                                              transcript: _selectedTranscript,
-                                              selectedCourse: testCourse,
-                                              useSharedPreferences: useCached,
+                                            const RoundProcessingLoadingScreen(
+                                              useSharedPreferences: false,
                                             ),
                                       ),
                                     );
@@ -514,14 +524,16 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
       return;
     }
 
+    // Update cubit state with transcript and course before navigating
+    final RecordRoundCubit cubit = context.read<RecordRoundCubit>();
+    cubit.startRecordingRound();
+    cubit.setSelectedCourse(_selectedCourse!);
+    cubit.setHoleDescription(transcript, index: 0);
+
     Navigator.pushReplacement(
       context,
       CupertinoPageRoute(
-        builder: (context) => RoundProcessingLoadingScreen(
-          transcript: transcript,
-          selectedCourse: _selectedCourse,
-          useSharedPreferences: false,
-        ),
+        builder: (context) => const RoundProcessingLoadingScreen(),
       ),
     );
   }

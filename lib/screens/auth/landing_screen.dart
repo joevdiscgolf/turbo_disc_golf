@@ -101,9 +101,20 @@ class _LandingScreenState extends State<LandingScreen>
               children: [
                 const SizedBox(height: 24),
                 _buildHeader(),
-                const SizedBox(height: 32),
-                Expanded(child: _buildCards()),
-                _buildButtons(),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildCards(),
+                        const SizedBox(height: 24),
+                        _buildButtons(),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -174,41 +185,38 @@ class _LandingScreenState extends State<LandingScreen>
   }
 
   Widget _buildCards() {
-    return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          // Card 1: C1X Putting - slides from left (800-1300ms)
-          LandingPreviewCard(
-            accentColor: C1xPreviewCard.accentColor,
-            slideDirection: SlideDirection.left,
-            animationController: _mainController,
-            slideInterval: const Interval(0.267, 0.433, curve: Curves.easeOutCubic),
-            floatPhaseOffset: 0.0,
-            child: const C1xPreviewCard(),
-          ),
+    return Column(
+      children: [
+        // Card 1: C1X Putting - slides from left (800-1300ms)
+        LandingPreviewCard(
+          accentColor: C1xPreviewCard.accentColor,
+          slideDirection: SlideDirection.left,
+          animationController: _mainController,
+          slideInterval: const Interval(0.267, 0.433, curve: Curves.easeOutCubic),
+          floatPhaseOffset: 0.0,
+          child: const C1xPreviewCard(),
+        ),
 
-          // Card 2: Story - slides from right (1200-1700ms)
-          LandingPreviewCard(
-            accentColor: StoryPreviewCard.accentColor,
-            slideDirection: SlideDirection.right,
-            animationController: _mainController,
-            slideInterval: const Interval(0.4, 0.567, curve: Curves.easeOutCubic),
-            floatPhaseOffset: 0.33,
-            child: const StoryPreviewCard(),
-          ),
+        // Card 2: Story - slides from right (1200-1700ms)
+        LandingPreviewCard(
+          accentColor: StoryPreviewCard.accentColor,
+          slideDirection: SlideDirection.right,
+          animationController: _mainController,
+          slideInterval: const Interval(0.4, 0.567, curve: Curves.easeOutCubic),
+          floatPhaseOffset: 0.33,
+          child: const StoryPreviewCard(),
+        ),
 
-          // Card 3: Shot Analysis - slides from left (1600-2100ms)
-          LandingPreviewCard(
-            accentColor: ShotPreviewCard.accentColor,
-            slideDirection: SlideDirection.left,
-            animationController: _mainController,
-            slideInterval: const Interval(0.533, 0.7, curve: Curves.easeOutCubic),
-            floatPhaseOffset: 0.66,
-            child: const ShotPreviewCard(),
-          ),
-        ],
-      ),
+        // Card 3: Shot Analysis - slides from left (1600-2100ms)
+        LandingPreviewCard(
+          accentColor: ShotPreviewCard.accentColor,
+          slideDirection: SlideDirection.left,
+          animationController: _mainController,
+          slideInterval: const Interval(0.533, 0.7, curve: Curves.easeOutCubic),
+          floatPhaseOffset: 0.66,
+          child: const ShotPreviewCard(),
+        ),
+      ],
     );
   }
 

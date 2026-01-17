@@ -1,5 +1,7 @@
+import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 
@@ -25,11 +27,17 @@ ROUND DATA START
 Score: $totalScore ($scoreRelativeStr) | Par: $coursePar | Holes: ${round.holes.length}
 $scoringSummary
 
+# Hole-by-Hole Breakdown
+${round.holes.map((hole) => StoryServiceHelpers._formatHoleDetails(hole)).join('\n')}
+
 # Stats
 Fairway: ${(analysis.coreStats.fairwayHitPct).toStringAsFixed(1)}% | C1 in Reg: ${(analysis.coreStats.c1InRegPct).toStringAsFixed(1)}% | OB: ${(analysis.coreStats.obPct).toStringAsFixed(1)}% | Parked: ${(analysis.coreStats.parkedPct).toStringAsFixed(1)}%
 C1 Putting: ${(analysis.puttingStats.c1Percentage).toStringAsFixed(1)}% (${analysis.puttingStats.c1Makes}/${analysis.puttingStats.c1Attempts}) | C1X: ${(analysis.puttingStats.c1xPercentage).toStringAsFixed(1)}% (${analysis.puttingStats.c1xMakes}/${analysis.puttingStats.c1xAttempts}) | C2: ${(analysis.puttingStats.c2Percentage).toStringAsFixed(1)}% (${analysis.puttingStats.c2Makes}/${analysis.puttingStats.c2Attempts})
-Throw Types: ${StoryServiceHelpers.formatThrowTypeComparison(analysis)}
-Mistakes: ${StoryServiceHelpers.formatMistakesBreakdown(round)}
+
+Throw Types:
+${StoryServiceHelpers.formatThrowTypeComparison(analysis)}
+Mistakes:
+${StoryServiceHelpers.formatMistakesBreakdown(round)}
 
 # Hole Type Performance
 ${StoryServiceHelpers.formatHoleTypePerformance(round, analysis)}
@@ -86,7 +94,7 @@ whatCouldHaveBeen:
     - fix: "All of the above"
       resultScore: "[best as quoted string, e.g. '-13']"
       strokesSaved: [total as unquoted number, e.g. 7]
-  encouragement: [1 hopeful sentence]
+  encouragement: [Required. 1 hopeful sentence grounded in evidence]
 
 ## OPTIONAL - Include if relevant:
 shareableHeadline: [1-2 sentences for social sharing, start with "You"]
@@ -291,17 +299,17 @@ strategyTips:
     final int totalMistakes = mistakesService.getTotalMistakesCount(round);
 
     if (totalMistakes == 0) {
-      return 'No significant mistakes recorded';
+      return '  No significant mistakes recorded';
     }
 
     final StringBuffer buffer = StringBuffer();
-    buffer.writeln('Total Mistakes: $totalMistakes');
+    buffer.writeln('  Total: $totalMistakes');
 
     for (final mistake in mistakeTypes) {
       final String label = mistake.label;
       final int count = mistake.count;
       final double percentage = mistake.percentage;
-      buffer.writeln('$label: $count (${percentage.toStringAsFixed(0)}%)');
+      buffer.writeln('  $label: $count (${percentage.toStringAsFixed(0)}%)');
     }
 
     return buffer.toString();
@@ -323,18 +331,18 @@ strategyTips:
 
       if (tech1Count > 0) {
         buffer.writeln(
-          '$tech1Name: ${tech1Birdie.toStringAsFixed(1)}% birdie rate ($tech1Count tee shots)',
+          '  $tech1Name: ${tech1Birdie.toStringAsFixed(1)}% birdie rate ($tech1Count tee shots)',
         );
       }
       if (tech2Count > 0) {
         buffer.writeln(
-          '$tech2Name: ${tech2Birdie.toStringAsFixed(1)}% birdie rate ($tech2Count tee shots)',
+          '  $tech2Name: ${tech2Birdie.toStringAsFixed(1)}% birdie rate ($tech2Count tee shots)',
         );
       }
     }
 
     if (buffer.isEmpty) {
-      return 'No throw type comparison data available';
+      return '  No throw type comparison data available';
     }
 
     return buffer.toString();
@@ -419,5 +427,195 @@ strategyTips:
     }
 
     return buffer.toString();
+  }
+
+  /// Format a complete hole section with header and all throws
+  static String _formatHoleDetails(DGHole hole) {
+    final StringBuffer buffer = StringBuffer();
+
+    // Hole header
+    buffer.writeln('## HOLE ${hole.number}');
+    buffer.write('Par: ${hole.par} | Distance: ${hole.feet} ft | ');
+    buffer.write('Score: ${hole.holeScore} ');
+
+    final int relative = hole.relativeHoleScore;
+    if (relative == 0) {
+      buffer.writeln('(Even)');
+    } else if (relative > 0) {
+      buffer.writeln('(+$relative)');
+    } else {
+      buffer.writeln('($relative)');
+    }
+
+    if (hole.holeType != null) {
+      buffer.writeln('Type: ${_formatEnumValue(hole.holeType)}');
+    }
+
+    // Throws section
+    buffer.writeln('\nThrows (${hole.throws.length} total):');
+    for (int i = 0; i < hole.throws.length; i++) {
+      final DiscThrow throw_ = hole.throws[i];
+      final bool isTee = (i == 0);
+      buffer.writeln(_formatThrowDetails(throw_, i + 1, isTee));
+    }
+
+    return buffer.toString();
+  }
+
+  /// Format a single throw with only non-null properties
+  static String _formatThrowDetails(
+    DiscThrow throw_,
+    int throwNumber,
+    bool isTee,
+  ) {
+    final StringBuffer buffer = StringBuffer();
+
+    // Throw header
+    String throwLabel = 'Throw $throwNumber';
+    if (isTee) {
+      throwLabel += ' (Tee)';
+    } else if (throw_.purpose != null) {
+      throwLabel += ' (${_formatEnumValue(throw_.purpose)})';
+    }
+    buffer.writeln('  $throwLabel:');
+
+    // Build list of properties (only non-null)
+    final List<String> details = [];
+
+    // Core throw info
+    if (throw_.technique != null) {
+      details.add('Technique: ${_formatEnumValue(throw_.technique)}');
+    }
+
+    if (throw_.shotShape != null) {
+      details.add('Shape: ${_formatEnumValue(throw_.shotShape)}');
+    }
+
+    if (throw_.power != null) {
+      details.add('Power: ${_formatEnumValue(throw_.power)}');
+    }
+
+    if (throw_.stance != null) {
+      details.add('Stance: ${_formatEnumValue(throw_.stance)}');
+    }
+
+    if (throw_.puttStyle != null) {
+      details.add('Putt Style: ${_formatEnumValue(throw_.puttStyle)}');
+    }
+
+    // Distance info
+    if (throw_.distanceFeetBeforeThrow != null ||
+        throw_.distanceFeetAfterThrow != null) {
+      String distStr = 'Distance:';
+      if (throw_.distanceFeetBeforeThrow != null) {
+        distStr += ' ${throw_.distanceFeetBeforeThrow} ft before';
+      }
+      if (throw_.distanceFeetAfterThrow != null) {
+        distStr += ' → ${throw_.distanceFeetAfterThrow} ft after';
+      }
+      details.add(distStr);
+    }
+
+    if (throw_.elevationChangeFeet != null) {
+      details.add(
+        'Elevation change: ${throw_.elevationChangeFeet!.toStringAsFixed(1)} ft',
+      );
+    }
+
+    // Landing and result
+    if (throw_.landingSpot != null) {
+      details.add('Landing: ${_formatEnumValue(throw_.landingSpot)}');
+    }
+
+    if (throw_.resultRating != null) {
+      details.add('Result: ${_formatEnumValue(throw_.resultRating)}');
+    }
+
+    if (throw_.penaltyStrokes > 0) {
+      details.add(
+        'Penalty: +${throw_.penaltyStrokes} stroke${throw_.penaltyStrokes > 1 ? 's' : ''}',
+      );
+    }
+
+    // Disc info
+    if (throw_.discName != null && throw_.discName!.isNotEmpty) {
+      String discStr = 'Disc: ${throw_.discName}';
+      if (throw_.disc != null) {
+        final DGDisc disc = throw_.disc!;
+        if (disc.speed != null ||
+            disc.glide != null ||
+            disc.turn != null ||
+            disc.fade != null) {
+          discStr += ' (';
+          final List<String> flightNumbers = [];
+          if (disc.speed != null) flightNumbers.add('${disc.speed}');
+          if (disc.glide != null) flightNumbers.add('${disc.glide}');
+          if (disc.turn != null) flightNumbers.add('${disc.turn}');
+          if (disc.fade != null) flightNumbers.add('${disc.fade}');
+          discStr += flightNumbers.join('|');
+          discStr += ')';
+        }
+      }
+      details.add(discStr);
+    }
+
+    // Environmental conditions
+    if (throw_.windDirection != null || throw_.windStrength != null) {
+      String windStr = 'Wind:';
+      if (throw_.windDirection != null) {
+        windStr += ' ${_formatEnumValue(throw_.windDirection)}';
+      }
+      if (throw_.windStrength != null) {
+        windStr += ' (${_formatEnumValue(throw_.windStrength)})';
+      }
+      details.add(windStr);
+    }
+
+    if (throw_.fairwayWidth != null) {
+      details.add('Fairway: ${_formatEnumValue(throw_.fairwayWidth)}');
+    }
+
+    // Notes and metadata
+    if (throw_.notes != null && throw_.notes!.isNotEmpty) {
+      details.add('Notes: ${throw_.notes}');
+    }
+
+    if (throw_.rawText != null && throw_.rawText!.isNotEmpty) {
+      details.add('Raw: "${throw_.rawText}"');
+    }
+
+    if (throw_.parseConfidence != null) {
+      final String confidence = (throw_.parseConfidence! * 100).toStringAsFixed(
+        0,
+      );
+      details.add('Confidence: $confidence%');
+    }
+
+    // Output all details
+    for (final String detail in details) {
+      buffer.writeln('    - $detail');
+    }
+
+    return buffer.toString();
+  }
+
+  /// Convert enum values to human-readable strings
+  static String _formatEnumValue(dynamic enumValue) {
+    if (enumValue == null) return '';
+
+    // Get the enum name (e.g., "teeDrive" from "ThrowPurpose.teeDrive")
+    final String enumStr = enumValue.toString().split('.').last;
+
+    // Convert camelCase to Title Case with spaces
+    // teeDrive → Tee Drive
+    // backhandRoller → Backhand Roller
+    final RegExp regex = RegExp(r'([a-z])([A-Z])');
+    final String spaced = enumStr.replaceAllMapped(
+      regex,
+      (match) => '${match.group(1)} ${match.group(2)}',
+    );
+
+    // Capitalize first letter
+    return spaced[0].toUpperCase() + spaced.substring(1);
   }
 }

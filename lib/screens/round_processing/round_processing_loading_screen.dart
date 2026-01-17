@@ -10,12 +10,19 @@ import 'package:turbo_disc_golf/screens/round_processing/components/explosion_ef
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/persistent_square.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_confirmation_widget.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
+import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 
 /// Full-screen loading experience shown while processing a round.
+///
+/// This widget reads all necessary data from the RecordRoundCubit state
+/// (transcript, course, layout, number of holes) rather than receiving
+/// them as constructor parameters.
 ///
 /// Instead of navigating to a new screen, this widget transitions its content
 /// in-place from loading UI to round review UI once processing completes.
@@ -26,16 +33,10 @@ import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 ///
 /// Otherwise, processes the transcript normally with Gemini.
 class RoundProcessingLoadingScreen extends StatefulWidget {
-  final String transcript;
-  final Course? selectedCourse;
-  final int numHoles;
   final bool useSharedPreferences;
 
   const RoundProcessingLoadingScreen({
     super.key,
-    this.transcript = '',
-    this.selectedCourse,
-    this.numHoles = 18,
     this.useSharedPreferences = false,
   });
 
@@ -54,9 +55,11 @@ enum _ProcessingState {
 }
 
 class _RoundProcessingLoadingScreenState
-    extends State<RoundProcessingLoadingScreen> {
+    extends State<RoundProcessingLoadingScreen>
+    with SingleTickerProviderStateMixin {
   late RoundParser _roundParser;
   _ProcessingState _processingState = _ProcessingState.loading;
+  late TabController _tabController;
 
   // GlobalKey to ensure ExplosionEffect persists across state changes
   final GlobalKey _explosionEffectKey = GlobalKey();
@@ -64,6 +67,8 @@ class _RoundProcessingLoadingScreenState
   @override
   void initState() {
     super.initState();
+
+    _tabController = TabController(length: 3, vsync: this);
 
     BlocProvider.of<RecordRoundCubit>(context).emitInactive();
 
@@ -76,9 +81,29 @@ class _RoundProcessingLoadingScreenState
   }
 
   Future<void> _processRound() async {
+    // Read values from RecordRoundCubit state
+    final RecordRoundCubit cubit = context.read<RecordRoundCubit>();
+    final RecordRoundState state = cubit.state;
+
+    // Sanity check: ensure we have an active recording state
+    // (This should always be true, but we check to be safe)
+    if (state is! RecordRoundActive) {
+      debugPrint('RoundProcessingLoadingScreen: No active recording state');
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    // Extract values from the active state
+    final String transcript = state.fullTranscript;
+    final Course? selectedCourse = state.selectedCourse;
+    final String? selectedLayoutId = state.selectedLayoutId;
+    final int numHoles = state.numHoles;
+
     // If using shared preferences (cached round), we still need a transcript
     // but it won't be used if a cached round is found
-    if (widget.transcript.isEmpty && !widget.useSharedPreferences) {
+    if (transcript.isEmpty && !widget.useSharedPreferences) {
       return;
     }
 
@@ -87,9 +112,10 @@ class _RoundProcessingLoadingScreenState
       // - If useSharedPreferences=true and cached round exists: 5-second delay, no parsing
       // - Otherwise: normal Gemini API processing
       await _roundParser.parseVoiceTranscript(
-        widget.transcript,
-        selectedCourse: widget.selectedCourse,
-        numHoles: widget.numHoles,
+        transcript,
+        selectedCourse: selectedCourse,
+        selectedLayoutId: selectedLayoutId,
+        numHoles: numHoles,
         useSharedPreferences: widget.useSharedPreferences,
       );
 
@@ -174,9 +200,6 @@ class _RoundProcessingLoadingScreenState
       return;
     }
 
-    // Set the round so the parser can calculate stats
-    _roundParser.setRound(_roundParser.parsedRound!);
-
     // First, transition: fade out text and move icon to center
     setState(() {
       _processingState = _ProcessingState.transitioning;
@@ -214,6 +237,7 @@ class _RoundProcessingLoadingScreenState
 
   @override
   void dispose() {
+    _tabController.dispose();
     // Restore system UI when leaving the screen
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
@@ -346,15 +370,70 @@ class _RoundProcessingLoadingScreenState
     return Container(
       key: const ValueKey('review'),
       color: Colors.transparent, // Transparent initially
-      child: Padding(
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + kToolbarHeight,
-        ),
-        child: RoundOverviewBody(
-          round: _roundParser.parsedRound!,
-          isReviewV2Screen: true,
-        ),
+      child: Column(
+        children: [
+          GenericAppBar(
+            topViewPadding: MediaQuery.of(context).viewPadding.top,
+            title: _roundParser.parsedRound?.courseName ?? 'Round Review',
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.black87,
+            bottomWidget: _buildTabBar(),
+            bottomWidgetHeight: 48,
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                RoundOverviewBody(
+                  round: _roundParser.parsedRound!,
+                  isReviewV2Screen: true,
+                  tabController: _tabController,
+                ),
+                RoundStoryTab(
+                  round: _roundParser.parsedRound!,
+                  tabController: _tabController,
+                ),
+                JudgeRoundTab(round: _roundParser.parsedRound!),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return TabBar(
+      controller: _tabController,
+      splashFactory: NoSplash.splashFactory,
+      overlayColor: WidgetStateProperty.all(Colors.transparent),
+      labelColor: Colors.black,
+      unselectedLabelColor: Colors.black54,
+      indicatorColor: Colors.black,
+      indicatorWeight: 2,
+      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.normal,
+      ),
+      labelPadding: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      indicatorPadding: EdgeInsets.zero,
+      onTap: (_) => HapticFeedback.lightImpact(),
+      tabs: const [
+        Tab(text: 'Stats'),
+        Tab(text: 'Story'),
+        Tab(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.local_fire_department, size: 16),
+              SizedBox(width: 4),
+              Text('Judge'),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -373,42 +452,19 @@ class _RoundProcessingLoadingScreenState
       backgroundColor:
           Colors.transparent, // Transparent to show body background
       extendBodyBehindAppBar: true, // Body extends behind app bar
-      // App bar always present to reserve space, fades in with content
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: _processingState == _ProcessingState.revealing
-            ? TweenAnimationBuilder<double>(
-                duration: const Duration(
-                  milliseconds: 1000,
-                ), // Same as content fade
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                curve: Curves.easeOut, // Same curve as content
-                builder: (context, progress, child) {
-                  return Opacity(
-                    opacity: progress, // Fade from 0 to 1
-                    child: GenericAppBar(
-                      topViewPadding: MediaQuery.of(context).viewPadding.top,
-                      title:
-                          _roundParser.parsedRound?.courseName ??
-                          'Round Review',
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.black87,
-                    ),
-                  );
-                },
-              )
-            : _processingState == _ProcessingState.confirming
-            ? GenericAppBar(
+      // App bar only shown during confirmation state
+      // During revealing state, app bar is built into _buildReviewContent
+      appBar: _processingState == _ProcessingState.confirming
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: GenericAppBar(
                 topViewPadding: MediaQuery.of(context).viewPadding.top,
                 title: 'Confirm Round',
                 backgroundColor: const Color(0xFFF5F0FA),
                 foregroundColor: Colors.black87,
-              )
-            : Container(
-                color:
-                    Colors.transparent, // Just reserve space, no AppBar widget
               ),
-      ),
+            )
+          : null,
 
       body: Stack(
         children: [
