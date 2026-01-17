@@ -44,14 +44,81 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   void initState() {
     super.initState();
     // Testing functions - uncomment to use:
-    // _clearRecentCoursesCache();
-    // _syncCacheFromFirestore(); // Now called once from RoundHistoryScreen on app startup
+    // _syncMeiliFromFirestore(); // Sync all Firestore courses to local Meili instance
+    // _clearRecentCoursesCache(); // Clear recent courses cache
+    // _syncCacheFromFirestore(); // Sync cache from Firestore (now called from RoundHistoryScreen)
     _loadRecentCourses();
   }
 
   // ==========================================================================
   // TESTING FUNCTIONS - Call these from initState for debugging
   // ==========================================================================
+
+  /// Syncs all courses from Firestore to the local Meili search instance.
+  /// Firestore is the source of truth - this will upsert all courses to Meili.
+  /// Useful for populating a local Meili instance for simulator testing.
+  // Future<void> _syncMeiliFromFirestore() async {
+  //   try {
+  //     debugPrint('[Testing] Syncing Meili from Firestore...');
+
+  //     // Fetch all courses from Firestore
+  //     final List<Course> courses = await FBCourseDataLoader.getAllCourses();
+  //     debugPrint('[Testing] Found ${courses.length} courses in Firestore');
+
+  //     if (courses.isEmpty) {
+  //       debugPrint('[Testing] No courses to sync');
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(
+  //             content: Text('No courses found in Firestore'),
+  //             backgroundColor: Colors.orange,
+  //           ),
+  //         );
+  //       }
+  //       return;
+  //     }
+
+  //     // Upsert each course to Meili
+  //     int successCount = 0;
+  //     int failCount = 0;
+  //     for (final Course course in courses) {
+  //       try {
+  //         await _searchService.upsertCourse(course);
+  //         successCount++;
+  //         debugPrint('[Testing] ✓ Synced: ${course.name}');
+  //       } catch (e) {
+  //         failCount++;
+  //         debugPrint('[Testing] ✗ Failed to sync ${course.name}: $e');
+  //       }
+  //     }
+
+  //     debugPrint(
+  //       '[Testing] Sync complete: $successCount succeeded, $failCount failed',
+  //     );
+
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text(
+  //             'Synced $successCount/${courses.length} courses to Meili',
+  //           ),
+  //           backgroundColor: failCount > 0 ? Colors.orange : Colors.green,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e, stackTrace) {
+  //     debugPrint('[Testing] Failed to sync Meili from Firestore: $e');
+  //     debugPrint('[Testing] Stack trace: $stackTrace');
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Failed to sync Meili: $e'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   /// Clears the shared preferences recent courses cache.
   /// Useful for testing the empty state or resetting the cache.

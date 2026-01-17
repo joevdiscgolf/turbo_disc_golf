@@ -5,5 +5,7 @@ abstract class RoundsRepository {
 
   Future<bool> updateRound(DGRound round);
 
+  Future<bool> deleteRound(String uid, String roundId);
+
   Future<List<DGRound>?> loadRoundsForUser(String uid);
 }

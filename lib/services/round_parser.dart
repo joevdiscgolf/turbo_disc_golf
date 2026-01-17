@@ -10,10 +10,7 @@ import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
-import 'package:turbo_disc_golf/services/rounds_service.dart';
-import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
 class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
   PotentialDGRound? _potentialRound;
@@ -60,6 +57,7 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
   Future<bool> parseVoiceTranscript(
     String transcript, {
     Course? selectedCourse,
+    required String? selectedLayoutId,
     int numHoles = 18,
     bool useSharedPreferences = false,
     List<HoleMetadata>?
@@ -70,7 +68,20 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
     // Extract course info from Course object
     final String courseName = selectedCourse?.name ?? 'Unknown Course';
     final String courseId = selectedCourse?.id ?? 'unknown';
-    final String layoutId = 'default'; // Use default layout for now
+    // Use selected layout ID, or fall back to default layout ID, or 'default' as last resort
+    final String layoutId =
+        selectedLayoutId ?? (selectedCourse?.defaultLayout.id) ?? 'default';
+
+    debugPrint(
+      'parsing voice transcript in round parser, selectedLayoutId: $selectedLayoutId, layoutId variable :$layoutId',
+    );
+
+    debugPrint(
+      '🎯 parseVoiceTranscript: selectedLayoutId=$selectedLayoutId, resolved layoutId=$layoutId',
+    );
+    debugPrint(
+      '🎯 selectedCourse.defaultLayout: ${selectedCourse?.defaultLayout.name} (${selectedCourse?.defaultLayout.id})',
+    );
 
     try {
       // If using shared preferences, try to load cached round first
@@ -158,6 +169,7 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
             voiceTranscript: transcript,
             userBag: bagService.userBag,
             course: selectedCourse,
+            layoutId: layoutId,
             numHoles: numHoles,
             preParsedHoles: preParsedHoles, // Pass through pre-parsed holes
           );
@@ -216,107 +228,6 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
       return true;
     } catch (e) {
       _lastError = 'Error parsing round: $e';
-      _isProcessing = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Finalize the potential round after confirmation
-  /// Converts PotentialDGRound to DGRound, validates, enhances, and saves
-  Future<bool> finalizeRound() async {
-    final String? uid = locator.get<AuthService>().currentUid;
-    if (uid == null) return false;
-
-    if (_potentialRound == null) {
-      _lastError = 'No potential round to finalize';
-      return false;
-    }
-
-    try {
-      _isProcessing = true;
-      notifyListeners();
-
-      // Check if potential round has all required fields
-      if (!_potentialRound!.hasRequiredFields) {
-        _lastError =
-            'Round is missing required fields: ${_potentialRound!.getMissingFields().join(', ')}';
-        _isProcessing = false;
-        notifyListeners();
-        return false;
-      }
-
-      debugPrint('Converting PotentialDGRound to DGRound...');
-
-      // Convert to final DGRound
-      try {
-        _parsedRound = _potentialRound!.toDGRound();
-      } catch (e) {
-        _lastError = 'Failed to convert round: $e';
-        _isProcessing = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Validate and enhance the parsed data
-      _parsedRound = _validateAndEnhanceRound(uid, _parsedRound!);
-
-      // Generate analysis from round data
-      debugPrint('Generating round analysis...');
-      final analysis = RoundAnalysisGenerator.generateAnalysis(_parsedRound!);
-
-      // Generate AI insights (summary and coaching)
-      debugPrint('Generating AI summary and coaching...');
-      final insights = await locator
-          .get<AiParsingService>()
-          .generateRoundInsights(round: _parsedRound!, analysis: analysis);
-
-      // Update round with analysis and insights
-
-      final String currentTimestamp = getCurrentISOString();
-      _parsedRound = DGRound(
-        uid: uid,
-        id: _parsedRound!.id,
-        courseName: _parsedRound!.courseName,
-        courseId: _parsedRound!.courseId,
-        course: _parsedRound!.course,
-        layoutId: _parsedRound!.layoutId,
-        holes: _parsedRound!.holes,
-        analysis: analysis,
-        aiSummary: insights['summary'],
-        aiCoachSuggestion: insights['coaching'],
-        versionId: 1, // Set initial version ID
-        createdAt: currentTimestamp,
-        playedRoundAt: currentTimestamp,
-      );
-
-      // Save to shared preferences for future use
-      debugPrint('Saving parsed round to shared preferences...');
-      final savedLocally = await locator.get<RoundStorageService>().saveRound(
-        _parsedRound!,
-      );
-      if (savedLocally) {
-        debugPrint('Successfully saved round to shared preferences');
-      } else {
-        debugPrint('Failed to save round to shared preferences');
-      }
-
-      // Save to Firestore
-      debugPrint('Saving parsed round to Firestore...');
-      final firestoreSuccess = await locator.get<RoundsService>().addRound(
-        _parsedRound!,
-      );
-      if (firestoreSuccess) {
-        debugPrint('Successfully saved round to Firestore');
-      } else {
-        debugPrint('Failed to save round to Firestore');
-      }
-
-      _isProcessing = false;
-      _setReadyToNavigate(); // Signal that we're ready to navigate with a delay
-      return true;
-    } catch (e) {
-      _lastError = 'Error finalizing round: $e';
       _isProcessing = false;
       notifyListeners();
       return false;
@@ -527,7 +438,15 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
         .toSet();
 
     // Get course layout data for filling empty holes
-    final CourseLayout? layout = _potentialRound!.course?.defaultLayout;
+    final CourseLayout? layout =
+        _potentialRound!.course?.getLayoutById(
+          _potentialRound!.layoutId ?? '',
+        ) ??
+        _potentialRound!.course?.defaultLayout;
+
+    debugPrint(
+      '🎯 addEmptyHolesToPotentialRound: Using layout ${layout?.name} (${layout?.id})',
+    );
 
     for (final int holeNumber in holeNumbers) {
       // Check if hole already exists
@@ -539,10 +458,7 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
       // Try to get hole metadata from course layout
       final CourseHole? courseHole = layout?.holes
           .cast<CourseHole?>()
-          .firstWhere(
-            (h) => h?.holeNumber == holeNumber,
-            orElse: () => null,
-          );
+          .firstWhere((h) => h?.holeNumber == holeNumber, orElse: () => null);
 
       // Use course layout data if available, otherwise use defaults
       final int? holePar = defaultPar ?? courseHole?.par;
@@ -693,10 +609,18 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
             : _potentialRound?.course;
 
         if (course != null) {
-          final CourseLayout layout = course.getLayoutById(
-                course.defaultLayout.id,
-              ) ??
+          // Get the correct layoutId from either parsed round or potential round
+          final String? correctLayoutId = hasParsedRound
+              ? _parsedRound!.layoutId
+              : _potentialRound?.layoutId;
+
+          final CourseLayout layout =
+              course.getLayoutById(correctLayoutId ?? '') ??
               course.defaultLayout;
+
+          debugPrint(
+            '🎯 reProcessHole: Using layout ${layout.name} (${layout.id}) for hole $holeNumber',
+          );
 
           final CourseHole? courseHole = layout.holes
               .cast<CourseHole?>()
@@ -1053,83 +977,51 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
   }
 
   /// Enhance holes with par, distance, and holeType from course layout
-  /// Fills in missing values when AI doesn't return them
+  /// Course layout data is the source of truth
   List<PotentialDGHole> _enhanceHolesWithCourseLayout(
     List<PotentialDGHole> holes,
     Course course,
     String? layoutId,
   ) {
-    // Get the appropriate layout (use layoutId or fall back to default)
     final CourseLayout layout =
         course.getLayoutById(layoutId ?? 'default') ?? course.defaultLayout;
-
-    debugPrint(
-      '=== Enhancing holes with course layout data from "${layout.name}" ===',
-    );
 
     final List<PotentialDGHole> enhancedHoles = [];
 
     for (final PotentialDGHole hole in holes) {
-      // Skip if hole number is null (can't match to layout)
       if (hole.number == null) {
-        debugPrint('⚠️ Skipping hole with null number');
         enhancedHoles.add(hole);
         continue;
       }
 
       final int holeNumber = hole.number!;
 
-      // Find corresponding hole in course layout
-      final CourseHole? courseHole = layout.holes
+      final CourseHole? courseLayoutHole = layout.holes
           .cast<CourseHole?>()
-          .firstWhere(
-            (h) => h?.holeNumber == holeNumber,
-            orElse: () => null,
-          );
+          .firstWhere((h) => h?.holeNumber == holeNumber, orElse: () => null);
 
-      if (courseHole == null) {
-        debugPrint(
-          '⚠️ Hole $holeNumber not found in course layout "${layout.name}"',
-        );
+      if (courseLayoutHole == null) {
         enhancedHoles.add(hole);
         continue;
       }
 
-      // Check which fields need to be filled
-      final bool needsPar = hole.par == null;
-      final bool needsFeet = hole.feet == null;
-      final bool needsHoleType = hole.holeType == null;
-
-      // Create enhanced hole with course layout data
-      final PotentialDGHole enhancedHole = PotentialDGHole(
-        number: hole.number,
-        par: hole.par ?? courseHole.par,
-        feet: hole.feet ?? courseHole.feet,
-        throws: hole.throws,
-        holeType: hole.holeType ?? courseHole.holeType,
+      debugPrint(
+        'Hole $holeNumber: par ${hole.par} → ${courseLayoutHole.par}, '
+        'distance ${hole.feet}ft → ${courseLayoutHole.feet}ft, '
+        'type ${hole.holeType?.name} → ${courseLayoutHole.holeType?.name}',
       );
 
-      // Log what was filled
-      if (needsPar) {
-        debugPrint(
-          '✓ Filled par for hole $holeNumber from course layout: ${courseHole.par}',
-        );
-      }
-      if (needsFeet) {
-        debugPrint(
-          '✓ Filled distance for hole $holeNumber from course layout: ${courseHole.feet} ft',
-        );
-      }
-      if (needsHoleType && courseHole.holeType != null) {
-        debugPrint(
-          '✓ Filled holeType for hole $holeNumber from course layout: ${courseHole.holeType?.name}',
-        );
-      }
+      final PotentialDGHole enhancedHole = PotentialDGHole(
+        number: hole.number,
+        par: courseLayoutHole.par,
+        feet: courseLayoutHole.feet,
+        throws: hole.throws,
+        holeType: courseLayoutHole.holeType,
+      );
 
       enhancedHoles.add(enhancedHole);
     }
 
-    debugPrint('=== Finished enhancing ${enhancedHoles.length} holes ===');
     return enhancedHoles;
   }
 

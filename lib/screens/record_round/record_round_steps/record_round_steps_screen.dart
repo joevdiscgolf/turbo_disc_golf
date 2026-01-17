@@ -28,6 +28,7 @@ import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
@@ -62,6 +63,25 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   // Course/Date selection (Step 1)
   DateTime _selectedDateTime = DateTime.now();
+
+  // Debug test descriptions
+  int _selectedTestDescriptionIndex = 0;
+  static const List<String> _testRoundDescriptions = [
+    DescriptionConstants.testRoundDescription,
+    DescriptionConstants.testRoundDescription2,
+    DescriptionConstants.testRoundDescription3,
+    DescriptionConstants.testRoundDescription4,
+    DescriptionConstants.flingsGivingRound2Description,
+    DescriptionConstants.elevenUnderWhitesDescriptionNoHoleDistance,
+  ];
+  static const List<String> _testRoundDescriptionNames = [
+    'testRoundDescription',
+    'testRoundDescription2',
+    'testRoundDescription3',
+    'testRoundDescription4',
+    'flingsGivingRound2Description',
+    'elevenUnderWhitesDescriptionNoHoleDistance',
+  ];
 
   // Accent colors
   static const Color _descAccent = Color(0xFFB39DDB); // light purple
@@ -324,6 +344,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SizedBox(height: 200, child: _buildVoiceCard(isListening)),
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildDebugButtons(),
+            ),
+          ],
           const SizedBox(height: 20),
           Center(
             child: _buildMicrophoneButton(
@@ -517,6 +544,73 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 duration: 300.ms,
                 curve: Curves.easeOutBack,
               );
+  }
+
+  Widget _buildDebugButtons() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade300),
+      ),
+      child: Row(
+        children: [
+          // Dropdown to select test description
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: DropdownButton<int>(
+                value: _selectedTestDescriptionIndex,
+                isExpanded: true,
+                underline: const SizedBox(),
+                items: List.generate(
+                  _testRoundDescriptions.length,
+                  (index) => DropdownMenuItem<int>(
+                    value: index,
+                    child: Text(
+                      _testRoundDescriptionNames[index],
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                onChanged: (int? newIndex) {
+                  if (newIndex != null) {
+                    setState(() {
+                      _selectedTestDescriptionIndex = newIndex;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Parse button
+          Expanded(
+            child: PrimaryButton(
+              label: 'Parse',
+              width: double.infinity,
+              height: 44,
+              backgroundColor: Colors.orange,
+              labelColor: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _parseTestDescription();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCourseAndImportRow(RecordRoundActive state) {
@@ -1113,16 +1207,24 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _finishAndParse() {
-    final RecordRoundActive state =
-        _recordRoundCubit.state as RecordRoundActive;
     Navigator.of(context).pushReplacement(
       CupertinoPageRoute(
-        builder: (context) => RoundProcessingLoadingScreen(
-          transcript: state.fullTranscript,
-          selectedCourse: state.selectedCourse,
-          numHoles: state.numHoles,
-          useSharedPreferences: false,
-        ),
+        builder: (context) => const RoundProcessingLoadingScreen(),
+      ),
+    );
+  }
+
+  void _parseTestDescription() {
+    // Update the cubit with the test transcript before navigating
+    // Set hole 0's description to the full test transcript
+    _recordRoundCubit.setHoleDescription(
+      _testRoundDescriptions[_selectedTestDescriptionIndex],
+      index: 0,
+    );
+
+    Navigator.of(context).pushReplacement(
+      CupertinoPageRoute(
+        builder: (context) => const RoundProcessingLoadingScreen(),
       ),
     );
   }

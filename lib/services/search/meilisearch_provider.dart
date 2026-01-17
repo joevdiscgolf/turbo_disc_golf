@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:turbo_disc_golf/services/search/course_search_provider.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// MeiliSearch implementation of [CourseSearchProvider].
 ///
@@ -37,7 +38,11 @@ class MeiliSearchProvider implements CourseSearchProvider {
 
     // In debug mode, check if physical device
     final bool isPhysical = await _isPhysicalDevice();
-    _cachedBaseUrl = isPhysical ? _productionUrl : _localUrl;
+    if (isPhysical || !useLocalMeiliSearchOnSimulator) {
+      _cachedBaseUrl = _productionUrl;
+    } else {
+      _cachedBaseUrl = _localUrl;
+    }
     return _cachedBaseUrl!;
   }
 
@@ -138,6 +143,43 @@ class MeiliSearchProvider implements CourseSearchProvider {
 
     if (response.statusCode != 202) {
       throw Exception('Failed to clear index: ${response.statusCode}');
+    }
+  }
+
+  /// Creates the index if it doesn't exist and configures settings.
+  /// Safe to call multiple times - will update settings if index already exists.
+  Future<void> initializeIndex() async {
+    final String baseUrl = await _getBaseUrl();
+
+    // Create index (will return 202 if created, 200 if already exists)
+    final http.Response createResponse = await http.post(
+      Uri.parse('$baseUrl/indexes'),
+      headers: _headers,
+      body: jsonEncode({'uid': _index, 'primaryKey': 'id'}),
+    );
+
+    if (createResponse.statusCode != 202 && createResponse.statusCode != 200) {
+      throw Exception('Failed to create index: ${createResponse.statusCode}');
+    }
+
+    // Configure settings
+    await updateIndexSettings();
+  }
+
+  /// Updates the searchable and filterable attributes for the index.
+  Future<void> updateIndexSettings() async {
+    final String baseUrl = await _getBaseUrl();
+    final http.Response response = await http.patch(
+      Uri.parse('$baseUrl/indexes/$_index/settings'),
+      headers: _headers,
+      body: jsonEncode({
+        'searchableAttributes': ['name', 'city', 'state', 'country'],
+        'filterableAttributes': ['id', 'city', 'state', 'country'],
+      }),
+    );
+
+    if (response.statusCode != 202) {
+      throw Exception('Failed to update settings: ${response.statusCode}');
     }
   }
 }

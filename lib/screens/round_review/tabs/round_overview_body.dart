@@ -54,6 +54,8 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   @override
   bool get wantKeepAlive => true;
 
+  bool _judgeBannerDismissed = false;
+
   void _navigateToDetailView(int tabIndex) {
     HapticFeedback.lightImpact();
     if (widget.isReviewV2Screen) {
@@ -67,6 +69,9 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
 
   void _navigateToJudgeTab() {
     HapticFeedback.lightImpact();
+    setState(() {
+      _judgeBannerDismissed = true;
+    });
     if (widget.tabController != null) {
       widget.tabController!.animateTo(2); // Navigate to Judge tab (index 2)
     }
@@ -212,7 +217,8 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     // Determine if we should show banner
-    final bool shouldShowBanner = widget.round.aiJudgment == null;
+    final bool shouldShowBanner =
+        widget.round.aiJudgment == null && !_judgeBannerDismissed;
 
     // Check if this is first time seeing banner (for animation)
     final bool isFirstView = !AnimationStateService.instance.hasAnimated(
@@ -224,11 +230,16 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
       padding: const EdgeInsets.only(top: 12, bottom: 80),
       children: [
         if (shouldShowBanner)
-          _JudgeBanner(onTap: _navigateToJudgeTab, shouldAnimate: isFirstView),
+          _JudgeBanner(
+            onTap: _navigateToJudgeTab,
+            shouldAnimate: isFirstView,
+            roundId: widget.round.id,
+          ),
         ScoreKPICard(
           round: widget.round,
           isDetailScreen: false,
           onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
+          showMetadata: showRoundMetadataInfoBar,
         ),
         const SizedBox(height: 8),
 
@@ -2135,15 +2146,20 @@ class _DetailScreenWrapper extends StatelessWidget {
 class _JudgeBanner extends StatefulWidget {
   final VoidCallback onTap;
   final bool shouldAnimate;
+  final String roundId;
 
-  const _JudgeBanner({required this.onTap, this.shouldAnimate = false});
+  const _JudgeBanner({
+    required this.onTap,
+    required this.roundId,
+    this.shouldAnimate = false,
+  });
 
   @override
   State<_JudgeBanner> createState() => _JudgeBannerState();
 }
 
 class _JudgeBannerState extends State<_JudgeBanner>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -2167,7 +2183,11 @@ class _JudgeBannerState extends State<_JudgeBanner>
         end: 1.0,
       ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
-      // Start animation after short delay
+      // Mark animation as played and start animation after short delay
+      AnimationStateService.instance.markAnimated(
+        widget.roundId,
+        'judge_banner',
+      );
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) _controller.forward();
       });
@@ -2182,6 +2202,7 @@ class _JudgeBannerState extends State<_JudgeBanner>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     Widget banner = GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -2255,4 +2276,7 @@ class _JudgeBannerState extends State<_JudgeBanner>
 
     return banner;
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

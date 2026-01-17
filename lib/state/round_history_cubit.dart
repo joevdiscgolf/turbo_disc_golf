@@ -96,17 +96,42 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState>
     }
   }
 
-  /// Delete a round from the history (optional - for future use)
-  Future<void> deleteRound(String roundId) async {
+  /// Delete a round from the history and Firestore
+  Future<bool> deleteRound(String roundId) async {
     if (state is RoundHistoryLoaded) {
       final List<DGRound> currentRounds = (state as RoundHistoryLoaded).rounds;
+
+      // Find the round to get the uid
+      final DGRound? roundToDelete = currentRounds
+          .where((round) => round.id == roundId)
+          .firstOrNull;
+
+      if (roundToDelete == null) {
+        debugPrint('Round $roundId not found in history');
+        return false;
+      }
+
+      // Delete from Firestore first
+      final bool firestoreSuccess = await locator.get<RoundsService>().deleteRound(
+        roundToDelete.uid,
+        roundId,
+      );
+
+      if (!firestoreSuccess) {
+        debugPrint('Failed to delete round $roundId from Firestore');
+        return false;
+      }
+
+      // Then remove from local state
       final List<DGRound> updatedRounds = currentRounds
           .where((round) => round.id != roundId)
           .toList();
 
       emit(RoundHistoryLoaded(rounds: updatedRounds));
-      debugPrint('Deleted round $roundId from history');
+      debugPrint('Deleted round $roundId from Firestore and local history');
+      return true;
     }
+    return false;
   }
 
   @override

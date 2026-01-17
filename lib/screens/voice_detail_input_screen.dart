@@ -198,6 +198,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
     await _roundParser.parseVoiceTranscript(
       _transcriptController.text,
       selectedCourse: widget.selectedCourse,
+      selectedLayoutId: widget.selectedCourse.defaultLayout.id,
       preParsedHoles: widget.holeMetadata,
     );
 

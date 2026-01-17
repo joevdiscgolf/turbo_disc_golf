@@ -46,4 +46,8 @@ class RoundsService {
   Future<bool> updateRound(DGRound round) {
     return _roundsRepository.updateRound(round);
   }
+
+  Future<bool> deleteRound(String uid, String roundId) {
+    return _roundsRepository.deleteRound(uid, roundId);
+  }
 }

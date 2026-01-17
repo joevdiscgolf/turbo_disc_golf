@@ -5,13 +5,11 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
-import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/date_formatter.dart';
@@ -437,17 +435,11 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
     // Validate and enhance the parsed data
     parsedRound = _validateAndEnhanceRound(uid, parsedRound);
 
-    // Generate analysis from round data
+    // Generate analysis from round data (local calculation, NOT AI)
     debugPrint('Generating round analysis...');
     final analysis = RoundAnalysisGenerator.generateAnalysis(parsedRound);
 
-    // Generate AI insights (summary and coaching)
-    debugPrint('Generating AI summary and coaching...');
-    final insights = await locator
-        .get<AiParsingService>()
-        .generateRoundInsights(round: parsedRound, analysis: analysis);
-
-    // Update round with analysis and insights
+    // Create final round with analysis but WITHOUT AI content (AI generated later in Story tab)
     final String currentTimestamp = getCurrentISOString();
     parsedRound = DGRound(
       uid: uid,
@@ -457,37 +449,28 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
       course: parsedRound.course,
       layoutId: parsedRound.layoutId,
       holes: parsedRound.holes,
-      analysis: analysis,
-      aiSummary: insights['summary'],
-      aiCoachSuggestion: insights['coaching'],
+      analysis: analysis, // LOCAL calculation (not AI) - required for stats
+      aiSummary: null, // AI-generated story - deferred to Story tab
+      aiCoachSuggestion: null, // Deprecated AI field
       versionId: 1, // Set initial version ID
       createdAt: currentTimestamp,
       playedRoundAt: currentTimestamp,
     );
 
-    // Save to shared preferences for future use
-    debugPrint('Saving parsed round to shared preferences...');
-    final savedLocally = await locator.get<RoundStorageService>().saveRound(
+    // Save to Firestore first
+    debugPrint('Saving round to Firestore...');
+    final bool firestoreSuccess = await locator.get<RoundsService>().addRound(
       parsedRound,
     );
-    if (savedLocally) {
-      debugPrint('Successfully saved round to shared preferences');
-    } else {
-      debugPrint('Failed to save round to shared preferences');
-    }
 
-    // Save to Firestore
-    debugPrint('Saving parsed round to Firestore...');
-    final firestoreSuccess = await locator.get<RoundsService>().addRound(
-      parsedRound,
-    );
     if (firestoreSuccess) {
       debugPrint('Successfully saved round to Firestore');
-
-      // Add the new round to round history
+      // Then add to local history state
       roundHistoryCubit.addRound(parsedRound);
     } else {
       debugPrint('Failed to save round to Firestore');
+      // Still add to local state so user can see it
+      roundHistoryCubit.addRound(parsedRound);
     }
 
     return parsedRound;

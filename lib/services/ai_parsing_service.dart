@@ -8,8 +8,8 @@ import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/gemini_helpers.dart';
 import 'package:uuid/uuid.dart';
@@ -102,6 +102,7 @@ class AiParsingService {
     required String voiceTranscript,
     required List<DGDisc> userBag,
     Course? course,
+    String? layoutId,
     int numHoles = 18,
     List<HoleMetadata>?
     preParsedHoles, // NEW: Pre-parsed hole metadata from image
@@ -186,7 +187,7 @@ class AiParsingService {
       jsonMap['courseName'] = course?.name;
       jsonMap['courseId'] = course?.id;
       jsonMap['course'] = course?.toJson();
-      jsonMap['layoutId'] = course?.defaultLayout.id;
+      jsonMap['layoutId'] = layoutId ?? course?.defaultLayout.id;
       jsonMap['uid'] = uid;
 
       debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
@@ -424,8 +425,9 @@ class AiParsingService {
       String? responseText;
       switch (_selectedModel) {
         case AiParsingModel.gemini:
+          // ALWAYS use Gemini for scorecard parsing (vision), regardless of story generation provider
           responseText = await locator
-              .get<LLMService>()
+              .get<GeminiService>()
               .generateContentWithImage(prompt: prompt, imagePath: imagePath);
       }
 
@@ -484,7 +486,8 @@ class AiParsingService {
     try {
       switch (_selectedModel) {
         case AiParsingModel.gemini:
-          return locator.get<LLMService>().testConnection();
+          // ALWAYS use Gemini for testing connection
+          return locator.get<GeminiService>().testConnection();
       }
     } catch (e) {
       debugPrint('Gemini connection test failed: $e');
@@ -536,7 +539,8 @@ class AiParsingService {
   Future<String?> _getContentFromModel({required String prompt}) async {
     switch (_selectedModel) {
       case AiParsingModel.gemini:
-        return locator.get<LLMService>().generateContent(prompt: prompt);
+        // ALWAYS use Gemini for round parsing, regardless of story generation provider
+        return locator.get<GeminiService>().generateContent(prompt: prompt);
     }
   }
 

@@ -35,7 +35,7 @@ class RoundMetadataCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Course name
+          // Course name and layout
           Row(
             children: [
               Icon(
@@ -45,11 +45,23 @@ class RoundMetadataCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  potentialRound.courseName ?? 'Unknown Course',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      potentialRound.courseName ?? 'Unknown Course',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    if (potentialRound.layoutId != null && potentialRound.course != null)
+                      Text(
+                        _getLayoutName(potentialRound),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -119,6 +131,15 @@ class RoundMetadataCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getLayoutName(PotentialDGRound round) {
+    if (round.layoutId == null || round.course == null) {
+      return 'Unknown Layout';
+    }
+
+    final layout = round.course!.getLayoutById(round.layoutId!);
+    return layout?.name ?? 'Unknown Layout';
   }
 
   Color _getScoreColor(int score) {

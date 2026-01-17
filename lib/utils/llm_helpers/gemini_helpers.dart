@@ -79,19 +79,56 @@ DISC BAG: $discListString
 
 DISC GOLF SCORE TERMINOLOGY:
 Understand these score terms to calculate expected throw count:
-- Condor: 4 under par (-4)
-- Albatross: 3 under par (-3)
-- Eagle: 2 under par (-2)
-- Birdie: 1 under par (-1)
-- Par: Even with par (0)
-- Bogey: 1 over par (+1)
-- Double Bogey: 2 over par (+2)
-- Triple Bogey: 3 over par (+3)
+- Condor: 4 under par (-4) → Par 5 condor = 1 throw
+- Albatross: 3 under par (-3) → Par 5 albatross = 2 throws
+- Eagle: 2 under par (-2) → Par 4 eagle = 2 throws, Par 5 eagle = 3 throws
+- Birdie: 1 under par (-1) → Par 3 birdie = 2 throws, Par 4 birdie = 3 throws
+- Par: Even with par (0) → Par 3 = 3 throws, Par 4 = 4 throws
+- Bogey: 1 over par (+1) → Par 3 bogey = 4 throws, Par 4 bogey = 5 throws
+- Double Bogey: 2 over par (+2) → Par 3 double = 5 throws
+- Triple Bogey: 3 over par (+3) → Par 3 triple = 6 throws
+- Quadruple Bogey: 4 over par (+4)
+- Quintuple Bogey: 5 over par (+5)
 
-CALCULATING THROW COUNT FROM SCORE:
+CALCULATING THROW COUNT FROM STATED SCORE (CRITICAL):
+If user says "birdie on par 3", expected throws = 3 - 1 = 2 throws
+If user says "birdie on par 4", expected throws = 4 - 1 = 3 throws ← YOUR ERROR CASE
+If user says "par on par 3", expected throws = 3 + 0 = 3 throws
 If user says "bogey on par 3", expected throws = 3 + 1 = 4 throws
-If user says "birdie on par 4", expected throws = 4 - 1 = 3 throws
 If user says "eagle on par 5", expected throws = 5 - 2 = 3 throws
+
+CRITICAL: The stated score determines throw count. NEVER calculate score from throw count.
+
+⚠️⚠️⚠️ ABSOLUTE RULE: USER'S STATED SCORE IS SACRED TRUTH ⚠️⚠️⚠️
+
+The user's stated score on a hole is ABSOLUTE, UNCHANGEABLE TRUTH.
+You MUST NEVER recalculate or override the user's stated score based on throw count.
+
+SCORE PHRASE DETECTION - These phrases indicate the user's FINAL SCORE:
+- "for birdie" / "made the birdie putt" / "I birdied" → SCORE IS BIRDIE (Par - 1)
+- "for par" / "made the par putt" / "I parred" / "got to par" → SCORE IS PAR (Par + 0)
+- "for bogey" / "took bogey" / "I bogeyed" → SCORE IS BOGEY (Par + 1)
+- "for eagle" / "made the eagle putt" / "I eagled" → SCORE IS EAGLE (Par - 2)
+- "for albatross" / "I albatrossed" → SCORE IS ALBATROSS (Par - 3)
+- "double bogey" / "took double" → SCORE IS DOUBLE BOGEY (Par + 2)
+- "triple bogey" / "took triple" → SCORE IS TRIPLE BOGEY (Par + 3)
+
+CRITICAL EXAMPLES:
+❌ WRONG: User says "made that birdie putt" on Par 4, you count 2 throws → score = 2 (eagle)
+✅ CORRECT: User says "made that birdie putt" on Par 4 → score = 3 (birdie), THEN add throws to match
+
+❌ WRONG: User describes 2 throws, you calculate "that's a birdie on par 3"
+✅ CORRECT: User says "for par" on par 3 → score = 3, THEN verify throws match (add tap-in if needed)
+
+RESOLVING MISMATCHES:
+If the user says "for birdie" on a Par 4 but you only parsed 2 throws:
+1. The score IS 3 (birdie) - NEVER change this to 2 (eagle)
+2. YOU made a mistake in parsing throws
+3. Re-read the description and find the missing throw
+4. Add implied throws (tap-ins, missed putts) to reach the stated score
+
+THE STATED SCORE IS NEVER WRONG. YOUR THROW PARSING MIGHT BE WRONG.
+ADJUST THROWS TO MATCH SCORE, NEVER ADJUST SCORE TO MATCH THROWS.
 
 CRITICAL VALIDATION RULE:
 Your parsed throws MUST match the stated score exactly.
@@ -148,6 +185,31 @@ ALLOWED ENUM VALUES (use ONLY these exact values):
 - stance (footwork): $stanceValues
 - power (effort level): $throwPowerValues
 - landingSpot (where it ended up): $landingSpotValues
+
+⚠️⚠️⚠️ CRITICAL TECHNIQUE VALIDATION - FAILURE CAUSES PARSING ERROR ⚠️⚠️⚠️
+
+For the 'technique' field, you MUST use ONLY these values: $techniqueValues
+
+❌ INVALID VALUES THAT WILL CAUSE ERRORS:
+- "standstill" - INVALID! This is a stance value, use it in stance field instead
+- "x_step" - INVALID! This is a stance value, use it in stance field instead
+- "hyzer" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "anhyzer" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "flex_shot" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "roller" - INVALID! Use "backhand_roller" or "forehand_roller" as technique instead
+
+REJECTION EXAMPLES:
+❌ WRONG: technique: standstill → ERROR! "standstill is not a supported technique value"
+✅ CORRECT: stance: standstill, technique: backhand
+
+❌ WRONG: technique: hyzer → ERROR! "hyzer is not a supported technique value"
+✅ CORRECT: technique: backhand, shotShape: hyzer
+
+❌ WRONG: technique: roller → ERROR! "roller is not a supported technique value"
+✅ CORRECT: technique: backhand_roller
+
+IF YOU RETURN AN INVALID TECHNIQUE VALUE, THE ENTIRE HOLE PARSING WILL FAIL.
+ONLY USE VALUES FROM THIS LIST: $techniqueValues
 
 IMPORTANT: Only include enum fields if explicitly mentioned. Omit fields with no values.
 
@@ -887,9 +949,30 @@ ALLOWED ENUM VALUES (use ONLY these exact values - NEVER mix categories):
 - gripType: $gripTypeValues
 - throwHand: $throwHandValues
 
-CRITICAL: For the 'technique' field, you MUST use ONLY these values: $techniqueValues
-DO NOT use "standstill" for technique - that is a stance value!
-DO NOT use "hyzer", "anhyzer", "flex_shot", etc. for technique - those are shotShape values!
+⚠️⚠️⚠️ CRITICAL TECHNIQUE VALIDATION - FAILURE CAUSES PARSING ERROR ⚠️⚠️⚠️
+
+For the 'technique' field, you MUST use ONLY these values: $techniqueValues
+
+❌ INVALID VALUES THAT WILL CAUSE ERRORS:
+- "standstill" - INVALID! This is a stance value, use it in stance field instead
+- "x_step" - INVALID! This is a stance value, use it in stance field instead
+- "hyzer" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "anhyzer" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "flex_shot" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "roller" - INVALID! Use "backhand_roller" or "forehand_roller" as technique instead
+
+REJECTION EXAMPLES:
+❌ WRONG: technique: standstill → ERROR! "standstill is not a supported technique value"
+✅ CORRECT: stance: standstill, technique: backhand
+
+❌ WRONG: technique: hyzer → ERROR! "hyzer is not a supported technique value"
+✅ CORRECT: technique: backhand, shotShape: hyzer
+
+❌ WRONG: technique: roller → ERROR! "roller is not a supported technique value"
+✅ CORRECT: technique: backhand_roller
+
+IF YOU RETURN AN INVALID TECHNIQUE VALUE, THE ENTIRE ROUND PARSING WILL FAIL.
+ONLY USE VALUES FROM THIS LIST: $techniqueValues
 
 OTHER FIELDS (integers, not enums):
 - penaltyStrokes: Number of penalty strokes for this throw (1 for OB/water/lost disc, omit if no penalty)
@@ -1151,41 +1234,97 @@ VALIDATION BEFORE RETURNING YAML:
 - If distanceFeetAfterThrow is missing and can be inferred, ADD IT!
 - Approach shots without distanceFeetAfterThrow are INVALID - fix them!
 
+DISC GOLF SCORE TERMINOLOGY:
+Understand these score terms to calculate expected throw count:
+- Condor: 4 under par (-4) → Par 5 condor = 1 throw
+- Albatross: 3 under par (-3) → Par 5 albatross = 2 throws
+- Eagle: 2 under par (-2) → Par 4 eagle = 2 throws, Par 5 eagle = 3 throws
+- Birdie: 1 under par (-1) → Par 3 birdie = 2 throws, Par 4 birdie = 3 throws
+- Par: Even with par (0) → Par 3 = 3 throws, Par 4 = 4 throws
+- Bogey: 1 over par (+1) → Par 3 bogey = 4 throws, Par 4 bogey = 5 throws
+- Double Bogey: 2 over par (+2) → Par 3 double = 5 throws
+- Triple Bogey: 3 over par (+3) → Par 3 triple = 6 throws
+- Quadruple Bogey: 4 over par (+4)
+- Quintuple Bogey: 5 over par (+5)
+
+CALCULATING THROW COUNT FROM STATED SCORE (CRITICAL):
+If user says "birdie on par 3", expected throws = 3 - 1 = 2 throws
+If user says "birdie on par 4", expected throws = 4 - 1 = 3 throws ← YOUR ERROR CASE
+If user says "par on par 3", expected throws = 3 + 0 = 3 throws
+If user says "bogey on par 3", expected throws = 3 + 1 = 4 throws
+If user says "eagle on par 5", expected throws = 5 - 2 = 3 throws
+
+CRITICAL: The stated score determines throw count. NEVER calculate score from throw count.
+
+⚠️⚠️⚠️ ABSOLUTE RULE: USER'S STATED SCORE IS SACRED TRUTH ⚠️⚠️⚠️
+
+The user's stated score on a hole is ABSOLUTE, UNCHANGEABLE TRUTH.
+You MUST NEVER recalculate or override the user's stated score based on throw count.
+
+SCORE PHRASE DETECTION - These phrases indicate the user's FINAL SCORE:
+- "for birdie" / "made the birdie putt" / "I birdied" → SCORE IS BIRDIE (Par - 1)
+- "for par" / "made the par putt" / "I parred" / "got to par" → SCORE IS PAR (Par + 0)
+- "for bogey" / "took bogey" / "I bogeyed" → SCORE IS BOGEY (Par + 1)
+- "for eagle" / "made the eagle putt" / "I eagled" → SCORE IS EAGLE (Par - 2)
+- "for albatross" / "I albatrossed" → SCORE IS ALBATROSS (Par - 3)
+- "double bogey" / "took double" → SCORE IS DOUBLE BOGEY (Par + 2)
+- "triple bogey" / "took triple" → SCORE IS TRIPLE BOGEY (Par + 3)
+
+CRITICAL EXAMPLES:
+❌ WRONG: User says "made that birdie putt" on Par 4, you count 2 throws → score = 2 (eagle)
+✅ CORRECT: User says "made that birdie putt" on Par 4 → score = 3 (birdie), THEN add throws to match
+
+❌ WRONG: User describes 2 throws, you calculate "that's a birdie on par 3"
+✅ CORRECT: User says "for par" on par 3 → score = 3, THEN verify throws match (add tap-in if needed)
+
+RESOLVING MISMATCHES:
+If the user says "for birdie" on a Par 4 but you only parsed 2 throws:
+1. The score IS 3 (birdie) - NEVER change this to 2 (eagle)
+2. YOU made a mistake in parsing throws
+3. Re-read the description and find the missing throw
+4. Add implied throws (tap-ins, missed putts) to reach the stated score
+
+THE STATED SCORE IS NEVER WRONG. YOUR THROW PARSING MIGHT BE WRONG.
+ADJUST THROWS TO MATCH SCORE, NEVER ADJUST SCORE TO MATCH THROWS.
+
 CRITICAL THROW COUNTING - REASON THROUGH EACH HOLE:
 
-⚠️⚠️⚠️ SCORE-FIRST VALIDATION - THIS IS ABSOLUTE TRUTH ⚠️⚠️⚠️
-When the player states their score (birdie, par, bogey, eagle, etc.), that is the GROUND TRUTH.
-This is NON-NEGOTIABLE and MUST be followed!
+⚠️⚠️⚠️ SCORE-FIRST VALIDATION - USER'S SCORE IS IMMUTABLE TRUTH ⚠️⚠️⚠️
+
+When the player states their score (birdie, par, bogey, eagle, etc.), that is ABSOLUTE, IMMUTABLE TRUTH.
+You MUST NEVER override, recalculate, or change the stated score for ANY reason.
+
+IF THE USER SAYS "FOR BIRDIE", THE SCORE IS BIRDIE. PERIOD. NO EXCEPTIONS.
 
 MANDATORY VALIDATION STEPS:
-1. FIRST: Identify the stated score from phrases like:
-   - "for birdie", "for par", "for bogey"
-   - "I took a bogey", "I made par", "so I got to par"
-   - "tapped in for bogey", "made putt for par"
-   - "so I birdied", "so I parred"
+1. FIRST: Identify the stated score from the hole description
+   - Look for: "for [score]", "made the [score] putt", "I [scored]", "took [score]"
+   - Example: "for birdie" → SCORE IS BIRDIE
 
-2. SECOND: Calculate expected throw count:
-   - Par 3 + "for par" = EXACTLY 3 throws (NOT 2!)
-   - Par 3 + "for birdie" = EXACTLY 2 throws (NOT 1!)
-   - Par 4 + "for par" = EXACTLY 4 throws (NOT 3!)
-   - Par 4 + "for birdie" = EXACTLY 3 throws (NOT 2!)
-   - Par 3 + "for bogey" = EXACTLY 4 throws
-   - Par 4 + "for bogey" = EXACTLY 5 throws
+2. SECOND: Calculate EXPECTED throw count from stated score
+   - BIRDIE on Par 4 = Par 4 - 1 = EXACTLY 3 throws (NOT 2!)
+   - PAR on Par 3 = Par 3 + 0 = EXACTLY 3 throws (NOT 2!)
+   - BOGEY on Par 4 = Par 4 + 1 = EXACTLY 5 throws (NOT 4!)
+   - EAGLE on Par 5 = Par 5 - 2 = EXACTLY 3 throws (NOT 2!)
 
 3. THIRD: Parse the throws from the description
 
 4. FOURTH: COUNT YOUR PARSED THROWS
-   - If count doesn't match expected: YOU MADE A MISTAKE!
-   - Too few throws? You MISSED a throw - go back and find it!
-   - Too many throws? You created a throw from a position description (like "had a 20 ft putt")
 
-5. FIFTH: BEFORE RETURNING - VERIFY ONE MORE TIME
-   - Does throw count match the stated score? If NO, DO NOT RETURN - FIX IT!
+5. FIFTH: IF COUNTS DON'T MATCH → YOU MISSED THROWS, NOT THE USER!
+   - User said "for birdie" on Par 4 → SCORE IS 3, find the 3rd throw
+   - User said "for par" on Par 3 → SCORE IS 3, find all 3 throws
+   - NEVER recalculate score to match your throw count
+   - ALWAYS add missing throws to match the stated score
+
+THE USER IS ALWAYS RIGHT ABOUT THEIR SCORE.
+IF YOUR THROW COUNT DOESN'T MATCH, YOU MADE THE PARSING ERROR.
 
 COMMON MISTAKES YOU MAKE:
 - User says "for par" but you only count 2 throws on a par 3 (should be 3!)
 - User says "laid that up to tap in" and you combine them (should be 2 throws!)
 - User says "for birdie" but you count 1 throw on a par 3 (should be 2!)
+- User says "made that birdie putt" on Par 4, you count 2 throws and call it eagle (NO! It's birdie = 3 throws!)
 
 THE STATED SCORE IS ABSOLUTE TRUTH - YOUR THROW COUNT MUST MATCH IT!
 
@@ -1499,9 +1638,30 @@ ALLOWED ENUM VALUES (use ONLY these exact values - NEVER mix categories):
 - gripType: $gripTypeValues
 - throwHand: $throwHandValues
 
-CRITICAL: For the 'technique' field, you MUST use ONLY these values: $techniqueValues
-DO NOT use "standstill" for technique - that is a stance value!
-DO NOT use "hyzer", "anhyzer", "flex_shot", etc. for technique - those are shotShape values!
+⚠️⚠️⚠️ CRITICAL TECHNIQUE VALIDATION - FAILURE CAUSES PARSING ERROR ⚠️⚠️⚠️
+
+For the 'technique' field, you MUST use ONLY these values: $techniqueValues
+
+❌ INVALID VALUES THAT WILL CAUSE ERRORS:
+- "standstill" - INVALID! This is a stance value, use it in stance field instead
+- "x_step" - INVALID! This is a stance value, use it in stance field instead
+- "hyzer" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "anhyzer" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "flex_shot" - INVALID! This is a shotShape value, use it in shotShape field instead
+- "roller" - INVALID! Use "backhand_roller" or "forehand_roller" as technique instead
+
+REJECTION EXAMPLES:
+❌ WRONG: technique: standstill → ERROR! "standstill is not a supported technique value"
+✅ CORRECT: stance: standstill, technique: backhand
+
+❌ WRONG: technique: hyzer → ERROR! "hyzer is not a supported technique value"
+✅ CORRECT: technique: backhand, shotShape: hyzer
+
+❌ WRONG: technique: roller → ERROR! "roller is not a supported technique value"
+✅ CORRECT: technique: backhand_roller
+
+IF YOU RETURN AN INVALID TECHNIQUE VALUE, THE ENTIRE ROUND PARSING WILL FAIL.
+ONLY USE VALUES FROM THIS LIST: $techniqueValues
 
 OTHER FIELDS (integers, not enums):
 - penaltyStrokes: Number of penalty strokes for this throw (1 for OB/water/lost disc, omit if no penalty)

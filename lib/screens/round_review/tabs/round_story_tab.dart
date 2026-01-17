@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_empty_state.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_loading_animation.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer_v2.dart';
@@ -130,7 +131,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    // Full-screen loading state (no scroll wrapper)
+    // Loading state
     if (_isGenerating || showStoryLoadingAnimation) {
       return const StoryLoadingAnimation();
     }
@@ -138,36 +139,38 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     final bool hasStory = _currentRound.aiSummary != null &&
         _currentRound.aiSummary!.content.isNotEmpty;
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5), // Light gray with faint purple tint
-            Color(0xFFECECEE), // Light gray
-            Color(0xFFE8F4E8), // Light gray with faint green tint
-            Color(0xFFEAE8F0), // Light gray with subtle purple
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
+    // Three distinct rendering paths:
+    if (hasStory) {
+      // Story exists - show content with share bar
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEEE8F5), // Light gray with faint purple tint
+              Color(0xFFECECEE), // Light gray
+              Color(0xFFE8F4E8), // Light gray with faint green tint
+              Color(0xFFEAE8F0), // Light gray with subtle purple
+            ],
+            stops: [0.0, 0.3, 0.7, 1.0],
+          ),
         ),
-      ),
-      child: hasStory ? _buildContentWithShareBar(context) : _buildScrollableContent(context),
-    );
+        child: _buildContentWithShareBar(context),
+      );
+    } else if (_errorMessage != null) {
+      // Error occurred - show error in scrollable container
+      return _buildScrollableContent(context);
+    } else {
+      // No story yet - show full-screen empty state
+      return _buildEmptyState(context);
+    }
   }
 
   Widget _buildScrollableContent(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 96),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_errorMessage != null)
-            _buildErrorState(context)
-          else
-            _buildEmptyState(context),
-        ],
-      ),
+      child: _buildErrorState(context),
     );
   }
 
@@ -381,44 +384,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(
-              Icons.auto_stories_outlined,
-              size: 64,
-              color: Theme.of(context).colorScheme.secondary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No story available yet',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Generate an AI-powered narrative that tells the story of your round with embedded visualizations and insights.',
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _generateStory,
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Generate Story'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return StoryEmptyState(onGenerateStory: _generateStory);
   }
 
   void _showDebugYamlOutput() {

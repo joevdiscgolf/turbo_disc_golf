@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_navigation_helper.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
@@ -117,7 +118,11 @@ class StructuredStoryRendererV2 extends StatelessWidget {
             child: InkWell(
               onTap: () {
                 HapticFeedback.lightImpact();
-                // TODO: Add navigation to detail screen if needed
+                StoryNavigationHelper.navigateToDetailScreen(
+                  context,
+                  callout.cardId,
+                  round,
+                );
               },
               child: StoryCalloutCard(
                 statWidget: statWidget,

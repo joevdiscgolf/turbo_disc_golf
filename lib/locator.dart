@@ -109,9 +109,9 @@ Future<void> setUpLocator() async {
   );
 
   // Register default LLMService for general AI parsing/analysis
-  // This allows swapping providers via configuration
+  // Uses defaultLLMProvider constant (separate from story generation)
   final LLMService defaultLLMService =
-      storyGenerationLLMProvider == LLMProvider.chatGPT
+      defaultLLMProvider == LLMProvider.chatGPT
       ? locator.get<ChatGPTService>()
       : locator.get<GeminiService>();
 

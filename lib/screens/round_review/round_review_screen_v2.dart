@@ -7,8 +7,10 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
+import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class RoundReviewScreenV2 extends StatefulWidget {
   final DGRound round;
@@ -58,6 +60,73 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
     super.dispose();
   }
 
+  Future<void> _handleDeleteRound(DGRound round) async {
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Round'),
+          content: Text(
+            'Are you sure you want to delete this round from ${round.courseName}? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading indicator
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Delete the round
+    final RoundHistoryCubit historyCubit = BlocProvider.of<RoundHistoryCubit>(
+      context,
+    );
+    final bool success = await historyCubit.deleteRound(round.id);
+
+    // Close loading dialog
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+
+    if (success) {
+      // Navigate back to history
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Round deleted successfully')),
+        );
+      }
+    } else {
+      // Show error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete round. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RoundReviewCubit, RoundReviewState>(
@@ -86,22 +155,16 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
             backgroundColor: Colors.transparent,
             appBar: GenericAppBar(
               topViewPadding: MediaQuery.of(context).viewPadding.top,
-              title: round.courseName,
+              title: showRoundMetadataInfoBar
+                  ? 'Round overview'
+                  : round.courseName,
               bottomWidget: _tabBar(),
-              bottomWidgetHeight: 48,
-
-              // rightWidget: IconButton(
-              //   icon: const Icon(Icons.auto_stories),
-              //   tooltip: 'View Fullscreen Story',
-              //   onPressed: () {
-              //     Navigator.of(context).push(
-              //       CupertinoPageRoute(
-              //         builder: (context) => RoundStoryView(round: round),
-              //         fullscreenDialog: true,
-              //       ),
-              //     );
-              //   },
-              // ),
+              bottomWidgetHeight: 40,
+              rightWidget: IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Delete Round',
+                onPressed: () => _handleDeleteRound(round),
+              ),
             ),
             // AppBar(
             //   backgroundColor: Colors.transparent,
@@ -147,12 +210,15 @@ class _RoundReviewScreenV2State extends State<RoundReviewScreenV2>
             body: TabBarView(
               controller: _tabController,
               children: [
+                // Stats tab - with optional info bar at top
                 RoundOverviewBody(
                   round: round,
                   isReviewV2Screen: true,
                   tabController: _tabController,
                 ),
+                // Story tab - no info bar
                 RoundStoryTab(round: round, tabController: _tabController),
+                // Judge tab - no info bar
                 JudgeRoundTab(round: round),
               ],
             ),

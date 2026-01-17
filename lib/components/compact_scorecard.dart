@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// A compact scorecard widget that displays hole-by-hole scores in two rows.
 ///
@@ -86,9 +88,21 @@ class CompactScorecard extends StatelessWidget {
                 '${hole.number}',
                 style: TextStyle(
                   fontSize: holeNumberFontSize,
-                  color: holeNumberColor ?? Colors.grey,
+                  color: holeNumberColor ?? TurbColors.darkGray,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+              if (showHoleDistancesInScorecard && hole.feet > 0) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '${hole.feet}',
+                  style: TextStyle(
+                    fontSize: holeNumberFontSize - 2,
+                    color: holeNumberColor ?? TurbColors.gray[400]!,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
               const SizedBox(height: 4),
               isPar
                   ? SizedBox(
