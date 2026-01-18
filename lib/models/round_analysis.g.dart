@@ -68,6 +68,11 @@ RoundAnalysis _$RoundAnalysisFromJson(Map json) => RoundAnalysis(
   scrambleStats: ScrambleStats.fromJson(
     Map<String, dynamic>.from(json['scrambleStats'] as Map),
   ),
+  streakStats: json['streakStats'] == null
+      ? null
+      : ScoringStreakStats.fromJson(
+          Map<String, dynamic>.from(json['streakStats'] as Map),
+        ),
 );
 
 Map<String, dynamic> _$RoundAnalysisToJson(
@@ -99,4 +104,5 @@ Map<String, dynamic> _$RoundAnalysisToJson(
   'mistakeTypes': instance.mistakeTypes.map((e) => e.toJson()).toList(),
   'teeComparison': instance.teeComparison.toJson(),
   'scrambleStats': instance.scrambleStats.toJson(),
+  'streakStats': instance.streakStats?.toJson(),
 };

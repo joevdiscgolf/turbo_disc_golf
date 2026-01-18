@@ -143,6 +143,11 @@ const bool showWhatCouldHaveBeenEncouragement = false;
 /// Note: V1 and V2 stories are stored separately (aiSummary vs aiSummaryV2).
 const bool storyV2Enabled = true;
 
+/// When true, uses the new Story V3 engine with hole-range-based sections and interactive mini scorecard.
+/// When false, falls back to V2 if enabled, or V1.
+/// V3 adds hole range metadata to each section and highlights active holes as you scroll.
+const bool storyV3Enabled = true;
+
 /// When true, shows the map location picker in the Create Course screen.
 /// When false, only text fields for city/state/country are shown.
 const bool showMapLocationPicker = true;
@@ -203,3 +208,7 @@ const bool showFormAnalysisVideoComparison = true;
 /// When true, shows hole distances in the compact scorecard below the hole number.
 /// The distance is displayed in the same font size as the hole number.
 const bool showHoleDistancesInScorecard = true;
+
+/// When true, highlights the currently visible story section with a subtle blue background in V3 stories.
+/// This helps visualize which section is active as you scroll.
+const bool highlightActiveStorySection = true;

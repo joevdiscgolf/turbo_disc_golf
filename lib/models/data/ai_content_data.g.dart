@@ -42,6 +42,11 @@ AIContent _$AIContentFromJson(Map json) => AIContent(
       : RoundStoryV2Content.fromJson(
           Map<String, dynamic>.from(json['structuredContentV2'] as Map),
         ),
+  structuredContentV3: json['structuredContentV3'] == null
+      ? null
+      : RoundStoryV3Content.fromJson(
+          Map<String, dynamic>.from(json['structuredContentV3'] as Map),
+        ),
 );
 
 Map<String, dynamic> _$AIContentToJson(AIContent instance) => <String, dynamic>{
@@ -50,4 +55,5 @@ Map<String, dynamic> _$AIContentToJson(AIContent instance) => <String, dynamic>{
   'segments': instance.segments?.map((e) => e.toJson()).toList(),
   'structuredContent': instance.structuredContent?.toJson(),
   'structuredContentV2': instance.structuredContentV2?.toJson(),
+  'structuredContentV3': instance.structuredContentV3?.toJson(),
 };

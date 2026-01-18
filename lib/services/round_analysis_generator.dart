@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.da
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
+import 'package:turbo_disc_golf/services/round_analysis/scoring_streak_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 
 /// Generates comprehensive analysis data from a parsed round
@@ -16,6 +17,7 @@ class RoundAnalysisGenerator {
     final puttingAnalysisService = locator.get<PuttingAnalysisService>();
     final mistakesAnalysisService = locator.get<MistakesAnalysisService>();
     final discAnalysisService = locator.get<DiscAnalysisService>();
+    final scoringStreakService = ScoringStreakService();
 
     return RoundAnalysis(
       // Scoring statistics
@@ -52,6 +54,9 @@ class RoundAnalysisGenerator {
       // Technique comparisons
       teeComparison: statsService.compareBackhandVsForehandTeeShots(),
       scrambleStats: statsService.getScrambleStats(),
+
+      // Scoring streaks and patterns
+      streakStats: scoringStreakService.calculateStreaks(round),
     );
   }
 }

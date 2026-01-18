@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/scoring_streak_stats.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 
 part 'round_analysis.g.dart';
@@ -30,6 +31,7 @@ class RoundAnalysis {
     required this.mistakeTypes,
     required this.teeComparison,
     required this.scrambleStats,
+    this.streakStats,
   });
 
   // Scoring statistics
@@ -65,6 +67,9 @@ class RoundAnalysis {
   // Technique comparisons
   final ComparisonResult teeComparison;
   final ScrambleStats scrambleStats;
+
+  // Scoring streaks and patterns (nullable for backwards compatibility with old rounds)
+  final ScoringStreakStats? streakStats;
 
   factory RoundAnalysis.fromJson(Map<String, dynamic> json) =>
       _$RoundAnalysisFromJson(json);
