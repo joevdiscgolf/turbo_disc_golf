@@ -655,6 +655,7 @@ class _StructuredStoryRendererV3State
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Flexible(
                       child: Text(
@@ -664,16 +665,17 @@ class _StructuredStoryRendererV3State
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      skill.statHighlight,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: color,
+                    Flexible(
+                      child: Text(
+                        skill.statHighlight,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
                       ),
                     ),
                   ],
