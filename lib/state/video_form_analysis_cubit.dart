@@ -19,7 +19,7 @@ import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:uuid/uuid.dart';
 
 /// Cubit for managing video form analysis workflow
@@ -193,7 +193,8 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     PoseAnalysisResponse? poseResult;
     String? poseAnalysisWarning;
 
-    if (usePoseAnalysisBackend) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    if (flags.usePoseAnalysisBackend) {
       final (PoseAnalysisResponse? result, String? error) =
           await _runPoseAnalysis(
         videoPath: videoPath,
@@ -313,7 +314,8 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('🎯 POSE ANALYSIS: Starting...');
     debugPrint('🎯 Video path: $videoPath');
-    debugPrint('🎯 Backend URL: $poseAnalysisBaseUrl');
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    debugPrint('🎯 Backend URL: ${flags.poseAnalysisBaseUrl}');
     debugPrint('═══════════════════════════════════════════════════════');
 
     try {
@@ -355,7 +357,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
           errorMessage.contains('Connection refused') ||
           errorMessage.contains('Network error')) {
         userMessage =
-            'Could not connect to pose analysis server at $poseAnalysisBaseUrl. '
+            'Could not connect to pose analysis server at ${flags.poseAnalysisBaseUrl}. '
             'Make sure the backend is running.';
       } else if (errorMessage.contains('timed out')) {
         userMessage = 'Pose analysis timed out. The server may be overloaded.';

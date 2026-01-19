@@ -7,7 +7,8 @@ import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_app_info_data_loader.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_user_data_loader.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
@@ -35,7 +36,8 @@ class AppPhaseController extends ChangeNotifier {
 
     try {
       // Testing override: always show force upgrade screen if enabled
-      if (alwaysShowForceUpgradeScreen) {
+      final FeatureFlagService flags = locator.get<FeatureFlagService>();
+      if (flags.alwaysShowForceUpgradeScreen) {
         debugPrint('[AppPhaseCubit][init] Testing mode - forcing upgrade screen');
         setPhase(AppPhase.forceUpgrade);
         return;
@@ -167,7 +169,8 @@ class AppPhaseController extends ChangeNotifier {
 
   void _handleAuthStateChange(AuthUser? user) async {
     // Testing override: always show force upgrade screen if enabled
-    if (alwaysShowForceUpgradeScreen) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    if (flags.alwaysShowForceUpgradeScreen) {
       setPhase(AppPhase.forceUpgrade);
       return;
     }

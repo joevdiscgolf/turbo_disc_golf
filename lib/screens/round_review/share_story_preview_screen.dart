@@ -11,7 +11,7 @@ import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Full-screen preview of the story share card.
 ///
@@ -127,7 +127,7 @@ class _ShareStoryPreviewScreenState extends State<ShareStoryPreviewScreen> {
   }
 
   Widget _buildShareCard() {
-    if (useStoryPosterShareCard) {
+    if (locator.get<FeatureFlagService>().useStoryPosterShareCard) {
       return StoryPosterShareCard(
         round: widget.round,
         analysis: widget.analysis,

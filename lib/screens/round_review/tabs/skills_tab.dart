@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class SkillsTab extends StatelessWidget {
   static const String screenName = 'Skills';
@@ -125,7 +125,7 @@ class _SkillsSpiderChartCard extends StatelessWidget {
             const SizedBox(height: 20),
             AspectRatio(
               aspectRatio: 1,
-              child: useHeroAnimationsForRoundReview
+              child: locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                   ? Hero(
                       tag: 'skills_spider_chart',
                       child: _SkillsSpiderChart(analysis: analysis),

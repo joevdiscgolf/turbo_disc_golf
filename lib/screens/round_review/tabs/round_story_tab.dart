@@ -27,7 +27,7 @@ import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 /// AI narrative story tab that tells the story of your round
@@ -112,9 +112,10 @@ class _RoundStoryTabState extends State<RoundStoryTab>
           .get<StoryGeneratorService>();
 
       // Generate story based on feature flag (V3 → V2 → V1)
-      final AIContent? story = storyV3Enabled
+      final FeatureFlagService flags = locator.get<FeatureFlagService>();
+      final AIContent? story = flags.storyV3Enabled
           ? await storyService.generateRoundStoryV3(_currentRound) // V3
-          : (storyV2Enabled
+          : (flags.storyV2Enabled
                 ? await storyService.generateRoundStoryV2(_currentRound) // V2
                 : await storyService.generateRoundStory(_currentRound)); // V1
 
@@ -243,7 +244,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     // Loading state
-    if (_isGenerating || showStoryLoadingAnimation) {
+    if (_isGenerating || locator.get<FeatureFlagService>().showStoryLoadingAnimation) {
       return const StoryLoadingAnimation();
     }
 
@@ -347,7 +348,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               // Fixed mini scorecard (only for V3 stories)
               if (isV3Story) _buildMiniScorecard(story!),
               // Fixed bottom action bar (hidden when testing V3)
-              if (!storyV3Enabled) _buildShareActionBar(),
+              if (!locator.get<FeatureFlagService>().storyV3Enabled) _buildShareActionBar(),
             ],
           ),
           // Hidden share card for capture (using Offstage)
@@ -366,7 +367,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   Widget _buildShareCard() {
     final (roundTitle, overview, shareableHeadline) = _getShareData();
 
-    if (useStoryPosterShareCard) {
+    if (locator.get<FeatureFlagService>().useStoryPosterShareCard) {
       return StoryPosterShareCard(
         round: _currentRound,
         analysis: _analysis,

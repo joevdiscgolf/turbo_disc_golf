@@ -11,7 +11,8 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/v3/story_section_tracker.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 class StructuredStoryRendererV3 extends StatefulWidget {
@@ -200,7 +201,7 @@ class _StructuredStoryRendererV3State
         ValueListenableBuilder<int?>(
           valueListenable: _sectionTracker.activeSectionIndex,
           builder: (context, activeIndex, child) {
-            final bool isActive = highlightActiveStorySection && activeIndex == sectionIndex;
+            final bool isActive = locator.get<FeatureFlagService>().highlightActiveStorySection && activeIndex == sectionIndex;
 
             return AnimatedContainer(
               key: _sectionKeys[i],  // Attach GlobalKey for tracking

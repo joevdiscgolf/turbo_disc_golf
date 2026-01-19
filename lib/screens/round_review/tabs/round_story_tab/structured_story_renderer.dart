@@ -18,7 +18,8 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/compon
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_navigation_helper.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// Renderer for structured story content with specific sections
@@ -49,7 +50,7 @@ class StructuredStoryRenderer extends StatelessWidget {
         _buildHeadline(context),
         const SizedBox(height: 12),
         // What Could Have Been - After headline (from AI data)
-        if (showWhatCouldHaveBeenCard && content.whatCouldHaveBeen != null) ...[
+        if (locator.get<FeatureFlagService>().showWhatCouldHaveBeenCard && content.whatCouldHaveBeen != null) ...[
           WhatCouldHaveBeenCard(data: content.whatCouldHaveBeen!),
           const SizedBox(height: 12),
         ],

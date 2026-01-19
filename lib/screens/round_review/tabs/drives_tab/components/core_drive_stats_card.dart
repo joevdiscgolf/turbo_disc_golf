@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 class CoreDriveStatsCard extends StatefulWidget {
@@ -38,7 +39,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            useHeroAnimationsForRoundReview
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'driving_c1_in_reg',
                     child: CircularStatIndicator(
@@ -70,7 +71,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
             //   shouldGlow: true,
             //   onPressed: widget.onC2InRegPressed,
             // ),
-            useHeroAnimationsForRoundReview
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'driving_fairway',
                     child: CircularStatIndicator(
@@ -92,7 +93,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                     shouldGlow: true,
                     onPressed: widget.onFairwayPressed,
                   ),
-            useHeroAnimationsForRoundReview
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'driving_ob',
                     child: CircularStatIndicator(
@@ -114,7 +115,7 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                     shouldGlow: true,
                     onPressed: widget.onOBPressed,
                   ),
-            useHeroAnimationsForRoundReview
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'driving_parked',
                     child: CircularStatIndicator(

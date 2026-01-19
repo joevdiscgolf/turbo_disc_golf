@@ -13,7 +13,7 @@ import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
 import 'package:turbo_disc_golf/services/llm/chatgpt_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/chat_gpt_helpers.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/story_service_helpers.dart';
 import 'package:yaml/yaml.dart';
@@ -184,7 +184,8 @@ class StoryGeneratorService {
     required String version,
     required String Function() buildLocalPrompt,
   }) async {
-    if (generateAiContentFromBackend) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    if (flags.generateAiContentFromBackend) {
       debugPrint(
         '📝 Using backend cloud function for $version story generation',
       );

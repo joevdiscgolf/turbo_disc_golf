@@ -16,7 +16,8 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/form_analysis_video_helper.dart';
 
 /// View for displaying a historical form analysis from Firestore.
@@ -104,7 +105,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           slivers: [
             SliverPadding(padding: EdgeInsets.only(top: widget.topViewPadding)),
             SliverToBoxAdapter(child: _buildHeader(context)),
-            if (showFormAnalysisVideoComparison) _buildVideoComparisonSliver(),
+            if (locator.get<FeatureFlagService>().showFormAnalysisVideoComparison) _buildVideoComparisonSliver(),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
             SliverToBoxAdapter(child: _buildAngleDeviations(context)),

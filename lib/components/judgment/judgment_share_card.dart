@@ -7,7 +7,8 @@ import 'package:turbo_disc_golf/components/compact_scorecard.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// A shareable card widget for roast/glaze judgments.
@@ -210,7 +211,8 @@ class JudgmentShareCard extends StatelessWidget {
 
   Widget _buildVerdictText(String emoji) {
     // Use PNG images if enabled, otherwise use text
-    if (useVerdictImages) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    if (flags.useVerdictImages) {
       final String imagePath = isGlaze
           ? 'assets/judge_tab/glazed_clear_crop_2.png'
           : 'assets/judge_tab/roasted_clear_crop_3.png';
@@ -420,7 +422,7 @@ class JudgmentShareCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (showQrCodeOnShareCard) ...[
+        if (locator.get<FeatureFlagService>().showQrCodeOnShareCard) ...[
           // QR code on left side
           Container(
             padding: const EdgeInsets.all(4),
@@ -429,7 +431,7 @@ class JudgmentShareCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: QrImageView(
-              data: shareCardQrUrl,
+              data: locator.get<FeatureFlagService>().shareCardQrUrl,
               version: QrVersions.auto,
               size: 40,
               backgroundColor: Colors.white,

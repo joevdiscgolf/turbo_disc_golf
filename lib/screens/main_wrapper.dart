@@ -16,7 +16,7 @@ import 'package:turbo_disc_golf/screens/test_roast_screen.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class MainWrapper extends StatefulWidget {
@@ -59,7 +59,8 @@ class _MainWrapperState extends State<MainWrapper> {
   }
 
   void _onItemTapped(int index) {
-    final List<String> tabNames = useFormAnalysisTab
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    final List<String> tabNames = flags.useFormAnalysisTab
         ? _formAnalysisTabNames
         : _bottomNavTabNames;
 
@@ -84,11 +85,13 @@ class _MainWrapperState extends State<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+
     // Form Analysis tab mode takes precedence
-    if (useFormAnalysisTab) {
+    if (flags.useFormAnalysisTab) {
       return _buildWithFormAnalysisTabs(context);
     }
-    if (!useBottomNavigationBar) {
+    if (!flags.useBottomNavigationBar) {
       return _buildRoundHistoryOnly(context);
     }
     return _buildWithBottomNavigation(context);

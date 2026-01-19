@@ -12,7 +12,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   static const String routeName = '/round-review';
@@ -211,7 +211,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             backgroundColor: Colors.transparent,
             appBar: GenericAppBar(
               topViewPadding: MediaQuery.of(context).viewPadding.top,
-              title: showRoundMetadataInfoBar
+              title: locator.get<FeatureFlagService>().showRoundMetadataInfoBar
                   ? 'Round overview'
                   : round.courseName,
               bottomWidget: _tabBar(),

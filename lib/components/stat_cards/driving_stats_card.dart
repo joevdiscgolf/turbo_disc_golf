@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 /// Compact driving stats card showing 4 key metrics in a 2x2 grid
@@ -144,7 +145,7 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
       roundId: widget.round.id,
     );
 
-    if (useHeroAnimationsForRoundReview) {
+    if (locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview) {
       return Hero(tag: heroTag, child: indicator);
     }
 

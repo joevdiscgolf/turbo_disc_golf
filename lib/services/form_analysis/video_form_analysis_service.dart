@@ -9,7 +9,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
 
@@ -84,7 +84,7 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
       }
 
       // Return mock response in debug mode when flag is enabled
-      if (kDebugMode && useMockFormAnalysisResponse) {
+      if (kDebugMode && locator.get<FeatureFlagService>().useMockFormAnalysisResponse) {
         debugPrint('Using mock form analysis response (Gemini skipped)');
         onProgressUpdate?.call('Processing results...');
         await Future<void>.delayed(const Duration(milliseconds: 500));

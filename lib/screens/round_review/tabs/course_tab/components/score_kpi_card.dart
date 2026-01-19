@@ -7,7 +7,8 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class ScoreKPICard extends StatelessWidget {
   const ScoreKPICard({
@@ -76,7 +77,7 @@ class ScoreKPICard extends StatelessWidget {
                   CompactScorecard(holes: round.holes),
                   const SizedBox(height: 16),
                 ],
-                useHeroAnimationsForRoundReview
+                locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                     ? Hero(
                         tag: 'score_distribution_bar',
                         child: Material(
@@ -113,7 +114,7 @@ class ScoreKPICard extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: useHeroAnimationsForRoundReview
+          child: locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
               ? Hero(
                   tag: 'score_kpi_score',
                   child: Material(
@@ -125,7 +126,7 @@ class ScoreKPICard extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: useHeroAnimationsForRoundReview
+          child: locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
               ? Hero(
                   tag: 'score_kpi_throws',
                   child: Material(
@@ -137,7 +138,7 @@ class ScoreKPICard extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: useHeroAnimationsForRoundReview
+          child: locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
               ? Hero(
                   tag: 'score_kpi_par',
                   child: Material(

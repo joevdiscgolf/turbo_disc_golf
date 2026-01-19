@@ -30,7 +30,7 @@ import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 import 'package:yaml/yaml.dart';
 
@@ -108,7 +108,7 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
       _isGlaze = _extractJudgmentType(_currentRound.aiJudgment!.content);
 
       // If testing flag is on, show preparing animation first
-      if (showJudgmentPreparingAnimation) {
+      if (locator.get<FeatureFlagService>().showJudgmentPreparingAnimation) {
         _currentState = JudgmentState.preparing;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _showPreparingAnimationForTesting();
@@ -202,8 +202,9 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   /// Starts the full judgment animation flow.
   Future<void> _startJudgmentFlow() async {
     // Determine roast vs glaze upfront (so slot reel knows where to land)
-    if (forceJudgmentType != null) {
-      _isGlaze = forceJudgmentType == 'glaze';
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    if (flags.forceJudgmentType != null) {
+      _isGlaze = flags.forceJudgmentType == 'glaze';
     } else {
       final Random random = Random(DateTime.now().microsecondsSinceEpoch);
       _isGlaze = random.nextBool();
@@ -224,7 +225,7 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     if (!mounted) return;
 
     // Phase 2: Preparing - wait for API to complete
-    if (showJudgmentPreparingAnimation) {
+    if (locator.get<FeatureFlagService>().showJudgmentPreparingAnimation) {
       setState(() {
         _currentState = JudgmentState.preparing;
       });
@@ -304,10 +305,10 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
       String? judgment;
 
       // Use mock judgment for testing the animation flow
-      if (useMockJudgment) {
+      if (locator.get<FeatureFlagService>().useMockJudgment) {
         await Future.delayed(const Duration(milliseconds: 2000));
         judgment = _isGlaze ? _getMockGlazeJudgment() : _getMockRoastJudgment();
-      } else if (generateAiContentFromBackend) {
+      } else if (locator.get<FeatureFlagService>().generateAiContentFromBackend) {
         debugPrint('using backend to generate roast');
         // Use backend cloud function for judgment generation
         final RoundAnalysis? analysis = _currentRound.analysis;
@@ -789,7 +790,7 @@ highlightStats:
 
   Widget _buildResultContent(BuildContext context) {
     // Feature flag: use new bottom action bar layout
-    if (useBottomShareActionBar) {
+    if (locator.get<FeatureFlagService>().useBottomShareActionBar) {
       return _buildResultContentV2(context);
     }
 
