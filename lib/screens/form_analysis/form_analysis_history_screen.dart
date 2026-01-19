@@ -13,7 +13,7 @@ import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_detail_scree
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class FormAnalysisHistoryScreen extends StatefulWidget {
@@ -235,7 +235,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
 
         // When bottom nav bar is present, body ends at nav bar - just need 20px margin
         // When no nav bar, need to account for safe area
-        final double bottomMargin = useFormAnalysisTab
+        final double bottomMargin = locator.get<FeatureFlagService>().useFormAnalysisTab
             ? 20
             : (bottomViewPadding + 20);
 

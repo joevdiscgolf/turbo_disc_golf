@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class MistakesBarChartCard extends StatefulWidget {
   final int totalMistakes;
@@ -69,7 +70,7 @@ class _MistakesBarChartCardState extends State<MistakesBarChartCard> {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Expanded(
-                    child: useHeroAnimationsForRoundReview
+                    child: locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                         ? Hero(
                             tag: 'mistakes_count',
                             child: Material(

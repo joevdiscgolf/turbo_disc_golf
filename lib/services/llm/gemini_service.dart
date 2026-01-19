@@ -8,7 +8,7 @@ import 'package:turbo_disc_golf/models/error/error_context.dart';
 import 'package:turbo_disc_golf/models/error/error_severity.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class GeminiService implements LLMService {
   late final GenerativeModel _textModel; // For text parsing
@@ -94,7 +94,7 @@ class GeminiService implements LLMService {
     try {
       // Use full flash model if requested, otherwise use lite model
       if (useFullModel) {
-        final String modelToUse = useGeminiFallbackModel
+        final String modelToUse = locator.get<FeatureFlagService>().useGeminiFallbackModel
             ? twoPointZeroFlashExpModel
             : twoPointFiveFlashModel;
         final fullModel = GenerativeModel(
@@ -127,7 +127,7 @@ class GeminiService implements LLMService {
         customData: {
           'use_full_model': useFullModel,
           'model_name': useFullModel
-              ? (useGeminiFallbackModel
+              ? (locator.get<FeatureFlagService>().useGeminiFallbackModel
                     ? twoPointZeroFlashExpModel
                     : twoPointFiveFlashModel)
               : twoPointFiveFlashLiteModel,

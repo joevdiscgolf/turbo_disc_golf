@@ -6,7 +6,8 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detai
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Shared navigation helper for story renderers (v1 and v2)
 /// Handles navigation from stat cards to detail screens
@@ -91,7 +92,7 @@ class StoryNavigationHelper {
       child: detailScreen.screen,
     );
 
-    if (useCustomPageTransitionsForRoundReview) {
+    if (locator.get<FeatureFlagService>().useCustomPageTransitionsForRoundReview) {
       Navigator.of(context).push(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>

@@ -13,7 +13,7 @@ import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
 import 'package:turbo_disc_golf/services/llm/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/gemini_helpers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
@@ -116,7 +116,8 @@ class AiParsingService {
     try {
       String? responseText;
 
-      if (generateAiContentFromBackend) {
+      final FeatureFlagService flags = locator.get<FeatureFlagService>();
+      if (flags.generateAiContentFromBackend) {
         // Use backend cloud function for round parsing
         debugPrint('Sending request to backend cloud function...');
         final BackendLLMService backendService = locator.get<BackendLLMService>();

@@ -7,7 +7,7 @@ import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
 ///
@@ -156,7 +156,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       technique: ThrowTechnique.backhand,
     );
 
-    if (useAddThrowPanelV2) {
+    if (locator.get<FeatureFlagService>().useAddThrowPanelV2) {
       // Determine the previous throw for smart auto-selection
       // If addAtIndex is null, previous throw is the last throw
       // If addAtIndex is a number, previous throw is the throw at that index
@@ -240,7 +240,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       return; // Can't edit incomplete throw
     }
 
-    if (useAddThrowPanelV2) {
+    if (locator.get<FeatureFlagService>().useAddThrowPanelV2) {
       // Determine the previous throw for smart auto-selection
       final DiscThrow? previousThrow = throwIndex > 0 &&
               currentHole.throws != null &&

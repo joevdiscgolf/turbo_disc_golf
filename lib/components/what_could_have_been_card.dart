@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// "What Could Have Been" hero card showing potential score improvements
 ///
@@ -82,7 +83,7 @@ class WhatCouldHaveBeenCard extends StatelessWidget {
                 _buildScenariosTable(),
               ],
               // Encouragement message (conditional)
-              if (showWhatCouldHaveBeenEncouragement) ...[
+              if (locator.get<FeatureFlagService>().showWhatCouldHaveBeenEncouragement) ...[
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

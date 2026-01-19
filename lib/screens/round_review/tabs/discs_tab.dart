@@ -7,7 +7,7 @@ import 'package:turbo_disc_golf/services/throw_analysis_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class DiscsTab extends StatelessWidget {
   static const String screenName = 'Discs';
@@ -409,7 +409,7 @@ class _TopPerformerCard extends StatelessWidget {
       ),
     );
 
-    return useHeroAnimationsForRoundReview
+    return locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
         ? Hero(
             tag: 'top_disc_$rank',
             child: Material(color: Colors.transparent, child: cardContent),

@@ -30,7 +30,8 @@ import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart' show testScorecardData;
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String _hasSeenEducationKey = 'hasSeenHoleDescriptionEducation';
@@ -408,7 +409,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         ),
         const SizedBox(height: 8),
         // Hole Progress / Mini Holes Grid
-        if (showInlineMiniHoleGrid) ...[
+        if (locator.get<FeatureFlagService>().showInlineMiniHoleGrid) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -442,7 +443,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               child: Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(
-                  vertical: showHoleProgressLabel ? 8 : 12,
+                  vertical: locator.get<FeatureFlagService>().showHoleProgressLabel ? 8 : 12,
                   horizontal: 2,
                 ),
                 decoration: BoxDecoration(
@@ -452,7 +453,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 ),
                 child: Column(
                   children: [
-                    if (showHoleProgressLabel)
+                    if (locator.get<FeatureFlagService>().showHoleProgressLabel)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -487,7 +488,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                           ),
                         ],
                       ),
-                    if (showHoleProgressLabel) const SizedBox(height: 12),
+                    if (locator.get<FeatureFlagService>().showHoleProgressLabel) const SizedBox(height: 12),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
@@ -1216,7 +1217,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     // Unfocus the text field before showing the date picker
     _focusNode.unfocus();
 
-    if (useBeautifulDatePicker) {
+    if (locator.get<FeatureFlagService>().useBeautifulDatePicker) {
       await _showBeautifulDateTimePicker();
     } else {
       await _showMaterialDateTimePicker();
@@ -1381,7 +1382,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _showReviewGrid() {
-    if (showInlineMiniHoleGrid) {
+    if (locator.get<FeatureFlagService>().showInlineMiniHoleGrid) {
       return;
     }
     HapticFeedback.lightImpact();
@@ -1507,10 +1508,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     String imagePath;
 
     // In debug mode with test constant enabled, use test scorecard directly
-    if (kDebugMode && useTestScorecardForImport) {
-      debugPrint('Using test scorecard: $testScorecardPath');
+    if (kDebugMode && locator.get<FeatureFlagService>().useTestScorecardForImport) {
+      debugPrint('Using test scorecard: $locator.get<FeatureFlagService>().testScorecardPath');
       // Copy asset to temp file since parseScorecard needs a filesystem path
-      final ByteData data = await rootBundle.load(testScorecardPath);
+      final ByteData data = await rootBundle.load(locator.get<FeatureFlagService>().testScorecardPath);
       final Directory tempDir = await getTemporaryDirectory();
       final File tempFile = File('${tempDir.path}/test_scorecard.jpeg');
       await tempFile.writeAsBytes(data.buffer.asUint8List());
@@ -1541,7 +1542,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       List<HoleMetadata> holeMetadata;
 
       // Use mock data if enabled (skips AI parsing entirely)
-      if (kDebugMode && useMockScorecardData) {
+      if (kDebugMode && locator.get<FeatureFlagService>().useMockScorecardData) {
         debugPrint('Using mock scorecard data (skipping AI parsing)');
         holeMetadata = testScorecardData.map((Map<String, int> data) {
           return HoleMetadata(
@@ -1564,7 +1565,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       setState(() => _isParsingScorecard = false);
 
       // Debug print without truncation for test data extraction
-      if (kDebugMode && useTestScorecardForImport && !useMockScorecardData) {
+      if (kDebugMode && locator.get<FeatureFlagService>().useTestScorecardForImport && !locator.get<FeatureFlagService>().useMockScorecardData) {
         debugPrint('=== PARSED SCORECARD DATA (copy for testing) ===');
         debugPrint('Total holes parsed: ${holeMetadata.length}');
         for (final HoleMetadata hole in holeMetadata) {

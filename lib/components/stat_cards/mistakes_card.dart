@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Unified Mistakes Card component with configurable sizing
 ///
@@ -182,7 +182,7 @@ class MistakesCard extends StatelessWidget {
       ],
     );
 
-    if (useHeroAnimationsForRoundReview) {
+    if (locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview) {
       return Hero(
         tag: 'mistakes_count',
         child: Material(color: Colors.transparent, child: totalDisplay),

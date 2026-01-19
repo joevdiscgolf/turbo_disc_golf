@@ -13,7 +13,7 @@ import 'package:turbo_disc_golf/state/user_data_cubit.dart';
 import 'package:turbo_disc_golf/state/user_data_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/pdga_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   static const String routeName = '/settings';
@@ -77,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      if (showDistancePreferences) ...[
+                      if (locator.get<FeatureFlagService>().showDistancePreferences) ...[
                         _buildSectionHeader('Preferences'),
                         _buildSettingsCard([
                           _buildUnitToggleRow(),

@@ -3,7 +3,8 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 /// Compact putting stats card showing 3 putting zones
@@ -163,7 +164,7 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
       roundId: widget.round.id,
     );
 
-    if (useHeroAnimationsForRoundReview) {
+    if (locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview) {
       return Hero(tag: heroTag, child: indicator);
     }
 

@@ -6,7 +6,8 @@ import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/constants/timing_constants.dart';
 import 'package:turbo_disc_golf/utils/firebase/firebase_storage_utils.dart';
 import 'package:turbo_disc_golf/utils/firebase/firebase_utils.dart';
@@ -22,7 +23,7 @@ abstract class FBFormAnalysisDataLoader {
     required PoseAnalysisResponse poseAnalysis,
   }) async {
     // Check if saving is enabled
-    if (!saveFormAnalysisToFirestore) {
+    if (!locator.get<FeatureFlagService>().saveFormAnalysisToFirestore) {
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[FBFormAnalysisDataLoader] ⏭️  SAVE SKIPPED (saveFormAnalysisToFirestore = false)');
       debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');

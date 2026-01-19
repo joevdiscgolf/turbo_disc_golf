@@ -45,7 +45,8 @@ import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart
 import 'package:turbo_disc_golf/services/voice/ios_voice_service.dart';
 import 'package:turbo_disc_golf/services/voice/speech_to_text_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/firebase_feature_flags_provider.dart';
 
 final locator = GetIt.instance;
 Future<void> setUpLocator() async {
@@ -84,6 +85,13 @@ Future<void> setUpLocator() async {
   // Initialize the error logging service
   await errorLoggingService.initialize();
 
+  // Initialize Feature Flag Service early (other services may depend on it)
+  final FeatureFlagService featureFlagService = FeatureFlagService(
+    provider: FirebaseFeatureFlagsProvider(),
+  );
+  locator.registerSingleton<FeatureFlagService>(featureFlagService);
+  await featureFlagService.initialize();
+
   // Register core services first
   locator.registerSingleton<SharedPreferencesService>(
     SharedPreferencesService(),
@@ -107,7 +115,7 @@ Future<void> setUpLocator() async {
   await _registerSuperPropertiesIfLoggedIn(authService, loggingService);
 
   // Round analysis - conditionally register voice service based on flag
-  if (useIosVoiceService) {
+  if (featureFlagService.useIosVoiceService) {
     locator.registerSingleton<BaseVoiceRecordingService>(
       IosVoiceService(),
       // GoogleSpeechRecordingService(),
@@ -127,7 +135,7 @@ Future<void> setUpLocator() async {
     VideoFormAnalysisService(),
   );
   locator.registerSingleton<PoseAnalysisApiClient>(
-    PoseAnalysisApiClient(baseUrl: poseAnalysisBaseUrl),
+    PoseAnalysisApiClient(baseUrl: featureFlagService.poseAnalysisBaseUrl),
   );
   locator.registerSingleton<FormAnalysisHistoryCubit>(
     FormAnalysisHistoryCubit(),
@@ -144,9 +152,9 @@ Future<void> setUpLocator() async {
   );
 
   // Register the LLMService based on configuration
-  // This allows swapping providers via testing_constants.dart
+  // This allows swapping providers via FeatureFlagService
   final LLMService storyLLMService =
-      storyGenerationLLMProvider == LLMProvider.chatGPT
+      featureFlagService.storyGenerationLLMProvider == LLMProvider.chatGPT
       ? locator.get<ChatGPTService>()
       : locator.get<GeminiService>();
 
@@ -158,8 +166,9 @@ Future<void> setUpLocator() async {
   );
 
   // Register default LLMService for general AI parsing/analysis
-  // Uses defaultLLMProvider constant (separate from story generation)
-  final LLMService defaultLLMService = defaultLLMProvider == LLMProvider.chatGPT
+  // Uses defaultLLMProvider from FeatureFlagService (separate from story generation)
+  final LLMService defaultLLMService =
+      featureFlagService.defaultLLMProvider == LLMProvider.chatGPT
       ? locator.get<ChatGPTService>()
       : locator.get<GeminiService>();
 
@@ -176,7 +185,9 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<WebScraperService>(WebScraperService());
   // Search provider - swap MeiliSearchProvider for a different implementation here
   locator.registerLazySingleton<CourseSearchProvider>(
-    () => useTestCourseProvider ? TestCourseProvider() : MeiliSearchProvider(),
+    () => featureFlagService.useTestCourseProvider
+        ? TestCourseProvider()
+        : MeiliSearchProvider(),
   );
   locator.registerLazySingleton<CourseSearchService>(
     () => CourseSearchService(),

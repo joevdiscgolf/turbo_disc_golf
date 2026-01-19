@@ -6,8 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/search/course_search_provider.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// MeiliSearch implementation of [CourseSearchProvider].
 ///
@@ -38,7 +39,8 @@ class MeiliSearchProvider implements CourseSearchProvider {
 
     // In debug mode, check if physical device
     final bool isPhysical = await _isPhysicalDevice();
-    if (isPhysical || !useLocalMeiliSearchOnSimulator) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    if (isPhysical || !flags.useLocalMeiliSearchOnSimulator) {
       _cachedBaseUrl = _productionUrl;
     } else {
       _cachedBaseUrl = _localUrl;

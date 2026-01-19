@@ -9,7 +9,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 class PuttingTab extends StatelessWidget {
@@ -121,7 +121,7 @@ class PuttingTab extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            useHeroAnimationsForRoundReview
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'putting_c1',
                     child: CircularStatIndicator(
@@ -145,7 +145,7 @@ class PuttingTab extends StatelessWidget {
                     shouldAnimate: true,
                     shouldGlow: true,
                   ),
-            useHeroAnimationsForRoundReview
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'putting_c1x',
                     child: CircularStatIndicator(
@@ -167,7 +167,7 @@ class PuttingTab extends StatelessWidget {
                     shouldAnimate: true,
                     shouldGlow: true,
                   ),
-            useHeroAnimationsForRoundReview
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'putting_c2',
                     child: CircularStatIndicator(

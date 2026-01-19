@@ -15,7 +15,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/create_course_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Bottom sheet / modal for creating a course + default layout
 class CreateCourseSheet extends StatefulWidget {
@@ -168,7 +168,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
         ),
         const SizedBox(height: 12),
         // Map location picker (controlled by feature flag)
-        if (showMapLocationPicker) ...[
+        if (locator.get<FeatureFlagService>().showMapLocationPicker) ...[
           _buildLocationPickerSection(context, state),
           const SizedBox(height: 12),
         ],

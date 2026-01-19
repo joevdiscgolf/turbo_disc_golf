@@ -20,7 +20,7 @@ import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
@@ -70,7 +70,8 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   }
 
   Future<void> _showRecordRoundSheet() async {
-    if (useAddRoundStepsPanel) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    if (flags.useAddRoundStepsPanel) {
       // Start recording round in Cubit before showing panel
       BlocProvider.of<RecordRoundCubit>(context).startRecordingRound();
 
@@ -142,7 +143,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final DGRound round = sortedRounds[index];
-            return useRoundHistoryRowV2
+            return locator.get<FeatureFlagService>().useRoundHistoryRowV2
                 ? RoundHistoryRowV2(round: round, logger: _logger, index: index)
                 : RoundHistoryRow(round: round, logger: _logger, index: index);
           }, childCount: sortedRounds.length),
@@ -216,7 +217,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
             // When bottom nav bar is present, body ends at nav bar - just need 20px margin
             // When no nav bar, need to account for safe area
-            final double bottomMargin = useFormAnalysisTab
+            final double bottomMargin = locator.get<FeatureFlagService>().useFormAnalysisTab
                 ? 20
                 : (bottomViewPadding + 20);
 

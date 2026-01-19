@@ -30,7 +30,7 @@ import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 class RoundOverviewBody extends StatefulWidget {
@@ -155,7 +155,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
 
     if (detailScreen != null && mounted) {
       final Widget screen = detailScreen;
-      if (useCustomPageTransitionsForRoundReview) {
+      if (locator.get<FeatureFlagService>().useCustomPageTransitionsForRoundReview) {
         Navigator.of(context).push(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
@@ -220,7 +220,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
 
     final Widget screen = ScoreDetailScreen(round: widget.round);
 
-    if (useCustomPageTransitionsForRoundReview) {
+    if (locator.get<FeatureFlagService>().useCustomPageTransitionsForRoundReview) {
       Navigator.of(context).push(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => screen,
@@ -280,7 +280,7 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
           round: widget.round,
           isDetailScreen: false,
           onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
-          showMetadata: showRoundMetadataInfoBar,
+          showMetadata: locator.get<FeatureFlagService>().showRoundMetadataInfoBar,
         ),
         const SizedBox(height: 8),
 
@@ -455,7 +455,7 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      useHeroAnimationsForRoundReview
+                      locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'driving_c1_in_reg',
                               child: CircularStatIndicator(
@@ -487,7 +487,7 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                               shouldGlow: true,
                               roundId: widget.round.id,
                             ),
-                      useHeroAnimationsForRoundReview
+                      locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'driving_fairway',
                               child: CircularStatIndicator(
@@ -525,7 +525,7 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      useHeroAnimationsForRoundReview
+                      locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'driving_ob',
                               child: CircularStatIndicator(
@@ -553,7 +553,7 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                               shouldGlow: true,
                               roundId: widget.round.id,
                             ),
-                      useHeroAnimationsForRoundReview
+                      locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'driving_parked',
                               child: CircularStatIndicator(
@@ -761,7 +761,7 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      useHeroAnimationsForRoundReview
+                      locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'putting_c1',
                               child: CircularStatIndicator(
@@ -789,7 +789,7 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
                               shouldGlow: true,
                               roundId: widget.round.id,
                             ),
-                      useHeroAnimationsForRoundReview
+                      locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'putting_c1x',
                               child: CircularStatIndicator(
@@ -823,7 +823,7 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      useHeroAnimationsForRoundReview
+                      locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'putting_c2',
                               child: CircularStatIndicator(
@@ -1507,7 +1507,7 @@ class _MiniMedalCard extends StatelessWidget {
       ),
     );
 
-    return useHeroAnimationsForRoundReview
+    return locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
         ? Hero(
             tag: 'top_disc_$rank',
             child: Material(color: Colors.transparent, child: cardContent),
@@ -1822,7 +1822,7 @@ class _SkillsOverviewCardState extends State<SkillsOverviewCard>
                   Expanded(
                     child: AspectRatio(
                       aspectRatio: 1.15,
-                      child: useHeroAnimationsForRoundReview
+                      child: locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                           ? Hero(
                               tag: 'skills_spider_chart',
                               child: _CompactSkillsSpiderChart(
