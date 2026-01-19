@@ -49,5 +49,3 @@ class ConfirmingRoundActive extends RoundConfirmationState {
     );
   }
 }
-
-class ConfirmingState {}

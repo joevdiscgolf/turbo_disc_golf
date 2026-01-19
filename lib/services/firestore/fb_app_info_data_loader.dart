@@ -4,8 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
 
-FirebaseFirestore firestore = FirebaseFirestore.instance;
-
 class AppVersionInfo {
   final String minimumVersion;
   final String? appStoreUrl;
@@ -68,14 +66,18 @@ class FBAppInfoDataLoader {
         .get()
         .then((DocumentSnapshot<Map<String, dynamic>> snapshot) {
           if (snapshot.metadata.isFromCache) {
-            log('[AppInfoDataLoader][getAppVersionInfo] data is from cache, returning null');
+            log(
+              '[AppInfoDataLoader][getAppVersionInfo] data is from cache, returning null',
+            );
             return null;
           }
           if (snapshot.exists && snapshot.data() != null) {
             try {
               return AppVersionInfo.fromMap(snapshot.data()!);
             } catch (e) {
-              log('[AppInfoDataLoader][getAppVersionInfo] error parsing data: $e');
+              log(
+                '[AppInfoDataLoader][getAppVersionInfo] error parsing data: $e',
+              );
               return null;
             }
           } else {

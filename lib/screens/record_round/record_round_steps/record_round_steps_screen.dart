@@ -33,8 +33,6 @@ import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
-const String testCourseName = 'Foxwood';
-const int totalHoles = 18;
 const String _hasSeenEducationKey = 'hasSeenHoleDescriptionEducation';
 
 class RecordRoundStepsScreen extends StatefulWidget {

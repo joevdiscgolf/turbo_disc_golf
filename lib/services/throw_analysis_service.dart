@@ -1,5 +1,4 @@
 // lib/services/analysis_service.dart
-import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 
 /// Derived enums & models used by the analysis service.
@@ -38,71 +37,6 @@ class ThrowAnalysis {
   });
 }
 
-/// Per-hole aggregated analysis
-class HoleAnalysis {
-  final DGHole hole;
-  final List<ThrowAnalysis> throwAnalyses;
-
-  final double weightedLoss; // sum of weights flagged as losses
-  final double weightedGain; // sum of weights flagged as gains
-  final int obviousLossCount;
-  final int obviousGainCount;
-  final double netObvious; // weightedGain - weightedLoss
-  final double driveFairwayPct; // 0..1
-  final double greensReachedPct; // 0..1
-  final int holeScore;
-
-  HoleAnalysis({required this.hole, required this.throwAnalyses})
-    : holeScore = hole.holeScore,
-      weightedLoss = throwAnalyses
-          .where(
-            (ta) =>
-                ta.execCategory == ExecCategory.bad ||
-                ta.execCategory == ExecCategory.severe,
-          )
-          .fold(0.0, (p, ta) => p + ta.weight),
-      weightedGain = throwAnalyses
-          .where((ta) => ta.execCategory == ExecCategory.good)
-          .fold(0.0, (p, ta) => p + ta.weight),
-      obviousLossCount = throwAnalyses
-          .where(
-            (ta) =>
-                ta.execCategory == ExecCategory.bad ||
-                ta.execCategory == ExecCategory.severe,
-          )
-          .length,
-      obviousGainCount = throwAnalyses
-          .where((ta) => ta.execCategory == ExecCategory.good)
-          .length,
-      netObvious =
-          throwAnalyses
-              .where((ta) => ta.execCategory == ExecCategory.good)
-              .fold(0.0, (p, ta) => p + ta.weight) -
-          throwAnalyses
-              .where(
-                (ta) =>
-                    ta.execCategory == ExecCategory.bad ||
-                    ta.execCategory == ExecCategory.severe,
-              )
-              .fold(0.0, (p, ta) => p + ta.weight),
-      driveFairwayPct =
-          throwAnalyses.isNotEmpty &&
-              (throwAnalyses.first.discThrow.landingSpot ==
-                      LandingSpot.fairway ||
-                  throwAnalyses.first.discThrow.landingSpot ==
-                      LandingSpot.parked)
-          ? 1.0
-          : 0.0,
-      greensReachedPct =
-          throwAnalyses.any(
-            (t) =>
-                t.discThrow.landingSpot == LandingSpot.circle1 ||
-                t.discThrow.landingSpot == LandingSpot.circle2,
-          )
-          ? 1.0
-          : 0.0;
-}
-
 /// Coaching card / suggestion
 class CoachingCard {
   final LossReason reason;
@@ -121,7 +55,7 @@ class CoachingCard {
 }
 
 /// The analysis service with deterministic rules & weights
-class GPTAnalysisService {
+class ThrowAnalysisService {
   // Tunable thresholds
   static const double shortC1Feet = 12.0; // 0-12ft: short C1 putts
   static const double circle1Feet = 33.0; // 0-33ft: C1 range

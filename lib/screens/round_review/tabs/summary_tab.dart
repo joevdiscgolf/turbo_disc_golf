@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
-import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/components/custom_markdown_content.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 
 class AiSummaryTab extends StatelessWidget {
+  static const String tabName = 'Summary';
+
   final DGRound round;
   final TabController? tabController;
 
@@ -13,6 +17,13 @@ class AiSummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track('Screen Impression', properties: {
+        'screen_name': AiSummaryTab.tabName,
+        'screen_class': 'AiSummaryTab',
+      });
+    });
+
     // Generate analysis if we have AI content with segments
     final analysis =
         (round.aiSummary != null && round.aiSummary!.segments != null)

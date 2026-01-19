@@ -2,14 +2,10 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:yaml/yaml.dart';
-
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
@@ -23,17 +19,20 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
-import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
+import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
 import 'package:turbo_disc_golf/services/judgment_prompt_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
+import 'package:yaml/yaml.dart';
 
 /// State machine for the judgment animation flow.
 enum JudgmentState {
@@ -50,6 +49,8 @@ enum JudgmentState {
 /// AI-powered judgment tab that roasts or glazes your round (50/50 chance)
 /// with a viral slot machine reveal experience.
 class JudgeRoundTab extends StatefulWidget {
+  static const String tabName = 'Judge';
+
   final DGRound round;
   final bool autoStartJudgment;
 
@@ -83,12 +84,20 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   // For blur transition into content
   bool _showBlurTransition = false;
 
+  late final LoggingServiceBase _logger;
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': JudgeRoundTab.tabName,
+    });
+    _logger.logScreenImpression('JudgeRoundTab');
+
     _currentRound = widget.round;
     _confettiController = ConfettiController(
       duration: const Duration(milliseconds: 4000),
@@ -524,7 +533,10 @@ highlightStats:
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _startJudgmentFlow,
+                onPressed: () {
+                  _logger.track('Begin Judgment Button Tapped');
+                  _startJudgmentFlow();
+                },
                 icon: const Icon(Icons.local_fire_department),
                 label: const Text('Begin Judgment'),
                 style: ElevatedButton.styleFrom(
@@ -575,6 +587,9 @@ highlightStats:
   }
 
   Future<void> _shareJudgmentCard(String headline) async {
+    _logger.track('Judgment Share Button Tapped', properties: {
+      'judgment_type': _isGlaze ? 'glaze' : 'roast',
+    });
     final ShareService shareService = locator.get<ShareService>();
 
     final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
@@ -655,6 +670,9 @@ highlightStats:
   }
 
   void _showShareCardPreview(String headline) {
+    _logger.track('Judgment Preview Button Tapped', properties: {
+      'judgment_type': _isGlaze ? 'glaze' : 'roast',
+    });
     final String displayTagline = _getPreviewTagline();
     final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
       _currentRound,
@@ -854,6 +872,7 @@ highlightStats:
                 padding: const EdgeInsets.only(bottom: 12),
                 child: OutlinedButton.icon(
                   onPressed: () {
+                    _logger.track('Judgment Regenerate Button Tapped');
                     setState(() {
                       _currentRound = _currentRound.copyWith(aiJudgment: null);
                       _currentState = JudgmentState.idle;
@@ -1075,6 +1094,7 @@ highlightStats:
                           padding: const EdgeInsets.only(bottom: 12),
                           child: OutlinedButton.icon(
                             onPressed: () {
+                              _logger.track('Judgment Regenerate Button Tapped');
                               setState(() {
                                 _currentRound = _currentRound.copyWith(
                                   aiJudgment: null,
@@ -1264,6 +1284,7 @@ highlightStats:
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
+                  _logger.track('Judgment Try Again Button Tapped');
                   setState(() {
                     _currentState = JudgmentState.idle;
                   });

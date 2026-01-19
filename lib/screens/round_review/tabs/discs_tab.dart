@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
+import 'package:turbo_disc_golf/services/throw_analysis_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
@@ -21,11 +21,14 @@ class DiscsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     // Track screen impression
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      locator.get<LoggingService>().track('Screen Impression', properties: {
-        'screen_name': DiscsTab.screenName,
-        'screen_class': 'DiscsTab',
-        'tab_name': DiscsTab.tabName,
-      });
+      locator.get<LoggingService>().track(
+        'Screen Impression',
+        properties: {
+          'screen_name': DiscsTab.screenName,
+          'screen_class': 'DiscsTab',
+          'tab_name': DiscsTab.tabName,
+        },
+      );
     });
 
     final DiscAnalysisService discAnalysisService = locator
@@ -777,7 +780,7 @@ class _CompactDiscCard extends StatelessWidget {
                       final int throwIndex = throwData['throwIndex'];
                       final DiscThrow discThrow =
                           throwData['throw'] as DiscThrow;
-                      final analysis = GPTAnalysisService.analyzeThrow(
+                      final analysis = ThrowAnalysisService.analyzeThrow(
                         discThrow,
                       );
 

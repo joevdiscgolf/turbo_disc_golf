@@ -28,10 +28,7 @@ class JudgmentConfettiOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     // For roast: show fire emojis
     if (!isGlaze) {
-      return FireEmojiOverlay(
-        isPlaying: fireIsPlaying,
-        onComplete: null,
-      );
+      return FireEmojiOverlay(isPlaying: fireIsPlaying, onComplete: null);
     }
 
     // For glaze: show golden star confetti
@@ -101,33 +98,5 @@ class JudgmentConfettiOverlay extends StatelessWidget {
     path.close();
 
     return path;
-  }
-}
-
-/// Helper class to create and manage confetti controllers.
-class JudgmentConfettiManager {
-  JudgmentConfettiManager() {
-    _controller = ConfettiController(
-      duration: const Duration(milliseconds: 2000),
-    );
-  }
-
-  late final ConfettiController _controller;
-
-  ConfettiController get controller => _controller;
-
-  /// Triggers the confetti celebration.
-  void play() {
-    _controller.play();
-  }
-
-  /// Stops the confetti.
-  void stop() {
-    _controller.stop();
-  }
-
-  /// Disposes the controller.
-  void dispose() {
-    _controller.dispose();
   }
 }

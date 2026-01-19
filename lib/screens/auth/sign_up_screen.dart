@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/components/buttons/multi_state_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/auth/components/apple_sign_in_button.dart';
@@ -17,6 +16,8 @@ import 'package:turbo_disc_golf/screens/auth/components/auth_input_field.dart';
 import 'package:turbo_disc_golf/screens/auth/components/google_sign_in_button.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
+enum ButtonState { normal, loading, success, retry }
 
 class SignUpScreen extends StatefulWidget {
   static const String routeName = '/sign-up';

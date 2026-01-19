@@ -22,7 +22,6 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
@@ -83,10 +82,10 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
 
     final String? tabName = _tabNames[tabIndex];
     if (tabName != null) {
-      _logger.track('$tabName Card Tapped', properties: {
-        'round_id': widget.round.id,
-        'destination_tab': tabName,
-      });
+      _logger.track(
+        '$tabName Card Tapped',
+        properties: {'round_id': widget.round.id, 'destination_tab': tabName},
+      );
     }
 
     if (widget.isReviewV2Screen) {
@@ -101,9 +100,10 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   void _navigateToJudgeTab() {
     HapticFeedback.lightImpact();
 
-    _logger.track('Judge Banner Tapped', properties: {
-      'round_id': widget.round.id,
-    });
+    _logger.track(
+      'Judge Banner Tapped',
+      properties: {'round_id': widget.round.id},
+    );
 
     setState(() {
       _judgeBannerDismissed = true;
@@ -150,10 +150,6 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
       case 9: // Summary
         detailScreen = AiSummaryTab(round: widget.round);
         title = 'AI Insights';
-        break;
-      case 11: // Roast
-        detailScreen = RoastTab(round: widget.round);
-        title = 'AI Roast';
         break;
     }
 
@@ -203,10 +199,13 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   void _navigateToScoreDetail() {
     HapticFeedback.lightImpact();
 
-    _logger.track('Score KPI Card Tapped', properties: {
-      'round_id': widget.round.id,
-      'is_review_v2': widget.isReviewV2Screen,
-    });
+    _logger.track(
+      'Score KPI Card Tapped',
+      properties: {
+        'round_id': widget.round.id,
+        'is_review_v2': widget.isReviewV2Screen,
+      },
+    );
 
     if (!widget.isReviewV2Screen) {
       // V1: Navigate to Course tab (index 2)

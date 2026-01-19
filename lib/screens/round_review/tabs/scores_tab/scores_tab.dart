@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/hole_score_scatterplot.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/components/insight_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/components/performance_comparison_card.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class ScoresTab extends StatelessWidget {
+  static const String tabName = 'Scores';
+
   const ScoresTab({super.key, required this.round});
 
   final DGRound round;
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track('Screen Impression', properties: {
+        'screen_name': ScoresTab.tabName,
+        'screen_class': 'ScoresTab',
+      });
+    });
+
     final statsService = RoundStatisticsService(round);
 
     return ListView(

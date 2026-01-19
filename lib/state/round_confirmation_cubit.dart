@@ -12,7 +12,6 @@ import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
-import 'package:turbo_disc_golf/utils/date_formatter.dart';
 
 /// Cubit for managing round confirmation workflow state
 /// Tracks the potential round being edited and the current hole being edited
@@ -440,7 +439,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
     final analysis = RoundAnalysisGenerator.generateAnalysis(parsedRound);
 
     // Create final round with analysis but WITHOUT AI content (AI generated later in Story tab)
-    final String currentTimestamp = getCurrentISOString();
+    final String currentTimestamp = DateTime.now().toIso8601String();
     parsedRound = DGRound(
       uid: uid,
       id: parsedRound.id,
