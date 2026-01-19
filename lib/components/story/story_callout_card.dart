@@ -20,12 +20,9 @@ class StoryCalloutCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: TurbColors.gray[50],
+        color: SenseiColors.gray[50],
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: TurbColors.gray[200]!,
-          width: 1,
-        ),
+        border: Border.all(color: SenseiColors.gray[200]!, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -39,7 +36,7 @@ class StoryCalloutCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 height: 1.5,
-                color: TurbColors.gray[600],
+                color: SenseiColors.gray[600],
               ),
             ),
           ],

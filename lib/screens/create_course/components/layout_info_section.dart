@@ -107,7 +107,7 @@ class LayoutInfoSection extends StatelessWidget {
               showSelectedIcon: false,
               style: ButtonStyle(
                 side: WidgetStateProperty.all(
-                  BorderSide(color: TurbColors.gray.shade300),
+                  BorderSide(color: SenseiColors.gray.shade300),
                 ),
                 shape: WidgetStateProperty.all(
                   RoundedRectangleBorder(
@@ -181,10 +181,10 @@ class LayoutInfoSection extends StatelessWidget {
 
   Future<void> _showCustomHoleCountDialog(BuildContext context) async {
     // Track modal opened
-    locator.get<LoggingService>().track('Modal Opened', properties: {
-      'modal_type': 'dialog',
-      'modal_name': 'Custom Hole Count',
-    });
+    locator.get<LoggingService>().track(
+      'Modal Opened',
+      properties: {'modal_type': 'dialog', 'modal_name': 'Custom Hole Count'},
+    );
 
     final TextEditingController controller = TextEditingController();
     final int? customCount = await showDialog<int>(
@@ -229,15 +229,15 @@ class LayoutInfoSection extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: TurbColors.gray.shade50,
-          border: Border.all(color: TurbColors.gray.shade200),
+          color: SenseiColors.gray.shade50,
+          border: Border.all(color: SenseiColors.gray.shade200),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
             Icon(
               isParsingImage ? Icons.hourglass_empty : Icons.camera_alt,
-              color: TurbColors.gray.shade600,
+              color: SenseiColors.gray.shade600,
               size: 24,
             ),
             const SizedBox(width: 12),
@@ -246,10 +246,12 @@ class LayoutInfoSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isParsingImage ? 'Parsing Image...' : 'Upload scorecard image',
+                    isParsingImage
+                        ? 'Parsing Image...'
+                        : 'Upload scorecard image',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: TurbColors.gray.shade800,
+                      color: SenseiColors.gray.shade800,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -257,7 +259,7 @@ class LayoutInfoSection extends StatelessWidget {
                     'Auto-fill par & distance from photo',
                     style: TextStyle(
                       fontSize: 12,
-                      color: TurbColors.gray.shade600,
+                      color: SenseiColors.gray.shade600,
                     ),
                   ),
                 ],

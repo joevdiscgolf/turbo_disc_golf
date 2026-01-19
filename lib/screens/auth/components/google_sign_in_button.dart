@@ -16,7 +16,7 @@ class GoogleSignInButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: TurbColors.gray[300]!, width: 1),
+          side: BorderSide(color: SenseiColors.gray[300]!, width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(48),
           ),
@@ -25,18 +25,14 @@ class GoogleSignInButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SvgIcon(
-              assetPath: SvgIcons.google,
-              width: 20,
-              height: 20,
-            ),
+            const SvgIcon(assetPath: SvgIcons.google, width: 20, height: 20),
             const SizedBox(width: 12),
             Text(
               'Continue with Google',
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: TurbColors.gray[700],
+                color: SenseiColors.gray[700],
               ),
             ),
           ],

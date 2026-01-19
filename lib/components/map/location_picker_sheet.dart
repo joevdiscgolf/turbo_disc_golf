@@ -39,16 +39,17 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
 
     // Setup scoped logger
     final LoggingService loggingService = locator.get<LoggingService>();
-    _logger = loggingService.withBaseProperties({
-      'modal_name': _sheetName,
-    });
+    _logger = loggingService.withBaseProperties({'modal_name': _sheetName});
 
     // Track modal opened
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'full_screen_modal',
-      'modal_name': _sheetName,
-      'has_initial_location': widget.initialLatitude != null,
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'full_screen_modal',
+        'modal_name': _sheetName,
+        'has_initial_location': widget.initialLatitude != null,
+      },
+    );
 
     _selectedLat = widget.initialLatitude;
     _selectedLng = widget.initialLongitude;
@@ -168,10 +169,10 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                   : null,
               backgroundColor: _hasSelection
                   ? Colors.transparent
-                  : TurbColors.gray.shade200,
+                  : SenseiColors.gray.shade200,
               labelColor: _hasSelection
                   ? Colors.white
-                  : TurbColors.gray.shade400,
+                  : SenseiColors.gray.shade400,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               disabled: !_hasSelection,
@@ -192,7 +193,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: TurbColors.gray.shade100,
+        color: SenseiColors.gray.shade100,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -204,7 +205,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
               '${_selectedLat!.toStringAsFixed(5)}, ${_selectedLng!.toStringAsFixed(5)}',
               style: TextStyle(
                 fontSize: 14,
-                color: TurbColors.gray.shade700,
+                color: SenseiColors.gray.shade700,
                 fontFamily: 'monospace',
               ),
             ),
@@ -217,7 +218,11 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                 _selectedLng = null;
               });
             },
-            child: Icon(Icons.clear, color: TurbColors.gray.shade500, size: 20),
+            child: Icon(
+              Icons.clear,
+              color: SenseiColors.gray.shade500,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -244,12 +249,15 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
         ),
         child: Row(
           children: [
-            Icon(Icons.touch_app, color: TurbColors.gray.shade600, size: 24),
+            Icon(Icons.touch_app, color: SenseiColors.gray.shade600, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Tap on the map to place a pin at your course location',
-                style: TextStyle(fontSize: 14, color: TurbColors.gray.shade700),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: SenseiColors.gray.shade700,
+                ),
               ),
             ),
           ],

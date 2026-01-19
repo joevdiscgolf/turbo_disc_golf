@@ -55,17 +55,18 @@ class _CreateLayoutSheetState extends State<CreateLayoutSheet> {
 
     // Setup scoped logger
     final LoggingService loggingService = locator.get<LoggingService>();
-    _logger = loggingService.withBaseProperties({
-      'sheet_name': _sheetName,
-    });
+    _logger = loggingService.withBaseProperties({'sheet_name': _sheetName});
 
     // Track modal opened
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'full_screen_modal',
-      'modal_name': _isEditMode ? 'Edit Layout' : 'Create Layout',
-      'course_name': widget.course.name,
-      'is_edit_mode': _isEditMode,
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'full_screen_modal',
+        'modal_name': _isEditMode ? 'Edit Layout' : 'Create Layout',
+        'course_name': widget.course.name,
+        'is_edit_mode': _isEditMode,
+      },
+    );
 
     // Create cubit based on mode (create vs edit)
     if (widget.existingLayout != null) {
@@ -145,7 +146,7 @@ class _CreateLayoutSheetState extends State<CreateLayoutSheet> {
                               ),
                               Divider(
                                 height: 32,
-                                color: TurbColors.gray.shade100,
+                                color: SenseiColors.gray.shade100,
                                 thickness: 1,
                               ),
                               HolesSection(
@@ -207,8 +208,8 @@ class _CreateLayoutSheetState extends State<CreateLayoutSheet> {
             : null,
         backgroundColor: canSave
             ? Colors.transparent
-            : TurbColors.gray.shade200,
-        labelColor: canSave ? Colors.white : TurbColors.gray.shade400,
+            : SenseiColors.gray.shade200,
+        labelColor: canSave ? Colors.white : SenseiColors.gray.shade400,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         disabled: !canSave,

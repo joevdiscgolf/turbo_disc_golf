@@ -1,1 +1,30 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"turbo-disc-golf-v2","appId":"1:866559849247:android:7dcd86aa44873e7ba9362a","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"turbo-disc-golf-v2","appId":"1:866559849247:ios:9ba0688e626c87e6a9362a","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"turbo-disc-golf-v2","configurations":{"android":"1:866559849247:android:7dcd86aa44873e7ba9362a","ios":"1:866559849247:ios:9ba0688e626c87e6a9362a"}}}}}}
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "turbo-disc-golf-v2",
+                    "appId": "1:866559849247:android:7dcd86aa44873e7ba9362a",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "ios": {
+                "default": {
+                    "projectId": "turbo-disc-golf-v2",
+                    "appId": "1:866559849247:ios:9ba0688e626c87e6a9362a",
+                    "uploadDebugSymbols": false,
+                    "fileOutput": "ios/Runner/GoogleService-Info.plist"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "turbo-disc-golf-v2",
+                    "configurations": {
+                        "android": "1:866559849247:android:7dcd86aa44873e7ba9362a",
+                        "ios": "1:866559849247:ios:9ba0688e626c87e6a9362a"
+                    }
+                }
+            }
+        }
+    }
+}

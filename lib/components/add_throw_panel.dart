@@ -79,7 +79,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
   static const Color _generalAccent = Color(0xFF9E9E9E); // gray
 
   // Button accent color (consistent across all buttons for UX)
-  static const Color _buttonAccent = TurbColors.blue; // purple
+  static const Color _buttonAccent = SenseiColors.blue; // purple
 
   @override
   void initState() {
@@ -87,17 +87,18 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
 
     // Setup scoped logger
     final LoggingService loggingService = locator.get<LoggingService>();
-    _logger = loggingService.withBaseProperties({
-      'panel_name': _panelName,
-    });
+    _logger = loggingService.withBaseProperties({'panel_name': _panelName});
 
     // Track modal opened
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'bottom_sheet',
-      'modal_name': _panelName,
-      'is_new_throw': widget.isNewThrow,
-      'throw_index': widget.throwIndex,
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': _panelName,
+        'is_new_throw': widget.isNewThrow,
+        'throw_index': widget.throwIndex,
+      },
+    );
 
     _bagService = locator.get<BagService>();
     _userDiscs = _bagService.userBag;
@@ -876,7 +877,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
               label: 'Save',
               width: double.infinity,
               height: 48,
-              backgroundColor: TurbColors.blue,
+              backgroundColor: SenseiColors.blue,
               labelColor: Colors.white,
               disabled: !canSave,
               onPressed: _handleSave,

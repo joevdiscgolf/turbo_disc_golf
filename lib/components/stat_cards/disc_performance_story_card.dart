@@ -19,8 +19,9 @@ class DiscPerformanceStoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final RoundAnalysis analysis =
-        RoundAnalysisGenerator.generateAnalysis(round);
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      round,
+    );
 
     // Get stats for this disc
     final double birdieRate = analysis.discBirdieRates[discName] ?? 0.0;
@@ -37,43 +38,38 @@ class DiscPerformanceStoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: TurbColors.gray[100]!),
+        border: Border.all(color: SenseiColors.gray[100]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.album,
-                size: 20,
-                color: TurbColors.gray[500],
-              ),
+              Icon(Icons.album, size: 20, color: SenseiColors.gray[500]),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   discName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: TurbColors.gray[500],
-                      ),
+                    fontWeight: FontWeight.w700,
+                    color: SenseiColors.gray[500],
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: TurbColors.gray[100],
+                  color: SenseiColors.gray[100],
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '$throwCount throws',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                        color: TurbColors.gray[500],
-                      ),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: SenseiColors.gray[500],
+                  ),
                 ),
               ),
             ],
@@ -135,18 +131,18 @@ class _StatColumn extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 20,
-              ),
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontSize: 20,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
       ],

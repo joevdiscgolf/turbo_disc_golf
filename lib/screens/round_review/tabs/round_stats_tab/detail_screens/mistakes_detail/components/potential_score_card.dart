@@ -84,20 +84,20 @@ class PotentialScoreCard extends StatelessWidget {
                 Text(
                   'Your Score: ',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   _formatScore(currentScore),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _getScoreColor(context, currentScore),
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: _getScoreColor(context, currentScore),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Divider(color: TurbColors.gray[100]),
+            Divider(color: SenseiColors.gray[100]),
             const SizedBox(height: 16),
             // Perfect round comparison (highlighted at top)
             _buildScenarioRow(
@@ -108,7 +108,7 @@ class PotentialScoreCard extends StatelessWidget {
               isHighlight: true,
             ),
             const SizedBox(height: 16),
-            Divider(color: TurbColors.gray[100]),
+            Divider(color: SenseiColors.gray[100]),
             const SizedBox(height: 12),
             // Individual mistake type scenarios
             ...nonZeroMistakes.map((mistake) {
@@ -140,9 +140,7 @@ class PotentialScoreCard extends StatelessWidget {
     bool isHighlight = false,
   }) {
     return Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: isHighlight ? 4 : 6,
-      ),
+      padding: EdgeInsets.symmetric(vertical: isHighlight ? 4 : 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -160,7 +158,9 @@ class PotentialScoreCard extends StatelessWidget {
           // Arrow - centered position
           Icon(
             Icons.arrow_forward,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             size: 18,
           ),
           const SizedBox(width: 16),
@@ -169,13 +169,14 @@ class PotentialScoreCard extends StatelessWidget {
             width: 50,
             child: Text(
               _formatScore(potentialScore),
-              style: (isHighlight
-                      ? Theme.of(context).textTheme.headlineMedium
-                      : Theme.of(context).textTheme.titleLarge)
-                  ?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: _getScoreColor(context, potentialScore),
-                  ),
+              style:
+                  (isHighlight
+                          ? Theme.of(context).textTheme.headlineMedium
+                          : Theme.of(context).textTheme.titleLarge)
+                      ?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: _getScoreColor(context, potentialScore),
+                      ),
             ),
           ),
           const SizedBox(width: 12),

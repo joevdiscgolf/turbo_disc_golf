@@ -10,12 +10,14 @@ class CreateCourseState extends Equatable {
     required this.numberOfHoles,
     required this.isParsingImage,
     required this.isGeocodingLocation,
+    required this.isSaving,
     this.parseError,
     this.city,
     this.state,
     this.country,
     this.latitude,
     this.longitude,
+    this.previousHolesSnapshot,
   });
 
   // ─────────────────────────────────────────────
@@ -30,6 +32,7 @@ class CreateCourseState extends Equatable {
       numberOfHoles: 18,
       isParsingImage: false,
       isGeocodingLocation: false,
+      isSaving: false,
     );
   }
 
@@ -60,13 +63,31 @@ class CreateCourseState extends Equatable {
   // ─────────────────────────────────────────────
   final bool isParsingImage;
   final bool isGeocodingLocation;
+  final bool isSaving;
   final String? parseError;
+
+  // ─────────────────────────────────────────────
+  // Undo support
+  // ─────────────────────────────────────────────
+  final List<CourseHole>? previousHolesSnapshot;
 
   // ─────────────────────────────────────────────
   // Derived
   // ─────────────────────────────────────────────
   bool get hasValidLayout => holes.isNotEmpty;
   bool get hasLocation => latitude != null && longitude != null;
+
+  /// Returns completion percentage (0-100).
+  /// Sections: Course name (required), Location, Layout name, Holes (always complete)
+  int get completionPercentage {
+    int completed = 0;
+    if (courseName.trim().isNotEmpty) completed++;
+    if (hasLocation) completed++;
+    if (layoutName.trim().isNotEmpty) completed++;
+    // Holes always exist, count as complete
+    completed++;
+    return ((completed / 4) * 100).round();
+  }
 
   // ─────────────────────────────────────────────
   // Copy
@@ -79,6 +100,7 @@ class CreateCourseState extends Equatable {
     int? numberOfHoles,
     bool? isParsingImage,
     bool? isGeocodingLocation,
+    bool? isSaving,
     String? parseError,
     String? city,
     String? state,
@@ -86,6 +108,8 @@ class CreateCourseState extends Equatable {
     double? latitude,
     double? longitude,
     bool clearLocation = false,
+    List<CourseHole>? previousHolesSnapshot,
+    bool clearPreviousHolesSnapshot = false,
   }) {
     return CreateCourseState(
       courseName: courseName ?? this.courseName,
@@ -95,12 +119,16 @@ class CreateCourseState extends Equatable {
       numberOfHoles: numberOfHoles ?? this.numberOfHoles,
       isParsingImage: isParsingImage ?? this.isParsingImage,
       isGeocodingLocation: isGeocodingLocation ?? this.isGeocodingLocation,
+      isSaving: isSaving ?? this.isSaving,
       parseError: parseError,
       city: clearLocation ? null : (city ?? this.city),
       state: clearLocation ? null : (state ?? this.state),
       country: clearLocation ? null : (country ?? this.country),
       latitude: clearLocation ? null : (latitude ?? this.latitude),
       longitude: clearLocation ? null : (longitude ?? this.longitude),
+      previousHolesSnapshot: clearPreviousHolesSnapshot
+          ? null
+          : (previousHolesSnapshot ?? this.previousHolesSnapshot),
     );
   }
 
@@ -113,11 +141,13 @@ class CreateCourseState extends Equatable {
     numberOfHoles,
     isParsingImage,
     isGeocodingLocation,
+    isSaving,
     parseError,
     city,
     state,
     country,
     latitude,
     longitude,
+    previousHolesSnapshot,
   ];
 }

@@ -83,7 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           await _authService.logout();
         },
       ),
-      backgroundColor: TurbColors.white,
+      backgroundColor: SenseiColors.white,
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -151,14 +151,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'Username',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: TurbColors.gray[700],
+            color: SenseiColors.gray[700],
           ),
         ),
         Text(
           ' *',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: TurbColors.gray[700],
+            color: SenseiColors.gray[700],
           ),
         ),
         if (_usernameStatus == UsernameStatus.taken) ...[
@@ -180,7 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       label,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
         fontWeight: FontWeight.w600,
-        color: TurbColors.gray[700],
+        color: SenseiColors.gray[700],
       ),
     );
   }
@@ -208,7 +208,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               vertical: 16,
             ),
             filled: true,
-            fillColor: TurbColors.gray[50],
+            fillColor: SenseiColors.gray[50],
             hintStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
               color: Colors.grey[400],
               fontSize: 16,
@@ -216,7 +216,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: TurbColors.gray[200]!, width: 1),
+              borderSide: BorderSide(color: SenseiColors.gray[200]!, width: 1),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -237,7 +237,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'Letters, numbers, and underscores only. Min 3 characters.',
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: TurbColors.gray[500]),
+          ).textTheme.bodySmall?.copyWith(color: SenseiColors.gray[500]),
         ),
       ],
     );
@@ -290,7 +290,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           vertical: 16,
         ),
         filled: true,
-        fillColor: TurbColors.gray[50],
+        fillColor: SenseiColors.gray[50],
         hintStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
           color: Colors.grey[400],
           fontSize: 16,
@@ -298,7 +298,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: TurbColors.gray[200]!, width: 1),
+          borderSide: BorderSide(color: SenseiColors.gray[200]!, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -327,9 +327,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: TurbColors.gray[50],
+          color: SenseiColors.gray[50],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: TurbColors.gray[200]!, width: 1),
+          border: Border.all(color: SenseiColors.gray[200]!, width: 1),
         ),
         child: Row(
           children: [
@@ -347,7 +347,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             Icon(
               FlutterRemix.arrow_down_s_line,
-              color: TurbColors.gray[400],
+              color: SenseiColors.gray[400],
               size: 20,
             ),
           ],
@@ -598,10 +598,10 @@ class _DivisionSelectionPanelState extends State<_DivisionSelectionPanel> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search divisions...',
-                  hintStyle: TextStyle(color: TurbColors.gray[400]),
+                  hintStyle: TextStyle(color: SenseiColors.gray[400]),
                   prefixIcon: Icon(
                     FlutterRemix.search_line,
-                    color: TurbColors.gray[400],
+                    color: SenseiColors.gray[400],
                     size: 20,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -612,24 +612,24 @@ class _DivisionSelectionPanelState extends State<_DivisionSelectionPanel> {
                           },
                           child: Icon(
                             FlutterRemix.close_circle_fill,
-                            color: TurbColors.gray[400],
+                            color: SenseiColors.gray[400],
                             size: 20,
                           ),
                         )
                       : null,
                   filled: true,
-                  fillColor: TurbColors.gray[50],
+                  fillColor: SenseiColors.gray[50],
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: TurbColors.gray[200]!),
+                    borderSide: BorderSide(color: SenseiColors.gray[200]!),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: TurbColors.gray[200]!),
+                    borderSide: BorderSide(color: SenseiColors.gray[200]!),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -645,7 +645,7 @@ class _DivisionSelectionPanelState extends State<_DivisionSelectionPanel> {
                       child: Text(
                         'No divisions found',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: TurbColors.gray[500],
+                          color: SenseiColors.gray[500],
                         ),
                       ),
                     )
@@ -694,10 +694,10 @@ class _DivisionListItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? flattenedOverWhite(Colors.blue, 0.1)
-              : TurbColors.gray[50],
+              : SenseiColors.gray[50],
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? Colors.blue : TurbColors.gray[200]!,
+            color: isSelected ? Colors.blue : SenseiColors.gray[200]!,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -710,7 +710,7 @@ class _DivisionListItem extends StatelessWidget {
                     division,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.blue : TurbColors.gray[700],
+                      color: isSelected ? Colors.blue : SenseiColors.gray[700],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -718,7 +718,7 @@ class _DivisionListItem extends StatelessWidget {
                     child: Text(
                       _getFullName(division),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: TurbColors.gray[400],
+                        color: SenseiColors.gray[400],
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

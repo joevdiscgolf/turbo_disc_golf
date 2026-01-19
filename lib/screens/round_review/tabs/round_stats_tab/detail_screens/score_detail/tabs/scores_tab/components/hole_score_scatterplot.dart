@@ -168,7 +168,7 @@ class _ScatterplotChart extends StatelessWidget {
         textStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-        gridColor: TurbColors.gray[50]!,
+        gridColor: SenseiColors.gray[50]!,
       ),
       child: const SizedBox.expand(),
     );

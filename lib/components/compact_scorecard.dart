@@ -89,17 +89,20 @@ class CompactScorecard extends StatelessWidget {
                 '${hole.number}',
                 style: TextStyle(
                   fontSize: holeNumberFontSize,
-                  color: holeNumberColor ?? TurbColors.darkGray,
+                  color: holeNumberColor ?? SenseiColors.darkGray,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (locator.get<FeatureFlagService>().showHoleDistancesInScorecard && hole.feet > 0) ...[
+              if (locator
+                      .get<FeatureFlagService>()
+                      .showHoleDistancesInScorecard &&
+                  hole.feet > 0) ...[
                 const SizedBox(height: 2),
                 Text(
                   '${hole.feet}',
                   style: TextStyle(
                     fontSize: holeNumberFontSize - 2,
-                    color: holeNumberColor ?? TurbColors.gray[400]!,
+                    color: holeNumberColor ?? SenseiColors.gray[400]!,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

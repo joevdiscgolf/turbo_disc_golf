@@ -15,10 +15,18 @@ class QuickFillHolesCard extends StatefulWidget {
   const QuickFillHolesCard({
     super.key,
     required this.onApplyDefaults,
+    this.onSnapshotBeforeApply,
+    this.onUndo,
   });
 
   /// Callback to apply default values to all holes
   final ApplyDefaultsCallback onApplyDefaults;
+
+  /// Callback to snapshot holes before applying (for undo support)
+  final VoidCallback? onSnapshotBeforeApply;
+
+  /// Callback to undo the quick fill
+  final VoidCallback? onUndo;
 
   @override
   State<QuickFillHolesCard> createState() => _QuickFillHolesCardState();
@@ -246,16 +254,30 @@ class _QuickFillHolesCardState extends State<QuickFillHolesCard> {
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
+
+          // Snapshot holes before applying (for undo)
+          widget.onSnapshotBeforeApply?.call();
+
           widget.onApplyDefaults(
             defaultPar: quickFillPar,
             defaultFeet: quickFillFeet,
             defaultType: quickFillType,
             defaultShape: quickFillShape,
           );
+
+          ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Applied defaults to all holes'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Text('Applied defaults to all holes'),
+              duration: const Duration(seconds: 5),
+              action: widget.onUndo != null
+                  ? SnackBarAction(
+                      label: 'Undo',
+                      onPressed: () {
+                        widget.onUndo?.call();
+                      },
+                    )
+                  : null,
             ),
           );
         },

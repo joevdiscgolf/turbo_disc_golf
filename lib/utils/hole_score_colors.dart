@@ -14,7 +14,7 @@ class HoleScoreColors {
 
   // Static color constants - SINGLE SOURCE OF TRUTH
   static const Color birdie = Color(0xFF137e66);
-  static Color par = TurbColors.gray[300]!;
+  static Color par = SenseiColors.gray[300]!;
   static const Color bogey = Color(0xFFFF7A7A);
   static const Color doubleBogeyPlus = Color(0xFFD32F2F);
 

@@ -137,7 +137,7 @@ class _FormAnalysisRecordingScreenState
           final bool isCompleted =
               state is VideoFormAnalysisComplete && !_showingTransition;
           final Color foregroundColor = isCompleted
-              ? TurbColors.darkGray
+              ? SenseiColors.darkGray
               : Colors.white;
 
           final bool isLoadingOrAnalyzing =

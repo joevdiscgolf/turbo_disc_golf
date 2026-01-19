@@ -15,7 +15,7 @@ class AppleSignInButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: TurbColors.gray[300]!, width: 1),
+          side: BorderSide(color: SenseiColors.gray[300]!, width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(48),
           ),
@@ -26,7 +26,7 @@ class AppleSignInButton extends StatelessWidget {
           children: [
             Icon(
               FlutterRemix.apple_fill,
-              color: TurbColors.gray[700],
+              color: SenseiColors.gray[700],
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -35,7 +35,7 @@ class AppleSignInButton extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium!.copyWith(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: TurbColors.gray[700],
+                color: SenseiColors.gray[700],
               ),
             ),
           ],

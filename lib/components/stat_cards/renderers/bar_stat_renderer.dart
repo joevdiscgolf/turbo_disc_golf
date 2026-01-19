@@ -38,7 +38,7 @@ class BarStatRenderer extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: TurbColors.gray[100]!),
+        border: Border.all(color: SenseiColors.gray[100]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +56,9 @@ class BarStatRenderer extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final Color headingColor = useColorForHeading ? color : TurbColors.gray[500]!;
+    final Color headingColor = useColorForHeading
+        ? color
+        : SenseiColors.gray[500]!;
     return Row(
       children: [
         Icon(icon, size: 20, color: headingColor),
@@ -65,27 +67,27 @@ class BarStatRenderer extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: headingColor,
-                ),
+              fontWeight: FontWeight.w600,
+              color: headingColor,
+            ),
           ),
         ),
         Text(
           '${percentage.toStringAsFixed(0)}%',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 20,
-              ),
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontSize: 20,
+          ),
         ),
         const SizedBox(width: 6),
         Text(
           '($count/$total)',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: TurbColors.gray[400],
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+            color: SenseiColors.gray[400],
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -107,9 +109,9 @@ class BarStatRenderer extends StatelessWidget {
     return Text(
       subtitle!,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: TurbColors.gray[400],
-            fontSize: 11,
-          ),
+        color: SenseiColors.gray[400],
+        fontSize: 11,
+      ),
     );
   }
 }

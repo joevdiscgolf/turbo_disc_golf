@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
               "Don't have an account?",
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(color: TurbColors.gray[400]),
+              ).textTheme.titleMedium?.copyWith(color: SenseiColors.gray[400]),
             ),
             const SizedBox(height: 12),
             _signUpButton(context),
@@ -166,9 +166,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Text(
             'Forgot password?',
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              color: TurbColors.blue,
+              color: SenseiColors.blue,
               decoration: TextDecoration.underline,
-              decorationColor: TurbColors.blue,
+              decorationColor: SenseiColors.blue,
             ),
           ),
         ),
@@ -194,9 +194,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Text(
             'Sign up',
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              color: TurbColors.blue,
+              color: SenseiColors.blue,
               decoration: TextDecoration.underline,
-              decorationColor: TurbColors.blue,
+              decorationColor: SenseiColors.blue,
             ),
           ),
         ),
@@ -208,9 +208,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return PrimaryButton(
       disabled: _checkDisabled(),
       label: 'Sign in',
-      labelColor: TurbColors.white,
+      labelColor: SenseiColors.white,
       backgroundColor: Colors.blue,
-      iconColor: TurbColors.white,
+      iconColor: SenseiColors.white,
       height: 56,
       width: double.infinity,
       loading: _loading,

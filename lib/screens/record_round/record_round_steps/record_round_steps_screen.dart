@@ -31,7 +31,8 @@ import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart' show testScorecardData;
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart'
+    show testScorecardData;
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String _hasSeenEducationKey = 'hasSeenHoleDescriptionEducation';
@@ -87,10 +88,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     'elevenUnderWhitesDescriptionNoHoleDistance',
   ];
 
-  // Accent colors
-  static const Color _descAccent = Color(0xFFB39DDB); // light purple
-  static const Color _courseAccent = Color(0xFF2196F3); // blue
-  static const Color _dateAccent = Color(0xFF4CAF50); // green
+  // Single unified accent color
+  static const Color _accent = Color(0xFF2196F3); // TurbColors.blue
 
   @override
   void initState() {
@@ -275,11 +274,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                     top: MediaQuery.of(context).viewPadding.top + 112,
                   ),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFFF5EEF8), Colors.white],
-                    ),
+                    color: SenseiColors.gray[50],
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
@@ -418,7 +413,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: _MiniHolesGrid(
                 state: state,
@@ -443,13 +444,22 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               child: Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(
-                  vertical: locator.get<FeatureFlagService>().showHoleProgressLabel ? 8 : 12,
+                  vertical:
+                      locator.get<FeatureFlagService>().showHoleProgressLabel
+                      ? 8
+                      : 12,
                   horizontal: 2,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -488,7 +498,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                           ),
                         ],
                       ),
-                    if (locator.get<FeatureFlagService>().showHoleProgressLabel) const SizedBox(height: 12),
+                    if (locator.get<FeatureFlagService>().showHoleProgressLabel)
+                      const SizedBox(height: 12),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
@@ -515,7 +526,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       controller: _textEditingController,
       focusNode: _focusNode,
       isListening: isListening,
-      accent: _descAccent,
+      accent: _accent,
       onClear: () {
         _logger.track(
           'Clear Text Button Tapped',
@@ -698,10 +709,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       subtitle = 'Select a course';
     }
 
-    // Use orange gradient when no course selected, blue when selected
-    final Color courseAccent = state.selectedCourse != null
-        ? _courseAccent
-        : const Color(0xFFFF9800); // Orange to draw attention
+    // Always use unified accent color
+    const Color courseAccent = _accent;
+    final bool noCourseSelected = state.selectedCourse == null;
 
     final Widget row = Row(
       children: [
@@ -710,6 +720,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           child: RoundDataInputCard(
             icon: Icons.landscape,
             subtitle: subtitle,
+            showRequiredIndicator: noCourseSelected,
             onTap: () {
               _logger.track(
                 'Select Course Button Tapped',
@@ -769,7 +780,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
         _showDateTimeEditor();
       },
-      accent: _dateAccent,
+      accent: _accent,
     );
 
     return widget.skipIntroAnimations
@@ -786,8 +797,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Widget _buildImportScorecardButton() {
-    const Color lightPurple = Color(0xFFE1BEE7); // lighter purple for gradient
-
     return GestureDetector(
       onTap: () {
         _logger.track('Import Scorecard Button Tapped', properties: {});
@@ -805,19 +814,39 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 48,
+        width: 64,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: lightPurple.withValues(alpha: 0.5)),
-          gradient: LinearGradient(
-            transform: const GradientRotation(0.785), // ~45 degrees
-            colors: [lightPurple.withValues(alpha: 0.3), Colors.white],
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Center(
-          child: Icon(Icons.photo_camera, size: 20, color: TurbColors.darkGray),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.file_download_outlined,
+                size: 16,
+                color: SenseiColors.gray[600],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Import',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: SenseiColors.gray[600],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -849,9 +878,15 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final Widget card = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -951,7 +986,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     // Buttons are disabled when there's no score
     final bool hasScore = score != null;
     final Color buttonColor = hasScore
-        ? TurbColors.gray[600]!
+        ? SenseiColors.gray[600]!
         : Colors.grey.shade300;
 
     return Column(
@@ -1508,10 +1543,15 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     String imagePath;
 
     // In debug mode with test constant enabled, use test scorecard directly
-    if (kDebugMode && locator.get<FeatureFlagService>().useTestScorecardForImport) {
-      debugPrint('Using test scorecard: $locator.get<FeatureFlagService>().testScorecardPath');
+    if (kDebugMode &&
+        locator.get<FeatureFlagService>().useTestScorecardForImport) {
+      debugPrint(
+        'Using test scorecard: $locator.get<FeatureFlagService>().testScorecardPath',
+      );
       // Copy asset to temp file since parseScorecard needs a filesystem path
-      final ByteData data = await rootBundle.load(locator.get<FeatureFlagService>().testScorecardPath);
+      final ByteData data = await rootBundle.load(
+        locator.get<FeatureFlagService>().testScorecardPath,
+      );
       final Directory tempDir = await getTemporaryDirectory();
       final File tempFile = File('${tempDir.path}/test_scorecard.jpeg');
       await tempFile.writeAsBytes(data.buffer.asUint8List());
@@ -1542,7 +1582,8 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       List<HoleMetadata> holeMetadata;
 
       // Use mock data if enabled (skips AI parsing entirely)
-      if (kDebugMode && locator.get<FeatureFlagService>().useMockScorecardData) {
+      if (kDebugMode &&
+          locator.get<FeatureFlagService>().useMockScorecardData) {
         debugPrint('Using mock scorecard data (skipping AI parsing)');
         holeMetadata = testScorecardData.map((Map<String, int> data) {
           return HoleMetadata(
@@ -1565,7 +1606,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       setState(() => _isParsingScorecard = false);
 
       // Debug print without truncation for test data extraction
-      if (kDebugMode && locator.get<FeatureFlagService>().useTestScorecardForImport && !locator.get<FeatureFlagService>().useMockScorecardData) {
+      if (kDebugMode &&
+          locator.get<FeatureFlagService>().useTestScorecardForImport &&
+          !locator.get<FeatureFlagService>().useMockScorecardData) {
         debugPrint('=== PARSED SCORECARD DATA (copy for testing) ===');
         debugPrint('Total holes parsed: ${holeMetadata.length}');
         for (final HoleMetadata hole in holeMetadata) {
@@ -1871,6 +1914,7 @@ class _MiniHoleIndicator extends StatelessWidget {
     required this.onTap,
     this.score,
     this.par,
+    this.feet,
   });
 
   final int holeNumber;
@@ -1879,6 +1923,7 @@ class _MiniHoleIndicator extends StatelessWidget {
   final VoidCallback onTap;
   final int? score;
   final int? par;
+  final int? feet;
 
   static const Color _holeAccent = Color(0xFF2196F3); // blue
   static const Color _noScore = Color(0xFFE0E0E0); // light gray (no score)
@@ -1940,6 +1985,9 @@ class _MiniHoleIndicator extends StatelessWidget {
       );
     }
 
+    // Only show distance if feet data is present
+    final bool hasFeet = feet != null && feet! > 0;
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1947,7 +1995,7 @@ class _MiniHoleIndicator extends StatelessWidget {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 44,
+        height: hasFeet ? 56 : 44,
         padding: const EdgeInsets.symmetric(vertical: 2),
         decoration: decoration,
         child: Center(
@@ -1963,6 +2011,17 @@ class _MiniHoleIndicator extends StatelessWidget {
                   color: isCurrent ? _holeAccent : Colors.grey[700],
                 ),
               ),
+              if (hasFeet) ...[
+                const SizedBox(height: 1),
+                Text(
+                  '$feet',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w500,
+                    color: SenseiColors.gray[400],
+                  ),
+                ),
+              ],
               const SizedBox(height: 2),
               _buildScoreIndicator(hasScore, isPar, circleColor),
             ],
@@ -2068,7 +2127,10 @@ class _MiniHolesGrid extends StatelessWidget {
 
               // Add spacer for empty slots in partial rows
               if (colIndex >= holesInRow) {
-                return const Expanded(child: SizedBox(height: 44));
+                // Match height to whether layout has feet data
+                final bool hasFeetData =
+                    layout != null && layout.holes.any((h) => h.feet > 0);
+                return Expanded(child: SizedBox(height: hasFeetData ? 56 : 44));
               }
 
               final int index = startHole + colIndex;
@@ -2080,10 +2142,12 @@ class _MiniHolesGrid extends StatelessWidget {
               // Get score from imported scorecard (if available)
               final int? score = state.importedScores?[index];
 
-              // Get par from course layout (if available)
+              // Get par and distance from course layout (if available)
               int? par;
+              int? feet;
               if (layout != null && index < layout.holes.length) {
                 par = layout.holes[index].par;
+                feet = layout.holes[index].feet;
               }
 
               return Expanded(
@@ -2093,6 +2157,7 @@ class _MiniHolesGrid extends StatelessWidget {
                   isCurrent: isCurrent,
                   score: score,
                   par: par,
+                  feet: feet,
                   onTap: () => onHoleTap(index),
                 ),
               );

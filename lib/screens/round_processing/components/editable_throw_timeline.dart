@@ -586,7 +586,7 @@ class _AnchoredAddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = color ?? TurbColors.blue;
+    final bg = color ?? SenseiColors.blue;
     return Bounceable(
       onTap: () {
         // parent GestureDetector handles actual add callback

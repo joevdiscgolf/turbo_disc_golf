@@ -16,7 +16,9 @@ class InteractiveMiniScorecard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     debugPrint('🎯 InteractiveMiniScorecard building:');
-    debugPrint('  - highlightedHoleRange: ${highlightedHoleRange?.displayString ?? "none"}');
+    debugPrint(
+      '  - highlightedHoleRange: ${highlightedHoleRange?.displayString ?? "none"}',
+    );
     debugPrint('  - Total holes: ${holes.length}');
 
     return Container(
@@ -28,9 +30,7 @@ class InteractiveMiniScorecard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(16),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -101,10 +101,12 @@ class InteractiveMiniScorecard extends StatelessWidget {
 
     // Determine if we need to draw a bounding box
     final bool hasHighlightedHoles = highlightedIndices.isNotEmpty;
-    final int? firstHighlightedIndex =
-        hasHighlightedHoles ? highlightedIndices.first : null;
-    final int? lastHighlightedIndex =
-        hasHighlightedHoles ? highlightedIndices.last : null;
+    final int? firstHighlightedIndex = hasHighlightedHoles
+        ? highlightedIndices.first
+        : null;
+    final int? lastHighlightedIndex = hasHighlightedHoles
+        ? highlightedIndices.last
+        : null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -122,10 +124,14 @@ class InteractiveMiniScorecard extends StatelessWidget {
             ),
 
             // Highlighted bounding box (if any holes are highlighted in this row)
-            if (hasHighlightedHoles && firstHighlightedIndex != null && lastHighlightedIndex != null)
+            if (hasHighlightedHoles &&
+                firstHighlightedIndex != null &&
+                lastHighlightedIndex != null)
               Positioned(
                 left: firstHighlightedIndex * cellWidth,
-                width: (lastHighlightedIndex - firstHighlightedIndex + 1) * cellWidth,
+                width:
+                    (lastHighlightedIndex - firstHighlightedIndex + 1) *
+                    cellWidth,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
@@ -142,9 +148,9 @@ class InteractiveMiniScorecard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(height: 11), // Hole number height
-                      SizedBox(height: 4),  // Spacing
+                      SizedBox(height: 4), // Spacing
                       SizedBox(height: 20), // Score circle height
-                      SizedBox(height: 2),  // Bottom padding
+                      SizedBox(height: 2), // Bottom padding
                     ],
                   ),
                 ),
@@ -171,7 +177,7 @@ class InteractiveMiniScorecard extends StatelessWidget {
               '${hole.number}',
               style: TextStyle(
                 fontSize: 11,
-                color: TurbColors.darkGray,
+                color: SenseiColors.darkGray,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -220,10 +226,10 @@ class InteractiveMiniScorecard extends StatelessWidget {
   Color _getScoreColor(int scoreToPar) {
     // Match CompactScorecard color logic
     if (scoreToPar <= -3) return const Color(0xFFFFD700); // Gold
-    if (scoreToPar == -2) return const Color(0xFF2196F3);  // Blue
-    if (scoreToPar == -1) return const Color(0xFF137e66);  // Green
-    if (scoreToPar == 1) return const Color(0xFFFF7A7A);   // Light red
-    if (scoreToPar == 2) return const Color(0xFFE53935);   // Medium red
-    return const Color(0xFFB71C1C);                        // Dark red
+    if (scoreToPar == -2) return const Color(0xFF2196F3); // Blue
+    if (scoreToPar == -1) return const Color(0xFF137e66); // Green
+    if (scoreToPar == 1) return const Color(0xFFFF7A7A); // Light red
+    if (scoreToPar == 2) return const Color(0xFFE53935); // Medium red
+    return const Color(0xFFB71C1C); // Dark red
   }
 }

@@ -114,7 +114,7 @@ class _EditParDistanceRowState extends State<EditParDistanceRow> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: TurbColors.gray[50]!),
+          border: Border.all(color: SenseiColors.gray[50]!),
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -171,7 +171,7 @@ class _EditParDistanceRowState extends State<EditParDistanceRow> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: TurbColors.gray[50]!),
+              border: Border.all(color: SenseiColors.gray[50]!),
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
