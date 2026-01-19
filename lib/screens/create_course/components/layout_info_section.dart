@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Shared component for layout configuration (name, hole count, image parser).
@@ -178,6 +180,12 @@ class LayoutInfoSection extends StatelessWidget {
   }
 
   Future<void> _showCustomHoleCountDialog(BuildContext context) async {
+    // Track modal opened
+    locator.get<LoggingService>().track('Modal Opened', properties: {
+      'modal_type': 'dialog',
+      'modal_name': 'Custom Hole Count',
+    });
+
     final TextEditingController controller = TextEditingController();
     final int? customCount = await showDialog<int>(
       context: context,

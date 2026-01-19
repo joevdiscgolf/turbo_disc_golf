@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_toggle.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
@@ -206,6 +208,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   Widget _buildVideoOptions(BuildContext context) {
     final VideoFormAnalysisCubit cubit =
         BlocProvider.of<VideoFormAnalysisCubit>(context);
+    final LoggingService logger = locator.get<LoggingService>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,6 +223,9 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                 subtitle: 'Capture your throw live',
                 gradient: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
                 onPressed: () {
+                  logger.track('Record Video Button Tapped', properties: {
+                    'camera_angle': _selectedCameraAngle.name,
+                  });
                   cubit.recordVideo(
                     throwType: ThrowTechnique.backhand,
                     cameraAngle: _selectedCameraAngle,
@@ -235,6 +241,9 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                 subtitle: 'Choose from your gallery',
                 backgroundColor: Colors.white.withValues(alpha: 0.1),
                 onPressed: () {
+                  logger.track('Import Video Button Tapped', properties: {
+                    'camera_angle': _selectedCameraAngle.name,
+                  });
                   cubit.importVideo(
                     throwType: ThrowTechnique.backhand,
                     cameraAngle: _selectedCameraAngle,

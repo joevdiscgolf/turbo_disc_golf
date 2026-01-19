@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 class FormAnalysisWelcomeEmptyState extends StatelessWidget {
   const FormAnalysisWelcomeEmptyState({
     super.key,
     required this.onStartAnalysis,
+    required this.logger,
   });
 
   final VoidCallback onStartAnalysis;
+  final LoggingServiceBase logger;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +60,13 @@ class FormAnalysisWelcomeEmptyState extends StatelessWidget {
                     ],
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    onPressed: onStartAnalysis,
+                    onPressed: () {
+                      logger.track(
+                        'Analyze First Video Button Tapped',
+                        properties: {'Button Location': 'Empty State'},
+                      );
+                      onStartAnalysis();
+                    },
                   ),
                 ],
               ),

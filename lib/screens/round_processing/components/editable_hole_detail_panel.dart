@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:turbo_disc_golf/components/add_throw_panel.dart';
 import 'package:turbo_disc_golf/components/edit_hole/edit_hole_body.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
@@ -165,6 +168,14 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
               ? currentHole.throws!.last
               : null);
 
+      // Track modal opened
+      locator.get<LoggingService>().track('Modal Opened', properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': 'Add Throw Panel',
+        'hole_number': currentHole.number ?? widget.holeIndex + 1,
+        'is_new_throw': true,
+      });
+
       // Show the panel
       showModalBottomSheet(
         context: context,
@@ -184,6 +195,14 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         ),
       );
     } else {
+      // Track modal opened
+      locator.get<LoggingService>().track('Modal Opened', properties: {
+        'modal_type': 'dialog',
+        'modal_name': 'Throw Edit Dialog',
+        'hole_number': currentHole.number ?? widget.holeIndex + 1,
+        'is_new_throw': true,
+      });
+
       await showDialog(
         context: context,
         builder: (context) => ThrowEditDialog(
@@ -229,6 +248,15 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
           ? currentHole.throws![throwIndex - 1]
           : null;
 
+      // Track modal opened
+      locator.get<LoggingService>().track('Modal Opened', properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': 'Add Throw Panel',
+        'hole_number': currentHole.number ?? widget.holeIndex + 1,
+        'throw_index': throwIndex,
+        'is_new_throw': false,
+      });
+
       // Show the panel
       showModalBottomSheet(
         context: context,
@@ -250,6 +278,15 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         ),
       );
     } else {
+      // Track modal opened
+      locator.get<LoggingService>().track('Modal Opened', properties: {
+        'modal_type': 'dialog',
+        'modal_name': 'Throw Edit Dialog',
+        'hole_number': currentHole.number ?? widget.holeIndex + 1,
+        'throw_index': throwIndex,
+        'is_new_throw': false,
+      });
+
       await showDialog(
         context: context,
         builder: (context) => ThrowEditDialog(

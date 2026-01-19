@@ -53,6 +53,9 @@ class _MainWrapperState extends State<MainWrapper> {
     _logger = loggingService.withBaseProperties({
       'screen_name': MainWrapper.screenName,
     });
+
+    // Track screen impression
+    _logger.logScreenImpression('MainWrapper');
   }
 
   void _onItemTapped(int index) {

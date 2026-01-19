@@ -82,6 +82,12 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         ),
       );
     } else {
+      // Track modal opened
+      _logger.track('Modal Opened', properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': 'Record Round Panel',
+      });
+
       await displayBottomSheet(
         context,
         RecordRoundPanel(bottomViewPadding: widget.bottomViewPadding),
@@ -138,7 +144,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
             final DGRound round = sortedRounds[index];
             return useRoundHistoryRowV2
                 ? RoundHistoryRowV2(round: round, logger: _logger, index: index)
-                : RoundHistoryRow(round: round);
+                : RoundHistoryRow(round: round, logger: _logger, index: index);
           }, childCount: sortedRounds.length),
         ),
       );

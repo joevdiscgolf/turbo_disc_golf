@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 
 /// Full-screen preview of the judgment share card.
@@ -14,6 +15,9 @@ import 'package:turbo_disc_golf/services/share_service.dart';
 /// Displays the share card in a full-screen view with a transparent app bar
 /// and a share button at the bottom.
 class ShareJudgmentPreviewScreen extends StatefulWidget {
+  static const String screenName = 'Share Judgment Preview';
+  static const String routeName = '/share-judgment-preview';
+
   const ShareJudgmentPreviewScreen({
     super.key,
     required this.isGlaze,
@@ -40,9 +44,28 @@ class _ShareJudgmentPreviewScreenState
     extends State<ShareJudgmentPreviewScreen> {
   final GlobalKey _shareCardKey = GlobalKey();
   bool _isSharing = false;
+  late final LoggingServiceBase _logger;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': ShareJudgmentPreviewScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('ShareJudgmentPreviewScreen');
+  }
 
   Future<void> _shareCard() async {
     if (_isSharing) return;
+
+    _logger.track('Share Judgment Button Tapped', properties: {
+      'is_glaze': widget.isGlaze,
+    });
 
     setState(() => _isSharing = true);
 

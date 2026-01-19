@@ -94,6 +94,19 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
   }
 
   Future<void> _handleDeleteRound(DGRound round) async {
+    // Track button tap
+    _logger.track('Delete Round Button Tapped', properties: {
+      'round_id': round.id,
+      'course_name': round.courseName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'dialog',
+      'modal_name': 'Delete Round Confirmation',
+      'round_id': round.id,
+    });
+
     // Show confirmation dialog
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -105,11 +118,21 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () {
+                _logger.track('Delete Round Cancelled', properties: {
+                  'round_id': round.id,
+                });
+                Navigator.of(context).pop(false);
+              },
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () {
+                _logger.track('Delete Round Confirmed', properties: {
+                  'round_id': round.id,
+                });
+                Navigator.of(context).pop(true);
+              },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Delete'),
             ),

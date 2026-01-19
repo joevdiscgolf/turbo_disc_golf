@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/shot_detail.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 /// Detail screen showing shot shape breakdown for a specific throw type
 class ThrowTypeDetailScreen extends StatefulWidget {
+  static const String screenName = 'Throw Type Detail';
+  static const String routeName = '/throw-type-detail';
+
   const ThrowTypeDetailScreen({
     super.key,
     required this.throwType,
@@ -27,6 +32,21 @@ class ThrowTypeDetailScreen extends StatefulWidget {
 class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
   bool _isOverallExpanded = false;
   final Map<String, bool> _shotShapeExpanded = {};
+  late final LoggingServiceBase _logger;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': ThrowTypeDetailScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('ThrowTypeDetailScreen');
+  }
 
   @override
   Widget build(BuildContext context) {

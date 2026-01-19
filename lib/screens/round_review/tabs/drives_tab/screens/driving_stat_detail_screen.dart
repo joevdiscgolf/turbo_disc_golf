@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 enum HoleResultStatus { success, failure, noData }
 
@@ -12,6 +14,9 @@ class HoleResult {
 }
 
 class DrivingStatDetailScreen extends StatelessWidget {
+  static const String screenName = 'Driving Stat Detail';
+  static const String routeName = '/driving-stat-detail';
+
   final String statName;
   final double percentage;
   final Color color;
@@ -31,6 +36,13 @@ class DrivingStatDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track('Screen Impression', properties: {
+        'screen_name': DrivingStatDetailScreen.screenName,
+        'screen_class': 'DrivingStatDetailScreen',
+        'stat_name': statName,
+      });
+    });
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: GenericAppBar(

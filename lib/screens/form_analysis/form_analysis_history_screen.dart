@@ -125,6 +125,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
         return SliverFillRemaining(
           child: FormAnalysisWelcomeEmptyState(
             onStartAnalysis: _showRecordingScreen,
+            logger: _logger,
           ),
         );
       }

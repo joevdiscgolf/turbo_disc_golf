@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 /// A beautiful date and time picker displayed in a bottom sheet.
 /// Shows a calendar for date selection and a time selector row.
@@ -35,12 +37,28 @@ class DateTimePickerPanel extends StatefulWidget {
 }
 
 class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
+  static const String _panelName = 'Date Time Picker';
+
   late DateTime _tempDate;
   late TimeOfDay _tempTime;
+  late final LoggingServiceBase _logger;
 
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'panel_name': _panelName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'bottom_sheet',
+      'modal_name': _panelName,
+    });
+
     _tempDate = widget.initialDateTime;
     _tempTime = TimeOfDay.fromDateTime(widget.initialDateTime);
   }

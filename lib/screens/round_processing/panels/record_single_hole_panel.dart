@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
@@ -45,10 +46,12 @@ class RecordSingleHolePanel extends StatefulWidget {
 }
 
 class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
+  static const String _panelName = 'Record Single Hole';
   static const Color _descAccent = Color(0xFFB39DDB); // light purple
 
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  late final LoggingServiceBase _logger;
 
   late BaseVoiceRecordingService _voiceService;
   final ScrollController _scrollController = ScrollController();
@@ -75,6 +78,21 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'panel_name': _panelName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'bottom_sheet',
+      'modal_name': _panelName,
+      'hole_number': widget.holeNumber,
+      'course_name': widget.courseName,
+    });
+
     _voiceService = locator.get<BaseVoiceRecordingService>();
     _initializeVoiceService();
     _voiceService.addListener(_onVoiceServiceUpdate);

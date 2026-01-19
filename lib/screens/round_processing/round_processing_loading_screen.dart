@@ -13,6 +13,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/round_confir
 import 'package:turbo_disc_golf/screens/round_review/tabs/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
@@ -33,6 +34,9 @@ import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 ///
 /// Otherwise, processes the transcript normally with Gemini.
 class RoundProcessingLoadingScreen extends StatefulWidget {
+  static const String screenName = 'Round Processing';
+  static const String routeName = '/round-processing';
+
   final bool useSharedPreferences;
 
   const RoundProcessingLoadingScreen({
@@ -60,6 +64,7 @@ class _RoundProcessingLoadingScreenState
   late RoundParser _roundParser;
   _ProcessingState _processingState = _ProcessingState.loading;
   late TabController _tabController;
+  late final LoggingServiceBase _logger;
 
   // GlobalKey to ensure ExplosionEffect persists across state changes
   final GlobalKey _explosionEffectKey = GlobalKey();
@@ -67,6 +72,15 @@ class _RoundProcessingLoadingScreenState
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': RoundProcessingLoadingScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('RoundProcessingLoadingScreen');
 
     _tabController = TabController(length: 3, vsync: this);
 

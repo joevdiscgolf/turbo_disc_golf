@@ -128,6 +128,13 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
   }
 
   Future<void> _showDeleteConfirmation() async {
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'dialog',
+      'modal_name': 'Delete Analysis Confirmation',
+      'analysis_id': widget.analysis.id,
+    });
+
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -138,7 +145,12 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () {
+                _logger.track('Delete Analysis Cancelled', properties: {
+                  'analysis_id': widget.analysis.id,
+                });
+                Navigator.pop(context, false);
+              },
               child: const Text('Cancel'),
             ),
             TextButton(

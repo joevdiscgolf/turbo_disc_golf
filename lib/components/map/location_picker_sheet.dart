@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/map/map_provider.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
@@ -24,13 +26,30 @@ class LocationPickerSheet extends StatefulWidget {
 }
 
 class _LocationPickerSheetState extends State<LocationPickerSheet> {
+  static const String _sheetName = 'Location Picker';
+
   double? _selectedLat;
   double? _selectedLng;
   late final MapProvider _mapProvider;
+  late final LoggingServiceBase _logger;
 
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'modal_name': _sheetName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'full_screen_modal',
+      'modal_name': _sheetName,
+      'has_initial_location': widget.initialLatitude != null,
+    });
+
     _selectedLat = widget.initialLatitude;
     _selectedLng = widget.initialLongitude;
     _mapProvider = MapProvider.getProvider();
