@@ -116,7 +116,7 @@ enum FeatureFlag {
   adminUids('admin_uids', '9abVDwf3ZVM8unEzqMcWk95in2F3'),
   alwaysShowForceUpgradeScreen('always_show_force_upgrade_screen', false),
   alwaysShowFeatureWalkthrough('always_show_feature_walkthrough', false),
-  alwaysShowOnboarding('always_show_onboarding', true);
+  alwaysShowOnboarding('always_show_onboarding', false);
 
   const FeatureFlag(this.remoteKey, this.defaultValue);
 

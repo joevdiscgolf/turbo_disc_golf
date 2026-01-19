@@ -74,6 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: GenericAppBar(
         topViewPadding: MediaQuery.of(context).viewPadding.top,
         title: 'Complete Your Profile',
@@ -84,7 +85,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
       backgroundColor: TurbColors.white,
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: Padding(
           padding: EdgeInsets.only(
             top: 24,
@@ -130,9 +132,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               if (kDebugMode) ...[
                 _buildDebugSkipButton(),
                 const SizedBox(height: 4),
+                _buildSkipButton(),
+                const SizedBox(height: 12),
               ],
-              _buildSkipButton(),
-              const SizedBox(height: 12),
+
               _buildSubmitButton(),
             ],
           ),
