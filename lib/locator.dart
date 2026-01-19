@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/repositories/firebase_auth_database_repository.dart';
 import 'package:turbo_disc_golf/repositories/firebase_auth_repository.dart';
@@ -15,6 +16,7 @@ import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
 import 'package:turbo_disc_golf/services/search/course_search_provider.dart';
 import 'package:turbo_disc_golf/services/search/meilisearch_provider.dart';
+import 'package:turbo_disc_golf/services/search/supabase_search_provider.dart';
 import 'package:turbo_disc_golf/services/search/test_course_provider.dart';
 import 'package:turbo_disc_golf/services/geocoding/geocoding_service.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_rounds_repository.dart';
@@ -57,6 +59,16 @@ Future<void> setUpLocator() async {
   debugPrint(
     '[Locator] Mixpanel token from .env: ${mixpanelToken == null ? "NULL" : "length=${mixpanelToken.length}, first8=${mixpanelToken.length >= 8 ? mixpanelToken.substring(0, 8) : mixpanelToken}..."}',
   );
+
+  // Initialize Supabase
+  final String? supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final String? supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  if (supabaseUrl != null && supabaseAnonKey != null) {
+    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+    debugPrint('[Locator] Supabase initialized');
+  } else {
+    debugPrint('[Locator] Supabase not initialized - missing URL or anon key');
+  }
 
   // Initialize Mixpanel provider
   final MixpanelLoggingProvider mixpanelProvider = MixpanelLoggingProvider();
@@ -183,12 +195,16 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());
   locator.registerSingleton<WebScraperService>(WebScraperService());
-  // Search provider - swap MeiliSearchProvider for a different implementation here
-  locator.registerLazySingleton<CourseSearchProvider>(
-    () => featureFlagService.useTestCourseProvider
-        ? TestCourseProvider()
-        : MeiliSearchProvider(),
-  );
+  // Search provider - swap implementation via feature flags
+  locator.registerLazySingleton<CourseSearchProvider>(() {
+    if (featureFlagService.useTestCourseProvider) {
+      return TestCourseProvider();
+    } else if (featureFlagService.useSupabaseSearchProvider) {
+      return SupabaseSearchProvider();
+    } else {
+      return MeiliSearchProvider();
+    }
+  });
   locator.registerLazySingleton<CourseSearchService>(
     () => CourseSearchService(),
   );
