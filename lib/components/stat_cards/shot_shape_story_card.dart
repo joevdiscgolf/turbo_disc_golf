@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 
 /// Compact shot shape breakdown card for story context
@@ -13,14 +13,16 @@ class ShotShapeStoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final RoundStatisticsService statsService = RoundStatisticsService(round);
-    final Map<String, dynamic> shotShapeBirdieRates =
-        statsService.getShotShapeByTechniqueBirdieRateStats();
-    final Map<String, Map<String, double>> circleInRegByShape =
-        statsService.getCircleInRegByShotShapeAndTechnique();
+    final Map<String, dynamic> shotShapeBirdieRates = statsService
+        .getShotShapeByTechniqueBirdieRateStats();
+    final Map<String, Map<String, double>> circleInRegByShape = statsService
+        .getCircleInRegByShotShapeAndTechnique();
 
     // Get all shot shape stats
-    final List<ShotShapeStats> allShapes =
-        _getShotShapeStats(shotShapeBirdieRates, circleInRegByShape);
+    final List<ShotShapeStats> allShapes = _getShotShapeStats(
+      shotShapeBirdieRates,
+      circleInRegByShape,
+    );
 
     // Take top 3 by birdie rate
     final List<ShotShapeStats> topShapes = allShapes.take(3).toList();
@@ -32,15 +34,14 @@ class ShotShapeStoryCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
           ),
         ),
         child: Text(
           'Not enough data for shot shape analysis',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -60,10 +61,10 @@ class ShotShapeStoryCard extends StatelessWidget {
           Text(
             'Top Shot Shapes',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 12),
           ...topShapes.map(
@@ -141,16 +142,16 @@ class _ShotShapeRow extends StatelessWidget {
             children: [
               Text(
                 formattedName,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               Text(
                 '${shape.totalAttempts} attempts',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 11,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
@@ -205,28 +206,25 @@ class _StatBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         children: [
           Text(
             '${value.toStringAsFixed(0)}%',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontSize: 16,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              fontSize: 10,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';

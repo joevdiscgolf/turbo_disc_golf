@@ -2,10 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/score_detail_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/score_detail_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/drives_detail_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/mistakes_detail/mistakes_detail_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/putt_detail/putting_detail_screen.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
@@ -34,14 +34,14 @@ class StoryNavigationHelper {
       case 'C1X_PUTTING':
       case 'C1_PUTTING':
       case 'C2_PUTTING':
-        return (screen: PuttingTab(round: round), title: 'Putting');
+        return (screen: PuttingDetailScreen(round: round), title: 'Putting');
 
       // Driving cards -> Driving detail screen
       case 'FAIRWAY_HIT':
       case 'C1_IN_REG':
       case 'OB_RATE':
       case 'PARKED':
-        return (screen: DrivesTab(round: round), title: 'Driving');
+        return (screen: DrivesDetailScreen(round: round), title: 'Driving');
 
       // Scoring cards -> Score detail screen
       case 'BIRDIES':
@@ -55,12 +55,12 @@ class StoryNavigationHelper {
 
       // Mistakes card -> Mistakes detail screen
       case 'MISTAKES':
-        return (screen: MistakesTab(round: round), title: 'Mistakes');
+        return (screen: MistakesDetailScreen(round: round), title: 'Mistakes');
 
       // Throw type and shot shape -> Drives tab
       case 'THROW_TYPE_COMPARISON':
       case 'SHOT_SHAPE_BREAKDOWN':
-        return (screen: DrivesTab(round: round), title: 'Driving');
+        return (screen: DrivesDetailScreen(round: round), title: 'Driving');
 
       // Performance tracking cards -> Scores
       case 'BOUNCE_BACK':
@@ -92,7 +92,9 @@ class StoryNavigationHelper {
       child: detailScreen.screen,
     );
 
-    if (locator.get<FeatureFlagService>().useCustomPageTransitionsForRoundReview) {
+    if (locator
+        .get<FeatureFlagService>()
+        .useCustomPageTransitionsForRoundReview) {
       Navigator.of(context).push(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
