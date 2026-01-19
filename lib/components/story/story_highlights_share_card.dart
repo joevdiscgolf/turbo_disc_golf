@@ -208,7 +208,7 @@ class StoryHighlightsShareCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w900,
-            color: TurbColors.gray[700]!,
+            color: SenseiColors.gray[700]!,
           ),
         ),
       ],
@@ -376,10 +376,7 @@ class StoryHighlightsShareCard extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         ColorFiltered(
-          colorFilter: const ColorFilter.mode(
-            Colors.white,
-            BlendMode.srcIn,
-          ),
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           child: Image.asset(
             'assets/icon/app_icon_clear_bg.png',
             height: 16,

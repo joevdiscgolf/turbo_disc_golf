@@ -39,7 +39,7 @@ List<Widget> addDividers(
 
     final Color color =
         dividerColor ??
-        (darkDivider ? TurbColors.gray[100]! : TurbColors.gray[100]!);
+        (darkDivider ? SenseiColors.gray[100]! : SenseiColors.gray[100]!);
 
     if (i < numDividers) {
       withDividers.add(

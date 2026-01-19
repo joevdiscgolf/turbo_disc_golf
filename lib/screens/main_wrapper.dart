@@ -130,7 +130,7 @@ class _MainWrapperState extends State<MainWrapper> {
             fontWeight: FontWeight.w700, // SemiBold/Bold
             fontStyle: FontStyle.italic, // optional sporty slant
             letterSpacing: 0.5,
-            color: TurbColors.senseiBlue,
+            color: SenseiColors.senseiBlue,
           ),
           hasBackButton: false,
           leftWidget: _buildSettingsButton(
@@ -189,7 +189,7 @@ class _MainWrapperState extends State<MainWrapper> {
                     fontWeight: FontWeight.w700,
                     fontStyle: FontStyle.italic,
                     letterSpacing: 0.5,
-                    color: TurbColors.senseiBlue,
+                    color: SenseiColors.senseiBlue,
                   )
                 : null,
             hasBackButton: false,

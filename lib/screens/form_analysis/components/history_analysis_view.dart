@@ -78,10 +78,16 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     if (widget.analysis.videoSyncMetadata != null) {
       final metadata = widget.analysis.videoSyncMetadata!;
       debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
-      debugPrint('[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x');
-      debugPrint('[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}');
+      debugPrint(
+        '[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x',
+      );
+      debugPrint(
+        '[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}',
+      );
     } else {
-      debugPrint('[HistoryAnalysisView]   ❌ videoSyncMetadata is NULL (not saved to Firestore)');
+      debugPrint(
+        '[HistoryAnalysisView]   ❌ videoSyncMetadata is NULL (not saved to Firestore)',
+      );
     }
 
     // Check PoseAnalysisResponse (if provided)
@@ -89,10 +95,16 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     if (widget.poseAnalysisResponse?.videoSyncMetadata != null) {
       final metadata = widget.poseAnalysisResponse!.videoSyncMetadata!;
       debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
-      debugPrint('[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x');
-      debugPrint('[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}');
+      debugPrint(
+        '[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x',
+      );
+      debugPrint(
+        '[HistoryAnalysisView]   - Checkpoint sync points: ${metadata.checkpointSyncPoints.length}',
+      );
     } else {
-      debugPrint('[HistoryAnalysisView]   ${widget.poseAnalysisResponse == null ? "⏭️  PoseAnalysisResponse not provided" : "❌ videoSyncMetadata is NULL"}');
+      debugPrint(
+        '[HistoryAnalysisView]   ${widget.poseAnalysisResponse == null ? "⏭️  PoseAnalysisResponse not provided" : "❌ videoSyncMetadata is NULL"}',
+      );
     }
     debugPrint('═══════════════════════════════════════════════════════');
   }
@@ -105,7 +117,10 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           slivers: [
             SliverPadding(padding: EdgeInsets.only(top: widget.topViewPadding)),
             SliverToBoxAdapter(child: _buildHeader(context)),
-            if (locator.get<FeatureFlagService>().showFormAnalysisVideoComparison) _buildVideoComparisonSliver(),
+            if (locator
+                .get<FeatureFlagService>()
+                .showFormAnalysisVideoComparison)
+              _buildVideoComparisonSliver(),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
             SliverToBoxAdapter(child: _buildAngleDeviations(context)),
@@ -118,7 +133,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       ],
     );
   }
-
 
   Widget _buildHeader(BuildContext context) {
     final DateTime createdAt = DateTime.parse(widget.analysis.createdAt);
@@ -164,7 +178,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                     if (widget.analysis.cameraAngle != null) ...[
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildCameraAngleChip(widget.analysis.cameraAngle!),
+                        child: _buildCameraAngleChip(
+                          widget.analysis.cameraAngle!,
+                        ),
                       ),
                     ],
                     if (widget.analysis.worstDeviationSeverity != null) ...[
@@ -216,7 +232,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           child: SynchronizedVideoPlayer(
             userVideoUrl: widget.videoUrl!,
             proVideoAssetPath: proVideoPath,
-            videoSyncMetadata: widget.poseAnalysisResponse?.videoSyncMetadata ??
+            videoSyncMetadata:
+                widget.poseAnalysisResponse?.videoSyncMetadata ??
                 widget.analysis.videoSyncMetadata,
             videoAspectRatio: widget.videoAspectRatio,
           ),
@@ -235,19 +252,12 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.grey[700],
-                  size: 20,
-                ),
+                Icon(Icons.info_outline, color: Colors.grey[700], size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Video comparison not yet available for this throw type.',
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey[700], fontSize: 14),
                   ),
                 ),
               ],
@@ -403,9 +413,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final Color color = isSideView
         ? const Color(0xFF1976D2)
         : const Color(0xFF00897B);
-    final IconData icon = isSideView
-        ? Icons.photo_camera
-        : Icons.videocam;
+    final IconData icon = isSideView ? Icons.photo_camera : Icons.videocam;
     final String label = cameraAngle.displayName;
 
     return Container(
@@ -435,7 +443,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       ),
     );
   }
-
 
   Widget _buildFloatingViewToggle() {
     return Positioned(
@@ -777,7 +784,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: TurbColors.darkGray,
+              color: SenseiColors.darkGray,
             ),
           ),
         ),
@@ -841,8 +848,10 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           }
 
           // Apply alignment transformation (translate + scale)
-          final double horizontalOffset = MediaQuery.of(context).size.width *
-              (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
+          final double horizontalOffset =
+              MediaQuery.of(context).size.width *
+              (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+              100;
 
           // WORKAROUND: Clamp scale to prevent backend bugs from making pro reference too small/large
           final double rawScale = checkpoint.referenceScale ?? 1.0;
@@ -858,10 +867,16 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
           debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
           debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
-          debugPrint('   - referenceScale from backend: ${checkpoint.referenceScale}');
+          debugPrint(
+            '   - referenceScale from backend: ${checkpoint.referenceScale}',
+          );
           debugPrint('   - Applied scale: $scale');
-          debugPrint('   - referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}');
-          debugPrint('   - Calculated horizontalOffset (pixels): $horizontalOffset');
+          debugPrint(
+            '   - referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}',
+          );
+          debugPrint(
+            '   - Calculated horizontalOffset (pixels): $horizontalOffset',
+          );
           debugPrint('   - Screen width: ${MediaQuery.of(context).size.width}');
 
           return Transform.translate(
@@ -963,7 +978,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: TurbColors.darkGray,
+                  color: SenseiColors.darkGray,
                 ),
               ),
               const Spacer(),
@@ -1072,8 +1087,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         widget.analysis.checkpoints[_selectedCheckpointIndex];
 
     // Convert angleDeviations map to List<AngleDeviation> format
-    final List<AngleDeviation> deviations =
-        _convertAngleDeviationsToList(checkpoint);
+    final List<AngleDeviation> deviations = _convertAngleDeviationsToList(
+      checkpoint,
+    );
 
     if (deviations.isEmpty) {
       return const SizedBox.shrink();
@@ -1098,10 +1114,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         children: [
           Text(
             'Angle Analysis',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           ...deviations.map((deviation) {
@@ -1121,7 +1136,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     );
   }
 
-  List<AngleDeviation> _convertAngleDeviationsToList(CheckpointRecord checkpoint) {
+  List<AngleDeviation> _convertAngleDeviationsToList(
+    CheckpointRecord checkpoint,
+  ) {
     final List<AngleDeviation> deviations = [];
     final Map<String, double>? angleDeviations = checkpoint.angleDeviations;
 
@@ -1151,8 +1168,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final Color statusColor = isGood
         ? const Color(0xFF4CAF50)
         : (deviation.deviation != null && deviation.deviation!.abs() > 20)
-            ? const Color(0xFFF44336)
-            : const Color(0xFFFF9800);
+        ? const Color(0xFFF44336)
+        : const Color(0xFFFF9800);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1178,19 +1195,17 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               children: [
                 Text(
                   _formatAngleName(deviation.angleName),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w500),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
                 if (deviation.userValue != 0 && deviation.referenceValue != 0)
                   Text(
                     'You: ${deviation.userValue.toStringAsFixed(0)}° • '
                     'Pro: ${deviation.referenceValue?.toStringAsFixed(0) ?? '--'}°',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.grey[600]),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                   ),
               ],
             ),
@@ -1244,7 +1259,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         checkpoint.userIndividualAngles?.leftKneeBendAngle;
     final double? refLeftKnee =
         checkpoint.referenceIndividualAngles?.leftKneeBendAngle;
-    final double? deviation = checkpoint.individualDeviations?.leftKneeBendAngle;
+    final double? deviation =
+        checkpoint.individualDeviations?.leftKneeBendAngle;
 
     if (userLeftKnee == null) return const SizedBox.shrink();
 
@@ -1259,10 +1275,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       decoration: BoxDecoration(
         color: Colors.grey.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2), width: 1),
       ),
       child: Row(
         children: [
@@ -1282,10 +1295,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           // User angle
           Text(
             '${userLeftKnee.toStringAsFixed(1)}°',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
 
           // "vs" separator
@@ -1293,10 +1303,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Text(
               'vs',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
             ),
           ),
 
@@ -1405,9 +1412,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                   ),
                 ),
               )
-              .animate(
-                onPlay: (controller) => controller.repeat(),
-              )
+              .animate(onPlay: (controller) => controller.repeat())
               .shimmer(
                 duration: 1500.ms,
                 color: Colors.white.withValues(alpha: 0.3),
@@ -1753,8 +1758,10 @@ class _FullscreenComparisonDialogState
           }
 
           // Apply alignment transformation (translate + scale)
-          final double horizontalOffset = MediaQuery.of(context).size.width *
-              (checkpoint.referenceHorizontalOffsetPercent ?? 0) / 100;
+          final double horizontalOffset =
+              MediaQuery.of(context).size.width *
+              (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+              100;
 
           // WORKAROUND: Clamp scale to prevent backend bugs from making pro reference too small/large
           final double rawScale = checkpoint.referenceScale ?? 1.0;
@@ -1770,10 +1777,16 @@ class _FullscreenComparisonDialogState
 
           debugPrint('🎯 [HistoryAnalysisView] Rendering pro reference:');
           debugPrint('   - Checkpoint: ${checkpoint.checkpointName}');
-          debugPrint('   - referenceScale from backend: ${checkpoint.referenceScale}');
+          debugPrint(
+            '   - referenceScale from backend: ${checkpoint.referenceScale}',
+          );
           debugPrint('   - Applied scale: $scale');
-          debugPrint('   - referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}');
-          debugPrint('   - Calculated horizontalOffset (pixels): $horizontalOffset');
+          debugPrint(
+            '   - referenceHorizontalOffsetPercent: ${checkpoint.referenceHorizontalOffsetPercent}',
+          );
+          debugPrint(
+            '   - Calculated horizontalOffset (pixels): $horizontalOffset',
+          );
           debugPrint('   - Screen width: ${MediaQuery.of(context).size.width}');
 
           return Transform.translate(
@@ -1916,9 +1929,7 @@ class _FullscreenComparisonDialogState
                   ),
                 ),
               )
-              .animate(
-                onPlay: (controller) => controller.repeat(),
-              )
+              .animate(onPlay: (controller) => controller.repeat())
               .shimmer(
                 duration: 1500.ms,
                 color: Colors.white.withValues(alpha: 0.3),

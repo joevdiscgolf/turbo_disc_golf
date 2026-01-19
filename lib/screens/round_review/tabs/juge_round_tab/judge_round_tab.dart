@@ -307,7 +307,9 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
       if (locator.get<FeatureFlagService>().useMockJudgment) {
         await Future.delayed(const Duration(milliseconds: 2000));
         judgment = _isGlaze ? _getMockGlazeJudgment() : _getMockRoastJudgment();
-      } else if (locator.get<FeatureFlagService>().generateAiContentFromBackend) {
+      } else if (locator
+          .get<FeatureFlagService>()
+          .generateAiContentFromBackend) {
         debugPrint('using backend to generate roast');
         // Use backend cloud function for judgment generation
         final RoundAnalysis? analysis = _currentRound.analysis;
@@ -587,9 +589,10 @@ highlightStats:
   }
 
   Future<void> _shareJudgmentCard(String headline) async {
-    _logger.track('Judgment Share Button Tapped', properties: {
-      'judgment_type': _isGlaze ? 'glaze' : 'roast',
-    });
+    _logger.track(
+      'Judgment Share Button Tapped',
+      properties: {'judgment_type': _isGlaze ? 'glaze' : 'roast'},
+    );
     final ShareService shareService = locator.get<ShareService>();
 
     final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
@@ -657,7 +660,7 @@ highlightStats:
               backgroundColor: Colors.white,
               labelColor: Colors.grey[800]!,
               iconColor: Colors.grey[800]!,
-              borderColor: TurbColors.gray[100],
+              borderColor: SenseiColors.gray[100],
               onPressed: () => _showShareCardPreview(headline),
             ),
           ),
@@ -670,9 +673,10 @@ highlightStats:
   }
 
   void _showShareCardPreview(String headline) {
-    _logger.track('Judgment Preview Button Tapped', properties: {
-      'judgment_type': _isGlaze ? 'glaze' : 'roast',
-    });
+    _logger.track(
+      'Judgment Preview Button Tapped',
+      properties: {'judgment_type': _isGlaze ? 'glaze' : 'roast'},
+    );
     final String displayTagline = _getPreviewTagline();
     final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
       _currentRound,
@@ -882,11 +886,11 @@ highlightStats:
                   icon: const Icon(
                     Icons.refresh,
                     size: 16,
-                    color: TurbColors.darkGray,
+                    color: SenseiColors.darkGray,
                   ),
                   label: const Text(
                     'Regenerate',
-                    style: TextStyle(color: TurbColors.darkGray),
+                    style: TextStyle(color: SenseiColors.darkGray),
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
@@ -1094,7 +1098,9 @@ highlightStats:
                           padding: const EdgeInsets.only(bottom: 12),
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              _logger.track('Judgment Regenerate Button Tapped');
+                              _logger.track(
+                                'Judgment Regenerate Button Tapped',
+                              );
                               setState(() {
                                 _currentRound = _currentRound.copyWith(
                                   aiJudgment: null,
@@ -1106,11 +1112,11 @@ highlightStats:
                             icon: const Icon(
                               Icons.refresh,
                               size: 16,
-                              color: TurbColors.darkGray,
+                              color: SenseiColors.darkGray,
                             ),
                             label: const Text(
                               'Regenerate',
-                              style: TextStyle(color: TurbColors.darkGray),
+                              style: TextStyle(color: SenseiColors.darkGray),
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(

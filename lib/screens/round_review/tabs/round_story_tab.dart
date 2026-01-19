@@ -243,7 +243,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     // Loading state
-    if (_isGenerating || locator.get<FeatureFlagService>().showStoryLoadingAnimation) {
+    if (_isGenerating ||
+        locator.get<FeatureFlagService>().showStoryLoadingAnimation) {
       return const StoryLoadingAnimation();
     }
 
@@ -347,7 +348,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               // Fixed mini scorecard (only for V3 stories)
               if (isV3Story) _buildMiniScorecard(story!),
               // Fixed bottom action bar (hidden when testing V3)
-              if (!locator.get<FeatureFlagService>().storyV3Enabled) _buildShareActionBar(),
+              if (!locator.get<FeatureFlagService>().storyV3Enabled)
+                _buildShareActionBar(),
             ],
           ),
           // Hidden share card for capture (using Offstage)
@@ -474,9 +476,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               height: 56,
               label: 'Preview',
               backgroundColor: Colors.white,
-              labelColor: TurbColors.gray[800]!,
-              iconColor: TurbColors.gray[800]!,
-              borderColor: TurbColors.gray[100],
+              labelColor: SenseiColors.gray[800]!,
+              iconColor: SenseiColors.gray[800]!,
+              borderColor: SenseiColors.gray[100],
               onPressed: _showShareCardPreview,
             ),
           ),

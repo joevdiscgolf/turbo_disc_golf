@@ -68,7 +68,7 @@ class CustomColor extends ColorSwatch<int> {
   Color get shade900 => this[900]!;
 }
 
-abstract class TurbColors {
+abstract class SenseiColors {
   static const CustomColor gray = CustomColor(0xff535353, {
     50: Color(0xffF7F7F7),
     100: Color(0xffEBEBEB),

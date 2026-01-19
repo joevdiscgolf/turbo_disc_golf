@@ -9,7 +9,7 @@ import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
-import 'package:turbo_disc_golf/screens/create_course/create_course_sheet.dart';
+import 'package:turbo_disc_golf/screens/create_course/create_course_screen.dart';
 import 'package:turbo_disc_golf/screens/create_course/create_layout_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
@@ -387,7 +387,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       separatorBuilder: (context, index) => Divider(
         height: 1,
         thickness: 1,
-        color: TurbColors.gray.shade50,
+        color: SenseiColors.gray.shade50,
         indent: 16,
         endIndent: 16,
       ),
@@ -668,7 +668,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
           pushCupertinoRoute(
             context,
-            CreateCourseSheet(
+            CreateCourseScreen(
               onCourseCreated: (course) async {
                 debugPrint(
                   '[SelectCoursePanel] New course created: ${course.name}',
@@ -777,7 +777,7 @@ class _CourseSearchResultItemState extends State<_CourseSearchResultItem> {
                           location,
                           style: TextStyle(
                             fontSize: 13,
-                            color: TurbColors.gray.shade500,
+                            color: SenseiColors.gray.shade500,
                           ),
                         ),
                       ],
@@ -791,7 +791,7 @@ class _CourseSearchResultItemState extends State<_CourseSearchResultItem> {
                       : '${widget.hit.layouts.length} layouts',
                   style: TextStyle(
                     fontSize: 12,
-                    color: TurbColors.gray.shade400,
+                    color: SenseiColors.gray.shade400,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -800,7 +800,7 @@ class _CourseSearchResultItemState extends State<_CourseSearchResultItem> {
                   duration: const Duration(milliseconds: 200),
                   child: Icon(
                     Icons.chevron_right,
-                    color: TurbColors.gray.shade400,
+                    color: SenseiColors.gray.shade400,
                     size: 20,
                   ),
                 ),
@@ -868,8 +868,8 @@ class _LayoutSummaryItem extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  flattenedOverWhite(TurbColors.blue, 0.1),
-                  flattenedOverWhite(TurbColors.blue, 0.05),
+                  flattenedOverWhite(SenseiColors.blue, 0.1),
+                  flattenedOverWhite(SenseiColors.blue, 0.05),
                 ],
                 begin: Alignment.bottomRight,
                 end: Alignment.topLeft,
@@ -882,7 +882,7 @@ class _LayoutSummaryItem extends StatelessWidget {
                   offset: const Offset(0, 2),
                 ),
               ],
-              border: Border.all(color: TurbColors.gray.shade100, width: 1),
+              border: Border.all(color: SenseiColors.gray.shade100, width: 1),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -903,7 +903,7 @@ class _LayoutSummaryItem extends StatelessWidget {
                         '${layout.holeCount} holes • Par ${layout.par} • ${layout.totalFeet} ft',
                         style: TextStyle(
                           fontSize: 12,
-                          color: TurbColors.gray.shade500,
+                          color: SenseiColors.gray.shade500,
                         ),
                       ),
                     ],
@@ -919,7 +919,7 @@ class _LayoutSummaryItem extends StatelessWidget {
                     child: Icon(
                       Icons.edit_outlined,
                       size: 18,
-                      color: TurbColors.gray.shade400,
+                      color: SenseiColors.gray.shade400,
                     ),
                   ),
                 ),
@@ -927,7 +927,7 @@ class _LayoutSummaryItem extends StatelessWidget {
                 Icon(
                   Icons.chevron_right,
                   size: 20,
-                  color: TurbColors.gray.shade400,
+                  color: SenseiColors.gray.shade400,
                 ),
               ],
             ),
@@ -957,10 +957,10 @@ class _NewLayoutButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
-              color: TurbColors.gray.shade50,
+              color: SenseiColors.gray.shade50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: TurbColors.gray.shade200,
+                color: SenseiColors.gray.shade200,
                 width: 1,
                 style: BorderStyle.solid,
               ),
@@ -968,14 +968,14 @@ class _NewLayoutButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(Icons.add, size: 20, color: TurbColors.gray.shade600),
+                Icon(Icons.add, size: 20, color: SenseiColors.gray.shade600),
                 const SizedBox(width: 8),
                 Text(
                   'New layout',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: TurbColors.gray.shade600,
+                    color: SenseiColors.gray.shade600,
                   ),
                 ),
               ],
@@ -1029,7 +1029,7 @@ class _EmptyStateWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: TurbColors.gray.shade700,
+                color: SenseiColors.gray.shade700,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1038,7 +1038,7 @@ class _EmptyStateWidget extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 15,
-                color: TurbColors.gray.shade400,
+                color: SenseiColors.gray.shade400,
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
@@ -1049,7 +1049,7 @@ class _EmptyStateWidget extends StatelessWidget {
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('Try again'),
-                style: TextButton.styleFrom(foregroundColor: TurbColors.blue),
+                style: TextButton.styleFrom(foregroundColor: SenseiColors.blue),
               ),
             ],
           ],

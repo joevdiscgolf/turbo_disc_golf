@@ -81,11 +81,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _buildProfileHeader(currentUser),
                         const SizedBox(height: 32),
                       ],
-                      if (locator.get<FeatureFlagService>().showDistancePreferences) ...[
+                      if (locator
+                          .get<FeatureFlagService>()
+                          .showDistancePreferences) ...[
                         _buildSectionHeader('Preferences'),
-                        _buildSettingsCard([
-                          _buildUnitToggleRow(),
-                        ]),
+                        _buildSettingsCard([_buildUnitToggleRow()]),
                         const SizedBox(height: 32),
                       ],
                       _buildSectionHeader('Account'),
@@ -132,9 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
@@ -160,10 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Expanded(
             child: Text(
               'Distance units',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
           _buildUnitToggle(),
@@ -249,11 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.logout,
-                  color: Colors.red,
-                  size: 20,
-                ),
+                child: const Icon(Icons.logout, color: Colors.red, size: 20),
               ),
               const SizedBox(width: 12),
               const Expanded(
@@ -266,11 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey.shade400,
-                size: 24,
-              ),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 24),
             ],
           ),
         ),
@@ -303,7 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             '@${user.username}',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: TurbColors.gray[800],
+              color: SenseiColors.gray[800],
             ),
           ),
           if (hasRating || hasDivision) ...[
@@ -331,20 +318,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildProfileStatRow(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: TurbColors.gray[400]),
+        Icon(icon, size: 18, color: SenseiColors.gray[400]),
         const SizedBox(width: 8),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: TurbColors.gray[500],
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: SenseiColors.gray[500]),
         ),
         const Spacer(),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            color: TurbColors.gray[700],
+            color: SenseiColors.gray[700],
           ),
         ),
       ],
@@ -367,10 +354,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Container(
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(
-                color: Colors.grey.shade200,
-                width: 1,
-              ),
+              top: BorderSide(color: Colors.grey.shade200, width: 1),
             ),
           ),
           child: Padding(
@@ -417,10 +401,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showLogoutConfirmation() {
     _logger.track(
       'Modal Opened',
-      properties: {
-        'modal_type': 'alert',
-        'modal_name': 'Logout Confirmation',
-      },
+      properties: {'modal_type': 'alert', 'modal_name': 'Logout Confirmation'},
     );
 
     showCupertinoModalPopup<void>(
@@ -555,4 +536,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // If success, AuthService automatically handles logout and navigation
   }
 }
-

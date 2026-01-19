@@ -28,7 +28,7 @@ class HoleTypeStoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: TurbColors.gray[100]!),
+          border: Border.all(color: SenseiColors.gray[100]!),
         ),
         child: Text(
           'Invalid hole type: $holeType',
@@ -37,12 +37,14 @@ class HoleTypeStoryCard extends StatelessWidget {
       );
     }
 
-    final RoundAnalysis analysis =
-        RoundAnalysisGenerator.generateAnalysis(round);
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      round,
+    );
 
     // Calculate stats for this hole type
-    final List<DGHole> holes =
-        round.holes.where((hole) => hole.par == par).toList();
+    final List<DGHole> holes = round.holes
+        .where((hole) => hole.par == par)
+        .toList();
 
     if (holes.isEmpty) {
       return Container(
@@ -50,7 +52,7 @@ class HoleTypeStoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: TurbColors.gray[100]!),
+          border: Border.all(color: SenseiColors.gray[100]!),
         ),
         child: Text(
           'No $holeType holes in this round',
@@ -60,8 +62,10 @@ class HoleTypeStoryCard extends StatelessWidget {
     }
 
     // Calculate scoring average relative to par
-    final int totalScore =
-        holes.fold<int>(0, (sum, hole) => sum + hole.holeScore);
+    final int totalScore = holes.fold<int>(
+      0,
+      (sum, hole) => sum + hole.holeScore,
+    );
     final int totalPar = holes.length * par;
     final double avgRelative = (totalScore - totalPar) / holes.length;
 
@@ -69,49 +73,45 @@ class HoleTypeStoryCard extends StatelessWidget {
     final double birdieRate = analysis.birdieRateByPar[par] ?? 0.0;
 
     // Count birdies and better
-    final int birdies =
-        holes.where((hole) => hole.relativeHoleScore < 0).length;
+    final int birdies = holes
+        .where((hole) => hole.relativeHoleScore < 0)
+        .length;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: TurbColors.gray[100]!),
+        border: Border.all(color: SenseiColors.gray[100]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.golf_course,
-                size: 20,
-                color: TurbColors.gray[500],
-              ),
+              Icon(Icons.golf_course, size: 20, color: SenseiColors.gray[500]),
               const SizedBox(width: 8),
               Text(
                 holeType,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: TurbColors.gray[500],
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: SenseiColors.gray[500],
+                ),
               ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: TurbColors.gray[100],
+                  color: SenseiColors.gray[100],
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '${holes.length} holes',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                        color: TurbColors.gray[500],
-                      ),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: SenseiColors.gray[500],
+                  ),
                 ),
               ),
             ],
@@ -194,18 +194,18 @@ class _StatColumn extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 18,
-              ),
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontSize: 18,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
       ],

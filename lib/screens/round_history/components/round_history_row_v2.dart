@@ -150,7 +150,7 @@ class RoundHistoryRowV2 extends StatelessWidget {
                       ),
                     ],
                     axis: Axis.vertical,
-                    dividerColor: TurbColors.gray[50],
+                    dividerColor: SenseiColors.gray[50],
                   ),
                 ),
               ),

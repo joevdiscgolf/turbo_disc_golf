@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-/// Description card (larger) with unified background and subtle amber tint.
+/// Description card with clean shadow-based depth styling.
 class VoiceDescriptionCard extends StatefulWidget {
   const VoiceDescriptionCard({
     super.key,
@@ -64,28 +64,17 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
 
   @override
   Widget build(BuildContext context) {
-    final Color baseColor = Colors.grey.shade50;
-
     return GestureDetector(
       onTap: () => widget.focusNode.requestFocus(),
       child: Container(
         decoration: BoxDecoration(
-          color: baseColor,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: flattenedOverWhite(widget.accent, 0.5)),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              flattenedOverWhite(widget.accent, 0.3),
-              Colors.white, // Fade to white at bottom right
-            ],
-          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
-              offset: const Offset(0, 6),
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -93,125 +82,125 @@ class _VoiceDescriptionCardState extends State<VoiceDescriptionCard> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 100),
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-          // title row with circular icon (matching _InfoCard)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [Colors.white, widget.accent.withValues(alpha: 0.04)],
-                    stops: const [0.6, 1.0],
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.accent.withValues(alpha: 0.08), // Colored shadow
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+              // title row with circular icon
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: SenseiColors.gray[300]!),
                     ),
-                  ],
-                ),
-                child: Icon(Icons.note, size: 20, color: widget.accent),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${widget.isSingleHole ? 'Hole' : 'Round'} description',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              if (widget.onHelpTap != null) ...[
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    widget.onHelpTap!();
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
                     child: Icon(
-                      Icons.help_outline,
-                      size: 18,
-                      color: Colors.grey[500],
+                      Icons.note,
+                      size: 20,
+                      color: SenseiColors.gray[600],
                     ),
                   ),
-                ),
-              ],
-              const Spacer(),
-              if (widget.isListening)
-                Row(
-                  children: [
-                    const Icon(Icons.mic, size: 16, color: Color(0xFF2196F3)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Listening',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF2196F3),
-                      ),
-                    ),
-                  ],
-                ),
-              if (!widget.isListening && widget.onClear != null && widget.controller.text.isNotEmpty)
-                TextButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    widget.onClear!();
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    minimumSize: const Size(60, 36),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  child: Text(
-                    'Clear',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[700],
+                  const SizedBox(width: 12),
+                  Text(
+                    '${widget.isSingleHole ? 'Hole' : 'Round'} description',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (widget.onHelpTap != null) ...[
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onHelpTap!();
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.help_outline,
+                          size: 18,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (widget.isListening)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.mic,
+                          size: 16,
+                          color: Color(0xFF2196F3),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Listening',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: const Color(0xFF2196F3)),
+                        ),
+                      ],
+                    ),
+                  if (!widget.isListening &&
+                      widget.onClear != null &&
+                      widget.controller.text.isNotEmpty)
+                    TextButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        widget.onClear!();
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        minimumSize: const Size(60, 36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: Text(
+                        'Clear',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // text field area (transparent background so it inherits the card color)
+              Expanded(
+                child: TextField(
+                  controller: widget.controller,
+                  focusNode: widget.focusNode,
+                  scrollController: _scrollController,
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  cursorColor: const Color(0xFF2196F3),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black,
+                    height: 1.4,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Speak to fill this in, or type manually',
+                    hintStyle: TextStyle(fontSize: 15, color: Colors.grey[500]),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
+              ),
             ],
-          ),
-          const SizedBox(height: 12),
-          // text field area (transparent background so it inherits the card color)
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              focusNode: widget.focusNode,
-              scrollController: _scrollController,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              cursorColor: const Color(0xFF2196F3),
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black,
-                height: 1.4,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Speak to fill this in, or type manually',
-                hintStyle: TextStyle(fontSize: 15, color: Colors.grey[500]),
-                filled: true,
-                fillColor: Colors.transparent,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-          ],
           ),
         ),
       ),

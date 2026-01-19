@@ -17,6 +17,8 @@ class HolesSection extends StatelessWidget {
     required this.onHoleFeetChanged,
     required this.onHoleTypeChanged,
     required this.onHoleShapeChanged,
+    this.onSnapshotBeforeApply,
+    this.onUndoQuickFill,
   });
 
   /// List of holes to display
@@ -42,6 +44,12 @@ class HolesSection extends StatelessWidget {
   /// Callback when a hole's shape changes
   final void Function(int holeNumber, HoleShape shape) onHoleShapeChanged;
 
+  /// Callback to snapshot holes before applying quick fill (for undo)
+  final VoidCallback? onSnapshotBeforeApply;
+
+  /// Callback to undo quick fill
+  final VoidCallback? onUndoQuickFill;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -49,7 +57,11 @@ class HolesSection extends StatelessWidget {
       children: [
         _buildSectionHeader('Holes', Icons.sports_golf, Colors.orange),
         const SizedBox(height: 8),
-        QuickFillHolesCard(onApplyDefaults: onApplyDefaults),
+        QuickFillHolesCard(
+          onApplyDefaults: onApplyDefaults,
+          onSnapshotBeforeApply: onSnapshotBeforeApply,
+          onUndo: onUndoQuickFill,
+        ),
         const SizedBox(height: 12),
         // Header row
         const CreateCourseHoleHeader(),

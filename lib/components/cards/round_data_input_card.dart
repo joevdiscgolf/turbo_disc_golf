@@ -1,15 +1,14 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-/// Info card with subtle gradient tint and shared icon bubble.
+/// Info card with clean shadow-based depth styling.
 class RoundDataInputCard extends StatelessWidget {
   final IconData icon;
   final String subtitle;
   final VoidCallback? onTap;
   final Color accent;
+  final bool showRequiredIndicator;
 
   const RoundDataInputCard({
     super.key,
@@ -17,12 +16,12 @@ class RoundDataInputCard extends StatelessWidget {
     required this.subtitle,
     this.onTap,
     required this.accent,
+    this.showRequiredIndicator = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isClickable = onTap != null;
-    final Color baseColor = Colors.grey.shade50;
 
     return GestureDetector(
       onTap: onTap != null
@@ -35,53 +34,52 @@ class RoundDataInputCard extends StatelessWidget {
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: baseColor,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: flattenedOverWhite(accent, 0.3)),
-          gradient: LinearGradient(
-            transform: GradientRotation(math.pi / 4),
-            colors: [
-              flattenedOverWhite(accent, 0.2),
-              Colors.white, // Fade to white at bottom right
-            ],
-          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            // Circular icon container with radial gradient
+            // Circular icon container
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  colors: [Colors.white, accent.withValues(alpha: 0.0)],
-                  stops: const [0.6, 1.0],
-                ),
+                color: Colors.white,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.08), // Colored shadow
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(color: SenseiColors.gray[300]!),
               ),
-              child: Icon(icon, size: 16, color: accent),
+              child: Icon(icon, size: 16, color: SenseiColors.gray[600]),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: SenseiColors.darkGray,
+                      ),
+                    ),
+                    if (showRequiredIndicator)
+                      const TextSpan(
+                        text: ' *',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                  ],
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

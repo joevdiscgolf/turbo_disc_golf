@@ -91,7 +91,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         topViewPadding: MediaQuery.of(context).viewPadding.top,
         title: 'Sign up',
       ),
-      backgroundColor: TurbColors.white,
+      backgroundColor: SenseiColors.white,
       body: Padding(
         padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
         child: _mainBody(context),
@@ -169,7 +169,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       loading: _buttonState == ButtonState.loading,
       disabled: _checkDisabled(),
       label: 'Sign up',
-      backgroundColor: TurbColors.blue,
+      backgroundColor: SenseiColors.blue,
       height: 56,
       width: double.infinity,
       onPressed: _signupPressed,

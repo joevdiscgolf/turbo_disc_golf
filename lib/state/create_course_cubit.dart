@@ -197,6 +197,26 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
   }
 
   // ─────────────────────────────────────────────
+  // Quick fill undo support
+  // ─────────────────────────────────────────────
+  void snapshotHolesForUndo() {
+    emit(state.copyWith(previousHolesSnapshot: List.from(state.holes)));
+  }
+
+  void undoQuickFill() {
+    if (state.previousHolesSnapshot != null) {
+      emit(state.copyWith(
+        holes: state.previousHolesSnapshot,
+        clearPreviousHolesSnapshot: true,
+      ));
+    }
+  }
+
+  void clearHolesSnapshot() {
+    emit(state.copyWith(clearPreviousHolesSnapshot: true));
+  }
+
+  // ─────────────────────────────────────────────
   // Image parsing
   // ─────────────────────────────────────────────
   Future<void> pickAndParseImage(BuildContext context) async {
@@ -355,6 +375,8 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
       return false;
     }
 
+    emit(state.copyWith(isSaving: true));
+
     try {
       final layout = CourseLayout(
         id: state.layoutId,
@@ -379,6 +401,7 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
       // Save to Firestore
       final bool firestoreSaved = await FBCourseDataLoader.saveCourse(course);
       if (!firestoreSaved) {
+        emit(state.copyWith(isSaving: false));
         onError('Failed to save course to database');
         return false;
       }
@@ -393,6 +416,8 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
         debugPrint('Warning: Failed to index course in MeiliSearch: $e');
       }
 
+      emit(state.copyWith(isSaving: false));
+
       // Call success callback
       onSuccess(course);
 
@@ -400,6 +425,7 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
     } catch (e, trace) {
       debugPrint('Error saving course: $e');
       debugPrint(trace.toString());
+      emit(state.copyWith(isSaving: false));
       onError('Failed to create course: ${e.toString()}');
       return false;
     }

@@ -53,7 +53,7 @@ class ThrowTypeStoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: TurbColors.gray[100]!),
+        border: Border.all(color: SenseiColors.gray[100]!),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -65,7 +65,7 @@ class ThrowTypeStoryCard extends StatelessWidget {
             VerticalDivider(
               width: 1,
               thickness: 1,
-              color: TurbColors.gray[100],
+              color: SenseiColors.gray[100],
             ),
             Expanded(
               child: _ThrowTypeColumn(stats: stats2, color: technique2Color),
@@ -209,7 +209,7 @@ class _ThrowTypeColumn extends StatelessWidget {
                 Text(
                   '(${stats.c1Count}/${stats.c1Total})',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: TurbColors.gray[400],
+                    color: SenseiColors.gray[400],
                     fontSize: 10,
                   ),
                 ),

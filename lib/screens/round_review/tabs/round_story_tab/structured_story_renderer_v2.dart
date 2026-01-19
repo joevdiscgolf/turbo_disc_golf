@@ -67,21 +67,20 @@ class StructuredStoryRendererV2 extends StatelessWidget {
           _buildWhatCouldHaveBeen(context),
 
           // Practice advice (integrated)
-          if (content.practiceAdvice.isNotEmpty)
-            _buildPracticeAdvice(context),
+          if (content.practiceAdvice.isNotEmpty) _buildPracticeAdvice(context),
 
           // Strategy tips (integrated)
-          if (content.strategyTips.isNotEmpty)
-            _buildStrategyTips(context),
+          if (content.strategyTips.isNotEmpty) _buildStrategyTips(context),
         ],
       ),
     );
   }
 
-
   List<Widget> _buildStoryParagraphs(BuildContext context) {
     final List<Widget> widgets = [];
-    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(round);
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      round,
+    );
 
     for (int i = 0; i < content.story.length; i++) {
       final StoryParagraph paragraph = content.story[i];
@@ -149,18 +148,14 @@ class StructuredStoryRendererV2 extends StatelessWidget {
           // Divider
           Container(
             height: 1,
-            color: TurbColors.gray[200],
+            color: SenseiColors.gray[200],
             margin: const EdgeInsets.symmetric(vertical: 24),
           ),
 
           // Section header
           Row(
             children: [
-              const Icon(
-                Icons.insights,
-                color: Color(0xFF6366F1),
-                size: 20,
-              ),
+              const Icon(Icons.insights, color: Color(0xFF6366F1), size: 20),
               const SizedBox(width: 8),
               Text(
                 'What Could Have Been',
@@ -220,8 +215,8 @@ class StructuredStoryRendererV2 extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildScoreBox('Current Score', current, TurbColors.gray[600]!),
-        Icon(Icons.arrow_forward, color: TurbColors.gray[400]),
+        _buildScoreBox('Current Score', current, SenseiColors.gray[600]!),
+        Icon(Icons.arrow_forward, color: SenseiColors.gray[400]),
         _buildScoreBox('Potential Score', potential, const Color(0xFF4CAF50)),
       ],
     );
@@ -234,7 +229,7 @@ class StructuredStoryRendererV2 extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: TurbColors.gray[600],
+            color: SenseiColors.gray[600],
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -280,10 +275,7 @@ class StructuredStoryRendererV2 extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Result: ${scenario.resultScore} (${scenario.strokesSaved} strokes saved)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: TurbColors.gray[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: SenseiColors.gray[600]),
                 ),
               ],
             ),
@@ -302,7 +294,7 @@ class StructuredStoryRendererV2 extends StatelessWidget {
           // Divider
           Container(
             height: 1,
-            color: TurbColors.gray[200],
+            color: SenseiColors.gray[200],
             margin: const EdgeInsets.symmetric(vertical: 24),
           ),
 
@@ -341,18 +333,14 @@ class StructuredStoryRendererV2 extends StatelessWidget {
           // Divider
           Container(
             height: 1,
-            color: TurbColors.gray[200],
+            color: SenseiColors.gray[200],
             margin: const EdgeInsets.symmetric(vertical: 24),
           ),
 
           // Section header
           Row(
             children: [
-              const Icon(
-                Icons.psychology,
-                color: Color(0xFF2196F3),
-                size: 20,
-              ),
+              const Icon(Icons.psychology, color: Color(0xFF2196F3), size: 20),
               const SizedBox(width: 8),
               Text(
                 'Strategy Tips',
@@ -373,11 +361,7 @@ class StructuredStoryRendererV2 extends StatelessWidget {
 
   Widget? _buildStatWidget(String cardId, RoundAnalysis analysis) {
     try {
-      return StatCardRegistry.buildCard(
-        cardId,
-        round,
-        analysis,
-      );
+      return StatCardRegistry.buildCard(cardId, round, analysis);
     } catch (e) {
       debugPrint('Failed to build stat widget for cardId: $cardId - $e');
       return null;

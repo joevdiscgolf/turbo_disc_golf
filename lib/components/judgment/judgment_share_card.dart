@@ -91,66 +91,69 @@ class JudgmentShareCard extends StatelessWidget {
           ),
         ),
         child: Stack(
-        children: [
-          // Random background emojis
-          ..._buildBackgroundEmojis(screenHeight),
-          // Main content - centered vertically
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Verdict outside the card - centered with effects
-                  _buildVerdictText(emoji),
-                  const SizedBox(height: 16),
-                  // Inner card - centered
-                  Container(
-                    width: cardWidth,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: cardColors,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
+          children: [
+            // Random background emojis
+            ..._buildBackgroundEmojis(screenHeight),
+            // Main content - centered vertically
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Verdict outside the card - centered with effects
+                    _buildVerdictText(emoji),
+                    const SizedBox(height: 16),
+                    // Inner card - centered
+                    Container(
+                      width: cardWidth,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: cardColors,
                         ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildCourseAndDate(bodyColor),
-                          const SizedBox(height: 12),
-                          _buildHeader(headlineColor),
-                          const SizedBox(height: 16),
-                          _buildTagline(bodyColor, containerBgAlpha),
-                          const SizedBox(height: 8),
-                          _buildStatsGrid(
-                            bodyColor,
-                            subtleColor,
-                            containerBgAlpha,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
                           ),
-                          const SizedBox(height: 8),
-                          _buildScorecard(subtleColor, containerBgAlpha),
-                          const SizedBox(height: 16),
-                          _buildFooter(bodyColor, subtleColor),
                         ],
                       ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCourseAndDate(bodyColor),
+                            const SizedBox(height: 12),
+                            _buildHeader(headlineColor),
+                            const SizedBox(height: 16),
+                            _buildTagline(bodyColor, containerBgAlpha),
+                            const SizedBox(height: 8),
+                            _buildStatsGrid(
+                              bodyColor,
+                              subtleColor,
+                              containerBgAlpha,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildScorecard(subtleColor, containerBgAlpha),
+                            const SizedBox(height: 16),
+                            _buildFooter(bodyColor, subtleColor),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           ],
         ),
       ),
@@ -224,7 +227,7 @@ class JudgmentShareCard extends StatelessWidget {
     final TextStyle textStyle = TextStyle(
       fontSize: 24,
       fontWeight: FontWeight.w900,
-      color: TurbColors.gray[700]!,
+      color: SenseiColors.gray[700]!,
     );
 
     // No drip/fire effects on share card - they overlap with the card below
@@ -458,10 +461,7 @@ class JudgmentShareCard extends StatelessWidget {
           const SizedBox(width: 8),
         ],
         ColorFiltered(
-          colorFilter: const ColorFilter.mode(
-            Colors.white,
-            BlendMode.srcIn,
-          ),
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           child: Image.asset(
             'assets/icon/app_icon_clear_bg.png',
             height: 16,

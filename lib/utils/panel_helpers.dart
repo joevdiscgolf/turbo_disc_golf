@@ -15,7 +15,7 @@ Future<void> displayBottomSheet(
   modal_bottom_sheet
       .showBarModalBottomSheet(
         barrierColor: backgroundBarrierColor
-            ? TurbColors.gray[800]!.withValues(alpha: 0.8)
+            ? SenseiColors.gray[800]!.withValues(alpha: 0.8)
             : Colors.transparent,
         context: context,
         duration: duration,

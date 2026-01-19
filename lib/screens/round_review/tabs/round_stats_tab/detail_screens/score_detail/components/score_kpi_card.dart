@@ -67,7 +67,7 @@ class ScoreKPICard extends StatelessWidget {
                   Divider(
                     height: 8,
                     thickness: 1,
-                    color: TurbColors.gray.shade100,
+                    color: SenseiColors.gray.shade100,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -171,7 +171,7 @@ class ScoreKPICard extends StatelessWidget {
       context,
       'Throws',
       '${round.getTotalScore()}',
-      TurbColors.gray[600]!,
+      SenseiColors.gray[600]!,
     );
   }
 
@@ -180,7 +180,7 @@ class ScoreKPICard extends StatelessWidget {
       context,
       'Par',
       '${round.getTotalPar()}',
-      TurbColors.gray[600]!,
+      SenseiColors.gray[600]!,
     );
   }
 
@@ -235,7 +235,7 @@ class ScoreKPICard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: TurbColors.darkGray,
+              color: SenseiColors.darkGray,
             ),
           ),
           Padding(

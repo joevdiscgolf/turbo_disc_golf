@@ -36,7 +36,7 @@ class MiniMapPreview extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: TurbColors.gray.shade200),
+          border: Border.all(color: SenseiColors.gray.shade200),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -67,10 +67,7 @@ class MiniMapPreview extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withValues(alpha: 0.6),
-            ],
+            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
           ),
         ),
         child: Row(
@@ -115,11 +112,7 @@ class MiniMapPreview extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(
-            Icons.close,
-            size: 18,
-            color: TurbColors.gray.shade700,
-          ),
+          child: Icon(Icons.close, size: 18, color: SenseiColors.gray.shade700),
         ),
       ),
     );

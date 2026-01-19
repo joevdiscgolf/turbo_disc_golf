@@ -45,7 +45,8 @@ class _AuthInputFieldState extends State<AuthInputField> {
   @override
   void didUpdateWidget(AuthInputField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.externalObscured != null && widget.externalObscured != oldWidget.externalObscured) {
+    if (widget.externalObscured != null &&
+        widget.externalObscured != oldWidget.externalObscured) {
       _isObscured = widget.externalObscured!;
     }
   }
@@ -75,9 +76,9 @@ class _AuthInputFieldState extends State<AuthInputField> {
       maxLines: 1,
       maxLength: widget.maxLength,
       style: Theme.of(context).textTheme.titleMedium!.copyWith(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: widget.hintText,
         contentPadding: const EdgeInsets.symmetric(
@@ -85,29 +86,27 @@ class _AuthInputFieldState extends State<AuthInputField> {
           vertical: 16,
         ),
         filled: true,
-        fillColor: TurbColors.gray[50],
+        fillColor: SenseiColors.gray[50],
         hintStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
-              color: Colors.grey[400],
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
+          color: Colors.grey[400],
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: TurbColors.gray[200]!, width: 1),
+          borderSide: BorderSide(color: SenseiColors.gray[200]!, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.blue, width: 2),
         ),
-        prefixIcon: Icon(
-          widget.prefixIcon,
-          color: Colors.grey,
-          size: 12,
-        ),
+        prefixIcon: Icon(widget.prefixIcon, color: Colors.grey, size: 12),
         suffixIcon: widget.obscureText && widget.showVisibilityToggle
             ? IconButton(
                 icon: Icon(
-                  _shouldObscure ? FlutterRemix.eye_off_line : FlutterRemix.eye_line,
+                  _shouldObscure
+                      ? FlutterRemix.eye_off_line
+                      : FlutterRemix.eye_line,
                   color: Colors.grey,
                   size: 18,
                 ),

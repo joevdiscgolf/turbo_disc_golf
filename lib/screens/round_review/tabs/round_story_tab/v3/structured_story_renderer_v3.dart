@@ -36,8 +36,7 @@ class StructuredStoryRendererV3 extends StatefulWidget {
       _StructuredStoryRendererV3State();
 }
 
-class _StructuredStoryRendererV3State
-    extends State<StructuredStoryRendererV3> {
+class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
   ScrollController? _scrollController;
   bool _ownsScrollController = false;
   late StorySectionTracker _sectionTracker;
@@ -75,7 +74,8 @@ class _StructuredStoryRendererV3State
     // Set initial active section after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_sectionTracker.activeSectionIndex.value == null) {
-        _sectionTracker.activeSectionIndex.value = 0; // Start with first section highlighted
+        _sectionTracker.activeSectionIndex.value =
+            0; // Start with first section highlighted
       }
     });
 
@@ -201,10 +201,12 @@ class _StructuredStoryRendererV3State
         ValueListenableBuilder<int?>(
           valueListenable: _sectionTracker.activeSectionIndex,
           builder: (context, activeIndex, child) {
-            final bool isActive = locator.get<FeatureFlagService>().highlightActiveStorySection && activeIndex == sectionIndex;
+            final bool isActive =
+                locator.get<FeatureFlagService>().highlightActiveStorySection &&
+                activeIndex == sectionIndex;
 
             return AnimatedContainer(
-              key: _sectionKeys[i],  // Attach GlobalKey for tracking
+              key: _sectionKeys[i], // Attach GlobalKey for tracking
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -266,10 +268,7 @@ class _StructuredStoryRendererV3State
             widget.round,
           );
         },
-        child: StoryCalloutCard(
-          statWidget: statWidget,
-          reason: callout.reason,
-        ),
+        child: StoryCalloutCard(statWidget: statWidget, reason: callout.reason),
       ),
     );
   }
@@ -294,18 +293,14 @@ class _StructuredStoryRendererV3State
           // Divider
           Container(
             height: 1,
-            color: TurbColors.gray[200],
+            color: SenseiColors.gray[200],
             margin: const EdgeInsets.symmetric(vertical: 24),
           ),
 
           // Section header
           Row(
             children: [
-              const Icon(
-                Icons.insights,
-                color: Color(0xFF6366F1),
-                size: 20,
-              ),
+              const Icon(Icons.insights, color: Color(0xFF6366F1), size: 20),
               const SizedBox(width: 8),
               Text(
                 'What Could Have Been',
@@ -365,8 +360,8 @@ class _StructuredStoryRendererV3State
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildScoreBox('Current Score', current, TurbColors.gray[600]!),
-        Icon(Icons.arrow_forward, color: TurbColors.gray[400]),
+        _buildScoreBox('Current Score', current, SenseiColors.gray[600]!),
+        Icon(Icons.arrow_forward, color: SenseiColors.gray[400]),
         _buildScoreBox('Potential Score', potential, const Color(0xFF4CAF50)),
       ],
     );
@@ -379,7 +374,7 @@ class _StructuredStoryRendererV3State
           label,
           style: TextStyle(
             fontSize: 12,
-            color: TurbColors.gray[600],
+            color: SenseiColors.gray[600],
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -425,10 +420,7 @@ class _StructuredStoryRendererV3State
                 const SizedBox(height: 2),
                 Text(
                   'Result: ${scenario.resultScore} (${scenario.strokesSaved} strokes saved)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: TurbColors.gray[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: SenseiColors.gray[600]),
                 ),
               ],
             ),
@@ -447,7 +439,7 @@ class _StructuredStoryRendererV3State
           // Divider
           Container(
             height: 1,
-            color: TurbColors.gray[200],
+            color: SenseiColors.gray[200],
             margin: const EdgeInsets.symmetric(vertical: 24),
           ),
 
@@ -486,18 +478,14 @@ class _StructuredStoryRendererV3State
           // Divider
           Container(
             height: 1,
-            color: TurbColors.gray[200],
+            color: SenseiColors.gray[200],
             margin: const EdgeInsets.symmetric(vertical: 24),
           ),
 
           // Section header
           Row(
             children: [
-              const Icon(
-                Icons.psychology,
-                color: Color(0xFF2196F3),
-                size: 20,
-              ),
+              const Icon(Icons.psychology, color: Color(0xFF2196F3), size: 20),
               const SizedBox(width: 8),
               Text(
                 'Strategy Tips',
@@ -527,18 +515,14 @@ class _StructuredStoryRendererV3State
           // Divider
           Container(
             height: 1,
-            color: TurbColors.gray[200],
+            color: SenseiColors.gray[200],
             margin: const EdgeInsets.symmetric(vertical: 24),
           ),
 
           // Section header
           Row(
             children: [
-              const Icon(
-                Icons.assessment,
-                color: Color(0xFF6366F1),
-                size: 20,
-              ),
+              const Icon(Icons.assessment, color: Color(0xFF6366F1), size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Skills Assessment',
@@ -585,11 +569,7 @@ class _StructuredStoryRendererV3State
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.lightbulb,
-                  color: Color(0xFF6366F1),
-                  size: 20,
-                ),
+                const Icon(Icons.lightbulb, color: Color(0xFF6366F1), size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -633,8 +613,13 @@ class _StructuredStoryRendererV3State
     );
   }
 
-  Widget _buildSkillHighlight(SkillHighlight skill, {required bool isStrength}) {
-    final color = isStrength ? const Color(0xFF4CAF50) : const Color(0xFFFF9800);
+  Widget _buildSkillHighlight(
+    SkillHighlight skill, {
+    required bool isStrength,
+  }) {
+    final color = isStrength
+        ? const Color(0xFF4CAF50)
+        : const Color(0xFFFF9800);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -645,10 +630,7 @@ class _StructuredStoryRendererV3State
             margin: const EdgeInsets.only(top: 4),
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -686,7 +668,7 @@ class _StructuredStoryRendererV3State
                   skill.description,
                   style: TextStyle(
                     fontSize: 13,
-                    color: TurbColors.gray[700],
+                    color: SenseiColors.gray[700],
                     height: 1.5,
                   ),
                 ),
