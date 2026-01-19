@@ -2,7 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/error/app_error_type.dart';
+import 'package:turbo_disc_golf/models/error/error_context.dart';
+import 'package:turbo_disc_golf/models/error/error_severity.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
+import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class GeminiService implements LLMService {
@@ -53,6 +58,34 @@ class GeminiService implements LLMService {
     );
   }
 
+  /// Log LLM errors to Crashlytics with context
+  void _logError(
+    dynamic exception,
+    StackTrace stackTrace, {
+    required String operation,
+    Map<String, dynamic>? customData,
+  }) {
+    try {
+      locator.get<ErrorLoggingService>().logError(
+        exception: exception,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        severity: ErrorSeverity.error,
+        context: ErrorContext(
+          customData: {
+            'llm_service': 'gemini',
+            'operation': operation,
+            ...?customData,
+          },
+        ),
+        reason: 'Gemini API call failed: $operation',
+      );
+    } catch (e) {
+      // Error logging should never crash the app
+      debugPrint('Failed to log error to Crashlytics: $e');
+    }
+  }
+
   @override
   Future<String?> generateContent({
     required String prompt,
@@ -86,6 +119,21 @@ class GeminiService implements LLMService {
       debugPrint('Error generating content with Gemini');
       debugPrint(e.toString());
       debugPrint(trace.toString());
+
+      _logError(
+        e,
+        trace,
+        operation: 'generateContent',
+        customData: {
+          'use_full_model': useFullModel,
+          'model_name': useFullModel
+              ? (useGeminiFallbackModel
+                  ? twoPointZeroFlashExpModel
+                  : twoPointFiveFlashModel)
+              : twoPointFiveFlashLiteModel,
+        },
+      );
+
       return null;
     }
   }
@@ -151,6 +199,22 @@ class GeminiService implements LLMService {
     } catch (e, trace) {
       debugPrint('Error generating content with video: $e');
       debugPrint(trace.toString());
+
+      final Map<String, dynamic> customData = {
+        'video_path': videoPath,
+      };
+
+      // Add video size if we successfully read it before the error
+      try {
+        final File videoFile = File(videoPath);
+        if (await videoFile.exists()) {
+          final videoBytes = await videoFile.readAsBytes();
+          customData['video_size_bytes'] = videoBytes.length;
+        }
+      } catch (_) {}
+
+      _logError(e, trace, operation: 'generateContentWithVideo', customData: customData);
+
       return null;
     }
   }
@@ -203,6 +267,14 @@ class GeminiService implements LLMService {
     } catch (e, trace) {
       debugPrint('Error generating content with image: $e');
       debugPrint(trace.toString());
+
+      _logError(
+        e,
+        trace,
+        operation: 'generateContentWithImage',
+        customData: {'image_path': imagePath},
+      );
+
       return null;
     }
   }

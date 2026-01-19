@@ -21,6 +21,9 @@ class FormAnalysisHistoryScreen extends StatefulWidget {
     required this.topViewPadding,
   });
 
+  static const String screenName = 'Form Analysis History';
+  static const String routeName = '/form-analysis-history';
+
   final double bottomViewPadding;
   final double topViewPadding;
 

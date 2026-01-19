@@ -13,6 +13,7 @@ import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/screens/test_roast_screen.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
@@ -83,7 +84,10 @@ class _MainWrapperState extends State<MainWrapper> {
             color: TurbColors.senseiBlue,
           ),
           hasBackButton: false,
-          rightWidget: _buildSettingsButton(context),
+          rightWidget: _buildSettingsButton(
+            context,
+            RoundHistoryScreen.screenName,
+          ),
         ),
         body: RoundHistoryScreen(
           bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
@@ -246,7 +250,7 @@ class _MainWrapperState extends State<MainWrapper> {
               : null,
           hasBackButton: false,
           leftWidget: _selectedIndex == 0
-              ? _buildSettingsButton(context)
+              ? _buildSettingsButton(context, RoundHistoryScreen.screenName)
               : null,
         ),
         body: IndexedStack(
@@ -304,18 +308,34 @@ class _MainWrapperState extends State<MainWrapper> {
 
   Widget? _buildRightWidget(BuildContext context) {
     if (_selectedIndex == 0) {
-      return _buildSettingsButton(context);
-    } else if (_selectedIndex == 1 && kDebugMode) {
-      return _buildDeleteButton(context);
+      return _buildSettingsButton(context, RoundHistoryScreen.screenName);
+    } else if (_selectedIndex == 1) {
+      if (kDebugMode) {
+        return _buildDeleteButton(context);
+      }
+      // When Form Analysis tab is selected
+      return _buildSettingsButton(
+        context,
+        FormAnalysisHistoryScreen.screenName,
+      );
     }
     return null;
   }
 
-  Widget _buildSettingsButton(BuildContext context) {
+  Widget _buildSettingsButton(BuildContext context, String currentScreenName) {
     return Center(
       child: IconButton(
         icon: const Icon(Icons.person, size: 24),
         onPressed: () {
+          // Track analytics with dynamic screen name
+          locator.get<LoggingServiceBase>().track(
+            'Settings Button Tapped',
+            properties: {
+              'Screen Name': currentScreenName,
+              'Button Location': 'Header',
+            },
+          );
+
           HapticFeedback.lightImpact();
           pushCupertinoRoute(context, const SettingsScreen());
         },

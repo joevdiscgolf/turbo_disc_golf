@@ -3,7 +3,12 @@ import 'dart:io';
 
 import 'package:dart_openai/dart_openai.dart';
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/error/app_error_type.dart';
+import 'package:turbo_disc_golf/models/error/error_context.dart';
+import 'package:turbo_disc_golf/models/error/error_severity.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
+import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
 
 class ModelPricing {
   final double inputPer1M;
@@ -31,6 +36,34 @@ class ChatGPTService implements LLMService {
 
   ChatGPTService({required String apiKey}) {
     OpenAI.apiKey = apiKey;
+  }
+
+  /// Log LLM errors to Crashlytics with context
+  void _logError(
+    dynamic exception,
+    StackTrace stackTrace, {
+    required String operation,
+    Map<String, dynamic>? customData,
+  }) {
+    try {
+      locator.get<ErrorLoggingService>().logError(
+        exception: exception,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        severity: ErrorSeverity.error,
+        context: ErrorContext(
+          customData: {
+            'llm_service': 'chatgpt',
+            'operation': operation,
+            ...?customData,
+          },
+        ),
+        reason: 'ChatGPT API call failed: $operation',
+      );
+    } catch (e) {
+      // Error logging should never crash the app
+      debugPrint('Failed to log error to Crashlytics: $e');
+    }
   }
 
   @override
@@ -69,6 +102,14 @@ class ChatGPTService implements LLMService {
     } catch (e, trace) {
       debugPrint('Error generating content with ChatGPT: $e');
       debugPrint(trace.toString());
+
+      _logError(
+        e,
+        trace,
+        operation: 'generateContent',
+        customData: {'model_name': gptFour1Mini},
+      );
+
       return null;
     }
   }
@@ -152,6 +193,14 @@ class ChatGPTService implements LLMService {
     } catch (e, trace) {
       debugPrint('Error generating content with image: $e');
       debugPrint(trace.toString());
+
+      _logError(
+        e,
+        trace,
+        operation: 'generateContentWithImage',
+        customData: {'image_path': imagePath},
+      );
+
       return null;
     }
   }

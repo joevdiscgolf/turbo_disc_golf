@@ -9,12 +9,13 @@ class FormAnalysisPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: accentColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
@@ -22,10 +23,10 @@ class FormAnalysisPreviewCard extends StatelessWidget {
               child: Icon(
                 Icons.videocam,
                 color: accentColor,
-                size: 20,
+                size: 18,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Text(
               'Form Analysis',
               style: TextStyle(
@@ -36,16 +37,16 @@ class FormAnalysisPreviewCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
         Text(
           'Compare your form to the pros',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.85),
-            fontSize: 15,
-            height: 1.4,
+            fontSize: 13,
+            height: 1.3,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         _buildComparisonIndicator(),
       ],
     );
@@ -55,13 +56,13 @@ class FormAnalysisPreviewCard extends StatelessWidget {
     return Row(
       children: [
         _buildFormBox('You', false),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Icon(
           Icons.compare_arrows,
           color: accentColor,
           size: 20,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         _buildFormBox('Pro', true),
       ],
     );
@@ -70,27 +71,39 @@ class FormAnalysisPreviewCard extends StatelessWidget {
   Widget _buildFormBox(String label, bool isPro) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         decoration: BoxDecoration(
           color: isPro
               ? accentColor.withValues(alpha: 0.15)
               : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isPro
                 ? accentColor.withValues(alpha: 0.4)
-                : Colors.white.withValues(alpha: 0.1),
+                : Colors.white.withValues(alpha: 0.15),
             width: 1,
           ),
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Column(
+          children: [
+            Icon(
+              isPro ? Icons.star : Icons.person,
+              color: isPro
+                  ? accentColor
+                  : Colors.white.withValues(alpha: 0.6),
+              size: 18,
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 class WelcomeEmptyState extends StatelessWidget {
-  const WelcomeEmptyState({super.key, required this.onAddRound});
+  const WelcomeEmptyState({
+    super.key,
+    required this.onAddRound,
+    required this.logger,
+  });
 
   final VoidCallback onAddRound;
+  final LoggingServiceBase logger;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +81,15 @@ class WelcomeEmptyState extends StatelessWidget {
                   ],
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  onPressed: onAddRound,
+                  onPressed: () {
+                    // Track analytics using scoped logger
+                    logger.track(
+                      'Add First Round Button Tapped',
+                      properties: {'Button Location': 'Empty State'},
+                    );
+
+                    onAddRound();
+                  },
                 ),
               ],
             ),

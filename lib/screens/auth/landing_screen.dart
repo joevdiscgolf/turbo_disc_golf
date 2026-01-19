@@ -254,23 +254,34 @@ class _LandingScreenState extends State<LandingScreen>
             onPageChanged: _onPageChanged,
             itemCount: pages.length,
             itemBuilder: (context, pageIndex) {
-              return Column(
-                children: pages[pageIndex].map<Widget>((cardData) {
-                  return Expanded(
-                    child: LandingPreviewCard(
-                      accentColor: cardData['color'],
-                      slideDirection: cardData['direction'],
-                      animationController: _mainController,
-                      slideInterval: const Interval(
-                        0.267,
-                        0.433,
-                        curve: Curves.easeOutCubic,
-                      ),
-                      floatPhaseOffset: cardData['floatOffset'],
-                      child: cardData['card'],
-                    ),
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  // Each card has vertical margin (4 top + 4 bottom = 8px per card)
+                  // For 2 cards: 16px margins + 12px safety buffer = 28px total
+                  final double cardHeight = (constraints.maxHeight - 28) / 2;
+
+                  return ListView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    children: pages[pageIndex].map<Widget>((cardData) {
+                      return SizedBox(
+                        height: cardHeight,
+                        child: LandingPreviewCard(
+                          accentColor: cardData['color'],
+                          slideDirection: cardData['direction'],
+                          animationController: _mainController,
+                          slideInterval: const Interval(
+                            0.267,
+                            0.433,
+                            curve: Curves.easeOutCubic,
+                          ),
+                          floatPhaseOffset: cardData['floatOffset'],
+                          child: cardData['card'],
+                        ),
+                      );
+                    }).toList(),
                   );
-                }).toList(),
+                },
               );
             },
           ),

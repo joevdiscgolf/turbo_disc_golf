@@ -9,12 +9,13 @@ class StoryPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
             const Text(
               '✨',
-              style: TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: 16),
             ),
             const SizedBox(width: 8),
             Text(
@@ -27,14 +28,25 @@ class StoryPreviewCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          '"Your Destroyer is a birdie machine — 67% of your birdies come off backhand hyzers with this disc."',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
-            fontSize: 15,
-            fontStyle: FontStyle.italic,
-            height: 1.4,
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: accentColor.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            '"Your Destroyer is a birdie machine — 67% of your birdies come off backhand hyzers with this disc."',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 12.5,
+              fontStyle: FontStyle.italic,
+              height: 1.35,
+            ),
           ),
         ),
       ],

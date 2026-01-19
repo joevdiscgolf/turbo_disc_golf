@@ -9,12 +9,13 @@ class ShotPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
             const Text(
               '🎯',
-              style: TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: 16),
             ),
             const SizedBox(width: 8),
             Text(
@@ -27,52 +28,50 @@ class ShotPreviewCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
         _buildShotRow('Backhand Hyzer', 0.73),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
         _buildShotRow('Forehand', 0.21),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
         _buildShotRow('Other', 0.06),
       ],
     );
   }
 
   Widget _buildShotRow(String label, double percentage) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 110,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 13,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ),
-        Expanded(
-          child: _buildProgressBar(percentage),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 36,
-          child: Text(
-            '${(percentage * 100).toInt()}%',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+            Text(
+              '${(percentage * 100).toInt()}%',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
+          ],
         ),
+        const SizedBox(height: 5),
+        _buildProgressBar(percentage),
       ],
     );
   }
 
   Widget _buildProgressBar(double percentage) {
     return Container(
-      height: 8,
+      height: 7,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),

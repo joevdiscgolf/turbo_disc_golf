@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/animations/page_transitions.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
@@ -25,6 +26,9 @@ import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 class RoundHistoryScreen extends StatefulWidget {
   const RoundHistoryScreen({super.key, required this.bottomViewPadding});
 
+  static const String screenName = 'Round History';
+  static const String routeName = '/round-history';
+
   final double bottomViewPadding;
 
   @override
@@ -33,10 +37,21 @@ class RoundHistoryScreen extends StatefulWidget {
 
 class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   late RoundHistoryCubit _roundHistoryCubit;
+  late final LoggingServiceBase _logger;
 
   @override
   void initState() {
     super.initState();
+
+    // Create scoped logger with base properties
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'Screen Name': RoundHistoryScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('RoundHistoryScreen');
+
     _roundHistoryCubit = BlocProvider.of<RoundHistoryCubit>(context);
     // Load rounds on initial screen load
     _roundHistoryCubit.loadRounds();
@@ -110,7 +125,10 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       final List<DGRound> sortedRounds = state.sortedRounds;
       if (sortedRounds.isEmpty) {
         return SliverFillRemaining(
-          child: WelcomeEmptyState(onAddRound: _showRecordRoundSheet),
+          child: WelcomeEmptyState(
+            onAddRound: _showRecordRoundSheet,
+            logger: _logger,
+          ),
         );
       }
       return SliverPadding(
@@ -119,7 +137,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           delegate: SliverChildBuilderDelegate((context, index) {
             final DGRound round = sortedRounds[index];
             return useRoundHistoryRowV2
-                ? RoundHistoryRowV2(round: round)
+                ? RoundHistoryRowV2(round: round, logger: _logger, index: index)
                 : RoundHistoryRow(round: round);
           }, childCount: sortedRounds.length),
         ),
@@ -192,7 +210,9 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
             // When bottom nav bar is present, body ends at nav bar - just need 20px margin
             // When no nav bar, need to account for safe area
-            final double bottomMargin = useFormAnalysisTab ? 20 : (bottomViewPadding + 20);
+            final double bottomMargin = useFormAnalysisTab
+                ? 20
+                : (bottomViewPadding + 20);
 
             return Positioned(
               right: 20,
@@ -245,6 +265,12 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
+                // Track analytics using scoped logger (Screen Name already included!)
+                _logger.track(
+                  'Add Round Button Tapped',
+                  properties: {'Button Location': 'Floating'},
+                );
+
                 HapticFeedback.lightImpact();
                 _showRecordRoundSheet();
               },

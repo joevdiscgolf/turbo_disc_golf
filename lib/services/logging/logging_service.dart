@@ -5,6 +5,21 @@ import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/protocols/logging_provider.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 
+/// Abstract interface for logging service implementations.
+/// Allows for both the main service and scoped variants.
+abstract class LoggingServiceBase {
+  Future<void> track(String eventName, {Map<String, dynamic>? properties});
+  Future<void> identify(String userId);
+  Future<void> setUserProperties(Map<String, dynamic> properties);
+  Future<void> flush();
+  Future<void> initialize();
+  LoggingServiceBase withBaseProperties(Map<String, dynamic> baseProperties);
+
+  /// Log a screen impression event.
+  /// When used with a scoped logger, 'Screen Name' is already in base properties.
+  void logScreenImpression(String screenClass);
+}
+
 /// Main logging service that orchestrates multiple analytics providers.
 ///
 /// This service:
@@ -31,7 +46,7 @@ import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 ///   'email': 'john@example.com',
 /// });
 /// ```
-class LoggingService implements ClearOnLogoutProtocol {
+class LoggingService implements LoggingServiceBase, ClearOnLogoutProtocol {
   /// List of analytics providers to broadcast events to
   final List<LoggingProvider> _providers;
 
@@ -39,14 +54,17 @@ class LoggingService implements ClearOnLogoutProtocol {
   String? _currentUserId;
 
   LoggingService({required List<LoggingProvider> providers})
-      : _providers = providers;
+    : _providers = providers;
 
   /// Initialize all providers and auto-identify the current user.
   ///
   /// This should be called once during app startup after all dependencies
   /// are registered in the service locator.
+  @override
   Future<void> initialize() async {
-    debugPrint('[LoggingService] Initializing with ${_providers.length} provider(s)...');
+    debugPrint(
+      '[LoggingService] Initializing with ${_providers.length} provider(s)...',
+    );
 
     // Providers are already initialized in locator.dart before being passed here
     // Just need to auto-identify the current user
@@ -67,7 +85,9 @@ class LoggingService implements ClearOnLogoutProtocol {
       if (userId != null && userId.isNotEmpty) {
         await identify(userId);
       } else {
-        debugPrint('[LoggingService] No user logged in - skipping auto-identify');
+        debugPrint(
+          '[LoggingService] No user logged in - skipping auto-identify',
+        );
       }
     } catch (e) {
       debugPrint('[LoggingService] Failed to auto-identify user: $e');
@@ -87,6 +107,7 @@ class LoggingService implements ClearOnLogoutProtocol {
   ///   'screen': 'Create Round',
   /// });
   /// ```
+  @override
   Future<void> track(
     String eventName, {
     Map<String, dynamic>? properties,
@@ -107,9 +128,9 @@ class LoggingService implements ClearOnLogoutProtocol {
 
       // Broadcast to all providers (fire-and-forget)
       for (final LoggingProvider provider in _providers) {
-        provider
-            .track(eventName, properties: enrichedProperties)
-            .catchError((dynamic error) {
+        provider.track(eventName, properties: enrichedProperties).catchError((
+          dynamic error,
+        ) {
           debugPrint(
             '[LoggingService] ${provider.providerName} failed to track "$eventName": $error',
           );
@@ -128,6 +149,7 @@ class LoggingService implements ClearOnLogoutProtocol {
   /// ```dart
   /// loggingService.identify('user_12345');
   /// ```
+  @override
   Future<void> identify(String userId) async {
     try {
       _currentUserId = userId;
@@ -158,9 +180,12 @@ class LoggingService implements ClearOnLogoutProtocol {
   ///   'pdga_number': '12345',
   /// });
   /// ```
+  @override
   Future<void> setUserProperties(Map<String, dynamic> properties) async {
     try {
-      debugPrint('[LoggingService] Setting user properties: ${properties.keys.join(", ")}');
+      debugPrint(
+        '[LoggingService] Setting user properties: ${properties.keys.join(", ")}',
+      );
 
       // Broadcast to all providers (fire-and-forget)
       for (final LoggingProvider provider in _providers) {
@@ -178,6 +203,7 @@ class LoggingService implements ClearOnLogoutProtocol {
   /// Force send any queued events to the server across all providers.
   ///
   /// Useful before logout to ensure events are not lost.
+  @override
   Future<void> flush() async {
     try {
       debugPrint('[LoggingService] Flushing queued events...');
@@ -228,4 +254,90 @@ class LoggingService implements ClearOnLogoutProtocol {
       debugPrint('[LoggingService] Failed to clear on logout: $e');
     }
   }
+
+  /// Creates a scoped logging service with base properties that are automatically
+  /// merged with each track() call.
+  ///
+  /// Useful for screens to avoid repeating screen name in every track call.
+  ///
+  /// Example:
+  /// ```dart
+  /// late final LoggingService _logger;
+  ///
+  /// @override
+  /// void initState() {
+  ///   super.initState();
+  ///   _logger = locator.get<LoggingService>().withBaseProperties({
+  ///     'Screen Name': RoundHistoryScreen.screenName,
+  ///   });
+  /// }
+  ///
+  /// // Later, track without repeating screen name:
+  /// _logger.track('Add Round Button Tapped', properties: {
+  ///   'Button Location': 'Floating',
+  /// });
+  /// ```
+  @override
+  LoggingServiceBase withBaseProperties(Map<String, dynamic> baseProperties) {
+    return _ScopedLoggingService(this, baseProperties);
+  }
+
+  /// Log a screen impression event.
+  /// When used with a scoped logger, 'Screen Name' is already in base properties.
+  @override
+  void logScreenImpression(String screenClass) {
+    track('Screen Impression', properties: {
+      'Screen Class': screenClass,
+    });
+  }
+}
+
+/// Private wrapper that merges base properties into each track call.
+class _ScopedLoggingService implements LoggingServiceBase {
+  final LoggingServiceBase _parent;
+  final Map<String, dynamic> _baseProperties;
+
+  _ScopedLoggingService(this._parent, this._baseProperties);
+
+  @override
+  Future<void> track(
+    String eventName, {
+    Map<String, dynamic>? properties,
+  }) async {
+    // Merge base properties with provided properties
+    // Provided properties take precedence over base properties
+    final Map<String, dynamic> mergedProperties = {
+      ..._baseProperties,
+      ...?properties,
+    };
+
+    return _parent.track(eventName, properties: mergedProperties);
+  }
+
+  // Delegate all other methods to parent
+  @override
+  Future<void> identify(String userId) => _parent.identify(userId);
+
+  @override
+  Future<void> setUserProperties(Map<String, dynamic> properties) =>
+      _parent.setUserProperties(properties);
+
+  @override
+  Future<void> flush() => _parent.flush();
+
+  @override
+  Future<void> initialize() => _parent.initialize();
+
+  @override
+  LoggingServiceBase withBaseProperties(Map<String, dynamic> baseProperties) {
+    // Merge with existing base properties
+    return _ScopedLoggingService(_parent, {
+      ..._baseProperties,
+      ...baseProperties,
+    });
+  }
+
+  @override
+  void logScreenImpression(String screenClass) =>
+      _parent.logScreenImpression(screenClass);
 }
