@@ -9,14 +9,13 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
-import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/models/data/user_data/pdga_player_info.dart';
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/feature_walkthrough_screen.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
-import 'package:turbo_disc_golf/services/web_scraper_service.dart';
-import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/feature_walkthrough_screen.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/pdga_constants.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class OnboardingScreen extends StatefulWidget {
   static const String routeName = '/onboarding';
@@ -32,24 +31,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final AuthService _authService = locator.get<AuthService>();
   final AuthDatabaseService _authDatabaseService = locator
       .get<AuthDatabaseService>();
-  final WebScraperService _webScraperService = locator.get<WebScraperService>();
   late final LoggingServiceBase _logger;
 
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _pdgaNumController = TextEditingController();
   final TextEditingController _pdgaRatingController = TextEditingController();
 
   Timer? _usernameDebounceTimer;
-  Timer? _pdgaDebounceTimer;
 
   String? _username;
-  int? _pdgaNum;
   int? _pdgaRating;
   String? _selectedDivision;
 
   UsernameStatus _usernameStatus = UsernameStatus.empty;
-  PDGAFetchStatus _pdgaFetchStatus = PDGAFetchStatus.idle;
-  PDGAPlayerInfo? _fetchedPlayerInfo;
 
   bool _isSubmitting = false;
   String? _errorText;
@@ -73,10 +66,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void dispose() {
     _usernameController.dispose();
-    _pdgaNumController.dispose();
     _pdgaRatingController.dispose();
     _usernameDebounceTimer?.cancel();
-    _pdgaDebounceTimer?.cancel();
     super.dispose();
   }
 
@@ -94,36 +85,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: TurbColors.white,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
+        child: Padding(
           padding: EdgeInsets.only(
             top: 24,
             left: 16,
             right: 16,
-            bottom: MediaQuery.of(context).viewPadding.bottom + 24,
+            bottom: autoBottomPadding(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionLabel('Username *'),
-              const SizedBox(height: 8),
+              // Form fields
+              _buildUsernameLabel(),
+              const SizedBox(height: 6),
               _buildUsernameField(),
-              const SizedBox(height: 24),
-              _buildSectionLabel('PDGA Information (Optional)'),
-              const SizedBox(height: 8),
-              _buildPdgaNumField(),
-              if (_fetchedPlayerInfo != null) ...[
-                const SizedBox(height: 12),
-                _buildPlayerInfoCard(),
-              ],
-              // Only show rating field if no player info found
-              if (_fetchedPlayerInfo == null) ...[
-                const SizedBox(height: 12),
-                _buildPdgaRatingField(),
-              ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+
+              _buildSectionLabel('PDGA Rating (optional)'),
+              const SizedBox(height: 6),
+              _buildPdgaRatingField(),
+              const SizedBox(height: 16),
+
+              _buildSectionLabel('Division (optional)'),
+              const SizedBox(height: 6),
               _buildDivisionSelector(),
+
+              // Error text if any
               if (_errorText != null) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Center(
                   child: Text(
                     _errorText!,
@@ -134,18 +123,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 32),
-              _buildSubmitButton(),
-              const SizedBox(height: 16),
-              _buildSkipToWalkthroughButton(),
+
+              const Spacer(),
+
+              // Bottom buttons
               if (kDebugMode) ...[
-                const SizedBox(height: 8),
-                _buildSkipButton(),
+                _buildDebugSkipButton(),
+                const SizedBox(height: 4),
               ],
+              _buildSkipButton(),
+              const SizedBox(height: 12),
+              _buildSubmitButton(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUsernameLabel() {
+    return Row(
+      children: [
+        Text(
+          'Username',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: TurbColors.gray[700],
+          ),
+        ),
+        Text(
+          ' *',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: TurbColors.gray[700],
+          ),
+        ),
+        if (_usernameStatus == UsernameStatus.taken) ...[
+          const SizedBox(width: 8),
+          Text(
+            'taken',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.red,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -247,211 +270,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     };
   }
 
-  Widget _buildPdgaNumField() {
-    return TextFormField(
-      controller: _pdgaNumController,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      maxLength: 10,
-      style: Theme.of(context).textTheme.titleMedium!.copyWith(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: 'PDGA Number',
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        filled: true,
-        fillColor: TurbColors.gray[50],
-        hintStyle: Theme.of(context).textTheme.titleMedium!.copyWith(
-          color: Colors.grey[400],
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: TurbColors.gray[200]!, width: 1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
-        ),
-        prefixIcon: const Icon(
-          FlutterRemix.hashtag,
-          color: Colors.grey,
-          size: 18,
-        ),
-        suffixIcon: _buildPdgaSuffixIcon(),
-        counter: const Offstage(),
-      ),
-      onChanged: _onPdgaNumChanged,
-    );
-  }
-
-  Widget? _buildPdgaSuffixIcon() {
-    return switch (_pdgaFetchStatus) {
-      PDGAFetchStatus.idle => null,
-      PDGAFetchStatus.fetching => const SizedBox(
-        width: 20,
-        height: 20,
-        child: Padding(
-          padding: EdgeInsets.all(12),
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      PDGAFetchStatus.success => const Icon(
-        FlutterRemix.checkbox_circle_fill,
-        color: Colors.green,
-        size: 20,
-      ),
-      PDGAFetchStatus.notFound => const Icon(
-        FlutterRemix.close_circle_fill,
-        color: Colors.orange,
-        size: 20,
-      ),
-      PDGAFetchStatus.error => const Icon(
-        FlutterRemix.error_warning_fill,
-        color: Colors.red,
-        size: 20,
-      ),
-    };
-  }
-
-  Widget _buildPlayerInfoCard() {
-    final PDGAPlayerInfo info = _fetchedPlayerInfo!;
-    final Color subtleGreen = flattenedOverWhite(Colors.green, 0.08);
-    final Color borderGreen = flattenedOverWhite(Colors.green, 0.25);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [subtleGreen, flattenedOverWhite(Colors.green, 0.04)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderGreen),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with name and close button
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      info.name ?? 'PDGA #${info.pdgaNum}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: TurbColors.gray[800],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'PDGA #${info.pdgaNum}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: TurbColors.gray[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: _clearPlayerInfo,
-                child: Icon(
-                  FlutterRemix.close_line,
-                  color: TurbColors.gray[400],
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildStatsGrid(info),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid(PDGAPlayerInfo info) {
-    final List<_StatData> stats = [
-      if (info.rating != null) _StatData('Rating', info.rating.toString()),
-      if (info.location != null) _StatData('Location', info.location!),
-      if (info.careerWins != null)
-        _StatData('Wins', info.careerWins.toString()),
-      if (info.careerEvents != null)
-        _StatData('Events', info.careerEvents.toString()),
-      if (info.careerEarnings != null)
-        _StatData('Earnings', _formatCurrency(info.careerEarnings!)),
-      if (info.memberSince != null)
-        _StatData('Member Since', info.memberSince!),
-      if (info.classification != null) _StatData('Class', info.classification!),
-    ];
-
-    // Build rows of 2 items each
-    final List<Widget> rows = [];
-    for (int i = 0; i < stats.length; i += 2) {
-      final bool hasSecond = i + 1 < stats.length;
-      rows.add(
-        Padding(
-          padding: EdgeInsets.only(bottom: i + 2 < stats.length ? 12 : 0),
-          child: Row(
-            children: [
-              Expanded(child: _buildStatItem(stats[i].label, stats[i].value)),
-              if (hasSecond)
-                Expanded(
-                  child: _buildStatItem(stats[i + 1].label, stats[i + 1].value),
-                )
-              else
-                const Expanded(child: SizedBox()),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Column(children: rows);
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: TurbColors.gray[400],
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: TurbColors.gray[700],
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatCurrency(double amount) {
-    if (amount >= 1000) {
-      return '\$${(amount / 1000).toStringAsFixed(1)}k';
-    }
-    return '\$${amount.toStringAsFixed(0)}';
-  }
-
   Widget _buildPdgaRatingField() {
     return TextFormField(
       controller: _pdgaRatingController,
@@ -463,7 +281,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
-        hintText: 'PDGA Rating',
+        hintText: 'Enter your rating',
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
@@ -516,9 +334,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                hasSelection
-                    ? PDGADivisions.getDisplayName(_selectedDivision!)
-                    : 'Select Division',
+                hasSelection ? _selectedDivision! : 'Select Division',
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
                   color: hasSelection ? Colors.black : Colors.grey[400],
                   fontSize: 16,
@@ -538,6 +354,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _showDivisionPanel() async {
+    // Dismiss keyboard before showing panel
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final String? result = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -548,6 +367,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       builder: (context) =>
           _DivisionSelectionPanel(selectedDivision: _selectedDivision),
     );
+
+    // Dismiss keyboard again after panel closes to prevent refocus
+    if (mounted) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
 
     if (result != null && mounted) {
       setState(() {
@@ -560,7 +384,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return PrimaryButton(
       width: double.infinity,
       height: 56,
-      label: 'Complete Profile',
+      label: 'Continue',
       backgroundColor: Colors.blue,
       loading: _isSubmitting,
       disabled: !_isFormValid(),
@@ -569,6 +393,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildSkipButton() {
+    return Center(
+      child: TextButton(
+        onPressed: _onSkipToWalkthrough,
+        child: Text(
+          'Skip for now',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugSkipButton() {
     return Center(
       child: TextButton(
         onPressed: _onSkipOnboarding,
@@ -584,22 +422,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildSkipToWalkthroughButton() {
-    return Center(
-      child: TextButton(
-        onPressed: _onSkipToWalkthrough,
-        child: Text(
-          'Skip to Walkthrough',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey,
-          ),
-        ),
-      ),
-    );
-  }
-
   void _onSkipToWalkthrough() {
-    _logger.track('Skip To Walkthrough Button Tapped');
+    _logger.track('Skip For Now Button Tapped');
     HapticFeedback.lightImpact();
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -655,67 +479,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _onPdgaNumChanged(String value) {
-    _pdgaDebounceTimer?.cancel();
-
-    final int? pdgaNum = int.tryParse(value);
-    setState(() {
-      _pdgaNum = pdgaNum;
-      _fetchedPlayerInfo = null;
-      _pdgaFetchStatus = PDGAFetchStatus.idle;
-    });
-
-    // Fetch after 500ms of no typing if a valid number is entered
-    if (pdgaNum != null) {
-      setState(() {
-        _pdgaFetchStatus = PDGAFetchStatus.fetching;
-      });
-
-      _pdgaDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-        _fetchPdgaPlayerInfo(pdgaNum);
-      });
-    }
-  }
-
-  Future<void> _fetchPdgaPlayerInfo(int pdgaNum) async {
-    final PDGAPlayerInfo? info = await _webScraperService.getPDGAPlayerInfo(
-      pdgaNum,
-    );
-
-    if (!mounted) return;
-
-    if (_pdgaNum == pdgaNum) {
-      setState(() {
-        if (info != null && info.name != null) {
-          _fetchedPlayerInfo = info;
-          _pdgaFetchStatus = PDGAFetchStatus.success;
-
-          // Auto-populate rating if fetched
-          if (info.rating != null) {
-            _pdgaRating = info.rating;
-            _pdgaRatingController.text = info.rating.toString();
-          }
-        } else {
-          _fetchedPlayerInfo = null;
-          _pdgaFetchStatus = PDGAFetchStatus.notFound;
-        }
-      });
-    }
-  }
-
-  void _clearPlayerInfo() {
-    setState(() {
-      _fetchedPlayerInfo = null;
-      _pdgaFetchStatus = PDGAFetchStatus.idle;
-    });
-  }
-
   bool _isFormValid() {
     return _usernameStatus == UsernameStatus.available && !_isSubmitting;
   }
 
   Future<void> _onSubmit() async {
-    _logger.track('Complete Profile Button Tapped');
+    _logger.track('Create My Card Button Tapped');
 
     if (!_isFormValid()) return;
 
@@ -726,14 +495,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     HapticFeedback.lightImpact();
 
-    // Use fetched rating if available, otherwise fall back to manual entry
-    final int? rating = _fetchedPlayerInfo?.rating ?? _pdgaRating;
-
     PDGAMetadata? pdgaMetadata;
-    if (_pdgaNum != null || rating != null || _selectedDivision != null) {
+    if (_pdgaRating != null || _selectedDivision != null) {
       pdgaMetadata = PDGAMetadata(
-        pdgaNum: _pdgaNum,
-        pdgaRating: rating,
+        pdgaNum: null,
+        pdgaRating: _pdgaRating,
         division: _selectedDivision,
       );
     }
@@ -773,14 +539,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 enum UsernameStatus { empty, tooShort, invalid, checking, available, taken }
-
-enum PDGAFetchStatus { idle, fetching, success, notFound, error }
-
-class _StatData {
-  const _StatData(this.label, this.value);
-  final String label;
-  final String value;
-}
 
 class _DivisionSelectionPanel extends StatefulWidget {
   const _DivisionSelectionPanel({this.selectedDivision});

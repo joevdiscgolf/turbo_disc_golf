@@ -133,7 +133,7 @@ class _MainWrapperState extends State<MainWrapper> {
             color: TurbColors.senseiBlue,
           ),
           hasBackButton: false,
-          rightWidget: _buildSettingsButton(
+          leftWidget: _buildSettingsButton(
             context,
             RoundHistoryScreen.screenName,
           ),
@@ -193,7 +193,7 @@ class _MainWrapperState extends State<MainWrapper> {
                   )
                 : null,
             hasBackButton: false,
-            rightWidget: _buildRightWidget(context),
+            leftWidget: _buildLeftWidget(context),
           ),
           body: IndexedStack(
             index: _selectedIndex,
@@ -355,7 +355,7 @@ class _MainWrapperState extends State<MainWrapper> {
     );
   }
 
-  Widget? _buildRightWidget(BuildContext context) {
+  Widget? _buildLeftWidget(BuildContext context) {
     if (_selectedIndex == 0) {
       return _buildSettingsButton(context, RoundHistoryScreen.screenName);
     } else if (_selectedIndex == 1) {
@@ -377,11 +377,11 @@ class _MainWrapperState extends State<MainWrapper> {
         icon: const Icon(Icons.person, size: 24),
         onPressed: () {
           // Track analytics with dynamic screen name
-          locator.get<LoggingServiceBase>().track(
+          _logger.track(
             'Settings Button Tapped',
             properties: {
-              'Screen Name': currentScreenName,
-              'Button Location': 'Header',
+              'screen_name': currentScreenName,
+              'button_location': 'Header',
             },
           );
 

@@ -101,30 +101,4 @@ class FirebaseAuthDatabaseRepository implements AuthDatabaseRepository {
       return false;
     }
   }
-
-  @override
-  Future<bool> userIsSetUp(String uid) async {
-    return false;
-    // try {
-    //   final Map<String, dynamic>? userJson = await FBUserDataLoader.getUserJson(
-    //     uid,
-    //   );
-    //   if (userJson == null) {
-    //     return false;
-    //   }
-
-    //   // Try to parse into TurboUser - if this throws, catch will return false
-    //   TurboUser.fromJson(userJson);
-    //   return true;
-    // } catch (e, trace) {
-    //   log(e.toString());
-    //   log(trace.toString());
-    //   FirebaseCrashlytics.instance.recordError(
-    //     e,
-    //     trace,
-    //     reason: '[FirebaseAuthDatabaseRepository][userIsSetUp] exception',
-    //   );
-    //   return false;
-    // }
-  }
 }

@@ -77,18 +77,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
+                      if (currentUser != null) ...[
+                        _buildProfileHeader(currentUser),
+                        const SizedBox(height: 32),
+                      ],
                       if (locator.get<FeatureFlagService>().showDistancePreferences) ...[
                         _buildSectionHeader('Preferences'),
                         _buildSettingsCard([
                           _buildUnitToggleRow(),
                         ]),
-                      ],
-                      if (currentUser?.pdgaMetadata != null) ...[
                         const SizedBox(height: 32),
-                        _buildSectionHeader('PDGA Information'),
-                        _buildPdgaInfoSection(currentUser!.pdgaMetadata!),
                       ],
-                      const SizedBox(height: 32),
                       _buildSectionHeader('Account'),
                       _buildSettingsCard([
                         _buildLogoutRow(),
@@ -279,95 +278,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPdgaInfoSection(PDGAMetadata pdgaData) {
-    final Color subtleGreen = flattenedOverWhite(Colors.green, 0.08);
-    final Color borderGreen = flattenedOverWhite(Colors.green, 0.25);
+  Widget _buildProfileHeader(TurboUser user) {
+    final PDGAMetadata? pdgaData = user.pdgaMetadata;
+    final bool hasRating = pdgaData?.pdgaRating != null;
+    final bool hasDivision = pdgaData?.division != null;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [subtleGreen, flattenedOverWhite(Colors.green, 0.04)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderGreen),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildPdgaStatsGrid(pdgaData),
+          // Username headline
+          Text(
+            '@${user.username}',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: TurbColors.gray[800],
+            ),
+          ),
+          if (hasRating || hasDivision) ...[
+            const SizedBox(height: 16),
+            // Stats rows
+            if (hasRating)
+              _buildProfileStatRow(
+                'PDGA Rating',
+                pdgaData!.pdgaRating.toString(),
+                Icons.star_outline,
+              ),
+            if (hasRating && hasDivision) const SizedBox(height: 8),
+            if (hasDivision)
+              _buildProfileStatRow(
+                'Division',
+                PDGADivisions.getDisplayName(pdgaData!.division!),
+                Icons.emoji_events_outlined,
+              ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildPdgaStatsGrid(PDGAMetadata pdgaData) {
-    final List<_PdgaStat> stats = [
-      _PdgaStat(
-        'PDGA Number',
-        pdgaData.pdgaNum != null ? '#${pdgaData.pdgaNum}' : 'N/A',
-      ),
-      _PdgaStat(
-        'PDGA Rating',
-        pdgaData.pdgaRating != null ? '${pdgaData.pdgaRating}' : 'N/A',
-      ),
-      _PdgaStat(
-        'Division',
-        pdgaData.division != null
-            ? PDGADivisions.getDisplayName(pdgaData.division!)
-            : 'N/A',
-      ),
-    ];
-
-    // Build rows of 2 items each
-    final List<Widget> rows = [];
-    for (int i = 0; i < stats.length; i += 2) {
-      final bool hasSecond = i + 1 < stats.length;
-      rows.add(
-        Padding(
-          padding: EdgeInsets.only(bottom: i + 2 < stats.length ? 12 : 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildPdgaStatItem(stats[i].label, stats[i].value),
-              ),
-              if (hasSecond)
-                Expanded(
-                  child: _buildPdgaStatItem(stats[i + 1].label, stats[i + 1].value),
-                )
-              else
-                const Expanded(child: SizedBox()),
-            ],
+  Widget _buildProfileStatRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: TurbColors.gray[400]),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: TurbColors.gray[500],
           ),
         ),
-      );
-    }
-
-    return Column(children: rows);
-  }
-
-  Widget _buildPdgaStatItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade400,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-        ),
-        const SizedBox(height: 2),
+        const Spacer(),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
+            fontWeight: FontWeight.w600,
+            color: TurbColors.gray[700],
+          ),
         ),
       ],
     );
@@ -578,8 +556,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _PdgaStat {
-  const _PdgaStat(this.label, this.value);
-  final String label;
-  final String value;
-}

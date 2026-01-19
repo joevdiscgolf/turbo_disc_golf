@@ -16,6 +16,7 @@ import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/screens/auth/landing_screen.dart';
 import 'package:turbo_disc_golf/screens/force_upgrade/force_upgrade_screen.dart';
 import 'package:turbo_disc_golf/screens/main_wrapper.dart';
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/feature_walkthrough_screen.dart';
 import 'package:turbo_disc_golf/screens/onboarding/onboarding_screen.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
@@ -184,6 +185,9 @@ GoRouter createRouter(AppPhaseController controller) {
         case AppPhase.onboarding:
           return '/onboarding';
 
+        case AppPhase.featureWalkthrough:
+          return '/feature_walkthrough';
+
         case AppPhase.home:
           return '/home';
 
@@ -223,12 +227,31 @@ GoRouter createRouter(AppPhaseController controller) {
           },
         ),
       ),
-      // todo: implement onboarding
       GoRoute(
         path: '/onboarding',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const OnboardingScreen(),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1.0, 0.0), // Slide from right
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                  ),
+              child: child,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/feature_walkthrough',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const FeatureWalkthroughScreen(),
           transitionDuration: const Duration(milliseconds: 300),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(

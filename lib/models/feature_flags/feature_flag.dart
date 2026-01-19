@@ -10,7 +10,10 @@ enum FeatureFlag {
   // ===== UI & Animation Toggles =====
   shouldAnimateProgressIndicators('should_animate_progress_indicators', true),
   useRoundReviewScreenV2('use_round_review_screen_v2', true),
-  useHeroAnimationsForRoundReview('use_hero_animations_for_round_review', false),
+  useHeroAnimationsForRoundReview(
+    'use_hero_animations_for_round_review',
+    false,
+  ),
   useCustomPageTransitionsForRoundReview(
     'use_custom_page_transitions_for_round_review',
     true,
@@ -112,7 +115,8 @@ enum FeatureFlag {
   /// Comma-separated list of admin UIDs
   adminUids('admin_uids', '9abVDwf3ZVM8unEzqMcWk95in2F3'),
   alwaysShowForceUpgradeScreen('always_show_force_upgrade_screen', false),
-  ;
+  alwaysShowFeatureWalkthrough('always_show_feature_walkthrough', true),
+  alwaysShowOnboarding('always_show_onboarding', false);
 
   const FeatureFlag(this.remoteKey, this.defaultValue);
 

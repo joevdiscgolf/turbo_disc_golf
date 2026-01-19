@@ -15,5 +15,4 @@ abstract class AuthDatabaseRepository {
     String? bio,
   );
   Future<bool> usernameIsAvailable(String username);
-  Future<bool> userIsSetUp(String uid);
 }

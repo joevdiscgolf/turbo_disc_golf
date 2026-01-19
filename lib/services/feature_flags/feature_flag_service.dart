@@ -277,6 +277,11 @@ class FeatureFlagService {
   bool get alwaysShowForceUpgradeScreen =>
       getBool(FeatureFlag.alwaysShowForceUpgradeScreen);
 
+  bool get alwaysShowFeatureWalkthrough =>
+      getBool(FeatureFlag.alwaysShowFeatureWalkthrough);
+
+  bool get alwaysShowOnboarding => getBool(FeatureFlag.alwaysShowOnboarding);
+
   // ===== Debug Info =====
 
   /// Get all current flag values for debugging.

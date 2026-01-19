@@ -105,8 +105,9 @@ class FirebaseAuthRepository implements AuthRepository {
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
 
       if (userCredential.user == null) {
         return false;
@@ -159,14 +160,13 @@ class FirebaseAuthRepository implements AuthRepository {
             nonce: nonce,
           );
 
-      final OAuthCredential oauthCredential = OAuthProvider('apple.com')
-          .credential(
-            idToken: appleCredential.identityToken,
-            rawNonce: rawNonce,
-          );
+      final OAuthCredential oauthCredential = OAuthProvider(
+        'apple.com',
+      ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(oauthCredential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        oauthCredential,
+      );
 
       if (userCredential.user == null) {
         return false;
@@ -216,8 +216,10 @@ class FirebaseAuthRepository implements AuthRepository {
     const String charset =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final math.Random random = math.Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
-        .join();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 
   /// Returns the SHA256 hash of the input string
@@ -276,7 +278,8 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   bool userHasOnboarded() {
-    return getCurrentUser()?.displayName?.contains('has_onboarded') == true;
+    return false;
+    // return getCurrentUser()?.displayName?.contains('has_onboarded') == true;
   }
 
   @override

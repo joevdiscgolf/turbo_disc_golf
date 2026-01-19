@@ -8,11 +8,11 @@ class SceneComplete extends StatefulWidget {
   const SceneComplete({
     super.key,
     required this.isActive,
-    required this.onComplete,
+    this.onComplete,
   });
 
   final bool isActive;
-  final VoidCallback onComplete;
+  final VoidCallback? onComplete;
 
   @override
   State<SceneComplete> createState() => _SceneCompleteState();
@@ -22,6 +22,7 @@ class _SceneCompleteState extends State<SceneComplete>
     with TickerProviderStateMixin {
   late AnimationController _statsCardController;
   late AnimationController _storyCardController;
+  late AnimationController _glazeCardController;
   late AnimationController _roastCardController;
   late AnimationController _buttonController;
   late AnimationController _floatController;
@@ -31,6 +32,7 @@ class _SceneCompleteState extends State<SceneComplete>
   late Animation<double> _statsRotation;
   late Animation<double> _storySlide;
   late Animation<double> _storyRotation;
+  late Animation<double> _glazeSlide;
   late Animation<double> _roastSlide;
   late Animation<double> _buttonOpacity;
   late Animation<double> _buttonScale;
@@ -166,8 +168,10 @@ class _SceneCompleteState extends State<SceneComplete>
             _buildCardsStack(),
             const Spacer(flex: 1),
             _buildCopyText(),
-            const SizedBox(height: 24),
-            _buildButton(),
+            if (widget.onComplete != null) ...[
+              const SizedBox(height: 24),
+              _buildButton(),
+            ],
             const SizedBox(height: 20),
           ],
         ),
@@ -584,7 +588,7 @@ class _SceneCompleteState extends State<SceneComplete>
               gradientBackground: const [Color(0xFF4ECDC4), Color(0xFF44CF9C)],
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              onPressed: widget.onComplete,
+              onPressed: widget.onComplete!,
             ),
           ),
         );
