@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/judge_round_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/juge_round_tab/judge_round_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_stats_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -95,17 +95,20 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
 
   Future<void> _handleDeleteRound(DGRound round) async {
     // Track button tap
-    _logger.track('Delete Round Button Tapped', properties: {
-      'round_id': round.id,
-      'course_name': round.courseName,
-    });
+    _logger.track(
+      'Delete Round Button Tapped',
+      properties: {'round_id': round.id, 'course_name': round.courseName},
+    );
 
     // Track modal opened
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'dialog',
-      'modal_name': 'Delete Round Confirmation',
-      'round_id': round.id,
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'dialog',
+        'modal_name': 'Delete Round Confirmation',
+        'round_id': round.id,
+      },
+    );
 
     // Show confirmation dialog
     final bool? confirmed = await showDialog<bool>(
@@ -119,18 +122,20 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
           actions: [
             TextButton(
               onPressed: () {
-                _logger.track('Delete Round Cancelled', properties: {
-                  'round_id': round.id,
-                });
+                _logger.track(
+                  'Delete Round Cancelled',
+                  properties: {'round_id': round.id},
+                );
                 Navigator.of(context).pop(false);
               },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                _logger.track('Delete Round Confirmed', properties: {
-                  'round_id': round.id,
-                });
+                _logger.track(
+                  'Delete Round Confirmed',
+                  properties: {'round_id': round.id},
+                );
                 Navigator.of(context).pop(true);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -267,7 +272,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
               controller: _tabController,
               children: [
                 // Stats tab - with optional info bar at top
-                RoundOverviewBody(
+                RoundStatsBody(
                   round: round,
                   isReviewV2Screen: true,
                   tabController: _tabController,

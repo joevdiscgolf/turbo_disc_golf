@@ -9,13 +9,11 @@ import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response
 
 /// Client for the Cloud Run pose analysis API
 class PoseAnalysisApiClient {
-  PoseAnalysisApiClient({
-    String? baseUrl,
-    http.Client? httpClient,
-  })  : _baseUrl = baseUrl ?? _defaultBaseUrl,
-        _httpClient = httpClient ?? http.Client();
+  PoseAnalysisApiClient({String? baseUrl, http.Client? httpClient})
+    : _baseUrl = baseUrl ?? _defaultBaseUrl,
+      _httpClient = httpClient ?? http.Client();
 
-  // TODO: Update this to your Cloud Run URL after deployment
+  // todo: Update this to your Cloud Run URL after deployment
   static const String _defaultBaseUrl = 'http://localhost:8080';
 
   final String _baseUrl;
@@ -58,31 +56,40 @@ class PoseAnalysisApiClient {
 
     try {
       // Send request with timeout
-      final http.StreamedResponse streamedResponse = await request.send().timeout(
-        const Duration(minutes: 5), // Video analysis can take time
-        onTimeout: () {
-          throw PoseAnalysisException(
-            'Request timed out. Video analysis is taking too long.',
+      final http.StreamedResponse streamedResponse = await request
+          .send()
+          .timeout(
+            const Duration(minutes: 5), // Video analysis can take time
+            onTimeout: () {
+              throw PoseAnalysisException(
+                'Request timed out. Video analysis is taking too long.',
+              );
+            },
           );
-        },
-      );
 
       // Read response
-      final http.Response response = await http.Response.fromStream(streamedResponse);
+      final http.Response response = await http.Response.fromStream(
+        streamedResponse,
+      );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> json =
+            jsonDecode(response.body) as Map<String, dynamic>;
 
         // Debug: Print raw response structure
         debugPrint('═══════════════════════════════════════════════════════');
         debugPrint('📥 RAW POSE ANALYSIS RESPONSE:');
         debugPrint('Status: ${json['status']}');
-        debugPrint('Checkpoints count: ${(json['checkpoints'] as List?)?.length ?? 0}');
+        debugPrint(
+          'Checkpoints count: ${(json['checkpoints'] as List?)?.length ?? 0}',
+        );
 
         // 🔍 CHECK FOR THUMBNAIL - THIS IS CRITICAL
         debugPrint('');
         debugPrint('🖼️  THUMBNAIL CHECK:');
-        debugPrint('   - round_thumbnail_base64 exists: ${json.containsKey('round_thumbnail_base64')}');
+        debugPrint(
+          '   - round_thumbnail_base64 exists: ${json.containsKey('round_thumbnail_base64')}',
+        );
         if (json.containsKey('round_thumbnail_base64')) {
           final dynamic thumbnailValue = json['round_thumbnail_base64'];
           if (thumbnailValue == null) {
@@ -90,8 +97,12 @@ class PoseAnalysisApiClient {
           } else if (thumbnailValue is String) {
             debugPrint('   - Value type: String');
             debugPrint('   - Length: ${thumbnailValue.length} characters');
-            debugPrint('   - First 50 chars: ${thumbnailValue.substring(0, thumbnailValue.length > 50 ? 50 : thumbnailValue.length)}...');
-            debugPrint('   - Looks like base64: ${thumbnailValue.startsWith('/9j/') || thumbnailValue.startsWith('iVBORw')}');
+            debugPrint(
+              '   - First 50 chars: ${thumbnailValue.substring(0, thumbnailValue.length > 50 ? 50 : thumbnailValue.length)}...',
+            );
+            debugPrint(
+              '   - Looks like base64: ${thumbnailValue.startsWith('/9j/') || thumbnailValue.startsWith('iVBORw')}',
+            );
           } else {
             debugPrint('   - Value type: ${thumbnailValue.runtimeType}');
           }
@@ -101,12 +112,20 @@ class PoseAnalysisApiClient {
         }
         debugPrint('');
 
-        if (json['checkpoints'] != null && (json['checkpoints'] as List).isNotEmpty) {
-          final Map<String, dynamic> firstCheckpoint = (json['checkpoints'] as List).first as Map<String, dynamic>;
+        if (json['checkpoints'] != null &&
+            (json['checkpoints'] as List).isNotEmpty) {
+          final Map<String, dynamic> firstCheckpoint =
+              (json['checkpoints'] as List).first as Map<String, dynamic>;
           debugPrint('First checkpoint keys: ${firstCheckpoint.keys.toList()}');
-          debugPrint('First checkpoint_id: ${firstCheckpoint['checkpoint_id']}');
-          debugPrint('First checkpoint_name: ${firstCheckpoint['checkpoint_name']}');
-          debugPrint('Deviations type: ${firstCheckpoint['deviations'].runtimeType}');
+          debugPrint(
+            'First checkpoint_id: ${firstCheckpoint['checkpoint_id']}',
+          );
+          debugPrint(
+            'First checkpoint_name: ${firstCheckpoint['checkpoint_name']}',
+          );
+          debugPrint(
+            'Deviations type: ${firstCheckpoint['deviations'].runtimeType}',
+          );
           debugPrint('Deviations: ${firstCheckpoint['deviations']}');
         }
         debugPrint('═══════════════════════════════════════════════════════');
@@ -114,9 +133,11 @@ class PoseAnalysisApiClient {
         return PoseAnalysisResponse.fromJson(json);
       } else {
         // Try to parse error message from response
-        String errorMessage = 'Analysis failed with status ${response.statusCode}';
+        String errorMessage =
+            'Analysis failed with status ${response.statusCode}';
         try {
-          final Map<String, dynamic> errorJson = jsonDecode(response.body) as Map<String, dynamic>;
+          final Map<String, dynamic> errorJson =
+              jsonDecode(response.body) as Map<String, dynamic>;
           errorMessage = errorJson['detail'] as String? ?? errorMessage;
         } catch (_) {
           // Use default error message
@@ -128,9 +149,7 @@ class PoseAnalysisApiClient {
         'Network error: Could not connect to analysis server. ${e.message}',
       );
     } on http.ClientException catch (e) {
-      throw PoseAnalysisException(
-        'HTTP error: ${e.message}',
-      );
+      throw PoseAnalysisException('HTTP error: ${e.message}');
     }
   }
 
@@ -164,26 +183,31 @@ class PoseAnalysisApiClient {
     };
 
     try {
-      final http.Response response = await _httpClient.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestBody),
-      ).timeout(
-        const Duration(minutes: 5),
-        onTimeout: () {
-          throw PoseAnalysisException(
-            'Request timed out. Video analysis is taking too long.',
+      final http.Response response = await _httpClient
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(requestBody),
+          )
+          .timeout(
+            const Duration(minutes: 5),
+            onTimeout: () {
+              throw PoseAnalysisException(
+                'Request timed out. Video analysis is taking too long.',
+              );
+            },
           );
-        },
-      );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> json =
+            jsonDecode(response.body) as Map<String, dynamic>;
         return PoseAnalysisResponse.fromJson(json);
       } else {
-        String errorMessage = 'Analysis failed with status ${response.statusCode}';
+        String errorMessage =
+            'Analysis failed with status ${response.statusCode}';
         try {
-          final Map<String, dynamic> errorJson = jsonDecode(response.body) as Map<String, dynamic>;
+          final Map<String, dynamic> errorJson =
+              jsonDecode(response.body) as Map<String, dynamic>;
           errorMessage = errorJson['detail'] as String? ?? errorMessage;
         } catch (_) {}
         throw PoseAnalysisException(errorMessage);
@@ -199,9 +223,9 @@ class PoseAnalysisApiClient {
   Future<bool> healthCheck() async {
     try {
       final Uri uri = Uri.parse('$_baseUrl/health');
-      final http.Response response = await _httpClient.get(uri).timeout(
-        const Duration(seconds: 10),
-      );
+      final http.Response response = await _httpClient
+          .get(uri)
+          .timeout(const Duration(seconds: 10));
       return response.statusCode == 200;
     } catch (e) {
       return false;

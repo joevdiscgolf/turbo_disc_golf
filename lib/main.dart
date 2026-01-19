@@ -1,4 +1,9 @@
+import 'dart:io';
+
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,6 +54,12 @@ Future<void> main() async {
   );
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Use Firebase Functions emulator on simulators/emulators only
+  if (kDebugMode && !await _isPhysicalDevice()) {
+    FirebaseFunctions.instance.useFunctionsEmulator('127.0.0.1', 5001);
+  }
+
   await setUpLocator();
 
   await locator.get<AppPhaseController>().initialize();
@@ -266,4 +277,16 @@ GoRouter createRouter(AppPhaseController controller) {
       ),
     ],
   );
+}
+
+Future<bool> _isPhysicalDevice() async {
+  if (Platform.isIOS) {
+    final IosDeviceInfo info = await DeviceInfoPlugin().iosInfo;
+    return info.isPhysicalDevice;
+  }
+  if (Platform.isAndroid) {
+    final AndroidDeviceInfo info = await DeviceInfoPlugin().androidInfo;
+    return info.isPhysicalDevice;
+  }
+  return false;
 }

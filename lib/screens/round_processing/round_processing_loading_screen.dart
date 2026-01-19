@@ -10,8 +10,8 @@ import 'package:turbo_disc_golf/screens/round_processing/components/explosion_ef
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/persistent_square.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_confirmation_widget.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/judge_round_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_overview_body.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/juge_round_tab/judge_round_tab.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_stats_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -398,7 +398,7 @@ class _RoundProcessingLoadingScreenState
             child: TabBarView(
               controller: _tabController,
               children: [
-                RoundOverviewBody(
+                RoundStatsBody(
                   round: _roundParser.parsedRound!,
                   isReviewV2Screen: true,
                   tabController: _tabController,
