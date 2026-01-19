@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/user_data_cubit.dart';
 import 'package:turbo_disc_golf/state/user_data_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -15,6 +16,9 @@ import 'package:turbo_disc_golf/utils/constants/pdga_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class SettingsScreen extends StatefulWidget {
+  static const String routeName = '/settings';
+  static const String screenName = 'Settings';
+
   const SettingsScreen({super.key});
 
   @override
@@ -22,7 +26,22 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  late final LoggingServiceBase _logger;
   bool _useMeters = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': SettingsScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('SettingsScreen');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +192,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildToggleOption(String label, bool isSelected) {
     return GestureDetector(
       onTap: () {
+        _logger.track(
+          'Distance Unit Toggle Tapped',
+          properties: {'selected_unit': label},
+        );
         HapticFeedback.lightImpact();
         setState(() {
           _useMeters = label == 'Meters';
@@ -211,6 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          _logger.track('Log Out Button Tapped');
           HapticFeedback.lightImpact();
           _showLogoutConfirmation();
         },
@@ -354,6 +378,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          _logger.track('Delete Account Button Tapped');
           HapticFeedback.lightImpact();
           _showDeleteAccountConfirmation();
         },
@@ -412,6 +437,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLogoutConfirmation() {
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'alert',
+        'modal_name': 'Logout Confirmation',
+      },
+    );
+
     showCupertinoModalPopup<void>(
       context: context,
       builder: (context) => CupertinoActionSheet(
@@ -421,6 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           CupertinoActionSheetAction(
             isDestructiveAction: true,
             onPressed: () {
+              _logger.track('Logout Confirmed');
               Navigator.of(context).pop();
               locator.get<AuthService>().logout();
             },
@@ -428,7 +462,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            _logger.track('Logout Cancelled');
+            Navigator.of(context).pop();
+          },
           child: const Text('Cancel'),
         ),
       ),
@@ -436,6 +473,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showDeleteAccountConfirmation() {
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'alert',
+        'modal_name': 'Delete Account Confirmation',
+      },
+    );
+
     showCupertinoModalPopup<void>(
       context: context,
       builder: (context) => CupertinoActionSheet(
@@ -447,6 +492,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           CupertinoActionSheetAction(
             isDestructiveAction: true,
             onPressed: () {
+              _logger.track('Delete Account First Confirmation');
               Navigator.of(context).pop();
               _showFinalDeleteConfirmation();
             },
@@ -454,7 +500,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            _logger.track('Delete Account Cancelled');
+            Navigator.of(context).pop();
+          },
           child: const Text('Cancel'),
         ),
       ),
@@ -462,6 +511,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showFinalDeleteConfirmation() {
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'alert',
+        'modal_name': 'Delete Account Final Confirmation',
+      },
+    );
+
     showCupertinoModalPopup<void>(
       context: context,
       builder: (context) => CupertinoActionSheet(
@@ -473,6 +530,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           CupertinoActionSheetAction(
             isDestructiveAction: true,
             onPressed: () async {
+              _logger.track('Delete Account Final Confirmed');
               Navigator.of(context).pop();
               await _deleteUserAccount();
             },
@@ -480,7 +538,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            _logger.track('Delete Account Final Cancelled');
+            Navigator.of(context).pop();
+          },
           child: const Text('Cancel'),
         ),
       ),

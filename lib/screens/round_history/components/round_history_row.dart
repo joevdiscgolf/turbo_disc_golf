@@ -4,9 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class RoundHistoryRow extends StatelessWidget {
   const RoundHistoryRow({super.key, required this.round});
@@ -50,9 +48,7 @@ class RoundHistoryRow extends StatelessWidget {
           Navigator.push(
             context,
             CupertinoPageRoute(
-              builder: (context) => useRoundReviewScreenV2
-                  ? RoundReviewScreenV2(round: round)
-                  : RoundReviewScreen(round: round),
+              builder: (context) => RoundReviewScreen(round: round),
             ),
           );
         },

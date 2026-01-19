@@ -18,6 +18,12 @@ abstract class LoggingServiceBase {
   /// Log a screen impression event.
   /// When used with a scoped logger, 'Screen Name' is already in base properties.
   void logScreenImpression(String screenClass);
+
+  /// Register super properties that are sent with every event.
+  Future<void> registerSuperProperties(Map<String, dynamic> properties);
+
+  /// Clear all super properties.
+  Future<void> clearSuperProperties();
 }
 
 /// Main logging service that orchestrates multiple analytics providers.
@@ -50,7 +56,8 @@ class LoggingService implements LoggingServiceBase, ClearOnLogoutProtocol {
   /// List of analytics providers to broadcast events to
   final List<LoggingProvider> _providers;
 
-  /// The currently identified user ID (cached for event enrichment)
+  /// The currently identified user ID (cached for debugging/logout handling)
+  // ignore: unused_field
   String? _currentUserId;
 
   LoggingService({required List<LoggingProvider> providers})
@@ -96,15 +103,13 @@ class LoggingService implements LoggingServiceBase, ClearOnLogoutProtocol {
 
   /// Track an event across all providers.
   ///
-  /// Automatically enriches the event with:
-  /// - `user_id` (if a user is identified)
-  /// - `timestamp` (ISO8601 format)
+  /// Note: `user_id` and `timestamp` are automatically recorded by Mixpanel
+  /// (user_id via identify(), timestamp automatically).
   ///
   /// Example:
   /// ```dart
-  /// loggingService.track('Button Clicked', properties: {
-  ///   'button_name': 'Submit',
-  ///   'screen': 'Create Round',
+  /// loggingService.track('Create Round Button Tapped', properties: {
+  ///   'course_name': 'Blue Lake Park',
   /// });
   /// ```
   @override
@@ -113,22 +118,13 @@ class LoggingService implements LoggingServiceBase, ClearOnLogoutProtocol {
     Map<String, dynamic>? properties,
   }) async {
     try {
-      // Create enriched properties map
-      final Map<String, dynamic> enrichedProperties = {
-        ...?properties,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-
-      // Add user_id if available
-      if (_currentUserId != null) {
-        enrichedProperties['user_id'] = _currentUserId;
-      }
-
+      // Note: timestamp and user_id are auto-recorded by Mixpanel
+      // (timestamp is automatic, user_id is set via identify())
       debugPrint('[LoggingService] Tracking: $eventName');
 
       // Broadcast to all providers (fire-and-forget)
       for (final LoggingProvider provider in _providers) {
-        provider.track(eventName, properties: enrichedProperties).catchError((
+        provider.track(eventName, properties: properties).catchError((
           dynamic error,
         ) {
           debugPrint(
@@ -228,7 +224,7 @@ class LoggingService implements LoggingServiceBase, ClearOnLogoutProtocol {
   /// Implementation of [ClearOnLogoutProtocol].
   ///
   /// Called automatically by [LogoutManager] when the user logs out.
-  /// Flushes queued events, resets all providers, and clears the cached user ID.
+  /// Flushes queued events, clears super properties, resets all providers, and clears the cached user ID.
   @override
   Future<void> clearOnLogout() async {
     try {
@@ -236,6 +232,9 @@ class LoggingService implements LoggingServiceBase, ClearOnLogoutProtocol {
 
       // First, flush any pending events to ensure they're sent
       await flush();
+
+      // Clear super properties before reset
+      await clearSuperProperties();
 
       // Reset all providers (clears user identity and generates new anonymous ID)
       for (final LoggingProvider provider in _providers) {
@@ -290,6 +289,59 @@ class LoggingService implements LoggingServiceBase, ClearOnLogoutProtocol {
       'Screen Class': screenClass,
     });
   }
+
+  /// Register super properties that are sent with every event across all providers.
+  ///
+  /// Super properties persist until explicitly cleared and are automatically
+  /// included with all tracked events.
+  ///
+  /// Example:
+  /// ```dart
+  /// loggingService.registerSuperProperties({
+  ///   'is_admin': true,
+  ///   'platform': 'iOS',
+  /// });
+  /// ```
+  @override
+  Future<void> registerSuperProperties(Map<String, dynamic> properties) async {
+    try {
+      debugPrint(
+        '[LoggingService] Registering super properties: ${properties.keys.join(", ")}',
+      );
+
+      // Broadcast to all providers (fire-and-forget)
+      for (final LoggingProvider provider in _providers) {
+        provider.registerSuperProperties(properties).catchError((dynamic error) {
+          debugPrint(
+            '[LoggingService] ${provider.providerName} failed to register super properties: $error',
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('[LoggingService] Failed to register super properties: $e');
+    }
+  }
+
+  /// Clear all super properties across all providers.
+  ///
+  /// Should be called on logout to remove user-specific super properties.
+  @override
+  Future<void> clearSuperProperties() async {
+    try {
+      debugPrint('[LoggingService] Clearing super properties...');
+
+      // Broadcast to all providers (fire-and-forget)
+      for (final LoggingProvider provider in _providers) {
+        provider.clearSuperProperties().catchError((dynamic error) {
+          debugPrint(
+            '[LoggingService] ${provider.providerName} failed to clear super properties: $error',
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('[LoggingService] Failed to clear super properties: $e');
+    }
+  }
 }
 
 /// Private wrapper that merges base properties into each track call.
@@ -340,4 +392,11 @@ class _ScopedLoggingService implements LoggingServiceBase {
   @override
   void logScreenImpression(String screenClass) =>
       _parent.logScreenImpression(screenClass);
+
+  @override
+  Future<void> registerSuperProperties(Map<String, dynamic> properties) =>
+      _parent.registerSuperProperties(properties);
+
+  @override
+  Future<void> clearSuperProperties() => _parent.clearSuperProperties();
 }

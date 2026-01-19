@@ -5,11 +5,9 @@ import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/custom_page_routes.dart';
 
 // Test constant for image + voice mode (no hole distance/par info)
@@ -116,9 +114,7 @@ class _VoiceDetailInputScreenState extends State<VoiceDetailInputScreen>
         // Then push review screen with zoom transition
         Navigator.of(context).push(
           ZoomPageRoute(
-            page: useRoundReviewScreenV2
-                ? RoundReviewScreenV2(round: round, showStoryOnLoad: false)
-                : RoundReviewScreen(round: round, showStoryOnLoad: false),
+            page: RoundReviewScreen(round: round, showStoryOnLoad: false),
           ),
         );
       } else {

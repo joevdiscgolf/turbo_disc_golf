@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
@@ -8,6 +10,9 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysi
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 
 class FormAnalysisDetailScreen extends StatefulWidget {
+  static const String routeName = '/form-analysis-detail';
+  static const String screenName = 'Form Analysis Detail';
+
   const FormAnalysisDetailScreen({super.key, required this.analysis});
 
   final FormAnalysisRecord analysis;
@@ -19,6 +24,21 @@ class FormAnalysisDetailScreen extends StatefulWidget {
 
 class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
   bool _isDeleting = false;
+  late final LoggingServiceBase _logger;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': FormAnalysisDetailScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('FormAnalysisDetailScreen');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +106,9 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
       enabled: !_isDeleting,
       onSelected: (String value) {
         if (value == 'delete') {
+          _logger.track('Delete Analysis Menu Item Tapped', properties: {
+            'analysis_id': widget.analysis.id,
+          });
           _showDeleteConfirmation();
         }
       },
@@ -129,6 +152,9 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     );
 
     if (confirmed == true && mounted) {
+      _logger.track('Delete Analysis Confirmed', properties: {
+        'analysis_id': widget.analysis.id,
+      });
       await _handleDelete();
     }
   }

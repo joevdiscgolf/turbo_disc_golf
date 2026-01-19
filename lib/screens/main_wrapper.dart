@@ -20,6 +20,8 @@ import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class MainWrapper extends StatefulWidget {
+  static const String screenName = 'Main Wrapper';
+
   const MainWrapper({super.key});
 
   @override
@@ -27,9 +29,50 @@ class MainWrapper extends StatefulWidget {
 }
 
 class _MainWrapperState extends State<MainWrapper> {
+  late final LoggingServiceBase _logger;
   int _selectedIndex = 0;
 
+  // Tab names for form analysis tab mode
+  static const List<String> _formAnalysisTabNames = ['Rounds', 'Form Coach'];
+  // Tab names for bottom navigation mode
+  static const List<String> _bottomNavTabNames = [
+    'Rounds',
+    'Stats',
+    'Test AI',
+    'Test Image',
+    'Test Roast',
+    'Settings',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': MainWrapper.screenName,
+    });
+  }
+
   void _onItemTapped(int index) {
+    final List<String> tabNames = useFormAnalysisTab
+        ? _formAnalysisTabNames
+        : _bottomNavTabNames;
+
+    final String previousTabName = tabNames[_selectedIndex];
+    final String newTabName = tabNames[index];
+
+    _logger.track(
+      'Tab Changed',
+      properties: {
+        'tab_index': index,
+        'tab_name': newTabName,
+        'previous_tab_index': _selectedIndex,
+        'previous_tab_name': previousTabName,
+      },
+    );
+
     HapticFeedback.lightImpact();
     setState(() {
       _selectedIndex = index;
@@ -348,6 +391,7 @@ class _MainWrapperState extends State<MainWrapper> {
       child: IconButton(
         icon: const Icon(Icons.delete_forever, size: 24),
         onPressed: () {
+          _logger.track('Delete All Analyses Button Tapped');
           HapticFeedback.lightImpact();
           _showDeleteConfirmation(context);
         },
@@ -356,6 +400,14 @@ class _MainWrapperState extends State<MainWrapper> {
   }
 
   void _showDeleteConfirmation(BuildContext context) {
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'dialog',
+        'modal_name': 'Delete All Analyses Confirmation',
+      },
+    );
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -370,11 +422,15 @@ class _MainWrapperState extends State<MainWrapper> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () {
+              _logger.track('Delete All Analyses Cancelled');
+              Navigator.pop(dialogContext);
+            },
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
+              _logger.track('Delete All Analyses Confirmed');
               Navigator.pop(dialogContext);
               final FormAnalysisHistoryCubit historyCubit = locator
                   .get<FormAnalysisHistoryCubit>();

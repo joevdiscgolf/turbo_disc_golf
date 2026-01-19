@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_card.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_welcome_empty_state.dart';
@@ -34,12 +36,23 @@ class FormAnalysisHistoryScreen extends StatefulWidget {
 
 class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   late FormAnalysisHistoryCubit _historyCubit;
+  late final LoggingServiceBase _logger;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _historyCubit = BlocProvider.of<FormAnalysisHistoryCubit>(context);
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': FormAnalysisHistoryScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('FormAnalysisHistoryScreen');
+
     // Load analyses on initial screen load
     _historyCubit.loadHistory();
 
@@ -63,6 +76,8 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   }
 
   Future<void> _showRecordingScreen() async {
+    _logger.track('New Form Analysis Button Tapped');
+
     pushCupertinoRoute(
       context,
       FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding),
@@ -130,6 +145,10 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
                   analysis: analysis,
                   onTap: () {
                     HapticFeedback.lightImpact();
+                    _logger.track('Form Analysis Card Tapped', properties: {
+                      'analysis_id': analysis.id,
+                      'item_index': index,
+                    });
                     Navigator.push(
                       context,
                       CupertinoPageRoute(
@@ -188,7 +207,10 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => _historyCubit.loadHistory(),
+            onPressed: () {
+              _logger.track('Retry Load History Button Tapped');
+              _historyCubit.loadHistory();
+            },
             child: const Text('Retry'),
           ),
         ],

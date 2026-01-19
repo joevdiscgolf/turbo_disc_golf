@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/screens/auth/components/c1x_preview_card.dart';
@@ -18,6 +20,9 @@ import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
 import 'package:turbo_disc_golf/screens/auth/sign_up_screen.dart';
 
 class LandingScreen extends StatefulWidget {
+  static const String routeName = '/landing';
+  static const String screenName = 'Landing';
+
   const LandingScreen({super.key});
 
   @override
@@ -33,12 +38,22 @@ class _LandingScreenState extends State<LandingScreen>
   late Animation<double> _buttonsOpacity;
   late PageController _pageController;
   late Timer _autoScrollTimer;
+  late final LoggingServiceBase _logger;
   int _currentPage = 0;
   static const int _autoScrollDuration = 4000; // 4 seconds per page
 
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': LandingScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('LandingScreen');
 
     // Set status bar to light content for dark background
     SystemChrome.setSystemUIOverlayStyle(
@@ -358,6 +373,7 @@ class _LandingScreenState extends State<LandingScreen>
 
   void _navigateToSignUp() {
     HapticFeedback.mediumImpact();
+    _logger.track('Get Started Button Tapped');
     Navigator.push(
       context,
       CupertinoPageRoute(builder: (context) => const SignUpScreen()),
@@ -366,6 +382,7 @@ class _LandingScreenState extends State<LandingScreen>
 
   void _navigateToLogin() {
     HapticFeedback.lightImpact();
+    _logger.track('Sign In Link Tapped');
     Navigator.push(
       context,
       CupertinoPageRoute(builder: (context) => const LoginScreen()),

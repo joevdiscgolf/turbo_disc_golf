@@ -58,4 +58,20 @@ abstract class LoggingProvider {
   /// Useful before logout to ensure events are not lost.
   /// Should never throw - catch all errors internally.
   Future<void> flush();
+
+  /// Register super properties that are sent with every event.
+  ///
+  /// Super properties persist until explicitly cleared and are automatically
+  /// included with all tracked events. Useful for properties that should be
+  /// on every event (e.g., platform, user type).
+  /// Should never throw - catch all errors internally.
+  ///
+  /// [properties] - Key-value properties to include with every event
+  Future<void> registerSuperProperties(Map<String, dynamic> properties);
+
+  /// Clear all super properties.
+  ///
+  /// Should be called on logout to remove user-specific super properties.
+  /// Should never throw - catch all errors internally.
+  Future<void> clearSuperProperties();
 }

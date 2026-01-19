@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/course_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/scores_tab/scores_tab.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 /// Detail screen that shows course and scores information
 class ScoreDetailScreen extends StatefulWidget {
+  static const String screenName = 'Score Detail';
+  static const String routeName = '/score-detail';
+
   final DGRound round;
 
   const ScoreDetailScreen({super.key, required this.round});
@@ -17,15 +22,38 @@ class ScoreDetailScreen extends StatefulWidget {
 class _ScoreDetailScreenState extends State<ScoreDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late final LoggingServiceBase _logger;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Initialize scoped logger
+    _logger = locator.get<LoggingService>().withBaseProperties({
+      'screen_name': ScoreDetailScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('ScoreDetailScreen');
+
+    // Track tab changes
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      final List<String> tabNames = ['Course', 'Scores'];
+      _logger.track('Score Detail Tab Changed', properties: {
+        'tab_index': _tabController.index,
+        'tab_name': tabNames[_tabController.index],
+      });
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }

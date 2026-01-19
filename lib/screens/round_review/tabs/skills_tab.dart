@@ -1,17 +1,31 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class SkillsTab extends StatelessWidget {
+  static const String screenName = 'Skills';
+  static const String tabName = 'Skills';
+
   const SkillsTab({super.key, required this.round});
 
   final DGRound round;
 
   @override
   Widget build(BuildContext context) {
+    // Track screen impression
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track('Screen Impression', properties: {
+        'screen_name': SkillsTab.screenName,
+        'screen_class': 'SkillsTab',
+        'tab_name': SkillsTab.tabName,
+      });
+    });
+
     final SkillsAnalysisService service = SkillsAnalysisService();
     final SkillsAnalysis analysis = service.getSkillsAnalysis(round);
 

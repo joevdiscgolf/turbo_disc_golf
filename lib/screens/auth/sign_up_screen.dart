@@ -12,12 +12,16 @@ import 'package:turbo_disc_golf/components/buttons/multi_state_button.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/auth/components/apple_sign_in_button.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/screens/auth/components/auth_input_field.dart';
 import 'package:turbo_disc_golf/screens/auth/components/google_sign_in_button.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class SignUpScreen extends StatefulWidget {
+  static const String routeName = '/sign-up';
+  static const String screenName = 'Sign Up';
+
   const SignUpScreen({super.key});
 
   @override
@@ -31,6 +35,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+  late final LoggingServiceBase _logger;
 
   ButtonState _buttonState = ButtonState.normal;
   Timer? checkUsernameOnStoppedTyping;
@@ -44,6 +49,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': SignUpScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('SignUpScreen');
+
     if (kDebugMode) {
       _emailController.text = 'test@gmail.com';
       _passwordController.text = 'Testing123!';
@@ -161,6 +176,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _signupPressed() async {
+    _logger.track('Sign Up Button Tapped');
+
     setState(() => _errorText = null);
     HapticFeedback.lightImpact();
     final String email = _emailController.text;
@@ -215,6 +232,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    _logger.track('Google Sign In Button Tapped');
+
     setState(() {
       _errorText = null;
     });
@@ -244,6 +263,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _handleAppleSignIn() async {
+    _logger.track('Apple Sign In Button Tapped');
+
     setState(() {
       _buttonState = ButtonState.loading;
       _errorText = null;

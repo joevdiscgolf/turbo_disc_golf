@@ -1,14 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
+import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
-import 'package:turbo_disc_golf/services/chatgpt_service.dart';
+import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
+import 'package:turbo_disc_golf/services/llm/chatgpt_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/chat_gpt_helpers.dart';
@@ -25,35 +28,99 @@ class StoryGeneratorService {
 
   /// Generate a narrative story for a round with embedded stat visualizations
   Future<AIContent?> generateRoundStory(DGRound round) async {
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      round,
+    );
+
+    return _generateStoryWithRetries(
+      round: round,
+      analysis: analysis,
+      version: 'V1',
+      minResponseLength: 1200,
+      requiredField: 'weaknesses:',
+      buildLocalPrompt: () {
+        final bool isOpenAI = _llmService is ChatGPTService;
+        debugPrint(
+          '📝 Using ${isOpenAI ? 'ChatGPT' : 'Gemini'} prompt strategy',
+        );
+        return isOpenAI
+            ? ChatGPTHelpers.buildStoryPrompt(round, analysis)
+            : _buildDefaultStoryPrompt(round, analysis);
+      },
+      parseResponse: (response) => _parseStoryResponse(response, round),
+      validateContent: (aiContent) => aiContent.structuredContent != null,
+    );
+  }
+
+  /// Generate a V2 narrative story with inline callout cards
+  Future<AIContent?> generateRoundStoryV2(DGRound round) async {
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      round,
+    );
+
+    return _generateStoryWithRetries(
+      round: round,
+      analysis: analysis,
+      version: 'V2',
+      minResponseLength: 1500,
+      requiredField: 'whatCouldHaveBeen:',
+      buildLocalPrompt: () {
+        debugPrint('📝 Using ChatGPT V2 prompt strategy');
+        return ChatGPTHelpers.buildStoryPromptV2(round, analysis);
+      },
+      parseResponse: (response) => _parseStoryV2Response(response, round),
+      validateContent: (aiContent) => aiContent.structuredContentV2 != null,
+    );
+  }
+
+  /// Generate a V3 narrative story with hole range metadata for interactive scrolling
+  Future<AIContent?> generateRoundStoryV3(DGRound round) async {
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      round,
+    );
+
+    return _generateStoryWithRetries(
+      round: round,
+      analysis: analysis,
+      version: 'V3',
+      minResponseLength: 1500,
+      requiredField: 'whatCouldHaveBeen:',
+      buildLocalPrompt: () {
+        debugPrint('📝 Using ChatGPT V3 prompt strategy');
+        return ChatGPTHelpers.buildStoryPromptV3(round, analysis);
+      },
+      parseResponse: (response) => _parseStoryV3Response(response, round),
+      validateContent: (aiContent) => aiContent.structuredContentV3 != null,
+    );
+  }
+
+  /// Shared retry logic for all story generation versions.
+  Future<AIContent?> _generateStoryWithRetries({
+    required DGRound round,
+    required RoundAnalysis analysis,
+    required String version,
+    required int minResponseLength,
+    required String requiredField,
+    required String Function() buildLocalPrompt,
+    required AIContent Function(String response) parseResponse,
+    required bool Function(AIContent aiContent) validateContent,
+  }) async {
     const int maxRetries = 3;
     int retryCount = 0;
 
     while (retryCount < maxRetries) {
       try {
-        // Generate round analysis for stats
-        final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
-          round,
+        // Get response from backend or local LLM
+        final String? response = await _getStoryResponse(
+          round: round,
+          analysis: analysis,
+          version: version,
+          buildLocalPrompt: buildLocalPrompt,
         );
 
-        // Build the story generation prompt
-        // Use ChatGPTHelpers for OpenAI, default prompt for Gemini
-        final bool isOpenAI = _llmService is ChatGPTService;
+        // Debug log the response
         debugPrint(
-          '📝 Using ${isOpenAI ? 'ChatGPT' : 'Gemini'} prompt strategy',
-        );
-
-        final String prompt = isOpenAI
-            ? ChatGPTHelpers.buildStoryPrompt(round, analysis)
-            : _buildDefaultStoryPrompt(round, analysis);
-
-        // Generate story using full model for creative content
-        final String? response = await _llmService.generateContent(
-          prompt: prompt,
-        );
-
-        // Debug log the entire response
-        debugPrint(
-          '📖 Story Generator Response (${response?.length ?? 0} chars):',
+          '📖 Story $version Generator Response (${response?.length ?? 0} chars):',
         );
         debugPrint(
           '═══════════════════════════════════════════════════════════════',
@@ -64,14 +131,14 @@ class StoryGeneratorService {
         );
 
         if (response == null || response.isEmpty) {
-          debugPrint('Failed to generate story: empty response');
+          debugPrint('Failed to generate $version story: empty response');
           retryCount++;
           continue;
         }
 
-        // Check for likely truncated response - complete YAML should be >1200 chars
-        // and should contain the 'weaknesses' section (required field)
-        if (response.length < 1200 || !response.contains('weaknesses:')) {
+        // Check for truncation
+        if (response.length < minResponseLength ||
+            !response.contains(requiredField)) {
           debugPrint(
             'Response appears truncated (${response.length} chars, missing key sections). Retrying...',
           );
@@ -80,206 +147,67 @@ class StoryGeneratorService {
           continue;
         }
 
-        // Parse response into AIContent with segments
-        final aiContent = _parseStoryResponse(response, round);
+        // Parse response
+        final AIContent aiContent = parseResponse(response);
 
-        // If we successfully parsed, return it
-        if (aiContent.structuredContent != null) {
+        if (validateContent(aiContent)) {
           return aiContent;
         }
 
-        // If parsing failed, retry
         debugPrint(
-          'Failed to parse story response, retry $retryCount/$maxRetries',
+          'Failed to parse $version story, retry $retryCount/$maxRetries',
         );
         retryCount++;
       } catch (e, trace) {
         debugPrint(
-          'Error generating round story (attempt ${retryCount + 1}/$maxRetries): $e',
+          'Error generating $version story (attempt ${retryCount + 1}/$maxRetries): $e',
         );
         debugPrint(trace.toString());
         retryCount++;
 
-        // If this was the last retry, return null
         if (retryCount >= maxRetries) {
           return null;
         }
 
-        // Wait a bit before retrying
         await Future.delayed(Duration(seconds: retryCount));
       }
     }
 
-    debugPrint('Failed to generate story after $maxRetries attempts');
+    debugPrint('Failed to generate $version story after $maxRetries attempts');
     return null;
   }
 
-  /// Generate a V2 narrative story with inline callout cards
-  Future<AIContent?> generateRoundStoryV2(DGRound round) async {
-    const int maxRetries = 3;
-    int retryCount = 0;
+  /// Gets the story response from either backend or local LLM.
+  Future<String?> _getStoryResponse({
+    required DGRound round,
+    required RoundAnalysis analysis,
+    required String version,
+    required String Function() buildLocalPrompt,
+  }) async {
+    if (generateAiContentFromBackend) {
+      debugPrint(
+        '📝 Using backend cloud function for $version story generation',
+      );
+      final BackendLLMService backendService = locator.get<BackendLLMService>();
+      final GenerateRoundStoryRequest request = GenerateRoundStoryRequest(
+        round: round,
+        analysis: analysis,
+      );
+      final GenerateRoundStoryResponse? backendResponse = await backendService
+          .generateRoundStory(request: request);
 
-    while (retryCount < maxRetries) {
-      try {
-        // Generate round analysis
-        final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
-          round,
+      if (backendResponse == null || !backendResponse.success) {
+        throw Exception(
+          backendResponse?.data.error ??
+              'Failed to generate $version story from backend',
         );
-
-        late final String prompt;
-
-        // Build V2 prompt (ChatGPT only for now)
-        switch (storyGenerationLLMProvider) {
-          case LLMProvider.chatGPT:
-            prompt = ChatGPTHelpers.buildStoryPromptV2(round, analysis);
-          // will use gemini-specific prompt later if needed.
-          case LLMProvider.gemini:
-            prompt = ChatGPTHelpers.buildStoryPromptV2(round, analysis);
-        }
-
-        debugPrint('📝 Using ChatGPT V2 prompt strategy');
-
-        // Generate story
-        final response = await _llmService.generateContent(prompt: prompt);
-
-        debugPrint(
-          '📖 Story V2 Generator Response (${response?.length ?? 0} chars):',
-        );
-        debugPrint(
-          '═══════════════════════════════════════════════════════════════',
-        );
-        debugPrint(response ?? '(null response)');
-        debugPrint(
-          '═══════════════════════════════════════════════════════════════',
-        );
-
-        if (response == null || response.isEmpty) {
-          debugPrint('Failed to generate V2 story: empty response');
-          retryCount++;
-          continue;
-        }
-
-        // Check for truncation (V2 should be >1500 chars with story paragraphs)
-        if (response.length < 1500 ||
-            !response.contains('whatCouldHaveBeen:')) {
-          debugPrint(
-            'Response appears truncated (${response.length} chars). Retrying...',
-          );
-          retryCount++;
-          await Future.delayed(Duration(seconds: retryCount));
-          continue;
-        }
-
-        // Parse V2 response
-        final aiContent = _parseStoryV2Response(response, round);
-
-        if (aiContent.structuredContentV2 != null) {
-          return aiContent;
-        }
-
-        debugPrint('Failed to parse V2 story, retry $retryCount/$maxRetries');
-        retryCount++;
-      } catch (e, trace) {
-        debugPrint(
-          'Error generating V2 story (attempt ${retryCount + 1}/$maxRetries): $e',
-        );
-        debugPrint(trace.toString());
-        retryCount++;
-
-        if (retryCount >= maxRetries) {
-          return null;
-        }
-
-        await Future.delayed(Duration(seconds: retryCount));
       }
+
+      return backendResponse.data.rawResponse;
+    } else {
+      final String prompt = buildLocalPrompt();
+      return _llmService.generateContent(prompt: prompt);
     }
-
-    debugPrint('Failed to generate V2 story after $maxRetries attempts');
-    return null;
-  }
-
-  /// Generate a V3 narrative story with hole range metadata for interactive scrolling
-  Future<AIContent?> generateRoundStoryV3(DGRound round) async {
-    const int maxRetries = 3;
-    int retryCount = 0;
-
-    while (retryCount < maxRetries) {
-      try {
-        // Generate round analysis
-        final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
-          round,
-        );
-
-        late final String prompt;
-
-        // Build V3 prompt (ChatGPT only for now)
-        switch (storyGenerationLLMProvider) {
-          case LLMProvider.chatGPT:
-            prompt = ChatGPTHelpers.buildStoryPromptV3(round, analysis);
-          // will use gemini-specific prompt later if needed.
-          case LLMProvider.gemini:
-            prompt = ChatGPTHelpers.buildStoryPromptV3(round, analysis);
-        }
-
-        debugPrint('📝 Using ChatGPT V3 prompt strategy');
-
-        // Generate story
-        final response = await _llmService.generateContent(prompt: prompt);
-
-        debugPrint(
-          '📖 Story V3 Generator Response (${response?.length ?? 0} chars):',
-        );
-        debugPrint(
-          '═══════════════════════════════════════════════════════════════',
-        );
-        debugPrint(response ?? '(null response)');
-        debugPrint(
-          '═══════════════════════════════════════════════════════════════',
-        );
-
-        if (response == null || response.isEmpty) {
-          debugPrint('Failed to generate V3 story: empty response');
-          retryCount++;
-          continue;
-        }
-
-        // Check for truncation (V3 should be >1500 chars with sections)
-        if (response.length < 1500 ||
-            !response.contains('whatCouldHaveBeen:')) {
-          debugPrint(
-            'Response appears truncated (${response.length} chars). Retrying...',
-          );
-          retryCount++;
-          await Future.delayed(Duration(seconds: retryCount));
-          continue;
-        }
-
-        // Parse V3 response
-        final aiContent = _parseStoryV3Response(response, round);
-
-        if (aiContent.structuredContentV3 != null) {
-          return aiContent;
-        }
-
-        debugPrint('Failed to parse V3 story, retry $retryCount/$maxRetries');
-        retryCount++;
-      } catch (e, trace) {
-        debugPrint(
-          'Error generating V3 story (attempt ${retryCount + 1}/$maxRetries): $e',
-        );
-        debugPrint(trace.toString());
-        retryCount++;
-
-        if (retryCount >= maxRetries) {
-          return null;
-        }
-
-        await Future.delayed(Duration(seconds: retryCount));
-      }
-    }
-
-    debugPrint('Failed to generate V3 story after $maxRetries attempts');
-    return null;
   }
 
   /// Build the prompt for story generation
@@ -862,22 +790,30 @@ strategyTips:
         // Ensure required fields exist with defaults
         if (!whatCouldHaveBeen.containsKey('currentScore') ||
             whatCouldHaveBeen['currentScore'] == null) {
-          debugPrint('⚠️  Missing currentScore in whatCouldHaveBeen, using default');
+          debugPrint(
+            '⚠️  Missing currentScore in whatCouldHaveBeen, using default',
+          );
           whatCouldHaveBeen['currentScore'] = '0';
         }
         if (!whatCouldHaveBeen.containsKey('potentialScore') ||
             whatCouldHaveBeen['potentialScore'] == null) {
-          debugPrint('⚠️  Missing potentialScore in whatCouldHaveBeen, using default');
+          debugPrint(
+            '⚠️  Missing potentialScore in whatCouldHaveBeen, using default',
+          );
           whatCouldHaveBeen['potentialScore'] = '0';
         }
         if (!whatCouldHaveBeen.containsKey('scenarios') ||
             whatCouldHaveBeen['scenarios'] == null) {
-          debugPrint('⚠️  Missing scenarios in whatCouldHaveBeen, using empty list');
+          debugPrint(
+            '⚠️  Missing scenarios in whatCouldHaveBeen, using empty list',
+          );
           whatCouldHaveBeen['scenarios'] = [];
         }
         if (!whatCouldHaveBeen.containsKey('encouragement') ||
             whatCouldHaveBeen['encouragement'] == null) {
-          debugPrint('⚠️  Missing encouragement in whatCouldHaveBeen, using default');
+          debugPrint(
+            '⚠️  Missing encouragement in whatCouldHaveBeen, using default',
+          );
           whatCouldHaveBeen['encouragement'] = 'Keep working on your game!';
         }
       }
@@ -1042,22 +978,30 @@ strategyTips:
         // Ensure required fields exist with defaults
         if (!whatCouldHaveBeen.containsKey('currentScore') ||
             whatCouldHaveBeen['currentScore'] == null) {
-          debugPrint('⚠️  Missing currentScore in whatCouldHaveBeen, using default');
+          debugPrint(
+            '⚠️  Missing currentScore in whatCouldHaveBeen, using default',
+          );
           whatCouldHaveBeen['currentScore'] = '0';
         }
         if (!whatCouldHaveBeen.containsKey('potentialScore') ||
             whatCouldHaveBeen['potentialScore'] == null) {
-          debugPrint('⚠️  Missing potentialScore in whatCouldHaveBeen, using default');
+          debugPrint(
+            '⚠️  Missing potentialScore in whatCouldHaveBeen, using default',
+          );
           whatCouldHaveBeen['potentialScore'] = '0';
         }
         if (!whatCouldHaveBeen.containsKey('scenarios') ||
             whatCouldHaveBeen['scenarios'] == null) {
-          debugPrint('⚠️  Missing scenarios in whatCouldHaveBeen, using empty list');
+          debugPrint(
+            '⚠️  Missing scenarios in whatCouldHaveBeen, using empty list',
+          );
           whatCouldHaveBeen['scenarios'] = [];
         }
         if (!whatCouldHaveBeen.containsKey('encouragement') ||
             whatCouldHaveBeen['encouragement'] == null) {
-          debugPrint('⚠️  Missing encouragement in whatCouldHaveBeen, using default');
+          debugPrint(
+            '⚠️  Missing encouragement in whatCouldHaveBeen, using default',
+          );
           whatCouldHaveBeen['encouragement'] = 'Keep working on your game!';
         }
       }
@@ -1094,7 +1038,8 @@ strategyTips:
       if (parsedData.containsKey('skillsAssessment') &&
           parsedData['skillsAssessment'] != null) {
         try {
-          final skillsData = parsedData['skillsAssessment'] as Map<String, dynamic>;
+          final skillsData =
+              parsedData['skillsAssessment'] as Map<String, dynamic>;
 
           // Validate required fields in skillsAssessment
           if (!skillsData.containsKey('strengths') ||
@@ -1150,7 +1095,8 @@ strategyTips:
 
       // Validate hole range if present
       if (section.containsKey('holeRange') && section['holeRange'] != null) {
-        final Map<String, dynamic> holeRange = section['holeRange'] as Map<String, dynamic>;
+        final Map<String, dynamic> holeRange =
+            section['holeRange'] as Map<String, dynamic>;
 
         final int? startHole = holeRange['startHole'] as int?;
         final int? endHole = holeRange['endHole'] as int?;

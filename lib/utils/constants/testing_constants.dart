@@ -216,3 +216,5 @@ const bool highlightActiveStorySection = true;
 /// When true, shows the distance unit toggle (Feet/Meters) in the Settings screen.
 /// When false, hides the distance preferences row.
 const bool showDistancePreferences = false;
+
+const bool generateAiContentFromBackend = true;

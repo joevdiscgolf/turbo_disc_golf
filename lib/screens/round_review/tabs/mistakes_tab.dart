@@ -3,16 +3,29 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/mistakes_bar_chart_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/components/potential_score_card.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class MistakesTab extends StatelessWidget {
+  static const String screenName = 'Mistakes';
+  static const String tabName = 'Mistakes';
+
   final DGRound round;
 
   const MistakesTab({super.key, required this.round});
 
   @override
   Widget build(BuildContext context) {
+    // Track screen impression
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track('Screen Impression', properties: {
+        'screen_name': MistakesTab.screenName,
+        'screen_class': 'MistakesTab',
+        'tab_name': MistakesTab.tabName,
+      });
+    });
+
     final MistakesAnalysisService mistakesAnalysisService = locator
         .get<MistakesAnalysisService>();
 

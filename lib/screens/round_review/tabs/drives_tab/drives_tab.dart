@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/hole_breakdown_list.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -12,10 +13,14 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/shot
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/screens/driving_stat_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/screens/throw_type_detail_screen.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
 
 class DrivesTab extends StatefulWidget {
+  static const String screenName = 'Drives';
+  static const String tabName = 'Drives';
+
   const DrivesTab({super.key, required this.round});
 
   final DGRound round;
@@ -26,6 +31,16 @@ class DrivesTab extends StatefulWidget {
 
 class _DrivesTabState extends State<DrivesTab> {
   DriveViewMode _viewMode = DriveViewMode.cards;
+  late final LoggingServiceBase _logger;
+
+  @override
+  void initState() {
+    super.initState();
+    _logger = locator.get<LoggingService>().withBaseProperties({
+      'screen_name': DrivesTab.screenName,
+    });
+    _logger.logScreenImpression('DrivesTab');
+  }
 
   void _navigateToStatDetail(
     BuildContext context,
@@ -43,6 +58,13 @@ class _DrivesTabState extends State<DrivesTab> {
 
       holeResults.add(HoleResult(holeNumber: hole.number, status: status));
     }
+
+    _logger.track('Driving Stat Detail Tapped', properties: {
+      'stat_name': statName,
+      'percentage': percentage,
+      'success_count': successHoles.length,
+      'total_holes': widget.round.holes.length,
+    });
 
     Navigator.of(context).push(
       CupertinoPageRoute(
@@ -348,6 +370,13 @@ class _DrivesTabState extends State<DrivesTab> {
     final Map<String, List<ShotDetail>> shotShapeDetails =
         _getShotDetailsByShape(throwType);
 
+    _logger.track('Throw Type Detail Tapped', properties: {
+      'throw_type': throwType,
+      'birdie_rate': overallStats.birdieRate,
+      'c1_in_reg_pct': overallStats.c1InRegPct,
+      'total_holes': overallStats.totalHoles,
+    });
+
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (context) => ThrowTypeDetailScreen(
@@ -470,6 +499,9 @@ class _DrivesTabState extends State<DrivesTab> {
         ViewModeToggle(
           selectedMode: _viewMode,
           onModeChanged: (DriveViewMode mode) {
+            _logger.track('Drives View Mode Changed', properties: {
+              'view_mode': mode == DriveViewMode.cards ? 'cards' : 'radar',
+            });
             setState(() {
               _viewMode = mode;
             });

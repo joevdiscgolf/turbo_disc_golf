@@ -20,13 +20,37 @@ class MixpanelLoggingProvider implements LoggingProvider {
     bool trackAutomaticEvents = true,
   }) async {
     try {
-      // Validate token
+      debugPrint('[MixpanelProvider] initialize() called');
+      debugPrint('[MixpanelProvider] Token length: ${projectToken.length}');
+      debugPrint(
+        '[MixpanelProvider] Token preview: ${projectToken.length >= 8 ? projectToken.substring(0, 8) : projectToken}...',
+      );
+
+      // Validate token - empty check
       if (projectToken.isEmpty) {
-        debugPrint('[MixpanelProvider] No project token provided - skipping init');
+        debugPrint('[MixpanelProvider] FAILED: Token is empty');
         return false;
       }
 
-      debugPrint('[MixpanelProvider] Initializing with token: ${projectToken.substring(0, 8)}...');
+      // Check for placeholder tokens
+      final bool containsYour = projectToken.contains('your_');
+      final bool containsPlaceholder = projectToken.contains('placeholder');
+      final bool tooShort = projectToken.length < 20;
+
+      debugPrint(
+        '[MixpanelProvider] Validation: containsYour=$containsYour, containsPlaceholder=$containsPlaceholder, tooShort=$tooShort',
+      );
+
+      if (containsYour || containsPlaceholder || tooShort) {
+        debugPrint(
+          '[MixpanelProvider] FAILED: Invalid or placeholder token detected',
+        );
+        return false;
+      }
+
+      debugPrint(
+        '[MixpanelProvider] Token validation PASSED, calling Mixpanel.init()...',
+      );
 
       // Initialize Mixpanel SDK
       _mixpanel = await Mixpanel.init(
@@ -35,10 +59,11 @@ class MixpanelLoggingProvider implements LoggingProvider {
       );
 
       _isInitialized = true;
-      debugPrint('[MixpanelProvider] Successfully initialized');
+      debugPrint('[MixpanelProvider] SUCCESS: Mixpanel initialized');
       return true;
-    } catch (e) {
-      debugPrint('[MixpanelProvider] Initialization failed: $e');
+    } catch (e, stackTrace) {
+      debugPrint('[MixpanelProvider] EXCEPTION during init: $e');
+      debugPrint('[MixpanelProvider] Stack trace: $stackTrace');
       _isInitialized = false;
       return false;
     }
@@ -127,6 +152,36 @@ class MixpanelLoggingProvider implements LoggingProvider {
       debugPrint('[MixpanelProvider] Flushed queued events');
     } catch (e) {
       debugPrint('[MixpanelProvider] Failed to flush: $e');
+    }
+  }
+
+  @override
+  Future<void> registerSuperProperties(Map<String, dynamic> properties) async {
+    if (!_isInitialized || _mixpanel == null) {
+      debugPrint('[MixpanelProvider] Not initialized - skipping registerSuperProperties');
+      return;
+    }
+
+    try {
+      _mixpanel!.registerSuperProperties(properties);
+      debugPrint('[MixpanelProvider] Registered super properties: ${properties.keys.join(", ")}');
+    } catch (e) {
+      debugPrint('[MixpanelProvider] Failed to register super properties: $e');
+    }
+  }
+
+  @override
+  Future<void> clearSuperProperties() async {
+    if (!_isInitialized || _mixpanel == null) {
+      debugPrint('[MixpanelProvider] Not initialized - skipping clearSuperProperties');
+      return;
+    }
+
+    try {
+      _mixpanel!.clearSuperProperties();
+      debugPrint('[MixpanelProvider] Cleared super properties');
+    } catch (e) {
+      debugPrint('[MixpanelProvider] Failed to clear super properties: $e');
     }
   }
 }

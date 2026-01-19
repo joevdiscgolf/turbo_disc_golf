@@ -25,6 +25,7 @@ import 'package:turbo_disc_golf/screens/record_round/record_round_steps/panels/s
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -43,6 +44,9 @@ class RecordRoundStepsScreen extends StatefulWidget {
     this.skipIntroAnimations = false,
   });
 
+  static const String screenName = 'Record Round Steps';
+  static const String routeName = '/record-round-steps';
+
   final double bottomViewPadding;
   final bool skipIntroAnimations;
 
@@ -52,6 +56,7 @@ class RecordRoundStepsScreen extends StatefulWidget {
 
 class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   late final RecordRoundCubit _recordRoundCubit;
+  late final LoggingServiceBase _logger;
 
   // Text editing
   late final TextEditingController _textEditingController;
@@ -91,6 +96,16 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Create scoped logger with base properties
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': RecordRoundStepsScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('RecordRoundStepsScreen');
+
     _recordRoundCubit = BlocProvider.of<RecordRoundCubit>(context);
     _textEditingController = TextEditingController();
     _focusNode = FocusNode();
@@ -208,7 +223,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               leftWidget: _clearAllButton(),
               rightWidget: IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: _handleClose,
+                onPressed: () {
+                  _logger.track(
+                    'Close Button Tapped',
+                    properties: {'has_unsaved_data': _hasUnsavedData()},
+                  );
+                  _handleClose();
+                },
               ),
             ),
           ],
@@ -412,7 +433,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: GestureDetector(
-              onTap: _showReviewGrid,
+              onTap: () {
+                _logger.track(
+                  'Progress Card Button Tapped',
+                  properties: {'current_hole': currentHoleIndex + 1},
+                );
+                _showReviewGrid();
+              },
               behavior: HitTestBehavior.translucent,
               child: Container(
                 width: double.infinity,
@@ -490,9 +517,34 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       focusNode: _focusNode,
       isListening: isListening,
       accent: _descAccent,
-      onClear: _handleClearText,
+      onClear: () {
+        _logger.track(
+          'Clear Text Button Tapped',
+          properties: {
+            'hole_number': _recordRoundCubit.state is RecordRoundActive
+                ? (_recordRoundCubit.state as RecordRoundActive)
+                          .currentHoleIndex +
+                      1
+                : null,
+          },
+        );
+        _handleClearText();
+      },
       isSingleHole: true,
-      onHelpTap: () => HoleDescriptionExamplesScreen.show(context),
+      onHelpTap: () {
+        _logger.track('Help Button Tapped', properties: {});
+
+        _logger.track(
+          'Modal Opened',
+          properties: {
+            'modal_type': 'full_screen_modal',
+            'modal_name': 'Hole Description Examples',
+            'trigger_source': 'button',
+          },
+        );
+
+        HoleDescriptionExamplesScreen.show(context);
+      },
     );
 
     return widget.skipIntroAnimations
@@ -529,7 +581,25 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       child: AnimatedMicrophoneButton(
         showListeningWaveState: isListening || pausingBetweenHoles,
         isLoading: isStartingListening,
-        onTap: _toggleListening,
+        onTap: () {
+          final RecordRoundState state = _recordRoundCubit.state;
+          final bool willBeListening = state is RecordRoundActive
+              ? !state.isListening
+              : true;
+          final int? currentHole = state is RecordRoundActive
+              ? state.currentHoleIndex + 1
+              : null;
+
+          _logger.track(
+            'Microphone Button Tapped',
+            properties: {
+              'action': willBeListening ? 'start_listening' : 'stop_listening',
+              'hole_number': currentHole,
+            },
+          );
+
+          _toggleListening();
+        },
       ),
     );
 
@@ -641,7 +711,25 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           child: RoundDataInputCard(
             icon: Icons.landscape,
             subtitle: subtitle,
-            onTap: _showCourseSelector,
+            onTap: () {
+              _logger.track(
+                'Select Course Button Tapped',
+                properties: {
+                  'has_course_selected': state.selectedCourse != null,
+                },
+              );
+
+              _logger.track(
+                'Modal Opened',
+                properties: {
+                  'modal_type': 'bottom_sheet',
+                  'modal_name': 'Course Selector',
+                  'trigger_source': 'button',
+                },
+              );
+
+              _showCourseSelector();
+            },
             accent: courseAccent,
           ),
         ),
@@ -668,7 +756,20 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final Widget card = RoundDataInputCard(
       icon: Icons.access_time,
       subtitle: _formatDateTime(state.selectedDateTime),
-      onTap: _showDateTimeEditor,
+      onTap: () {
+        _logger.track('Select Date Time Button Tapped', properties: {});
+
+        _logger.track(
+          'Modal Opened',
+          properties: {
+            'modal_type': 'bottom_sheet',
+            'modal_name': 'Date Time Picker',
+            'trigger_source': 'button',
+          },
+        );
+
+        _showDateTimeEditor();
+      },
       accent: _dateAccent,
     );
 
@@ -689,7 +790,20 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     const Color lightPurple = Color(0xFFE1BEE7); // lighter purple for gradient
 
     return GestureDetector(
-      onTap: _handleImportScorecard,
+      onTap: () {
+        _logger.track('Import Scorecard Button Tapped', properties: {});
+
+        _logger.track(
+          'Modal Opened',
+          properties: {
+            'modal_type': 'bottom_sheet',
+            'modal_name': 'Image Source Selection',
+            'trigger_source': 'button',
+          },
+        );
+
+        _handleImportScorecard();
+      },
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 48,
@@ -861,6 +975,15 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               child: GestureDetector(
                 onTap: hasScore
                     ? () {
+                        _logger.track(
+                          'Decrement Score Button Tapped',
+                          properties: {
+                            'hole_number': holeIndex + 1,
+                            'previous_score': score,
+                            'new_score': score - 1,
+                          },
+                        );
+
                         HapticFeedback.lightImpact();
                         _recordRoundCubit.decrementHoleScore(holeIndex);
                       }
@@ -894,6 +1017,15 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               child: GestureDetector(
                 onTap: hasScore
                     ? () {
+                        _logger.track(
+                          'Increment Score Button Tapped',
+                          properties: {
+                            'hole_number': holeIndex + 1,
+                            'previous_score': score,
+                            'new_score': score + 1,
+                          },
+                        );
+
                         HapticFeedback.lightImpact();
                         _recordRoundCubit.incrementHoleScore(holeIndex);
                       }
@@ -1014,7 +1146,16 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               isFirstHole: isFirstHole,
               isLastHole: isLastHole,
               targetWidth: previousButtonWidth,
-              onPressed: _previousHole,
+              onPressed: () {
+                _logger.track(
+                  'Previous Hole Button Tapped',
+                  properties: {
+                    'current_hole': currentHoleIndex + 1,
+                    'previous_hole': currentHoleIndex,
+                  },
+                );
+                _previousHole();
+              },
             ),
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
@@ -1032,7 +1173,26 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 disabled: showFinalize && !allHolesFilled,
-                onPressed: showFinalize ? _finishAndParse : _nextHole,
+                onPressed: () {
+                  final String eventName = showFinalize
+                      ? 'Finalize Round Button Tapped'
+                      : 'Next Hole Button Tapped';
+
+                  _logger.track(
+                    eventName,
+                    properties: {
+                      'current_hole': currentHoleIndex + 1,
+                      'is_last_hole': isLastHole,
+                      'next_hole': isLastHole ? null : currentHoleIndex + 2,
+                    },
+                  );
+
+                  if (showFinalize) {
+                    _finishAndParse();
+                  } else {
+                    _nextHole();
+                  }
+                },
               ),
             ),
           ],
@@ -1070,6 +1230,11 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       context: context,
       initialDateTime: _selectedDateTime,
       onConfirm: (DateTime updatedDateTime) {
+        _logger.track(
+          'Beautiful Date Time Picker Confirmed',
+          properties: {'date_changed': updatedDateTime != _selectedDateTime},
+        );
+
         setState(() {
           _selectedDateTime = updatedDateTime;
         });
@@ -1100,6 +1265,12 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         _selectedDateTime.hour,
         _selectedDateTime.minute,
       );
+
+      _logger.track(
+        'Material Date Picker Confirmed',
+        properties: {'date_changed': updatedDateTime != _selectedDateTime},
+      );
+
       setState(() {
         _selectedDateTime = updatedDateTime;
       });
@@ -1114,6 +1285,12 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       pickedTime.hour,
       pickedTime.minute,
     );
+
+    _logger.track(
+      'Material Date Time Picker Confirmed',
+      properties: {'date_changed': updatedDateTime != _selectedDateTime},
+    );
+
     setState(() {
       _selectedDateTime = updatedDateTime;
     });
@@ -1161,6 +1338,22 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     return true;
   }
 
+  bool _hasUnsavedData() {
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is! RecordRoundActive) return false;
+
+    // Check if any holes have descriptions
+    for (int i = 0; i < state.numHoles; i++) {
+      final String? description = state.holeDescriptions[i];
+      if (description != null && description.trim().isNotEmpty) {
+        return true;
+      }
+    }
+
+    // Check if course is selected
+    return state.selectedCourse != null;
+  }
+
   Future<void> _previousHole() async {
     final RecordRoundState state = _recordRoundCubit.state;
     if (state is! RecordRoundActive) return;
@@ -1198,6 +1391,16 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   Future<void> _onHoleTapFromGrid(int holeIndex) async {
+    final RecordRoundState state = _recordRoundCubit.state;
+    final int? currentHole = state is RecordRoundActive
+        ? state.currentHoleIndex + 1
+        : null;
+
+    _logger.track(
+      'Hole Number Button Tapped',
+      properties: {'from_hole': currentHole, 'to_hole': holeIndex + 1},
+    );
+
     // Save any manual edits before navigating
     _recordRoundCubit.updateCurrentHoleText(_textEditingController.text);
 
@@ -1207,11 +1410,41 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _finishAndParse() {
+    final RecordRoundState state = _recordRoundCubit.state;
+    final int numHoles = state is RecordRoundActive ? state.numHoles : 0;
+
+    _logger.track(
+      'Finish and Parse Button Tapped',
+      properties: {
+        'total_holes': numHoles,
+        'holes_with_descriptions': _getHolesWithDescriptions(),
+      },
+    );
+
+    _logger.track(
+      'Navigation Action',
+      properties: {
+        'from_screen': RecordRoundStepsScreen.screenName,
+        'to_screen': 'Round Processing Loading',
+        'action_type': 'replace',
+        'trigger': 'button',
+      },
+    );
+
     Navigator.of(context).pushReplacement(
       CupertinoPageRoute(
         builder: (context) => const RoundProcessingLoadingScreen(),
       ),
     );
+  }
+
+  int _getHolesWithDescriptions() {
+    final RecordRoundState state = _recordRoundCubit.state;
+    if (state is! RecordRoundActive) return 0;
+
+    return state.holeDescriptions.values
+        .where((String description) => description.isNotEmpty)
+        .length;
   }
 
   void _parseTestDescription() {
@@ -1231,10 +1464,42 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   Future<void> _toggleListening() async {
     FocusScope.of(context).unfocus();
+
+    final RecordRoundState state = _recordRoundCubit.state;
+    final bool willBeListening = state is RecordRoundActive
+        ? !state.isListening
+        : true;
+
+    final String eventName = willBeListening
+        ? 'Voice Input Started'
+        : 'Voice Input Stopped';
+    _logger.track(
+      eventName,
+      properties: {
+        'hole_number': state is RecordRoundActive
+            ? state.currentHoleIndex + 1
+            : null,
+      },
+    );
+
     _recordRoundCubit.toggleListening();
   }
 
   void _handleClearText() {
+    final RecordRoundState state = _recordRoundCubit.state;
+    final int? holeNumber = state is RecordRoundActive
+        ? state.currentHoleIndex + 1
+        : null;
+    final String clearedText = _textEditingController.text;
+
+    _logger.track(
+      'Hole Description Cleared',
+      properties: {
+        'hole_number': holeNumber,
+        'text_length_cleared': clearedText.length,
+      },
+    );
+
     _textEditingController.clear();
     _recordRoundCubit.clearCurrentHoleText();
   }
@@ -1340,6 +1605,11 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       // Update state with full metadata (scores, par, distance)
       _recordRoundCubit.setImportedHoleMetadata(holeMetadata);
 
+      _logger.track(
+        'Scorecard Parsed Successfully',
+        properties: {'holes_imported': holeMetadata.length},
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Imported ${holeMetadata.length} hole scores'),
@@ -1349,6 +1619,12 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isParsingScorecard = false);
+
+      _logger.track(
+        'Scorecard Parse Failed',
+        properties: {'error': e.toString()},
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error parsing scorecard: ${e.toString()}'),
@@ -1362,6 +1638,11 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     HapticFeedback.lightImpact();
     // Unfocus keyboard
     FocusScope.of(context).unfocus();
+
+    _logger.track(
+      'All Holes Cleared',
+      properties: {'holes_cleared': _getHolesWithDescriptions()},
+    );
 
     await _recordRoundCubit.clearAllHoles();
 
@@ -1403,7 +1684,17 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   Widget _clearAllButton() {
     return IconButton(
       icon: Icon(Icons.delete_sweep, color: Colors.grey.shade600),
-      onPressed: _handleClearAll,
+      onPressed: () {
+        final RecordRoundState state = _recordRoundCubit.state;
+        final int numHoles = state is RecordRoundActive ? state.numHoles : 0;
+
+        _logger.track(
+          'Clear All Button Tapped',
+          properties: {'total_holes': numHoles},
+        );
+
+        _handleClearAll();
+      },
       tooltip: 'Clear All',
     );
   }
