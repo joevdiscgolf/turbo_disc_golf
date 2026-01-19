@@ -35,7 +35,10 @@ enum FeatureFlag {
 
   // ===== Course Search =====
   /// Debug-only: Uses test courses instead of MeiliSearch
-  useTestCourseProvider('use_test_course_provider', true),
+  useTestCourseProvider('use_test_course_provider', false),
+
+  /// Uses Supabase for course search instead of MeiliSearch
+  useSupabaseSearchProvider('use_supabase_search_provider', true),
 
   /// Debug-only: Uses local Meili server on simulator
   useLocalMeiliSearchOnSimulator('use_local_meili_search_on_simulator', true),

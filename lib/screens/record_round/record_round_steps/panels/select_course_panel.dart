@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/screens/create_course/create_layout_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/search/supabase_search_provider.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
@@ -55,20 +56,53 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     });
 
     // Track panel impression
-    _logger.track('Panel Impression', properties: {
-      'panel_class': 'SelectCoursePanel',
-    });
+    _logger.track(
+      'Panel Impression',
+      properties: {'panel_class': 'SelectCoursePanel'},
+    );
 
     // Testing functions - uncomment to use:
     // _syncMeiliFromFirestore(); // Sync all Firestore courses to local Meili instance
     // _clearRecentCoursesCache(); // Clear recent courses cache
     // _syncCacheFromFirestore(); // Sync cache from Firestore (now called from RoundHistoryScreen)
+    // uploadFirestoreCoursesToSupabase();
     _loadRecentCourses();
   }
 
   // ==========================================================================
   // TESTING FUNCTIONS - Call these from initState for debugging
   // ==========================================================================
+
+  Future<void> uploadFirestoreCoursesToSupabase() async {
+    final List<Course> courses = await FBCourseDataLoader.getAllCourses();
+    debugPrint(
+      '[SelectCoursePanel] Found ${courses.length} courses in Firestore',
+    );
+
+    if (courses.isEmpty) {
+      debugPrint('[SelectCoursePanel] No courses to sync to Supabase');
+      return;
+    }
+
+    // Convert courses to search documents for Supabase
+    final List<Map<String, dynamic>> searchDocs = courses
+        .map((Course course) => course.toSearchDocument())
+        .toList();
+
+    // Upsert to Supabase
+    try {
+      final SupabaseSearchProvider supabaseProvider = SupabaseSearchProvider();
+      await supabaseProvider.upsertCoursesForTesting(searchDocs);
+      debugPrint(
+        '[SelectCoursePanel] Successfully upserted ${courses.length} courses to Supabase search_courses table',
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[SelectCoursePanel] Failed to upsert courses to Supabase: $e',
+      );
+      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
+    }
+  }
 
   /// Syncs all courses from Firestore to the local Meili search instance.
   /// Firestore is the source of truth - this will upsert all courses to Meili.
@@ -249,9 +283,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (!mounted) return;
 
-      _logger.track('Course Search Executed', properties: {
-        'query_length': value.length,
-      });
+      _logger.track(
+        'Course Search Executed',
+        properties: {'query_length': value.length},
+      );
 
       setState(() {
         _isLoading = true;
@@ -262,9 +297,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         final List<CourseSearchHit> results = await _searchService
             .searchCourses(value);
         if (mounted) {
-          _logger.track('Course Search Results Returned', properties: {
-            'result_count': results.length,
-          });
+          _logger.track(
+            'Course Search Results Returned',
+            properties: {'result_count': results.length},
+          );
           setState(() {
             _searchResults = results;
             _isLoading = false;
@@ -273,9 +309,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       } catch (e, trace) {
         debugPrint(e.toString());
         debugPrint(trace.toString());
-        _logger.track('Course Search Failed', properties: {
-          'error': e.toString(),
-        });
+        _logger.track(
+          'Course Search Failed',
+          properties: {'error': e.toString()},
+        );
         if (mounted) {
           setState(() {
             _error = 'Search failed. Please try again.';
@@ -373,18 +410,19 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseSearchHit hit,
     CourseLayoutSummary layoutSummary,
   ) async {
-    _logger.track('Course Layout Selected', properties: {
-      'course_name': hit.name,
-      'layout_name': layoutSummary.name,
-      'hole_count': layoutSummary.holeCount,
-    });
+    _logger.track(
+      'Course Layout Selected',
+      properties: {
+        'course_name': hit.name,
+        'layout_name': layoutSummary.name,
+        'hole_count': layoutSummary.holeCount,
+      },
+    );
 
     // Fetch full course from Firestore
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
-      _logger.track('Course Load Failed', properties: {
-        'course_id': hit.id,
-      });
+      _logger.track('Course Load Failed', properties: {'course_id': hit.id});
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -405,9 +443,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   }
 
   Future<void> _openCreateLayoutSheet(CourseSearchHit hit) async {
-    _logger.track('Create New Layout Button Tapped', properties: {
-      'course_name': hit.name,
-    });
+    _logger.track(
+      'Create New Layout Button Tapped',
+      properties: {'course_name': hit.name},
+    );
 
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
@@ -422,10 +461,13 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
     if (!mounted) return;
 
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'full_screen_modal',
-      'modal_name': 'Create Layout',
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'full_screen_modal',
+        'modal_name': 'Create Layout',
+      },
+    );
 
     pushCupertinoRoute(
       context,
@@ -445,10 +487,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseSearchHit hit,
     CourseLayoutSummary layoutSummary,
   ) async {
-    _logger.track('Edit Layout Button Tapped', properties: {
-      'course_name': hit.name,
-      'layout_name': layoutSummary.name,
-    });
+    _logger.track(
+      'Edit Layout Button Tapped',
+      properties: {'course_name': hit.name, 'layout_name': layoutSummary.name},
+    );
 
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
@@ -477,10 +519,13 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
     if (!mounted) return;
 
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'full_screen_modal',
-      'modal_name': 'Edit Layout',
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'full_screen_modal',
+        'modal_name': 'Edit Layout',
+      },
+    );
 
     pushCupertinoRoute(
       context,
@@ -502,12 +547,17 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseLayout layout, {
     required bool isNew,
   }) async {
-    final String eventName = isNew ? 'Layout Created Successfully' : 'Layout Updated Successfully';
-    _logger.track(eventName, properties: {
-      'course_name': course.name,
-      'layout_name': layout.name,
-      'hole_count': layout.holes.length,
-    });
+    final String eventName = isNew
+        ? 'Layout Created Successfully'
+        : 'Layout Updated Successfully';
+    _logger.track(
+      eventName,
+      properties: {
+        'course_name': course.name,
+        'layout_name': layout.name,
+        'hole_count': layout.holes.length,
+      },
+    );
 
     debugPrint(
       '[SelectCoursePanel] _handleLayoutSaved called - isNew: $isNew, '
@@ -606,10 +656,13 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         onPressed: () {
           _logger.track('Create New Course Button Tapped');
 
-          _logger.track('Modal Opened', properties: {
-            'modal_type': 'full_screen_modal',
-            'modal_name': 'Create Course',
-          });
+          _logger.track(
+            'Modal Opened',
+            properties: {
+              'modal_type': 'full_screen_modal',
+              'modal_name': 'Create Course',
+            },
+          );
 
           Navigator.of(context).pop();
 

@@ -144,6 +144,10 @@ class FeatureFlagService {
   bool get useTestCourseProvider =>
       getBool(FeatureFlag.useTestCourseProvider);
 
+  /// Uses Supabase for course search instead of MeiliSearch.
+  bool get useSupabaseSearchProvider =>
+      getBool(FeatureFlag.useSupabaseSearchProvider);
+
   /// Debug-only: Uses local Meili server on simulator.
   /// Always returns false in release builds.
   bool get useLocalMeiliSearchOnSimulator =>
