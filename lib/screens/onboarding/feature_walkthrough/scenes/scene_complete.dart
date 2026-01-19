@@ -8,11 +8,11 @@ class SceneComplete extends StatefulWidget {
   const SceneComplete({
     super.key,
     required this.isActive,
-    required this.onComplete,
+    this.onComplete,
   });
 
   final bool isActive;
-  final VoidCallback onComplete;
+  final VoidCallback? onComplete;
 
   @override
   State<SceneComplete> createState() => _SceneCompleteState();
@@ -22,6 +22,7 @@ class _SceneCompleteState extends State<SceneComplete>
     with TickerProviderStateMixin {
   late AnimationController _statsCardController;
   late AnimationController _storyCardController;
+  late AnimationController _glazeCardController;
   late AnimationController _roastCardController;
   late AnimationController _buttonController;
   late AnimationController _floatController;
@@ -31,6 +32,7 @@ class _SceneCompleteState extends State<SceneComplete>
   late Animation<double> _statsRotation;
   late Animation<double> _storySlide;
   late Animation<double> _storyRotation;
+  late Animation<double> _glazeSlide;
   late Animation<double> _roastSlide;
   late Animation<double> _buttonOpacity;
   late Animation<double> _buttonScale;
@@ -68,12 +70,21 @@ class _SceneCompleteState extends State<SceneComplete>
       CurvedAnimation(parent: _storyCardController, curve: Curves.easeOutBack),
     );
 
-    // Glaze card (bottom center)
+    // Glaze card (bottom left) - slides in from left
+    _glazeCardController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _glazeSlide = Tween<double>(begin: -300, end: 0).animate(
+      CurvedAnimation(parent: _glazeCardController, curve: Curves.easeOutBack),
+    );
+
+    // Roast card (bottom right) - slides in from right
     _roastCardController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    _roastSlide = Tween<double>(begin: 500, end: 0).animate(
+    _roastSlide = Tween<double>(begin: 300, end: 0).animate(
       CurvedAnimation(parent: _roastCardController, curve: Curves.easeOutBack),
     );
 
@@ -123,9 +134,12 @@ class _SceneCompleteState extends State<SceneComplete>
       if (mounted) _storyCardController.forward();
     });
 
-    // 0.9s - Glaze card rises up
+    // 0.9s - Glaze and Roast cards slide in from opposite sides
     Future.delayed(const Duration(milliseconds: 900), () {
-      if (mounted) _roastCardController.forward();
+      if (mounted) {
+        _glazeCardController.forward();
+        _roastCardController.forward();
+      }
     });
 
     // 1.5s - Start floating
@@ -148,6 +162,7 @@ class _SceneCompleteState extends State<SceneComplete>
   void dispose() {
     _statsCardController.dispose();
     _storyCardController.dispose();
+    _glazeCardController.dispose();
     _roastCardController.dispose();
     _buttonController.dispose();
     _floatController.dispose();
@@ -166,8 +181,10 @@ class _SceneCompleteState extends State<SceneComplete>
             _buildCardsStack(),
             const Spacer(flex: 1),
             _buildCopyText(),
-            const SizedBox(height: 24),
-            _buildButton(),
+            if (widget.onComplete != null) ...[
+              const SizedBox(height: 24),
+              _buildButton(),
+            ],
             const SizedBox(height: 20),
           ],
         ),
@@ -198,11 +215,16 @@ class _SceneCompleteState extends State<SceneComplete>
                 top: 20 + _getFloatOffset(1),
                 child: _buildStoryCard(),
               ),
-              // Roast card (bottom center)
+              // Glaze card (bottom left)
               Positioned(
-                left: 20,
-                right: 20,
+                left: 0,
                 bottom: 0 + _getFloatOffset(2),
+                child: _buildGlazeCard(),
+              ),
+              // Roast card (bottom right)
+              Positioned(
+                right: 0,
+                bottom: 0 + _getFloatOffset(3),
                 child: _buildRoastCard(),
               ),
             ],
@@ -473,14 +495,15 @@ class _SceneCompleteState extends State<SceneComplete>
     );
   }
 
-  Widget _buildRoastCard() {
+  Widget _buildGlazeCard() {
     return AnimatedBuilder(
-      animation: _roastCardController,
+      animation: _glazeCardController,
       builder: (context, child) {
         return Transform.translate(
-          offset: Offset(0, _roastSlide.value),
+          offset: Offset(_glazeSlide.value, 0),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            width: 165,
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
@@ -502,31 +525,93 @@ class _SceneCompleteState extends State<SceneComplete>
               children: [
                 const Row(
                   children: [
-                    Text('✨', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
+                    Text('✨', style: TextStyle(fontSize: 16)),
+                    SizedBox(width: 6),
                     Text(
                       'GLAZE',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
                     ),
                     Spacer(),
-                    Text('🍯', style: TextStyle(fontSize: 16)),
+                    Text('🍯', style: TextStyle(fontSize: 14)),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Text(
-                  '"That 50-footer you drained on hole 7? Pure butter. The chains didn\'t stand a chance."',
+                  '"That 50-footer on hole 7? Pure butter."',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 13,
+                    fontSize: 12,
                     fontStyle: FontStyle.italic,
-                    height: 1.4,
+                    height: 1.3,
                   ),
-                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRoastCard() {
+    return AnimatedBuilder(
+      animation: _roastCardController,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_roastSlide.value, 0),
+          child: Container(
+            width: 165,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE74C3C).withValues(alpha: 0.4),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFE74C3C).withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Row(
+                  children: [
+                    Text('🔥', style: TextStyle(fontSize: 16)),
+                    SizedBox(width: 6),
+                    Text(
+                      'ROAST',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Spacer(),
+                    Text('🍖', style: TextStyle(fontSize: 14)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '"3 OBs? Were you aiming for the parking lot?"',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    height: 1.3,
+                  ),
                 ),
               ],
             ),
@@ -584,7 +669,7 @@ class _SceneCompleteState extends State<SceneComplete>
               gradientBackground: const [Color(0xFF4ECDC4), Color(0xFF44CF9C)],
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              onPressed: widget.onComplete,
+              onPressed: widget.onComplete!,
             ),
           ),
         );

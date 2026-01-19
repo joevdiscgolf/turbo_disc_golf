@@ -25,6 +25,8 @@ class _WalkthroughBackgroundState extends State<WalkthroughBackground>
     [Color(0xFF1a535c), Color(0xFF16213e), Color(0xFF0f3460)],
     // Scene 4: Warm teal to green (complete)
     [Color(0xFF1a535c), Color(0xFF2d6a4f), Color(0xFF1b4332)],
+    // Scene 5: Green to teal (form analysis)
+    [Color(0xFF2d6a4f), Color(0xFF1a535c), Color(0xFF16213e)],
   ];
 
   @override

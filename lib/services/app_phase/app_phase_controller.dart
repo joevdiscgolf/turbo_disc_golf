@@ -38,8 +38,26 @@ class AppPhaseController extends ChangeNotifier {
       // Testing override: always show force upgrade screen if enabled
       final FeatureFlagService flags = locator.get<FeatureFlagService>();
       if (flags.alwaysShowForceUpgradeScreen) {
-        debugPrint('[AppPhaseCubit][init] Testing mode - forcing upgrade screen');
+        debugPrint(
+          '[AppPhaseCubit][init] Testing mode - forcing upgrade screen',
+        );
         setPhase(AppPhase.forceUpgrade);
+        return;
+      }
+
+      // Testing override: always show feature walkthrough if enabled
+      if (flags.alwaysShowFeatureWalkthrough) {
+        debugPrint(
+          '[AppPhaseCubit][init] Testing mode - forcing feature walkthrough',
+        );
+        setPhase(AppPhase.featureWalkthrough);
+        return;
+      }
+
+      // Testing override: always show onboarding if enabled
+      if (flags.alwaysShowOnboarding) {
+        debugPrint('[AppPhaseCubit][init] Testing mode - forcing onboarding');
+        setPhase(AppPhase.onboarding);
         return;
       }
 
@@ -50,12 +68,16 @@ class AppPhaseController extends ChangeNotifier {
 
       final AuthUser? currentAuthUser = _authService.currentUser;
       if (currentAuthUser == null) {
-        debugPrint('[AppPhaseCubit][init] No auth user, setting loggedOut phase');
+        debugPrint(
+          '[AppPhaseCubit][init] No auth user, setting loggedOut phase',
+        );
         setPhase(AppPhase.loggedOut);
         return;
       }
 
-      debugPrint('[AppPhaseCubit][init] Auth user found: ${currentAuthUser.uid}');
+      debugPrint(
+        '[AppPhaseCubit][init] Auth user found: ${currentAuthUser.uid}',
+      );
 
       TurboUser? currentTurboUser;
       AppVersionInfo? appVersionInfo;
@@ -71,7 +93,9 @@ class AppPhaseController extends ChangeNotifier {
             .then((results) {
               appVersionInfo = results[0] as AppVersionInfo?;
               currentTurboUser = results[1] as TurboUser?;
-              debugPrint('[AppPhaseCubit][init] Successfully loaded app version info and user');
+              debugPrint(
+                '[AppPhaseCubit][init] Successfully loaded app version info and user',
+              );
             })
             .timeout(
               tinyTimeout,
@@ -108,7 +132,8 @@ class AppPhaseController extends ChangeNotifier {
 
       // Only trigger force upgrade if BOTH versions are valid (not null, not empty, not "unknown")
       final String? minimumVersion = appVersionInfo?.minimumVersion;
-      final bool canCheckVersion = minimumVersion != null &&
+      final bool canCheckVersion =
+          minimumVersion != null &&
           isValidVersionString(minimumVersion) &&
           isValidVersionString(version);
 
@@ -121,7 +146,9 @@ class AppPhaseController extends ChangeNotifier {
         try {
           final int minVersionNum = versionToNumber(minimumVersion);
           final int currentVersionNum = versionToNumber(version);
-          debugPrint('[AppPhaseCubit][init] Version numbers: min=$minVersionNum, current=$currentVersionNum');
+          debugPrint(
+            '[AppPhaseCubit][init] Version numbers: min=$minVersionNum, current=$currentVersionNum',
+          );
 
           if (minVersionNum > currentVersionNum) {
             debugPrint(
@@ -135,8 +162,12 @@ class AppPhaseController extends ChangeNotifier {
             );
           }
         } catch (e) {
-          debugPrint('[AppPhaseCubit][init] ❌ Error parsing version numbers: $e');
-          debugPrint('[AppPhaseCubit][init] Skipping version check due to parsing error');
+          debugPrint(
+            '[AppPhaseCubit][init] ❌ Error parsing version numbers: $e',
+          );
+          debugPrint(
+            '[AppPhaseCubit][init] Skipping version check due to parsing error',
+          );
         }
       } else {
         debugPrint(
@@ -146,11 +177,15 @@ class AppPhaseController extends ChangeNotifier {
 
       final bool hasOnboarded = _authService.userHasOnboarded();
       debugPrint('[AppPhaseCubit][init] Has onboarded: $hasOnboarded');
-      debugPrint('[AppPhaseCubit][init] Setting phase to: ${hasOnboarded ? "home" : "onboarding"}');
+      debugPrint(
+        '[AppPhaseCubit][init] Setting phase to: ${hasOnboarded ? "home" : "onboarding"}',
+      );
       setPhase(hasOnboarded ? AppPhase.home : AppPhase.onboarding);
       debugPrint('[AppPhaseCubit][init] ✅ Initialization complete');
     } catch (e, stackTrace) {
-      debugPrint('[AppPhaseCubit][init] ❌ FATAL ERROR during initialization: $e');
+      debugPrint(
+        '[AppPhaseCubit][init] ❌ FATAL ERROR during initialization: $e',
+      );
       debugPrint('[AppPhaseCubit][init] Stack trace: $stackTrace');
       FirebaseCrashlytics.instance.recordError(
         e,
@@ -162,9 +197,9 @@ class AppPhaseController extends ChangeNotifier {
     }
   }
 
-  // called from AuthService
+  // called from AuthService when user marks onboarded (e.g., skip onboarding)
   void onMarkUserOnboarded() {
-    setPhase(AppPhase.home);
+    setPhase(AppPhase.featureWalkthrough);
   }
 
   void _handleAuthStateChange(AuthUser? user) async {
@@ -172,6 +207,18 @@ class AppPhaseController extends ChangeNotifier {
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
     if (flags.alwaysShowForceUpgradeScreen) {
       setPhase(AppPhase.forceUpgrade);
+      return;
+    }
+
+    // Testing override: always show feature walkthrough if enabled
+    if (flags.alwaysShowFeatureWalkthrough) {
+      setPhase(AppPhase.featureWalkthrough);
+      return;
+    }
+
+    // Testing override: always show onboarding if enabled
+    if (flags.alwaysShowOnboarding) {
+      setPhase(AppPhase.onboarding);
       return;
     }
 

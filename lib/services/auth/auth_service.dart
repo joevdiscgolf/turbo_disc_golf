@@ -1,8 +1,5 @@
-import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
@@ -15,7 +12,6 @@ import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_user_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/logout_manager.dart';
-import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 
 class AuthService {
   final AuthRepository _authRepository;
@@ -124,35 +120,10 @@ class AuthService {
     final AuthUser? authUser = currentUser;
     if (authUser == null) return false;
 
-    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
+    // Setup logging after successful login
+    await _setupLoggingForUser(authUser.uid);
 
-    if (!isSetUp) {
-      locator.get<AppPhaseController>().setPhase(AppPhase.onboarding);
-      return true;
-    }
-
-    locator.get<SharedPreferencesService>().markUserIsSetUp(true);
-
-    try {
-      // fetchLocalRepositoryData();
-      // fetchRepositoryData();
-      locator.get<AppPhaseController>().setPhase(AppPhase.home);
-
-      // Setup logging after successful login
-      await _setupLoggingForUser(authUser.uid);
-    } catch (e, trace) {
-      log(
-        '[myputt_auth_service][attemptSigninWithEmail] Failed to fetch repository data. Error: $e',
-      );
-      log(trace.toString());
-      FirebaseCrashlytics.instance.recordError(
-        e,
-        trace,
-        reason:
-            '[MyPuttAuthService][attemptSignInWithEmail] fetchRepositoryData timeout',
-      );
-    }
-
+    // AppPhaseController._handleAuthStateChange() handles routing based on userHasOnboarded()
     return true;
   }
 
@@ -170,19 +141,10 @@ class AuthService {
     final AuthUser? authUser = currentUser;
     if (authUser == null) return false;
 
-    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
-
-    if (!isSetUp) {
-      locator.get<AppPhaseController>().setPhase(AppPhase.onboarding);
-      return true;
-    }
-
-    locator.get<SharedPreferencesService>().markUserIsSetUp(true);
-    locator.get<AppPhaseController>().setPhase(AppPhase.home);
-
     // Setup logging after successful login
     await _setupLoggingForUser(authUser.uid);
 
+    // AppPhaseController._handleAuthStateChange() handles routing based on userHasOnboarded()
     return true;
   }
 
@@ -199,19 +161,10 @@ class AuthService {
     final AuthUser? authUser = currentUser;
     if (authUser == null) return false;
 
-    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
-
-    if (!isSetUp) {
-      locator.get<AppPhaseController>().setPhase(AppPhase.onboarding);
-      return true;
-    }
-
-    locator.get<SharedPreferencesService>().markUserIsSetUp(true);
-    locator.get<AppPhaseController>().setPhase(AppPhase.home);
-
     // Setup logging after successful login
     await _setupLoggingForUser(authUser.uid);
 
+    // AppPhaseController._handleAuthStateChange() handles routing based on userHasOnboarded()
     return true;
   }
 
@@ -237,13 +190,11 @@ class AuthService {
       return false;
     }
 
-    final bool isSetUp = await _authDatabaseService.userIsSetUp(authUser.uid);
+    // Mark onboarding complete NOW (persists the has_onboarded flag)
+    await _authRepository.markUserOnboarded();
 
-    if (!isSetUp) {
-      return false;
-    }
-
-    locator.get<AppPhaseController>().setPhase(AppPhase.home);
+    // Go to feature walkthrough (not home) for first-time users
+    locator.get<AppPhaseController>().setPhase(AppPhase.featureWalkthrough);
 
     // Setup logging after successful onboarding
     await _setupLoggingForUser(authUser.uid);

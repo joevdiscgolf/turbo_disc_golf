@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_complete.dart';
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_form_analysis.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_insights.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_processing.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_recording.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/walkthrough_background.dart';
-import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 class FeatureWalkthroughScreen extends StatefulWidget {
@@ -24,7 +26,6 @@ class FeatureWalkthroughScreen extends StatefulWidget {
 }
 
 class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
-  final AuthService _authService = locator.get<AuthService>();
   final PageController _pageController = PageController();
   late final LoggingServiceBase _logger;
 
@@ -32,13 +33,14 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
   Timer? _autoAdvanceTimer;
 
   // Scene durations in milliseconds (null = no auto-advance)
-  static const List<int?> _sceneDurations = [5500, 5000, 6500, null];
+  static const List<int?> _sceneDurations = [5500, 5000, 6500, 5000, null];
 
   static const List<String> _sceneNames = [
     'Recording',
     'Processing',
     'Insights',
     'Complete',
+    'Form Analysis',
   ];
 
   @override
@@ -102,11 +104,12 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
     _startAutoAdvanceTimer();
   }
 
-  Future<void> _onComplete() async {
+  void _onComplete() {
     _logger.track('Walkthrough Completed Button Tapped');
 
     HapticFeedback.mediumImpact();
-    await _authService.markUserOnboarded();
+    // User is already marked as onboarded in setupNewUser, just go to home
+    locator.get<AppPhaseController>().setPhase(AppPhase.home);
   }
 
   @override
@@ -132,8 +135,9 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
                       SceneRecording(isActive: _currentPage == 0),
                       SceneProcessing(isActive: _currentPage == 1),
                       SceneInsights(isActive: _currentPage == 2),
-                      SceneComplete(
-                        isActive: _currentPage == 3,
+                      SceneComplete(isActive: _currentPage == 3),
+                      SceneFormAnalysis(
+                        isActive: _currentPage == 4,
                         onComplete: _onComplete,
                       ),
                     ],

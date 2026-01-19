@@ -3,5 +3,6 @@ enum AppPhase {
   home, // main app
   loggedOut, // no user
   onboarding, // user logged in but missing onboarding
+  featureWalkthrough, // user completed onboarding, show feature walkthrough
   forceUpgrade, // force the user to update app
 }

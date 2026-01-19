@@ -59,3 +59,9 @@ List<Widget> addDividers(
   }
   return withDividers;
 }
+
+double autoBottomPadding(BuildContext context) {
+  return MediaQuery.of(context).viewPadding.bottom > 0
+      ? MediaQuery.of(context).viewPadding.bottom
+      : 12;
+}
