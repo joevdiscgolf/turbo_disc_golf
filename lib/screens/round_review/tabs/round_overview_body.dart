@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/components/stat_cards/putting_stats_card.dart'
     as compact;
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
@@ -21,7 +22,6 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/drives_tab.
 import 'package:turbo_disc_golf/screens/round_review/tabs/mistakes_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/putting_tab.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/roast_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/skills_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/summary_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
@@ -31,7 +31,7 @@ import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 class RoundOverviewBody extends StatefulWidget {
   final DGRound round;
@@ -55,9 +55,39 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
   bool get wantKeepAlive => true;
 
   bool _judgeBannerDismissed = false;
+  late final LoggingServiceBase _logger;
+
+  static const Map<int, String> _tabNames = {
+    1: 'Skills',
+    4: 'Drives',
+    5: 'Putting',
+    6: 'Discs',
+    7: 'Mistakes',
+    8: 'Psych',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': 'Round Overview',
+    });
+  }
 
   void _navigateToDetailView(int tabIndex) {
     HapticFeedback.lightImpact();
+
+    final String? tabName = _tabNames[tabIndex];
+    if (tabName != null) {
+      _logger.track(
+        '$tabName Card Tapped',
+        properties: {'round_id': widget.round.id, 'destination_tab': tabName},
+      );
+    }
+
     if (widget.isReviewV2Screen) {
       // V2: Push new screen based on tab index
       _pushDetailScreen(tabIndex);
@@ -69,6 +99,12 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
 
   void _navigateToJudgeTab() {
     HapticFeedback.lightImpact();
+
+    _logger.track(
+      'Judge Banner Tapped',
+      properties: {'round_id': widget.round.id},
+    );
+
     setState(() {
       _judgeBannerDismissed = true;
     });
@@ -114,10 +150,6 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
       case 9: // Summary
         detailScreen = AiSummaryTab(round: widget.round);
         title = 'AI Insights';
-        break;
-      case 11: // Roast
-        detailScreen = RoastTab(round: widget.round);
-        title = 'AI Roast';
         break;
     }
 
@@ -166,6 +198,15 @@ class _RoundOverviewBodyState extends State<RoundOverviewBody>
 
   void _navigateToScoreDetail() {
     HapticFeedback.lightImpact();
+
+    _logger.track(
+      'Score KPI Card Tapped',
+      properties: {
+        'round_id': widget.round.id,
+        'is_review_v2': widget.isReviewV2Screen,
+      },
+    );
+
     if (!widget.isReviewV2Screen) {
       // V1: Navigate to Course tab (index 2)
       if (widget.tabController != null) {

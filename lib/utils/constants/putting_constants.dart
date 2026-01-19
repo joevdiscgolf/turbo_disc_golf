@@ -18,13 +18,3 @@ const List<String> c1xBuckets = ['11-22 ft', '22-33 ft'];
 /// This represents putts inside Circle 2, the outer regulation circle.
 const double c2MinDistance = 33.0;
 const double c2MaxDistance = 66.0;
-
-/// Bucket labels used in putting statistics
-class PuttingBuckets {
-  static const String bucket0to11 = '0-11 ft';
-  static const String bucket11to22 = '11-22 ft';
-  static const String bucket22to33 = '22-33 ft';
-  static const String bucket33to44 = '33-44 ft';
-  static const String bucket44to55 = '44-55 ft';
-  static const String bucket55to66 = '55-66 ft';
-}

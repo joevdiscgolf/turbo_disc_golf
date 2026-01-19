@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nuclear_loader.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
@@ -18,6 +20,9 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 /// Screen for recording/importing videos and analyzing form.
 /// Keeps the exact same UI/UX as the original FormAnalysisScreen.
 class FormAnalysisRecordingScreen extends StatefulWidget {
+  static const String routeName = '/form-analysis-recording';
+  static const String screenName = 'Form Analysis Recording';
+
   const FormAnalysisRecordingScreen({super.key, required this.topViewPadding});
 
   final double topViewPadding;
@@ -31,6 +36,7 @@ class _FormAnalysisRecordingScreenState
     extends State<FormAnalysisRecordingScreen> {
   bool _showingTransition = false;
   VideoFormAnalysisComplete? _pendingResults;
+  late final LoggingServiceBase _logger;
 
   // Persistent speed notifier for the loader
   final ValueNotifier<double> _loaderSpeedNotifier = ValueNotifier<double>(1.0);
@@ -51,6 +57,15 @@ class _FormAnalysisRecordingScreenState
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': FormAnalysisRecordingScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('FormAnalysisRecordingScreen');
 
     // Debug mode: automatically trigger loading and transition
     if (_debugAutoFinalization) {
@@ -153,6 +168,7 @@ class _FormAnalysisRecordingScreenState
                       icon: Icon(Icons.close, color: foregroundColor),
                       onPressed: () {
                         HapticFeedback.lightImpact();
+                        _logger.track('Close Recording Screen Button Tapped');
                         Navigator.pop(context);
                       },
                     ),
@@ -339,6 +355,7 @@ class _FormAnalysisRecordingScreenState
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
+                _logger.track('Try Again Button Tapped');
                 BlocProvider.of<VideoFormAnalysisCubit>(context).reset();
               },
               child: const Text('Try Again'),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/constants/hole_description_examples.dart';
 
 /// Screen showing side-by-side bad vs good hole description examples.
@@ -16,6 +19,12 @@ class HoleDescriptionExamplesScreen extends StatelessWidget {
 
   /// Shows this screen as a modal bottom sheet.
   static Future<void> show(BuildContext context) async {
+    // Track modal opened
+    locator.get<LoggingService>().track('Modal Opened', properties: {
+      'modal_type': 'bottom_sheet',
+      'modal_name': 'Hole Description Examples',
+    });
+
     HapticFeedback.lightImpact();
     await showModalBottomSheet(
       context: context,

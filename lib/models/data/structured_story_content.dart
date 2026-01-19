@@ -2,22 +2,10 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'structured_story_content.g.dart';
 
-/// Section types in a structured story
-enum StorySection {
-  overview,     // Round Overview - context setting
-  strengths,    // What You Did Well - positive highlights
-  weaknesses,   // What Cost You Strokes - mistakes/issues
-  opportunity,  // Biggest Opportunity to Improve - single focus
-  advice,       // Practice & Strategy - actionable advice
-}
-
 /// A stat selected by AI for the share card
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class ShareHighlightStat {
-  const ShareHighlightStat({
-    required this.statId,
-    this.reason,
-  });
+  const ShareHighlightStat({required this.statId, this.reason});
 
   /// Stat ID for the share card (e.g., 'c1PuttPct', 'fairwayPct', 'birdies')
   /// Valid values: score, c1PuttPct, c1xPuttPct, c2PuttPct, fairwayPct,

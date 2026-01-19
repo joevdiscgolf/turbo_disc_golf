@@ -48,21 +48,4 @@ class ShotOutcome {
 }
 
 /// Metrics we track for shot success
-enum ShotMetric {
-  birdie,
-  c1InReg,
-  c2InReg,
-}
-
-extension ShotMetricExtension on ShotMetric {
-  String get displayName {
-    switch (this) {
-      case ShotMetric.birdie:
-        return 'Birdie';
-      case ShotMetric.c1InReg:
-        return 'C1 in Reg';
-      case ShotMetric.c2InReg:
-        return 'C2 in Reg';
-    }
-  }
-}
+enum ShotMetric { birdie, c1InReg, c2InReg }

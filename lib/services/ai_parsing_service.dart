@@ -8,9 +8,12 @@ import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
-import 'package:turbo_disc_golf/services/gemini_service.dart';
+import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
+import 'package:turbo_disc_golf/services/llm/gemini_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
+import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/gemini_helpers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yaml/yaml.dart';
@@ -111,17 +114,40 @@ class AiParsingService {
     if (uid == null) return null;
 
     try {
-      final prompt = _buildParsingPrompt(
-        voiceTranscript,
-        userBag,
-        course?.name,
-        preParsedHoles: preParsedHoles, // Pass through to prompt builder
-      );
-      debugPrint('Sending request to Gemini...');
-      String? responseText = await _getContentFromModel(prompt: prompt);
+      String? responseText;
 
-      if (responseText == null) {
-        throw Exception('No response from Gemini');
+      if (generateAiContentFromBackend) {
+        // Use backend cloud function for round parsing
+        debugPrint('Sending request to backend cloud function...');
+        final BackendLLMService backendService = locator.get<BackendLLMService>();
+        final ParseRoundDataRequest request = ParseRoundDataRequest(
+          voiceTranscript: voiceTranscript,
+          userBag: userBag,
+          courseName: course?.name,
+        );
+        final ParseRoundDataResponse? response = await backendService
+            .parseRoundData(request: request);
+
+        if (response == null || !response.success) {
+          throw Exception(
+            response?.data.error ?? 'No response from backend',
+          );
+        }
+
+        responseText = response.data.rawResponse;
+      } else {
+        final prompt = _buildParsingPrompt(
+          voiceTranscript,
+          userBag,
+          course?.name,
+          preParsedHoles: preParsedHoles, // Pass through to prompt builder
+        );
+        debugPrint('Sending request to Gemini...');
+        responseText = await _getContentFromModel(prompt: prompt);
+
+        if (responseText == null) {
+          throw Exception('No response from Gemini');
+        }
       }
 
       // Store the raw response
@@ -130,9 +156,9 @@ class AiParsingService {
       // Detect and handle repetitive output
       responseText = _removeRepetitiveText(responseText);
 
-      debugPrint('Gemini response received, parsing YAML...');
+      debugPrint('Response received, parsing YAML...');
       debugPrint(
-        '==================== RAW GEMINI RESPONSE ====================',
+        '==================== RAW RESPONSE ====================',
       );
       // debugPrint in chunks to avoid truncation
       const chunkSize =
@@ -197,7 +223,7 @@ class AiParsingService {
 
       return _fillMissingHoles(uid, potentialRound, numHoles);
     } catch (e, trace) {
-      debugPrint('Error parsing round with Gemini: $e');
+      debugPrint('Error parsing round: $e');
       debugPrint(trace.toString());
       if (e.toString().contains('API key')) {
         throw Exception('API Key Error: $e');

@@ -3,21 +3,37 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card_v2.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/components/putt_heat_map_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 class PuttingTab extends StatelessWidget {
+  static const String screenName = 'Putting';
+  static const String tabName = 'Putting';
+
   final DGRound round;
 
   const PuttingTab({super.key, required this.round});
 
   @override
   Widget build(BuildContext context) {
+    // Track screen impression
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track(
+        'Screen Impression',
+        properties: {
+          'screen_name': PuttingTab.screenName,
+          'screen_class': 'PuttingTab',
+          'tab_name': PuttingTab.tabName,
+        },
+      );
+    });
+
     final PuttingAnalysisService puttingAnalysisService = locator
         .get<PuttingAnalysisService>();
 
@@ -54,7 +70,7 @@ class PuttingTab extends StatelessWidget {
           // Heat map visualization
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PuttHeatMapCardV2(round: round, shouldAnimate: true),
+            child: PuttHeatMapCard(round: round, shouldAnimate: true),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

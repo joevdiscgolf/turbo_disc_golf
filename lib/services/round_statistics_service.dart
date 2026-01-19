@@ -4,7 +4,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
+import 'package:turbo_disc_golf/services/throw_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.dart';
 
@@ -406,7 +406,7 @@ class RoundStatisticsService {
     for (var hole in round.holes) {
       for (var discThrow in hole.throws) {
         // Use GPT analysis service to determine loss reason
-        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+        final analysis = ThrowAnalysisService.analyzeThrow(discThrow);
 
         // Only count non-none loss reasons
         if (analysis.lossReason != LossReason.none) {

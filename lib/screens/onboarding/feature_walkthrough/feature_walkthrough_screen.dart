@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_complete.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_insights.dart';
@@ -9,8 +10,12 @@ import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/sc
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_recording.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/walkthrough_background.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 class FeatureWalkthroughScreen extends StatefulWidget {
+  static const String routeName = '/feature-walkthrough';
+  static const String screenName = 'Feature Walkthrough';
+
   const FeatureWalkthroughScreen({super.key});
 
   @override
@@ -21,6 +26,7 @@ class FeatureWalkthroughScreen extends StatefulWidget {
 class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
   final AuthService _authService = locator.get<AuthService>();
   final PageController _pageController = PageController();
+  late final LoggingServiceBase _logger;
 
   int _currentPage = 0;
   Timer? _autoAdvanceTimer;
@@ -28,9 +34,26 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
   // Scene durations in milliseconds (null = no auto-advance)
   static const List<int?> _sceneDurations = [5500, 5000, 6500, null];
 
+  static const List<String> _sceneNames = [
+    'Recording',
+    'Processing',
+    'Insights',
+    'Complete',
+  ];
+
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': FeatureWalkthroughScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('FeatureWalkthroughScreen');
+
     _startAutoAdvanceTimer();
   }
 
@@ -63,6 +86,16 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
   }
 
   void _onPageChanged(int page) {
+    _logger.track(
+      'Walkthrough Page Changed',
+      properties: {
+        'page_index': page,
+        'page_name': _sceneNames[page],
+        'previous_page_index': _currentPage,
+        'previous_page_name': _sceneNames[_currentPage],
+      },
+    );
+
     setState(() {
       _currentPage = page;
     });
@@ -70,6 +103,8 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
   }
 
   Future<void> _onComplete() async {
+    _logger.track('Walkthrough Completed Button Tapped');
+
     HapticFeedback.mediumImpact();
     await _authService.markUserOnboarded();
   }

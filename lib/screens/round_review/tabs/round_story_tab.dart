@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/interactive_mini_scorecard.dart';
@@ -21,6 +20,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/v3/structured_story_renderer_v3.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
@@ -33,6 +33,8 @@ import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 /// AI narrative story tab that tells the story of your round
 /// with embedded visualizations and insights
 class RoundStoryTab extends StatefulWidget {
+  static const String tabName = 'Story';
+
   final DGRound round;
   final TabController? tabController;
 
@@ -58,12 +60,20 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   // Scroll controller for V3 story renderer
   ScrollController? _v3ScrollController;
 
+  late final LoggingServiceBase _logger;
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': RoundStoryTab.tabName,
+    });
+    _logger.logScreenImpression('RoundStoryTab');
+
     // Initialize local state with widget round
     _currentRound = widget.round;
     // Cache analysis to avoid regenerating on every build
@@ -90,6 +100,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Future<void> _generateStory() async {
+    _logger.track('Story Generate Button Tapped');
     setState(() {
       _isGenerating = true;
       _errorMessage = null;
@@ -97,15 +108,15 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
     try {
       // Get service from locator
-      final StoryGeneratorService storyService =
-          locator.get<StoryGeneratorService>();
+      final StoryGeneratorService storyService = locator
+          .get<StoryGeneratorService>();
 
       // Generate story based on feature flag (V3 → V2 → V1)
       final AIContent? story = storyV3Enabled
-          ? await storyService.generateRoundStoryV3(_currentRound)  // V3
+          ? await storyService.generateRoundStoryV3(_currentRound) // V3
           : (storyV2Enabled
-              ? await storyService.generateRoundStoryV2(_currentRound)  // V2
-              : await storyService.generateRoundStory(_currentRound));   // V1
+                ? await storyService.generateRoundStoryV2(_currentRound) // V2
+                : await storyService.generateRoundStory(_currentRound)); // V1
 
       if (story == null) {
         throw Exception('Failed to generate story content');
@@ -113,9 +124,15 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
       // Debug: Log which story version was generated
       debugPrint('📖 Story generated with:');
-      debugPrint('  - structuredContentV3: ${story.structuredContentV3 != null ? "✅ PRESENT (${story.structuredContentV3!.sections.length} sections)" : "❌ NULL"}');
-      debugPrint('  - structuredContentV2: ${story.structuredContentV2 != null ? "✅ PRESENT" : "❌ NULL"}');
-      debugPrint('  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}');
+      debugPrint(
+        '  - structuredContentV3: ${story.structuredContentV3 != null ? "✅ PRESENT (${story.structuredContentV3!.sections.length} sections)" : "❌ NULL"}',
+      );
+      debugPrint(
+        '  - structuredContentV2: ${story.structuredContentV2 != null ? "✅ PRESENT" : "❌ NULL"}',
+      );
+      debugPrint(
+        '  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}',
+      );
 
       // Update round with new story
       final RoundStorageService storageService = locator
@@ -159,8 +176,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     });
 
     try {
-      final StoryGeneratorService storyService =
-          locator.get<StoryGeneratorService>();
+      final StoryGeneratorService storyService = locator
+          .get<StoryGeneratorService>();
 
       debugPrint('🔧 DEBUG: Forcing story generation version $version');
 
@@ -177,9 +194,15 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
       // Debug: Log which story version was generated
       debugPrint('📖 V$version Story generated with:');
-      debugPrint('  - structuredContentV3: ${story.structuredContentV3 != null ? "✅ PRESENT (${story.structuredContentV3!.sections.length} sections)" : "❌ NULL"}');
-      debugPrint('  - structuredContentV2: ${story.structuredContentV2 != null ? "✅ PRESENT" : "❌ NULL"}');
-      debugPrint('  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}');
+      debugPrint(
+        '  - structuredContentV3: ${story.structuredContentV3 != null ? "✅ PRESENT (${story.structuredContentV3!.sections.length} sections)" : "❌ NULL"}',
+      );
+      debugPrint(
+        '  - structuredContentV2: ${story.structuredContentV2 != null ? "✅ PRESENT" : "❌ NULL"}',
+      );
+      debugPrint(
+        '  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}',
+      );
 
       // Update round with new story
       final RoundStorageService storageService = locator
@@ -224,7 +247,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       return const StoryLoadingAnimation();
     }
 
-    final bool hasStory = _currentRound.aiSummary != null &&
+    final bool hasStory =
+        _currentRound.aiSummary != null &&
         _currentRound.aiSummary!.content.isNotEmpty;
 
     // Three distinct rendering paths:
@@ -364,6 +388,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Future<void> _shareStoryCard() async {
+    _logger.track('Story Share Button Tapped');
     final (roundTitle, _, _) = _getShareData();
     final ShareService shareService = locator.get<ShareService>();
 
@@ -388,6 +413,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   void _showShareCardPreview() {
+    _logger.track('Story Preview Button Tapped');
     final (roundTitle, overview, shareableHeadline) = _getShareData();
 
     pushCupertinoRoute(
@@ -408,8 +434,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     return ValueListenableBuilder<int?>(
       valueListenable: _activeSectionIndex,
       builder: (context, activeSectionIndex, child) {
-        final HoleRange? activeRange = activeSectionIndex != null &&
-                story.structuredContentV3 != null
+        final HoleRange? activeRange =
+            activeSectionIndex != null && story.structuredContentV3 != null
             ? story.structuredContentV3!.sections[activeSectionIndex].holeRange
             : null;
 
@@ -554,23 +580,33 @@ class _RoundStoryTabState extends State<RoundStoryTab>
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: _isGenerating ? null : () => _generateStoryVersion(2),
+                    onPressed: _isGenerating
+                        ? null
+                        : () => _generateStoryVersion(2),
                     icon: const Icon(Icons.refresh, size: 16),
                     label: const Text('V2'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    onPressed: _isGenerating ? null : () => _generateStoryVersion(3),
+                    onPressed: _isGenerating
+                        ? null
+                        : () => _generateStoryVersion(3),
                     icon: const Icon(Icons.refresh, size: 16),
                     label: const Text('V3'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.purple,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       textStyle: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -584,7 +620,10 @@ class _RoundStoryTabState extends State<RoundStoryTab>
                   label: const Text('Regenerate'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     textStyle: const TextStyle(fontSize: 12),
                   ),
                 ),
@@ -646,7 +685,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     // Debug: Log which renderer is being used
     if (story != null) {
       if (story.structuredContentV3 != null) {
-        debugPrint('🎨 Rendering story with V3 renderer (${story.structuredContentV3!.sections.length} sections)');
+        debugPrint(
+          '🎨 Rendering story with V3 renderer (${story.structuredContentV3!.sections.length} sections)',
+        );
       } else if (story.structuredContentV2 != null) {
         debugPrint('🎨 Rendering story with V2 renderer');
       } else if (story.structuredContent != null) {

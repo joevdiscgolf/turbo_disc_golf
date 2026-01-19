@@ -13,6 +13,7 @@ import 'package:turbo_disc_golf/screens/create_course/create_course_sheet.dart';
 import 'package:turbo_disc_golf/screens/create_course/create_layout_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
@@ -24,6 +25,8 @@ class SelectCoursePanel extends StatefulWidget {
     required this.bottomViewPadding,
   });
 
+  static const String panelName = 'Select Course';
+
   final double topViewPadding;
   final double bottomViewPadding;
 
@@ -34,6 +37,7 @@ class SelectCoursePanel extends StatefulWidget {
 class _SelectCoursePanelState extends State<SelectCoursePanel> {
   final TextEditingController _controller = TextEditingController();
   final CourseSearchService _searchService = locator.get<CourseSearchService>();
+  late final LoggingServiceBase _logger;
 
   Timer? _debounce;
   List<CourseSearchHit> _searchResults = [];
@@ -43,6 +47,18 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   @override
   void initState() {
     super.initState();
+
+    // Create scoped logger with base properties
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'panel_name': SelectCoursePanel.panelName,
+    });
+
+    // Track panel impression
+    _logger.track('Panel Impression', properties: {
+      'panel_class': 'SelectCoursePanel',
+    });
+
     // Testing functions - uncomment to use:
     // _syncMeiliFromFirestore(); // Sync all Firestore courses to local Meili instance
     // _clearRecentCoursesCache(); // Clear recent courses cache
@@ -233,6 +249,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (!mounted) return;
 
+      _logger.track('Course Search Executed', properties: {
+        'query_length': value.length,
+      });
+
       setState(() {
         _isLoading = true;
         _error = null;
@@ -242,6 +262,9 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         final List<CourseSearchHit> results = await _searchService
             .searchCourses(value);
         if (mounted) {
+          _logger.track('Course Search Results Returned', properties: {
+            'result_count': results.length,
+          });
           setState(() {
             _searchResults = results;
             _isLoading = false;
@@ -250,6 +273,9 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       } catch (e, trace) {
         debugPrint(e.toString());
         debugPrint(trace.toString());
+        _logger.track('Course Search Failed', properties: {
+          'error': e.toString(),
+        });
         if (mounted) {
           setState(() {
             _error = 'Search failed. Please try again.';
@@ -267,6 +293,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         PanelHeader(
           title: 'Select Course',
           onClose: () {
+            _logger.track('Close Panel Button Tapped');
             HapticFeedback.lightImpact();
             Navigator.of(context).pop();
           },
@@ -346,9 +373,18 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseSearchHit hit,
     CourseLayoutSummary layoutSummary,
   ) async {
+    _logger.track('Course Layout Selected', properties: {
+      'course_name': hit.name,
+      'layout_name': layoutSummary.name,
+      'hole_count': layoutSummary.holeCount,
+    });
+
     // Fetch full course from Firestore
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
+      _logger.track('Course Load Failed', properties: {
+        'course_id': hit.id,
+      });
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -369,6 +405,10 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   }
 
   Future<void> _openCreateLayoutSheet(CourseSearchHit hit) async {
+    _logger.track('Create New Layout Button Tapped', properties: {
+      'course_name': hit.name,
+    });
+
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
@@ -381,6 +421,11 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     }
 
     if (!mounted) return;
+
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'full_screen_modal',
+      'modal_name': 'Create Layout',
+    });
 
     pushCupertinoRoute(
       context,
@@ -400,6 +445,11 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseSearchHit hit,
     CourseLayoutSummary layoutSummary,
   ) async {
+    _logger.track('Edit Layout Button Tapped', properties: {
+      'course_name': hit.name,
+      'layout_name': layoutSummary.name,
+    });
+
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
@@ -427,6 +477,11 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
     if (!mounted) return;
 
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'full_screen_modal',
+      'modal_name': 'Edit Layout',
+    });
+
     pushCupertinoRoute(
       context,
       CreateLayoutSheet(
@@ -447,6 +502,13 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     CourseLayout layout, {
     required bool isNew,
   }) async {
+    final String eventName = isNew ? 'Layout Created Successfully' : 'Layout Updated Successfully';
+    _logger.track(eventName, properties: {
+      'course_name': course.name,
+      'layout_name': layout.name,
+      'hole_count': layout.holes.length,
+    });
+
     debugPrint(
       '[SelectCoursePanel] _handleLayoutSaved called - isNew: $isNew, '
       'course: ${course.name}, layout: ${layout.name}',
@@ -542,6 +604,13 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         label: 'Create new course',
         icon: Icons.add,
         onPressed: () {
+          _logger.track('Create New Course Button Tapped');
+
+          _logger.track('Modal Opened', properties: {
+            'modal_type': 'full_screen_modal',
+            'modal_name': 'Create Course',
+          });
+
           Navigator.of(context).pop();
 
           pushCupertinoRoute(

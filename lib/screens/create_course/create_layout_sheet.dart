@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/holes_section.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/layout_info_section.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/create_layout_cubit.dart';
 import 'package:turbo_disc_golf/state/create_layout_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -41,13 +42,31 @@ class CreateLayoutSheet extends StatefulWidget {
 }
 
 class _CreateLayoutSheetState extends State<CreateLayoutSheet> {
+  static const String _sheetName = 'Create Layout';
+
   late final CreateLayoutCubit _createLayoutCubit;
+  late final LoggingServiceBase _logger;
 
   bool get _isEditMode => widget.existingLayout != null;
 
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'sheet_name': _sheetName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'full_screen_modal',
+      'modal_name': _isEditMode ? 'Edit Layout' : 'Create Layout',
+      'course_name': widget.course.name,
+      'is_edit_mode': _isEditMode,
+    });
+
     // Create cubit based on mode (create vs edit)
     if (widget.existingLayout != null) {
       _createLayoutCubit = CreateLayoutCubit.fromLayout(widget.existingLayout!);

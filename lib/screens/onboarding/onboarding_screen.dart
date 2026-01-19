@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/models/data/user_data/pdga_player_info.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
@@ -18,6 +19,9 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/pdga_constants.dart';
 
 class OnboardingScreen extends StatefulWidget {
+  static const String routeName = '/onboarding';
+  static const String screenName = 'Onboarding';
+
   const OnboardingScreen({super.key});
 
   @override
@@ -29,6 +33,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final AuthDatabaseService _authDatabaseService = locator
       .get<AuthDatabaseService>();
   final WebScraperService _webScraperService = locator.get<WebScraperService>();
+  late final LoggingServiceBase _logger;
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _pdgaNumController = TextEditingController();
@@ -50,6 +55,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String? _errorText;
 
   static final RegExp _usernameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': OnboardingScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('OnboardingScreen');
+  }
 
   @override
   void dispose() {
@@ -580,6 +599,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _onSkipToWalkthrough() {
+    _logger.track('Skip To Walkthrough Button Tapped');
     HapticFeedback.lightImpact();
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -695,6 +715,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _onSubmit() async {
+    _logger.track('Complete Profile Button Tapped');
+
     if (!_isFormValid()) return;
 
     setState(() {
@@ -744,6 +766,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _onSkipOnboarding() async {
+    _logger.track('Skip Onboarding Button Tapped');
     HapticFeedback.lightImpact();
     await _authService.markUserOnboarded();
   }

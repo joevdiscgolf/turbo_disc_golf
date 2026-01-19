@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/confirmation_holes_grid.dart';
@@ -11,6 +12,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/description_
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/description_quality_analyzer.dart';
@@ -269,7 +271,17 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
               height: 56,
               fontSize: 16,
               disabled: !hasRequiredFields,
-              onPressed: widget.onConfirm,
+              onPressed: () {
+                locator.get<LoggingService>().track(
+                  'Finalize Round Button Tapped',
+                  properties: {
+                    'screen_name': 'Round Confirmation',
+                    'course_name': widget.potentialRound.courseName ?? 'Unknown',
+                    'hole_count': widget.potentialRound.holes?.length ?? 0,
+                  },
+                );
+                widget.onConfirm();
+              },
             ),
           ),
         ),
@@ -288,6 +300,14 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
   }
 
   void _showEditableHoleSheet(BuildContext context, int holeIndex) {
+    // Track Modal Opened event
+    locator.get<LoggingService>().track('Modal Opened', properties: {
+      'screen_name': 'Round Confirmation',
+      'modal_type': 'bottom_sheet',
+      'modal_name': 'Editable Hole Detail Panel',
+      'hole_index': holeIndex,
+    });
+
     // Set the current editing hole when opening the panel
     _roundConfirmationCubit.setCurrentEditingHole(holeIndex);
 

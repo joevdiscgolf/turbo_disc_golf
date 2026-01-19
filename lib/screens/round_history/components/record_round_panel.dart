@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/components/voice_input/voice_description_card.da
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -35,10 +36,13 @@ class RecordRoundPanel extends StatefulWidget {
 }
 
 class _RecordRoundPanelState extends State<RecordRoundPanel> {
+  static const String _panelName = 'Record Round';
+
   final BaseVoiceRecordingService _voiceService = locator
       .get<BaseVoiceRecordingService>();
   final TextEditingController _transcriptController = TextEditingController();
   final FocusNode _transcriptFocusNode = FocusNode();
+  late final LoggingServiceBase _logger;
 
   // Course management
   List<Course> _courses = <Course>[];
@@ -70,6 +74,19 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'panel_name': _panelName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'bottom_sheet',
+      'modal_name': _panelName,
+    });
+
     _voiceService.initialize();
     _voiceService.addListener(_onVoiceServiceUpdate);
     _transcriptFocusNode.addListener(_onTranscriptFocusChange);
@@ -346,8 +363,8 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
 
                                   if (context.mounted) {
                                     // Update cubit state with test data before navigating
-                                    final RecordRoundCubit cubit =
-                                        context.read<RecordRoundCubit>();
+                                    final RecordRoundCubit cubit = context
+                                        .read<RecordRoundCubit>();
                                     cubit.startRecordingRound();
                                     cubit.setSelectedCourse(testCourse);
                                     cubit.setHoleDescription(

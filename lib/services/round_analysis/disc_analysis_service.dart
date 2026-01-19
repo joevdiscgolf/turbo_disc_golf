@@ -2,7 +2,7 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
+import 'package:turbo_disc_golf/services/throw_analysis_service.dart';
 
 class DiscAnalysisService {
   List<DiscPerformanceSummary> getDiscPerformanceSummaries(DGRound round) {
@@ -18,7 +18,7 @@ class DiscAnalysisService {
           () => {'good': 0, 'okay': 0, 'bad': 0},
         );
 
-        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+        final analysis = ThrowAnalysisService.analyzeThrow(discThrow);
 
         switch (analysis.execCategory) {
           case ExecCategory.good:
@@ -90,7 +90,10 @@ class DiscAnalysisService {
     return holesWithDisc.map((disc, holeNumbers) {
       final birdies = birdiesByDisc[disc] ?? 0;
       final totalHoles = holeNumbers.length;
-      return MapEntry(disc, totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0);
+      return MapEntry(
+        disc,
+        totalHoles > 0 ? (birdies / totalHoles) * 100 : 0.0,
+      );
     });
   }
 
@@ -255,7 +258,10 @@ class DiscAnalysisService {
     return holesWithDisc.map((disc, holeNumbers) {
       final c1InReg = c1InRegByDisc[disc] ?? 0;
       final totalHoles = holeNumbers.length;
-      return MapEntry(disc, totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0);
+      return MapEntry(
+        disc,
+        totalHoles > 0 ? (c1InReg / totalHoles) * 100 : 0.0,
+      );
     });
   }
 
@@ -303,7 +309,10 @@ class DiscAnalysisService {
     return holesWithDisc.map((disc, holeNumbers) {
       final c2InReg = c2InRegByDisc[disc] ?? 0;
       final totalHoles = holeNumbers.length;
-      return MapEntry(disc, totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0);
+      return MapEntry(
+        disc,
+        totalHoles > 0 ? (c2InReg / totalHoles) * 100 : 0.0,
+      );
     });
   }
 
@@ -476,7 +485,7 @@ class DiscAnalysisService {
 
     for (var hole in round.holes) {
       for (var discThrow in hole.throws) {
-        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+        final analysis = ThrowAnalysisService.analyzeThrow(discThrow);
         final isMajorMistake =
             analysis.execCategory == ExecCategory.bad ||
             analysis.execCategory == ExecCategory.severe;

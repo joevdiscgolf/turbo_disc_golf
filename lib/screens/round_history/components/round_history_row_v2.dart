@@ -2,21 +2,26 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/course_tab/components/score_distribution_bar.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class RoundHistoryRowV2 extends StatelessWidget {
-  const RoundHistoryRowV2({super.key, required this.round});
+  const RoundHistoryRowV2({
+    super.key,
+    required this.round,
+    required this.logger,
+    this.index,
+  });
 
   final DGRound round;
+  final LoggingServiceBase logger;
+  final int? index;
 
   @override
   Widget build(BuildContext context) {
@@ -55,15 +60,23 @@ class RoundHistoryRowV2 extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: GestureDetector(
         onTap: () {
+          // Track analytics FIRST (Screen Name already in logger!)
+          logger.track(
+            'Round History Row Tapped',
+            properties: {
+              'Round Id': round.id,
+              'Course Name': round.courseName,
+              if (index != null) 'Item Index': index,
+            },
+          );
+
           HapticFeedback.lightImpact();
           locator.get<RoundParser>().setRound(round);
 
           Navigator.push(
             context,
             CupertinoPageRoute(
-              builder: (context) => useRoundReviewScreenV2
-                  ? RoundReviewScreenV2(round: round)
-                  : RoundReviewScreen(round: round),
+              builder: (context) => RoundReviewScreen(round: round),
             ),
           );
         },

@@ -1,7 +1,7 @@
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/services/gpt_analysis_service.dart';
+import 'package:turbo_disc_golf/services/throw_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 
 class MistakesAnalysisService {
@@ -62,7 +62,7 @@ class MistakesAnalysisService {
 
       for (var i = 0; i < hole.throws.length; i++) {
         final discThrow = hole.throws[i];
-        final analysis = GPTAnalysisService.analyzeThrow(discThrow);
+        final analysis = ThrowAnalysisService.analyzeThrow(discThrow);
         final actualStrokeNumber = strokeNumbers[i];
 
         // Check for indicators of a good throw
@@ -186,7 +186,7 @@ class MistakesAnalysisService {
       return 'Missed approach';
     }
 
-    final baseLabel = GPTAnalysisService.describeLossReason(lossReason);
+    final baseLabel = ThrowAnalysisService.describeLossReason(lossReason);
     if (discThrow.technique != null) {
       final technique = discThrow.technique!.name.capitalize();
       return '$technique - $baseLabel';

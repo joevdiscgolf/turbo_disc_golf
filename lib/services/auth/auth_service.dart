@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,8 @@ import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/repositories/auth_repository.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
+import 'package:turbo_disc_golf/services/firestore/fb_user_data_loader.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
 
@@ -60,6 +63,36 @@ class AuthService {
     return _authRepository.deleteCurrentUser();
   }
 
+  /// Identifies user in logging service and registers super properties.
+  /// Called after successful login to set up analytics context.
+  Future<void> _setupLoggingForUser(String uid) async {
+    try {
+      final LoggingService loggingService = locator.get<LoggingService>();
+
+      // Identify the user
+      await loggingService.identify(uid);
+
+      // Fetch user data for super properties
+      final TurboUser? user = await FBUserDataLoader.getCurrentUser(uid);
+      if (user != null) {
+        await loggingService.registerSuperProperties({
+          'is_admin': user.isAdmin ?? false,
+          'has_pdga_number': user.pdgaMetadata?.pdgaNum != null,
+          'platform': Platform.isIOS ? 'iOS' : 'Android',
+        });
+      } else {
+        // Register basic super properties even if user data not available
+        await loggingService.registerSuperProperties({
+          'is_admin': false,
+          'has_pdga_number': false,
+          'platform': Platform.isIOS ? 'iOS' : 'Android',
+        });
+      }
+    } catch (e) {
+      debugPrint('[AuthService] Failed to setup logging for user: $e');
+    }
+  }
+
   Future<bool> attemptSignUpWithEmail(String email, String password) async {
     final bool signUpSuccess = await _authRepository.signUpWithEmailPassword(
       email,
@@ -104,6 +137,9 @@ class AuthService {
       // fetchLocalRepositoryData();
       // fetchRepositoryData();
       locator.get<AppPhaseController>().setPhase(AppPhase.home);
+
+      // Setup logging after successful login
+      await _setupLoggingForUser(authUser.uid);
     } catch (e, trace) {
       log(
         '[myputt_auth_service][attemptSigninWithEmail] Failed to fetch repository data. Error: $e',
@@ -143,6 +179,10 @@ class AuthService {
 
     locator.get<SharedPreferencesService>().markUserIsSetUp(true);
     locator.get<AppPhaseController>().setPhase(AppPhase.home);
+
+    // Setup logging after successful login
+    await _setupLoggingForUser(authUser.uid);
+
     return true;
   }
 
@@ -168,6 +208,10 @@ class AuthService {
 
     locator.get<SharedPreferencesService>().markUserIsSetUp(true);
     locator.get<AppPhaseController>().setPhase(AppPhase.home);
+
+    // Setup logging after successful login
+    await _setupLoggingForUser(authUser.uid);
+
     return true;
   }
 
@@ -200,6 +244,10 @@ class AuthService {
     }
 
     locator.get<AppPhaseController>().setPhase(AppPhase.home);
+
+    // Setup logging after successful onboarding
+    await _setupLoggingForUser(authUser.uid);
+
     return true;
   }
 }

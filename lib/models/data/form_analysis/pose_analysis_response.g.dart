@@ -7,7 +7,7 @@ part of 'pose_analysis_response.dart';
 // **************************************************************************
 
 PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
-  Map<String, dynamic> json,
+  Map json,
 ) => PoseAnalysisResponse(
   sessionId: json['session_id'] as String,
   status: json['status'] as String,
@@ -21,10 +21,12 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   videoDurationSeconds: (json['video_duration_seconds'] as num).toDouble(),
   totalFrames: (json['total_frames'] as num).toInt(),
   checkpoints: (json['checkpoints'] as List<dynamic>)
-      .map((e) => CheckpointPoseData.fromJson(e as Map<String, dynamic>))
+      .map(
+        (e) => CheckpointPoseData.fromJson(Map<String, dynamic>.from(e as Map)),
+      )
       .toList(),
   framePoses: (json['frame_poses'] as List<dynamic>)
-      .map((e) => FramePoseData.fromJson(e as Map<String, dynamic>))
+      .map((e) => FramePoseData.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
   overallFormScore: (json['overall_form_score'] as num?)?.toInt(),
   errorMessage: json['error_message'] as String?,
@@ -33,7 +35,7 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   videoSyncMetadata: json['video_sync_metadata'] == null
       ? null
       : VideoSyncMetadata.fromJson(
-          json['video_sync_metadata'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['video_sync_metadata'] as Map),
         ),
   proVideoReference: json['pro_video_reference'] as String?,
 );
@@ -69,25 +71,27 @@ const _$VideoOrientationEnumMap = {
   VideoOrientation.landscape: 'landscape',
 };
 
-CheckpointPoseData _$CheckpointPoseDataFromJson(
-  Map<String, dynamic> json,
-) => CheckpointPoseData(
+CheckpointPoseData _$CheckpointPoseDataFromJson(Map json) => CheckpointPoseData(
   checkpointId: json['checkpoint_id'] as String,
   checkpointName: json['checkpoint_name'] as String,
   frameNumber: (json['frame_number'] as num).toInt(),
   timestampSeconds: (json['timestamp_seconds'] as num).toDouble(),
   userLandmarks: (json['user_landmarks'] as List<dynamic>)
-      .map((e) => PoseLandmark.fromJson(e as Map<String, dynamic>))
+      .map((e) => PoseLandmark.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
-  userAngles: PoseAngles.fromJson(json['user_angles'] as Map<String, dynamic>),
+  userAngles: PoseAngles.fromJson(
+    Map<String, dynamic>.from(json['user_angles'] as Map),
+  ),
   referenceLandmarks: (json['reference_landmarks'] as List<dynamic>?)
-      ?.map((e) => PoseLandmark.fromJson(e as Map<String, dynamic>))
+      ?.map((e) => PoseLandmark.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
   referenceAngles: json['reference_angles'] == null
       ? null
-      : PoseAngles.fromJson(json['reference_angles'] as Map<String, dynamic>),
+      : PoseAngles.fromJson(
+          Map<String, dynamic>.from(json['reference_angles'] as Map),
+        ),
   deviationsRaw: AngleDeviations.fromJson(
-    json['deviations'] as Map<String, dynamic>,
+    Map<String, dynamic>.from(json['deviations'] as Map),
   ),
   deviationSeverity: json['deviation_severity'] as String,
   comparisonImageBase64: json['comparison_image_base64'] as String?,
@@ -112,17 +116,17 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(
   userIndividualAngles: json['user_individual_angles'] == null
       ? null
       : IndividualJointAngles.fromJson(
-          json['user_individual_angles'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['user_individual_angles'] as Map),
         ),
   referenceIndividualAngles: json['reference_individual_angles'] == null
       ? null
       : IndividualJointAngles.fromJson(
-          json['reference_individual_angles'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['reference_individual_angles'] as Map),
         ),
   individualDeviations: json['individual_deviations'] == null
       ? null
       : IndividualJointDeviations.fromJson(
-          json['individual_deviations'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['individual_deviations'] as Map),
         ),
 );
 
@@ -161,7 +165,7 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'individual_deviations': instance.individualDeviations?.toJson(),
 };
 
-PoseLandmark _$PoseLandmarkFromJson(Map<String, dynamic> json) => PoseLandmark(
+PoseLandmark _$PoseLandmarkFromJson(Map json) => PoseLandmark(
   name: json['name'] as String,
   x: (json['x'] as num).toDouble(),
   y: (json['y'] as num).toDouble(),
@@ -178,7 +182,7 @@ Map<String, dynamic> _$PoseLandmarkToJson(PoseLandmark instance) =>
       'visibility': instance.visibility,
     };
 
-PoseAngles _$PoseAnglesFromJson(Map<String, dynamic> json) => PoseAngles(
+PoseAngles _$PoseAnglesFromJson(Map json) => PoseAngles(
   shoulderRotation: (json['shoulder_rotation'] as num?)?.toDouble(),
   elbowAngle: (json['elbow_angle'] as num?)?.toDouble(),
   hipRotation: (json['hip_rotation'] as num?)?.toDouble(),
@@ -198,7 +202,7 @@ Map<String, dynamic> _$PoseAnglesToJson(PoseAngles instance) =>
     };
 
 IndividualJointAngles _$IndividualJointAnglesFromJson(
-  Map<String, dynamic> json,
+  Map json,
 ) => IndividualJointAngles(
   leftKneeBendAngle: (json['left_knee_bend_angle'] as num?)?.toDouble(),
   rightKneeBendAngle: (json['right_knee_bend_angle'] as num?)?.toDouble(),
@@ -237,7 +241,7 @@ Map<String, dynamic> _$IndividualJointAnglesToJson(
 };
 
 IndividualJointDeviations _$IndividualJointDeviationsFromJson(
-  Map<String, dynamic> json,
+  Map json,
 ) => IndividualJointDeviations(
   leftKneeBendAngle: (json['left_knee_bend_angle'] as num?)?.toDouble(),
   rightKneeBendAngle: (json['right_knee_bend_angle'] as num?)?.toDouble(),
@@ -275,14 +279,13 @@ Map<String, dynamic> _$IndividualJointDeviationsToJson(
   'right_ankle_angle': instance.rightAnkleAngle,
 };
 
-AngleDeviations _$AngleDeviationsFromJson(Map<String, dynamic> json) =>
-    AngleDeviations(
-      shoulderRotation: (json['shoulder_rotation'] as num?)?.toDouble(),
-      elbowAngle: (json['elbow_angle'] as num?)?.toDouble(),
-      hipRotation: (json['hip_rotation'] as num?)?.toDouble(),
-      kneeBend: (json['knee_bend'] as num?)?.toDouble(),
-      spineTilt: (json['spine_tilt'] as num?)?.toDouble(),
-    );
+AngleDeviations _$AngleDeviationsFromJson(Map json) => AngleDeviations(
+  shoulderRotation: (json['shoulder_rotation'] as num?)?.toDouble(),
+  elbowAngle: (json['elbow_angle'] as num?)?.toDouble(),
+  hipRotation: (json['hip_rotation'] as num?)?.toDouble(),
+  kneeBend: (json['knee_bend'] as num?)?.toDouble(),
+  spineTilt: (json['spine_tilt'] as num?)?.toDouble(),
+);
 
 Map<String, dynamic> _$AngleDeviationsToJson(AngleDeviations instance) =>
     <String, dynamic>{
@@ -293,17 +296,16 @@ Map<String, dynamic> _$AngleDeviationsToJson(AngleDeviations instance) =>
       'spine_tilt': instance.spineTilt,
     };
 
-FramePoseData _$FramePoseDataFromJson(Map<String, dynamic> json) =>
-    FramePoseData(
-      frameNumber: (json['frame_number'] as num).toInt(),
-      timestampSeconds: (json['timestamp_seconds'] as num).toDouble(),
-      landmarks: (json['landmarks'] as List<dynamic>)
-          .map((e) => PoseLandmark.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      thumbnailBase64: json['thumbnail_base64'] as String,
-      isCheckpoint: json['is_checkpoint'] as bool,
-      checkpointId: json['checkpoint_id'] as String?,
-    );
+FramePoseData _$FramePoseDataFromJson(Map json) => FramePoseData(
+  frameNumber: (json['frame_number'] as num).toInt(),
+  timestampSeconds: (json['timestamp_seconds'] as num).toDouble(),
+  landmarks: (json['landmarks'] as List<dynamic>)
+      .map((e) => PoseLandmark.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList(),
+  thumbnailBase64: json['thumbnail_base64'] as String,
+  isCheckpoint: json['is_checkpoint'] as bool,
+  checkpointId: json['checkpoint_id'] as String?,
+);
 
 Map<String, dynamic> _$FramePoseDataToJson(FramePoseData instance) =>
     <String, dynamic>{

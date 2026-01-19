@@ -4,14 +4,20 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/round_review_screen_v2.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
-import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
 class RoundHistoryRow extends StatelessWidget {
-  const RoundHistoryRow({super.key, required this.round});
+  const RoundHistoryRow({
+    super.key,
+    required this.round,
+    required this.logger,
+    this.index,
+  });
 
   final DGRound round;
+  final LoggingServiceBase logger;
+  final int? index;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +49,16 @@ class RoundHistoryRow extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: GestureDetector(
         onTap: () {
+          // Track analytics FIRST (Screen Name already in logger!)
+          logger.track(
+            'Round History Row Tapped',
+            properties: {
+              'Round Id': round.id,
+              'Course Name': round.courseName,
+              if (index != null) 'Item Index': index,
+            },
+          );
+
           HapticFeedback.lightImpact();
           // Set the existing round so the parser can calculate stats
           locator.get<RoundParser>().setRound(round);
@@ -50,9 +66,7 @@ class RoundHistoryRow extends StatelessWidget {
           Navigator.push(
             context,
             CupertinoPageRoute(
-              builder: (context) => useRoundReviewScreenV2
-                  ? RoundReviewScreenV2(round: round)
-                  : RoundReviewScreen(round: round),
+              builder: (context) => RoundReviewScreen(round: round),
             ),
           );
         },

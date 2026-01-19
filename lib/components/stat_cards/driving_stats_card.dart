@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 /// Compact driving stats card showing 4 key metrics in a 2x2 grid
 ///
@@ -15,11 +15,7 @@ class DrivingStatsCard extends StatefulWidget {
   final DGRound round;
   final VoidCallback? onTap;
 
-  const DrivingStatsCard({
-    super.key,
-    required this.round,
-    this.onTap,
-  });
+  const DrivingStatsCard({super.key, required this.round, this.onTap});
 
   @override
   State<DrivingStatsCard> createState() => _DrivingStatsCardState();
@@ -79,7 +75,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                         key: ValueKey('driving_c1_in_reg_${widget.round.id}'),
                         heroTag: 'driving_c1_in_reg',
                         label: 'C1 in Reg',
-                        percentage: hasData ? stats['c1InRegPct'] as double : 0.0,
+                        percentage: hasData
+                            ? stats['c1InRegPct'] as double
+                            : 0.0,
                         color: const Color(0xFF137e66),
                       ),
                       const SizedBox(width: 8),
@@ -87,7 +85,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                         key: ValueKey('driving_fairway_${widget.round.id}'),
                         heroTag: 'driving_fairway',
                         label: 'Fairway',
-                        percentage: hasData ? stats['fairwayPct'] as double : 0.0,
+                        percentage: hasData
+                            ? stats['fairwayPct'] as double
+                            : 0.0,
                         color: const Color(0xFF4CAF50),
                       ),
                     ],
@@ -108,7 +108,9 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                         key: ValueKey('driving_parked_${widget.round.id}'),
                         heroTag: 'driving_parked',
                         label: 'Parked',
-                        percentage: hasData ? stats['parkedPct'] as double : 0.0,
+                        percentage: hasData
+                            ? stats['parkedPct'] as double
+                            : 0.0,
                         color: const Color(0xFFFFA726),
                       ),
                     ],
@@ -143,10 +145,7 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
     );
 
     if (useHeroAnimationsForRoundReview) {
-      return Hero(
-        tag: heroTag,
-        child: indicator,
-      );
+      return Hero(tag: heroTag, child: indicator);
     }
 
     return indicator;

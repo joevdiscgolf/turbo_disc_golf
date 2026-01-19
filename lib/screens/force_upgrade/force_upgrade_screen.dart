@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/auth/components/landing_background.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_app_info_data_loader.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/platform_helpers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -35,7 +36,7 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     );
 
     _loadVersionInfo();
-    _trackScreenView();
+    _trackScreenImpression();
   }
 
   @override
@@ -61,13 +62,16 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     });
   }
 
-  void _trackScreenView() {
+  void _trackScreenImpression() {
     final AppPhaseController controller = locator.get<AppPhaseController>();
     final AppVersionInfo? versionInfo = controller.appVersionInfo;
 
-    debugPrint(
-      '[ForceUpgradeScreen] Screen viewed - Current: ${_currentVersion ?? 'unknown'}, Required: ${versionInfo?.minimumVersion ?? 'unknown'}',
-    );
+    locator.get<LoggingService>().track('Screen Impression', properties: {
+      'screen_name': ForceUpgradeScreen.screenName,
+      'screen_class': 'ForceUpgradeScreen',
+      'current_version': _currentVersion ?? 'unknown',
+      'required_version': versionInfo?.minimumVersion ?? 'unknown',
+    });
   }
 
   @override
@@ -194,23 +198,21 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
       versionInfo?.playStoreUrl,
     );
 
-    debugPrint(
-      '[ForceUpgradeScreen] Update button pressed - Platform: ${PlatformHelpers.isIOS ? 'iOS' : 'Android'}, URL: ${storeUrl ?? 'not configured'}',
-    );
+    locator.get<LoggingService>().track('Update Now Button Tapped', properties: {
+      'screen_name': ForceUpgradeScreen.screenName,
+      'platform': PlatformHelpers.isIOS ? 'iOS' : 'Android',
+      'store_url_configured': storeUrl != null && storeUrl.isNotEmpty,
+    });
 
     if (storeUrl != null && storeUrl.isNotEmpty) {
       try {
         final Uri uri = Uri.parse(storeUrl);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          debugPrint('[ForceUpgradeScreen] Cannot launch URL: $storeUrl');
         }
       } catch (e) {
         debugPrint('[ForceUpgradeScreen] Error launching URL: $e');
       }
-    } else {
-      debugPrint('[ForceUpgradeScreen] Store URL not configured in Firestore');
     }
   }
 }

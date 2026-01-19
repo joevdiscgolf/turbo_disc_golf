@@ -92,8 +92,8 @@ class _LandingPreviewCardState extends State<LandingPreviewCard>
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
@@ -109,7 +109,9 @@ class _LandingPreviewCardState extends State<LandingPreviewCard>
             ),
           ],
         ),
-        child: widget.child,
+        child: Center(
+          child: widget.child,
+        ),
       ),
     );
   }

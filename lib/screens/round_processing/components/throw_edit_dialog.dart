@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
 /// Dialog for editing or adding a throw with all available fields.
@@ -31,8 +32,11 @@ class ThrowEditDialog extends StatefulWidget {
 }
 
 class _ThrowEditDialogState extends State<ThrowEditDialog> {
+  static const String _modalName = 'Throw Edit Dialog';
+
   late BagService _bagService;
   late List<DGDisc> _userDiscs;
+  late final LoggingServiceBase _logger;
 
   // Form controllers
   late ThrowPurpose? _purpose;
@@ -58,6 +62,21 @@ class _ThrowEditDialogState extends State<ThrowEditDialog> {
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'modal_name': _modalName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'dialog',
+      'modal_name': _modalName,
+      'is_new_throw': widget.isNewThrow,
+      'throw_index': widget.throwIndex,
+    });
+
     _bagService = locator.get<BagService>();
     _userDiscs = _bagService.userBag;
 

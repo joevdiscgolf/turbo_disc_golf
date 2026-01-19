@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
@@ -36,8 +37,11 @@ class AddThrowPanel extends StatefulWidget {
 }
 
 class _AddThrowPanelState extends State<AddThrowPanel> {
+  static const String _panelName = 'Add Throw Panel';
+
   late BagService _bagService;
   late List<DGDisc> _userDiscs;
+  late final LoggingServiceBase _logger;
 
   // Form state
   late ThrowPurpose? _purpose;
@@ -80,6 +84,21 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'panel_name': _panelName,
+    });
+
+    // Track modal opened
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'bottom_sheet',
+      'modal_name': _panelName,
+      'is_new_throw': widget.isNewThrow,
+      'throw_index': widget.throwIndex,
+    });
+
     _bagService = locator.get<BagService>();
     _userDiscs = _bagService.userBag;
 
@@ -505,7 +524,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
               onChanged: (value) {
                 setState(() {
                   _landingDistance = value.round();
-                  _customLandingDistanceController.text = _landingDistance.toString();
+                  _customLandingDistanceController.text = _landingDistance
+                      .toString();
                 });
               },
             ),

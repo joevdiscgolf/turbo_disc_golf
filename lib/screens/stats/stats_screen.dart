@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
@@ -9,6 +10,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/componen
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_distance_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/putting_summary_cards.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/deep_analysis/components/shot_type_birdie_rates_card.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/multi_round_statistics_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -16,6 +18,9 @@ import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class StatsScreen extends StatefulWidget {
+  static const String routeName = '/stats';
+  static const String screenName = 'Stats';
+
   const StatsScreen({super.key});
 
   @override
@@ -23,6 +28,7 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
+  late final LoggingServiceBase _logger;
   int _selectedRoundCount = 10; // Default to last 10 rounds
 
   final List<int> _roundCountOptions = [
@@ -32,6 +38,20 @@ class _StatsScreenState extends State<StatsScreen> {
     20,
     -1,
   ]; // -1 means all rounds
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': StatsScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('StatsScreen');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -219,6 +239,13 @@ class _StatsScreenState extends State<StatsScreen> {
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
+                  _logger.track(
+                    'Stats Round Filter Changed',
+                    properties: {
+                      'previous_count': _selectedRoundCount,
+                      'new_count': value,
+                    },
+                  );
                   setState(() {
                     _selectedRoundCount = value;
                   });

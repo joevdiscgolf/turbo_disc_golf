@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/drives_tab/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 /// Compact throw type comparison card for story context
 /// Shows two throw techniques' performance side-by-side
@@ -28,10 +28,10 @@ class ThrowTypeStoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final RoundStatisticsService statsService = RoundStatisticsService(round);
-    final Map<String, dynamic> teeShotBirdieRates =
-        statsService.getTeeShotBirdieRateStats();
-    final Map<String, Map<String, double>> circleInRegByType =
-        statsService.getCircleInRegByThrowType();
+    final Map<String, dynamic> teeShotBirdieRates = statsService
+        .getTeeShotBirdieRateStats();
+    final Map<String, Map<String, double>> circleInRegByType = statsService
+        .getCircleInRegByThrowType();
     final Map<String, List<MapEntry<DGHole, DiscThrow>>> allTeeShotsByType =
         statsService.getAllTeeShotsByType();
 
@@ -60,10 +60,7 @@ class ThrowTypeStoryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: _ThrowTypeColumn(
-                stats: stats1,
-                color: technique1Color,
-              ),
+              child: _ThrowTypeColumn(stats: stats1, color: technique1Color),
             ),
             VerticalDivider(
               width: 1,
@@ -71,10 +68,7 @@ class ThrowTypeStoryCard extends StatelessWidget {
               color: TurbColors.gray[100],
             ),
             Expanded(
-              child: _ThrowTypeColumn(
-                stats: stats2,
-                color: technique2Color,
-              ),
+              child: _ThrowTypeColumn(stats: stats2, color: technique2Color),
             ),
           ],
         ),
@@ -146,10 +140,7 @@ class ThrowTypeStoryCard extends StatelessWidget {
 }
 
 class _ThrowTypeColumn extends StatelessWidget {
-  const _ThrowTypeColumn({
-    required this.stats,
-    required this.color,
-  });
+  const _ThrowTypeColumn({required this.stats, required this.color});
 
   final ThrowTypeStats stats;
   final Color color;
@@ -164,9 +155,9 @@ class _ThrowTypeColumn extends StatelessWidget {
           Text(
             stats.displayName,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
           const SizedBox(height: 8),
           // Birdie rate circle
@@ -200,27 +191,27 @@ class _ThrowTypeColumn extends StatelessWidget {
             Text(
               'C1 in Reg',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 11,
-                  ),
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+              ),
             ),
             Row(
               children: [
                 Text(
                   '${stats.c1InRegPct.toStringAsFixed(0)}%',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                        fontSize: 12,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(width: 3),
                 Text(
                   '(${stats.c1Count}/${stats.c1Total})',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: TurbColors.gray[400],
-                        fontSize: 10,
-                      ),
+                    color: TurbColors.gray[400],
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),

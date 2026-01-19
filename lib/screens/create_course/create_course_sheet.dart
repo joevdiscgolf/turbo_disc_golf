@@ -7,9 +7,11 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/map/location_picker_sheet.dart';
 import 'package:turbo_disc_golf/components/map/mini_map_preview.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/holes_section.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/layout_info_section.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/create_course_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -24,6 +26,9 @@ class CreateCourseSheet extends StatefulWidget {
     required this.bottomViewPadding,
   });
 
+  static const String screenName = 'Create Course';
+  static const String routeName = '/create-course';
+
   final void Function(Course course) onCourseCreated;
   final double topViewPadding;
   final double bottomViewPadding;
@@ -34,11 +39,21 @@ class CreateCourseSheet extends StatefulWidget {
 
 class _CreateCourseSheetState extends State<CreateCourseSheet> {
   late final CreateCourseCubit _createCourseCubit;
+  late final LoggingServiceBase _logger;
 
   @override
   void initState() {
     super.initState();
     _createCourseCubit = BlocProvider.of<CreateCourseCubit>(context);
+
+    // Create scoped logger with base properties
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': CreateCourseSheet.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('CreateCourseSheet');
   }
 
   @override
@@ -54,6 +69,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
             size: PanelConstants.closeButtonIconSize,
           ),
           onPressed: () {
+            _logger.track('Close Button Tapped');
             HapticFeedback.lightImpact();
             Navigator.of(context).pop();
           },
@@ -95,6 +111,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
                               onHoleCountChanged:
                                   _createCourseCubit.updateHoleCount,
                               onParseImage: () async {
+                                _logger.track('Parse Layout Image Button Tapped');
                                 HapticFeedback.lightImpact();
                                 FocusScope.of(context).unfocus();
                                 await Future.delayed(
@@ -271,6 +288,15 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
   }
 
   void _openLocationPicker(BuildContext context, CreateCourseState state) {
+    _logger.track('Select Location Button Tapped', properties: {
+      'has_existing_location': state.hasLocation,
+    });
+
+    _logger.track('Modal Opened', properties: {
+      'modal_type': 'full_screen_modal',
+      'modal_name': 'Location Picker',
+    });
+
     HapticFeedback.lightImpact();
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -279,6 +305,7 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
           initialLatitude: state.latitude,
           initialLongitude: state.longitude,
           onLocationSelected: (double lat, double lng) {
+            _logger.track('Location Selected On Map');
             _createCourseCubit.updateLocation(lat, lng);
           },
         ),
@@ -322,8 +349,20 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
         fontWeight: FontWeight.bold,
         disabled: !canSave,
         onPressed: () async {
+          _logger.track('Create Course Button Tapped', properties: {
+            'has_course_name': state.courseName.trim().isNotEmpty,
+            'has_location': state.hasLocation,
+            'hole_count': state.numberOfHoles,
+          });
+
           await _createCourseCubit.saveCourse(
             onSuccess: (Course course) {
+              _logger.track('Course Created Successfully', properties: {
+                'course_name': course.name,
+                'layout_count': course.layouts.length,
+                'hole_count': course.defaultLayout.holes.length,
+              });
+
               // Call parent callback
               widget.onCourseCreated(course);
 
@@ -338,6 +377,10 @@ class _CreateCourseSheetState extends State<CreateCourseSheet> {
               }
             },
             onError: (String errorMessage) {
+              _logger.track('Course Creation Failed', properties: {
+                'error': errorMessage,
+              });
+
               if (context.mounted) {
                 // Show error message
                 ScaffoldMessenger.of(context).showSnackBar(

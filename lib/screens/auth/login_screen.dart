@@ -9,12 +9,16 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/auth/components/auth_input_field.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/screens/auth/components/google_sign_in_button.dart';
 import 'package:turbo_disc_golf/screens/auth/sign_up_screen.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class LoginScreen extends StatefulWidget {
+  static const String routeName = '/login';
+  static const String screenName = 'Login';
+
   const LoginScreen({super.key, this.isFirstRun = false});
 
   final bool isFirstRun;
@@ -27,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = locator.get<AuthService>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  late final LoggingServiceBase _logger;
 
   String? _email;
   String? _password;
@@ -36,6 +41,16 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': LoginScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('LoginScreen');
+
     if (kDebugMode) {
       _emailController.text = 'test@gmail.com';
       _passwordController.text = 'Testing123!';
@@ -165,6 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Center(
       child: GestureDetector(
         onTap: () {
+          _logger.track('Sign Up Link Tapped');
           Navigator.push(
             context,
             CupertinoPageRoute(
@@ -210,6 +226,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _signInPressed() async {
+    _logger.track('Sign In Button Tapped');
+
     if (_email == null || _password == null) {
       setState(() {
         _errorText = 'Missing username or password';
@@ -255,6 +273,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    _logger.track('Google Sign In Button Tapped');
+
     setState(() {
       _errorText = '';
     });

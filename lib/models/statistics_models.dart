@@ -4,7 +4,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'statistics_models.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class DiscStats {
   final String discName;
   final int timesThrown;
@@ -43,7 +43,7 @@ class DiscStats {
   Map<String, dynamic> toJson() => _$DiscStatsToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class PuttingStats {
   final String distanceRange; // e.g., "0-15 ft", "15-33 ft", "33-66 ft"
   final int attempted;
@@ -62,7 +62,7 @@ class PuttingStats {
   Map<String, dynamic> toJson() => _$PuttingStatsToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class TechniqueStats {
   final String techniqueName; // "Backhand", "Forehand", etc.
   final int attempts;
@@ -91,7 +91,7 @@ class TechniqueStats {
   Map<String, dynamic> toJson() => _$TechniqueStatsToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class ScoringStats {
   final int totalHoles;
   final int eagles;
@@ -121,7 +121,7 @@ class ScoringStats {
   Map<String, dynamic> toJson() => _$ScoringStatsToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class ScrambleStats {
   final int scrambleOpportunities; // Times went OB or off fairway
   final int scrambleSaves; // Times still made par or better
@@ -140,7 +140,7 @@ class ScrambleStats {
   Map<String, dynamic> toJson() => _$ScrambleStatsToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class ComparisonResult {
   final String technique1;
   final String technique2;
@@ -175,7 +175,7 @@ class ComparisonResult {
   Map<String, dynamic> toJson() => _$ComparisonResultToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class DiscInsight {
   final String discName;
   final double birdieRate;
@@ -195,7 +195,7 @@ class DiscInsight {
 }
 
 /// Per-distance-bucket putting statistics
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class PuttBucketStats {
   final String label;
   final int makes;
@@ -218,7 +218,7 @@ class PuttBucketStats {
 }
 
 /// Comprehensive putting summary with C1/C2 breakdown and distance buckets
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class PuttStats {
   final int c1Makes;
   final int c1Misses;
@@ -279,7 +279,7 @@ class PuttStats {
 }
 
 /// UDisc-style core performance metrics
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class CoreStats {
   final double fairwayHitPct;
   final double parkedPct;
@@ -303,7 +303,7 @@ class CoreStats {
 }
 
 /// Disc-specific mistake tracking
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class DiscMistake {
   final String discName;
   final int mistakeCount;
@@ -320,7 +320,7 @@ class DiscMistake {
   Map<String, dynamic> toJson() => _$DiscMistakeToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class DiscPerformanceSummary {
   final String discName;
   final int goodShots;
@@ -349,7 +349,7 @@ class DiscPerformanceSummary {
 }
 
 /// Categorized mistake analysis
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class MistakeTypeSummary {
   final String label;
   final int count;
@@ -367,7 +367,7 @@ class MistakeTypeSummary {
 }
 
 /// Birdie rate statistics with counts
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class BirdieRateStats {
   final double percentage;
   final int birdieCount;
@@ -385,7 +385,7 @@ class BirdieRateStats {
 }
 
 /// Individual segment data for score trend analysis
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class ScoreSegment {
   final String label; // e.g., "1-3", "4-6", "7-9"
   final double avgScore; // Average relative to par for this segment
@@ -403,7 +403,7 @@ class ScoreSegment {
 }
 
 /// Progressive score trend analysis throughout the round
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class ScoreTrend {
   final List<ScoreSegment> segments;
   final String trendDirection; // "improving", "worsening", "stable"
@@ -422,7 +422,7 @@ class ScoreTrend {
 }
 
 /// Performance statistics for a section of the round
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class SectionPerformance {
   final String sectionName; // "Front 9", "Back 9", "Last 6"
   final int holesPlayed;
@@ -458,7 +458,7 @@ class SectionPerformance {
 }
 
 /// Scoring transition data - represents one row in the momentum transition matrix
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class ScoringTransition {
   final String fromScore; // "Birdie", "Par", "Bogey", "Double+"
   final double toBirdiePercent;
@@ -486,7 +486,7 @@ class ScoringTransition {
 }
 
 /// Complete momentum and psychological analysis
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class PsychStats {
   /// Transition matrix: from score -> transition percentages
   final Map<String, ScoringTransition> transitionMatrix;
@@ -554,7 +554,7 @@ class PsychStats {
 }
 
 /// Represents a single flow state period (consecutive holes of peak performance)
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class FlowStatePeriod {
   final int startHole; // Hole number where flow started (1-indexed)
   final int endHole; // Hole number where flow ended (1-indexed)
@@ -596,7 +596,7 @@ class FlowStatePeriod {
 }
 
 /// Complete flow state analysis
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class FlowStateAnalysis {
   final List<FlowStatePeriod> flowPeriods;
   final int totalFlowHoles; // Total holes spent in flow state

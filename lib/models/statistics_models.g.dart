@@ -6,7 +6,7 @@ part of 'statistics_models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-DiscStats _$DiscStatsFromJson(Map<String, dynamic> json) => DiscStats(
+DiscStats _$DiscStatsFromJson(Map json) => DiscStats(
   discName: json['discName'] as String,
   timesThrown: (json['timesThrown'] as num).toInt(),
   birdies: (json['birdies'] as num).toInt(),
@@ -28,7 +28,7 @@ Map<String, dynamic> _$DiscStatsToJson(DiscStats instance) => <String, dynamic>{
   'outOfBounds': instance.outOfBounds,
 };
 
-PuttingStats _$PuttingStatsFromJson(Map<String, dynamic> json) => PuttingStats(
+PuttingStats _$PuttingStatsFromJson(Map json) => PuttingStats(
   distanceRange: json['distanceRange'] as String,
   attempted: (json['attempted'] as num).toInt(),
   made: (json['made'] as num).toInt(),
@@ -41,16 +41,15 @@ Map<String, dynamic> _$PuttingStatsToJson(PuttingStats instance) =>
       'made': instance.made,
     };
 
-TechniqueStats _$TechniqueStatsFromJson(Map<String, dynamic> json) =>
-    TechniqueStats(
-      techniqueName: json['techniqueName'] as String,
-      attempts: (json['attempts'] as num).toInt(),
-      successful: (json['successful'] as num).toInt(),
-      unsuccessful: (json['unsuccessful'] as num).toInt(),
-      birdies: (json['birdies'] as num).toInt(),
-      pars: (json['pars'] as num).toInt(),
-      bogeys: (json['bogeys'] as num).toInt(),
-    );
+TechniqueStats _$TechniqueStatsFromJson(Map json) => TechniqueStats(
+  techniqueName: json['techniqueName'] as String,
+  attempts: (json['attempts'] as num).toInt(),
+  successful: (json['successful'] as num).toInt(),
+  unsuccessful: (json['unsuccessful'] as num).toInt(),
+  birdies: (json['birdies'] as num).toInt(),
+  pars: (json['pars'] as num).toInt(),
+  bogeys: (json['bogeys'] as num).toInt(),
+);
 
 Map<String, dynamic> _$TechniqueStatsToJson(TechniqueStats instance) =>
     <String, dynamic>{
@@ -63,7 +62,7 @@ Map<String, dynamic> _$TechniqueStatsToJson(TechniqueStats instance) =>
       'bogeys': instance.bogeys,
     };
 
-ScoringStats _$ScoringStatsFromJson(Map<String, dynamic> json) => ScoringStats(
+ScoringStats _$ScoringStatsFromJson(Map json) => ScoringStats(
   totalHoles: (json['totalHoles'] as num).toInt(),
   eagles: (json['eagles'] as num).toInt(),
   birdies: (json['birdies'] as num).toInt(),
@@ -82,11 +81,10 @@ Map<String, dynamic> _$ScoringStatsToJson(ScoringStats instance) =>
       'doubleBogeyPlus': instance.doubleBogeyPlus,
     };
 
-ScrambleStats _$ScrambleStatsFromJson(Map<String, dynamic> json) =>
-    ScrambleStats(
-      scrambleOpportunities: (json['scrambleOpportunities'] as num).toInt(),
-      scrambleSaves: (json['scrambleSaves'] as num).toInt(),
-    );
+ScrambleStats _$ScrambleStatsFromJson(Map json) => ScrambleStats(
+  scrambleOpportunities: (json['scrambleOpportunities'] as num).toInt(),
+  scrambleSaves: (json['scrambleSaves'] as num).toInt(),
+);
 
 Map<String, dynamic> _$ScrambleStatsToJson(ScrambleStats instance) =>
     <String, dynamic>{
@@ -94,17 +92,16 @@ Map<String, dynamic> _$ScrambleStatsToJson(ScrambleStats instance) =>
       'scrambleSaves': instance.scrambleSaves,
     };
 
-ComparisonResult _$ComparisonResultFromJson(Map<String, dynamic> json) =>
-    ComparisonResult(
-      technique1: json['technique1'] as String,
-      technique2: json['technique2'] as String,
-      technique1BirdieRate: (json['technique1BirdieRate'] as num).toDouble(),
-      technique2BirdieRate: (json['technique2BirdieRate'] as num).toDouble(),
-      technique1SuccessRate: (json['technique1SuccessRate'] as num).toDouble(),
-      technique2SuccessRate: (json['technique2SuccessRate'] as num).toDouble(),
-      technique1Count: (json['technique1Count'] as num).toInt(),
-      technique2Count: (json['technique2Count'] as num).toInt(),
-    );
+ComparisonResult _$ComparisonResultFromJson(Map json) => ComparisonResult(
+  technique1: json['technique1'] as String,
+  technique2: json['technique2'] as String,
+  technique1BirdieRate: (json['technique1BirdieRate'] as num).toDouble(),
+  technique2BirdieRate: (json['technique2BirdieRate'] as num).toDouble(),
+  technique1SuccessRate: (json['technique1SuccessRate'] as num).toDouble(),
+  technique2SuccessRate: (json['technique2SuccessRate'] as num).toDouble(),
+  technique1Count: (json['technique1Count'] as num).toInt(),
+  technique2Count: (json['technique2Count'] as num).toInt(),
+);
 
 Map<String, dynamic> _$ComparisonResultToJson(ComparisonResult instance) =>
     <String, dynamic>{
@@ -118,7 +115,7 @@ Map<String, dynamic> _$ComparisonResultToJson(ComparisonResult instance) =>
       'technique2Count': instance.technique2Count,
     };
 
-DiscInsight _$DiscInsightFromJson(Map<String, dynamic> json) => DiscInsight(
+DiscInsight _$DiscInsightFromJson(Map json) => DiscInsight(
   discName: json['discName'] as String,
   birdieRate: (json['birdieRate'] as num).toDouble(),
   timesUsed: (json['timesUsed'] as num).toInt(),
@@ -133,13 +130,12 @@ Map<String, dynamic> _$DiscInsightToJson(DiscInsight instance) =>
       'category': instance.category,
     };
 
-PuttBucketStats _$PuttBucketStatsFromJson(Map<String, dynamic> json) =>
-    PuttBucketStats(
-      label: json['label'] as String,
-      makes: (json['makes'] as num).toInt(),
-      misses: (json['misses'] as num).toInt(),
-      avgDistance: (json['avgDistance'] as num).toDouble(),
-    );
+PuttBucketStats _$PuttBucketStatsFromJson(Map json) => PuttBucketStats(
+  label: json['label'] as String,
+  makes: (json['makes'] as num).toInt(),
+  misses: (json['misses'] as num).toInt(),
+  avgDistance: (json['avgDistance'] as num).toDouble(),
+);
 
 Map<String, dynamic> _$PuttBucketStatsToJson(PuttBucketStats instance) =>
     <String, dynamic>{
@@ -149,7 +145,7 @@ Map<String, dynamic> _$PuttBucketStatsToJson(PuttBucketStats instance) =>
       'avgDistance': instance.avgDistance,
     };
 
-PuttStats _$PuttStatsFromJson(Map<String, dynamic> json) => PuttStats(
+PuttStats _$PuttStatsFromJson(Map json) => PuttStats(
   c1Makes: (json['c1Makes'] as num).toInt(),
   c1Misses: (json['c1Misses'] as num).toInt(),
   c2Makes: (json['c2Makes'] as num).toInt(),
@@ -158,8 +154,11 @@ PuttStats _$PuttStatsFromJson(Map<String, dynamic> json) => PuttStats(
   avgMissDistance: (json['avgMissDistance'] as num).toDouble(),
   avgAttemptDistance: (json['avgAttemptDistance'] as num).toDouble(),
   totalMadeDistance: (json['totalMadeDistance'] as num).toDouble(),
-  bucketStats: (json['bucketStats'] as Map<String, dynamic>).map(
-    (k, e) => MapEntry(k, PuttBucketStats.fromJson(e as Map<String, dynamic>)),
+  bucketStats: (json['bucketStats'] as Map).map(
+    (k, e) => MapEntry(
+      k as String,
+      PuttBucketStats.fromJson(Map<String, dynamic>.from(e as Map)),
+    ),
   ),
 );
 
@@ -175,7 +174,7 @@ Map<String, dynamic> _$PuttStatsToJson(PuttStats instance) => <String, dynamic>{
   'bucketStats': instance.bucketStats.map((k, e) => MapEntry(k, e.toJson())),
 };
 
-CoreStats _$CoreStatsFromJson(Map<String, dynamic> json) => CoreStats(
+CoreStats _$CoreStatsFromJson(Map json) => CoreStats(
   fairwayHitPct: (json['fairwayHitPct'] as num).toDouble(),
   parkedPct: (json['parkedPct'] as num).toDouble(),
   c1InRegPct: (json['c1InRegPct'] as num).toDouble(),
@@ -193,7 +192,7 @@ Map<String, dynamic> _$CoreStatsToJson(CoreStats instance) => <String, dynamic>{
   'totalHoles': instance.totalHoles,
 };
 
-DiscMistake _$DiscMistakeFromJson(Map<String, dynamic> json) => DiscMistake(
+DiscMistake _$DiscMistakeFromJson(Map json) => DiscMistake(
   discName: json['discName'] as String,
   mistakeCount: (json['mistakeCount'] as num).toInt(),
   reasons: (json['reasons'] as List<dynamic>).map((e) => e as String).toList(),
@@ -206,15 +205,14 @@ Map<String, dynamic> _$DiscMistakeToJson(DiscMistake instance) =>
       'reasons': instance.reasons,
     };
 
-DiscPerformanceSummary _$DiscPerformanceSummaryFromJson(
-  Map<String, dynamic> json,
-) => DiscPerformanceSummary(
-  discName: json['discName'] as String,
-  goodShots: (json['goodShots'] as num).toInt(),
-  okayShots: (json['okayShots'] as num).toInt(),
-  badShots: (json['badShots'] as num).toInt(),
-  totalShots: (json['totalShots'] as num).toInt(),
-);
+DiscPerformanceSummary _$DiscPerformanceSummaryFromJson(Map json) =>
+    DiscPerformanceSummary(
+      discName: json['discName'] as String,
+      goodShots: (json['goodShots'] as num).toInt(),
+      okayShots: (json['okayShots'] as num).toInt(),
+      badShots: (json['badShots'] as num).toInt(),
+      totalShots: (json['totalShots'] as num).toInt(),
+    );
 
 Map<String, dynamic> _$DiscPerformanceSummaryToJson(
   DiscPerformanceSummary instance,
@@ -226,12 +224,11 @@ Map<String, dynamic> _$DiscPerformanceSummaryToJson(
   'totalShots': instance.totalShots,
 };
 
-MistakeTypeSummary _$MistakeTypeSummaryFromJson(Map<String, dynamic> json) =>
-    MistakeTypeSummary(
-      label: json['label'] as String,
-      count: (json['count'] as num).toInt(),
-      percentage: (json['percentage'] as num).toDouble(),
-    );
+MistakeTypeSummary _$MistakeTypeSummaryFromJson(Map json) => MistakeTypeSummary(
+  label: json['label'] as String,
+  count: (json['count'] as num).toInt(),
+  percentage: (json['percentage'] as num).toDouble(),
+);
 
 Map<String, dynamic> _$MistakeTypeSummaryToJson(MistakeTypeSummary instance) =>
     <String, dynamic>{
@@ -240,12 +237,11 @@ Map<String, dynamic> _$MistakeTypeSummaryToJson(MistakeTypeSummary instance) =>
       'percentage': instance.percentage,
     };
 
-BirdieRateStats _$BirdieRateStatsFromJson(Map<String, dynamic> json) =>
-    BirdieRateStats(
-      percentage: (json['percentage'] as num).toDouble(),
-      birdieCount: (json['birdieCount'] as num).toInt(),
-      totalAttempts: (json['totalAttempts'] as num).toInt(),
-    );
+BirdieRateStats _$BirdieRateStatsFromJson(Map json) => BirdieRateStats(
+  percentage: (json['percentage'] as num).toDouble(),
+  birdieCount: (json['birdieCount'] as num).toInt(),
+  totalAttempts: (json['totalAttempts'] as num).toInt(),
+);
 
 Map<String, dynamic> _$BirdieRateStatsToJson(BirdieRateStats instance) =>
     <String, dynamic>{
@@ -254,7 +250,7 @@ Map<String, dynamic> _$BirdieRateStatsToJson(BirdieRateStats instance) =>
       'totalAttempts': instance.totalAttempts,
     };
 
-ScoreSegment _$ScoreSegmentFromJson(Map<String, dynamic> json) => ScoreSegment(
+ScoreSegment _$ScoreSegmentFromJson(Map json) => ScoreSegment(
   label: json['label'] as String,
   avgScore: (json['avgScore'] as num).toDouble(),
   holesPlayed: (json['holesPlayed'] as num).toInt(),
@@ -267,9 +263,9 @@ Map<String, dynamic> _$ScoreSegmentToJson(ScoreSegment instance) =>
       'holesPlayed': instance.holesPlayed,
     };
 
-ScoreTrend _$ScoreTrendFromJson(Map<String, dynamic> json) => ScoreTrend(
+ScoreTrend _$ScoreTrendFromJson(Map json) => ScoreTrend(
   segments: (json['segments'] as List<dynamic>)
-      .map((e) => ScoreSegment.fromJson(e as Map<String, dynamic>))
+      .map((e) => ScoreSegment.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
   trendDirection: json['trendDirection'] as String,
   trendStrength: (json['trendStrength'] as num).toDouble(),
@@ -282,21 +278,20 @@ Map<String, dynamic> _$ScoreTrendToJson(ScoreTrend instance) =>
       'trendStrength': instance.trendStrength,
     };
 
-SectionPerformance _$SectionPerformanceFromJson(Map<String, dynamic> json) =>
-    SectionPerformance(
-      sectionName: json['sectionName'] as String,
-      holesPlayed: (json['holesPlayed'] as num).toInt(),
-      avgScore: (json['avgScore'] as num).toDouble(),
-      birdieRate: (json['birdieRate'] as num).toDouble(),
-      parRate: (json['parRate'] as num).toDouble(),
-      bogeyPlusRate: (json['bogeyPlusRate'] as num).toDouble(),
-      shotQualityRate: (json['shotQualityRate'] as num).toDouble(),
-      c1InRegRate: (json['c1InRegRate'] as num).toDouble(),
-      c2InRegRate: (json['c2InRegRate'] as num).toDouble(),
-      fairwayHitRate: (json['fairwayHitRate'] as num).toDouble(),
-      obRate: (json['obRate'] as num).toDouble(),
-      mistakeCount: (json['mistakeCount'] as num).toInt(),
-    );
+SectionPerformance _$SectionPerformanceFromJson(Map json) => SectionPerformance(
+  sectionName: json['sectionName'] as String,
+  holesPlayed: (json['holesPlayed'] as num).toInt(),
+  avgScore: (json['avgScore'] as num).toDouble(),
+  birdieRate: (json['birdieRate'] as num).toDouble(),
+  parRate: (json['parRate'] as num).toDouble(),
+  bogeyPlusRate: (json['bogeyPlusRate'] as num).toDouble(),
+  shotQualityRate: (json['shotQualityRate'] as num).toDouble(),
+  c1InRegRate: (json['c1InRegRate'] as num).toDouble(),
+  c2InRegRate: (json['c2InRegRate'] as num).toDouble(),
+  fairwayHitRate: (json['fairwayHitRate'] as num).toDouble(),
+  obRate: (json['obRate'] as num).toDouble(),
+  mistakeCount: (json['mistakeCount'] as num).toInt(),
+);
 
 Map<String, dynamic> _$SectionPerformanceToJson(SectionPerformance instance) =>
     <String, dynamic>{
@@ -314,14 +309,13 @@ Map<String, dynamic> _$SectionPerformanceToJson(SectionPerformance instance) =>
       'mistakeCount': instance.mistakeCount,
     };
 
-ScoringTransition _$ScoringTransitionFromJson(Map<String, dynamic> json) =>
-    ScoringTransition(
-      fromScore: json['fromScore'] as String,
-      toBirdiePercent: (json['toBirdiePercent'] as num).toDouble(),
-      toParPercent: (json['toParPercent'] as num).toDouble(),
-      toBogeyPercent: (json['toBogeyPercent'] as num).toDouble(),
-      toDoublePercent: (json['toDoublePercent'] as num).toDouble(),
-    );
+ScoringTransition _$ScoringTransitionFromJson(Map json) => ScoringTransition(
+  fromScore: json['fromScore'] as String,
+  toBirdiePercent: (json['toBirdiePercent'] as num).toDouble(),
+  toParPercent: (json['toParPercent'] as num).toDouble(),
+  toBogeyPercent: (json['toBogeyPercent'] as num).toDouble(),
+  toDoublePercent: (json['toDoublePercent'] as num).toDouble(),
+);
 
 Map<String, dynamic> _$ScoringTransitionToJson(ScoringTransition instance) =>
     <String, dynamic>{
@@ -332,10 +326,12 @@ Map<String, dynamic> _$ScoringTransitionToJson(ScoringTransition instance) =>
       'toDoublePercent': instance.toDoublePercent,
     };
 
-PsychStats _$PsychStatsFromJson(Map<String, dynamic> json) => PsychStats(
-  transitionMatrix: (json['transitionMatrix'] as Map<String, dynamic>).map(
-    (k, e) =>
-        MapEntry(k, ScoringTransition.fromJson(e as Map<String, dynamic>)),
+PsychStats _$PsychStatsFromJson(Map json) => PsychStats(
+  transitionMatrix: (json['transitionMatrix'] as Map).map(
+    (k, e) => MapEntry(
+      k as String,
+      ScoringTransition.fromJson(Map<String, dynamic>.from(e as Map)),
+    ),
   ),
   momentumMultiplier: (json['momentumMultiplier'] as num).toDouble(),
   tiltFactor: (json['tiltFactor'] as num).toDouble(),
@@ -349,26 +345,28 @@ PsychStats _$PsychStatsFromJson(Map<String, dynamic> json) => PsychStats(
   front9Performance: json['front9Performance'] == null
       ? null
       : SectionPerformance.fromJson(
-          json['front9Performance'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['front9Performance'] as Map),
         ),
   back9Performance: json['back9Performance'] == null
       ? null
       : SectionPerformance.fromJson(
-          json['back9Performance'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['back9Performance'] as Map),
         ),
   last6Performance: json['last6Performance'] == null
       ? null
       : SectionPerformance.fromJson(
-          json['last6Performance'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['last6Performance'] as Map),
         ),
   conditioningScore: (json['conditioningScore'] as num).toDouble(),
   scoreTrend: json['scoreTrend'] == null
       ? null
-      : ScoreTrend.fromJson(json['scoreTrend'] as Map<String, dynamic>),
+      : ScoreTrend.fromJson(
+          Map<String, dynamic>.from(json['scoreTrend'] as Map),
+        ),
   flowStateAnalysis: json['flowStateAnalysis'] == null
       ? null
       : FlowStateAnalysis.fromJson(
-          json['flowStateAnalysis'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(json['flowStateAnalysis'] as Map),
         ),
 );
 
@@ -392,25 +390,24 @@ Map<String, dynamic> _$PsychStatsToJson(PsychStats instance) =>
       'flowStateAnalysis': instance.flowStateAnalysis?.toJson(),
     };
 
-FlowStatePeriod _$FlowStatePeriodFromJson(Map<String, dynamic> json) =>
-    FlowStatePeriod(
-      startHole: (json['startHole'] as num).toInt(),
-      endHole: (json['endHole'] as num).toInt(),
-      duration: (json['duration'] as num).toInt(),
-      avgScore: (json['avgScore'] as num).toDouble(),
-      shotQualityRate: (json['shotQualityRate'] as num).toDouble(),
-      birdieCount: (json['birdieCount'] as num).toInt(),
-      parCount: (json['parCount'] as num).toInt(),
-      mistakeCount: (json['mistakeCount'] as num).toInt(),
-      commonDiscs: (json['commonDiscs'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      commonTechniques: (json['commonTechniques'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      dominantWindCondition: json['dominantWindCondition'] as String?,
-      flowQuality: json['flowQuality'] as String,
-    );
+FlowStatePeriod _$FlowStatePeriodFromJson(Map json) => FlowStatePeriod(
+  startHole: (json['startHole'] as num).toInt(),
+  endHole: (json['endHole'] as num).toInt(),
+  duration: (json['duration'] as num).toInt(),
+  avgScore: (json['avgScore'] as num).toDouble(),
+  shotQualityRate: (json['shotQualityRate'] as num).toDouble(),
+  birdieCount: (json['birdieCount'] as num).toInt(),
+  parCount: (json['parCount'] as num).toInt(),
+  mistakeCount: (json['mistakeCount'] as num).toInt(),
+  commonDiscs: (json['commonDiscs'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  commonTechniques: (json['commonTechniques'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  dominantWindCondition: json['dominantWindCondition'] as String?,
+  flowQuality: json['flowQuality'] as String,
+);
 
 Map<String, dynamic> _$FlowStatePeriodToJson(FlowStatePeriod instance) =>
     <String, dynamic>{
@@ -428,29 +425,30 @@ Map<String, dynamic> _$FlowStatePeriodToJson(FlowStatePeriod instance) =>
       'flowQuality': instance.flowQuality,
     };
 
-FlowStateAnalysis _$FlowStateAnalysisFromJson(Map<String, dynamic> json) =>
-    FlowStateAnalysis(
-      flowPeriods: (json['flowPeriods'] as List<dynamic>)
-          .map((e) => FlowStatePeriod.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      totalFlowHoles: (json['totalFlowHoles'] as num).toInt(),
-      flowPercentage: (json['flowPercentage'] as num).toDouble(),
-      longestFlow: json['longestFlow'] == null
-          ? null
-          : FlowStatePeriod.fromJson(
-              json['longestFlow'] as Map<String, dynamic>,
-            ),
-      bestFlow: json['bestFlow'] == null
-          ? null
-          : FlowStatePeriod.fromJson(json['bestFlow'] as Map<String, dynamic>),
-      flowTriggers: (json['flowTriggers'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      insights: (json['insights'] as List<dynamic>)
-          .map((e) => e as String)
-          .toList(),
-      overallFlowScore: (json['overallFlowScore'] as num).toDouble(),
-    );
+FlowStateAnalysis _$FlowStateAnalysisFromJson(Map json) => FlowStateAnalysis(
+  flowPeriods: (json['flowPeriods'] as List<dynamic>)
+      .map((e) => FlowStatePeriod.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList(),
+  totalFlowHoles: (json['totalFlowHoles'] as num).toInt(),
+  flowPercentage: (json['flowPercentage'] as num).toDouble(),
+  longestFlow: json['longestFlow'] == null
+      ? null
+      : FlowStatePeriod.fromJson(
+          Map<String, dynamic>.from(json['longestFlow'] as Map),
+        ),
+  bestFlow: json['bestFlow'] == null
+      ? null
+      : FlowStatePeriod.fromJson(
+          Map<String, dynamic>.from(json['bestFlow'] as Map),
+        ),
+  flowTriggers: (json['flowTriggers'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  insights: (json['insights'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  overallFlowScore: (json['overallFlowScore'] as num).toDouble(),
+);
 
 Map<String, dynamic> _$FlowStateAnalysisToJson(FlowStateAnalysis instance) =>
     <String, dynamic>{

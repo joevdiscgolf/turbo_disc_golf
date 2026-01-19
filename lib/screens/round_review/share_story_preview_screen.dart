@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 
@@ -17,6 +18,9 @@ import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 /// Displays the share card in a full-screen view with a transparent app bar
 /// and a share button at the bottom.
 class ShareStoryPreviewScreen extends StatefulWidget {
+  static const String screenName = 'Share Story Preview';
+  static const String routeName = '/share-story-preview';
+
   const ShareStoryPreviewScreen({
     super.key,
     required this.round,
@@ -42,9 +46,26 @@ class ShareStoryPreviewScreen extends StatefulWidget {
 class _ShareStoryPreviewScreenState extends State<ShareStoryPreviewScreen> {
   final GlobalKey _shareCardKey = GlobalKey();
   bool _isSharing = false;
+  late final LoggingServiceBase _logger;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup scoped logger
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': ShareStoryPreviewScreen.screenName,
+    });
+
+    // Track screen impression
+    _logger.logScreenImpression('ShareStoryPreviewScreen');
+  }
 
   Future<void> _shareCard() async {
     if (_isSharing) return;
+
+    _logger.track('Share Story Button Tapped');
 
     setState(() => _isSharing = true);
 

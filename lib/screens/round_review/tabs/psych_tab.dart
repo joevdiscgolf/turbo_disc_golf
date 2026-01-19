@@ -7,15 +7,28 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/i
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/psych_metrics_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/psych_overview_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/psych_tab/components/transition_matrix_card.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 
 class PsychTab extends StatelessWidget {
+  static const String screenName = 'Psych';
+  static const String tabName = 'Psych';
+
   final DGRound round;
 
   const PsychTab({super.key, required this.round});
 
   @override
   Widget build(BuildContext context) {
+    // Track screen impression
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track('Screen Impression', properties: {
+        'screen_name': PsychTab.screenName,
+        'screen_class': 'PsychTab',
+        'tab_name': PsychTab.tabName,
+      });
+    });
+
     // Calculate momentum stats
     final psychStats = locator.get<PsychAnalysisService>().getPsychStats(round);
 

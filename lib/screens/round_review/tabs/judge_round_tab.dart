@@ -2,14 +2,10 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:yaml/yaml.dart';
-
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
@@ -22,16 +18,21 @@ import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
+import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
+import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
 import 'package:turbo_disc_golf/services/judgment_prompt_service.dart';
+import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
+import 'package:yaml/yaml.dart';
 
 /// State machine for the judgment animation flow.
 enum JudgmentState {
@@ -48,6 +49,8 @@ enum JudgmentState {
 /// AI-powered judgment tab that roasts or glazes your round (50/50 chance)
 /// with a viral slot machine reveal experience.
 class JudgeRoundTab extends StatefulWidget {
+  static const String tabName = 'Judge';
+
   final DGRound round;
   final bool autoStartJudgment;
 
@@ -81,12 +84,20 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   // For blur transition into content
   bool _showBlurTransition = false;
 
+  late final LoggingServiceBase _logger;
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    final LoggingService loggingService = locator.get<LoggingService>();
+    _logger = loggingService.withBaseProperties({
+      'screen_name': JudgeRoundTab.tabName,
+    });
+    _logger.logScreenImpression('JudgeRoundTab');
+
     _currentRound = widget.round;
     _confettiController = ConfettiController(
       duration: const Duration(milliseconds: 4000),
@@ -290,51 +301,56 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   /// Generates judgment content via API (runs in parallel with animations).
   Future<void> _generateJudgmentContent() async {
     try {
+      String? judgment;
+
       // Use mock judgment for testing the animation flow
       if (useMockJudgment) {
         await Future.delayed(const Duration(milliseconds: 2000));
-        _generatedJudgment = _isGlaze
-            ? _getMockGlazeJudgment()
-            : _getMockRoastJudgment();
+        judgment = _isGlaze ? _getMockGlazeJudgment() : _getMockRoastJudgment();
+      } else if (generateAiContentFromBackend) {
+        debugPrint('using backend to generate roast');
+        // Use backend cloud function for judgment generation
+        final RoundAnalysis? analysis = _currentRound.analysis;
+        if (analysis == null) return;
+
+        final BackendLLMService backendService = locator
+            .get<BackendLLMService>();
+
+        final GenerateRoundJudgmentResponse? response = await backendService
+            .generateRoundJudgment(
+              request: GenerateRoundJudgmentRequest(
+                round: _currentRound,
+                analysis: analysis,
+                shouldGlaze: _isGlaze,
+              ),
+            );
+
+        if (response == null || !response.success) {
+          throw Exception(
+            response?.data.error ?? 'Failed to generate judgment from backend',
+          );
+        }
+        judgment = response.data.rawResponse;
       } else {
+        // Use local LLM service
         final JudgmentPromptService promptService = JudgmentPromptService();
         final String prompt = promptService.buildJudgmentPrompt(
           _currentRound,
           _isGlaze,
         );
-
         final LLMService llmService = locator.get<LLMService>();
-        // Use full model for judge generation (roasts/glazes require creative output)
-        // Full model uses gemini-2.5-flash with temperature 0.8 vs lite model's 0.3
-        String? judgment = await llmService.generateContent(
+        judgment = await llmService.generateContent(
           prompt: prompt,
           useFullModel: true,
         );
-
-        if (judgment == null) {
-          throw Exception('Failed to generate judgment');
-        }
-
-        // Clean up the response - remove markdown code blocks if present
-        judgment = judgment.trim();
-
-        // Remove ```yaml or ```YAML at the beginning
-        if (judgment.startsWith('```yaml') || judgment.startsWith('```YAML')) {
-          judgment = judgment.substring(judgment.indexOf('\n') + 1);
-        }
-
-        // Remove just 'yaml' or 'YAML' at the beginning
-        if (judgment.startsWith('yaml\n') || judgment.startsWith('YAML\n')) {
-          judgment = judgment.substring(5);
-        }
-
-        // Remove closing ``` at the end
-        if (judgment.endsWith('```')) {
-          judgment = judgment.substring(0, judgment.length - 3).trim();
-        }
-
-        _generatedJudgment = judgment;
       }
+
+      if (judgment == null) {
+        throw Exception('Failed to generate judgment');
+      }
+
+      // Clean up the response - remove markdown code blocks if present
+      _generatedJudgment = _cleanYamlResponse(judgment);
     } catch (e) {
       _errorMessage = 'Failed to generate judgment: $e';
     }
@@ -343,6 +359,28 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     if (mounted) {
       _apiReadyNotifier.value = true;
     }
+  }
+
+  /// Removes markdown code block wrappers from YAML responses.
+  String _cleanYamlResponse(String response) {
+    String cleaned = response.trim();
+
+    // Remove ```yaml or ```YAML at the beginning
+    if (cleaned.startsWith('```yaml') || cleaned.startsWith('```YAML')) {
+      cleaned = cleaned.substring(cleaned.indexOf('\n') + 1);
+    }
+
+    // Remove just 'yaml' or 'YAML' at the beginning
+    if (cleaned.startsWith('yaml\n') || cleaned.startsWith('YAML\n')) {
+      cleaned = cleaned.substring(5);
+    }
+
+    // Remove closing ``` at the end
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3).trim();
+    }
+
+    return cleaned;
   }
 
   String _getMockRoastJudgment() {
@@ -495,7 +533,10 @@ highlightStats:
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _startJudgmentFlow,
+                onPressed: () {
+                  _logger.track('Begin Judgment Button Tapped');
+                  _startJudgmentFlow();
+                },
                 icon: const Icon(Icons.local_fire_department),
                 label: const Text('Begin Judgment'),
                 style: ElevatedButton.styleFrom(
@@ -546,6 +587,9 @@ highlightStats:
   }
 
   Future<void> _shareJudgmentCard(String headline) async {
+    _logger.track('Judgment Share Button Tapped', properties: {
+      'judgment_type': _isGlaze ? 'glaze' : 'roast',
+    });
     final ShareService shareService = locator.get<ShareService>();
 
     final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
@@ -626,6 +670,9 @@ highlightStats:
   }
 
   void _showShareCardPreview(String headline) {
+    _logger.track('Judgment Preview Button Tapped', properties: {
+      'judgment_type': _isGlaze ? 'glaze' : 'roast',
+    });
     final String displayTagline = _getPreviewTagline();
     final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
       _currentRound,
@@ -825,6 +872,7 @@ highlightStats:
                 padding: const EdgeInsets.only(bottom: 12),
                 child: OutlinedButton.icon(
                   onPressed: () {
+                    _logger.track('Judgment Regenerate Button Tapped');
                     setState(() {
                       _currentRound = _currentRound.copyWith(aiJudgment: null);
                       _currentState = JudgmentState.idle;
@@ -1046,6 +1094,7 @@ highlightStats:
                           padding: const EdgeInsets.only(bottom: 12),
                           child: OutlinedButton.icon(
                             onPressed: () {
+                              _logger.track('Judgment Regenerate Button Tapped');
                               setState(() {
                                 _currentRound = _currentRound.copyWith(
                                   aiJudgment: null,
@@ -1235,6 +1284,7 @@ highlightStats:
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
+                  _logger.track('Judgment Try Again Button Tapped');
                   setState(() {
                     _currentState = JudgmentState.idle;
                   });

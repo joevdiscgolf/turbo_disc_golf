@@ -530,7 +530,8 @@ strategyTips:
 
         // Throw type analysis
         final String? technique = throw_.technique?.toString();
-        final bool isClean = throw_.penaltyStrokes == 0 &&
+        final bool isClean =
+            throw_.penaltyStrokes == 0 &&
             !(throw_.landingSpot?.toString().contains('outOfBounds') ?? false);
 
         if (technique?.contains('backhand') ?? false) {
@@ -560,7 +561,8 @@ strategyTips:
     }
     if (c1xAttempts > 0) {
       final double c1xPct = (c1xMakes / c1xAttempts) * 100;
-      puttingPerf['c1x'] = '$c1xMakes/$c1xAttempts (${c1xPct.toStringAsFixed(0)}%)';
+      puttingPerf['c1x'] =
+          '$c1xMakes/$c1xAttempts (${c1xPct.toStringAsFixed(0)}%)';
     }
     if (c2Attempts > 0) {
       final double c2Pct = (c2Makes / c2Attempts) * 100;
@@ -568,7 +570,8 @@ strategyTips:
     }
     if (overallAttempts > 0) {
       final double overallPct = (overallMakes / overallAttempts) * 100;
-      puttingPerf['overall'] = '$overallMakes/$overallAttempts (${overallPct.toStringAsFixed(0)}%)';
+      puttingPerf['overall'] =
+          '$overallMakes/$overallAttempts (${overallPct.toStringAsFixed(0)}%)';
     }
     if (puttingPerf.isNotEmpty) {
       performance['putting'] = puttingPerf;
@@ -578,14 +581,17 @@ strategyTips:
     final Map<String, String> approachPerf = {};
     if (c1InRegOpportunities > 0) {
       final double c1InRegPct = (c1InReg / c1InRegOpportunities) * 100;
-      approachPerf['c1InReg'] = '$c1InReg/$c1InRegOpportunities (${c1InRegPct.toStringAsFixed(0)}%)';
+      approachPerf['c1InReg'] =
+          '$c1InReg/$c1InRegOpportunities (${c1InRegPct.toStringAsFixed(0)}%)';
     }
     if (fairwayOpportunities > 0) {
       final double fairwayPct = (fairwayHits / fairwayOpportunities) * 100;
-      approachPerf['fairwayHit'] = '$fairwayHits/$fairwayOpportunities (${fairwayPct.toStringAsFixed(0)}%)';
+      approachPerf['fairwayHit'] =
+          '$fairwayHits/$fairwayOpportunities (${fairwayPct.toStringAsFixed(0)}%)';
     }
     if (parked > 0) {
-      approachPerf['parked'] = '$parked/${streakHoles.length} (${(parked / streakHoles.length * 100).toStringAsFixed(0)}%)';
+      approachPerf['parked'] =
+          '$parked/${streakHoles.length} (${(parked / streakHoles.length * 100).toStringAsFixed(0)}%)';
     }
     if (approachPerf.isNotEmpty) {
       performance['approach'] = approachPerf;
@@ -595,14 +601,18 @@ strategyTips:
     final Map<String, String> throwTypes = {};
     if (backhandThrows > 0) {
       final double backhandCleanPct = (backhandClean / backhandThrows) * 100;
-      throwTypes['backhand'] = '$backhandThrows throws (${backhandCleanPct.toStringAsFixed(0)}% clean)';
+      throwTypes['backhand'] =
+          '$backhandThrows throws (${backhandCleanPct.toStringAsFixed(0)}% clean)';
     }
     if (forehandThrows > 0) {
       final double forehandCleanPct = (forehandClean / forehandThrows) * 100;
-      throwTypes['forehand'] = '$forehandThrows throws (${forehandCleanPct.toStringAsFixed(0)}% clean)';
+      throwTypes['forehand'] =
+          '$forehandThrows throws (${forehandCleanPct.toStringAsFixed(0)}% clean)';
     }
     if (backhandThrows > 0 || forehandThrows > 0) {
-      throwTypes['preference'] = backhandThrows > forehandThrows ? 'backhand' : 'forehand';
+      throwTypes['preference'] = backhandThrows > forehandThrows
+          ? 'backhand'
+          : 'forehand';
       performance['throwTypes'] = throwTypes;
     }
 
@@ -629,7 +639,8 @@ strategyTips:
     }
 
     // Front 9 vs Back 9 breakdown with performance stats
-    if (streakStats.frontNineStats != null || streakStats.backNineStats != null) {
+    if (streakStats.frontNineStats != null ||
+        streakStats.backNineStats != null) {
       buffer.writeln('Course Section Performance:');
       if (streakStats.frontNineStats != null) {
         final front = streakStats.frontNineStats!;

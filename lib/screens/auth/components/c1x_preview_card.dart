@@ -10,19 +10,20 @@ class C1xPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildCircularIndicator(),
-        const SizedBox(width: 16),
-        Expanded(child: _buildTextContent()),
+        const SizedBox(height: 8),
+        _buildTextContent(),
       ],
     );
   }
 
   Widget _buildCircularIndicator() {
     return SizedBox(
-      width: 70,
-      height: 70,
+      width: 60,
+      height: 60,
       child: CustomPaint(
         painter: _CircularProgressPainter(
           progress: percentage,
@@ -34,7 +35,7 @@ class C1xPreviewCard extends StatelessWidget {
             '${(percentage * 100).toInt()}%',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -45,33 +46,36 @@ class C1xPreviewCard extends StatelessWidget {
 
   Widget _buildTextContent() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           'C1X Putting',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 2),
         Text(
           '(11-33 ft)',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 12,
+            fontSize: 11,
           ),
         ),
         const SizedBox(height: 8),
-        _buildProgressBar(),
-        const SizedBox(height: 4),
+        SizedBox(
+          width: 180,
+          child: _buildProgressBar(),
+        ),
+        const SizedBox(height: 5),
         Text(
           'Above Average',
           style: TextStyle(
             color: accentColor.withValues(alpha: 0.9),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

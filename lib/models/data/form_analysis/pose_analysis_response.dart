@@ -6,7 +6,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.da
 part 'pose_analysis_response.g.dart';
 
 /// Response from the Cloud Run pose analysis API
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class PoseAnalysisResponse {
   const PoseAnalysisResponse({
     required this.sessionId,
@@ -79,7 +79,7 @@ class PoseAnalysisResponse {
 }
 
 /// Pose data for a detected checkpoint
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class CheckpointPoseData {
   const CheckpointPoseData({
     required this.checkpointId,
@@ -285,7 +285,7 @@ class CheckpointPoseData {
 }
 
 /// A single pose landmark
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class PoseLandmark {
   const PoseLandmark({
     required this.name,
@@ -307,7 +307,7 @@ class PoseLandmark {
 }
 
 /// Calculated pose angles (matches backend PoseAngles)
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class PoseAngles {
   const PoseAngles({
     this.shoulderRotation,
@@ -342,7 +342,7 @@ class PoseAngles {
 }
 
 /// Individual joint angles for left/right body parts
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class IndividualJointAngles {
   const IndividualJointAngles({
     this.leftKneeBendAngle,
@@ -401,7 +401,7 @@ class IndividualJointAngles {
 }
 
 /// Individual joint deviations for left/right body parts
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class IndividualJointDeviations {
   const IndividualJointDeviations({
     this.leftKneeBendAngle,
@@ -460,7 +460,7 @@ class IndividualJointDeviations {
 }
 
 /// Angle deviations from reference (matches backend AngleDeviations)
-@JsonSerializable()
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class AngleDeviations {
   const AngleDeviations({
     this.shoulderRotation,
@@ -508,7 +508,7 @@ class AngleDeviation {
 }
 
 /// Frame pose data for video scrubber
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class FramePoseData {
   const FramePoseData({
     required this.frameNumber,
