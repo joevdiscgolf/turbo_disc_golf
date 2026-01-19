@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
@@ -194,6 +195,90 @@ class StoryGeneratorService {
     }
 
     debugPrint('Failed to generate V2 story after $maxRetries attempts');
+    return null;
+  }
+
+  /// Generate a V3 narrative story with hole range metadata for interactive scrolling
+  Future<AIContent?> generateRoundStoryV3(DGRound round) async {
+    const int maxRetries = 3;
+    int retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        // Generate round analysis
+        final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+          round,
+        );
+
+        late final String prompt;
+
+        // Build V3 prompt (ChatGPT only for now)
+        switch (storyGenerationLLMProvider) {
+          case LLMProvider.chatGPT:
+            prompt = ChatGPTHelpers.buildStoryPromptV3(round, analysis);
+          // will use gemini-specific prompt later if needed.
+          case LLMProvider.gemini:
+            prompt = ChatGPTHelpers.buildStoryPromptV3(round, analysis);
+        }
+
+        debugPrint('📝 Using ChatGPT V3 prompt strategy');
+
+        // Generate story
+        final response = await _llmService.generateContent(prompt: prompt);
+
+        debugPrint(
+          '📖 Story V3 Generator Response (${response?.length ?? 0} chars):',
+        );
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
+        debugPrint(response ?? '(null response)');
+        debugPrint(
+          '═══════════════════════════════════════════════════════════════',
+        );
+
+        if (response == null || response.isEmpty) {
+          debugPrint('Failed to generate V3 story: empty response');
+          retryCount++;
+          continue;
+        }
+
+        // Check for truncation (V3 should be >1500 chars with sections)
+        if (response.length < 1500 ||
+            !response.contains('whatCouldHaveBeen:')) {
+          debugPrint(
+            'Response appears truncated (${response.length} chars). Retrying...',
+          );
+          retryCount++;
+          await Future.delayed(Duration(seconds: retryCount));
+          continue;
+        }
+
+        // Parse V3 response
+        final aiContent = _parseStoryV3Response(response, round);
+
+        if (aiContent.structuredContentV3 != null) {
+          return aiContent;
+        }
+
+        debugPrint('Failed to parse V3 story, retry $retryCount/$maxRetries');
+        retryCount++;
+      } catch (e, trace) {
+        debugPrint(
+          'Error generating V3 story (attempt ${retryCount + 1}/$maxRetries): $e',
+        );
+        debugPrint(trace.toString());
+        retryCount++;
+
+        if (retryCount >= maxRetries) {
+          return null;
+        }
+
+        await Future.delayed(Duration(seconds: retryCount));
+      }
+    }
+
+    debugPrint('Failed to generate V3 story after $maxRetries attempts');
     return null;
   }
 
@@ -884,6 +969,237 @@ strategyTips:
 
     debugPrint(
       '✅ V2 callout validation passed: $totalCallouts unique callouts',
+    );
+  }
+
+  /// Parse V3 story response with hole range metadata
+  AIContent _parseStoryV3Response(String response, DGRound round) {
+    try {
+      // Clean response (same logic as V2)
+      String cleanedResponse = response.trim();
+
+      // Remove markdown code blocks
+      if (cleanedResponse.startsWith('```yaml') ||
+          cleanedResponse.startsWith('```YAML')) {
+        cleanedResponse = cleanedResponse.substring(
+          cleanedResponse.indexOf('\n') + 1,
+        );
+      }
+      if (cleanedResponse.startsWith('yaml\n') ||
+          cleanedResponse.startsWith('YAML\n')) {
+        cleanedResponse = cleanedResponse.substring(5);
+      }
+      if (cleanedResponse.startsWith('```')) {
+        cleanedResponse = cleanedResponse.substring(3);
+      }
+      if (cleanedResponse.endsWith('```')) {
+        cleanedResponse = cleanedResponse.substring(
+          0,
+          cleanedResponse.length - 3,
+        );
+      }
+      cleanedResponse = cleanedResponse.trim();
+
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('📋 V3 YAML PARSING ATTEMPT');
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('Raw response length: ${cleanedResponse.length} characters');
+
+      // Parse YAML
+      dynamic yamlDoc;
+      try {
+        yamlDoc = loadYaml(cleanedResponse);
+        debugPrint('✅ SUCCESS: Parsed V3 YAML');
+      } catch (parseError) {
+        debugPrint('❌ V3 YAML PARSE FAILED: $parseError');
+        // Try repair
+        final String repaired = _repairTruncatedYaml(cleanedResponse);
+        yamlDoc = loadYaml(repaired);
+        debugPrint('✅ SUCCESS: Parsed V3 YAML after repair');
+      }
+
+      // Convert to Map
+      final Map<String, dynamic> parsedData =
+          json.decode(json.encode(yamlDoc)) as Map<String, dynamic>;
+      debugPrint('Parsed V3 fields: ${parsedData.keys.toList()}');
+
+      // Normalize score types
+      _normalizeScoreTypes(parsedData);
+
+      // Validate V3 required fields
+      if (!parsedData.containsKey('roundTitle') ||
+          !parsedData.containsKey('overview') ||
+          !parsedData.containsKey('sections') ||
+          !parsedData.containsKey('whatCouldHaveBeen')) {
+        throw Exception('Missing required V3 fields');
+      }
+
+      // Validate and fix whatCouldHaveBeen structure
+      if (parsedData['whatCouldHaveBeen'] is Map) {
+        final Map<String, dynamic> whatCouldHaveBeen =
+            parsedData['whatCouldHaveBeen'] as Map<String, dynamic>;
+
+        // Ensure required fields exist with defaults
+        if (!whatCouldHaveBeen.containsKey('currentScore') ||
+            whatCouldHaveBeen['currentScore'] == null) {
+          debugPrint('⚠️  Missing currentScore in whatCouldHaveBeen, using default');
+          whatCouldHaveBeen['currentScore'] = '0';
+        }
+        if (!whatCouldHaveBeen.containsKey('potentialScore') ||
+            whatCouldHaveBeen['potentialScore'] == null) {
+          debugPrint('⚠️  Missing potentialScore in whatCouldHaveBeen, using default');
+          whatCouldHaveBeen['potentialScore'] = '0';
+        }
+        if (!whatCouldHaveBeen.containsKey('scenarios') ||
+            whatCouldHaveBeen['scenarios'] == null) {
+          debugPrint('⚠️  Missing scenarios in whatCouldHaveBeen, using empty list');
+          whatCouldHaveBeen['scenarios'] = [];
+        }
+        if (!whatCouldHaveBeen.containsKey('encouragement') ||
+            whatCouldHaveBeen['encouragement'] == null) {
+          debugPrint('⚠️  Missing encouragement in whatCouldHaveBeen, using default');
+          whatCouldHaveBeen['encouragement'] = 'Keep working on your game!';
+        }
+      }
+
+      // Validate sections structure
+      final dynamic sectionsData = parsedData['sections'];
+      if (sectionsData is! List) {
+        throw Exception('Invalid V3 story structure: sections must be a list');
+      }
+
+      final List<dynamic> sections = sectionsData;
+      if (sections.isEmpty) {
+        throw Exception('V3 story must have at least one section');
+      }
+
+      if (sections.length < 3 || sections.length > 7) {
+        debugPrint(
+          '⚠️  V3 section count (${sections.length}) outside 3-7 range',
+        );
+      }
+
+      // Validate hole ranges and callouts
+      _validateV3Sections(sections, round.holes.length);
+
+      // Add defaults for optional fields
+      if (!parsedData.containsKey('practiceAdvice')) {
+        parsedData['practiceAdvice'] = <String>[];
+      }
+      if (!parsedData.containsKey('strategyTips')) {
+        parsedData['strategyTips'] = <String>[];
+      }
+
+      // Parse skillsAssessment if present (optional for backward compatibility)
+      if (parsedData.containsKey('skillsAssessment') &&
+          parsedData['skillsAssessment'] != null) {
+        try {
+          final skillsData = parsedData['skillsAssessment'] as Map<String, dynamic>;
+
+          // Validate required fields in skillsAssessment
+          if (!skillsData.containsKey('strengths') ||
+              !skillsData.containsKey('weaknesses') ||
+              !skillsData.containsKey('keyInsight')) {
+            debugPrint('⚠️  Invalid skillsAssessment structure, removing it');
+            parsedData.remove('skillsAssessment');
+          } else {
+            debugPrint('✅ Successfully parsed skillsAssessment');
+          }
+        } catch (e) {
+          debugPrint('⚠️  Failed to parse skillsAssessment: $e');
+          parsedData.remove('skillsAssessment');
+        }
+      }
+
+      // Parse as RoundStoryV3Content
+      final v3Content = RoundStoryV3Content.fromJson({
+        ...parsedData,
+        'roundVersionId': round.versionId,
+      });
+
+      debugPrint(
+        '✅ Successfully parsed V3 story with ${v3Content.sections.length} sections',
+      );
+
+      return AIContent(
+        content: response,
+        roundVersionId: round.versionId,
+        structuredContentV3: v3Content,
+      );
+    } catch (e, stackTrace) {
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('❌ V3 YAML PARSING FAILED');
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+      // Return error state
+      throw Exception('Failed to parse V3 story: $e');
+    }
+  }
+
+  /// Validate V3 sections (hole ranges, callout uniqueness, limits)
+  void _validateV3Sections(List<dynamic> sections, int totalHoles) {
+    final Set<String> seenCardIds = {};
+    int totalCallouts = 0;
+
+    for (int i = 0; i < sections.length; i++) {
+      final dynamic section = sections[i];
+      if (section is! Map) continue;
+
+      // Validate hole range if present
+      if (section.containsKey('holeRange') && section['holeRange'] != null) {
+        final Map<String, dynamic> holeRange = section['holeRange'] as Map<String, dynamic>;
+
+        final int? startHole = holeRange['startHole'] as int?;
+        final int? endHole = holeRange['endHole'] as int?;
+
+        if (startHole == null || endHole == null) {
+          debugPrint('⚠️  Section $i missing startHole or endHole');
+        } else {
+          if (startHole < 1 || endHole > totalHoles || startHole > endHole) {
+            debugPrint(
+              '⚠️  Section $i has invalid hole range: startHole=$startHole, '
+              'endHole=$endHole (totalHoles=$totalHoles)',
+            );
+          }
+        }
+      } else {
+        debugPrint('⚠️  Section $i missing holeRange');
+      }
+
+      // Validate callouts if present
+      if (section.containsKey('callouts') && section['callouts'] != null) {
+        final List<dynamic> callouts = section['callouts'] as List<dynamic>;
+        totalCallouts += callouts.length;
+
+        if (callouts.length > 2) {
+          debugPrint('⚠️  Section $i has ${callouts.length} callouts (max 2)');
+        }
+
+        for (final dynamic callout in callouts) {
+          if (callout is! Map || !callout.containsKey('cardId')) continue;
+
+          final String cardId = callout['cardId'] as String;
+          if (seenCardIds.contains(cardId)) {
+            debugPrint('⚠️  Duplicate cardId found: $cardId');
+          } else {
+            seenCardIds.add(cardId);
+          }
+        }
+      }
+    }
+
+    if (totalCallouts > 6) {
+      debugPrint(
+        '⚠️  Total callouts ($totalCallouts) exceeds recommended max of 6',
+      );
+    }
+
+    debugPrint(
+      '✅ V3 section validation passed: ${sections.length} sections, '
+      '$totalCallouts unique callouts',
     );
   }
 

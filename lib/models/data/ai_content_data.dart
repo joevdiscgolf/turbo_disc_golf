@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 
 part 'ai_content_data.g.dart';
@@ -43,6 +44,7 @@ class AIContent {
     this.segments,
     this.structuredContent,
     this.structuredContentV2,
+    this.structuredContentV3,
   });
 
   /// Raw markdown content (kept for backward compatibility)
@@ -64,6 +66,10 @@ class AIContent {
   /// V2 structured story content (narrative paragraphs with callouts)
   /// Null if this is a V1 story or old format
   final RoundStoryV2Content? structuredContentV2;
+
+  /// V3 structured story content (sections with hole range metadata)
+  /// Null if this is a V1/V2 story or old format
+  final RoundStoryV3Content? structuredContentV3;
 
   factory AIContent.fromJson(Map<String, dynamic> json) =>
       _$AIContentFromJson(json);

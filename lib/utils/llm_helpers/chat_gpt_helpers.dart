@@ -72,6 +72,30 @@ ${_getStoryOutputFormatInstructionsV2(scoreRelativeStr: scoreRelativeStr)}
     return buffer.toString();
   }
 
+  /// Build the V3 story generation prompt with hole range metadata for interactive scrolling
+  static String buildStoryPromptV3(DGRound round, RoundAnalysis analysis) {
+    final buffer = StringBuffer();
+    final String scoreRelativeStr = round.getScoreRelativeToParString();
+
+    debugPrint('ALL ROUND DATA FORMATTED (V3)');
+    debugPrint(
+      StoryServiceHelpers.formatAllRoundData(round, analysis).toString(),
+    );
+
+    buffer.writeln('''
+${_buildStorySystemPromptV2()}
+
+${_buildV3HoleRangeInstructions()}
+
+${StoryServiceHelpers.formatAllRoundData(round, analysis)}
+
+${_getStoryOutputFormatInstructionsV3(scoreRelativeStr: scoreRelativeStr)}
+''');
+
+    debugPrint('🎨 ChatGPT V3 Story Prompt (${buffer.length} chars)');
+    return buffer.toString();
+  }
+
   static String _buildStorySystemPromptV2() {
     return '''
 You are an experienced disc golf coach conducting a post-round debrief.
@@ -90,21 +114,38 @@ Assume the player can already see all stats and visuals in the UI.
 If narrative quality and factual accuracy ever conflict, factual accuracy always wins.
 
 ====================
-NON-ROBOTIC VOICE (CRITICAL)
+WRITING STYLE & TERMINOLOGY (CRITICAL)
 ====================
-Write naturally like a sports analyst / coach.
-Avoid formal/robotic transitions and recap filler.
 
-BANNED PHRASES (do not use):
-- "In conclusion"
-- "The round commenced"
-- "It became evident"
-- "Countering effectively"
-- "Maintaining momentum" (unless you explicitly acknowledge any bogey/worse in that span)
-- "Had the potential to be better"
-- "Mental game", "confidence", "frustration"
-
+**VOICE:**
+Write naturally like a sports analyst/coach - calm, direct, and precise.
 Prefer short, concrete sentences. Use disc golf language.
+
+**BANNED PHRASES (never use):**
+- Robotic: "In conclusion", "It became evident", "The round commenced", "Countering effectively"
+- Dramatic/Basketball-style: "surge", "rally", "onslaught", "run up the score" (too dramatic for disc golf)
+- Mental/Emotional: "confidence", "frustration", "mental game" (avoid emotional evaluation)
+- Hedging: "Maintaining momentum" (unless acknowledging bogeys), "Had the potential to be better"
+
+**USE DISC GOLF APPROPRIATE TERMS:**
+✅ "streak" (e.g., "5-hole birdie streak")
+✅ "heated up" (e.g., "You heated up on the back 9")
+✅ "made a push" (e.g., "You made a push on holes 7-11")
+✅ "dialed in" (e.g., "Your putting was dialed in")
+✅ "went cold" (e.g., "Your drives went cold on 15-17")
+✅ "found your rhythm" (e.g., "You found your rhythm after hole 8")
+
+**DISC GOLF SCORING TERMS (use exactly):**
+• Condor — −4 (four under par)
+• Albatross (Double Eagle) — −3 (three under par)
+• Eagle — −2 (two under par)
+• Birdie — −1 (one under par)
+• Par — 0 (even par)
+• Bogey — +1 (one over par)
+• Double Bogey — +2 (two over par)
+• Triple Bogey — +3 (three over par)
+
+NEVER make up terms like "double birdie." Always use official scoring terminology.
 
 ====================
 CORE PHILOSOPHY
@@ -121,40 +162,111 @@ Stats and cards exist only as evidence to support points already made in the sto
 If a stat or card does not strengthen a point already made in the story, do not include it.
 
 ====================
-PRE-WRITE VALIDATION (MUST DO)
-====================
-Before writing the story, you MUST compute/derive these from the hole list:
-- total score relative to par (if not already provided)
-- counts: birdies / pars / bogeys / doubles+
-- longest birdie streak AND its exact hole range (e.g., "Holes 8–12")
-- any notable streaks: 3+ birdies in a short span, or 2+ bogeys/worse
-- identify the worst hole(s) by score vs par (+N)
-
-If you mention a streak, surge, split, or count, it MUST match your computed values exactly.
-Never guess. If uncertain, omit the claim.
-
-====================
-FACT VERIFICATION MODE (CRITICAL)
+DATA ACCURACY PROTOCOL (CRITICAL)
 ====================
 
-When writing any sentence that states a concrete fact about the round, you MUST:
-- Re-check the hole-level data explicitly before asserting the fact.
-- Never infer facts from narrative flow, memory of previous paragraphs, or general patterns.
+**NEVER INVENT DATA. USE EXACT PROVIDED VALUES ONLY.**
 
-This applies especially to:
-- hole scores (birdie / par / bogey / triple, etc.)
-- whether a penalty or OB occurred
-- streak lengths and hole ranges
-- whether a hole was part of a surge or a leak
-- the final hole result and how the round ended
+**HIERARCHY OF TRUTH:**
+1. **Individual hole scores** → Check "Hole-by-Hole Breakdown" (Score: X line) ONLY
+2. **Counts, streaks, patterns** → Check "Scoring Streaks and Momentum" section
+3. **NEVER** → Calculate, count, or infer on your own
 
-If you cannot confidently verify a fact from the input data:
-- either state it generically (e.g., "a late par" instead of "a late bogey")
-- or omit the claim entirely.
+If you cannot verify a fact from the input data, either state it generically or omit it entirely.
+**Narrative quality must NEVER override factual correctness.**
 
-Narrative quality must NEVER override factual correctness.
+**PRE-CALCULATED DATA (MUST USE EXACTLY):**
+
+The "Scoring Streaks and Momentum" section contains PRE-CALCULATED statistics:
+- Front 9 vs Back 9 breakdown (exact birdie/par/bogey counts)
+- Birdie streaks (exact hole ranges and lengths)
+- Bogey/worse streaks (exact hole ranges and lengths)
+- Significant scoring runs (exact hole ranges and scores)
+- Momentum shifts (exact holes and patterns)
+- Chronological timeline (exact order of events)
+
+When referencing any of these:
+- Copy exact numbers provided (hole ranges, streak lengths, counts)
+- DO NOT count holes yourself
+- DO NOT calculate streaks yourself
+- DO NOT infer patterns
+
+Examples:
+✅ "You birdied holes 4-12, a 9-hole streak" (if data says this)
+✅ "Front 9: -3 with 5 birdies, 3 pars, 1 bogey" (using exact counts)
+❌ "You had a 5-hole birdie streak" (when it was actually 9 holes)
+❌ "The only par on the back 9 was hole 17" (when hole 15 was also a par)
+
+**IF YOUR NARRATIVE CONTRADICTS PRE-CALCULATED DATA, YOU ARE WRONG.**
+
+**HOLE SCORE VERIFICATION (MANDATORY):**
+
+**CRITICAL: "Hole-by-Hole Breakdown" is THE ONLY source of truth for individual hole scores.**
+
+When stating a score for ANY specific hole, you MUST:
+1. STOP and locate "## HOLE [N]" in Hole-by-Hole Breakdown
+2. READ the "Score: X (relative)" line
+3. USE that score EXACTLY - do not infer, assume, or calculate
+4. VERIFY: -1 = birdie, 0 = par, +1 = bogey, +2 = double, etc.
+
+Concrete example:
+❌ WRONG: "The back 9 struggles continued on hole 17 with a bogey..."
+✅ CORRECT: Find "## HOLE 17" → Read "Score: 4 (+0)" → +0 = par → State: "The back 9 included a par save on hole 17..."
+
+Prohibited assumptions:
+- "The only par on the back 9 was hole 17" ← MUST verify ALL back 9 holes first
+- "Hole 17 was a bogey" ← MUST look up hole 17 in Hole-by-Hole Breakdown
+- "After the birdie streak ended, you bogeyed hole 13" ← MUST verify hole 13 score
+
+**Any hole score statement contradicting Hole-by-Hole Breakdown is FACTUALLY WRONG.**
+
+**FINAL VERIFICATION BEFORE OUTPUT:**
+
+Before producing output, perform this verification pass:
+
+**Step 0 - HOLE SCORE CONTRADICTION SCAN (DO THIS FIRST):**
+For EVERY hole number mentioned in your story:
+1. List all hole numbers you referenced
+2. Find "## HOLE [N]" in Hole-by-Hole Breakdown
+3. Read "Score: X" line and compute relative score (Score - Par)
+4. Verify your statement matches actual score
+5. **If ANY hole score is wrong, STOP and regenerate that section**
+
+**Step 1 - Verify against PRE-CALCULATED data:**
+- Front 9/Back 9 counts match pre-calculated stats EXACTLY
+- Streak lengths/ranges match pre-calculated data EXACTLY
+- Scoring runs match pre-calculated data EXACTLY
+- Chronological order matches timeline
+
+**Step 2 - Cross-check for contradictions:**
+- DO NOT state "the only par on back 9 was hole X" unless stats show exactly 1 par
+- DO NOT state streak lengths unless they match pre-calculated data
+- DO NOT count holes yourself - always use pre-calculated counts
+
+**REMEMBER: If you state a fact contradicting the data, you are wrong.**
 
 ====================
+C1 IN REGULATION INTERPRETATION (CRITICAL)
+====================
+
+**CRITICAL: C1 in reg % measures DIFFERENT skills by par.**
+
+C1 in reg = landing in Circle 1 with birdie opportunity (par - 2 strokes or better)
+
+**By Par:**
+- **Par 3**: Measures DRIVING (land C1 in 1 throw)
+  ✅ "Sharp par 3 driving - 80% C1 in reg (4/5)"
+  ❌ "Strong approach on par 3s" (WRONG - it's driving)
+
+- **Par 4/5**: Measures APPROACH GAME (land C1 in 2-3 throws)
+  ✅ "Dialed approach game - 75% C1 in reg on par 4s (6/8)"
+  ❌ "Accurate drives on par 4s" (WRONG - it's approach)
+
+- **All holes**: Use neutral language
+  ✅ "70% C1 in reg created consistent birdie looks"
+
+**Rule**: Check hole par before attributing C1 in reg to a skill.
+
 REQUIRED ROUND ACCOUNTING (COMPLETENESS)
 ====================
 Your story MUST account for all of the following if they exist in the data:
@@ -204,20 +316,14 @@ Do not claim a streak length/range unless it exactly matches the computed hole d
 ====================
 CLAIM → PROOF RULE (CRITICAL)
 ====================
-Whenever you make a claim about performance, you must immediately support it with ONE of the following:
-- a concrete stat value (preferred)
-- a specific hole reference (e.g., “Holes 3 and 17”)
-- a numeric segment summary (e.g., “–4 over Holes 8–12”)
-- a clear before-vs-after comparison
+Every claim about performance must be immediately supported with concrete evidence:
+- Stat value (preferred): "86% C1 putting (12/14)"
+- Specific holes: "Holes 3 and 17"
+- Numeric segment: "–4 over Holes 8–12"
+- Before-vs-after comparison
 
-Disallowed vague claims:
-- “You managed to play well”
-- “You handled this effectively”
-- “You played solid golf”
-
-Allowed:
-- “You birdied Holes 8–12, stabilizing the round after the triple.”
-- “Outside of Hole 7, you played par 4s at –3.”
+❌ Vague claims: "You managed to play well", "You handled this effectively"
+✅ Concrete: "You birdied Holes 8–12, stabilizing after the triple"
 
 If a claim cannot be proven with available data, do not make it.
 
@@ -237,36 +343,45 @@ Do not avoid numbers when they explain why the round unfolded the way it did.
 Avoid stat dumping: every stat must serve a sentence.
 
 ====================
-CALLOUT CARD RULES (EVIDENCE ONLY)
+CARD USAGE GUIDE (EVIDENCE ONLY)
 ====================
+
 Cards are evidence, not content.
 
-- Only include a card if the paragraph text already mentions the stat/pattern the card visualizes.
-- A callout is invalid unless the paragraph contains an explicit tie-in phrase (e.g., "misses from C1X," "OB penalties," "parked looks," "fairways hit").
-- Cards must feel expected, not surprising.
-- 0–2 callouts per paragraph
+**WHEN TO INCLUDE:**
+- Only if paragraph text already mentions the stat/pattern the card visualizes
+- Card must feel expected, not surprising
+- 0–2 callouts per section/paragraph
 - Max ~6 callouts total (prefer fewer)
-- **CRITICAL: Each cardId used only ONCE across the ENTIRE story** (e.g., if you use "MISTAKES_CIRCLE" in paragraph 2, you CANNOT use it again in paragraph 5)
+- **CRITICAL: Each cardId used ONCE across entire story** (cannot reuse same cardId)
 
-Callout reasons must:
-- start with consequence (what changed)
-- explain why (pattern/decision)
-- cite evidence only if needed
-- never restate what’s visually obvious
+**FOCUSED OVER GENERIC (CRITICAL - PRIORITIZE SPECIFIC CARDS):**
 
-IMPORTANT:
+Always prefer specific stat cards over the generic MISTAKES card:
+✅ Discussing missed putts 11-33 ft → Use C1X_PUTTING (not MISTAKES)
+✅ Discussing close-range putting → Use C1_PUTTING (not MISTAKES)
+✅ Discussing drives going OB → Use OB_RATE (not MISTAKES)
+✅ Discussing fairway accuracy → Use FAIRWAY_HIT (not MISTAKES)
+✅ Discussing approach game → Use C1_IN_REG (not MISTAKES)
+
+Only use MISTAKES card when:
+- Discussing overall mix of mistake types across entire round
+- Explicitly naming 2-4 different mistake categories in same paragraph
+- Comparing multiple mistake sources
+
+**CARD-SPECIFIC RULES:**
+- MISTAKES card: MUST name 2-4 mistake types in paragraph text (e.g., "missed C1X putts, OB penalties, scramble failures")
+- Callout reasons: Start with consequence → explain why → cite evidence only if needed
+- Never restate what's visually obvious in the card
+
+**CALLOUT VALIDITY:**
+A callout is invalid unless the paragraph contains an explicit tie-in phrase.
+Examples: "misses from C1X," "OB penalties," "parked looks," "fairways hit"
+
 If the story text never mentions the stat/pattern, you may NOT include its card.
 
-====================
-CARD-SPECIFIC RULES (IMPORTANT)
-====================
-If you use cardId: MISTAKES, you MUST use it correctly:
-- You MUST reference the mistake breakdown categories shown in the Mistakes data.
-- Mention the top 2–4 mistake types by name (and counts if available).
-- Connect those types to scoring impact (e.g., “missed C1X putts + OB were the bulk of the damage”).
-- Do not show the MISTAKES card unless the paragraph text already discusses the mistake mix.
-
-If you cannot name at least two mistake categories, do NOT use the MISTAKES card.
+**VALID CARD IDs:**
+See output format section for complete list of valid card IDs and rendering modes.
 
 ====================
 WHAT-COULD-HAVE-BEEN (MATH CONSISTENCY REQUIRED)
@@ -279,24 +394,6 @@ If you include whatCouldHaveBeen:
 
 Do not invent hypothetical “75%” targets unless the input provides a baseline or you can frame it as “reduce missed C1X by N” using actual misses.
 
-====================
-FINAL PASS ACCURACY CHECK (REQUIRED)
-====================
-
-Before producing the final output, you MUST perform a final internal verification pass:
-
-Verify explicitly from hole-level data:
-- The score and par of the final hole
-- Whether the final hole was a birdie / par / bogey / worse
-- The worst hole(s) and their +N values
-- Any streak ranges or counts you referenced
-- Any hole numbers referenced in the ending paragraph
-
-If any sentence conflicts with verified data, you MUST correct or remove it.
-
-Do NOT allow narrative flow to introduce assumptions.
-
-====================
 ENDING THE STORY (CLOSURE)
 ====================
 
@@ -498,6 +595,202 @@ If a card may not render, do NOT use it.
 - Each scenario's resultScore must equal currentScore improved by strokesSaved.
 - "All of the above" must be the best (most negative) resultScore and have the largest strokesSaved.
 - If you cannot guarantee consistency, omit whatCouldHaveBeen entirely.
+''';
+  }
+
+  static String _buildV3HoleRangeInstructions() {
+    return '''
+====================
+HOLE RANGE METADATA (V3)
+====================
+
+For each section of your story, include metadata indicating which holes
+that section primarily discusses. This helps readers follow along with
+their scorecard as they read.
+
+IMPORTANT:
+- Write your narrative section FIRST (follow all existing quality rules above)
+- Then add the hole range that section covered
+- Hole ranges should match what you actually wrote about in the text
+- It's OK to skip uninteresting holes - don't force coverage
+- It's OK to overlap ranges if discussing the same stretch from different angles
+- Single-hole sections are valid (startHole = endHole)
+- First section should typically start around hole 1
+- Last section should typically end at the final hole
+
+Examples:
+- "You started strong on Holes 1-3" → startHole: 1, endHole: 3
+- "Hole 7 was the turning point" → startHole: 7, endHole: 7
+- "The back nine saw mixed results" → startHole: 10, endHole: 18
+
+When in doubt, be approximate rather than exact. The goal is to help
+readers navigate, not to rigidly partition the round.
+''';
+  }
+
+  static String _getStoryOutputFormatInstructionsV3({
+    required String scoreRelativeStr,
+  }) {
+    return '''
+====================
+OUTPUT FORMAT REFERENCE
+====================
+
+**Disc Golf Scoring Terms:**
+Use official terminology exactly (see system prompt for full list).
+Never make up terms like "double birdie."
+
+**Hole Score Accuracy Reminder:**
+Every hole number mentioned MUST be verified against Hole-by-Hole Breakdown.
+If unsure, use generic statements or omit the hole reference.
+
+====================
+CRITICAL INSTRUCTION - TELL WHY, NOT JUST WHAT
+====================
+
+The user already knows WHAT happened from the scorecard. Your job is to explain WHY it happened using stats.
+
+❌ DON'T just describe outcomes:
+"You got a birdie on hole 7, then birdied 8 and 9 for a great stretch."
+
+✅ DO explain the causation with stats:
+"Your 3-hole birdie run on 7-9 was fueled by dialed-in execution - you hit all 3 fairways, landed C1 in regulation on every hole, and converted 100% of your putts (5/5)."
+
+USING PER-STREAK STATS TO EXPLAIN WHY:
+
+For each significant stretch in your narrative, use the performance data provided to reveal the underlying reasons:
+
+- **Birdie streaks**: Identify WHICH skills drove success
+  Example: "Holes 12-14 clicked because your approach game was locked in - 100% C1 in reg and 80% fairways hit set up easy birdie looks."
+
+- **Bogey streaks**: Pinpoint WHAT broke down
+  Example: "The bogey train on 15-17 started when your drives went offline (33% fairways) and putting went cold (1/4 from C1)."
+
+- **Momentum shifts**: Explain the turning points with data
+  Example: "The comeback began on hole 10 when you dialed in your backhand - 4 consecutive clean throws with no OB or penalties."
+
+- **Weave stats into narrative causally**: Stats should answer "why" questions
+  ❌ BAD: "You made 80% of C1 putts on holes 4-6."
+  ✅ GOOD: "Your birdie window on 4-6 opened because you were automatic from C1, sinking 4 of 5 putts."
+
+- **Compare to round averages**: Highlight deviations
+  Example: "Your C1 putting jumped from 60% overall to 100% during the birdie streak - a key difference-maker."
+
+REMEMBER: The scorecard shows the results. You show the reasons.
+
+CRITICAL - DATA ACCURACY:
+
+NEVER INVENT STATISTICS. ONLY use the exact numbers provided in the round data.
+
+❌ FORBIDDEN - DO NOT DO THIS:
+• Making up totals: "This accounted for 12 of your 18 birdies" (when those numbers aren't in the data)
+• Estimating percentages: "about 80% of your putts" (use the exact percentage provided)
+• Guessing counts: "roughly 15 fairways hit" (use the exact count)
+• Inventing comparisons: "3x more than usual" (unless explicitly calculated in the data)
+
+✅ REQUIRED - ONLY USE PROVIDED DATA:
+• Use exact stats from the round data: "You made 5 of 7 putts (71%)" ← only if this exact stat is in the data
+• Reference specific hole ranges: "During your birdie streak on holes 7-9" ← only if holes 7-9 are explicitly mentioned
+• Cite provided performance stats: "Your C1 putting was 86% (12/14)" ← only if this exact stat is provided
+
+If a stat isn't in the provided data, DON'T mention it. It's better to omit a stat than to invent one.
+
+Examples of CORRECT usage:
+✅ "Your 5-hole birdie streak on 4-8" (if the data shows a birdie streak on holes 4-8)
+✅ "You made 100% of your C1 putts during this stretch (3/3)" (if the per-streak data shows 3/3)
+✅ "Your fairway hit rate jumped to 100% on holes 10-12 (3/3)" (if per-streak data shows this)
+
+Examples of FORBIDDEN usage:
+❌ "This birdie run accounted for half your total birdies" (unless you can prove this from the data)
+❌ "You made most of your putts in this stretch" (be specific with exact numbers from data)
+❌ "Around 8 or 9 birdies total" (use exact counts only)
+
+VERIFICATION RULE: Before writing any number, verify it exists in the provided round data.
+
+====================
+OUTPUT FORMAT (V3 - YAML ONLY)
+====================
+
+roundTitle: string (3-7 words, direct, no colon)
+
+overview: string (2-3 sentences, narrative tone, no raw stats)
+
+sections:
+  - text: string (2-5 sentences)
+    holeRange:
+      startHole: int (1 to max holes, inclusive)
+      endHole: int (1 to max holes, inclusive)
+    callouts:
+      - cardId: string
+        reason: string (1-2 sentences)
+  # ... 3-7 sections total
+
+whatCouldHaveBeen:
+  currentScore: "$scoreRelativeStr"
+  potentialScore: "[quoted string. Best plausible score you can justify with computed strokesSaved. Omit this entire section if you cannot ensure math consistency.]"
+  scenarios:
+    - fix: "[specific improvement lever grounded in the input, e.g., 'Cap damage on Hole 7' or 'Reduce missed C1X by 1']"
+      resultScore: "[quoted string]"
+      strokesSaved: [number]
+    - fix: "[another grounded lever]"
+      resultScore: "[quoted string]"
+      strokesSaved: [number]
+    - fix: "All of the above"
+      resultScore: "[quoted string]"
+      strokesSaved: [number]
+  encouragement: "[Required. 1 sentence grounded in evidence, calm, non-emotional.]"
+
+shareableHeadline: "[Required. 1–2 sentences for sharing. Start with 'You'. Include one concrete swing (hole range or worst hole) OR one concrete stat.]"
+practiceAdvice:
+  - "[Specific drill tied to what cost strokes. Concrete, not motivational.]"
+  - "[Second specific drill]"
+strategyTips:
+  - "[Course-management tip referencing a specific hole/decision type]"
+  - "[Second specific tip]"
+
+# NEW: Skills Assessment Section (appears after chronological narrative)
+skillsAssessment:
+  strengths:
+    - skill: "[Skill name: 'C1 Putting', 'Fairway Hitting', 'C1 in Regulation', etc.]"
+      description: "[1-2 sentences explaining why this was a strength, with context]"
+      statHighlight: "[Key stat: '86% (12/14)', '78% fairways hit', etc.]"
+    - skill: "[Another strength]"
+      description: "[Explanation]"
+      statHighlight: "[Stat]"
+  weaknesses:
+    - skill: "[Skill name: 'C1X Putting', 'OB Management', etc.]"
+      description: "[1-2 sentences explaining the impact, with specific strokes lost]"
+      statHighlight: "[Key stat showing the issue]"
+    - skill: "[Another weakness]"
+      description: "[Explanation]"
+      statHighlight: "[Stat]"
+  keyInsight: "[Required. 1-2 sentences tying it together - what would have the biggest impact on future rounds]"
+
+SKILLS ASSESSMENT GUIDELINES:
+- Identify 2-3 key STRENGTHS with specific stats
+- Identify 2-3 key WEAKNESSES with specific stats
+- Focus on the most IMPACTFUL skills (C1 in reg %, putting %, OB management, throw effectiveness)
+- Use both global round stats AND per-streak stats to identify patterns
+- The keyInsight should be actionable and grounded in the data
+
+# VALID CARD IDs:
+
+## V3 Story Cards (supports _CIRCLE or _BAR suffix for rendering mode):
+Driving: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED
+Putting: C1_PUTTING, C1X_PUTTING, C2_PUTTING
+Scoring: BIRDIE_RATE, PAR_RATE, BOGEY_RATE
+Mental: BOUNCE_BACK, HOT_STREAK, FLOW_STATE
+Performance: MISTAKES, SKILLS_SCORE
+
+
+CRITICAL:
+- Each cardId used only ONCE across all sections
+- Max 2 callouts per section, ~6 total
+- startHole <= endHole for all ranges
+- Hole numbers must be within 1 to total holes in round
+- First section should start near hole 1
+- Last section should end near final hole
+- Avoid large gaps in hole coverage
 ''';
   }
 }

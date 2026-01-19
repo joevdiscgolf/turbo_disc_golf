@@ -5,12 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/interactive_mini_scorecard.dart';
 import 'package:turbo_disc_golf/components/story/story_highlights_share_card.dart';
 import 'package:turbo_disc_golf/components/story/story_poster_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
@@ -18,6 +20,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_loading_animation.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer_v2.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/v3/structured_story_renderer_v3.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
@@ -49,6 +52,12 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   // Share card key for capturing as image
   final GlobalKey _shareCardKey = GlobalKey();
 
+  // Active section index for V3 mini scorecard
+  final ValueNotifier<int?> _activeSectionIndex = ValueNotifier(null);
+
+  // Scroll controller for V3 story renderer
+  ScrollController? _v3ScrollController;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -73,6 +82,13 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     }
   }
 
+  @override
+  void dispose() {
+    _activeSectionIndex.dispose();
+    _v3ScrollController?.dispose();
+    super.dispose();
+  }
+
   Future<void> _generateStory() async {
     setState(() {
       _isGenerating = true;
@@ -84,14 +100,22 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       final StoryGeneratorService storyService =
           locator.get<StoryGeneratorService>();
 
-      // Generate story based on feature flag
-      final AIContent? story = storyV2Enabled
-          ? await storyService.generateRoundStoryV2(_currentRound)  // V2
-          : await storyService.generateRoundStory(_currentRound);   // V1
+      // Generate story based on feature flag (V3 → V2 → V1)
+      final AIContent? story = storyV3Enabled
+          ? await storyService.generateRoundStoryV3(_currentRound)  // V3
+          : (storyV2Enabled
+              ? await storyService.generateRoundStoryV2(_currentRound)  // V2
+              : await storyService.generateRoundStory(_currentRound));   // V1
 
       if (story == null) {
         throw Exception('Failed to generate story content');
       }
+
+      // Debug: Log which story version was generated
+      debugPrint('📖 Story generated with:');
+      debugPrint('  - structuredContentV3: ${story.structuredContentV3 != null ? "✅ PRESENT (${story.structuredContentV3!.sections.length} sections)" : "❌ NULL"}');
+      debugPrint('  - structuredContentV2: ${story.structuredContentV2 != null ? "✅ PRESENT" : "❌ NULL"}');
+      debugPrint('  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}');
 
       // Update round with new story
       final RoundStorageService storageService = locator
@@ -122,6 +146,70 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         setState(() {
           _isGenerating = false;
           _errorMessage = 'Failed to generate story: $e';
+        });
+      }
+    }
+  }
+
+  /// Generate a specific story version (for debug testing)
+  Future<void> _generateStoryVersion(int version) async {
+    setState(() {
+      _isGenerating = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final StoryGeneratorService storyService =
+          locator.get<StoryGeneratorService>();
+
+      debugPrint('🔧 DEBUG: Forcing story generation version $version');
+
+      // Generate specific version regardless of feature flags
+      final AIContent? story = switch (version) {
+        3 => await storyService.generateRoundStoryV3(_currentRound),
+        2 => await storyService.generateRoundStoryV2(_currentRound),
+        _ => await storyService.generateRoundStory(_currentRound),
+      };
+
+      if (story == null) {
+        throw Exception('Failed to generate V$version story content');
+      }
+
+      // Debug: Log which story version was generated
+      debugPrint('📖 V$version Story generated with:');
+      debugPrint('  - structuredContentV3: ${story.structuredContentV3 != null ? "✅ PRESENT (${story.structuredContentV3!.sections.length} sections)" : "❌ NULL"}');
+      debugPrint('  - structuredContentV2: ${story.structuredContentV2 != null ? "✅ PRESENT" : "❌ NULL"}');
+      debugPrint('  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}');
+
+      // Update round with new story
+      final RoundStorageService storageService = locator
+          .get<RoundStorageService>();
+      final DGRound updatedRound = _currentRound.copyWith(aiSummary: story);
+      await storageService.saveRound(updatedRound);
+
+      if (mounted) {
+        // Update the RoundReviewCubit
+        try {
+          final RoundReviewCubit? reviewCubit = context
+              .read<RoundReviewCubit?>();
+          reviewCubit?.updateRoundData(updatedRound);
+        } catch (e) {
+          debugPrint('RoundReviewCubit not available: $e');
+        }
+
+        setState(() {
+          _isGenerating = false;
+          _currentRound = updatedRound;
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error generating V$version story: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+          _errorMessage = 'Failed to generate V$version story: $e';
         });
       }
     }
@@ -199,37 +287,55 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildContentWithShareBar(BuildContext context) {
-    return Stack(
-      children: [
-        // Scrollable content
-        Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 12, bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildRegenerateButton(),
-                    const SizedBox(height: 8),
-                    _buildStoryContent(context, _analysis),
-                  ],
+    final AIContent? story = _currentRound.aiSummary;
+    final bool isV3Story = story?.structuredContentV3 != null;
+
+    // Create scroll controller for V3 stories if needed
+    if (isV3Story && _v3ScrollController == null) {
+      _v3ScrollController = ScrollController();
+    } else if (!isV3Story && _v3ScrollController != null) {
+      // Dispose scroll controller if we switch away from V3
+      _v3ScrollController?.dispose();
+      _v3ScrollController = null;
+    }
+
+    return Container(
+      color: Colors.white,
+      child: Stack(
+        children: [
+          // Scrollable content
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: isV3Story ? _v3ScrollController : null,
+                  padding: const EdgeInsets.only(top: 12, bottom: 48),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildRegenerateButton(),
+                      const SizedBox(height: 8),
+                      _buildStoryContent(context, _analysis),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            // Fixed bottom action bar
-            _buildShareActionBar(),
-          ],
-        ),
-        // Hidden share card for capture (using Offstage)
-        Offstage(
-          offstage: true,
-          child: RepaintBoundary(
-            key: _shareCardKey,
-            child: _buildShareCard(),
+              // Fixed mini scorecard (only for V3 stories)
+              if (isV3Story) _buildMiniScorecard(story!),
+              // Fixed bottom action bar (hidden when testing V3)
+              if (!storyV3Enabled) _buildShareActionBar(),
+            ],
           ),
-        ),
-      ],
+          // Hidden share card for capture (using Offstage)
+          Offstage(
+            offstage: true,
+            child: RepaintBoundary(
+              key: _shareCardKey,
+              child: _buildShareCard(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -295,6 +401,23 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
       ),
       pushFromBottom: true,
+    );
+  }
+
+  Widget _buildMiniScorecard(AIContent story) {
+    return ValueListenableBuilder<int?>(
+      valueListenable: _activeSectionIndex,
+      builder: (context, activeSectionIndex, child) {
+        final HoleRange? activeRange = activeSectionIndex != null &&
+                story.structuredContentV3 != null
+            ? story.structuredContentV3!.sections[activeSectionIndex].holeRange
+            : null;
+
+        return InteractiveMiniScorecard(
+          holes: _currentRound.holes,
+          highlightedHoleRange: activeRange,
+        );
+      },
     );
   }
 
@@ -426,19 +549,46 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Align(
         alignment: Alignment.centerRight,
-        child: GestureDetector(
-          onLongPress: kDebugMode ? _showDebugYamlOutput : null,
-          child: OutlinedButton.icon(
-            onPressed: _isGenerating ? null : _generateStory,
-            icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Regenerate'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              textStyle: const TextStyle(fontSize: 12),
-            ),
-          ),
-        ),
+        child: kDebugMode
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _isGenerating ? null : () => _generateStoryVersion(2),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('V2'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: _isGenerating ? null : () => _generateStoryVersion(3),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('V3'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.purple,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              )
+            : GestureDetector(
+                onLongPress: kDebugMode ? _showDebugYamlOutput : null,
+                child: OutlinedButton.icon(
+                  onPressed: _isGenerating ? null : _generateStory,
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Regenerate'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    textStyle: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -493,11 +643,33 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   Widget _buildContentCard(BuildContext context, RoundAnalysis analysis) {
     final AIContent? story = _currentRound.aiSummary;
 
+    // Debug: Log which renderer is being used
+    if (story != null) {
+      if (story.structuredContentV3 != null) {
+        debugPrint('🎨 Rendering story with V3 renderer (${story.structuredContentV3!.sections.length} sections)');
+      } else if (story.structuredContentV2 != null) {
+        debugPrint('🎨 Rendering story with V2 renderer');
+      } else if (story.structuredContent != null) {
+        debugPrint('🎨 Rendering story with V1 renderer');
+      } else {
+        debugPrint('🎨 Rendering story with old format renderer');
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // V3: Render if structuredContentV3 exists
+        if (story?.structuredContentV3 != null)
+          StructuredStoryRendererV3(
+            content: story!.structuredContentV3!,
+            round: _currentRound,
+            tabController: widget.tabController,
+            onActiveSectionChanged: _activeSectionIndex,
+            scrollController: _v3ScrollController,
+          )
         // V2: Render if structuredContentV2 exists
-        if (story?.structuredContentV2 != null)
+        else if (story?.structuredContentV2 != null)
           StructuredStoryRendererV2(
             content: story!.structuredContentV2!,
             round: _currentRound,

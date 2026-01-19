@@ -34,6 +34,10 @@ ${round.holes.map((hole) => StoryServiceHelpers._formatHoleDetails(hole)).join('
 Fairway: ${(analysis.coreStats.fairwayHitPct).toStringAsFixed(1)}% | C1 in Reg: ${(analysis.coreStats.c1InRegPct).toStringAsFixed(1)}% | OB: ${(analysis.coreStats.obPct).toStringAsFixed(1)}% | Parked: ${(analysis.coreStats.parkedPct).toStringAsFixed(1)}%
 C1 Putting: ${(analysis.puttingStats.c1Percentage).toStringAsFixed(1)}% (${analysis.puttingStats.c1Makes}/${analysis.puttingStats.c1Attempts}) | C1X: ${(analysis.puttingStats.c1xPercentage).toStringAsFixed(1)}% (${analysis.puttingStats.c1xMakes}/${analysis.puttingStats.c1xAttempts}) | C2: ${(analysis.puttingStats.c2Percentage).toStringAsFixed(1)}% (${analysis.puttingStats.c2Makes}/${analysis.puttingStats.c2Attempts})
 
+# Scoring Streaks and Momentum (PRE-CALCULATED - USE THESE EXACT COUNTS)
+${StoryServiceHelpers.formatScoringStreaks(round, analysis)}
+${StoryServiceHelpers.formatChronologicalStoryBeats(round, analysis)}
+
 Throw Types:
 ${StoryServiceHelpers.formatThrowTypeComparison(analysis)}
 Mistakes:
@@ -425,6 +429,455 @@ strategyTips:
         );
       }
     }
+
+    return buffer.toString();
+  }
+
+  /// Calculate performance stats for a specific hole range (streak)
+  /// Used to provide per-streak stats to help explain WHY streaks happened
+  static Map<String, dynamic> _calculateStreakStats({
+    required List<DGHole> holes,
+    required int startHole,
+    required int endHole,
+    required RoundAnalysis analysis,
+  }) {
+    // Get holes in the streak range
+    final List<DGHole> streakHoles = holes
+        .where((h) => h.number >= startHole && h.number <= endHole)
+        .toList();
+
+    if (streakHoles.isEmpty) {
+      return {};
+    }
+
+    // Calculate putting stats
+    int c1Makes = 0, c1Attempts = 0;
+    int c1xMakes = 0, c1xAttempts = 0;
+    int c2Makes = 0, c2Attempts = 0;
+    int overallMakes = 0, overallAttempts = 0;
+
+    // Calculate approach stats
+    int c1InReg = 0, c1InRegOpportunities = 0;
+    int fairwayHits = 0, fairwayOpportunities = 0;
+    int parked = 0;
+
+    // Calculate throw type stats
+    int backhandThrows = 0, backhandClean = 0;
+    int forehandThrows = 0, forehandClean = 0;
+
+    // Calculate mistakes
+    int obCount = 0;
+    int penaltyStrokes = 0;
+
+    for (final hole in streakHoles) {
+      // Count opportunities
+      c1InRegOpportunities++;
+      fairwayOpportunities++;
+
+      // Check if C1 in regulation (looking at second-to-last throw distance)
+      if (hole.throws.length >= 2) {
+        final approachThrow = hole.throws[hole.throws.length - 2];
+        if (approachThrow.distanceFeetAfterThrow != null &&
+            approachThrow.distanceFeetAfterThrow! <= 33.0) {
+          c1InReg++;
+        }
+        // Check if parked (<= 11 ft)
+        if (approachThrow.distanceFeetAfterThrow != null &&
+            approachThrow.distanceFeetAfterThrow! <= 11.0) {
+          parked++;
+        }
+      }
+
+      // Process all throws for this hole
+      for (int i = 0; i < hole.throws.length; i++) {
+        final throw_ = hole.throws[i];
+        final bool isTee = (i == 0);
+        final bool isPutt = (i == hole.throws.length - 1);
+
+        // Fairway hits (tee shots only)
+        if (isTee) {
+          if (throw_.landingSpot?.toString().contains('fairway') ?? false) {
+            fairwayHits++;
+          }
+        }
+
+        // Putting stats (last throw of the hole)
+        if (isPutt && throw_.distanceFeetBeforeThrow != null) {
+          final double distance = throw_.distanceFeetBeforeThrow!.toDouble();
+          final bool made = (throw_.distanceFeetAfterThrow == 0.0);
+
+          // Overall putting
+          overallAttempts++;
+          if (made) overallMakes++;
+
+          // C1 putting (0-33 ft)
+          if (distance <= 33.0) {
+            c1Attempts++;
+            if (made) c1Makes++;
+
+            // C1X putting (11-33 ft)
+            if (distance >= 11.0) {
+              c1xAttempts++;
+              if (made) c1xMakes++;
+            }
+          }
+          // C2 putting (33-66 ft)
+          else if (distance <= 66.0) {
+            c2Attempts++;
+            if (made) c2Makes++;
+          }
+        }
+
+        // Throw type analysis
+        final String? technique = throw_.technique?.toString();
+        final bool isClean = throw_.penaltyStrokes == 0 &&
+            !(throw_.landingSpot?.toString().contains('outOfBounds') ?? false);
+
+        if (technique?.contains('backhand') ?? false) {
+          backhandThrows++;
+          if (isClean) backhandClean++;
+        } else if (technique?.contains('forehand') ?? false) {
+          forehandThrows++;
+          if (isClean) forehandClean++;
+        }
+
+        // Count OB and penalties
+        if (throw_.penaltyStrokes > 0) {
+          obCount++;
+          penaltyStrokes += throw_.penaltyStrokes;
+        }
+      }
+    }
+
+    // Build performance object
+    final Map<String, dynamic> performance = {};
+
+    // Putting performance
+    final Map<String, String> puttingPerf = {};
+    if (c1Attempts > 0) {
+      final double c1Pct = (c1Makes / c1Attempts) * 100;
+      puttingPerf['c1'] = '$c1Makes/$c1Attempts (${c1Pct.toStringAsFixed(0)}%)';
+    }
+    if (c1xAttempts > 0) {
+      final double c1xPct = (c1xMakes / c1xAttempts) * 100;
+      puttingPerf['c1x'] = '$c1xMakes/$c1xAttempts (${c1xPct.toStringAsFixed(0)}%)';
+    }
+    if (c2Attempts > 0) {
+      final double c2Pct = (c2Makes / c2Attempts) * 100;
+      puttingPerf['c2'] = '$c2Makes/$c2Attempts (${c2Pct.toStringAsFixed(0)}%)';
+    }
+    if (overallAttempts > 0) {
+      final double overallPct = (overallMakes / overallAttempts) * 100;
+      puttingPerf['overall'] = '$overallMakes/$overallAttempts (${overallPct.toStringAsFixed(0)}%)';
+    }
+    if (puttingPerf.isNotEmpty) {
+      performance['putting'] = puttingPerf;
+    }
+
+    // Approach performance
+    final Map<String, String> approachPerf = {};
+    if (c1InRegOpportunities > 0) {
+      final double c1InRegPct = (c1InReg / c1InRegOpportunities) * 100;
+      approachPerf['c1InReg'] = '$c1InReg/$c1InRegOpportunities (${c1InRegPct.toStringAsFixed(0)}%)';
+    }
+    if (fairwayOpportunities > 0) {
+      final double fairwayPct = (fairwayHits / fairwayOpportunities) * 100;
+      approachPerf['fairwayHit'] = '$fairwayHits/$fairwayOpportunities (${fairwayPct.toStringAsFixed(0)}%)';
+    }
+    if (parked > 0) {
+      approachPerf['parked'] = '$parked/${streakHoles.length} (${(parked / streakHoles.length * 100).toStringAsFixed(0)}%)';
+    }
+    if (approachPerf.isNotEmpty) {
+      performance['approach'] = approachPerf;
+    }
+
+    // Throw type analysis
+    final Map<String, String> throwTypes = {};
+    if (backhandThrows > 0) {
+      final double backhandCleanPct = (backhandClean / backhandThrows) * 100;
+      throwTypes['backhand'] = '$backhandThrows throws (${backhandCleanPct.toStringAsFixed(0)}% clean)';
+    }
+    if (forehandThrows > 0) {
+      final double forehandCleanPct = (forehandClean / forehandThrows) * 100;
+      throwTypes['forehand'] = '$forehandThrows throws (${forehandCleanPct.toStringAsFixed(0)}% clean)';
+    }
+    if (backhandThrows > 0 || forehandThrows > 0) {
+      throwTypes['preference'] = backhandThrows > forehandThrows ? 'backhand' : 'forehand';
+      performance['throwTypes'] = throwTypes;
+    }
+
+    // Mistakes
+    if (obCount > 0 || penaltyStrokes > 0) {
+      performance['mistakes'] = {
+        'obCount': obCount,
+        'penaltyStrokes': penaltyStrokes,
+      };
+    }
+
+    return performance;
+  }
+
+  /// Format scoring streaks for the prompt with per-streak performance stats
+  static String formatScoringStreaks(DGRound round, RoundAnalysis analysis) {
+    final StringBuffer buffer = StringBuffer();
+    final streakStats = analysis.streakStats;
+
+    // Handle legacy rounds without streak stats
+    if (streakStats == null) {
+      buffer.writeln('(Streak stats not available for this round)');
+      return buffer.toString();
+    }
+
+    // Front 9 vs Back 9 breakdown with performance stats
+    if (streakStats.frontNineStats != null || streakStats.backNineStats != null) {
+      buffer.writeln('Course Section Performance:');
+      if (streakStats.frontNineStats != null) {
+        final front = streakStats.frontNineStats!;
+        buffer.writeln(
+          '  ${front.sectionName}: ${front.scoreRelativeDisplay} '
+          '(${front.birdies} birdies, ${front.pars} pars, '
+          '${front.bogeys} bogeys, ${front.doublesOrWorse} doubles+)',
+        );
+        // Add performance stats for Front 9
+        final frontPerf = _calculateStreakStats(
+          holes: round.holes,
+          startHole: front.startHole,
+          endHole: front.endHole,
+          analysis: analysis,
+        );
+        _appendPerformanceStats(buffer, frontPerf);
+      }
+      if (streakStats.backNineStats != null) {
+        final back = streakStats.backNineStats!;
+        buffer.writeln(
+          '  ${back.sectionName}: ${back.scoreRelativeDisplay} '
+          '(${back.birdies} birdies, ${back.pars} pars, '
+          '${back.bogeys} bogeys, ${back.doublesOrWorse} doubles+)',
+        );
+        // Add performance stats for Back 9
+        final backPerf = _calculateStreakStats(
+          holes: round.holes,
+          startHole: back.startHole,
+          endHole: back.endHole,
+          analysis: analysis,
+        );
+        _appendPerformanceStats(buffer, backPerf);
+      }
+      buffer.writeln();
+    }
+
+    // Birdie streaks with performance stats
+    if (streakStats.birdieStreaks.isNotEmpty) {
+      buffer.writeln('Birdie Streaks (with performance stats):');
+      for (final streak in streakStats.birdieStreaks) {
+        buffer.writeln(
+          '  ${streak.holeRangeDisplay}: ${streak.length} consecutive birdies (${streak.totalRelativeScore})',
+        );
+        // Calculate and add performance stats for this streak
+        final performance = _calculateStreakStats(
+          holes: round.holes,
+          startHole: streak.startHole,
+          endHole: streak.endHole,
+          analysis: analysis,
+        );
+        _appendPerformanceStats(buffer, performance, indent: '    ');
+      }
+      buffer.writeln('  Longest: ${streakStats.longestBirdieStreak} holes');
+      buffer.writeln();
+    }
+
+    // Bogey-or-worse streaks with performance stats
+    if (streakStats.bogeyStreaks.isNotEmpty) {
+      buffer.writeln('Bogey/Worse Streaks (with performance stats):');
+      for (final streak in streakStats.bogeyStreaks) {
+        buffer.writeln(
+          '  ${streak.holeRangeDisplay}: ${streak.length} consecutive bogeys or worse (+${-streak.totalRelativeScore})',
+        );
+        // Calculate and add performance stats for this streak
+        final performance = _calculateStreakStats(
+          holes: round.holes,
+          startHole: streak.startHole,
+          endHole: streak.endHole,
+          analysis: analysis,
+        );
+        _appendPerformanceStats(buffer, performance, indent: '    ');
+      }
+      buffer.writeln('  Longest: ${streakStats.longestBogeyStreak} holes');
+      buffer.writeln();
+    }
+
+    // Scoring runs
+    if (streakStats.scoringRuns.isNotEmpty) {
+      buffer.writeln('Significant Scoring Runs:');
+      for (final run in streakStats.scoringRuns) {
+        buffer.writeln('  ${run.description}');
+        // Calculate and add performance stats for scoring runs
+        final performance = _calculateStreakStats(
+          holes: round.holes,
+          startHole: run.startHole,
+          endHole: run.endHole,
+          analysis: analysis,
+        );
+        _appendPerformanceStats(buffer, performance, indent: '    ');
+      }
+      buffer.writeln();
+    }
+
+    // Momentum shifts
+    if (streakStats.momentumShifts.isNotEmpty) {
+      buffer.writeln('Momentum Shifts:');
+      for (final shift in streakStats.momentumShifts) {
+        buffer.writeln('  Hole ${shift.holeNumber}: ${shift.description}');
+      }
+      buffer.writeln();
+    }
+
+    return buffer.toString();
+  }
+
+  /// Helper to append performance stats to the buffer
+  static void _appendPerformanceStats(
+    StringBuffer buffer,
+    Map<String, dynamic> performance, {
+    String indent = '    ',
+  }) {
+    if (performance.isEmpty) return;
+
+    // Putting stats
+    if (performance.containsKey('putting')) {
+      final putting = performance['putting'] as Map<String, String>;
+      if (putting.isNotEmpty) {
+        buffer.writeln('${indent}Putting:');
+        if (putting.containsKey('c1')) {
+          buffer.writeln('$indent  C1: ${putting['c1']}');
+        }
+        if (putting.containsKey('c1x')) {
+          buffer.writeln('$indent  C1X: ${putting['c1x']}');
+        }
+        if (putting.containsKey('c2')) {
+          buffer.writeln('$indent  C2: ${putting['c2']}');
+        }
+        if (putting.containsKey('overall')) {
+          buffer.writeln('$indent  Overall: ${putting['overall']}');
+        }
+      }
+    }
+
+    // Approach stats
+    if (performance.containsKey('approach')) {
+      final approach = performance['approach'] as Map<String, String>;
+      if (approach.isNotEmpty) {
+        buffer.writeln('${indent}Approach:');
+        if (approach.containsKey('c1InReg')) {
+          buffer.writeln('$indent  C1 in Reg: ${approach['c1InReg']}');
+        }
+        if (approach.containsKey('fairwayHit')) {
+          buffer.writeln('$indent  Fairway Hit: ${approach['fairwayHit']}');
+        }
+        if (approach.containsKey('parked')) {
+          buffer.writeln('$indent  Parked: ${approach['parked']}');
+        }
+      }
+    }
+
+    // Throw types
+    if (performance.containsKey('throwTypes')) {
+      final throwTypes = performance['throwTypes'] as Map<String, String>;
+      if (throwTypes.isNotEmpty) {
+        buffer.writeln('${indent}Throw Types:');
+        if (throwTypes.containsKey('backhand')) {
+          buffer.writeln('$indent  Backhand: ${throwTypes['backhand']}');
+        }
+        if (throwTypes.containsKey('forehand')) {
+          buffer.writeln('$indent  Forehand: ${throwTypes['forehand']}');
+        }
+        if (throwTypes.containsKey('preference')) {
+          buffer.writeln('$indent  Preference: ${throwTypes['preference']}');
+        }
+      }
+    }
+
+    // Mistakes
+    if (performance.containsKey('mistakes')) {
+      final mistakes = performance['mistakes'] as Map<String, int>;
+      buffer.writeln('${indent}Mistakes:');
+      buffer.writeln('$indent  OB Count: ${mistakes['obCount']}');
+      buffer.writeln('$indent  Penalty Strokes: ${mistakes['penaltyStrokes']}');
+    }
+  }
+
+  /// Generate chronological story beats for narrative flow
+  static String formatChronologicalStoryBeats(
+    DGRound round,
+    RoundAnalysis analysis,
+  ) {
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln('# Chronological Round Narrative');
+    buffer.writeln('(Present story elements in this order):');
+    buffer.writeln();
+
+    final streakStats = analysis.streakStats;
+
+    // Handle legacy rounds without streak stats
+    if (streakStats == null) {
+      buffer.writeln('(Chronological timeline not available for this round)');
+      return buffer.toString();
+    }
+
+    // Create timeline of significant events
+    final List<({int hole, String event, String type})> timeline = [];
+
+    // Add streaks to timeline
+    for (final streak in streakStats.birdieStreaks) {
+      timeline.add((
+        hole: streak.startHole,
+        event:
+            'Birdie streak: ${streak.length} birdies from ${streak.holeRangeDisplay} (${streak.totalRelativeScore})',
+        type: 'strength',
+      ));
+    }
+
+    for (final streak in streakStats.bogeyStreaks) {
+      timeline.add((
+        hole: streak.startHole,
+        event:
+            'Struggle: ${streak.length} bogeys or worse from ${streak.holeRangeDisplay} (+${-streak.totalRelativeScore})',
+        type: 'weakness',
+      ));
+    }
+
+    // Add momentum shifts
+    for (final shift in streakStats.momentumShifts) {
+      timeline.add((
+        hole: shift.holeNumber,
+        event: shift.description,
+        type: 'momentum',
+      ));
+    }
+
+    // Add scoring runs
+    for (final run in streakStats.scoringRuns) {
+      timeline.add((
+        hole: run.startHole,
+        event: run.description,
+        type: run.relativeScore < 0 ? 'strength' : 'weakness',
+      ));
+    }
+
+    // Sort by hole number (chronological)
+    timeline.sort((a, b) => a.hole.compareTo(b.hole));
+
+    // Output in chronological order
+    for (final event in timeline) {
+      buffer.writeln(
+        'Hole ${event.hole}: [${event.type.toUpperCase()}] ${event.event}',
+      );
+    }
+
+    buffer.writeln();
+    buffer.writeln(
+      'NOTE: Present these events in this exact order when constructing your narrative.',
+    );
 
     return buffer.toString();
   }
