@@ -212,3 +212,7 @@ const bool showHoleDistancesInScorecard = true;
 /// When true, highlights the currently visible story section with a subtle blue background in V3 stories.
 /// This helps visualize which section is active as you scroll.
 const bool highlightActiveStorySection = true;
+
+/// When true, shows the distance unit toggle (Feet/Meters) in the Settings screen.
+/// When false, hides the distance preferences row.
+const bool showDistancePreferences = false;

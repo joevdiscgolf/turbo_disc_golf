@@ -701,6 +701,109 @@ Selector<AppStateModel, bool>(
 )
 ```
 
+#### ClearOnLogoutProtocol - Multi-User Support
+
+**CRITICAL: All Cubits and Services that cache user-specific data MUST implement ClearOnLogoutProtocol.**
+
+When a user logs out and another user logs in, all cached user-specific data must be cleared to prevent data leakage between users. Any Cubit or Service that stores user-specific data in memory must implement `ClearOnLogoutProtocol` and be registered in the logout cleanup system.
+
+**When to implement ClearOnLogoutProtocol:**
+- Cubit stores user-specific data (rounds, user profile, stats, etc.)
+- Service caches user-specific information (courses, preferences, etc.)
+- Component maintains state that should reset between users
+- Any data structure that could leak information to the next logged-in user
+
+**How to implement:**
+
+1. **Import the protocol:**
+```dart
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+```
+
+2. **Implement the protocol in your Cubit/Service:**
+```dart
+class UserDataCubit extends Cubit<UserDataState> implements ClearOnLogoutProtocol {
+  UserDataCubit() : super(const UserDataInitial());
+
+  // Your cubit methods here...
+
+  @override
+  Future<void> clearOnLogout() async {
+    // Reset state to initial
+    emit(const UserDataInitial());
+
+    // Clear any cached data
+    _cachedData = null;
+
+    // Cancel any active streams/subscriptions if needed
+    await _subscription?.cancel();
+  }
+}
+```
+
+3. **Register in the logout cleanup list in `lib/main.dart`:**
+```dart
+// In _MyAppState.initState()
+final List<ClearOnLogoutProtocol> clearOnLogoutComponents = [
+  // Cubits
+  _roundHistoryCubit,
+  _userDataCubit,           // Add your cubit here
+  _recordRoundCubit,
+
+  // Services from locator
+  locator.get<RoundParser>(),
+  locator.get<BagService>(),
+  locator.get<CourseSearchService>(),
+  // Add your service here if applicable
+];
+```
+
+**Important notes:**
+- The `clearOnLogout()` method MUST be `async` (returns `Future<void>`)
+- Clear ALL user-specific data in this method
+- Reset state to initial/empty state
+- Cancel any active subscriptions or streams
+- This prevents data leakage when switching between user accounts
+
+**Example: Complete implementation**
+```dart
+class RoundHistoryCubit extends Cubit<RoundHistoryState> implements ClearOnLogoutProtocol {
+  RoundHistoryCubit() : super(const RoundHistoryInitial());
+
+  final List<DGRound> _cachedRounds = [];
+  StreamSubscription<List<DGRound>>? _roundsSubscription;
+
+  Future<void> loadRounds() async {
+    // Load user's rounds...
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    // Cancel active subscriptions
+    await _roundsSubscription?.cancel();
+    _roundsSubscription = null;
+
+    // Clear cached data
+    _cachedRounds.clear();
+
+    // Reset to initial state
+    emit(const RoundHistoryInitial());
+  }
+
+  @override
+  Future<void> close() {
+    _roundsSubscription?.cancel();
+    return super.close();
+  }
+}
+```
+
+**Why this matters:**
+- **Security**: Prevents user data from leaking to the next logged-in user
+- **Privacy**: Ensures complete data isolation between user sessions
+- **Memory management**: Clears cached data when no longer needed
+- **Clean state**: Each user starts with a fresh, empty state
+
 ### Performance Best Practices
 
 1. **Use const constructors**: Always mark widgets as const when possible
@@ -1000,4 +1103,882 @@ Before submitting code, verify:
 - [ ] Error states and empty states are handled
 - [ ] Analytics tracking is added for user interactions
 - [ ] **Cubits/Blocs are accessed using `BlocProvider.of<T>(context)`, NEVER `locator.get<T>()`**
+- [ ] **Cubits and Services with user-specific data implement `ClearOnLogoutProtocol`** and are registered in main.dart
 - [ ] **Never use negative margins** - restructure layout instead
+
+---
+
+# Analytics Logging Convention Guide for Turbo Disc Golf
+
+## Overview
+
+This guide establishes comprehensive, consistent conventions for logging user interactions in the Turbo Disc Golf app. All events follow a standardized format optimized for Mixpanel dashboard analysis.
+
+## Core Principles
+
+1. **Consistency**: All events use the same naming patterns and property structures
+2. **Context-Rich**: Every event includes screen context and action details
+3. **Comprehensive**: Track all user interactions (taps, screens, modals, navigation)
+4. **Readable**: Event names and properties are human-readable and self-documenting
+5. **Analyzable**: Properties are structured to enable segmentation and funnel analysis in Mixpanel
+
+## Auto-Enriched Properties
+
+The `LoggingService` automatically adds these properties to EVERY event:
+
+```dart
+{
+  'user_id': '<firebase_uid>',      // Added automatically from AuthService
+  'timestamp': '<iso8601_string>',  // Added automatically
+}
+```
+
+**You should NEVER manually add these properties** - the service handles them.
+
+## Standard Event Types
+
+### 1. Screen Impression
+
+**Event Name:** `Screen Impression`
+
+**When to Track:** Automatically in every screen's `initState()` or `build()` method
+
+**Required Properties:**
+- `screen_name` (String) - Human-readable screen name from `static const screenName`
+- `screen_class` (String) - Widget class name (e.g., 'RoundHistoryScreen')
+
+**Optional Properties:**
+- `previous_screen` (String) - Where the user came from (if known)
+- `round_id` (String) - If viewing a specific round
+- `course_name` (String) - If viewing a specific course
+- `tab_name` (String) - If viewing a tab within a screen
+
+**Example:**
+```dart
+locator.get<LoggingService>().track('Screen Impression', properties: {
+  'screen_name': RoundHistoryScreen.screenName,
+  'screen_class': 'RoundHistoryScreen',
+});
+```
+
+---
+
+### 2. Button Tapped
+
+**Event Name:** `Button Tapped`
+
+**When to Track:** On every button/interactive element tap (buttons, cards, list items, icons)
+
+**Required Properties:**
+- `screen_name` (String) - Current screen name
+- `button_name` (String) - Descriptive button name (e.g., 'Create Round', 'Save Settings')
+- `element_type` (String) - Type of element ('button', 'card', 'list_item', 'icon', 'fab')
+
+**Optional Properties:**
+- `button_location` (String) - Where on screen ('header', 'footer', 'body', 'floating')
+- `round_id` (String) - If action relates to a specific round
+- `course_name` (String) - If action relates to a specific course
+- `item_index` (int) - If tapping a list item
+
+**Example:**
+```dart
+onPressed: () {
+  locator.get<LoggingService>().track('Button Tapped', properties: {
+    'screen_name': RoundHistoryScreen.screenName,
+    'button_name': 'Create Round',
+    'element_type': 'button',
+    'button_location': 'floating',
+  });
+
+  // Handle action
+  _createNewRound();
+}
+```
+
+---
+
+### 3. Modal Opened
+
+**Event Name:** `Modal Opened`
+
+**When to Track:** When showing bottom sheets, dialogs, alerts, or modals
+
+**Required Properties:**
+- `screen_name` (String) - Screen that triggered the modal
+- `modal_type` (String) - Type of modal ('bottom_sheet', 'dialog', 'alert', 'full_screen_modal')
+- `modal_name` (String) - Descriptive modal name (e.g., 'Delete Round Confirmation', 'Course Search')
+
+**Optional Properties:**
+- `trigger_source` (String) - What triggered it ('button', 'auto', 'long_press')
+- `round_id` (String) - If modal relates to a specific round
+
+**Example:**
+```dart
+void _showDeleteConfirmation() {
+  locator.get<LoggingService>().track('Modal Opened', properties: {
+    'screen_name': RoundHistoryScreen.screenName,
+    'modal_type': 'dialog',
+    'modal_name': 'Delete Round Confirmation',
+    'trigger_source': 'button',
+  });
+
+  showDialog(...);
+}
+```
+
+---
+
+### 4. Tab Changed
+
+**Event Name:** `Tab Changed`
+
+**When to Track:** When switching tabs in bottom navigation OR within a screen (like RoundReviewScreen)
+
+**Required Properties:**
+- `screen_name` (String) - Screen containing the tabs
+- `tab_index` (int) - Zero-based tab index
+- `tab_name` (String) - Human-readable tab name
+
+**Optional Properties:**
+- `previous_tab_index` (int) - Previous tab index
+- `previous_tab_name` (String) - Previous tab name
+- `tab_context` (String) - 'bottom_navigation' or 'screen_tabs'
+
+**Example:**
+```dart
+void _onTabChanged(int index) {
+  locator.get<LoggingService>().track('Tab Changed', properties: {
+    'screen_name': 'Main Navigation',
+    'tab_index': index,
+    'tab_name': _getTabName(index),
+    'previous_tab_index': _currentIndex,
+    'previous_tab_name': _getTabName(_currentIndex),
+    'tab_context': 'bottom_navigation',
+  });
+
+  setState(() => _currentIndex = index);
+}
+```
+
+---
+
+### 5. Navigation Action
+
+**Event Name:** `Navigation Action`
+
+**When to Track:** When navigating to a new screen (push, pop, replace)
+
+**Required Properties:**
+- `from_screen` (String) - Current screen name
+- `to_screen` (String) - Destination screen name
+- `action_type` (String) - Navigation type ('push', 'pop', 'replace', 'deep_link')
+
+**Optional Properties:**
+- `trigger` (String) - What triggered navigation ('button', 'back_button', 'deep_link')
+
+**Example:**
+```dart
+void _navigateToRoundReview() {
+  locator.get<LoggingService>().track('Navigation Action', properties: {
+    'from_screen': RoundHistoryScreen.screenName,
+    'to_screen': RoundReviewScreen.screenName,
+    'action_type': 'push',
+    'trigger': 'button',
+  });
+
+  Navigator.push(...);
+}
+```
+
+---
+
+### 6. Form Interaction
+
+**Event Name:** `Form Interaction`
+
+**When to Track:** When users interact with form fields, toggles, sliders
+
+**Required Properties:**
+- `screen_name` (String) - Current screen
+- `field_name` (String) - Form field identifier
+- `interaction_type` (String) - Type of interaction ('text_input', 'toggle', 'slider', 'dropdown', 'date_picker')
+
+**Optional Properties:**
+- `field_value` (String/int/bool) - The value (if not sensitive)
+- `validation_passed` (bool) - If validation occurred
+
+**Example:**
+```dart
+onChanged: (value) {
+  locator.get<LoggingService>().track('Form Interaction', properties: {
+    'screen_name': SettingsScreen.screenName,
+    'field_name': 'Dark Mode',
+    'interaction_type': 'toggle',
+    'field_value': value,
+  });
+
+  _updateDarkMode(value);
+}
+```
+
+---
+
+## Screen Constants - Required Pattern
+
+**EVERY screen MUST have these two static constants:**
+
+```dart
+class RoundHistoryScreen extends StatefulWidget {
+  const RoundHistoryScreen({super.key});
+
+  // REQUIRED: Human-readable name for analytics
+  static const String screenName = 'Round History';
+
+  // REQUIRED: Route path for navigation
+  static const String routeName = '/round-history';
+
+  @override
+  State<RoundHistoryScreen> createState() => _RoundHistoryScreenState();
+}
+```
+
+**Naming Conventions:**
+- `screenName`: Title case, spaces (e.g., 'Round History', 'Settings', 'Round Review')
+- `routeName`: Lowercase, hyphens, starts with `/` (e.g., '/round-history', '/settings', '/round-review')
+
+**Why Both?**
+- `screenName`: Used in analytics for human-readable reporting
+- `routeName`: Used for navigation and deep linking
+
+---
+
+## Screen Impression Implementation Patterns
+
+### Pattern 1: StatefulWidget (Preferred)
+
+```dart
+class RoundHistoryScreen extends StatefulWidget {
+  const RoundHistoryScreen({super.key});
+
+  static const String screenName = 'Round History';
+  static const String routeName = '/round-history';
+
+  @override
+  State<RoundHistoryScreen> createState() => _RoundHistoryScreenState();
+}
+
+class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Track screen impression
+    locator.get<LoggingService>().track('Screen Impression', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'screen_class': 'RoundHistoryScreen',
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Screen UI
+  }
+}
+```
+
+### Pattern 2: StatelessWidget
+
+For StatelessWidget, track in the build method (will only track once per screen instance):
+
+```dart
+class SomeScreen extends StatelessWidget {
+  const SomeScreen({super.key});
+
+  static const String screenName = 'Some Screen';
+  static const String routeName = '/some-screen';
+
+  @override
+  Widget build(BuildContext context) {
+    // Track on first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      locator.get<LoggingService>().track('Screen Impression', properties: {
+        'screen_name': SomeScreen.screenName,
+        'screen_class': 'SomeScreen',
+      });
+    });
+
+    return Scaffold(...);
+  }
+}
+```
+
+---
+
+## Button Tracking Implementation Patterns
+
+### Pattern 1: PrimaryButton (Existing Component)
+
+```dart
+PrimaryButton(
+  width: double.infinity,
+  height: 56,
+  label: 'Create Round',
+  onPressed: () {
+    locator.get<LoggingService>().track('Button Tapped', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'button_name': 'Create Round',
+      'element_type': 'button',
+    });
+
+    _createRound();
+  },
+)
+```
+
+### Pattern 2: IconButton
+
+```dart
+IconButton(
+  icon: const Icon(Icons.settings),
+  onPressed: () {
+    locator.get<LoggingService>().track('Button Tapped', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'button_name': 'Settings',
+      'element_type': 'icon',
+      'button_location': 'header',
+    });
+
+    _navigateToSettings();
+  },
+)
+```
+
+### Pattern 3: Card/List Item Tap
+
+```dart
+GestureDetector(
+  onTap: () {
+    locator.get<LoggingService>().track('Button Tapped', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'button_name': 'Round Card',
+      'element_type': 'card',
+      'round_id': round.id,
+      'course_name': round.courseName,
+      'item_index': index,
+    });
+
+    _viewRound(round);
+  },
+  child: RoundCard(round: round),
+)
+```
+
+### Pattern 4: FloatingActionButton
+
+```dart
+FloatingActionButton(
+  onPressed: () {
+    locator.get<LoggingService>().track('Button Tapped', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'button_name': 'Add Round',
+      'element_type': 'fab',
+      'button_location': 'floating',
+    });
+
+    _showRecordOptions();
+  },
+  child: const Icon(Icons.add),
+)
+```
+
+---
+
+## Modal Tracking Patterns
+
+### Pattern 1: Bottom Sheet
+
+```dart
+void _showRoundOptions() {
+  locator.get<LoggingService>().track('Modal Opened', properties: {
+    'screen_name': RoundHistoryScreen.screenName,
+    'modal_type': 'bottom_sheet',
+    'modal_name': 'Round Options',
+    'trigger_source': 'button',
+  });
+
+  showModalBottomSheet(
+    context: context,
+    builder: (context) => RoundOptionsSheet(),
+  );
+}
+```
+
+### Pattern 2: Dialog
+
+```dart
+void _showDeleteConfirmation() {
+  locator.get<LoggingService>().track('Modal Opened', properties: {
+    'screen_name': RoundHistoryScreen.screenName,
+    'modal_type': 'dialog',
+    'modal_name': 'Delete Confirmation',
+    'trigger_source': 'button',
+  });
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(...),
+  );
+}
+```
+
+### Pattern 3: Full-Screen Modal
+
+```dart
+void _openCourseSearch() {
+  locator.get<LoggingService>().track('Modal Opened', properties: {
+    'screen_name': RecordRoundScreen.screenName,
+    'modal_type': 'full_screen_modal',
+    'modal_name': 'Course Search',
+    'trigger_source': 'button',
+  });
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (context) => CourseSearchScreen(),
+    ),
+  );
+}
+```
+
+---
+
+## Tab Tracking Patterns
+
+### Pattern 1: Bottom Navigation (MainWrapper)
+
+```dart
+class _MainWrapperState extends State<MainWrapper> {
+  int _currentIndex = 0;
+
+  void _onTabChanged(int index) {
+    final String currentTabName = _getTabName(_currentIndex);
+    final String newTabName = _getTabName(index);
+
+    locator.get<LoggingService>().track('Tab Changed', properties: {
+      'screen_name': 'Main Navigation',
+      'tab_index': index,
+      'tab_name': newTabName,
+      'previous_tab_index': _currentIndex,
+      'previous_tab_name': currentTabName,
+      'tab_context': 'bottom_navigation',
+    });
+
+    setState(() => _currentIndex = index);
+  }
+
+  String _getTabName(int index) {
+    switch (index) {
+      case 0: return 'Home';
+      case 1: return 'Stats';
+      case 2: return 'Form Analysis';
+      case 3: return 'Settings';
+      default: return 'Unknown';
+    }
+  }
+}
+```
+
+### Pattern 2: Screen Tabs (RoundReviewScreen)
+
+```dart
+class _RoundReviewScreenState extends State<RoundReviewScreen> {
+  int _currentTabIndex = 0;
+
+  void _onTabChanged(int index) {
+    locator.get<LoggingService>().track('Tab Changed', properties: {
+      'screen_name': RoundReviewScreen.screenName,
+      'tab_index': index,
+      'tab_name': _tabs[index].name,
+      'previous_tab_index': _currentTabIndex,
+      'previous_tab_name': _tabs[_currentTabIndex].name,
+      'tab_context': 'screen_tabs',
+      'round_id': widget.round.id,
+    });
+
+    setState(() => _currentTabIndex = index);
+  }
+}
+```
+
+---
+
+## Implementation Checklist
+
+When implementing analytics in a screen:
+
+### Required Steps
+
+1. **Add screen constants:**
+   - [ ] Add `static const String screenName = '...'`
+   - [ ] Add `static const String routeName = '/...'`
+
+2. **Track screen impression:**
+   - [ ] Add tracking in `initState()` (StatefulWidget) or `build()` (StatelessWidget)
+   - [ ] Include `screen_name` and `screen_class` properties
+
+3. **Track all button/tap interactions:**
+   - [ ] Add tracking to every `onPressed`, `onTap`, `onLongPress`
+   - [ ] Include `screen_name`, `button_name`, `element_type`
+   - [ ] Add context properties (round_id, course_name, etc.) where relevant
+
+4. **Track modals:**
+   - [ ] Add tracking before showing bottom sheets
+   - [ ] Add tracking before showing dialogs
+   - [ ] Add tracking before full-screen modals
+   - [ ] Include `modal_type`, `modal_name`, `trigger_source`
+
+5. **Track tab changes:**
+   - [ ] Add tracking to tab change handlers
+   - [ ] Include current and previous tab info
+
+### Optional Context Properties
+
+Add these when relevant:
+- [ ] `round_id` - When viewing/editing a specific round
+- [ ] `course_name` - When viewing/editing a specific course
+- [ ] `item_index` - When tapping list items
+- [ ] `previous_screen` - When navigating between screens
+
+---
+
+## Property Naming Standards
+
+### Casing
+- Use **snake_case** for all property keys: `screen_name`, `button_name`, `tab_index`
+- Use **Title Case** for human-readable values: `'Round History'`, `'Create Round'`
+
+### Common Property Names
+
+**Screen Context:**
+- `screen_name` - Current screen (from static const)
+- `screen_class` - Widget class name
+- `previous_screen` - Previous screen name
+
+**Action Context:**
+- `button_name` - Button label or description
+- `element_type` - Type of interactive element
+- `button_location` - Where on screen
+
+**Navigation Context:**
+- `tab_index` - Tab number (0-based)
+- `tab_name` - Tab label
+- `tab_context` - Tab location ('bottom_navigation', 'screen_tabs')
+- `from_screen` - Origin screen
+- `to_screen` - Destination screen
+
+**Content Context:**
+- `round_id` - Round identifier
+- `course_name` - Course name
+- `item_index` - List position
+- `modal_name` - Modal identifier
+- `modal_type` - Modal style
+
+### Reserved Properties (Auto-Added by LoggingService)
+
+**NEVER manually add these:**
+- `user_id` - Auto-added from AuthService
+- `timestamp` - Auto-added as ISO8601
+
+---
+
+## Mixpanel Dashboard Organization
+
+### Recommended Report Structure
+
+**1. Screen Funnel**
+- Event: `Screen Impression`
+- Group by: `screen_name`
+- Shows user flow through app
+
+**2. Button Engagement**
+- Event: `Button Tapped`
+- Breakdown by: `button_name`, `screen_name`
+- Shows most-used features
+
+**3. Tab Usage**
+- Event: `Tab Changed`
+- Breakdown by: `tab_name`, `tab_context`
+- Shows navigation patterns
+
+**4. Modal Engagement**
+- Event: `Modal Opened`
+- Breakdown by: `modal_name`, `modal_type`
+- Shows feature discovery
+
+### Key Metrics to Track
+
+1. **Daily Active Users (DAU)** - Unique users with any event
+2. **Screen Impressions per User** - Average screens viewed per session
+3. **Most Popular Screens** - `Screen Impression` grouped by `screen_name`
+4. **Top Actions** - `Button Tapped` grouped by `button_name`
+5. **Tab Switching Rate** - `Tab Changed` frequency
+6. **Modal Conversion** - Users who open modals vs complete actions
+
+### Segmentation Strategies
+
+**By Screen:**
+```
+Event: Button Tapped
+Filter: screen_name = "Round History"
+Group by: button_name
+```
+
+**By Action:**
+```
+Event: Button Tapped
+Filter: button_name = "Create Round"
+Group by: screen_name
+```
+
+**Funnel Example:**
+```
+1. Screen Impression (screen_name = "Round History")
+2. Button Tapped (button_name = "Create Round")
+3. Screen Impression (screen_name = "Record Round")
+4. Button Tapped (button_name = "Save Round")
+5. Screen Impression (screen_name = "Round Review")
+```
+
+---
+
+## Testing Your Implementation
+
+### Manual Testing Checklist
+
+1. **Check console logs:**
+   - [ ] Run the app in debug mode
+   - [ ] Navigate through screens
+   - [ ] Verify console shows: `[LoggingService] Tracking: Screen Impression`
+   - [ ] Verify console shows: `[LoggingService] Tracking: Button Tapped`
+
+2. **Check Mixpanel dashboard:**
+   - [ ] Wait 1-2 minutes for events to appear
+   - [ ] Go to Mixpanel → Events
+   - [ ] Verify events appear with correct properties
+   - [ ] Verify `user_id` is populated (if logged in)
+   - [ ] Verify `timestamp` is correct
+
+3. **Test edge cases:**
+   - [ ] Test with no internet (events should queue)
+   - [ ] Test after logout (user_id should clear)
+   - [ ] Test rapid taps (should track all)
+
+### Common Issues
+
+**Events not appearing in Mixpanel:**
+- Check `.env` has correct `MIXPANEL_PROJECT_TOKEN`
+- Check console for `[MixpanelProvider] Successfully initialized`
+- Check internet connection
+- Wait 1-2 minutes for events to sync
+
+**Missing user_id:**
+- Ensure user is logged in
+- Check `AuthService.currentUid` returns a value
+- Verify `LoggingService.initialize()` was called after login
+
+**Duplicate screen impressions:**
+- Use `initState()` for StatefulWidget, not `build()`
+- For StatelessWidget, use `addPostFrameCallback` to track once
+
+---
+
+## Quick Reference: All Screen Names
+
+Based on codebase exploration, here are the screens that need constants added:
+
+### Authentication Screens
+- `LandingScreen` → screenName: `'Landing'`, routeName: `'/landing'`
+- `LoginScreen` → screenName: `'Login'`, routeName: `'/login'`
+- `SignUpScreen` → screenName: `'Sign Up'`, routeName: `'/sign-up'`
+
+### Onboarding
+- `OnboardingScreen` → screenName: `'Onboarding'`, routeName: `'/onboarding'`
+- `FeatureWalkthroughScreen` → screenName: `'Feature Walkthrough'`, routeName: `'/feature-walkthrough'`
+
+### Main Navigation Screens
+- `RoundHistoryScreen` → screenName: `'Round History'`, routeName: `'/round-history'`
+- `StatsScreen` → screenName: `'Stats'`, routeName: `'/stats'`
+- `FormAnalysisHistoryScreen` → screenName: `'Form Analysis History'`, routeName: `'/form-analysis-history'`
+- `SettingsScreen` → screenName: `'Settings'`, routeName: `'/settings'`
+
+### Round Management
+- `RecordRoundScreen` → screenName: `'Record Round'`, routeName: `'/record-round'`
+- `RecordRoundStepsScreen` → screenName: `'Record Round Steps'`, routeName: `'/record-round-steps'`
+- `RoundProcessingLoadingScreen` → screenName: `'Round Processing'`, routeName: `'/round-processing'`
+- `RoundReviewScreen` → screenName: `'Round Review'`, routeName: `'/round-review'`
+- `ImportScoreScreen` → screenName: `'Import Score'`, routeName: `'/import-score'`
+
+### Form Analysis
+- `FormAnalysisRecordingScreen` → screenName: `'Form Analysis Recording'`, routeName: `'/form-analysis-recording'`
+- `FormAnalysisDetailScreen` → screenName: `'Form Analysis Detail'`, routeName: `'/form-analysis-detail'`
+
+### Courses
+- `CreateCourseScreen` → screenName: `'Create Course'`, routeName: `'/create-course'`
+
+### Round Review Tabs & Details
+- `CoachTab` → screenName: `'Coach Tab'`, routeName: `'/coach-tab'`
+- `CourseTab` → screenName: `'Course Tab'`, routeName: `'/course-tab'`
+- `ScoreDetailScreen` → screenName: `'Score Detail'`, routeName: `'/score-detail'`
+- `DrivesTab` → screenName: `'Drives Tab'`, routeName: `'/drives-tab'`
+- `DrivingStatDetailScreen` → screenName: `'Driving Stat Detail'`, routeName: `'/driving-stat-detail'`
+- `ThrowTypeDetailScreen` → screenName: `'Throw Type Detail'`, routeName: `'/throw-type-detail'`
+- `GenericStatsScreen` → screenName: `'Generic Stats'`, routeName: `'/generic-stats'`
+- `MistakesTab` → screenName: `'Mistakes Tab'`, routeName: `'/mistakes-tab'`
+- `PsychTab` → screenName: `'Psych Tab'`, routeName: `'/psych-tab'`
+- `PuttingTab` → screenName: `'Putting Tab'`, routeName: `'/putting-tab'`
+- `RoastTab` → screenName: `'Roast Tab'`, routeName: `'/roast-tab'`
+- `ScoresTab` → screenName: `'Scores Tab'`, routeName: `'/scores-tab'`
+- `SkillsTab` → screenName: `'Skills Tab'`, routeName: `'/skills-tab'`
+- `SummaryTab` → screenName: `'Summary Tab'`, routeName: `'/summary-tab'`
+
+### Other
+- `ForceUpgradeScreen` → screenName: `'Force Upgrade'`, routeName: `'/force-upgrade'`
+- `RoundStoryView` → screenName: `'Round Story'`, routeName: `'/round-story'`
+- `ShareJudgmentPreviewScreen` → screenName: `'Share Judgment Preview'`, routeName: `'/share-judgment-preview'`
+- `ShareStoryPreviewScreen` → screenName: `'Share Story Preview'`, routeName: `'/share-story-preview'`
+- `VoiceDetailInputScreen` → screenName: `'Voice Detail Input'`, routeName: `'/voice-detail-input'`
+
+---
+
+## Example: Full Screen Implementation
+
+Here's a complete example of a screen with proper analytics:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+
+class RoundHistoryScreen extends StatefulWidget {
+  const RoundHistoryScreen({super.key});
+
+  // REQUIRED: Screen constants for analytics and routing
+  static const String screenName = 'Round History';
+  static const String routeName = '/round-history';
+
+  @override
+  State<RoundHistoryScreen> createState() => _RoundHistoryScreenState();
+}
+
+class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Track screen impression
+    locator.get<LoggingService>().track('Screen Impression', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'screen_class': 'RoundHistoryScreen',
+    });
+  }
+
+  void _createRound() {
+    locator.get<LoggingService>().track('Button Tapped', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'button_name': 'Create Round',
+      'element_type': 'fab',
+      'button_location': 'floating',
+    });
+
+    // Navigate to record round
+    Navigator.pushNamed(context, RecordRoundScreen.routeName);
+  }
+
+  void _viewRound(String roundId, String courseName, int index) {
+    locator.get<LoggingService>().track('Button Tapped', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'button_name': 'Round Card',
+      'element_type': 'card',
+      'round_id': roundId,
+      'course_name': courseName,
+      'item_index': index,
+    });
+
+    // Navigate to round review
+    Navigator.pushNamed(
+      context,
+      RoundReviewScreen.routeName,
+      arguments: roundId,
+    );
+  }
+
+  void _showRoundOptions() {
+    locator.get<LoggingService>().track('Modal Opened', properties: {
+      'screen_name': RoundHistoryScreen.screenName,
+      'modal_type': 'bottom_sheet',
+      'modal_name': 'Round Options',
+      'trigger_source': 'button',
+    });
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => const RoundOptionsSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Round History'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              locator.get<LoggingService>().track('Button Tapped', properties: {
+                'screen_name': RoundHistoryScreen.screenName,
+                'button_name': 'Settings',
+                'element_type': 'icon',
+                'button_location': 'header',
+              });
+
+              Navigator.pushNamed(context, SettingsScreen.routeName);
+            },
+          ),
+        ],
+      ),
+      body: ListView.builder(
+        itemCount: rounds.length,
+        itemBuilder: (context, index) {
+          final round = rounds[index];
+          return GestureDetector(
+            onTap: () => _viewRound(round.id, round.courseName, index),
+            child: RoundCard(round: round),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _createRound,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+```
+
+---
+
+## Summary
+
+This convention provides:
+- ✅ **Consistent event naming** across the entire app
+- ✅ **Standardized properties** for easy Mixpanel segmentation
+- ✅ **Screen identification** via required constants
+- ✅ **Comprehensive tracking** of all user interactions
+- ✅ **Clear implementation patterns** for common scenarios
+- ✅ **Testable tracking** with console logging
+- ✅ **Dashboard-ready events** optimized for Mixpanel analysis
+
+All events automatically include `user_id` and `timestamp`, and every screen must have `screenName` and `routeName` constants for consistency.

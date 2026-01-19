@@ -314,7 +314,7 @@ class _MainWrapperState extends State<MainWrapper> {
   Widget _buildSettingsButton(BuildContext context) {
     return Center(
       child: IconButton(
-        icon: const Icon(Icons.settings, size: 24),
+        icon: const Icon(Icons.person, size: 24),
         onPressed: () {
           HapticFeedback.lightImpact();
           pushCupertinoRoute(context, const SettingsScreen());

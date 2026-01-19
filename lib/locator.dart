@@ -17,6 +17,10 @@ import 'package:turbo_disc_golf/services/gemini_service.dart';
 import 'package:turbo_disc_golf/services/chatgpt_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/logging/mixpanel_logging_provider.dart';
+import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
+import 'package:turbo_disc_golf/services/error_logging/firebase_crashlytics_provider.dart';
 import 'package:turbo_disc_golf/services/round_analysis/disc_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
@@ -42,6 +46,38 @@ Future<void> setUpLocator() async {
   await dotenv.load();
   final String? geminiApiKey = dotenv.env['GEMINI_API_KEY'];
   final String? openaiApiKey = dotenv.env['OPENAI_API_KEY'];
+  final String? mixpanelToken = dotenv.env['MIXPANEL_PROJECT_TOKEN'];
+
+  // Initialize Mixpanel provider
+  final MixpanelLoggingProvider mixpanelProvider = MixpanelLoggingProvider();
+  await mixpanelProvider.initialize(
+    projectToken: mixpanelToken ?? '',
+    trackAutomaticEvents: true,
+  );
+
+  // Register LoggingService with providers
+  final LoggingService loggingService = LoggingService(
+    providers: [mixpanelProvider],
+  );
+  locator.registerSingleton<LoggingService>(loggingService);
+
+  // Initialize the logging service
+  await loggingService.initialize();
+
+  // Initialize Firebase Crashlytics provider
+  final FirebaseCrashlyticsProvider crashlyticsProvider =
+      FirebaseCrashlyticsProvider();
+  await crashlyticsProvider.initialize();
+
+  // Create and register ErrorLoggingService
+  final ErrorLoggingService errorLoggingService = ErrorLoggingService(
+    providers: [crashlyticsProvider],
+  );
+  locator.registerSingleton<ErrorLoggingService>(errorLoggingService);
+
+  // Initialize the error logging service
+  await errorLoggingService.initialize();
+
   // Register core services first
   locator.registerSingleton<SharedPreferencesService>(
     SharedPreferencesService(),

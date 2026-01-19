@@ -1,10 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/screens/auth/components/c1x_preview_card.dart';
+import 'package:turbo_disc_golf/screens/auth/components/form_analysis_preview_card.dart';
+import 'package:turbo_disc_golf/screens/auth/components/judge_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/landing_background.dart';
 import 'package:turbo_disc_golf/screens/auth/components/landing_preview_card.dart';
+import 'package:turbo_disc_golf/screens/auth/components/record_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/shot_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/story_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
@@ -24,6 +31,10 @@ class _LandingScreenState extends State<LandingScreen>
   late Animation<double> _logoScale;
   late Animation<double> _taglineOpacity;
   late Animation<double> _buttonsOpacity;
+  late PageController _pageController;
+  late Timer _autoScrollTimer;
+  int _currentPage = 0;
+  static const int _autoScrollDuration = 4000; // 4 seconds per page
 
   @override
   void initState() {
@@ -74,10 +85,22 @@ class _LandingScreenState extends State<LandingScreen>
     );
 
     _mainController.forward();
+
+    // Initialize PageController
+    _pageController = PageController();
+
+    // Start auto-scroll after initial animations complete
+    Future.delayed(const Duration(milliseconds: 3000), () {
+      if (mounted) {
+        _startAutoScroll();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _autoScrollTimer.cancel();
+    _pageController.dispose();
     _mainController.dispose();
     // Reset status bar style when leaving
     SystemChrome.setSystemUIOverlayStyle(
@@ -97,26 +120,17 @@ class _LandingScreenState extends State<LandingScreen>
         children: [
           const LandingBackground(),
           SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 24),
-                _buildHeader(),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 8),
-                        _buildCards(),
-                        const SizedBox(height: 24),
-                        _buildButtons(),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 32),
+                  Expanded(child: _buildCards()),
+                  const SizedBox(height: 16),
+                  _buildButtons(),
+                ],
+              ),
             ),
           ),
         ],
@@ -130,10 +144,7 @@ class _LandingScreenState extends State<LandingScreen>
       builder: (context, child) {
         return Opacity(
           opacity: _logoOpacity.value,
-          child: Transform.scale(
-            scale: _logoScale.value,
-            child: child,
-          ),
+          child: Transform.scale(scale: _logoScale.value, child: child),
         );
       },
       child: Column(
@@ -185,36 +196,97 @@ class _LandingScreenState extends State<LandingScreen>
   }
 
   Widget _buildCards() {
+    // Define pages - each page has 2 cards
+    final List<List<Map<String, dynamic>>> pages = [
+      // Page 1: Recording + Putting
+      [
+        {
+          'card': const RecordPreviewCard(),
+          'color': RecordPreviewCard.accentColor,
+          'direction': SlideDirection.left,
+          'floatOffset': 0.0,
+        },
+        {
+          'card': const C1xPreviewCard(),
+          'color': C1xPreviewCard.accentColor,
+          'direction': SlideDirection.right,
+          'floatOffset': 0.33,
+        },
+      ],
+      // Page 2: Story + Judge
+      [
+        {
+          'card': const StoryPreviewCard(),
+          'color': StoryPreviewCard.accentColor,
+          'direction': SlideDirection.left,
+          'floatOffset': 0.0,
+        },
+        {
+          'card': const JudgePreviewCard(),
+          'color': JudgePreviewCard.accentColor,
+          'direction': SlideDirection.right,
+          'floatOffset': 0.33,
+        },
+      ],
+      // Page 3: Form Analysis + Shot Analysis
+      [
+        {
+          'card': const FormAnalysisPreviewCard(),
+          'color': FormAnalysisPreviewCard.accentColor,
+          'direction': SlideDirection.left,
+          'floatOffset': 0.0,
+        },
+        {
+          'card': const ShotPreviewCard(),
+          'color': ShotPreviewCard.accentColor,
+          'direction': SlideDirection.right,
+          'floatOffset': 0.33,
+        },
+      ],
+    ];
+
     return Column(
       children: [
-        // Card 1: C1X Putting - slides from left (800-1300ms)
-        LandingPreviewCard(
-          accentColor: C1xPreviewCard.accentColor,
-          slideDirection: SlideDirection.left,
-          animationController: _mainController,
-          slideInterval: const Interval(0.267, 0.433, curve: Curves.easeOutCubic),
-          floatPhaseOffset: 0.0,
-          child: const C1xPreviewCard(),
+        // PageView expands to fill available space
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            itemCount: pages.length,
+            itemBuilder: (context, pageIndex) {
+              return Column(
+                children: pages[pageIndex].map<Widget>((cardData) {
+                  return Expanded(
+                    child: LandingPreviewCard(
+                      accentColor: cardData['color'],
+                      slideDirection: cardData['direction'],
+                      animationController: _mainController,
+                      slideInterval: const Interval(
+                        0.267,
+                        0.433,
+                        curve: Curves.easeOutCubic,
+                      ),
+                      floatPhaseOffset: cardData['floatOffset'],
+                      child: cardData['card'],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
         ),
-
-        // Card 2: Story - slides from right (1200-1700ms)
-        LandingPreviewCard(
-          accentColor: StoryPreviewCard.accentColor,
-          slideDirection: SlideDirection.right,
-          animationController: _mainController,
-          slideInterval: const Interval(0.4, 0.567, curve: Curves.easeOutCubic),
-          floatPhaseOffset: 0.33,
-          child: const StoryPreviewCard(),
-        ),
-
-        // Card 3: Shot Analysis - slides from left (1600-2100ms)
-        LandingPreviewCard(
-          accentColor: ShotPreviewCard.accentColor,
-          slideDirection: SlideDirection.left,
-          animationController: _mainController,
-          slideInterval: const Interval(0.533, 0.7, curve: Curves.easeOutCubic),
-          floatPhaseOffset: 0.66,
-          child: const ShotPreviewCard(),
+        const SizedBox(height: 16),
+        // Page indicator
+        SmoothPageIndicator(
+          controller: _pageController,
+          count: pages.length,
+          effect: WormEffect(
+            dotColor: Colors.white.withValues(alpha: 0.3),
+            activeDotColor: const Color(0xFF4ECDC4),
+            dotHeight: 8,
+            dotWidth: 8,
+            spacing: 8,
+          ),
         ),
       ],
     );
@@ -226,52 +298,49 @@ class _LandingScreenState extends State<LandingScreen>
       builder: (context, child) {
         return Opacity(opacity: _buttonsOpacity.value, child: child);
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          children: [
-            PrimaryButton(
-              width: double.infinity,
-              height: 56,
-              label: 'Get Started',
-              labelColor: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 17,
-              gradientBackground: const [Color(0xFF4ECDC4), Color(0xFF44CF9C)],
-              onPressed: _navigateToSignUp,
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: _navigateToLogin,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                color: Colors.transparent,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Already a member? ',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 15,
-                      ),
+      child: Column(
+        children: [
+          PrimaryButton(
+            width: double.infinity,
+            height: 56,
+            label: 'Get Started',
+            labelColor: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 17,
+            gradientBackground: const [Color(0xFF4ECDC4), Color(0xFF44CF9C)],
+            onPressed: _navigateToSignUp,
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: _navigateToLogin,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              color: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Have an account? ',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 15,
                     ),
-                    const Text(
-                      'Sign In',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                        decorationColor: Colors.white,
-                      ),
+                  ),
+                  const Text(
+                    'Sign In',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.white,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -290,5 +359,29 @@ class _LandingScreenState extends State<LandingScreen>
       context,
       CupertinoPageRoute(builder: (context) => const LoginScreen()),
     );
+  }
+
+  void _startAutoScroll() {
+    _autoScrollTimer = Timer.periodic(
+      const Duration(milliseconds: _autoScrollDuration),
+      (timer) {
+        if (_pageController.hasClients && mounted) {
+          final int nextPage = (_currentPage + 1) % 3; // 3 total pages
+          _pageController.animateToPage(
+            nextPage,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+    );
+  }
+
+  void _onPageChanged(int index) {
+    setState(() => _currentPage = index);
+
+    // Reset auto-scroll timer on manual swipe
+    _autoScrollTimer.cancel();
+    _startAutoScroll();
   }
 }

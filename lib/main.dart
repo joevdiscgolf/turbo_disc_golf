@@ -16,6 +16,7 @@ import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
@@ -26,6 +27,7 @@ import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
+import 'package:turbo_disc_golf/state/user_data_cubit.dart';
 import 'package:turbo_disc_golf/utils/theme/theme_data.dart';
 
 Future<void> main() async {
@@ -69,6 +71,7 @@ class _MyAppState extends State<MyApp> {
   late final RoundReviewCubit _roundReviewCubit;
   late final RecordRoundCubit _recordRoundCubit;
   late final CreateCourseCubit _createCourseCubit;
+  late final UserDataCubit _userDataCubit;
 
   @override
   void initState() {
@@ -88,6 +91,9 @@ class _MyAppState extends State<MyApp> {
     // Warm up voice recognition (fire and forget - don't block app startup)
     _recordRoundCubit = RecordRoundCubit();
     _createCourseCubit = CreateCourseCubit();
+    _userDataCubit = UserDataCubit();
+    // Load user data on app startup (fire and forget)
+    _userDataCubit.loadUserData();
 
     // Centralized list of ALL components (cubits + services) that need logout cleanup
     final List<ClearOnLogoutProtocol> clearOnLogoutComponents = [
@@ -96,6 +102,7 @@ class _MyAppState extends State<MyApp> {
       _roundConfirmationCubit,
       _roundReviewCubit,
       _recordRoundCubit,
+      _userDataCubit,
 
       // Services from locator
       locator.get<RoundParser>(),
@@ -104,6 +111,7 @@ class _MyAppState extends State<MyApp> {
       locator.get<BaseVoiceRecordingService>(),
       locator.get<CourseSearchService>(),
       locator.get<VideoFormAnalysisService>(),
+      locator.get<LoggingService>(),
       AnimationStateService.instance,
     ];
 
@@ -119,6 +127,7 @@ class _MyAppState extends State<MyApp> {
     _roundConfirmationCubit.close();
     _roundReviewCubit.close();
     _recordRoundCubit.close();
+    _userDataCubit.close();
     _router.dispose();
     super.dispose();
   }
@@ -135,6 +144,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider<RoundReviewCubit>.value(value: _roundReviewCubit),
         BlocProvider<RecordRoundCubit>.value(value: _recordRoundCubit),
         BlocProvider<CreateCourseCubit>.value(value: _createCourseCubit),
+        BlocProvider<UserDataCubit>.value(value: _userDataCubit),
       ],
       child: ChangeNotifierProvider<RoundParser>.value(
         value: locator.get<RoundParser>(),

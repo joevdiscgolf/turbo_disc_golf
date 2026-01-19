@@ -109,7 +109,10 @@ class _LandingPreviewCardState extends State<LandingPreviewCard>
             ),
           ],
         ),
-        child: widget.child,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: widget.child,
+        ),
       ),
     );
   }
