@@ -505,7 +505,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
               onChanged: (value) {
                 setState(() {
                   _landingDistance = value.round();
-                  _customLandingDistanceController.text = _landingDistance.toString();
+                  _customLandingDistanceController.text = _landingDistance
+                      .toString();
                 });
               },
             ),

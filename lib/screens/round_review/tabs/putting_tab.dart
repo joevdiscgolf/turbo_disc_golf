@@ -10,7 +10,7 @@ import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 class PuttingTab extends StatelessWidget {
   static const String screenName = 'Putting';

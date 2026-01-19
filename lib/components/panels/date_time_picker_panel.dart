@@ -112,10 +112,7 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
           textTheme: Typography.blackMountainView,
         ),
         child: DefaultTextStyle(
-          style: const TextStyle(
-            color: Colors.black87,
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: Colors.black87, fontSize: 14),
           child: CalendarDatePicker(
             initialDate: _tempDate,
             firstDate: DateTime(2000),
@@ -140,10 +137,7 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
         onTap: _showTimePicker,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
@@ -165,10 +159,7 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
                 ),
               ),
               const Spacer(),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey.shade400,
-              ),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400),
             ],
           ),
         ),

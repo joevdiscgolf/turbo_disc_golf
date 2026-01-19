@@ -31,7 +31,7 @@ import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 class RoundOverviewBody extends StatefulWidget {
   final DGRound round;

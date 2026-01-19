@@ -82,10 +82,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.5),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withValues(alpha: 0.5), Colors.transparent],
           ),
         ),
         child: Row(
@@ -150,10 +147,12 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
               gradientBackground: _hasSelection
                   ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]
                   : null,
-              backgroundColor:
-                  _hasSelection ? Colors.transparent : TurbColors.gray.shade200,
-              labelColor:
-                  _hasSelection ? Colors.white : TurbColors.gray.shade400,
+              backgroundColor: _hasSelection
+                  ? Colors.transparent
+                  : TurbColors.gray.shade200,
+              labelColor: _hasSelection
+                  ? Colors.white
+                  : TurbColors.gray.shade400,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               disabled: !_hasSelection,
@@ -231,10 +230,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
             Expanded(
               child: Text(
                 'Tap on the map to place a pin at your course location',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: TurbColors.gray.shade700,
-                ),
+                style: TextStyle(fontSize: 14, color: TurbColors.gray.shade700),
               ),
             ),
           ],

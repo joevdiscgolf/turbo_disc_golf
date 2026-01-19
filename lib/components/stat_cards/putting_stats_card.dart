@@ -4,7 +4,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
-import 'package:turbo_disc_golf/widgets/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 
 /// Compact putting stats card showing 3 putting zones
 ///
@@ -16,11 +16,7 @@ class PuttingStatsCard extends StatefulWidget {
   final DGRound round;
   final VoidCallback? onTap;
 
-  const PuttingStatsCard({
-    super.key,
-    required this.round,
-    this.onTap,
-  });
+  const PuttingStatsCard({super.key, required this.round, this.onTap});
 
   @override
   State<PuttingStatsCard> createState() => _PuttingStatsCardState();
@@ -168,10 +164,7 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
     );
 
     if (useHeroAnimationsForRoundReview) {
-      return Hero(
-        tag: heroTag,
-        child: indicator,
-      );
+      return Hero(tag: heroTag, child: indicator);
     }
 
     return indicator;

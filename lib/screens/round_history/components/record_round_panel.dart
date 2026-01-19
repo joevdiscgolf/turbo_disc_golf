@@ -346,8 +346,8 @@ class _RecordRoundPanelState extends State<RecordRoundPanel> {
 
                                   if (context.mounted) {
                                     // Update cubit state with test data before navigating
-                                    final RecordRoundCubit cubit =
-                                        context.read<RecordRoundCubit>();
+                                    final RecordRoundCubit cubit = context
+                                        .read<RecordRoundCubit>();
                                     cubit.startRecordingRound();
                                     cubit.setSelectedCourse(testCourse);
                                     cubit.setHoleDescription(
