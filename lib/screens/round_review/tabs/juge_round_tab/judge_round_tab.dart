@@ -96,7 +96,6 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     _logger = loggingService.withBaseProperties({
       'screen_name': JudgeRoundTab.tabName,
     });
-    _logger.logScreenImpression('JudgeRoundTab');
 
     _currentRound = widget.round;
     _confettiController = ConfettiController(

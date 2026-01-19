@@ -72,7 +72,6 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     _logger = loggingService.withBaseProperties({
       'screen_name': RoundStoryTab.tabName,
     });
-    _logger.logScreenImpression('RoundStoryTab');
 
     // Initialize local state with widget round
     _currentRound = widget.round;

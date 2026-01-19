@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/holes_grid.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_kpi_card.dart';
-import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
 
@@ -22,17 +20,10 @@ class CourseTab extends StatefulWidget {
 
 class _CourseTabState extends State<CourseTab> {
   late RoundReviewCubit _roundReviewCubit;
-  late final LoggingServiceBase _logger;
 
   @override
   void initState() {
     super.initState();
-    final LoggingService loggingService = locator.get<LoggingService>();
-    _logger = loggingService.withBaseProperties({
-      'screen_name': CourseTab.tabName,
-    });
-    _logger.logScreenImpression('CourseTab');
-
     _roundReviewCubit = BlocProvider.of<RoundReviewCubit>(context);
 
     // Start round review with the current round
