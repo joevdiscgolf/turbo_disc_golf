@@ -534,7 +534,7 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
           child: Column(
             children: [
               const Text(
-                'See Every Frame, Perfect Every Throw',
+                'See every frame, perfect every throw',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
