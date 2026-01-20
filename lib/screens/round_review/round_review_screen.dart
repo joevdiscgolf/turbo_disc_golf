@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
@@ -171,19 +172,12 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
       // Navigate back to history
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Round deleted successfully')),
-        );
+        locator.get<ToastService>().showSuccess('Round deleted successfully');
       }
     } else {
       // Show error
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to delete round. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        locator.get<ToastService>().showError('Failed to delete round. Please try again.');
       }
     }
   }

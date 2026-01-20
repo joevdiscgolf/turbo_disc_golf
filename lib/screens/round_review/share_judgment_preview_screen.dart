@@ -9,6 +9,8 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 
 /// Full-screen preview of the judgment share card.
 ///
@@ -83,11 +85,12 @@ class _ShareJudgmentPreviewScreenState
 
     if (!success && mounted) {
       Clipboard.setData(ClipboardData(text: caption));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copied to clipboard! Ready to share.'),
-          duration: Duration(seconds: 2),
-        ),
+      locator.get<ToastService>().show(
+        message: 'Copied to clipboard! Ready to share.',
+        type: ToastType.success,
+        duration: const Duration(seconds: 2),
+        icon: Icons.check,
+        iconSize: 18,
       );
     }
 

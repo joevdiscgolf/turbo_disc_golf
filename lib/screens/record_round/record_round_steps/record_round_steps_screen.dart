@@ -26,6 +26,7 @@ import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -1635,12 +1636,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       }
 
       if (holeMetadata.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not parse scorecard. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        locator.get<ToastService>().showError('Could not parse scorecard. Please try again.');
         return;
       }
 
@@ -1652,12 +1648,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         properties: {'holes_imported': holeMetadata.length},
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Imported ${holeMetadata.length} hole scores'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      locator.get<ToastService>().showSuccess('Imported ${holeMetadata.length} hole scores');
     } catch (e) {
       if (!mounted) return;
       setState(() => _isParsingScorecard = false);
@@ -1667,12 +1658,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         properties: {'error': e.toString()},
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error parsing scorecard: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      locator.get<ToastService>().showError('Error parsing scorecard: ${e.toString()}');
     }
   }
 

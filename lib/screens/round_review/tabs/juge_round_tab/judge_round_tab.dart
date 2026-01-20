@@ -19,14 +19,13 @@ import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
-import 'package:turbo_disc_golf/services/judgment_prompt_service.dart';
-import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
+import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
@@ -306,43 +305,19 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
       if (locator.get<FeatureFlagService>().useMockJudgment) {
         await Future.delayed(const Duration(milliseconds: 2000));
         judgment = _isGlaze ? _getMockGlazeJudgment() : _getMockRoastJudgment();
-      } else if (locator
-          .get<FeatureFlagService>()
-          .generateAiContentFromBackend) {
-        debugPrint('using backend to generate roast');
-        // Use backend cloud function for judgment generation
-        final RoundAnalysis? analysis = _currentRound.analysis;
-        if (analysis == null) return;
-
-        final BackendLLMService backendService = locator
-            .get<BackendLLMService>();
-
-        final GenerateRoundJudgmentResponse? response = await backendService
-            .generateRoundJudgment(
-              request: GenerateRoundJudgmentRequest(
-                round: _currentRound,
-                analysis: analysis,
-                shouldGlaze: _isGlaze,
-              ),
-            );
-
-        if (response == null || !response.success) {
-          throw Exception(
-            response?.data.error ?? 'Failed to generate judgment from backend',
-          );
-        }
-        judgment = response.data.rawResponse;
       } else {
-        // Use local LLM service
-        final JudgmentPromptService promptService = JudgmentPromptService();
-        final String prompt = promptService.buildJudgmentPrompt(
-          _currentRound,
-          _isGlaze,
-        );
-        final LLMService llmService = locator.get<LLMService>();
-        judgment = await llmService.generateContent(
-          prompt: prompt,
-          useFullModel: true,
+        // Use unified AIGenerationService (handles backend/frontend selection automatically)
+        final RoundAnalysis analysis =
+            _currentRound.analysis ??
+            RoundAnalysisGenerator.generateAnalysis(_currentRound);
+
+        final AIGenerationService aiService = locator
+            .get<AIGenerationService>();
+
+        judgment = await aiService.generateRoundJudgment(
+          round: _currentRound,
+          analysis: analysis,
+          shouldGlaze: _isGlaze,
         );
       }
 
@@ -608,11 +583,12 @@ highlightStats:
     if (!success && mounted) {
       // Fall back to clipboard if capture fails
       Clipboard.setData(ClipboardData(text: caption));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copied to clipboard! Ready to share.'),
-          duration: Duration(seconds: 2),
-        ),
+      locator.get<ToastService>().show(
+        message: 'Copied to clipboard! Ready to share.',
+        type: ToastType.success,
+        duration: const Duration(seconds: 2),
+        icon: Icons.check,
+        iconSize: 18,
       );
     }
   }

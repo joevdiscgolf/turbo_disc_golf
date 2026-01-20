@@ -13,6 +13,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/editable_hol
 import 'package:turbo_disc_golf/screens/round_processing/components/round_metadata_card.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/description_quality_analyzer.dart';
@@ -413,23 +414,13 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
 
   void _handleParseComplete(PotentialDGHole? parsedHole, int holeIndex) {
     if (parsedHole == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to parse hole'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      locator.get<ToastService>().showError('Failed to parse hole');
       return;
     }
 
     _roundConfirmationCubit.updatePotentialHole(holeIndex, parsedHole);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Hole updated successfully!'),
-        backgroundColor: Color(0xFF137e66),
-      ),
-    );
+    locator.get<ToastService>().showSuccess('Hole updated successfully!');
   }
 
   /// Get holes that have all required fields

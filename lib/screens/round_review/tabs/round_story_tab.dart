@@ -22,9 +22,11 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/struct
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/v3/structured_story_renderer_v3.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_type.dart';
+import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
-import 'package:turbo_disc_golf/services/story_generator_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -106,17 +108,14 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     });
 
     try {
-      // Get service from locator
-      final StoryGeneratorService storyService = locator
-          .get<StoryGeneratorService>();
+      // Use unified AIGenerationService - automatically handles backend/frontend
+      // selection and story version selection based on feature flags
+      final AIGenerationService aiService = locator.get<AIGenerationService>();
 
-      // Generate story based on feature flag (V3 → V2 → V1)
-      final FeatureFlagService flags = locator.get<FeatureFlagService>();
-      final AIContent? story = flags.storyV3Enabled
-          ? await storyService.generateRoundStoryV3(_currentRound) // V3
-          : (flags.storyV2Enabled
-                ? await storyService.generateRoundStoryV2(_currentRound) // V2
-                : await storyService.generateRoundStory(_currentRound)); // V1
+      final AIContent? story = await aiService.generateRoundStory(
+        round: _currentRound,
+        analysis: _analysis,
+      );
 
       if (story == null) {
         throw Exception('Failed to generate story content');
@@ -338,11 +337,12 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
     if (!success && mounted) {
       Clipboard.setData(ClipboardData(text: caption));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copied to clipboard! Ready to share.'),
-          duration: Duration(seconds: 2),
-        ),
+      locator.get<ToastService>().show(
+        message: 'Copied to clipboard! Ready to share.',
+        type: ToastType.success,
+        duration: const Duration(seconds: 2),
+        icon: Icons.check,
+        iconSize: 18,
       );
     }
   }

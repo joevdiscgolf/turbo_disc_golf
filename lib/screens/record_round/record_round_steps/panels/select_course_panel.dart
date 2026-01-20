@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/screens/create_course/create_layout_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/auth_helpers.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -393,11 +394,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
       _logger.track('Course Load Failed', properties: {'course_id': hit.id});
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to load course')));
-      }
+      locator.get<ToastService>().showError('Failed to load course');
       return;
     }
 
@@ -421,11 +418,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to load course')));
-      }
+      locator.get<ToastService>().showError('Failed to load course');
       return;
     }
 
@@ -465,11 +458,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to load course')));
-      }
+      locator.get<ToastService>().showError('Failed to load course');
       return;
     }
 
@@ -479,11 +468,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         .firstOrNull;
 
     if (layout == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Layout not found')));
-      }
+      locator.get<ToastService>().showError('Layout not found');
       return;
     }
 

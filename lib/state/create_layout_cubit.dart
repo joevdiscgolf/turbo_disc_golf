@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/create_layout_state.dart';
 
 class CreateLayoutCubit extends Cubit<CreateLayoutState> {
@@ -254,9 +255,7 @@ class CreateLayoutCubit extends Cubit<CreateLayoutState> {
 
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Parsed ${metadata.length} holes')),
-      );
+      locator.get<ToastService>().showInfo('Parsed ${metadata.length} holes');
     } catch (e) {
       debugPrint('Error in pickAndParseImage: $e');
       emit(

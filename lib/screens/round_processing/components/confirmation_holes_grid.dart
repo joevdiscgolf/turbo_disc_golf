@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -227,12 +229,7 @@ class _HoleGridItemState extends State<_HoleGridItem> {
   /// Panel has already popped itself, we just sync the result
   void _handleParseComplete(PotentialDGHole? parsedHole, int holeIndex) {
     if (parsedHole == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to parse hole'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      locator.get<ToastService>().showError('Failed to parse hole');
       return;
     }
 
@@ -247,12 +244,7 @@ class _HoleGridItemState extends State<_HoleGridItem> {
     ).updatePotentialHole(holeIndex, parsedHole);
 
     // Show success
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Hole updated successfully!'),
-        backgroundColor: Color(0xFF137e66),
-      ),
-    );
+    locator.get<ToastService>().showSuccess('Hole updated successfully!');
   }
 
   @override

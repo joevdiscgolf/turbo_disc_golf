@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/holes_section.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/layout_info_section.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/create_layout_cubit.dart';
 import 'package:turbo_disc_golf/state/create_layout_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -220,14 +221,10 @@ class _CreateLayoutSheetState extends State<CreateLayoutSheet> {
           widget.onLayoutSaved(layout);
 
           // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                _isEditMode
-                    ? 'Layout "${layout.name}" updated!'
-                    : 'Layout "${layout.name}" created!',
-              ),
-            ),
+          locator.get<ToastService>().showSuccess(
+            _isEditMode
+                ? 'Layout "${layout.name}" updated!'
+                : 'Layout "${layout.name}" created!',
           );
 
           // Close the sheet
