@@ -14,8 +14,8 @@ import 'package:turbo_disc_golf/screens/create_course/create_layout_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/services/search/supabase_search_provider.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
+import 'package:turbo_disc_golf/utils/auth_helpers.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
@@ -44,6 +44,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   List<CourseSearchHit> _searchResults = [];
   bool _isLoading = false;
   String? _error;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -61,48 +62,15 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       properties: {'panel_class': 'SelectCoursePanel'},
     );
 
-    // Testing functions - uncomment to use:
-    // _syncMeiliFromFirestore(); // Sync all Firestore courses to local Meili instance
-    // _clearRecentCoursesCache(); // Clear recent courses cache
-    // _syncCacheFromFirestore(); // Sync cache from Firestore (now called from RoundHistoryScreen)
-    // uploadFirestoreCoursesToSupabase();
+    // Check admin status
+    _isAdmin = isCurrentUserAdmin();
+
     _loadRecentCourses();
   }
 
   // ==========================================================================
   // TESTING FUNCTIONS - Call these from initState for debugging
   // ==========================================================================
-
-  Future<void> uploadFirestoreCoursesToSupabase() async {
-    final List<Course> courses = await FBCourseDataLoader.getAllCourses();
-    debugPrint(
-      '[SelectCoursePanel] Found ${courses.length} courses in Firestore',
-    );
-
-    if (courses.isEmpty) {
-      debugPrint('[SelectCoursePanel] No courses to sync to Supabase');
-      return;
-    }
-
-    // Convert courses to search documents for Supabase
-    final List<Map<String, dynamic>> searchDocs = courses
-        .map((Course course) => course.toSearchDocument())
-        .toList();
-
-    // Upsert to Supabase
-    try {
-      final SupabaseSearchProvider supabaseProvider = SupabaseSearchProvider();
-      await supabaseProvider.upsertCoursesForTesting(searchDocs);
-      debugPrint(
-        '[SelectCoursePanel] Successfully upserted ${courses.length} courses to Supabase search_courses table',
-      );
-    } catch (e, stackTrace) {
-      debugPrint(
-        '[SelectCoursePanel] Failed to upsert courses to Supabase: $e',
-      );
-      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
-    }
-  }
 
   /// Syncs all courses from Firestore to the local Meili search instance.
   /// Firestore is the source of truth - this will upsert all courses to Meili.
@@ -401,6 +369,8 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
           onCreateLayout: () => _openCreateLayoutSheet(hit),
           onEditLayout: (layoutSummary) =>
               _openEditLayoutSheet(hit, layoutSummary),
+          isAdmin: _isAdmin,
+          onDelete: () => _showDeleteConfirmationDialog(hit),
         );
       },
     );
@@ -596,20 +566,8 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
     }
 
-    // Update MeiliSearch index
-    try {
-      debugPrint('[SelectCoursePanel] Updating MeiliSearch index...');
-      await _searchService.upsertCourse(updatedCourse);
-      debugPrint(
-        '[SelectCoursePanel] Successfully updated MeiliSearch with '
-        '${updatedCourse.layouts.length} layouts',
-      );
-    } catch (e, stackTrace) {
-      debugPrint('[SelectCoursePanel] Failed to update MeiliSearch: $e');
-      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
-    }
-
     // Update shared preferences cache with the updated course
+    // (search indexing is handled by backend via Firestore listeners)
     try {
       debugPrint('[SelectCoursePanel] Updating shared preferences cache...');
       await _searchService.markCourseAsUsed(updatedCourse.toCourseSearchHit());
@@ -664,45 +622,27 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
             },
           );
 
+          // Capture cubit reference before popping (context will be invalid after pop)
+          final RecordRoundCubit recordRoundCubit =
+              BlocProvider.of<RecordRoundCubit>(context);
+
           Navigator.of(context).pop();
 
           pushCupertinoRoute(
             context,
             CreateCourseScreen(
-              onCourseCreated: (course) async {
+              onCourseCreated: (course) {
                 debugPrint(
                   '[SelectCoursePanel] New course created: ${course.name}',
                 );
 
-                // Capture references before async gap
-                final RecordRoundCubit recordRoundCubit =
-                    BlocProvider.of<RecordRoundCubit>(context);
-
-                // Add to shared preferences cache
-                try {
-                  debugPrint(
-                    '[SelectCoursePanel] Adding new course to shared preferences...',
-                  );
-                  await _searchService.markCourseAsUsed(
-                    course.toCourseSearchHit(),
-                  );
-                  debugPrint(
-                    '[SelectCoursePanel] Successfully added course to shared preferences',
-                  );
-                } catch (e) {
-                  debugPrint(
-                    '[SelectCoursePanel] Failed to add course to shared preferences: $e',
-                  );
-                }
-
-                // MeiliSearch indexing is handled by CreateCourseCubit.saveCourse()
+                // Use captured reference since context is no longer valid
+                // Cache update is handled by CreateCourseCubit.saveCourse()
+                // CreateCourseScreen pops itself after this callback
                 recordRoundCubit.setSelectedCourse(
                   course,
                   layoutId: course.defaultLayout.id,
                 );
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
               },
               topViewPadding: widget.topViewPadding,
               bottomViewPadding: widget.bottomViewPadding,
@@ -713,6 +653,83 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       ),
     );
   }
+
+  Future<void> _showDeleteConfirmationDialog(CourseSearchHit hit) async {
+    _logger.track(
+      'Course Delete Button Tapped',
+      properties: {'course_name': hit.name},
+    );
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Course?'),
+        content: Text(
+          "Are you sure you want to delete '${hit.name}'? This cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteCourse(hit);
+    }
+  }
+
+  Future<void> _deleteCourse(CourseSearchHit hit) async {
+    _logger.track(
+      'Course Delete Confirmed',
+      properties: {'course_id': hit.id, 'course_name': hit.name},
+    );
+
+    try {
+      await FBCourseDataLoader.deleteCourse(hit.id);
+
+      _logger.track(
+        'Course Deleted Successfully',
+        properties: {'course_id': hit.id},
+      );
+
+      // Remove from local list
+      if (mounted) {
+        setState(() {
+          _searchResults.removeWhere((result) => result.id == hit.id);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("'${hit.name}' deleted"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // Remove from search service cache
+      await _searchService.removeCourseFromCache(hit.id);
+    } catch (e, stackTrace) {
+      debugPrint('[SelectCoursePanel] Failed to delete course: $e');
+      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete course'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 }
 
 class _CourseSearchResultItem extends StatefulWidget {
@@ -721,12 +738,16 @@ class _CourseSearchResultItem extends StatefulWidget {
     required this.onLayoutSelected,
     required this.onCreateLayout,
     required this.onEditLayout,
+    required this.isAdmin,
+    required this.onDelete,
   });
 
   final CourseSearchHit hit;
   final void Function(CourseLayoutSummary layout) onLayoutSelected;
   final VoidCallback onCreateLayout;
   final void Function(CourseLayoutSummary layout) onEditLayout;
+  final bool isAdmin;
+  final VoidCallback onDelete;
 
   @override
   State<_CourseSearchResultItem> createState() =>
@@ -795,6 +816,22 @@ class _CourseSearchResultItemState extends State<_CourseSearchResultItem> {
                   ),
                 ),
                 const SizedBox(width: 4),
+                if (widget.isAdmin)
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      widget.onDelete();
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red.shade400,
+                      ),
+                    ),
+                  ),
+                if (widget.isAdmin) const SizedBox(width: 4),
                 AnimatedRotation(
                   turns: _isExpanded ? 0.25 : 0,
                   duration: const Duration(milliseconds: 200),

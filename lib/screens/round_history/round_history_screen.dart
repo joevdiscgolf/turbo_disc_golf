@@ -4,23 +4,24 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:turbo_disc_golf/animations/page_transitions.dart';
+import 'package:turbo_disc_golf/components/shimmer_box.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
-import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_steps/record_round_steps_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/record_round_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row_v2.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/welcome_empty_state.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_steps/record_round_steps_screen.dart';
+import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
@@ -84,10 +85,13 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       );
     } else {
       // Track modal opened
-      _logger.track('Modal Opened', properties: {
-        'modal_type': 'bottom_sheet',
-        'modal_name': 'Record Round Panel',
-      });
+      _logger.track(
+        'Modal Opened',
+        properties: {
+          'modal_type': 'bottom_sheet',
+          'modal_name': 'Record Round Panel',
+        },
+      );
 
       await displayBottomSheet(
         context,
@@ -120,9 +124,15 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
   Widget _buildContent(RoundHistoryState state) {
     if (state is RoundHistoryLoading) {
-      // Initial loading - show full-screen spinner
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+      // Initial loading - show shimmer skeletons
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => const _RoundHistoryShimmer(),
+            childCount: 3,
+          ),
+        ),
       );
     } else if (state is RoundHistoryError) {
       // Error state
@@ -217,7 +227,8 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
             // When bottom nav bar is present, body ends at nav bar - just need 20px margin
             // When no nav bar, need to account for safe area
-            final double bottomMargin = locator.get<FeatureFlagService>().useFormAnalysisTab
+            final double bottomMargin =
+                locator.get<FeatureFlagService>().useFormAnalysisTab
                 ? 20
                 : (bottomViewPadding + 20);
 
@@ -272,6 +283,9 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
+                // for testing
+                locator.get<ToastService>().showSuccess('Course created!');
+
                 // Track analytics using scoped logger (Screen Name already included!)
                 _logger.track(
                   'Add Round Button Tapped',
@@ -302,6 +316,73 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shimmer skeleton placeholder for round history cards during loading
+class _RoundHistoryShimmer extends StatelessWidget {
+  const _RoundHistoryShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row: course name and score badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const ShimmerBox(width: 140, height: 20),
+                      const SizedBox(height: 6),
+                      const ShimmerBox(width: 80, height: 14),
+                    ],
+                  ),
+                ),
+                const ShimmerBox(width: 64, height: 40, borderRadius: 8),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Stats row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatShimmer(),
+                _buildStatShimmer(),
+                _buildStatShimmer(),
+                _buildStatShimmer(),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Score distribution bar
+            const ShimmerBox(height: 32, borderRadius: 8),
+            const SizedBox(height: 12),
+            // Date
+            const ShimmerBox(width: 120, height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatShimmer() {
+    return const Column(
+      children: [
+        ShimmerBox(width: 32, height: 16),
+        SizedBox(height: 4),
+        ShimmerBox(width: 48, height: 12),
+      ],
     );
   }
 }

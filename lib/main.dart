@@ -28,6 +28,7 @@ import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
@@ -77,6 +78,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final GlobalKey<OverlayState> _overlayKey = GlobalKey<OverlayState>();
   late final GoRouter _router;
   late final RoundHistoryCubit _roundHistoryCubit;
   late final RoundConfirmationCubit _roundConfirmationCubit;
@@ -88,6 +90,9 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+
+    // Initialize ToastService with overlay key
+    locator.get<ToastService>().initialize(_overlayKey);
 
     // Create router once
     final AppPhaseController appPhaseController = locator
@@ -146,25 +151,41 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Provide RoundParser at app level so components can listen to round changes
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<RoundHistoryCubit>.value(value: _roundHistoryCubit),
-        BlocProvider<RoundConfirmationCubit>.value(
-          value: _roundConfirmationCubit,
-        ),
-        BlocProvider<RoundReviewCubit>.value(value: _roundReviewCubit),
-        BlocProvider<RecordRoundCubit>.value(value: _recordRoundCubit),
-        BlocProvider<CreateCourseCubit>.value(value: _createCourseCubit),
-        BlocProvider<UserDataCubit>.value(value: _userDataCubit),
-      ],
-      child: ChangeNotifierProvider<RoundParser>.value(
-        value: locator.get<RoundParser>(),
-        child: MaterialApp.router(
-          routerConfig: _router,
-          debugShowCheckedModeBanner: false,
-          title: 'Turbo Disc Golf',
-          theme: kThemeData,
+    // Global Overlay for toast notifications above the entire app
+    // Directionality is required since Overlay is outside MaterialApp
+    // WidgetsApp provides WidgetsLocalizations needed by TextField's context menu
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: WidgetsApp(
+        color: Colors.white,
+        debugShowCheckedModeBanner: false,
+        builder: (context, child) => Overlay(
+          key: _overlayKey,
+          initialEntries: [
+            OverlayEntry(
+              builder: (BuildContext context) => MultiBlocProvider(
+                providers: [
+                  BlocProvider<RoundHistoryCubit>.value(value: _roundHistoryCubit),
+                  BlocProvider<RoundConfirmationCubit>.value(
+                    value: _roundConfirmationCubit,
+                  ),
+                  BlocProvider<RoundReviewCubit>.value(value: _roundReviewCubit),
+                  BlocProvider<RecordRoundCubit>.value(value: _recordRoundCubit),
+                  BlocProvider<CreateCourseCubit>.value(value: _createCourseCubit),
+                  BlocProvider<UserDataCubit>.value(value: _userDataCubit),
+                ],
+                child: ChangeNotifierProvider<RoundParser>.value(
+                  value: locator.get<RoundParser>(),
+                  child: MaterialApp.router(
+                    routerConfig: _router,
+                    debugShowCheckedModeBanner: false,
+                    title: 'Turbo Disc Golf',
+                    theme: kThemeData,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

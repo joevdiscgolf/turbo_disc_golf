@@ -407,13 +407,14 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
       }
       debugPrint('Course saved to Firestore');
 
-      // Save to MeiliSearch
+      // Add to shared preferences cache (search indexing handled by backend)
       try {
-        await locator.get<CourseSearchService>().upsertCourse(course);
-        debugPrint('Course indexed in MeiliSearch');
+        await locator.get<CourseSearchService>().markCourseAsUsed(
+          course.toCourseSearchHit(),
+        );
+        debugPrint('Course added to shared preferences cache');
       } catch (e) {
-        // MeiliSearch indexing failure shouldn't block course creation
-        debugPrint('Warning: Failed to index course in MeiliSearch: $e');
+        debugPrint('Warning: Failed to add course to cache: $e');
       }
 
       emit(state.copyWith(isSaving: false));

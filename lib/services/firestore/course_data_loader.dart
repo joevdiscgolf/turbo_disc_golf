@@ -51,6 +51,14 @@ abstract class FBCourseDataLoader {
     return firestoreWrite('$kCoursesCollection/${course.id}', course.toJson());
   }
 
+  /// Deletes a course from Firestore by its ID
+  static Future<void> deleteCourse(String courseId) async {
+    await FirebaseFirestore.instance
+        .collection(kCoursesCollection)
+        .doc(courseId)
+        .delete();
+  }
+
   /// Adds a new layout to an existing course.
   /// Returns the updated course on success, null on failure.
   static Future<Course?> addLayoutToCourse(
