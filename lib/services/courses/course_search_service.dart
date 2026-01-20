@@ -121,7 +121,7 @@ class CourseSearchService implements ClearOnLogoutProtocol {
         .get<SharedPreferencesService>()
         .getJsonMap(_cacheKey);
     debugPrint('[CourseSearchService] Cache keys: ${cache.keys.toList()}');
-    debugPrint('[CourseSearchService] Cache contents: $cache');
+    debugPrint('[CourseSearchService] Cache contents: ${cache.length}');
 
     final List<CourseSearchHit> results = [];
     for (final String id in recentIds) {
@@ -140,7 +140,9 @@ class CourseSearchService implements ClearOnLogoutProtocol {
       }
     }
 
-    debugPrint('[CourseSearchService] Returning ${results.length} recent courses');
+    debugPrint(
+      '[CourseSearchService] Returning ${results.length} recent courses',
+    );
     return results;
   }
 
@@ -167,7 +169,9 @@ class CourseSearchService implements ClearOnLogoutProtocol {
     final List<String> recentIds = await locator
         .get<SharedPreferencesService>()
         .getStringList(_recentKey);
-    debugPrint('[CourseSearchService] Found ${recentIds.length} courses in cache');
+    debugPrint(
+      '[CourseSearchService] Found ${recentIds.length} courses in cache',
+    );
 
     if (recentIds.isEmpty) {
       debugPrint('[CourseSearchService] No courses to sync');
@@ -179,10 +183,11 @@ class CourseSearchService implements ClearOnLogoutProtocol {
     int syncedCount = 0;
 
     for (final String courseId in recentIds) {
-      debugPrint('[CourseSearchService] Fetching course $courseId from Firestore...');
+      debugPrint(
+        '[CourseSearchService] Fetching course $courseId from Firestore...',
+      );
       try {
-        final Course? course =
-            await FBCourseDataLoader.getCourseById(courseId);
+        final Course? course = await FBCourseDataLoader.getCourseById(courseId);
         if (course != null) {
           final CourseSearchHit hit = course.toCourseSearchHit();
           newCache[courseId] = hit.toJson();
@@ -193,7 +198,9 @@ class CourseSearchService implements ClearOnLogoutProtocol {
             'with ${course.layouts.length} layouts',
           );
         } else {
-          debugPrint('[CourseSearchService] Course $courseId not found in Firestore, removing from cache');
+          debugPrint(
+            '[CourseSearchService] Course $courseId not found in Firestore, removing from cache',
+          );
         }
       } catch (e) {
         debugPrint('[CourseSearchService] Error fetching course $courseId: $e');
@@ -201,10 +208,18 @@ class CourseSearchService implements ClearOnLogoutProtocol {
     }
 
     // Update cache with fresh data
-    await locator.get<SharedPreferencesService>().setStringList(_recentKey, validIds);
-    await locator.get<SharedPreferencesService>().setJsonMap(_cacheKey, newCache);
+    await locator.get<SharedPreferencesService>().setStringList(
+      _recentKey,
+      validIds,
+    );
+    await locator.get<SharedPreferencesService>().setJsonMap(
+      _cacheKey,
+      newCache,
+    );
 
-    debugPrint('[CourseSearchService] Sync complete. Updated $syncedCount courses');
+    debugPrint(
+      '[CourseSearchService] Sync complete. Updated $syncedCount courses',
+    );
     return syncedCount;
   }
 
@@ -212,7 +227,9 @@ class CourseSearchService implements ClearOnLogoutProtocol {
   // CALLED ON COURSE SELECTION
   // ------------------
   Future<void> markCourseAsUsed(CourseSearchHit course) async {
-    debugPrint('[CourseSearchService] Marking course as used: ${course.id} - ${course.name}');
+    debugPrint(
+      '[CourseSearchService] Marking course as used: ${course.id} - ${course.name}',
+    );
 
     final List<String> recentIds = await locator
         .get<SharedPreferencesService>()

@@ -63,6 +63,9 @@ ParseRoundDataResponseData _$ParseRoundDataResponseDataFromJson(Map json) =>
         Map<String, dynamic>.from(json['metadata'] as Map),
       ),
       error: json['error'] as String?,
+      parsedData: (json['parsedData'] as Map?)?.map(
+        (k, e) => MapEntry(k as String, e),
+      ),
     );
 
 Map<String, dynamic> _$ParseRoundDataResponseDataToJson(
@@ -73,6 +76,7 @@ Map<String, dynamic> _$ParseRoundDataResponseDataToJson(
   'tokensUsed': instance.tokensUsed?.toJson(),
   'metadata': instance.metadata.toJson(),
   'error': instance.error,
+  'parsedData': instance.parsedData,
 };
 
 ParseRoundDataResponse _$ParseRoundDataResponseFromJson(Map json) =>
@@ -133,6 +137,9 @@ GenerateRoundStoryResponseData _$GenerateRoundStoryResponseDataFromJson(
     Map<String, dynamic>.from(json['metadata'] as Map),
   ),
   error: json['error'] as String?,
+  aiContent: json['aiContent'] == null
+      ? null
+      : AIContent.fromJson(Map<String, dynamic>.from(json['aiContent'] as Map)),
 );
 
 Map<String, dynamic> _$GenerateRoundStoryResponseDataToJson(
@@ -143,6 +150,7 @@ Map<String, dynamic> _$GenerateRoundStoryResponseDataToJson(
   'tokensUsed': instance.tokensUsed?.toJson(),
   'metadata': instance.metadata.toJson(),
   'error': instance.error,
+  'aiContent': instance.aiContent?.toJson(),
 };
 
 GenerateRoundStoryResponse _$GenerateRoundStoryResponseFromJson(Map json) =>
@@ -205,6 +213,9 @@ GenerateRoundJudgmentResponseData _$GenerateRoundJudgmentResponseDataFromJson(
     Map<String, dynamic>.from(json['metadata'] as Map),
   ),
   error: json['error'] as String?,
+  aiContent: json['aiContent'] == null
+      ? null
+      : AIContent.fromJson(Map<String, dynamic>.from(json['aiContent'] as Map)),
 );
 
 Map<String, dynamic> _$GenerateRoundJudgmentResponseDataToJson(
@@ -215,6 +226,7 @@ Map<String, dynamic> _$GenerateRoundJudgmentResponseDataToJson(
   'tokensUsed': instance.tokensUsed?.toJson(),
   'metadata': instance.metadata.toJson(),
   'error': instance.error,
+  'aiContent': instance.aiContent?.toJson(),
 };
 
 GenerateRoundJudgmentResponse _$GenerateRoundJudgmentResponseFromJson(

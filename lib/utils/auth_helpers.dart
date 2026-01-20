@@ -6,5 +6,8 @@ import 'package:turbo_disc_golf/utils/constants/testing_constants.dart';
 bool isCurrentUserAdmin() {
   final String? currentUid = locator.get<AuthService>().currentUid;
   if (currentUid == null) return false;
+  print(
+    'is current user admin: ${adminUserIds.contains(currentUid)}, current uid: ${currentUid}',
+  );
   return adminUserIds.contains(currentUid);
 }

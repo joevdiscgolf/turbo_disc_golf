@@ -8,10 +8,7 @@ class ToastAction {
   final String label;
   final VoidCallback onPressed;
 
-  const ToastAction({
-    required this.label,
-    required this.onPressed,
-  });
+  const ToastAction({required this.label, required this.onPressed});
 }
 
 class ToastOverlay extends StatefulWidget {
@@ -55,14 +52,14 @@ class _ToastOverlayState extends State<ToastOverlay>
       duration: const Duration(milliseconds: 300),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-      reverseCurve: Curves.easeOut,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOut,
+            reverseCurve: Curves.easeOut,
+          ),
+        );
 
     _animationController.forward();
     _startAutoDismissTimer();
@@ -106,18 +103,16 @@ class _ToastOverlayState extends State<ToastOverlay>
             }
           },
           child: Container(
-            margin: EdgeInsets.only(
-              top: topPadding + 8,
-              left: 16,
-              right: 16,
-            ),
+            margin: EdgeInsets.only(top: topPadding + 8, left: 16, right: 16),
             alignment: Alignment.center,
             child: Material(
               color: Colors.transparent,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: iconToShow != null ? 20 : 16,
+                  top: 12,
+                  bottom: 12,
                 ),
                 decoration: BoxDecoration(
                   color: widget.type.backgroundColor,
@@ -139,7 +134,7 @@ class _ToastOverlayState extends State<ToastOverlay>
                         color: widget.iconColor ?? widget.type.textColor,
                         size: widget.iconSize ?? 22,
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                     ],
                     Flexible(
                       child: Text(
