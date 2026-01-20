@@ -15,12 +15,6 @@ class InteractiveMiniScorecard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🎯 InteractiveMiniScorecard building:');
-    debugPrint(
-      '  - highlightedHoleRange: ${highlightedHoleRange?.displayString ?? "none"}',
-    );
-    debugPrint('  - Total holes: ${holes.length}');
-
     return Container(
       padding: EdgeInsets.fromLTRB(
         12,
