@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/tabs/course_tab/course_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/tabs/scores_tab/scores_tab.dart';
@@ -64,19 +66,7 @@ class _ScoreDetailScreenState extends State<ScoreDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5), // Light gray with faint purple tint
-            Color(0xFFECECEE), // Light gray
-            Color(0xFFE8F4E8), // Light gray with faint green tint
-            Color(0xFFEAE8F0), // Light gray with subtle purple
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
-        ),
-      ),
+      color: SenseiColors.gray[50],
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GenericAppBar(
@@ -101,6 +91,7 @@ class _ScoreDetailScreenState extends State<ScoreDetailScreen>
             labelPadding: EdgeInsets.zero,
             padding: EdgeInsets.zero,
             indicatorPadding: EdgeInsets.zero,
+            onTap: (_) => HapticFeedback.lightImpact(),
             tabs: const [
               Tab(text: 'Course'),
               Tab(text: 'Scores'),

@@ -320,11 +320,11 @@ class _SlotItem extends StatelessWidget {
             isGlaze
                 ? const Text(
                     '\u{1F369}',
-                    style: TextStyle(fontSize: 36),
+                    style: TextStyle(fontSize: 72),
                   )
                 : const Icon(
                     Icons.local_fire_department,
-                    size: 40,
+                    size: 80,
                     color: Color(0xFFFF6B6B),
                   ),
             const SizedBox(width: 12),

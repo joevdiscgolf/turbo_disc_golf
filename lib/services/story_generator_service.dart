@@ -1059,10 +1059,7 @@ strategyTips:
       }
 
       // Parse as RoundStoryV3Content
-      final v3Content = RoundStoryV3Content.fromJson({
-        ...parsedData,
-        'roundVersionId': round.versionId,
-      });
+      final v3Content = RoundStoryV3Content.fromJson(parsedData);
 
       debugPrint(
         '✅ Successfully parsed V3 story with ${v3Content.sections.length} sections',

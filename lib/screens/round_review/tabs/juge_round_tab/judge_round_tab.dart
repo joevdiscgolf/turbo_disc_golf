@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:confetti/confetti.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -442,8 +443,15 @@ highlightStats:
       ),
       child: Stack(
         children: [
-          // Main content
-          _buildMainContent(context),
+          // Main content with optional debug button
+          Column(
+            children: [
+              // Debug regenerate button (only in debug mode)
+              if (kDebugMode) _buildDebugRegenerateButton(),
+              // Main content
+              Expanded(child: _buildMainContent(context)),
+            ],
+          ),
 
           // Confetti overlay (always mounted, controlled by controller)
           if (_currentState == JudgmentState.celebrating ||
@@ -455,6 +463,39 @@ highlightStats:
                   !_isGlaze && _currentState == JudgmentState.celebrating,
             ),
         ],
+      ),
+    );
+  }
+
+  /// Debug-only button to regenerate judgment for testing.
+  Widget _buildDebugRegenerateButton() {
+    final bool isGenerating = _currentState == JudgmentState.building ||
+        _currentState == JudgmentState.preparing ||
+        _currentState == JudgmentState.spinning;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, right: 16),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: TextButton(
+          onPressed: isGenerating
+              ? null
+              : () {
+                  _logger.track('Debug Regenerate Judgment Tapped');
+                  setState(() {
+                    _currentRound = _currentRound.copyWith(aiJudgment: null);
+                    _currentState = JudgmentState.idle;
+                  });
+                  _startJudgmentFlow();
+                },
+          child: Text(
+            isGenerating ? 'Generating...' : 'Regenerate',
+            style: TextStyle(
+              fontSize: 14,
+              color: isGenerating ? Colors.grey : Colors.black,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -495,7 +536,7 @@ highlightStats:
               ),
               const SizedBox(height: 16),
               Text(
-                'Ready to Be Judged?',
+                'View your judgment if you dare',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -544,7 +585,7 @@ highlightStats:
           ),
           const SizedBox(height: 32),
           Text(
-            'Spinning the wheel of fate...',
+            'Let the judge determine your fate',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: const Color(0xFF2C2C2C),

@@ -122,8 +122,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       },
       child: BlocListener<CreateCourseCubit, CreateCourseState>(
         listenWhen: (prev, curr) =>
-            prev.city != curr.city ||
-            prev.state != curr.state,
+            prev.city != curr.city || prev.state != curr.state,
         listener: (context, state) {
           // Sync controllers when state changes from geocoding
           if (_cityController.text != (state.city ?? '')) {
@@ -168,7 +167,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                     // Scrollable content
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.only(top: 12, bottom: 48),
+                        padding: const EdgeInsets.only(top: 20, bottom: 48),
                         children: [
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -374,14 +373,18 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   }
 
   void _openCountryPicker(BuildContext context, CreateCourseState state) {
-    _logger.track('Select Country Button Tapped', properties: {
-      'has_existing_country': state.countryCode != null,
-    });
+    _logger.track(
+      'Select Country Button Tapped',
+      properties: {'has_existing_country': state.countryCode != null},
+    );
 
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'bottom_sheet',
-      'modal_name': 'Country Picker',
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': 'Country Picker',
+      },
+    );
 
     HapticFeedback.lightImpact();
 
@@ -389,10 +392,13 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       context,
       selectedCountryCode: state.countryCode,
       onCountrySelected: (Country country) {
-        _logger.track('Country Selected', properties: {
-          'country_code': country.code,
-          'country_name': country.name,
-        });
+        _logger.track(
+          'Country Selected',
+          properties: {
+            'country_code': country.code,
+            'country_name': country.name,
+          },
+        );
         _createCourseCubit.updateCountrySelection(country.code, country.name);
       },
     );
@@ -407,7 +413,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: SenseiColors.gray.shade50,
+          color: Colors.white,
           border: Border.all(color: SenseiColors.gray.shade200),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -424,17 +430,24 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                 displayText ?? 'Select country',
                 style: TextStyle(
                   fontWeight: hasCountry ? FontWeight.w600 : FontWeight.normal,
-                  color: hasCountry ? SenseiColors.gray.shade800 : SenseiColors.gray.shade600,
+                  color: hasCountry
+                      ? SenseiColors.gray.shade800
+                      : SenseiColors.gray.shade600,
                 ),
               ),
             ),
             if (hasCountry)
               IconButton(
-                icon: Icon(Icons.close, size: 20, color: SenseiColors.gray.shade600),
+                icon: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: SenseiColors.gray.shade600,
+                ),
                 onPressed: () {
-                  _logger.track('Clear Country Button Tapped', properties: {
-                    'previous_country_code': state.countryCode,
-                  });
+                  _logger.track(
+                    'Clear Country Button Tapped',
+                    properties: {'previous_country_code': state.countryCode},
+                  );
                   HapticFeedback.lightImpact();
                   _createCourseCubit.updateCountrySelection('', '');
                 },
@@ -599,7 +612,9 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
               if (context.mounted) {
                 // Show success message
-                locator.get<ToastService>().showSuccess('Course "${course.name}" created!');
+                locator.get<ToastService>().showSuccess(
+                  'Course "${course.name}" created!',
+                );
 
                 // Close the sheet
                 Navigator.of(context).pop();

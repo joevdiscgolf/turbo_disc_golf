@@ -119,45 +119,38 @@ class _CountryPickerPanelState extends State<CountryPickerPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return SafeArea(
-          child: Column(
-            children: [
-              PanelHeader(
-                title: 'Select Country',
-                onClose: () {
-                  _logger.track('Close Panel Button Tapped');
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).pop();
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                child: TextField(
-                  controller: _controller,
-                  onChanged: _onSearchChanged,
-                  decoration: const InputDecoration(
-                    hintText: 'Search countries…',
-                    prefixIcon: Icon(Icons.search),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _buildCountryList(scrollController),
-              ),
-            ],
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - 64,
+      child: Column(
+        children: [
+          PanelHeader(
+            title: 'Select Country',
+            onClose: () {
+              _logger.track('Close Panel Button Tapped');
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
           ),
-        );
-      },
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: TextField(
+              controller: _controller,
+              onChanged: _onSearchChanged,
+              decoration: const InputDecoration(
+                hintText: 'Search countries…',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _buildCountryList(null),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildCountryList(ScrollController scrollController) {
+  Widget _buildCountryList(ScrollController? scrollController) {
     if (_filteredCountries.isEmpty) {
       if (_controller.text.isEmpty) {
         return _EmptyStateWidget(

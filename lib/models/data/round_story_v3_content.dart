@@ -97,7 +97,6 @@ class RoundStoryV3Content {
   final List<String> practiceAdvice;
   final List<String> strategyTips;
   final SkillAssessment? skillsAssessment;
-  final int roundVersionId;
 
   const RoundStoryV3Content({
     required this.roundTitle,
@@ -108,7 +107,6 @@ class RoundStoryV3Content {
     this.practiceAdvice = const [],
     this.strategyTips = const [],
     this.skillsAssessment,
-    required this.roundVersionId,
   });
 
   factory RoundStoryV3Content.fromJson(Map<String, dynamic> json) =>

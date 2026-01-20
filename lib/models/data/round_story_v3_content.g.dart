@@ -95,7 +95,6 @@ RoundStoryV3Content _$RoundStoryV3ContentFromJson(Map json) =>
           : SkillAssessment.fromJson(
               Map<String, dynamic>.from(json['skillsAssessment'] as Map),
             ),
-      roundVersionId: (json['roundVersionId'] as num).toInt(),
     );
 
 Map<String, dynamic> _$RoundStoryV3ContentToJson(
@@ -109,5 +108,4 @@ Map<String, dynamic> _$RoundStoryV3ContentToJson(
   'practiceAdvice': instance.practiceAdvice,
   'strategyTips': instance.strategyTips,
   'skillsAssessment': instance.skillsAssessment?.toJson(),
-  'roundVersionId': instance.roundVersionId,
 };

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
@@ -406,27 +407,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Log out'),
-        message: const Text('Are you sure you want to log out?'),
-        actions: [
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              _logger.track('Logout Confirmed');
-              Navigator.of(context).pop();
-              locator.get<AuthService>().logout();
-            },
-            child: const Text('Log out'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () {
-            _logger.track('Logout Cancelled');
-            Navigator.of(context).pop();
-          },
-          child: const Text('Cancel'),
-        ),
+      builder: (context) => CustomCupertinoActionSheet(
+        title: 'Log out',
+        message: 'Are you sure you want to log out?',
+        destructiveActionLabel: 'Log out',
+        onDestructiveActionPressed: () {
+          _logger.track('Logout Confirmed');
+          Navigator.of(context).pop();
+          locator.get<AuthService>().logout();
+        },
+        onCancelPressed: () {
+          _logger.track('Logout Cancelled');
+          Navigator.of(context).pop();
+        },
       ),
     );
   }
@@ -442,29 +435,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Delete Account'),
-        message: const Text(
-          'This will permanently delete your account and all data. This action cannot be undone.',
-        ),
-        actions: [
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              _logger.track('Delete Account First Confirmation');
-              Navigator.of(context).pop();
-              _showFinalDeleteConfirmation();
-            },
-            child: const Text('Delete Account'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () {
-            _logger.track('Delete Account Cancelled');
-            Navigator.of(context).pop();
-          },
-          child: const Text('Cancel'),
-        ),
+      builder: (context) => CustomCupertinoActionSheet(
+        title: 'Delete Account',
+        message: 'This will permanently delete your account and all data. This action cannot be undone.',
+        destructiveActionLabel: 'Delete Account',
+        onDestructiveActionPressed: () {
+          _logger.track('Delete Account First Confirmation');
+          Navigator.of(context).pop();
+          _showFinalDeleteConfirmation();
+        },
+        onCancelPressed: () {
+          _logger.track('Delete Account Cancelled');
+          Navigator.of(context).pop();
+        },
       ),
     );
   }
@@ -480,29 +463,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Are you absolutely sure?'),
-        message: const Text(
-          'Your account, rounds, and all data will be permanently deleted. This cannot be undone.',
-        ),
-        actions: [
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () async {
-              _logger.track('Delete Account Final Confirmed');
-              Navigator.of(context).pop();
-              await _deleteUserAccount();
-            },
-            child: const Text('Yes, Delete Everything'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () {
-            _logger.track('Delete Account Final Cancelled');
-            Navigator.of(context).pop();
-          },
-          child: const Text('Cancel'),
-        ),
+      builder: (context) => CustomCupertinoActionSheet(
+        title: 'Are you absolutely sure?',
+        message: 'Your account, rounds, and all data will be permanently deleted. This cannot be undone.',
+        destructiveActionLabel: 'Yes, Delete Everything',
+        onDestructiveActionPressed: () async {
+          _logger.track('Delete Account Final Confirmed');
+          Navigator.of(context).pop();
+          await _deleteUserAccount();
+        },
+        onCancelPressed: () {
+          _logger.track('Delete Account Final Cancelled');
+          Navigator.of(context).pop();
+        },
       ),
     );
   }

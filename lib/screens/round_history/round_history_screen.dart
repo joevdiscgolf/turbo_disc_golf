@@ -20,6 +20,7 @@ import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
   const RoundHistoryScreen({super.key, required this.bottomViewPadding});
@@ -320,13 +321,13 @@ class _RoundHistoryShimmer extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const ShimmerBox(width: 140, height: 20),
+                      ShimmerBox(width: 140, height: 24, color: SenseiColors.gray.shade100),
                       const SizedBox(height: 6),
-                      const ShimmerBox(width: 80, height: 14),
+                      ShimmerBox(width: 80, height: 18, color: SenseiColors.gray.shade50),
                     ],
                   ),
                 ),
-                const ShimmerBox(width: 64, height: 40, borderRadius: 8),
+                ShimmerBox(width: 64, height: 44, borderRadius: 8, color: SenseiColors.gray.shade100),
               ],
             ),
             const SizedBox(height: 16),
@@ -342,10 +343,10 @@ class _RoundHistoryShimmer extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             // Score distribution bar
-            const ShimmerBox(height: 32, borderRadius: 8),
+            ShimmerBox(height: 36, borderRadius: 8, color: SenseiColors.gray.shade50),
             const SizedBox(height: 12),
             // Date
-            const ShimmerBox(width: 120, height: 12),
+            ShimmerBox(width: 120, height: 16, color: SenseiColors.gray.shade100),
           ],
         ),
       ),
@@ -353,11 +354,11 @@ class _RoundHistoryShimmer extends StatelessWidget {
   }
 
   Widget _buildStatShimmer() {
-    return const Column(
+    return Column(
       children: [
-        ShimmerBox(width: 32, height: 16),
-        SizedBox(height: 4),
-        ShimmerBox(width: 48, height: 12),
+        ShimmerBox(width: 32, height: 20, color: SenseiColors.gray.shade100),
+        const SizedBox(height: 4),
+        ShimmerBox(width: 48, height: 16, color: SenseiColors.gray.shade50),
       ],
     );
   }
