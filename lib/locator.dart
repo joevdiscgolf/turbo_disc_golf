@@ -49,6 +49,7 @@ import 'package:turbo_disc_golf/services/voice/speech_to_text_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/firebase_feature_flags_provider.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 final locator = GetIt.instance;
 Future<void> setUpLocator() async {
@@ -82,6 +83,9 @@ Future<void> setUpLocator() async {
     providers: [mixpanelProvider],
   );
   locator.registerSingleton<LoggingService>(loggingService);
+
+  // Register ToastService (will be initialized with overlay key from main.dart)
+  locator.registerSingleton<ToastService>(ToastService());
 
   // Initialize Firebase Crashlytics provider
   final FirebaseCrashlyticsProvider crashlyticsProvider =

@@ -45,6 +45,7 @@ class AIContent {
     this.structuredContent,
     this.structuredContentV2,
     this.structuredContentV3,
+    this.regenerateCount = 0,
   });
 
   /// Raw markdown content (kept for backward compatibility)
@@ -71,8 +72,41 @@ class AIContent {
   /// Null if this is a V1/V2 story or old format
   final RoundStoryV3Content? structuredContentV3;
 
+  /// Number of times this content has been regenerated (max 2 allowed)
+  final int regenerateCount;
+
+  /// Maximum number of regenerations allowed
+  static const int maxRegenerations = 2;
+
+  /// Whether regeneration is still allowed
+  bool get canRegenerate => regenerateCount < maxRegenerations;
+
+  /// Number of regenerations remaining
+  int get regenerationsRemaining => maxRegenerations - regenerateCount;
+
   factory AIContent.fromJson(Map<String, dynamic> json) =>
       _$AIContentFromJson(json);
 
   Map<String, dynamic> toJson() => _$AIContentToJson(this);
+
+  /// Create a copy with updated fields
+  AIContent copyWith({
+    String? content,
+    int? roundVersionId,
+    List<AIContentSegment>? segments,
+    StructuredStoryContent? structuredContent,
+    RoundStoryV2Content? structuredContentV2,
+    RoundStoryV3Content? structuredContentV3,
+    int? regenerateCount,
+  }) {
+    return AIContent(
+      content: content ?? this.content,
+      roundVersionId: roundVersionId ?? this.roundVersionId,
+      segments: segments ?? this.segments,
+      structuredContent: structuredContent ?? this.structuredContent,
+      structuredContentV2: structuredContentV2 ?? this.structuredContentV2,
+      structuredContentV3: structuredContentV3 ?? this.structuredContentV3,
+      regenerateCount: regenerateCount ?? this.regenerateCount,
+    );
+  }
 }

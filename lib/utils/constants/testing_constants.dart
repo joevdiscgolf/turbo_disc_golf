@@ -1,3 +1,9 @@
+/// List of admin user UIDs who can delete courses
+const List<String> adminUserIds = [
+  'aKpPVfXRf4McpLkCSX47uwQfs972' // jwvv77@gmail.com
+      '9abVDwf3ZVM8unEzqMcWk95in2F3', // test@gmail.com
+];
+
 /// Hardcoded test scorecard data for Flingsgiving Round 2.
 /// Used when useMockScorecardData is true to skip AI parsing.
 const List<Map<String, int>> testScorecardData = [

@@ -19,27 +19,8 @@ class CourseTab extends StatefulWidget {
 }
 
 class _CourseTabState extends State<CourseTab> {
-  late RoundReviewCubit _roundReviewCubit;
-
-  @override
-  void initState() {
-    super.initState();
-    _roundReviewCubit = BlocProvider.of<RoundReviewCubit>(context);
-
-    // Start round review with the current round
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _roundReviewCubit.startRoundReview(widget.round);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    // Clear round review when tab is disposed
-    _roundReviewCubit.clearRoundReview();
-    super.dispose();
-  }
+  // Note: Round review lifecycle (start/clear) is managed by RoundReviewScreen.
+  // This tab only observes the cubit state via BlocBuilder.
 
   @override
   Widget build(BuildContext context) {

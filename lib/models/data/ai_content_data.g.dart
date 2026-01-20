@@ -47,6 +47,7 @@ AIContent _$AIContentFromJson(Map json) => AIContent(
       : RoundStoryV3Content.fromJson(
           Map<String, dynamic>.from(json['structuredContentV3'] as Map),
         ),
+  regenerateCount: (json['regenerateCount'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$AIContentToJson(AIContent instance) => <String, dynamic>{
@@ -56,4 +57,5 @@ Map<String, dynamic> _$AIContentToJson(AIContent instance) => <String, dynamic>{
   'structuredContent': instance.structuredContent?.toJson(),
   'structuredContentV2': instance.structuredContentV2?.toJson(),
   'structuredContentV3': instance.structuredContentV3?.toJson(),
+  'regenerateCount': instance.regenerateCount,
 };

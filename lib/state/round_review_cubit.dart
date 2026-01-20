@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
@@ -354,10 +355,14 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
 
   /// Save the round to both local storage and Firestore
   Future<void> _saveRound(DGRound round) async {
+    // Regenerate analysis to reflect any changes to hole data
+    final analysis = RoundAnalysisGenerator.generateAnalysis(round);
+    final DGRound roundWithUpdatedAnalysis = round.copyWith(analysis: analysis);
+
     // Save to shared preferences
     final bool savedLocally = await locator
         .get<RoundStorageService>()
-        .saveRound(round);
+        .saveRound(roundWithUpdatedAnalysis);
     if (savedLocally) {
       debugPrint('Successfully saved round to shared preferences');
     } else {
@@ -367,14 +372,20 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
     // Save to Firestore
     final bool firestoreSuccess = await locator
         .get<RoundsService>()
-        .updateRound(round);
+        .updateRound(roundWithUpdatedAnalysis);
     if (firestoreSuccess) {
       debugPrint('Successfully saved round to Firestore');
 
       // Update the round in round history
-      roundHistoryCubit.updateRound(round);
+      roundHistoryCubit.updateRound(roundWithUpdatedAnalysis);
     } else {
       debugPrint('Failed to save round to Firestore');
+    }
+
+    // Update local state with the new analysis
+    if (state is ReviewingRoundActive) {
+      final ReviewingRoundActive activeState = state as ReviewingRoundActive;
+      emit(activeState.copyWith(round: roundWithUpdatedAnalysis));
     }
   }
 

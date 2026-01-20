@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
+import 'package:turbo_disc_golf/components/banners/regenerate_prompt_banner.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_confetti_overlay.dart';
@@ -72,6 +73,9 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
   bool _isGlaze = false;
   String? _generatedJudgment;
 
+  // Track regeneration count from previous judgment (for incrementing on regenerate)
+  int _previousRegenerateCount = 0;
+
   // Confetti controller
   late ConfettiController _confettiController;
 
@@ -117,8 +121,8 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
       }
     }
 
-    // Auto-start if no judgment exists
-    if (_shouldGenerateJudgment()) {
+    // Auto-start only if no judgment exists (not when outdated - show banner instead)
+    if (_currentRound.aiJudgment == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _startJudgmentFlow();
       });
@@ -130,11 +134,6 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
     _confettiController.dispose();
     _apiReadyNotifier.dispose();
     super.dispose();
-  }
-
-  bool _shouldGenerateJudgment() {
-    return _currentRound.aiJudgment == null ||
-        _currentRound.isAIJudgmentOutdated;
   }
 
   /// Shows preparing animation for testing when judgment already exists.
@@ -431,6 +430,7 @@ highlightStats:
     final AIContent aiJudgment = AIContent(
       content: contentWithMetadata,
       roundVersionId: _currentRound.versionId,
+      regenerateCount: _previousRegenerateCount,
     );
 
     final RoundStorageService storageService = locator
@@ -867,42 +867,26 @@ highlightStats:
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Regenerate button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    _logger.track('Judgment Regenerate Button Tapped');
-                    setState(() {
-                      _currentRound = _currentRound.copyWith(aiJudgment: null);
-                      _currentState = JudgmentState.idle;
-                    });
-                    _startJudgmentFlow();
-                  },
-                  icon: const Icon(
-                    Icons.refresh,
-                    size: 16,
-                    color: SenseiColors.darkGray,
-                  ),
-                  label: const Text(
-                    'Regenerate',
-                    style: TextStyle(color: SenseiColors.darkGray),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    textStyle: const TextStyle(fontSize: 12),
-                  ),
-                ),
-              ),
+          // Show regenerate banner when content is outdated
+          if (_currentRound.isAIJudgmentOutdated)
+            RegeneratePromptBanner(
+              onRegenerate: () {
+                _logger.track('Judgment Regenerate Button Tapped');
+                // Save the current regenerate count + 1 for the new judgment
+                _previousRegenerateCount =
+                    (_currentRound.aiJudgment?.regenerateCount ?? 0) + 1;
+                setState(() {
+                  _currentRound = _currentRound.copyWith(aiJudgment: null);
+                  _currentState = JudgmentState.idle;
+                });
+                _startJudgmentFlow();
+              },
+              isLoading: _currentState == JudgmentState.building ||
+                  _currentState == JudgmentState.preparing,
+              subtitle: 'Roast may be outdated',
+              regenerationsRemaining:
+                  _currentRound.aiJudgment?.regenerationsRemaining,
             ),
-          ),
 
           // Verdict card
           Padding(
@@ -1089,46 +1073,29 @@ highlightStats:
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Regenerate button
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              _logger.track(
-                                'Judgment Regenerate Button Tapped',
-                              );
-                              setState(() {
-                                _currentRound = _currentRound.copyWith(
-                                  aiJudgment: null,
-                                );
-                                _currentState = JudgmentState.idle;
-                              });
-                              _startJudgmentFlow();
-                            },
-                            icon: const Icon(
-                              Icons.refresh,
-                              size: 16,
-                              color: SenseiColors.darkGray,
-                            ),
-                            label: const Text(
-                              'Regenerate',
-                              style: TextStyle(color: SenseiColors.darkGray),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              textStyle: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
+                    // Show regenerate banner when content is outdated
+                    if (_currentRound.isAIJudgmentOutdated)
+                      RegeneratePromptBanner(
+                        onRegenerate: () {
+                          _logger.track('Judgment Regenerate Button Tapped');
+                          // Save the current regenerate count + 1 for the new judgment
+                          _previousRegenerateCount =
+                              (_currentRound.aiJudgment?.regenerateCount ?? 0) +
+                              1;
+                          setState(() {
+                            _currentRound = _currentRound.copyWith(
+                              aiJudgment: null,
+                            );
+                            _currentState = JudgmentState.idle;
+                          });
+                          _startJudgmentFlow();
+                        },
+                        isLoading: _currentState == JudgmentState.building ||
+                            _currentState == JudgmentState.preparing,
+                        subtitle: 'Roast may be outdated',
+                        regenerationsRemaining:
+                            _currentRound.aiJudgment?.regenerationsRemaining,
                       ),
-                    ),
 
                     // Verdict card
                     Padding(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/app_bar_back_button.dart';
-import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   const GenericAppBar({
@@ -83,7 +82,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                             const SizedBox(width: 8),
                           ],
                           Text(
-                            title.capitalizeFirst(),
+                            title,
                             style:
                                 titleStyle ??
                                 Theme.of(

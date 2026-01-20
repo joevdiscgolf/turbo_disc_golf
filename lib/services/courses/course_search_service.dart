@@ -242,6 +242,28 @@ class CourseSearchService implements ClearOnLogoutProtocol {
     debugPrint('[CourseSearchService] Saved recent IDs: $recentIds');
   }
 
+  /// Removes a course from the local cache (used after deletion).
+  Future<void> removeCourseFromCache(String courseId) async {
+    debugPrint('[CourseSearchService] Removing course from cache: $courseId');
+
+    final List<String> recentIds = await locator
+        .get<SharedPreferencesService>()
+        .getStringList(_recentKey);
+    final Map<String, dynamic> cache = await locator
+        .get<SharedPreferencesService>()
+        .getJsonMap(_cacheKey);
+
+    recentIds.remove(courseId);
+    cache.remove(courseId);
+
+    await locator.get<SharedPreferencesService>().setStringList(
+      _recentKey,
+      recentIds,
+    );
+    await locator.get<SharedPreferencesService>().setJsonMap(_cacheKey, cache);
+    debugPrint('[CourseSearchService] Removed course $courseId from cache');
+  }
+
   // ------------------
   // LOGOUT PROTOCOL
   // ------------------

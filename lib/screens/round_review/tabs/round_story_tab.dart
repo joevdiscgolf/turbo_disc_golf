@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
+import 'package:turbo_disc_golf/components/banners/regenerate_prompt_banner.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/interactive_mini_scorecard.dart';
 import 'package:turbo_disc_golf/components/story/story_highlights_share_card.dart';
@@ -98,7 +98,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     super.dispose();
   }
 
-  Future<void> _generateStory() async {
+  Future<void> _generateStory({bool isRegeneration = false}) async {
     _logger.track('Story Generate Button Tapped');
     setState(() {
       _isGenerating = true;
@@ -134,10 +134,20 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         '  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}',
       );
 
+      // Increment regenerate count if this is a regeneration
+      final AIContent storyWithCount = isRegeneration
+          ? story.copyWith(
+              regenerateCount:
+                  (_currentRound.aiSummary?.regenerateCount ?? 0) + 1,
+            )
+          : story;
+
       // Update round with new story
       final RoundStorageService storageService = locator
           .get<RoundStorageService>();
-      final DGRound updatedRound = _currentRound.copyWith(aiSummary: story);
+      final DGRound updatedRound = _currentRound.copyWith(
+        aiSummary: storyWithCount,
+      );
       await storageService.saveRound(updatedRound);
 
       if (mounted) {
@@ -163,76 +173,6 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         setState(() {
           _isGenerating = false;
           _errorMessage = 'Failed to generate story: $e';
-        });
-      }
-    }
-  }
-
-  /// Generate a specific story version (for debug testing)
-  Future<void> _generateStoryVersion(int version) async {
-    setState(() {
-      _isGenerating = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final StoryGeneratorService storyService = locator
-          .get<StoryGeneratorService>();
-
-      debugPrint('🔧 DEBUG: Forcing story generation version $version');
-
-      // Generate specific version regardless of feature flags
-      final AIContent? story = switch (version) {
-        3 => await storyService.generateRoundStoryV3(_currentRound),
-        2 => await storyService.generateRoundStoryV2(_currentRound),
-        _ => await storyService.generateRoundStory(_currentRound),
-      };
-
-      if (story == null) {
-        throw Exception('Failed to generate V$version story content');
-      }
-
-      // Debug: Log which story version was generated
-      debugPrint('📖 V$version Story generated with:');
-      debugPrint(
-        '  - structuredContentV3: ${story.structuredContentV3 != null ? "✅ PRESENT (${story.structuredContentV3!.sections.length} sections)" : "❌ NULL"}',
-      );
-      debugPrint(
-        '  - structuredContentV2: ${story.structuredContentV2 != null ? "✅ PRESENT" : "❌ NULL"}',
-      );
-      debugPrint(
-        '  - structuredContent (V1): ${story.structuredContent != null ? "✅ PRESENT" : "❌ NULL"}',
-      );
-
-      // Update round with new story
-      final RoundStorageService storageService = locator
-          .get<RoundStorageService>();
-      final DGRound updatedRound = _currentRound.copyWith(aiSummary: story);
-      await storageService.saveRound(updatedRound);
-
-      if (mounted) {
-        // Update the RoundReviewCubit
-        try {
-          final RoundReviewCubit? reviewCubit = context
-              .read<RoundReviewCubit?>();
-          reviewCubit?.updateRoundData(updatedRound);
-        } catch (e) {
-          debugPrint('RoundReviewCubit not available: $e');
-        }
-
-        setState(() {
-          _isGenerating = false;
-          _currentRound = updatedRound;
-        });
-      }
-    } catch (e, stackTrace) {
-      debugPrint('❌ Error generating V$version story: $e');
-      debugPrint('Stack trace: $stackTrace');
-
-      if (mounted) {
-        setState(() {
-          _isGenerating = false;
-          _errorMessage = 'Failed to generate V$version story: $e';
         });
       }
     }
@@ -335,14 +275,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
                 child: SingleChildScrollView(
                   controller: isV3Story ? _v3ScrollController : null,
                   padding: const EdgeInsets.only(top: 12, bottom: 48),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildRegenerateButton(),
-                      const SizedBox(height: 8),
-                      _buildStoryContent(context, _analysis),
-                    ],
-                  ),
+                  child: _buildStoryContent(context, _analysis),
                 ),
               ),
               // Fixed mini scorecard (only for V3 stories)
@@ -538,147 +471,24 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     return StoryEmptyState(onGenerateStory: _generateStory);
   }
 
-  void _showDebugYamlOutput() {
-    final String? rawContent = _currentRound.aiSummary?.content;
-    if (rawContent == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Raw YAML Output'),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            rawContent,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: rawContent));
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied to clipboard')),
-              );
-            },
-            child: const Text('Copy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRegenerateButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: kDebugMode
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _isGenerating
-                        ? null
-                        : () => _generateStoryVersion(2),
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('V2'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      textStyle: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: _isGenerating
-                        ? null
-                        : () => _generateStoryVersion(3),
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('V3'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.purple,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      textStyle: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              )
-            : GestureDetector(
-                onLongPress: kDebugMode ? _showDebugYamlOutput : null,
-                child: OutlinedButton.icon(
-                  onPressed: _isGenerating ? null : _generateStory,
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Regenerate'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    textStyle: const TextStyle(fontSize: 12),
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-
   Widget _buildStoryContent(BuildContext context, RoundAnalysis analysis) {
     // Check if content is outdated
     if (_currentRound.isAISummaryOutdated) {
       return Column(
         children: [
-          _buildOutdatedWarning(context),
-          const SizedBox(height: 8),
+          RegeneratePromptBanner(
+            onRegenerate: () => _generateStory(isRegeneration: true),
+            isLoading: _isGenerating,
+            subtitle: 'Story may be outdated',
+            regenerationsRemaining:
+                _currentRound.aiSummary?.regenerationsRemaining,
+          ),
           _buildContentCard(context, analysis),
         ],
       );
     }
 
     return _buildContentCard(context, analysis);
-  }
-
-  Widget _buildOutdatedWarning(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            size: 20,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'This story is out of date with the current round',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: _generateStory,
-            child: const Text('Regenerate'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildContentCard(BuildContext context, RoundAnalysis analysis) {
