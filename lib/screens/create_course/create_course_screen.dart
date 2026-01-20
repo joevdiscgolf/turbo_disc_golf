@@ -8,13 +8,17 @@ import 'package:turbo_disc_golf/components/map/location_picker_sheet.dart';
 import 'package:turbo_disc_golf/components/map/mini_map_preview.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/country.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/screens/create_course/components/country_picker_panel.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/holes_section.dart';
 import 'package:turbo_disc_golf/screens/create_course/components/layout_info_section.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/create_course_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/country_constants.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Bottom sheet / modal for creating a course + default layout
@@ -44,7 +48,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   // Text controllers for location fields
   late final TextEditingController _cityController;
   late final TextEditingController _stateController;
-  late final TextEditingController _countryController;
 
   @override
   void initState() {
@@ -55,9 +58,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     final CreateCourseState initialState = _createCourseCubit.state;
     _cityController = TextEditingController(text: initialState.city ?? '');
     _stateController = TextEditingController(text: initialState.state ?? '');
-    _countryController = TextEditingController(
-      text: initialState.country ?? '',
-    );
 
     // Create scoped logger with base properties
     final LoggingService loggingService = locator.get<LoggingService>();
@@ -73,7 +73,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   void dispose() {
     _cityController.dispose();
     _stateController.dispose();
-    _countryController.dispose();
     super.dispose();
   }
 
@@ -123,9 +122,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       },
       child: BlocListener<CreateCourseCubit, CreateCourseState>(
         listenWhen: (prev, curr) =>
-            prev.city != curr.city ||
-            prev.state != curr.state ||
-            prev.country != curr.country,
+            prev.city != curr.city || prev.state != curr.state,
         listener: (context, state) {
           // Sync controllers when state changes from geocoding
           if (_cityController.text != (state.city ?? '')) {
@@ -133,9 +130,6 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           }
           if (_stateController.text != (state.state ?? '')) {
             _stateController.text = state.state ?? '';
-          }
-          if (_countryController.text != (state.country ?? '')) {
-            _countryController.text = state.country ?? '';
           }
         },
         child: Scaffold(
@@ -173,7 +167,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                     // Scrollable content
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.only(top: 12, bottom: 48),
+                        padding: const EdgeInsets.only(top: 20, bottom: 48),
                         children: [
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -361,12 +355,107 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _countryController,
-          onChanged: _createCourseCubit.updateCountry,
-          decoration: const InputDecoration(labelText: 'Country'),
-        ),
+        _buildCountrySelector(context, state),
       ],
+    );
+  }
+
+  String? _getCountryDisplayText(CreateCourseState state) {
+    if (state.countryCode == null) return null;
+
+    final Country? country = allCountries
+        .where((c) => c.code == state.countryCode)
+        .firstOrNull;
+
+    if (country == null) return state.country; // Fallback for legacy data
+
+    return '${country.flagEmoji} ${country.name}';
+  }
+
+  void _openCountryPicker(BuildContext context, CreateCourseState state) {
+    _logger.track(
+      'Select Country Button Tapped',
+      properties: {'has_existing_country': state.countryCode != null},
+    );
+
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': 'Country Picker',
+      },
+    );
+
+    HapticFeedback.lightImpact();
+
+    CountryPickerPanel.show(
+      context,
+      selectedCountryCode: state.countryCode,
+      onCountrySelected: (Country country) {
+        _logger.track(
+          'Country Selected',
+          properties: {
+            'country_code': country.code,
+            'country_name': country.name,
+          },
+        );
+        _createCourseCubit.updateCountrySelection(country.code, country.name);
+      },
+    );
+  }
+
+  Widget _buildCountrySelector(BuildContext context, CreateCourseState state) {
+    final String? displayText = _getCountryDisplayText(state);
+    final bool hasCountry = displayText != null;
+
+    return GestureDetector(
+      onTap: () => _openCountryPicker(context, state),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: SenseiColors.gray.shade200),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              hasCountry ? Icons.flag : Icons.public_outlined,
+              color: SenseiColors.gray.shade600,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                displayText ?? 'Select country',
+                style: TextStyle(
+                  fontWeight: hasCountry ? FontWeight.w600 : FontWeight.normal,
+                  color: hasCountry
+                      ? SenseiColors.gray.shade800
+                      : SenseiColors.gray.shade600,
+                ),
+              ),
+            ),
+            if (hasCountry)
+              IconButton(
+                icon: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: SenseiColors.gray.shade600,
+                ),
+                onPressed: () {
+                  _logger.track(
+                    'Clear Country Button Tapped',
+                    properties: {'previous_country_code': state.countryCode},
+                  );
+                  HapticFeedback.lightImpact();
+                  _createCourseCubit.updateCountrySelection('', '');
+                },
+              ),
+            Icon(Icons.chevron_right, color: SenseiColors.gray.shade400),
+          ],
+        ),
+      ),
     );
   }
 
@@ -523,8 +612,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
               if (context.mounted) {
                 // Show success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Course "${course.name}" created!')),
+                locator.get<ToastService>().showSuccess(
+                  'Course "${course.name}" created!',
                 );
 
                 // Close the sheet
@@ -539,12 +628,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
               if (context.mounted) {
                 // Show error message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(errorMessage),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                locator.get<ToastService>().showError(errorMessage);
               }
             },
           );

@@ -1,14 +1,18 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/juge_round_tab/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_stats_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
@@ -104,44 +108,34 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
     _logger.track(
       'Modal Opened',
       properties: {
-        'modal_type': 'dialog',
+        'modal_type': 'action_sheet',
         'modal_name': 'Delete Round Confirmation',
         'round_id': round.id,
       },
     );
 
-    // Show confirmation dialog
-    final bool? confirmed = await showDialog<bool>(
+    // Show confirmation action sheet
+    final bool? confirmed = await showCupertinoModalPopup<bool>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Round'),
-          content: Text(
-            'Are you sure you want to delete this round from ${round.courseName}? This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _logger.track(
-                  'Delete Round Cancelled',
-                  properties: {'round_id': round.id},
-                );
-                Navigator.of(context).pop(false);
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                _logger.track(
-                  'Delete Round Confirmed',
-                  properties: {'round_id': round.id},
-                );
-                Navigator.of(context).pop(true);
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
-            ),
-          ],
+        return CustomCupertinoActionSheet(
+          title: 'Delete Round from ${round.courseName}?',
+          message: 'This action cannot be undone.',
+          destructiveActionLabel: 'Delete',
+          onDestructiveActionPressed: () {
+            _logger.track(
+              'Delete Round Confirmed',
+              properties: {'round_id': round.id},
+            );
+            Navigator.of(context).pop(true);
+          },
+          onCancelPressed: () {
+            _logger.track(
+              'Delete Round Cancelled',
+              properties: {'round_id': round.id},
+            );
+            Navigator.of(context).pop(false);
+          },
         );
       },
     );
@@ -171,19 +165,12 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
       // Navigate back to history
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Round deleted successfully')),
-        );
+        locator.get<ToastService>().showSuccess('Round deleted successfully');
       }
     } else {
       // Show error
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to delete round. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        locator.get<ToastService>().showError('Failed to delete round. Please try again.');
       }
     }
   }
@@ -199,19 +186,7 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
             : widget.round;
 
         return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFEEE8F5), // Light gray with faint purple tint
-                Color(0xFFECECEE), // Light gray
-                Color(0xFFE8F4E8), // Light gray with faint green tint
-                Color(0xFFEAE8F0), // Light gray with subtle purple
-              ],
-              stops: [0.0, 0.3, 0.7, 1.0],
-            ),
-          ),
+          color: SenseiColors.gray[50],
           child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: GenericAppBar(
@@ -221,10 +196,21 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
                   : round.courseName,
               bottomWidget: _tabBar(),
               bottomWidgetHeight: 40,
-              rightWidget: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Delete Round',
-                onPressed: () => _handleDeleteRound(round),
+              rightWidget: PopupMenuButton(
+                icon: const Icon(Icons.more_horiz),
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                        SizedBox(width: 12),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                    onTap: () => _handleDeleteRound(round),
+                  ),
+                ],
               ),
             ),
             // AppBar(

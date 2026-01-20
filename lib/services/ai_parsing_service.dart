@@ -151,78 +151,13 @@ class AiParsingService {
         }
       }
 
-      // Store the raw response
-      _lastRawResponse = responseText;
-
-      // Detect and handle repetitive output
-      responseText = _removeRepetitiveText(responseText);
-
-      debugPrint('Response received, parsing YAML...');
-      debugPrint(
-        '==================== RAW RESPONSE ====================',
+      return _parseRoundResponseText(
+        responseText: responseText,
+        course: course,
+        layoutId: layoutId,
+        numHoles: numHoles,
+        uid: uid,
       );
-      // debugPrint in chunks to avoid truncation
-      const chunkSize =
-          800; // Flutter's console typically truncates around 1024 chars
-      for (int i = 0; i < responseText.length; i += chunkSize) {
-        final end = (i + chunkSize < responseText.length)
-            ? i + chunkSize
-            : responseText.length;
-        debugPrint(responseText.substring(i, end));
-      }
-      debugPrint(
-        '==============================================================',
-      );
-      debugPrint('Response length: ${responseText.length} characters');
-
-      // Clean up the response - remove markdown code blocks if present
-      responseText = responseText.trim();
-
-      // Remove ```yaml or ```YAML at the beginning
-      if (responseText.startsWith('```yaml') ||
-          responseText.startsWith('```YAML')) {
-        responseText = responseText.substring(responseText.indexOf('\n') + 1);
-      }
-
-      // Remove just 'yaml' or 'YAML' at the beginning
-      if (responseText.startsWith('yaml\n') ||
-          responseText.startsWith('YAML\n')) {
-        responseText = responseText.substring(5);
-      }
-
-      // Remove closing ``` at the end
-      if (responseText.endsWith('```')) {
-        responseText = responseText
-            .substring(0, responseText.length - 3)
-            .trim();
-      }
-
-      debugPrint('Cleaned response for parsing...');
-
-      // Sanitize YAML to fix common AI formatting issues
-      responseText = _sanitizeYaml(responseText);
-      debugPrint('YAML sanitized...');
-
-      // Parse the YAML response
-      debugPrint('Parsing YAML response...');
-      final yamlDoc = loadYaml(responseText);
-
-      // Convert YamlMap to regular Map<String, dynamic>
-      final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
-
-      jsonMap['id'] = _uuid.v4();
-      jsonMap['courseName'] = course?.name;
-      jsonMap['courseId'] = course?.id;
-      jsonMap['course'] = course?.toJson();
-      jsonMap['layoutId'] = layoutId ?? course?.defaultLayout.id;
-      jsonMap['uid'] = uid;
-
-      debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
-      final PotentialDGRound potentialRound = PotentialDGRound.fromJson(
-        jsonMap,
-      );
-
-      return _fillMissingHoles(uid, potentialRound, numHoles);
     } catch (e, trace) {
       debugPrint('Error parsing round: $e');
       debugPrint(trace.toString());
@@ -231,6 +166,134 @@ class AiParsingService {
       }
       rethrow;
     }
+  }
+
+  /// Parse round description using only local LLM (Gemini).
+  /// This method skips the feature flag check and always uses local processing.
+  /// Used by [FrontendAIGenerationService] for local-only parsing.
+  Future<PotentialDGRound?> parseRoundDescriptionLocal({
+    required String voiceTranscript,
+    required List<DGDisc> userBag,
+    Course? course,
+    String? layoutId,
+    int numHoles = 18,
+    List<HoleMetadata>? preParsedHoles,
+  }) async {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return null;
+
+    try {
+      final prompt = _buildParsingPrompt(
+        voiceTranscript,
+        userBag,
+        course?.name,
+        preParsedHoles: preParsedHoles,
+      );
+      debugPrint('Sending request to Gemini (local)...');
+      String? responseText = await _getContentFromModel(prompt: prompt);
+
+      if (responseText == null) {
+        throw Exception('No response from Gemini');
+      }
+
+      return _parseRoundResponseText(
+        responseText: responseText,
+        course: course,
+        layoutId: layoutId,
+        numHoles: numHoles,
+        uid: uid,
+      );
+    } catch (e, trace) {
+      debugPrint('Error parsing round (local): $e');
+      debugPrint(trace.toString());
+      if (e.toString().contains('API key')) {
+        throw Exception('API Key Error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Parse the response text from LLM into a PotentialDGRound.
+  /// Shared by both [parseRoundDescription] and [parseRoundDescriptionLocal].
+  Future<PotentialDGRound> _parseRoundResponseText({
+    required String responseText,
+    required Course? course,
+    required String? layoutId,
+    required int numHoles,
+    required String uid,
+  }) async {
+    // Store the raw response
+    _lastRawResponse = responseText;
+
+    // Detect and handle repetitive output
+    responseText = _removeRepetitiveText(responseText);
+
+    debugPrint('Response received, parsing YAML...');
+    debugPrint(
+      '==================== RAW RESPONSE ====================',
+    );
+    // debugPrint in chunks to avoid truncation
+    const chunkSize =
+        800; // Flutter's console typically truncates around 1024 chars
+    for (int i = 0; i < responseText.length; i += chunkSize) {
+      final end = (i + chunkSize < responseText.length)
+          ? i + chunkSize
+          : responseText.length;
+      debugPrint(responseText.substring(i, end));
+    }
+    debugPrint(
+      '==============================================================',
+    );
+    debugPrint('Response length: ${responseText.length} characters');
+
+    // Clean up the response - remove markdown code blocks if present
+    responseText = responseText.trim();
+
+    // Remove ```yaml or ```YAML at the beginning
+    if (responseText.startsWith('```yaml') ||
+        responseText.startsWith('```YAML')) {
+      responseText = responseText.substring(responseText.indexOf('\n') + 1);
+    }
+
+    // Remove just 'yaml' or 'YAML' at the beginning
+    if (responseText.startsWith('yaml\n') ||
+        responseText.startsWith('YAML\n')) {
+      responseText = responseText.substring(5);
+    }
+
+    // Remove closing ``` at the end
+    if (responseText.endsWith('```')) {
+      responseText = responseText
+          .substring(0, responseText.length - 3)
+          .trim();
+    }
+
+    debugPrint('Cleaned response for parsing...');
+
+    // Sanitize YAML to fix common AI formatting issues
+    responseText = _sanitizeYaml(responseText);
+    debugPrint('YAML sanitized...');
+
+    // Parse the YAML response
+    debugPrint('Parsing YAML response...');
+    final yamlDoc = loadYaml(responseText);
+
+    // Convert YamlMap to regular Map<String, dynamic>
+    final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
+
+    jsonMap['id'] = _uuid.v4();
+    jsonMap['courseName'] = course?.name;
+    jsonMap['courseId'] = course?.id;
+    jsonMap['course'] = course?.toJson();
+    jsonMap['layoutId'] = layoutId ?? course?.defaultLayout.id;
+    jsonMap['uid'] = uid;
+
+    debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
+    final PotentialDGRound potentialRound = PotentialDGRound.fromJson(
+      jsonMap,
+    );
+
+    return _fillMissingHoles(uid, potentialRound, numHoles);
   }
 
   /// Fills in missing holes in the sequence from 1 to numHoles.

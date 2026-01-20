@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
@@ -67,11 +68,19 @@ class ParseRoundDataResponseMetadata {
 
 @JsonSerializable(anyMap: true, explicitToJson: true)
 class ParseRoundDataResponseData {
+  /// Raw YAML response from LLM (for backward compatibility).
+  /// Use this if `parsedData` is null.
   final String rawResponse;
+
   final String model;
   final TokensUsed? tokensUsed;
   final ParseRoundDataResponseMetadata metadata;
   final String? error;
+
+  /// Parsed round data as JSON map (ready to convert to PotentialDGRound).
+  /// When present, use this directly instead of parsing rawResponse.
+  /// This field is populated when backend handles YAML parsing.
+  final Map<String, dynamic>? parsedData;
 
   ParseRoundDataResponseData({
     required this.rawResponse,
@@ -79,6 +88,7 @@ class ParseRoundDataResponseData {
     this.tokensUsed,
     required this.metadata,
     this.error,
+    this.parsedData,
   });
 
   factory ParseRoundDataResponseData.fromJson(Map<String, dynamic> json) =>
@@ -143,11 +153,19 @@ class GenerateRoundStoryResponseMetadata {
 
 @JsonSerializable(anyMap: true, explicitToJson: true)
 class GenerateRoundStoryResponseData {
+  /// Raw YAML response from LLM (for backward compatibility).
+  /// Use this if `aiContent` is null.
   final String rawResponse;
+
   final String model;
   final TokensUsed? tokensUsed;
   final GenerateRoundStoryResponseMetadata metadata;
   final String? error;
+
+  /// Complete AIContent object with parsed story data.
+  /// When present, use this directly instead of parsing rawResponse.
+  /// This field is populated when backend handles YAML parsing.
+  final AIContent? aiContent;
 
   GenerateRoundStoryResponseData({
     required this.rawResponse,
@@ -155,6 +173,7 @@ class GenerateRoundStoryResponseData {
     this.tokensUsed,
     required this.metadata,
     this.error,
+    this.aiContent,
   });
 
   factory GenerateRoundStoryResponseData.fromJson(Map<String, dynamic> json) =>
@@ -221,11 +240,19 @@ class GenerateRoundJudgmentResponseMetadata {
 
 @JsonSerializable(anyMap: true, explicitToJson: true)
 class GenerateRoundJudgmentResponseData {
+  /// Raw YAML response from LLM (for backward compatibility).
+  /// Use this if `aiContent` is null.
   final String rawResponse;
+
   final String model;
   final TokensUsed? tokensUsed;
   final GenerateRoundJudgmentResponseMetadata metadata;
   final String? error;
+
+  /// Complete AIContent object with parsed judgment data.
+  /// When present, use this directly instead of parsing rawResponse.
+  /// This field is populated when backend handles YAML parsing.
+  final AIContent? aiContent;
 
   GenerateRoundJudgmentResponseData({
     required this.rawResponse,
@@ -233,6 +260,7 @@ class GenerateRoundJudgmentResponseData {
     this.tokensUsed,
     required this.metadata,
     this.error,
+    this.aiContent,
   });
 
   factory GenerateRoundJudgmentResponseData.fromJson(

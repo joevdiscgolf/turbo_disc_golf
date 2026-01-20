@@ -89,7 +89,7 @@ class StoryGeneratorService {
         debugPrint('📝 Using ChatGPT V3 prompt strategy');
         return ChatGPTHelpers.buildStoryPromptV3(round, analysis);
       },
-      parseResponse: (response) => _parseStoryV3Response(response, round),
+      parseResponse: (response) => parseStoryV3Response(response, round),
       validateContent: (aiContent) => aiContent.structuredContentV3 != null,
     );
   }
@@ -909,8 +909,9 @@ strategyTips:
     );
   }
 
-  /// Parse V3 story response with hole range metadata
-  AIContent _parseStoryV3Response(String response, DGRound round) {
+  /// Parse V3 story response with hole range metadata.
+  /// This method is public to allow the backend service to use it for fallback parsing.
+  AIContent parseStoryV3Response(String response, DGRound round) {
     try {
       // Clean response (same logic as V2)
       String cleanedResponse = response.trim();
@@ -1058,10 +1059,7 @@ strategyTips:
       }
 
       // Parse as RoundStoryV3Content
-      final v3Content = RoundStoryV3Content.fromJson({
-        ...parsedData,
-        'roundVersionId': round.versionId,
-      });
+      final v3Content = RoundStoryV3Content.fromJson(parsedData);
 
       debugPrint(
         '✅ Successfully parsed V3 story with ${v3Content.sections.length} sections',

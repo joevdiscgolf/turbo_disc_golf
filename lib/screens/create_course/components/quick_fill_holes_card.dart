@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 /// Callback type for applying default values to all holes
 typedef ApplyDefaultsCallback = void Function({
@@ -265,21 +267,7 @@ class _QuickFillHolesCardState extends State<QuickFillHolesCard> {
             defaultShape: quickFillShape,
           );
 
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Applied defaults to all holes'),
-              duration: const Duration(seconds: 5),
-              action: widget.onUndo != null
-                  ? SnackBarAction(
-                      label: 'Undo',
-                      onPressed: () {
-                        widget.onUndo?.call();
-                      },
-                    )
-                  : null,
-            ),
-          );
+          locator.get<ToastService>().showSuccess('Applied defaults to all holes');
         },
         borderRadius: BorderRadius.circular(8),
         child: Container(

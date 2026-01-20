@@ -15,6 +15,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
@@ -137,9 +138,7 @@ class _RoundProcessingLoadingScreenState
       if (!mounted) return;
 
       if (_roundParser.lastError.isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(_roundParser.lastError)));
+        locator.get<ToastService>().showError(_roundParser.lastError);
         Navigator.of(context).pop();
         return;
       }
@@ -159,9 +158,7 @@ class _RoundProcessingLoadingScreenState
     } catch (e) {
       debugPrint('RoundProcessingLoadingScreen: Exception during parsing: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error processing round: $e')));
+        locator.get<ToastService>().showError('Error processing round: $e');
         Navigator.of(context).pop();
       }
     }
@@ -188,13 +185,7 @@ class _RoundProcessingLoadingScreenState
           'RoundProcessingLoadingScreen: ERROR - Failed to finalize round',
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Round is missing required fields. Please complete all holes.',
-              ),
-            ),
-          );
+          locator.get<ToastService>().showError('Round is missing required fields. Please complete all holes.');
           // Go back to confirmation screen
           setState(() {
             _processingState = _ProcessingState.confirming;

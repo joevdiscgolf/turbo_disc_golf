@@ -12,6 +12,7 @@ import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
 
@@ -367,9 +368,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
         if (!ok) {
           if (mounted) {
             setState(() {});
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(_voiceService.lastError)));
+            locator.get<ToastService>().showError(_voiceService.lastError);
           }
           return;
         }
@@ -542,11 +541,7 @@ class _RecordSingleHolePanelState extends State<RecordSingleHolePanel> {
   void _handleContinue() {
     final String transcript = _voiceService.transcribedText.trim();
     if (transcript.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please record or enter a description for this hole'),
-        ),
-      );
+      locator.get<ToastService>().showInfo('Please record or enter a description for this hole');
       return;
     }
     _parseTranscript(transcript, isTestConstant: false);

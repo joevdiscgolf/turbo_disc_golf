@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/screens/create_course/create_layout_sheet.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/utils/auth_helpers.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -85,14 +86,6 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
   //     if (courses.isEmpty) {
   //       debugPrint('[Testing] No courses to sync');
-  //       if (mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           const SnackBar(
-  //             content: Text('No courses found in Firestore'),
-  //             backgroundColor: Colors.orange,
-  //           ),
-  //         );
-  //       }
   //       return;
   //     }
 
@@ -114,27 +107,9 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   //       '[Testing] Sync complete: $successCount succeeded, $failCount failed',
   //     );
 
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text(
-  //             'Synced $successCount/${courses.length} courses to Meili',
-  //           ),
-  //           backgroundColor: failCount > 0 ? Colors.orange : Colors.green,
-  //         ),
-  //       );
-  //     }
   //   } catch (e, stackTrace) {
   //     debugPrint('[Testing] Failed to sync Meili from Firestore: $e');
   //     debugPrint('[Testing] Stack trace: $stackTrace');
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Failed to sync Meili: $e'),
-  //           backgroundColor: Colors.red,
-  //         ),
-  //       );
-  //     }
   //   }
   // }
 
@@ -145,25 +120,8 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   //     debugPrint('[Testing] Clearing recent courses cache...');
   //     await _searchService.clearRecentCoursesCache();
   //     debugPrint('[Testing] Successfully cleared recent courses cache');
-
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(
-  //           content: Text('Cleared recent courses cache'),
-  //           backgroundColor: Colors.orange,
-  //         ),
-  //       );
-  //     }
   //   } catch (e) {
   //     debugPrint('[Testing] Failed to clear cache: $e');
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Failed to clear cache: $e'),
-  //           backgroundColor: Colors.red,
-  //         ),
-  //       );
-  //     }
   //   }
   // }
 
@@ -177,25 +135,8 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
   //     debugPrint(
   //       '[Testing] Successfully synced $updatedCount courses from Firestore',
   //     );
-
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Synced $updatedCount courses from Firestore'),
-  //           backgroundColor: Colors.green,
-  //         ),
-  //       );
-  //     }
   //   } catch (e) {
   //     debugPrint('[Testing] Failed to sync from Firestore: $e');
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('Failed to sync from Firestore: $e'),
-  //           backgroundColor: Colors.red,
-  //         ),
-  //       );
-  //     }
   //   }
   // }
 
@@ -393,11 +334,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
       _logger.track('Course Load Failed', properties: {'course_id': hit.id});
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to load course')));
-      }
+      locator.get<ToastService>().showError('Failed to load course');
       return;
     }
 
@@ -421,11 +358,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to load course')));
-      }
+      locator.get<ToastService>().showError('Failed to load course');
       return;
     }
 
@@ -465,11 +398,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     // Fetch full course for the layout sheet
     final Course? course = await FBCourseDataLoader.getCourseById(hit.id);
     if (course == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to load course')));
-      }
+      locator.get<ToastService>().showError('Failed to load course');
       return;
     }
 
@@ -479,11 +408,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         .firstOrNull;
 
     if (layout == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Layout not found')));
-      }
+      locator.get<ToastService>().showError('Layout not found');
       return;
     }
 
@@ -706,12 +631,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
           _searchResults.removeWhere((result) => result.id == hit.id);
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("'${hit.name}' deleted"),
-            backgroundColor: Colors.green,
-          ),
-        );
+        locator.get<ToastService>().showSuccess("'${hit.name}' deleted");
       }
 
       // Remove from search service cache
@@ -721,12 +641,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to delete course'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        locator.get<ToastService>().showError('Failed to delete course');
       }
     }
   }

@@ -48,6 +48,9 @@ class BackendLLMService {
         request.toJson(),
       );
       final HttpsCallableResult result = await callable.call(safeJson);
+
+      debugPrint('got round story response, raw data:');
+      debugPrint(result.data.toString());
       return GenerateRoundStoryResponse.fromJson(
         Map<String, dynamic>.from(result.data as Map),
       );

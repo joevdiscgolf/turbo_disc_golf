@@ -23,6 +23,9 @@ import 'package:turbo_disc_golf/services/firestore/firestore_rounds_repository.d
 import 'package:turbo_disc_golf/services/firestore/fb_user_data_loader.dart';
 import 'package:turbo_disc_golf/services/llm/gemini_service.dart';
 import 'package:turbo_disc_golf/services/llm/chatgpt_service.dart';
+import 'package:turbo_disc_golf/services/ai_generation_service.dart';
+import 'package:turbo_disc_golf/services/backend_ai_generation_service.dart';
+import 'package:turbo_disc_golf/services/frontend_ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -194,6 +197,25 @@ Future<void> setUpLocator() async {
   );
 
   locator.registerSingleton<BackendLLMService>(BackendLLMService());
+
+  // Register AIGenerationService - the single point of feature flag check.
+  // This service abstracts away whether AI generation happens on backend or frontend.
+  if (featureFlagService.generateAiContentFromBackend) {
+    locator.registerSingleton<AIGenerationService>(
+      BackendAIGenerationService(
+        backendService: locator.get<BackendLLMService>(),
+        storyGeneratorService: locator.get<StoryGeneratorService>(),
+      ),
+    );
+  } else {
+    locator.registerSingleton<AIGenerationService>(
+      FrontendAIGenerationService(
+        storyGeneratorService: locator.get<StoryGeneratorService>(),
+        aiParsingService: locator.get<AiParsingService>(),
+        llmService: locator.get<LLMService>(),
+      ),
+    );
+  }
 
   locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());

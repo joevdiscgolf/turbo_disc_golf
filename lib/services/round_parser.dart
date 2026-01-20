@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
@@ -161,10 +162,10 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
         }
       }
 
-      // Parse with Gemini - returns PotentialDGRound with optional fields
-      debugPrint('Calling Gemini API to parse round...');
+      // Parse round transcript using unified AI service (handles backend/frontend selection)
+      debugPrint('Calling AI service to parse round...');
       _potentialRound = await locator
-          .get<AiParsingService>()
+          .get<AIGenerationService>()
           .parseRoundDescription(
             voiceTranscript: transcript,
             userBag: bagService.userBag,

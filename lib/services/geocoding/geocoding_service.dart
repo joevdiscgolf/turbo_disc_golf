@@ -8,16 +8,18 @@ class LocationDetails {
     this.city,
     this.state,
     this.country,
+    this.countryCode,
     this.displayName,
   });
 
   final String? city;
   final String? state;
   final String? country;
+  final String? countryCode; // ISO 3166-1 alpha-2 code (e.g., "us", "ca")
   final String? displayName;
 
   @override
-  String toString() => 'LocationDetails(city: $city, state: $state, country: $country)';
+  String toString() => 'LocationDetails(city: $city, state: $state, country: $country, countryCode: $countryCode)';
 }
 
 /// Service for reverse geocoding coordinates to location details.
@@ -72,6 +74,9 @@ class GeocodingService {
       // Extract country
       final String? country = address['country'];
 
+      // Extract country code - Nominatim returns lowercase, convert to uppercase
+      final String? countryCode = address['country_code']?.toString().toUpperCase();
+
       // Full display name from Nominatim
       final String? displayName = data['display_name'];
 
@@ -79,6 +84,7 @@ class GeocodingService {
         city: city,
         state: state,
         country: country,
+        countryCode: countryCode,
         displayName: displayName,
       );
     } catch (e) {

@@ -12,6 +12,7 @@ import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/services/geocoding/geocoding_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 class CreateCourseCubit extends Cubit<CreateCourseState> {
   CreateCourseCubit() : super(CreateCourseState.initial()) {
@@ -69,6 +70,11 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
     emit(state.copyWith(country: value));
   }
 
+  /// Updates country selection from the country picker panel
+  void updateCountrySelection(String code, String name) {
+    emit(state.copyWith(country: name, countryCode: code));
+  }
+
   // Aliases used by UI (no behavior change)
   void courseNameChanged(String v) => updateCourseName(v);
   void cityChanged(String v) => updateCity(v);
@@ -108,6 +114,7 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
           city: details.city,
           state: details.state,
           country: details.country,
+          countryCode: details.countryCode,
           isGeocodingLocation: false,
         ));
       } else {
@@ -345,9 +352,7 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
 
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Parsed ${metadata.length} holes')),
-      );
+      locator.get<ToastService>().showInfo('Parsed ${metadata.length} holes');
     } catch (e) {
       debugPrint('Error in pickAndParseImage: $e');
       emit(
@@ -392,6 +397,7 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
         city: state.city?.trim().isEmpty ?? true ? null : state.city,
         state: state.state?.trim().isEmpty ?? true ? null : state.state,
         country: state.country?.trim().isEmpty ?? true ? null : state.country,
+        countryCode: state.countryCode?.trim().isEmpty ?? true ? null : state.countryCode,
         latitude: state.latitude,
         longitude: state.longitude,
       );

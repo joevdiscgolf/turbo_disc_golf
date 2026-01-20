@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
@@ -183,24 +184,14 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
 
     if (success) {
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Analysis deleted successfully'),
-          backgroundColor: Color(0xFF137e66),
-        ),
-      );
+      locator.get<ToastService>().showSuccess('Analysis deleted successfully');
 
       // Navigate back to history screen
       Navigator.pop(context);
     } else {
       // Show error message
       setState(() => _isDeleting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to delete analysis. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      locator.get<ToastService>().showError('Failed to delete analysis. Please try again.');
     }
   }
 }

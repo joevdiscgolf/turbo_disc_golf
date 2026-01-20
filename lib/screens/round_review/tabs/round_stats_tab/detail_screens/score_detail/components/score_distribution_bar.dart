@@ -51,19 +51,19 @@ class ScoreDistributionBar extends StatelessWidget {
     final List<DistributionSegment> segments = [
       DistributionSegment(
         value: birdiePercentage,
-        color: HoleScoreColors.birdie,
+        color: HoleScoreColors.birdieColor,
       ),
       DistributionSegment(
         value: parPercentage,
-        color: HoleScoreColors.par,
+        color: HoleScoreColors.parColor,
       ),
       DistributionSegment(
         value: bogeyPercentage,
-        color: HoleScoreColors.bogey,
+        color: HoleScoreColors.bogeyColor,
       ),
       DistributionSegment(
         value: doubleBogeyPlusPercentage,
-        color: HoleScoreColors.doubleBogeyPlus,
+        color: HoleScoreColors.doubleBogeyPlusColor,
       ),
     ];
 

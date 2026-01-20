@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/hole_grid_item.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_hole_detail_panel.dart';
 import 'package:turbo_disc_golf/screens/round_processing/panels/record_single_hole_panel.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
@@ -180,12 +182,7 @@ class _HoleGridItem extends StatelessWidget {
     );
 
     if (parsedHole == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to parse hole'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      locator.get<ToastService>().showError('Failed to parse hole');
       return;
     }
 
@@ -200,22 +197,12 @@ class _HoleGridItem extends StatelessWidget {
       roundReviewCubit.updateHole(holeIndex, updatedHole);
 
       // Show success
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Hole updated successfully!'),
-          backgroundColor: Color(0xFF137e66),
-        ),
-      );
+      locator.get<ToastService>().showSuccess('Hole updated successfully!');
     } catch (e, trace) {
       debugPrint('❌ Error updating hole: $e');
       debugPrint(trace.toString());
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error updating hole'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      locator.get<ToastService>().showError('Error updating hole');
     }
   }
 }

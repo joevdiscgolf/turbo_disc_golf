@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/components/loaders/gpt_atomic_nuclear_loader.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
@@ -315,12 +317,10 @@ class _FormAnalysisRecordingScreenState
   }
 
   void _showPoseAnalysisWarning(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 5),
-        backgroundColor: Colors.orange,
-      ),
+    locator.get<ToastService>().show(
+      message: message,
+      type: ToastType.warning,
+      duration: const Duration(seconds: 5),
     );
   }
 

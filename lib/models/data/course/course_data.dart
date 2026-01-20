@@ -163,6 +163,7 @@ class Course {
     this.city,
     this.state,
     this.country,
+    this.countryCode,
     this.latitude,
     this.longitude,
     this.description,
@@ -185,6 +186,7 @@ class Course {
   final String? city;
   final String? state;
   final String? country;
+  final String? countryCode; // ISO 3166-1 alpha-2 code (e.g., "US", "CA")
 
   /// Geographic coordinates for map display
   final double? latitude;
@@ -228,6 +230,7 @@ class Course {
     String? city,
     String? state,
     String? country,
+    String? countryCode,
     double? latitude,
     double? longitude,
     String? description,
@@ -242,6 +245,7 @@ class Course {
       city: city ?? this.city,
       state: state ?? this.state,
       country: country ?? this.country,
+      countryCode: countryCode ?? this.countryCode,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       description: description ?? this.description,

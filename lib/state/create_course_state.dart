@@ -15,6 +15,7 @@ class CreateCourseState extends Equatable {
     this.city,
     this.state,
     this.country,
+    this.countryCode,
     this.latitude,
     this.longitude,
     this.previousHolesSnapshot,
@@ -55,6 +56,7 @@ class CreateCourseState extends Equatable {
   final String? city;
   final String? state;
   final String? country;
+  final String? countryCode; // ISO 3166-1 alpha-2 code (e.g., "US", "CA")
   final double? latitude;
   final double? longitude;
 
@@ -105,6 +107,7 @@ class CreateCourseState extends Equatable {
     String? city,
     String? state,
     String? country,
+    String? countryCode,
     double? latitude,
     double? longitude,
     bool clearLocation = false,
@@ -124,6 +127,7 @@ class CreateCourseState extends Equatable {
       city: clearLocation ? null : (city ?? this.city),
       state: clearLocation ? null : (state ?? this.state),
       country: clearLocation ? null : (country ?? this.country),
+      countryCode: clearLocation ? null : (countryCode ?? this.countryCode),
       latitude: clearLocation ? null : (latitude ?? this.latitude),
       longitude: clearLocation ? null : (longitude ?? this.longitude),
       previousHolesSnapshot: clearPreviousHolesSnapshot
@@ -146,6 +150,7 @@ class CreateCourseState extends Equatable {
     city,
     state,
     country,
+    countryCode,
     latitude,
     longitude,
     previousHolesSnapshot,
