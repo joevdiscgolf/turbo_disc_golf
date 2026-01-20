@@ -159,7 +159,9 @@ class ContinueRecordingBanner extends StatelessWidget {
                 HapticFeedback.lightImpact();
                 Navigator.of(context).push(
                   CupertinoPageRoute(
-                    builder: (context) => RoundProcessingLoadingScreen(),
+                    builder: (context) => const RoundProcessingLoadingScreen(
+                      fromFinalizeBanner: true,
+                    ),
                   ),
                 );
               },

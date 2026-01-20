@@ -40,10 +40,12 @@ class RoundProcessingLoadingScreen extends StatefulWidget {
   static const String routeName = '/round-processing';
 
   final bool useSharedPreferences;
+  final bool fromFinalizeBanner;
 
   const RoundProcessingLoadingScreen({
     super.key,
     this.useSharedPreferences = false,
+    this.fromFinalizeBanner = false,
   });
 
   @override
@@ -95,12 +97,13 @@ class _RoundProcessingLoadingScreenState
   }
 
   Future<void> _processRound() async {
-    // Check if we already have a potential round (from finalize banner)
+    // Check if we already have a potential round from the finalize banner
     // If so, skip parsing and go straight to confirming
-    if (_roundParser.potentialRound != null &&
+    if (widget.fromFinalizeBanner &&
+        _roundParser.potentialRound != null &&
         _roundParser.parsedRound == null) {
       debugPrint(
-        'RoundProcessingLoadingScreen: Potential round already loaded, skipping parsing',
+        'RoundProcessingLoadingScreen: Potential round already loaded from finalize banner, skipping parsing',
       );
       if (mounted) {
         setState(() {
