@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -49,15 +50,13 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
 
     // Setup scoped logger
     final LoggingService loggingService = locator.get<LoggingService>();
-    _logger = loggingService.withBaseProperties({
-      'panel_name': _panelName,
-    });
+    _logger = loggingService.withBaseProperties({'panel_name': _panelName});
 
     // Track modal opened
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'bottom_sheet',
-      'modal_name': _panelName,
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {'modal_type': 'bottom_sheet', 'modal_name': _panelName},
+    );
 
     _tempDate = widget.initialDateTime;
     _tempTime = TimeOfDay.fromDateTime(widget.initialDateTime);
@@ -80,6 +79,8 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
               _buildCalendar(),
               _buildTimeSelector(),
               const SizedBox(height: 12),
+              _buildUseCurrentTimeButton(),
+              const SizedBox(height: 8),
               _buildConfirmButton(),
             ],
           ),
@@ -104,7 +105,11 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
           ),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.black45),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _logger.track('Date Time Picker Close Button Tapped');
+              Navigator.pop(context);
+            },
           ),
         ],
       ),
@@ -138,6 +143,11 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
             // Set currentDate to a past date to avoid "today" styling issues
             currentDate: DateTime(2000, 1, 1),
             onDateChanged: (DateTime date) {
+              HapticFeedback.lightImpact();
+              _logger.track(
+                'Date Time Picker Date Changed',
+                properties: {'selected_date': date.toIso8601String()},
+              );
               setState(() {
                 _tempDate = date;
               });
@@ -152,7 +162,11 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: InkWell(
-        onTap: _showTimePicker,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _logger.track('Date Time Picker Time Selector Tapped');
+          _showTimePicker();
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -204,10 +218,40 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
       },
     );
     if (picked != null) {
+      HapticFeedback.lightImpact();
+      _logger.track(
+        'Date Time Picker Time Changed',
+        properties: {
+          'selected_time':
+              '${picked.hour}:${picked.minute.toString().padLeft(2, '0')}',
+        },
+      );
       setState(() {
         _tempTime = picked;
       });
     }
+  }
+
+  Widget _buildUseCurrentTimeButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: PrimaryButton(
+        label: 'Use current date',
+        width: double.infinity,
+        height: 50,
+        backgroundColor: Colors.grey.shade100,
+        labelColor: Colors.blue,
+        onPressed: () {
+          HapticFeedback.lightImpact();
+          _logger.track('Date Time Picker Use Current Date Button Tapped');
+
+          // Get current time and immediately confirm
+          final DateTime now = DateTime.now();
+          widget.onConfirm(now);
+          Navigator.pop(context);
+        },
+      ),
+    );
   }
 
   Widget _buildConfirmButton() {
@@ -220,12 +264,17 @@ class _DateTimePickerPanelState extends State<DateTimePickerPanel> {
         backgroundColor: const Color(0xFF137e66),
         labelColor: Colors.white,
         onPressed: () {
+          HapticFeedback.lightImpact();
           final DateTime updatedDateTime = DateTime(
             _tempDate.year,
             _tempDate.month,
             _tempDate.day,
             _tempTime.hour,
             _tempTime.minute,
+          );
+          _logger.track(
+            'Date Time Picker Confirm Button Tapped',
+            properties: {'final_date_time': updatedDateTime.toIso8601String()},
           );
           widget.onConfirm(updatedDateTime);
           Navigator.pop(context);

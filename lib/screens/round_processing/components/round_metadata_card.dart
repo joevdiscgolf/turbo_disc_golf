@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
 
 /// Card displaying round metadata with KPI stats.
 /// Design matches ScoreKPICard with isDetailScreen: false (without scorecard).
@@ -38,30 +40,37 @@ class RoundMetadataCard extends StatelessWidget {
           // Course name and layout
           Row(
             children: [
-              Icon(
-                Icons.location_on,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      potentialRound.courseName ?? 'Unknown Course',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    if (potentialRound.layoutId != null && potentialRound.course != null)
-                      Text(
-                        _getLayoutName(potentialRound),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                child: RichText(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: potentialRound.courseName ?? 'Unknown Course',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontSize: (Theme.of(context).textTheme.titleLarge?.fontSize ?? 22) - 2,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                  ],
+                      if (potentialRound.layoutId != null && potentialRound.course != null) ...[
+                        TextSpan(
+                          text: ' • ',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontSize: (Theme.of(context).textTheme.titleLarge?.fontSize ?? 22) - 2,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextSpan(
+                          text: _getLayoutName(potentialRound),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontSize: (Theme.of(context).textTheme.titleLarge?.fontSize ?? 22) - 2,
+                            color: HoleScoreColors.parColor,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -85,7 +94,7 @@ class RoundMetadataCard extends StatelessWidget {
                   context,
                   'Throws',
                   '$totalScore',
-                  const Color(0xFF2196F3),
+                  SenseiColors.darkGray,
                 ),
               ),
               const SizedBox(width: 12),
@@ -94,7 +103,7 @@ class RoundMetadataCard extends StatelessWidget {
                   context,
                   'Par',
                   '$totalPar',
-                  const Color(0xFFFFA726),
+                  SenseiColors.darkGray,
                 ),
               ),
             ],

@@ -133,6 +133,9 @@ class FeatureFlagService {
   bool get showDistancePreferences =>
       getBool(FeatureFlag.showDistancePreferences);
 
+  bool get showProjectedScoreInRecordRound =>
+      getBool(FeatureFlag.showProjectedScoreInRecordRound);
+
   // ===== Voice Service =====
 
   bool get useIosVoiceService => getBool(FeatureFlag.useIosVoiceService);

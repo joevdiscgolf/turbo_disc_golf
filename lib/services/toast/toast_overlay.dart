@@ -111,8 +111,8 @@ class _ToastOverlayState extends State<ToastOverlay>
                 padding: EdgeInsets.only(
                   left: 16,
                   right: iconToShow != null ? 20 : 16,
-                  top: 12,
-                  bottom: 12,
+                  top: 16,
+                  bottom: 16,
                 ),
                 decoration: BoxDecoration(
                   color: widget.type.backgroundColor,

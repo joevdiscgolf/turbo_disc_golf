@@ -10,6 +10,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_remix/flutter_remix.dart';
@@ -472,12 +473,16 @@ class _ThrowCardState extends State<_ThrowCard> {
     if (_isDraggingLocal == dragging) return;
     setState(() => _isDraggingLocal = dragging);
     widget.onDragStateChange(dragging);
+    HapticFeedback.lightImpact();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onEdit,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onEdit();
+      },
       child:
           Container(
                 decoration: BoxDecoration(

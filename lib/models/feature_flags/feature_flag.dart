@@ -29,6 +29,7 @@ enum FeatureFlag {
   useBeautifulDatePicker('use_beautiful_date_picker', true),
   showHoleDistancesInScorecard('show_hole_distances_in_scorecard', true),
   showDistancePreferences('show_distance_preferences', false),
+  showProjectedScoreInRecordRound('show_projected_score_in_record_round', true),
 
   // ===== Voice Service =====
   useIosVoiceService('use_ios_voice_service', true),

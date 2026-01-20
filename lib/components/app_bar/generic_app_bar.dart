@@ -36,7 +36,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
       Size.fromHeight(48 + topViewPadding + (bottomWidgetHeight ?? 0));
 
   static const double backButtonTouchTargetWidth = 60;
-  static const double rightPadding = 12;
+  static const double rightPadding = 16;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 0, right: 12),
+            padding: const EdgeInsets.only(left: 16, right: 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [

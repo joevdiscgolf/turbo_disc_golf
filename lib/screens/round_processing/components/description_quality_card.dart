@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/description_quality_analyzer.dart';
 
 /// A collapsible card displaying description quality feedback.
@@ -38,13 +39,13 @@ class _DescriptionQualityCardState extends State<DescriptionQualityCard> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFFE1BEE7).withValues(alpha: 0.4),
-            const Color(0xFFE1BEE7).withValues(alpha: 0.2),
+            flattenedOverWhite(const Color(0xFFE1BEE7), 0.15),
+            flattenedOverWhite(const Color(0xFFE1BEE7), 0.08),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFCE93D8).withValues(alpha: 0.4),
+          color: flattenedOverWhite(const Color(0xFFCE93D8), 0.15),
         ),
       ),
       child: Column(

@@ -17,6 +17,8 @@ import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -182,37 +184,58 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           return const SizedBox.shrink();
         }
 
-        return BlocBuilder<RecordRoundCubit, RecordRoundState>(
-          builder: (context, recordRoundState) {
-            // Show continue banner only when recording is active AND course is selected
-            if (recordRoundState is RecordRoundActive &&
-                recordRoundState.selectedCourse != null) {
-              return Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ContinueRecordingBanner(
-                  state: recordRoundState,
-                  bottomViewPadding: widget.bottomViewPadding,
-                ),
-              );
+        return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+          builder: (context, confirmationState) {
+            // Show finalize banner when confirming is active
+            if (confirmationState is ConfirmingRoundActive) {
+              // Get the recording state to pass to banner
+              final recordRoundState = context.read<RecordRoundCubit>().state;
+              if (recordRoundState is RecordRoundActive) {
+                return Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: ContinueRecordingBanner(
+                    state: recordRoundState,
+                    bottomViewPadding: widget.bottomViewPadding,
+                  ),
+                );
+              }
             }
 
-            final double bottomViewPadding = MediaQuery.of(
-              context,
-            ).viewPadding.bottom;
+            return BlocBuilder<RecordRoundCubit, RecordRoundState>(
+              builder: (context, recordRoundState) {
+                // Show continue banner only when recording is active AND course is selected
+                if (recordRoundState is RecordRoundActive &&
+                    recordRoundState.selectedCourse != null) {
+                  return Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: ContinueRecordingBanner(
+                      state: recordRoundState,
+                      bottomViewPadding: widget.bottomViewPadding,
+                    ),
+                  );
+                }
 
-            // When bottom nav bar is present, body ends at nav bar - just need 20px margin
-            // When no nav bar, need to account for safe area
-            final double bottomMargin =
-                locator.get<FeatureFlagService>().useFormAnalysisTab
-                ? 20
-                : (bottomViewPadding + 20);
+                final double bottomViewPadding = MediaQuery.of(
+                  context,
+                ).viewPadding.bottom;
 
-            return Positioned(
-              right: 20,
-              bottom: bottomMargin,
-              child: _buildNewRoundButton(),
+                // When bottom nav bar is present, body ends at nav bar - just need 20px margin
+                // When no nav bar, need to account for safe area
+                final double bottomMargin =
+                    locator.get<FeatureFlagService>().useFormAnalysisTab
+                    ? 20
+                    : (bottomViewPadding + 20);
+
+                return Positioned(
+                  right: 20,
+                  bottom: bottomMargin,
+                  child: _buildNewRoundButton(),
+                );
+              },
             );
           },
         );

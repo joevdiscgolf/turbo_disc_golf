@@ -10,6 +10,7 @@ import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
+import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 
@@ -17,10 +18,13 @@ import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 /// Tracks the potential round being edited and the current hole being edited
 class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
     implements ClearOnLogoutProtocol {
-  RoundConfirmationCubit({required this.roundHistoryCubit})
-    : super(const ConfirmingRoundInactive());
+  RoundConfirmationCubit({
+    required this.roundHistoryCubit,
+    required this.recordRoundCubit,
+  }) : super(const ConfirmingRoundInactive());
 
   final RoundHistoryCubit roundHistoryCubit;
+  final RecordRoundCubit recordRoundCubit;
 
   void startRoundConfirmation(
     BuildContext context,
@@ -466,10 +470,18 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
       debugPrint('Successfully saved round to Firestore');
       // Then add to local history state
       roundHistoryCubit.addRound(parsedRound);
+      // Clear recording state now that round is saved
+      recordRoundCubit.emitInactive();
+      // Clear confirmation state on successful save
+      clearRoundConfirmation();
     } else {
       debugPrint('Failed to save round to Firestore');
       // Still add to local state so user can see it
       roundHistoryCubit.addRound(parsedRound);
+      // Also clear state even on failure since we tried to save
+      recordRoundCubit.emitInactive();
+      // Clear confirmation state even on failure
+      clearRoundConfirmation();
     }
 
     return parsedRound;

@@ -13,16 +13,35 @@ class HoleScoreColors {
   HoleScoreColors._();
 
   // Static color constants - SINGLE SOURCE OF TRUTH
-  static const Color birdieColor = Color(0xFF137e66);
-  static const Color birdieColorBright = Color.fromARGB(255, 15, 255, 79);
+  static const Color condorColor = Color(0xFF9C27B0); // Purple
+  static const Color albatrossColor = Color(0xFFB8860B); // Darker gold
+  static const Color eagleColor = Color.fromARGB(255, 31, 158, 255); // Blue
+  static const Color birdieColor = Color(0xFF137e66); // Green
   static Color parColor = SenseiColors.gray[300]!;
-  static const Color bogeyColor = Color(0xFFFF7A7A);
-  // static const Color bogeyBright = Color(0xFFFF7A7A);
-  static const Color doubleBogeyPlusColor = Color(0xFFD32F2F);
+  static const Color bogeyColor = Color(0xFFFF7A7A); // Light red
+  static const Color doubleBogeyPlusColor = Color(0xFFD32F2F); // Dark red
 
   /// Returns gradient colors for the hole background based on relative score.
   static List<Color> getGradientColors(int relativeScore) {
-    if (relativeScore < 0) {
+    if (relativeScore < -3) {
+      // Condor - purple gradient
+      return [
+        flattenedOverWhite(condorColor, 0.25),
+        flattenedOverWhite(condorColor, 0.05),
+      ];
+    } else if (relativeScore == -3) {
+      // Albatross - darker gold gradient
+      return [
+        flattenedOverWhite(albatrossColor, 0.25),
+        flattenedOverWhite(albatrossColor, 0.05),
+      ];
+    } else if (relativeScore < -1) {
+      // Eagle - blue gradient
+      return [
+        flattenedOverWhite(eagleColor, 0.25),
+        flattenedOverWhite(eagleColor, 0.05),
+      ];
+    } else if (relativeScore < 0) {
       // Birdie - green gradient
       return [
         flattenedOverWhite(birdieColor, 0.25),
@@ -30,7 +49,6 @@ class HoleScoreColors {
       ];
     } else if (relativeScore == 0) {
       // Par - grey gradient
-      // return [ par.withValues(alpha: 0.15), par.withValues(alpha: 0.05)];
       return [
         flattenedOverWhite(parColor, 0.15),
         flattenedOverWhite(parColor, 0.05),
@@ -41,7 +59,6 @@ class HoleScoreColors {
         flattenedOverWhite(bogeyColor, 0.25),
         flattenedOverWhite(bogeyColor, 0.05),
       ];
-      // return [bogey.withValues(alpha: 0.25), bogey.withValues(alpha: 0.15)];
     } else {
       // Double bogey+ - dark red gradient
       return [
@@ -53,7 +70,13 @@ class HoleScoreColors {
 
   /// Returns the solid color for the score circle based on relative score.
   static Color getScoreColor(int relativeScore) {
-    if (relativeScore < 0) {
+    if (relativeScore < -3) {
+      return condorColor;
+    } else if (relativeScore == -3) {
+      return albatrossColor;
+    } else if (relativeScore < -1) {
+      return eagleColor;
+    } else if (relativeScore < 0) {
       return birdieColor;
     } else if (relativeScore == 0) {
       return parColor;

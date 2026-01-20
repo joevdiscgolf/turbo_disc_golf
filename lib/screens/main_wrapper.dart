@@ -132,6 +132,7 @@ class _MainWrapperState extends State<MainWrapper> {
             color: SenseiColors.senseiBlue,
           ),
           hasBackButton: false,
+          backgroundColor: SenseiColors.gray.shade50,
           leftWidget: _buildSettingsButton(
             context,
             RoundHistoryScreen.screenName,
@@ -192,6 +193,7 @@ class _MainWrapperState extends State<MainWrapper> {
                   )
                 : null,
             hasBackButton: false,
+            backgroundColor: SenseiColors.gray.shade50,
             leftWidget: _buildLeftWidget(context),
           ),
           body: IndexedStack(
@@ -297,6 +299,7 @@ class _MainWrapperState extends State<MainWrapper> {
                 )
               : null,
           hasBackButton: false,
+          backgroundColor: SenseiColors.gray.shade50,
           leftWidget: _selectedIndex == 0
               ? _buildSettingsButton(context, RoundHistoryScreen.screenName)
               : null,
