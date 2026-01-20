@@ -12,7 +12,6 @@ import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
-import 'package:turbo_disc_golf/screens/test_roast_screen.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -312,7 +311,6 @@ class _MainWrapperState extends State<MainWrapper> {
             const StatsScreen(),
             const TestAiSummaryScreen(),
             const TestImageParsingScreen(),
-            const TestRoastScreen(),
             const SettingsScreen(),
           ],
         ),

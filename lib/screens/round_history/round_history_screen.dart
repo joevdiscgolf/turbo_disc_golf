@@ -8,10 +8,9 @@ import 'package:turbo_disc_golf/animations/page_transitions.dart';
 import 'package:turbo_disc_golf/components/shimmer_box.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_steps/record_round_steps_screen.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/round_history_row_v2.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/welcome_empty_state.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -75,7 +74,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
     Navigator.of(context).push(
       BannerExpandPageRoute(
         builder: (context) =>
-            RecordRoundStepsScreen(bottomViewPadding: widget.bottomViewPadding),
+            RecordRoundScreen(bottomViewPadding: widget.bottomViewPadding),
       ),
     );
   }
@@ -133,9 +132,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final DGRound round = sortedRounds[index];
-            return locator.get<FeatureFlagService>().useRoundHistoryRowV2
-                ? RoundHistoryRowV2(round: round, logger: _logger, index: index)
-                : RoundHistoryRow(round: round, logger: _logger, index: index);
+            return RoundHistoryRow(round: round, logger: _logger, index: index);
           }, childCount: sortedRounds.length),
         ),
       );
@@ -308,58 +305,10 @@ class _RoundHistoryShimmer extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row: course name and score badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ShimmerBox(width: 140, height: 24, color: SenseiColors.gray.shade100),
-                      const SizedBox(height: 6),
-                      ShimmerBox(width: 80, height: 18, color: SenseiColors.gray.shade50),
-                    ],
-                  ),
-                ),
-                ShimmerBox(width: 64, height: 44, borderRadius: 8, color: SenseiColors.gray.shade100),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Stats row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatShimmer(),
-                _buildStatShimmer(),
-                _buildStatShimmer(),
-                _buildStatShimmer(),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Score distribution bar
-            ShimmerBox(height: 36, borderRadius: 8, color: SenseiColors.gray.shade50),
-            const SizedBox(height: 12),
-            // Date
-            ShimmerBox(width: 120, height: 16, color: SenseiColors.gray.shade100),
-          ],
-        ),
+      child: SizedBox(
+        height: 204,
+        child: ShimmerBox(borderRadius: 12, color: SenseiColors.gray.shade100),
       ),
-    );
-  }
-
-  Widget _buildStatShimmer() {
-    return Column(
-      children: [
-        ShimmerBox(width: 32, height: 20, color: SenseiColors.gray.shade100),
-        const SizedBox(height: 4),
-        ShimmerBox(width: 48, height: 16, color: SenseiColors.gray.shade50),
-      ],
     );
   }
 }

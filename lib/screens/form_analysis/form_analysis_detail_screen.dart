@@ -63,7 +63,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
         backgroundColor: Colors.transparent,
         appBar: GenericAppBar(
           topViewPadding: topViewPadding,
-          title: 'Form Analysis',
+          title: 'Form analysis',
           backgroundColor: Colors.transparent,
           hasBackButton: true,
           rightWidget: _buildMenuButton(),
@@ -107,9 +107,10 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
       enabled: !_isDeleting,
       onSelected: (String value) {
         if (value == 'delete') {
-          _logger.track('Delete Analysis Menu Item Tapped', properties: {
-            'analysis_id': widget.analysis.id,
-          });
+          _logger.track(
+            'Delete Analysis Menu Item Tapped',
+            properties: {'analysis_id': widget.analysis.id},
+          );
           _showDeleteConfirmation();
         }
       },
@@ -130,11 +131,14 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
 
   Future<void> _showDeleteConfirmation() async {
     // Track modal opened
-    _logger.track('Modal Opened', properties: {
-      'modal_type': 'dialog',
-      'modal_name': 'Delete Analysis Confirmation',
-      'analysis_id': widget.analysis.id,
-    });
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'dialog',
+        'modal_name': 'Delete Analysis Confirmation',
+        'analysis_id': widget.analysis.id,
+      },
+    );
 
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -147,9 +151,10 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                _logger.track('Delete Analysis Cancelled', properties: {
-                  'analysis_id': widget.analysis.id,
-                });
+                _logger.track(
+                  'Delete Analysis Cancelled',
+                  properties: {'analysis_id': widget.analysis.id},
+                );
                 Navigator.pop(context, false);
               },
               child: const Text('Cancel'),
@@ -165,9 +170,10 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     );
 
     if (confirmed == true && mounted) {
-      _logger.track('Delete Analysis Confirmed', properties: {
-        'analysis_id': widget.analysis.id,
-      });
+      _logger.track(
+        'Delete Analysis Confirmed',
+        properties: {'analysis_id': widget.analysis.id},
+      );
       await _handleDelete();
     }
   }
@@ -191,7 +197,9 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     } else {
       // Show error message
       setState(() => _isDeleting = false);
-      locator.get<ToastService>().showError('Failed to delete analysis. Please try again.');
+      locator.get<ToastService>().showError(
+        'Failed to delete analysis. Please try again.',
+      );
     }
   }
 }

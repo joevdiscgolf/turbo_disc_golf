@@ -15,13 +15,12 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/education/hole_description_examples_screen.dart';
 import 'package:turbo_disc_golf/components/panels/date_time_picker_panel.dart';
-import 'package:turbo_disc_golf/components/panels/select_image_source_panel.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_steps/panels/select_course_panel.dart';
+import 'package:turbo_disc_golf/screens/record_round/panels/select_course_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
@@ -38,24 +37,24 @@ import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String _hasSeenEducationKey = 'hasSeenHoleDescriptionEducation';
 
-class RecordRoundStepsScreen extends StatefulWidget {
-  const RecordRoundStepsScreen({
+class RecordRoundScreen extends StatefulWidget {
+  const RecordRoundScreen({
     super.key,
     required this.bottomViewPadding,
     this.skipIntroAnimations = false,
   });
 
-  static const String screenName = 'Record Round Steps';
-  static const String routeName = '/record-round-steps';
+  static const String screenName = 'Record Round';
+  static const String routeName = '/record-round';
 
   final double bottomViewPadding;
   final bool skipIntroAnimations;
 
   @override
-  State<RecordRoundStepsScreen> createState() => _RecordRoundStepsScreenState();
+  State<RecordRoundScreen> createState() => _RecordRoundScreenState();
 }
 
-class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
+class _RecordRoundScreenState extends State<RecordRoundScreen> {
   late final RecordRoundCubit _recordRoundCubit;
   late final LoggingServiceBase _logger;
 
@@ -99,7 +98,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     // Create scoped logger with base properties
     final LoggingService loggingService = locator.get<LoggingService>();
     _logger = loggingService.withBaseProperties({
-      'screen_name': RecordRoundStepsScreen.screenName,
+      'screen_name': RecordRoundScreen.screenName,
     });
 
     // Track screen impression
@@ -284,7 +283,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                   child: _mainBody(recordRoundState),
                 ),
               ),
-              if (_isParsingScorecard) _buildParsingOverlay(),
             ],
           );
         },
@@ -799,20 +797,22 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   Widget _buildImportScorecardButton() {
     return GestureDetector(
-      onTap: () {
-        _logger.track('Import Scorecard Button Tapped', properties: {});
+      onTap: _isParsingScorecard
+          ? null
+          : () {
+              _logger.track('Import Scorecard Button Tapped', properties: {});
 
-        _logger.track(
-          'Modal Opened',
-          properties: {
-            'modal_type': 'bottom_sheet',
-            'modal_name': 'Image Source Selection',
-            'trigger_source': 'button',
-          },
-        );
+              _logger.track(
+                'Modal Opened',
+                properties: {
+                  'modal_type': 'bottom_sheet',
+                  'modal_name': 'Image Source Selection',
+                  'trigger_source': 'button',
+                },
+              );
 
-        _handleImportScorecard();
-      },
+              _handleImportScorecard();
+            },
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 64,
@@ -829,25 +829,36 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           ],
         ),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.file_download_outlined,
-                size: 16,
-                color: SenseiColors.gray[600],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Import',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: SenseiColors.gray[600],
+          child: _isParsingScorecard
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.blue.shade600,
+                    ),
+                  ),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.file_download_outlined,
+                      size: 16,
+                      color: SenseiColors.gray[600],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Import',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: SenseiColors.gray[600],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -1114,44 +1125,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     }
   }
 
-  Widget _buildParsingOverlay() {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.5),
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CupertinoActivityIndicator(radius: 16),
-                const SizedBox(height: 16),
-                Text(
-                  'Parsing scorecard...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildNavigationButtons() {
     final RecordRoundState state = _recordRoundCubit.state;
@@ -1459,7 +1432,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _logger.track(
       'Navigation Action',
       properties: {
-        'from_screen': RecordRoundStepsScreen.screenName,
+        'from_screen': RecordRoundScreen.screenName,
         'to_screen': 'Round Processing Loading',
         'action_type': 'replace',
         'trigger': 'button',
@@ -1559,11 +1532,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       imagePath = tempFile.path;
       debugPrint('Temp file created at: $imagePath');
     } else {
-      // Show image source selection panel
-      final ImageSource? source = await SelectImageSourcePanel.show(context);
-      if (source == null || !mounted) return;
+      // Pick image from gallery
+      const ImageSource source = ImageSource.gallery;
 
-      // Pick image
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
@@ -1636,7 +1607,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       }
 
       if (holeMetadata.isEmpty) {
-        locator.get<ToastService>().showError('Could not parse scorecard. Please try again.');
+        locator.get<ToastService>().showError(
+          'Could not parse scorecard. Please try again.',
+        );
         return;
       }
 
@@ -1648,7 +1621,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         properties: {'holes_imported': holeMetadata.length},
       );
 
-      locator.get<ToastService>().showSuccess('Imported ${holeMetadata.length} hole scores');
+      locator.get<ToastService>().showSuccess(
+        'Imported ${holeMetadata.length} hole scores',
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isParsingScorecard = false);
@@ -1658,7 +1633,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         properties: {'error': e.toString()},
       );
 
-      locator.get<ToastService>().showError('Error parsing scorecard: ${e.toString()}');
+      locator.get<ToastService>().showError(
+        'Error parsing scorecard: ${e.toString()}',
+      );
     }
   }
 

@@ -81,14 +81,14 @@ enum FeatureFlag {
 
   // ===== Scorecard Import =====
   /// Debug-only: Uses test scorecard for import testing
-  useTestScorecardForImport('use_test_scorecard_for_import', true),
+  useTestScorecardForImport('use_test_scorecard_for_import', false),
   testScorecardPath(
     'test_scorecard_path',
     'assets/test_scorecards/flingsgiving_round_2.jpeg',
   ),
 
   /// Debug-only: Uses mock scorecard data instead of AI parsing
-  useMockScorecardData('use_mock_scorecard_data', true),
+  useMockScorecardData('use_mock_scorecard_data', false),
 
   // ===== Map/Location =====
   showMapLocationPicker('show_map_location_picker', true),

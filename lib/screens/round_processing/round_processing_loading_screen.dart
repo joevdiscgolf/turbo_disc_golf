@@ -185,7 +185,9 @@ class _RoundProcessingLoadingScreenState
           'RoundProcessingLoadingScreen: ERROR - Failed to finalize round',
         );
         if (mounted) {
-          locator.get<ToastService>().showError('Round is missing required fields. Please complete all holes.');
+          locator.get<ToastService>().showError(
+            'Round is missing required fields. Please complete all holes.',
+          );
           // Go back to confirmation screen
           setState(() {
             _processingState = _ProcessingState.confirming;
@@ -379,7 +381,7 @@ class _RoundProcessingLoadingScreenState
         children: [
           GenericAppBar(
             topViewPadding: MediaQuery.of(context).viewPadding.top,
-            title: _roundParser.parsedRound?.courseName ?? 'Round Review',
+            title: _roundParser.parsedRound?.courseName ?? 'Round review',
             backgroundColor: Colors.transparent,
             foregroundColor: Colors.black87,
             bottomWidget: _buildTabBar(),
@@ -464,7 +466,7 @@ class _RoundProcessingLoadingScreenState
               preferredSize: const Size.fromHeight(kToolbarHeight),
               child: GenericAppBar(
                 topViewPadding: MediaQuery.of(context).viewPadding.top,
-                title: 'Confirm Round',
+                title: 'Confirm round',
                 backgroundColor: const Color(0xFFF5F0FA),
                 foregroundColor: Colors.black87,
               ),
