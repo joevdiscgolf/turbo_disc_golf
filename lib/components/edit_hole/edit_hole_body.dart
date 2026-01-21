@@ -241,7 +241,9 @@ class EditHoleBody extends StatelessWidget {
       return HoleScoreColors.getScoreColor(0); // Default to par color
     }
 
-    final int relativeScore = throws.length - par!;
+    // Use actual score (includes OB penalties) instead of just throws.length
+    final int actualScore = getScoreFromThrows(throws);
+    final int relativeScore = actualScore - par!;
     return HoleScoreColors.getScoreColor(relativeScore);
   }
 }

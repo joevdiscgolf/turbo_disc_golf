@@ -12,7 +12,6 @@ import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/disc_usage_stats_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
 import 'package:turbo_disc_golf/services/search/course_search_provider.dart';
@@ -219,7 +218,6 @@ Future<void> setUpLocator() async {
   }
 
   locator.registerSingleton<BagService>(BagService());
-  locator.registerSingleton<DiscUsageStatsService>(DiscUsageStatsService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());
   locator.registerSingleton<WebScraperService>(WebScraperService());

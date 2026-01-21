@@ -219,6 +219,8 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                         showDragHandle: widget.enableReorder,
                         accentColor: purposeColor,
                         previousLandingSpot: previousLandingSpot,
+                        isOutOfBounds: discThrow.landingSpot == LandingSpot.outOfBounds ||
+                            discThrow.landingSpot == LandingSpot.hazard,
                       ),
                     );
                   },
@@ -338,6 +340,7 @@ class _MeasuredThrowRow extends StatelessWidget {
     required this.showDragHandle,
     required this.accentColor,
     this.previousLandingSpot,
+    this.isOutOfBounds = false,
   });
 
   final GlobalKey measurementKey;
@@ -350,6 +353,7 @@ class _MeasuredThrowRow extends StatelessWidget {
   final bool showDragHandle;
   final Color accentColor;
   final String? previousLandingSpot;
+  final bool isOutOfBounds;
 
   String _getThrowTitle() {
     if (discThrow.purpose != null) {
@@ -448,6 +452,8 @@ class _MeasuredThrowRow extends StatelessWidget {
                     : null,
                 previousLandingSpot: previousLandingSpot,
                 isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
+                isOutOfBounds: discThrow.landingSpot == LandingSpot.outOfBounds ||
+                    discThrow.landingSpot == LandingSpot.hazard,
                 isTeeShot: discThrow.purpose == ThrowPurpose.teeDrive,
                 animationDelay: animationDelay,
                 onEdit: onEdit,
@@ -463,7 +469,9 @@ class _MeasuredThrowRow extends StatelessWidget {
   }
 
   Widget _buildNumberCircle() {
-    final purposeColor = accentColor;
+    final Color circleColor = isOutOfBounds
+        ? Colors.red.withValues(alpha: 0.7)
+        : accentColor;
     return SizedBox(
       width: 44,
       child: Column(
@@ -472,9 +480,9 @@ class _MeasuredThrowRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: purposeColor.withValues(alpha: 0.12),
+              color: circleColor.withValues(alpha: 0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: purposeColor, width: 2),
+              border: Border.all(color: circleColor, width: 2),
             ),
             child: Center(
               child: Text(
@@ -482,7 +490,7 @@ class _MeasuredThrowRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: purposeColor,
+                  color: circleColor,
                 ),
               ),
             ),

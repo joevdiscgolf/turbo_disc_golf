@@ -7,7 +7,6 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/disc_usage_stats_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
@@ -50,7 +49,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
   late int? _distanceBefore;
   late int? _distanceAfter;
   late ThrowResultRating? _resultRating;
-  late String? _discId;
+  late String? _selectedDiscName;
   late ShotShape? _shotShape;
   late PuttStyle? _puttStyle;
   int? _landingDistance; // Direct state for slider to avoid lag
@@ -93,7 +92,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     _distanceBefore = widget.existingThrow?.distanceFeetBeforeThrow;
     _distanceAfter = widget.existingThrow?.distanceFeetAfterThrow;
     _resultRating = widget.existingThrow?.resultRating;
-    _discId = widget.existingThrow?.disc?.id;
+    _selectedDiscName =
+        widget.existingThrow?.disc?.name ?? widget.existingThrow?.discName;
     _shotShape = widget.existingThrow?.shotShape;
     _puttStyle =
         widget.existingThrow?.puttStyle ??
@@ -621,8 +621,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
         .where((disc) => disc.name.toLowerCase().contains(searchText))
         .toList();
 
-    // Get recommended discs based on selected purpose
-    final List<DGDisc> recommendedDiscs = _getRecommendedDiscs();
+    // Get recommended disc names from usage stats
+    final List<String> recommendedDiscNames = _getRecommendedDiscNames();
 
     // Check if search text doesn't match any disc (for "add new" option)
     final bool showAddNewOption =
@@ -634,9 +634,9 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Recommended discs section (only show when purpose is selected)
-          if (_purpose != null && recommendedDiscs.isNotEmpty) ...[
-            _buildRecommendedDiscsSection(recommendedDiscs),
+          // Recommended discs section (show when we have recommendations)
+          if (recommendedDiscNames.isNotEmpty) ...[
+            _buildRecommendedDiscsSection(recommendedDiscNames),
             const SizedBox(height: 12),
           ],
           // Search field
@@ -671,7 +671,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
             ),
             onChanged: (_) => setState(() {}),
           ),
-          // Filtered disc list
+          // Filtered disc list from user's bag
           if (filteredDiscs.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
@@ -684,8 +684,9 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
                         padding: const EdgeInsets.only(right: 8),
                         child: _buildOptionButton(
                           label: disc.name,
-                          isSelected: _discId == disc.id,
-                          onTap: () => setState(() => _discId = disc.id),
+                          isSelected: _selectedDiscName == disc.name,
+                          onTap: () =>
+                              setState(() => _selectedDiscName = disc.name),
                         ),
                       ),
                     )
@@ -703,110 +704,68 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     );
   }
 
-  /// Get recommended discs based on the currently selected purpose
-  List<DGDisc> _getRecommendedDiscs() {
-    if (_purpose == null) return [];
-
-    final DiscUsageStatsService statsService =
-        locator.get<DiscUsageStatsService>();
-    final List<String> recommendedIds = statsService.getRecommendedDiscIds(
-      purpose: _purpose!,
-      limit: 3,
+  /// Get recommended disc names based on the currently selected purpose
+  /// Returns disc names from usage stats (not dependent on local bag)
+  List<String> _getRecommendedDiscNames() {
+    debugPrint('[AddThrowPanel] Stats loaded: ${_bagService.usageStatsLoaded}');
+    debugPrint(
+      '[AddThrowPanel] Stats disc names: ${_bagService.usageStats.statsByDiscName.keys.toList()}',
     );
 
-    // Convert IDs to DGDisc objects, filtering out any that aren't in the bag
-    final List<DGDisc> recommendedDiscs = [];
-    for (final String discId in recommendedIds) {
-      final DGDisc? disc = _userDiscs
-          .where((d) => d.id == discId)
-          .cast<DGDisc?>()
-          .firstOrNull;
-      if (disc != null) {
-        recommendedDiscs.add(disc);
-      }
+    final List<String> recommendedNames;
+    if (_purpose != null) {
+      recommendedNames = _bagService.getRecommendedDiscNamesForPurpose(
+        purpose: _purpose!,
+        limit: 3,
+      );
+      debugPrint(
+        '[AddThrowPanel] Recommended names for $_purpose: $recommendedNames',
+      );
+    } else {
+      recommendedNames = _bagService.getMostUsedDiscNames(limit: 3);
+      debugPrint(
+        '[AddThrowPanel] Most used disc names (no purpose): $recommendedNames',
+      );
     }
 
-    return recommendedDiscs;
+    return recommendedNames;
   }
 
-  /// Build the "Frequently used for [purpose]" section
-  Widget _buildRecommendedDiscsSection(List<DGDisc> recommendedDiscs) {
-    final String purposeName = throwPurposeToName[_purpose] ?? _purpose!.name;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.star, size: 14, color: Colors.amber.shade600),
-            const SizedBox(width: 4),
-            Text(
-              'Frequently used for $purposeName',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: recommendedDiscs
-              .map((disc) => _buildRecommendedDiscChip(disc))
-              .toList(),
-        ),
-      ],
-    );
+  /// Find a disc in the user's bag by name
+  DGDisc? _findDiscInBag(String discName) {
+    return _userDiscs
+        .where((d) => d.name == discName)
+        .cast<DGDisc?>()
+        .firstOrNull;
   }
 
-  /// Build a chip for a recommended disc
-  Widget _buildRecommendedDiscChip(DGDisc disc) {
-    final bool isSelected = _discId == disc.id;
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        setState(() => _discId = disc.id);
-        _logger.track(
-          'Recommended Disc Selected',
-          properties: {
-            'disc_id': disc.id,
-            'disc_name': disc.name,
-            'purpose': _purpose?.name,
-          },
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? _buttonAccent : Colors.amber.shade50,
-          border: Border.all(
-            color: isSelected ? _buttonAccent : Colors.amber.shade200,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.star,
-              size: 12,
-              color: isSelected ? Colors.white : Colors.amber.shade600,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              disc.name,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.grey.shade800,
+  /// Build the recommended discs section as a horizontally scrollable row
+  Widget _buildRecommendedDiscsSection(List<String> discNames) {
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: discNames
+            .map(
+              (name) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildOptionButton(
+                  label: name,
+                  isSelected: _selectedDiscName == name,
+                  onTap: () {
+                    setState(() => _selectedDiscName = name);
+                    _logger.track(
+                      'Recommended Disc Selected',
+                      properties: {
+                        'disc_name': name,
+                        'purpose': _purpose?.name,
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+            )
+            .toList(),
       ),
     );
   }
@@ -860,7 +819,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
           // Refresh the disc list and select the new disc
           setState(() {
             _userDiscs = _bagService.userBag;
-            _discId = disc.id;
+            _selectedDiscName = disc.name;
             _discSearchController.clear();
           });
         },
@@ -1003,7 +962,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
               label,
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: FontWeight.w500,
               ),
               maxLines: 1,
               textAlign: TextAlign.center,
@@ -1190,13 +1149,10 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       _customDistanceAfterController.text,
     );
 
-    // Find selected disc
+    // Find selected disc in bag (if available)
     DGDisc? selectedDisc;
-    if (_discId != null) {
-      selectedDisc = _userDiscs.firstWhere(
-        (disc) => disc.id == _discId,
-        orElse: () => _userDiscs.first,
-      );
+    if (_selectedDiscName != null) {
+      selectedDisc = _findDiscInBag(_selectedDiscName!);
     }
 
     // Create updated throw
@@ -1220,7 +1176,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       notes: widget.existingThrow?.notes,
       rawText: widget.existingThrow?.rawText,
       parseConfidence: widget.existingThrow?.parseConfidence,
-      discName: selectedDisc?.name,
+      discName: _selectedDiscName ?? selectedDisc?.name,
       disc: selectedDisc,
     );
 

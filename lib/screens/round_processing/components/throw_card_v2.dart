@@ -22,6 +22,7 @@ class ThrowCardV2 extends StatefulWidget {
     this.landingSpot,
     this.previousLandingSpot,
     required this.isInBasket,
+    this.isOutOfBounds = false,
     required this.isTeeShot,
     required this.animationDelay,
     required this.onEdit,
@@ -56,6 +57,9 @@ class ThrowCardV2 extends StatefulWidget {
 
   /// Whether the throw landed in the basket (shows checkmark)
   final bool isInBasket;
+
+  /// Whether the throw went out of bounds (shows red border)
+  final bool isOutOfBounds;
 
   /// Whether this is a tee shot (shows "Tee" on left of arrow)
   final bool isTeeShot;
@@ -135,8 +139,10 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: widget.accentColor.withValues(alpha: 0.28),
-            width: 1,
+            color: widget.isOutOfBounds
+                ? Colors.red.withValues(alpha: 0.6)
+                : widget.accentColor.withValues(alpha: 0.28),
+            width: widget.isOutOfBounds ? 1.5 : 1,
           ),
           boxShadow: _isDraggingLocal
               ? null
@@ -148,7 +154,7 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
                   ),
                 ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.only(left: 8, right: 12, top: 4, bottom: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -163,6 +169,7 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
                 landingSpot: widget.landingSpot,
                 previousLandingSpot: widget.previousLandingSpot,
                 isInBasket: widget.isInBasket,
+                isOutOfBounds: widget.isOutOfBounds,
                 isTeeShot: widget.isTeeShot,
                 accentColor: widget.accentColor,
               ),
@@ -296,6 +303,7 @@ class _ArrowResultRow extends StatelessWidget {
     this.landingSpot,
     this.previousLandingSpot,
     required this.isInBasket,
+    this.isOutOfBounds = false,
     required this.isTeeShot,
     required this.accentColor,
   });
@@ -304,6 +312,7 @@ class _ArrowResultRow extends StatelessWidget {
   final String? landingSpot;
   final String? previousLandingSpot;
   final bool isInBasket;
+  final bool isOutOfBounds;
   final bool isTeeShot;
   final Color accentColor;
 
@@ -368,9 +377,13 @@ class _ArrowResultRow extends StatelessWidget {
         // Landing spot text (right side)
         if (landingSpot != null)
           Text(
-            landingSpot!,
+            isOutOfBounds
+                ? (landingSpot == 'Hazard' ? 'HZ' : 'OB')
+                : landingSpot!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: SenseiColors.gray[700],
+                  color: isOutOfBounds
+                      ? Colors.red.withValues(alpha: 0.7)
+                      : SenseiColors.gray[700],
                   fontWeight: FontWeight.w600,
                 ),
           ),

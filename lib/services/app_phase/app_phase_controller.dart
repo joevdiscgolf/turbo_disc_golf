@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
 import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
-import 'package:turbo_disc_golf/services/disc_usage_stats_service.dart';
+import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_app_info_data_loader.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_user_data_loader.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -177,7 +177,7 @@ class AppPhaseController extends ChangeNotifier {
       }
 
       // Start listening to disc usage stats for logged-in user
-      locator.get<DiscUsageStatsService>().startListening(currentAuthUser.uid);
+      locator.get<BagService>().startListeningToUsageStats(currentAuthUser.uid);
 
       final bool hasOnboarded = _authService.userHasOnboarded();
       debugPrint('[AppPhaseCubit][init] Has onboarded: $hasOnboarded');
@@ -230,7 +230,7 @@ class AppPhaseController extends ChangeNotifier {
       setPhase(AppPhase.loggedOut);
     } else {
       // Start listening to disc usage stats when user logs in
-      locator.get<DiscUsageStatsService>().startListening(user.uid);
+      locator.get<BagService>().startListeningToUsageStats(user.uid);
 
       final hasOnboarded = _authService.userHasOnboarded();
 

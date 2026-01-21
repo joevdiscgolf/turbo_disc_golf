@@ -85,7 +85,6 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
     );
 
     emit(activeState.copyWith(round: updatedRound));
-    _saveRound(updatedRound);
   }
 
   /// Update an entire hole including its throws
@@ -111,7 +110,6 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
     );
 
     emit(activeState.copyWith(round: updatedRound));
-    _saveRound(updatedRound);
   }
 
   /// Add a throw to a hole
@@ -350,7 +348,16 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
     }
     final ReviewingRoundActive activeState = state as ReviewingRoundActive;
     emit(activeState.copyWith(round: updatedRound));
-    _saveRound(updatedRound);
+  }
+
+  /// Save the current round to both local storage and Firestore.
+  /// Call this when the user confirms/finishes editing (e.g., presses "Done").
+  Future<void> saveToFirestore() async {
+    if (state is! ReviewingRoundActive) {
+      return;
+    }
+    final ReviewingRoundActive activeState = state as ReviewingRoundActive;
+    await _saveRound(activeState.round);
   }
 
   /// Save the round to both local storage and Firestore

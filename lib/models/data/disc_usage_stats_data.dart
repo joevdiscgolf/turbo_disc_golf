@@ -7,13 +7,13 @@ part 'disc_usage_stats_data.g.dart';
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class DiscUsageStats {
   const DiscUsageStats({
-    required this.discId,
+    required this.discName,
     required this.usageByPurpose,
     required this.lastUsedAt,
     required this.totalUses,
   });
 
-  final String discId;
+  final String discName;
 
   /// Map of ThrowPurpose.name -> usage count
   final Map<String, int> usageByPurpose;
@@ -29,28 +29,15 @@ class DiscUsageStats {
     return usageByPurpose[purpose.name] ?? 0;
   }
 
-  /// Create a new DiscUsageStats with incremented usage for a purpose
-  DiscUsageStats incrementUsage(ThrowPurpose purpose) {
-    final Map<String, int> updatedUsage = Map<String, int>.from(usageByPurpose);
-    updatedUsage[purpose.name] = (updatedUsage[purpose.name] ?? 0) + 1;
-
-    return DiscUsageStats(
-      discId: discId,
-      usageByPurpose: updatedUsage,
-      lastUsedAt: DateTime.now().toIso8601String(),
-      totalUses: totalUses + 1,
-    );
-  }
-
   factory DiscUsageStats.fromJson(Map<String, dynamic> json) =>
       _$DiscUsageStatsFromJson(json);
 
   Map<String, dynamic> toJson() => _$DiscUsageStatsToJson(this);
 
   /// Create empty stats for a new disc
-  factory DiscUsageStats.empty(String discId) {
+  factory DiscUsageStats.empty(String discName) {
     return DiscUsageStats(
-      discId: discId,
+      discName: discName,
       usageByPurpose: const {},
       lastUsedAt: DateTime.now().toIso8601String(),
       totalUses: 0,
@@ -62,13 +49,13 @@ class DiscUsageStats {
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class AllDiscUsageStats {
   const AllDiscUsageStats({
-    required this.statsByDiscId,
+    required this.statsByDiscName,
     required this.lastComputedAt,
     this.totalRoundsProcessed = 0,
   });
 
-  /// Map of discId -> DiscUsageStats
-  final Map<String, DiscUsageStats> statsByDiscId;
+  /// Map of discName -> DiscUsageStats
+  final Map<String, DiscUsageStats> statsByDiscName;
 
   /// ISO 8601 timestamp of when stats were last computed
   final String lastComputedAt;
@@ -84,20 +71,20 @@ class AllDiscUsageStats {
   /// Create empty stats container
   factory AllDiscUsageStats.empty() {
     return AllDiscUsageStats(
-      statsByDiscId: const {},
+      statsByDiscName: const {},
       lastComputedAt: DateTime.now().toIso8601String(),
       totalRoundsProcessed: 0,
     );
   }
 
-  /// Get stats for a specific disc, or null if not tracked
-  DiscUsageStats? getStatsForDisc(String discId) {
-    return statsByDiscId[discId];
+  /// Get stats for a specific disc by name, or null if not tracked
+  DiscUsageStats? getStatsForDisc(String discName) {
+    return statsByDiscName[discName];
   }
 
   /// Check if any stats exist
-  bool get isEmpty => statsByDiscId.isEmpty;
+  bool get isEmpty => statsByDiscName.isEmpty;
 
   /// Check if stats exist
-  bool get isNotEmpty => statsByDiscId.isNotEmpty;
+  bool get isNotEmpty => statsByDiscName.isNotEmpty;
 }

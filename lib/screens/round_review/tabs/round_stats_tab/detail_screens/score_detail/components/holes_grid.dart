@@ -163,6 +163,7 @@ class _HoleGridItem extends StatelessWidget {
                 ),
               );
             },
+            onRoundUpdated: () => roundReviewCubit.saveToFirestore(),
           );
         },
       ),
