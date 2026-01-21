@@ -455,7 +455,7 @@ class _MeasuredThrowRow extends StatelessWidget {
                 shotShape: discThrow.shotShape != null
                     ? shotShapeToName[discThrow.shotShape]
                     : null,
-                discName: discThrow.disc?.name,
+                discName: discThrow.disc?.name ?? discThrow.discName,
                 distance: discThrow.distanceFeetBeforeThrow != null
                     ? '${discThrow.distanceFeetBeforeThrow} ft'
                     : null,
