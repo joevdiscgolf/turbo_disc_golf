@@ -80,6 +80,7 @@ class ParseRoundDataResponseData {
   /// Parsed round data as JSON map (ready to convert to PotentialDGRound).
   /// When present, use this directly instead of parsing rawResponse.
   /// This field is populated when backend handles YAML parsing.
+  @JsonKey(name: 'parsedRound')
   final Map<String, dynamic>? parsedData;
 
   ParseRoundDataResponseData({

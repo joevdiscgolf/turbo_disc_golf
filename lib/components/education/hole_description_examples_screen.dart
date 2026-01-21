@@ -9,16 +9,21 @@ import 'package:turbo_disc_golf/utils/constants/hole_description_examples.dart';
 
 /// Screen showing side-by-side bad vs good hole description examples.
 /// Can be shown as a modal bottom sheet or full screen.
-class HoleDescriptionExamplesScreen extends StatelessWidget {
+class HoleDescriptionExamplesScreen extends StatefulWidget {
   const HoleDescriptionExamplesScreen({
     super.key,
     this.bottomViewPadding = 0,
+    this.isFirstTimeShow = false,
   });
 
   final double bottomViewPadding;
+  final bool isFirstTimeShow;
 
   /// Shows this screen as a modal bottom sheet.
-  static Future<void> show(BuildContext context) async {
+  static Future<void> show(
+    BuildContext context, {
+    bool isFirstTimeShow = false,
+  }) async {
     // Track modal opened
     locator.get<LoggingService>().track('Modal Opened', properties: {
       'modal_type': 'bottom_sheet',
@@ -32,9 +37,53 @@ class HoleDescriptionExamplesScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => HoleDescriptionExamplesScreen(
         bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        isFirstTimeShow: isFirstTimeShow,
       ),
     );
   }
+
+  @override
+  State<HoleDescriptionExamplesScreen> createState() =>
+      _HoleDescriptionExamplesScreenState();
+}
+
+class _HoleDescriptionExamplesScreenState
+    extends State<HoleDescriptionExamplesScreen> {
+  late bool _buttonEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    // Disable button for 3 seconds if this is first-time show
+    _buttonEnabled = !widget.isFirstTimeShow;
+
+    if (widget.isFirstTimeShow) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() => _buttonEnabled = true);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _HoleDescriptionExamplesContent(
+      bottomViewPadding: widget.bottomViewPadding,
+      buttonEnabled: _buttonEnabled,
+    );
+  }
+}
+
+/// Content widget for hole description examples
+class _HoleDescriptionExamplesContent extends StatelessWidget {
+  const _HoleDescriptionExamplesContent({
+    required this.bottomViewPadding,
+    required this.buttonEnabled,
+  });
+
+  final double bottomViewPadding;
+  final bool buttonEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -59,25 +108,25 @@ class HoleDescriptionExamplesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Key points section - moved to top
+                  _buildSectionHeader(
+                    context,
+                    'Key points',
+                    Colors.blue,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildKeyPointsCard(context),
+                  const SizedBox(height: 12),
                   // Side-by-side comparison cards
                   ...examplePairs.map(
                     (pair) => _ComparisonCard(pair: pair),
                   ),
-                  const SizedBox(height: 16),
-                  // Key points section
-                  _buildSectionHeader(
-                    context,
-                    'Key points',
-                    const Color(0xFF7E57C2),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildKeyPointsCard(context),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
-          _buildBottomButton(context),
+          _buildBottomButton(context, buttonEnabled),
         ],
       ),
     );
@@ -107,10 +156,10 @@ class HoleDescriptionExamplesScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3E5F5).withValues(alpha: 0.5),
+        color: Colors.blue.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border:
-            Border.all(color: const Color(0xFFCE93D8).withValues(alpha: 0.3)),
+            Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +206,7 @@ class HoleDescriptionExamplesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomButton(BuildContext context) {
+  Widget _buildBottomButton(BuildContext context, bool buttonEnabled) {
     return Container(
       padding: EdgeInsets.only(
         left: 16,
@@ -179,11 +228,16 @@ class HoleDescriptionExamplesScreen extends StatelessWidget {
         label: 'Got it!',
         width: double.infinity,
         height: 56,
-        backgroundColor: const Color(0xFF7E57C2),
+        backgroundColor: Colors.blue,
         labelColor: Colors.white,
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        onPressed: () => Navigator.of(context).pop(),
+        disabled: !buttonEnabled,
+        onPressed: () {
+          if (buttonEnabled) {
+            Navigator.of(context).pop();
+          }
+        },
       ),
     );
   }
@@ -264,7 +318,7 @@ class _ComparisonCard extends StatelessWidget {
         pair.outcome.toUpperCase(),
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
           color: outcomeColor.withValues(alpha: 0.9),
           letterSpacing: 0.5,
@@ -300,7 +354,7 @@ class _ComparisonCard extends StatelessWidget {
                 '"${pair.bad}"',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   color: Colors.grey[800],
                   height: 1.4,
                 ),
@@ -312,7 +366,7 @@ class _ComparisonCard extends StatelessWidget {
             pair.missingNote,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 9,
               color: Colors.grey[600],
               fontStyle: FontStyle.italic,
             ),
@@ -349,7 +403,7 @@ class _ComparisonCard extends StatelessWidget {
             child: Text(
               '"${pair.good}"',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 color: Colors.grey[800],
                 height: 1.4,
               ),

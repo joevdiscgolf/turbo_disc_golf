@@ -30,6 +30,7 @@ enum FeatureFlag {
   showHoleDistancesInScorecard('show_hole_distances_in_scorecard', true),
   showDistancePreferences('show_distance_preferences', false),
   showProjectedScoreInRecordRound('show_projected_score_in_record_round', true),
+  useThrowCardV2('use_throw_card_v2', true),
 
   // ===== Voice Service =====
   useIosVoiceService('use_ios_voice_service', true),
@@ -66,6 +67,7 @@ enum FeatureFlag {
   storyGenerationLLMProvider('story_generation_llm_provider', 'chatGPT'),
   useGeminiFallbackModel('use_gemini_fallback_model', false),
   generateAiContentFromBackend('generate_ai_content_from_backend', true),
+  expectParsedRoundFromBackend('expect_parsed_round_from_backend', true),
 
   // ===== Story Feature =====
   showStoryLoadingAnimation('show_story_loading_animation', false),

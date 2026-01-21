@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.da
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/education/hole_description_examples_screen.dart';
+import 'package:turbo_disc_golf/components/education/import_scorecard_education_panel.dart';
 import 'package:turbo_disc_golf/components/panels/date_time_picker_panel.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
@@ -133,7 +134,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     if (!hasSeenEducation && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
-          await HoleDescriptionExamplesScreen.show(context);
+          await HoleDescriptionExamplesScreen.show(context, isFirstTimeShow: true);
           await prefs.setBool(_hasSeenEducationKey, true);
         }
       });
@@ -157,51 +158,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
       context,
       title: 'Import your scorecard',
       modalName: 'Import Scorecard Education',
-      accentColor: const Color(0xFF2196F3),
-      contentBuilder: _buildImportEducationContent,
-    );
-  }
-
-  Widget _buildImportEducationContent(BuildContext context) {
-    // Placeholder content - user will provide the actual content
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2196F3).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF2196F3).withValues(alpha: 0.3),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'How to use scorecard import:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF2196F3),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Import education content goes here. This is a placeholder that will be replaced with your content.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      accentColor: Colors.blue,
+      contentBuilder: (_) => const ImportScorecardEducationPanel(),
     );
   }
 

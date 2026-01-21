@@ -93,8 +93,6 @@ enum ThrowPurpose {
   putt,
   @JsonValue('scramble')
   scramble,
-  @JsonValue('penalty')
-  penalty,
   @JsonValue('other')
   other,
 }

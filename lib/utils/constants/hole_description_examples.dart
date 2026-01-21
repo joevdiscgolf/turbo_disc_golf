@@ -49,15 +49,15 @@ const List<ExamplePair> examplePairs = [
 ];
 
 /// Key points that make a good hole description.
-const String whatMakesGoodDescription = '''
-A good hole description includes:
+const String whatMakesGoodDescription =
+    '''Describe all your throws on the hole with:
 
-Disc name (e.g. "my Wraith", "a Buzzz")
+Disc name
 
-Shot type (e.g. "backhand", "forehand")
+Shot type
 
-Shot shape if applicable (e.g. "hyzer flip", "turnover")
+Shot shape
 
-Landing spot (e.g. "450 ft short", "left of fairway")
+Landing spot
 
-Must end with the disc going in the basket (e.g. "tapped in for par", "made the putt for bogey", "made the birdie from 20 ft")''';
+Must end with disc going in the basket''';

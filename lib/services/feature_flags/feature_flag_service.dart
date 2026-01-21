@@ -136,6 +136,8 @@ class FeatureFlagService {
   bool get showProjectedScoreInRecordRound =>
       getBool(FeatureFlag.showProjectedScoreInRecordRound);
 
+  bool get useThrowCardV2 => getBool(FeatureFlag.useThrowCardV2);
+
   // ===== Voice Service =====
 
   bool get useIosVoiceService => getBool(FeatureFlag.useIosVoiceService);
@@ -198,6 +200,9 @@ class FeatureFlagService {
 
   bool get generateAiContentFromBackend =>
       getBool(FeatureFlag.generateAiContentFromBackend);
+
+  bool get expectParsedRoundFromBackend =>
+      getBool(FeatureFlag.expectParsedRoundFromBackend);
 
   // ===== Story Feature =====
 

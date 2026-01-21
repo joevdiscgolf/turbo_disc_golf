@@ -254,7 +254,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
             bottom: 16 + MediaQuery.of(context).padding.bottom,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: SenseiColors.gray[50],
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),

@@ -128,7 +128,10 @@ class EditHoleBody extends StatelessWidget {
                           width: double.infinity,
                           label: 'Re-record',
                           onPressed: onVoiceRecord,
-                          backgroundColor: const Color(0xFF9D4EDD),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          borderColor: const Color(0xFF9D4EDD),
+                          labelColor: const Color(0xFF9D4EDD),
+                          iconColor: const Color(0xFF9D4EDD),
                           icon: Icons.mic,
                         ),
                       ),
@@ -172,21 +175,11 @@ class EditHoleBody extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.golf_course,
-                size: 24,
-                color: hasRequiredFields ? scoreColor : Colors.black,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Hole ${holeNumber ?? '?'}',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          Text(
+            'Hole ${holeNumber ?? '?'}',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           Builder(
             builder: (context) {

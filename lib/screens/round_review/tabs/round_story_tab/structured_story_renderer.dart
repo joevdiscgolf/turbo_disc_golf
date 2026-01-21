@@ -50,7 +50,8 @@ class StructuredStoryRenderer extends StatelessWidget {
         _buildHeadline(context),
         const SizedBox(height: 12),
         // What Could Have Been - After headline (from AI data)
-        if (locator.get<FeatureFlagService>().showWhatCouldHaveBeenCard && content.whatCouldHaveBeen != null) ...[
+        if (locator.get<FeatureFlagService>().showWhatCouldHaveBeenCard &&
+            content.whatCouldHaveBeen != null) ...[
           WhatCouldHaveBeenCard(data: content.whatCouldHaveBeen!),
           const SizedBox(height: 12),
         ],
@@ -652,8 +653,6 @@ class StructuredStoryRenderer extends StatelessWidget {
         return Icons.flag;
       case ThrowPurpose.scramble:
         return Icons.refresh;
-      case ThrowPurpose.penalty:
-        return Icons.warning;
       default:
         return Icons.sports;
     }

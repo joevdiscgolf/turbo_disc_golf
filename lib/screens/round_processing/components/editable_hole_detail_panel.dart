@@ -112,7 +112,11 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         onThrowEdited: (throwIndex) =>
             _handleEditThrow(currentHole, throwIndex),
         onVoiceRecord: () => widget.onVoiceRecord(),
-        onDone: () => Navigator.of(context).pop(),
+        onDone: () {
+          // Save to Firestore when done is pressed (for existing rounds)
+          widget.onRoundUpdated?.call();
+          Navigator.of(context).pop();
+        },
         onReorder: (oldIndex, newIndex) => widget.onReorder(oldIndex, newIndex),
       ),
     );
