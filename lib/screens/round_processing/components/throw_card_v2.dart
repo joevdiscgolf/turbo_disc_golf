@@ -19,6 +19,7 @@ class ThrowCardV2 extends StatefulWidget {
     this.shotShape,
     this.discName,
     this.distance,
+    this.distanceAfter,
     this.landingSpot,
     this.previousLandingSpot,
     required this.isInBasket,
@@ -46,8 +47,11 @@ class ThrowCardV2 extends StatefulWidget {
   /// Disc name like "Star Destroyer" (nullable)
   final String? discName;
 
-  /// Distance like "350 ft" (nullable)
+  /// Distance before throw like "350 ft" (nullable)
   final String? distance;
+
+  /// Distance after throw like "25 ft" (nullable) - shown on right side
+  final String? distanceAfter;
 
   /// Landing spot like "Fairway", "Circle 1", "Basket" (nullable)
   final String? landingSpot;
@@ -166,6 +170,7 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
               const SizedBox(height: 6),
               _ArrowResultRow(
                 distance: widget.distance,
+                distanceAfter: widget.distanceAfter,
                 landingSpot: widget.landingSpot,
                 previousLandingSpot: widget.previousLandingSpot,
                 isInBasket: widget.isInBasket,
@@ -300,6 +305,7 @@ class _MiniChip extends StatelessWidget {
 class _ArrowResultRow extends StatelessWidget {
   const _ArrowResultRow({
     this.distance,
+    this.distanceAfter,
     this.landingSpot,
     this.previousLandingSpot,
     required this.isInBasket,
@@ -309,12 +315,29 @@ class _ArrowResultRow extends StatelessWidget {
   });
 
   final String? distance;
+  final String? distanceAfter;
   final String? landingSpot;
   final String? previousLandingSpot;
   final bool isInBasket;
   final bool isOutOfBounds;
   final bool isTeeShot;
   final Color accentColor;
+
+  /// Abbreviate location names for compact display
+  String _abbreviateLocation(String location) {
+    switch (location) {
+      case 'Circle 1':
+        return 'C1';
+      case 'Circle 2':
+        return 'C2';
+      case 'Out of bounds':
+        return 'OB';
+      case 'Hazard':
+        return 'HZ';
+      default:
+        return location;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -325,13 +348,35 @@ class _ArrowResultRow extends StatelessWidget {
     if (isTeeShot) {
       leftLabel = 'Tee';
     } else if (previousLandingSpot != null && distance != null) {
-      // Show both: "Fairway · 150 ft"
-      leftLabel = '$previousLandingSpot · $distance';
+      // Show both: "C1 · 150 ft"
+      leftLabel = '${_abbreviateLocation(previousLandingSpot!)} · $distance';
     } else if (previousLandingSpot != null) {
-      leftLabel = previousLandingSpot;
+      leftLabel = _abbreviateLocation(previousLandingSpot!);
     } else if (distance != null) {
       leftLabel = distance;
     }
+
+    // Build the right side label: prioritize special spots (basket/OB), then distance, then landing spot
+    String? rightLabel;
+    if (isOutOfBounds && landingSpot != null) {
+      // Always show OB/Hazard
+      rightLabel = landingSpot == 'Hazard' ? 'HZ' : 'OB';
+    } else if (isInBasket && landingSpot != null) {
+      // Always show Basket
+      rightLabel = _abbreviateLocation(landingSpot!);
+    } else if (distanceAfter != null) {
+      // Prefer distance over generic landing spots (C1, C2, fairway, etc.)
+      rightLabel = distanceAfter;
+    } else if (landingSpot != null) {
+      // Fall back to landing spot if no distance
+      rightLabel = _abbreviateLocation(landingSpot!);
+    }
+
+    // Consistent text style for both sides
+    final TextStyle labelStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
+          color: SenseiColors.gray[600],
+          fontWeight: FontWeight.w500,
+        );
 
     return Row(
       children: [
@@ -339,53 +384,31 @@ class _ArrowResultRow extends StatelessWidget {
         if (leftLabel != null)
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: Text(
-              leftLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: SenseiColors.gray[600],
-                    fontWeight: isTeeShot ? FontWeight.w500 : FontWeight.w400,
-                  ),
-            ),
+            child: Text(leftLabel, style: labelStyle),
           ),
 
-        // Arrow line (flexible middle)
+        // Arrow line with arrowhead
         Expanded(
-          child: Container(
-            height: 2,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  accentColor.withValues(alpha: 0.15),
-                  accentColor.withValues(alpha: 0.3),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(1),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: CustomPaint(
+              size: const Size(double.infinity, 12),
+              painter: _ArrowLinePainter(color: accentColor),
             ),
           ),
-        ),
-
-        // Arrow head
-        Icon(
-          Icons.arrow_forward,
-          size: 14,
-          color: accentColor,
         ),
 
         const SizedBox(width: 8),
 
         // Landing spot text (right side)
-        if (landingSpot != null)
+        if (rightLabel != null)
           Text(
-            isOutOfBounds
-                ? (landingSpot == 'Hazard' ? 'HZ' : 'OB')
-                : landingSpot!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isOutOfBounds
-                      ? Colors.red.withValues(alpha: 0.7)
-                      : SenseiColors.gray[700],
-                  fontWeight: FontWeight.w600,
-                ),
+            rightLabel,
+            style: labelStyle.copyWith(
+              color: isOutOfBounds
+                  ? Colors.red.withValues(alpha: 0.7)
+                  : SenseiColors.gray[600],
+            ),
           ),
 
         // Basket checkmark
@@ -399,5 +422,47 @@ class _ArrowResultRow extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+/// Custom painter for drawing a line with an arrowhead at the end.
+class _ArrowLinePainter extends CustomPainter {
+  const _ArrowLinePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = color.withValues(alpha: 0.4)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final double centerY = size.height / 2;
+    const double arrowSize = 5.0;
+
+    // Draw the main line (leaving space for arrowhead)
+    final Path linePath = Path()
+      ..moveTo(0, centerY)
+      ..lineTo(size.width - arrowSize, centerY);
+    canvas.drawPath(linePath, paint);
+
+    // Draw the filled arrowhead
+    final Paint arrowPaint = Paint()
+      ..color = color.withValues(alpha: 0.6)
+      ..style = PaintingStyle.fill;
+
+    final Path arrowPath = Path()
+      ..moveTo(size.width - arrowSize - 4, centerY - 4)
+      ..lineTo(size.width, centerY)
+      ..lineTo(size.width - arrowSize - 4, centerY + 4)
+      ..close();
+    canvas.drawPath(arrowPath, arrowPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArrowLinePainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }

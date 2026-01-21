@@ -35,8 +35,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize =>
       Size.fromHeight(48 + topViewPadding + (bottomWidgetHeight ?? 0));
 
-  static const double backButtonTouchTargetWidth = 60;
-  static const double rightPadding = 16;
+  static const double sideWidgetWidth = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +47,13 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   height: 40,
-                  width: backButtonTouchTargetWidth,
+                  width: sideWidgetWidth,
                   child: Builder(
                     builder: (context) {
                       if (hasBackButton) {
@@ -99,7 +98,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(
                   height: 40,
-                  width: backButtonTouchTargetWidth - rightPadding,
+                  width: sideWidgetWidth,
                   child: rightWidget,
                 ),
               ],

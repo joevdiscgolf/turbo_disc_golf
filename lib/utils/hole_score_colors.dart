@@ -60,10 +60,9 @@ class HoleScoreColors {
         flattenedOverWhite(bogeyColor, 0.05),
       ];
     } else {
-      // Double bogey+ - dark red gradient
       return [
-        doubleBogeyPlusColor.withValues(alpha: 0.25),
-        doubleBogeyPlusColor.withValues(alpha: 0.15),
+        flattenedOverWhite(doubleBogeyPlusColor, 0.4),
+        flattenedOverWhite(doubleBogeyPlusColor, 0.15),
       ];
     }
   }

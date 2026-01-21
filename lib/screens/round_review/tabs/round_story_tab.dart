@@ -30,6 +30,7 @@ import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/auth_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 /// AI narrative story tab that tells the story of your round
@@ -480,8 +481,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
             onRegenerate: () => _generateStory(isRegeneration: true),
             isLoading: _isGenerating,
             subtitle: 'Story may be outdated',
-            regenerationsRemaining:
-                _currentRound.aiSummary?.regenerationsRemaining,
+            regenerationsRemaining: isCurrentUserAdmin()
+                ? null
+                : _currentRound.aiSummary?.regenerationsRemaining,
           ),
           _buildContentCard(context, analysis),
         ],

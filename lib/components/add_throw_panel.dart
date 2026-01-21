@@ -922,7 +922,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
           ],
           Expanded(
             child: PrimaryButton(
-              label: 'Add',
+              label: widget.isNewThrow ? 'Add' : 'Save',
               width: double.infinity,
               height: 56,
               backgroundColor: SenseiColors.blue,

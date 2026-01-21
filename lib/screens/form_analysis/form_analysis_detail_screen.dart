@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -5,6 +7,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
@@ -66,7 +69,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           title: 'Form analysis',
           backgroundColor: Colors.transparent,
           hasBackButton: true,
-          rightWidget: _buildMenuButton(),
+          rightWidget: kDebugMode ? _buildMenuButton() : null,
         ),
         body: HistoryAnalysisView(
           analysis: widget.analysis,
@@ -134,46 +137,38 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     _logger.track(
       'Modal Opened',
       properties: {
-        'modal_type': 'dialog',
+        'modal_type': 'action_sheet',
         'modal_name': 'Delete Analysis Confirmation',
         'analysis_id': widget.analysis.id,
       },
     );
 
-    final bool? confirmed = await showDialog<bool>(
+    final bool? confirmed = await showCupertinoModalPopup<bool>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Analysis?'),
-          content: const Text(
-            'This will permanently delete this form analysis and all associated images. This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _logger.track(
-                  'Delete Analysis Cancelled',
-                  properties: {'analysis_id': widget.analysis.id},
-                );
-                Navigator.pop(context, false);
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
-            ),
-          ],
+        return CustomCupertinoActionSheet(
+          title: 'Delete Analysis?',
+          message: 'This will permanently delete this form analysis and all associated images. This action cannot be undone.',
+          destructiveActionLabel: 'Delete',
+          onDestructiveActionPressed: () {
+            _logger.track(
+              'Delete Analysis Confirmed',
+              properties: {'analysis_id': widget.analysis.id},
+            );
+            Navigator.of(context).pop(true);
+          },
+          onCancelPressed: () {
+            _logger.track(
+              'Delete Analysis Cancelled',
+              properties: {'analysis_id': widget.analysis.id},
+            );
+            Navigator.of(context).pop(false);
+          },
         );
       },
     );
 
     if (confirmed == true && mounted) {
-      _logger.track(
-        'Delete Analysis Confirmed',
-        properties: {'analysis_id': widget.analysis.id},
-      );
       await _handleDelete();
     }
   }

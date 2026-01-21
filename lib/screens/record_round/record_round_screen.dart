@@ -236,7 +236,19 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     final int projectedTotal = _calculateProjectedTotalThrows(state);
     final int totalPar = _calculateTotalPar(state);
 
-    final Color scoreColor = HoleScoreColors.getScoreColor(projectedRelative);
+    // Determine color and text based on relative score
+    final Color scoreColor;
+    final String scoreText;
+    if (projectedRelative < 0) {
+      scoreColor = HoleScoreColors.birdieColor;
+      scoreText = '$projectedRelative';
+    } else if (projectedRelative == 0) {
+      scoreColor = Colors.grey[600]!;
+      scoreText = 'E';
+    } else {
+      scoreColor = HoleScoreColors.bogeyColor;
+      scoreText = '+$projectedRelative';
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 0, left: 8),
@@ -245,9 +257,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
         children: [
           // Relative score (color coded)
           Text(
-            projectedRelative >= 0
-                ? '+$projectedRelative'
-                : '$projectedRelative',
+            scoreText,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

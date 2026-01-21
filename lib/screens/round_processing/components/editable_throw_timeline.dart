@@ -203,6 +203,15 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                       }
                     }
 
+                    // Infer distance after: if the NEXT throw has distanceBefore,
+                    // that's where THIS throw ended up
+                    int? inferredDistanceAfter = discThrow.distanceFeetAfterThrow;
+                    if (inferredDistanceAfter == null &&
+                        index < widget.throws.length - 1) {
+                      final nextThrow = widget.throws[index + 1];
+                      inferredDistanceAfter = nextThrow.distanceFeetBeforeThrow;
+                    }
+
                     return Container(
                       key: ValueKey('throw_$index'),
                       margin: EdgeInsets.only(
@@ -219,6 +228,7 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                         showDragHandle: widget.enableReorder,
                         accentColor: purposeColor,
                         previousLandingSpot: previousLandingSpot,
+                        inferredDistanceAfter: inferredDistanceAfter,
                         isOutOfBounds: discThrow.landingSpot == LandingSpot.outOfBounds ||
                             discThrow.landingSpot == LandingSpot.hazard,
                       ),
@@ -315,9 +325,9 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
       case ThrowPurpose.fairwayDrive:
         return const Color(0xFF5C6BC0); // Indigo - confident start
       case ThrowPurpose.approach:
-        return const Color(0xFF26A69A); // Teal - transitional
+        return const Color(0xFF2196F3); // Blue - transitional
       case ThrowPurpose.putt:
-        return const Color(0xFFFFB300); // Amber - finishing
+        return const Color(0xFF66BB6A); // Soft green - finishing
       case ThrowPurpose.scramble:
       case ThrowPurpose.other:
       default:
@@ -340,6 +350,7 @@ class _MeasuredThrowRow extends StatelessWidget {
     required this.showDragHandle,
     required this.accentColor,
     this.previousLandingSpot,
+    this.inferredDistanceAfter,
     this.isOutOfBounds = false,
   });
 
@@ -353,6 +364,7 @@ class _MeasuredThrowRow extends StatelessWidget {
   final bool showDragHandle;
   final Color accentColor;
   final String? previousLandingSpot;
+  final int? inferredDistanceAfter;
   final bool isOutOfBounds;
 
   String _getThrowTitle() {
@@ -447,13 +459,18 @@ class _MeasuredThrowRow extends StatelessWidget {
                 distance: discThrow.distanceFeetBeforeThrow != null
                     ? '${discThrow.distanceFeetBeforeThrow} ft'
                     : null,
+                distanceAfter: inferredDistanceAfter != null
+                    ? '$inferredDistanceAfter ft'
+                    : null,
                 landingSpot: discThrow.landingSpot != null
                     ? landingSpotToName[discThrow.landingSpot]
                     : null,
-                previousLandingSpot: previousLandingSpot,
+                // Only show previous landing spot if exact distance before isn't available
+                previousLandingSpot: discThrow.distanceFeetBeforeThrow == null
+                    ? previousLandingSpot
+                    : null,
                 isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
-                isOutOfBounds: discThrow.landingSpot == LandingSpot.outOfBounds ||
-                    discThrow.landingSpot == LandingSpot.hazard,
+                isOutOfBounds: isOutOfBounds,
                 isTeeShot: discThrow.purpose == ThrowPurpose.teeDrive,
                 animationDelay: animationDelay,
                 onEdit: onEdit,
