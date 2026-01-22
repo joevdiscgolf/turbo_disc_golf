@@ -5,15 +5,20 @@
 // while dragging, and the throw cards move around them.
 // Drag handle is inside the card (right side). Card keeps rounded corners
 // while dragging but removes shadow while in drag state.
-// Uses flutter_animate for subtle entry animations and uses technique colors.
+// Uses flutter_animate for subtle entry animations and uses purpose colors.
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
-import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v2.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v3_inline.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v3_split.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
 
@@ -45,6 +50,14 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
   List<double> _iconCenterY = [];
   bool _isDragging = false;
   Timer? _recomputeTimer;
+
+  /// Get the current throw card layout style from feature flags
+  String get _layoutStyle =>
+      locator.get<FeatureFlagService>().throwCardLayoutStyle;
+
+  /// Whether we're using a V3 layout (no external timeline)
+  bool get _isV3Layout =>
+      _layoutStyle == 'inline' || _layoutStyle == 'split';
 
   @override
   void initState() {
@@ -188,9 +201,37 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                   },
                   itemBuilder: (context, index) {
                     final discThrow = widget.throws[index];
-                    final techniqueColor = _getTechniqueColorForThrow(
-                      discThrow,
-                    );
+                    final purposeColor = _getPurposeColorForThrow(discThrow);
+
+                    // Get previous throw's landing spot for the starting location
+                    String? previousLandingSpot;
+                    if (index > 0) {
+                      final prevThrow = widget.throws[index - 1];
+                      if (prevThrow.landingSpot != null) {
+                        previousLandingSpot =
+                            landingSpotToName[prevThrow.landingSpot];
+                      }
+                    }
+
+                    // Infer distance after: if the NEXT throw has distanceBefore,
+                    // that's where THIS throw ended up
+                    int? inferredDistanceAfter = discThrow.distanceFeetAfterThrow;
+                    if (inferredDistanceAfter == null &&
+                        index < widget.throws.length - 1) {
+                      final nextThrow = widget.throws[index + 1];
+                      inferredDistanceAfter = nextThrow.distanceFeetBeforeThrow;
+                    }
+
+                    // Infer distance before: PREVIOUS throw's distanceAfter is
+                    // the authority (where we landed = where next throw starts)
+                    int? inferredDistanceBefore = discThrow.distanceFeetBeforeThrow;
+                    if (index > 0) {
+                      final prevThrow = widget.throws[index - 1];
+                      // Previous throw's distanceAfter takes precedence
+                      if (prevThrow.distanceFeetAfterThrow != null) {
+                        inferredDistanceBefore = prevThrow.distanceFeetAfterThrow;
+                      }
+                    }
 
                     return Container(
                       key: ValueKey('throw_$index'),
@@ -206,15 +247,21 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                         onEdit: () => widget.onEditThrow(index),
                         onDragStateChange: _setDragging,
                         showDragHandle: widget.enableReorder,
-                        accentColor: techniqueColor,
+                        accentColor: purposeColor,
+                        previousLandingSpot: previousLandingSpot,
+                        inferredDistanceBefore: inferredDistanceBefore,
+                        inferredDistanceAfter: inferredDistanceAfter,
+                        isOutOfBounds: discThrow.landingSpot == LandingSpot.outOfBounds ||
+                            discThrow.landingSpot == LandingSpot.hazard,
+                        layoutStyle: _layoutStyle,
                       ),
                     );
                   },
                 ),
               ),
 
-              // Overlay connectors between icons
-              if (_iconCenterY.isNotEmpty)
+              // Overlay connectors between icons (only for non-V3 layouts)
+              if (!_isV3Layout && _iconCenterY.isNotEmpty)
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Stack(
@@ -232,9 +279,7 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                                 double.infinity,
                               );
                               final discThrow = widget.throws[i];
-                              final color = _getTechniqueColorForThrow(
-                                discThrow,
-                              );
+                              final color = _getPurposeColorForThrow(discThrow);
 
                               return Positioned(
                                 left:
@@ -280,7 +325,7 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                             child: GestureDetector(
                               onTap: () => widget.onAddThrowAt(i),
                               child: _AnchoredAddButton(
-                                color: _getTechniqueColorForThrow(
+                                color: _getPurposeColorForThrow(
                                   widget.throws[i],
                                 ),
                               ),
@@ -297,19 +342,19 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
     );
   }
 
-  Color _getTechniqueColorForThrow(DiscThrow discThrow) {
-    switch (discThrow.technique) {
-      case ThrowTechnique.backhand:
-      case ThrowTechnique.backhandRoller:
-        return const Color(0xFF4A90E2);
-      case ThrowTechnique.forehand:
-      case ThrowTechnique.forehandRoller:
-        return const Color(0xFF50C878);
+  Color _getPurposeColorForThrow(DiscThrow discThrow) {
+    switch (discThrow.purpose) {
+      case ThrowPurpose.teeDrive:
+      case ThrowPurpose.fairwayDrive:
+        return const Color(0xFF5C6BC0); // Indigo - confident start
+      case ThrowPurpose.approach:
+        return const Color(0xFF2196F3); // Blue - transitional
+      case ThrowPurpose.putt:
+        return const Color(0xFF66BB6A); // Soft green - finishing
+      case ThrowPurpose.scramble:
+      case ThrowPurpose.other:
       default:
-        if (discThrow.purpose == ThrowPurpose.putt) {
-          return const Color(0xFFFDB927);
-        }
-        return const Color(0xFF9E9E9E);
+        return const Color(0xFF78909C); // Slate - neutral
     }
   }
 }
@@ -327,6 +372,11 @@ class _MeasuredThrowRow extends StatelessWidget {
     required this.onDragStateChange,
     required this.showDragHandle,
     required this.accentColor,
+    this.previousLandingSpot,
+    this.inferredDistanceBefore,
+    this.inferredDistanceAfter,
+    this.isOutOfBounds = false,
+    this.layoutStyle = '',
   });
 
   final GlobalKey measurementKey;
@@ -338,40 +388,31 @@ class _MeasuredThrowRow extends StatelessWidget {
   final void Function(bool isDragging) onDragStateChange;
   final bool showDragHandle;
   final Color accentColor;
+  final String? previousLandingSpot;
+  final int? inferredDistanceBefore;
+  final int? inferredDistanceAfter;
+  final bool isOutOfBounds;
 
-  IconData _getTechniqueIcon() {
-    switch (discThrow.technique) {
-      case ThrowTechnique.backhand:
-      case ThrowTechnique.backhandRoller:
-        return FlutterRemix.disc_line;
-      case ThrowTechnique.forehand:
-      case ThrowTechnique.forehandRoller:
-        return Icons.south_west;
-      case ThrowTechnique.tomahawk:
-      case ThrowTechnique.thumber:
-      case ThrowTechnique.overhand:
-        return Icons.arrow_downward;
-      case ThrowTechnique.grenade:
-        return FlutterRemix.arrow_down_circle_line;
-      case ThrowTechnique.other:
-      default:
-        if (discThrow.purpose == ThrowPurpose.putt) {
-          return FlutterRemix.flag_line;
-        }
-        return Icons.sports_golf;
-    }
-  }
+  /// Layout style: 'inline', 'split', or empty for default
+  final String layoutStyle;
 
   String _getThrowTitle() {
-    final String throwNumber = 'Throw ${throwIndex + 1}';
-    if (discThrow.technique != null) {
-      return '$throwNumber: ${throwTechniqueToName[discThrow.technique]}';
+    if (discThrow.purpose != null) {
+      return throwPurposeToName[discThrow.purpose] ?? 'Throw ${throwIndex + 1}';
     }
-    return throwNumber;
+    return 'Throw ${throwIndex + 1}';
   }
 
   List<String> _getThrowDetails() {
     final List<String> details = [];
+    // Add technique (if available)
+    if (discThrow.technique != null) {
+      details.add(throwTechniqueToName[discThrow.technique] ?? '');
+    }
+    // Add shot shape after technique (related "how" info)
+    if (discThrow.shotShape != null) {
+      details.add(shotShapeToName[discThrow.shotShape] ?? '');
+    }
     if (discThrow.distanceFeetBeforeThrow != null) {
       details.add('${discThrow.distanceFeetBeforeThrow} ft');
     }
@@ -386,8 +427,24 @@ class _MeasuredThrowRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final techniqueColor = accentColor;
-    final techniqueIcon = _getTechniqueIcon();
+    // V3 layouts: no external number circle, card is full-width
+    if (layoutStyle == 'inline') {
+      return _buildV3InlineCard(context);
+    }
+    if (layoutStyle == 'split') {
+      return _buildV3SplitCard(context);
+    }
+
+    // Legacy layouts with external number circle
+    final bool useV2 = locator.get<FeatureFlagService>().useThrowCardV2;
+    if (useV2) {
+      return _buildV2Card(context);
+    }
+    return _buildV1Card(context);
+  }
+
+  Widget _buildV1Card(BuildContext context) {
+    final purposeColor = accentColor;
     final details = _getThrowDetails();
 
     return Container(
@@ -396,35 +453,13 @@ class _MeasuredThrowRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left: icon; connector no longer rendered here (overlay handles it)
-            SizedBox(
-              width: 44,
-              child: Column(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: techniqueColor.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: techniqueColor, width: 2),
-                    ),
-                    child: Icon(techniqueIcon, size: 16, color: techniqueColor),
-                  ),
-                  // Spacer to create space for the overlay connector
-                  if (!isLast) Expanded(child: Container()),
-                ],
-              ),
-            ),
-
+            _buildNumberCircle(),
             const SizedBox(width: 12),
-
-            // Card
             Expanded(
               child: _ThrowCard(
                 title: _getThrowTitle(),
                 details: details,
-                accentColor: techniqueColor,
+                accentColor: purposeColor,
                 animationDelay: animationDelay,
                 onEdit: onEdit,
                 onDragStateChange: onDragStateChange,
@@ -434,6 +469,167 @@ class _MeasuredThrowRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildV2Card(BuildContext context) {
+    return Container(
+      key: measurementKey,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildNumberCircle(),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ThrowCardV2(
+                title: _getThrowTitle(),
+                accentColor: accentColor,
+                technique: discThrow.technique != null
+                    ? throwTechniqueToName[discThrow.technique]
+                    : null,
+                shotShape: discThrow.shotShape != null
+                    ? shotShapeToName[discThrow.shotShape]
+                    : null,
+                discName: discThrow.disc?.name ?? discThrow.discName,
+                distance: inferredDistanceBefore != null
+                    ? '$inferredDistanceBefore ft'
+                    : null,
+                distanceAfter: inferredDistanceAfter != null
+                    ? '$inferredDistanceAfter ft'
+                    : null,
+                landingSpot: discThrow.landingSpot != null
+                    ? landingSpotToName[discThrow.landingSpot]
+                    : null,
+                // Only show previous landing spot if exact distance before isn't available
+                previousLandingSpot: inferredDistanceBefore == null
+                    ? previousLandingSpot
+                    : null,
+                isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
+                isOutOfBounds: isOutOfBounds,
+                isTeeShot: discThrow.purpose == ThrowPurpose.teeDrive,
+                animationDelay: animationDelay,
+                onEdit: onEdit,
+                onDragStateChange: onDragStateChange,
+                showDragHandle: showDragHandle,
+                visualIndex: throwIndex,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// V3 inline layout - full-width card with inline number badge
+  Widget _buildV3InlineCard(BuildContext context) {
+    return Container(
+      key: measurementKey,
+      child: ThrowCardV3Inline(
+        throwNumber: throwIndex + 1,
+        title: _getThrowTitle(),
+        accentColor: accentColor,
+        technique: discThrow.technique != null
+            ? throwTechniqueToName[discThrow.technique]
+            : null,
+        shotShape: discThrow.shotShape != null
+            ? shotShapeToName[discThrow.shotShape]
+            : null,
+        discName: discThrow.disc?.name ?? discThrow.discName,
+        distance: inferredDistanceBefore != null
+            ? '$inferredDistanceBefore ft'
+            : null,
+        distanceAfter: inferredDistanceAfter != null
+            ? '$inferredDistanceAfter ft'
+            : null,
+        landingSpot: discThrow.landingSpot != null
+            ? landingSpotToName[discThrow.landingSpot]
+            : null,
+        previousLandingSpot: inferredDistanceBefore == null
+            ? previousLandingSpot
+            : null,
+        isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
+        isOutOfBounds: isOutOfBounds,
+        isTeeShot: discThrow.purpose == ThrowPurpose.teeDrive,
+        animationDelay: animationDelay,
+        onEdit: onEdit,
+        onDragStateChange: onDragStateChange,
+        showDragHandle: showDragHandle,
+        visualIndex: throwIndex,
+      ),
+    );
+  }
+
+  /// V3 split layout - left-right split with number in gutter
+  Widget _buildV3SplitCard(BuildContext context) {
+    return Container(
+      key: measurementKey,
+      child: ThrowCardV3Split(
+        throwNumber: throwIndex + 1,
+        title: _getThrowTitle(),
+        accentColor: accentColor,
+        technique: discThrow.technique != null
+            ? throwTechniqueToName[discThrow.technique]
+            : null,
+        shotShape: discThrow.shotShape != null
+            ? shotShapeToName[discThrow.shotShape]
+            : null,
+        discName: discThrow.disc?.name ?? discThrow.discName,
+        distance: inferredDistanceBefore != null
+            ? '$inferredDistanceBefore ft'
+            : null,
+        distanceAfter: inferredDistanceAfter != null
+            ? '$inferredDistanceAfter ft'
+            : null,
+        landingSpot: discThrow.landingSpot != null
+            ? landingSpotToName[discThrow.landingSpot]
+            : null,
+        previousLandingSpot: inferredDistanceBefore == null
+            ? previousLandingSpot
+            : null,
+        isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
+        isOutOfBounds: isOutOfBounds,
+        isTeeShot: discThrow.purpose == ThrowPurpose.teeDrive,
+        animationDelay: animationDelay,
+        onEdit: onEdit,
+        onDragStateChange: onDragStateChange,
+        showDragHandle: showDragHandle,
+        visualIndex: throwIndex,
+      ),
+    );
+  }
+
+  Widget _buildNumberCircle() {
+    final Color circleColor = isOutOfBounds
+        ? Colors.red.withValues(alpha: 0.7)
+        : accentColor;
+    return SizedBox(
+      width: 44,
+      child: Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: circleColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+              border: Border.all(color: circleColor, width: 2),
+            ),
+            child: Center(
+              child: Text(
+                '${throwIndex + 1}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: circleColor,
+                ),
+              ),
+            ),
+          ),
+          // Spacer to create space for the overlay connector
+          if (!isLast) Expanded(child: Container()),
+        ],
       ),
     );
   }
@@ -472,12 +668,16 @@ class _ThrowCardState extends State<_ThrowCard> {
     if (_isDraggingLocal == dragging) return;
     setState(() => _isDraggingLocal = dragging);
     widget.onDragStateChange(dragging);
+    HapticFeedback.lightImpact();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onEdit,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onEdit();
+      },
       child:
           Container(
                 decoration: BoxDecoration(
@@ -510,11 +710,19 @@ class _ThrowCardState extends State<_ThrowCard> {
                         children: [
                           Text(
                             widget.title,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.accentColor,
-                                ),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              // Darken accent color for better contrast against white
+                              color: HSLColor.fromColor(widget.accentColor)
+                                  .withLightness(
+                                    (HSLColor.fromColor(
+                                              widget.accentColor,
+                                            ).lightness -
+                                            0.15)
+                                        .clamp(0.0, 0.5),
+                                  )
+                                  .toColor(),
+                            ),
                           ),
                           if (widget.details.isNotEmpty) ...[
                             const SizedBox(height: 4),
@@ -537,7 +745,7 @@ class _ThrowCardState extends State<_ThrowCard> {
                     Icon(
                       Icons.edit_outlined,
                       size: 18,
-                      color: widget.accentColor,
+                      color: SenseiColors.gray[600],
                     ),
 
                     if (widget.showDragHandle) ...[
@@ -557,7 +765,7 @@ class _ThrowCardState extends State<_ThrowCard> {
                             child: Icon(
                               Icons.drag_handle,
                               size: 20,
-                              color: widget.accentColor.withValues(alpha: 0.84),
+                              color: SenseiColors.gray[600],
                             ),
                           ),
                         ),

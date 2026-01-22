@@ -29,6 +29,22 @@ enum FeatureFlag {
   useBeautifulDatePicker('use_beautiful_date_picker', true),
   showHoleDistancesInScorecard('show_hole_distances_in_scorecard', true),
   showDistancePreferences('show_distance_preferences', false),
+  showProjectedScoreInRecordRound('show_projected_score_in_record_round', true),
+  showHoleDetailCardInRecordRound(
+    'show_hole_detail_card_in_record_round',
+    false,
+  ),
+  useThrowCardV2('use_throw_card_v2', true),
+  useFixedBottomNavInRecordRound('use_fixed_bottom_nav_in_record_round', true),
+  useFlatMicrophoneButton('use_flat_microphone_button', true),
+
+  /// Throw card layout style: 'inline' for full-width with inline number badge,
+  /// 'split' for left-right split layout, empty for default (v2 with timeline)
+  throwCardLayoutStyle('throw_card_layout_style', 'split'),
+  showMissingThrowDetailsInScoreDetail(
+    'show_missing_throw_details_in_score_detail',
+    true,
+  ),
 
   // ===== Voice Service =====
   useIosVoiceService('use_ios_voice_service', true),
@@ -65,6 +81,7 @@ enum FeatureFlag {
   storyGenerationLLMProvider('story_generation_llm_provider', 'chatGPT'),
   useGeminiFallbackModel('use_gemini_fallback_model', false),
   generateAiContentFromBackend('generate_ai_content_from_backend', true),
+  expectParsedRoundFromBackend('expect_parsed_round_from_backend', true),
 
   // ===== Story Feature =====
   showStoryLoadingAnimation('show_story_loading_animation', false),
@@ -81,14 +98,14 @@ enum FeatureFlag {
 
   // ===== Scorecard Import =====
   /// Debug-only: Uses test scorecard for import testing
-  useTestScorecardForImport('use_test_scorecard_for_import', true),
+  useTestScorecardForImport('use_test_scorecard_for_import', false),
   testScorecardPath(
     'test_scorecard_path',
     'assets/test_scorecards/flingsgiving_round_2.jpeg',
   ),
 
   /// Debug-only: Uses mock scorecard data instead of AI parsing
-  useMockScorecardData('use_mock_scorecard_data', true),
+  useMockScorecardData('use_mock_scorecard_data', false),
 
   // ===== Map/Location =====
   showMapLocationPicker('show_map_location_picker', true),

@@ -129,56 +129,53 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
           ),
         );
       }
-      return SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            // Show list items
-            if (index < state.analyses.length) {
-              final analysis = state.analyses[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: index == 0 ? 12 : 0,
-                ),
-                child: FormAnalysisCard(
-                  key: ValueKey(analysis.id),
-                  analysis: analysis,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _logger.track('Form Analysis Card Tapped', properties: {
-                      'analysis_id': analysis.id,
-                      'item_index': index,
-                    });
-                    Navigator.push(
-                      context,
-                      CupertinoPageRoute(
-                        builder: (context) => BlocProvider.value(
-                          value: _historyCubit,
-                          child: FormAnalysisDetailScreen(analysis: analysis),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            }
-            // Show loading indicator at bottom when loading more
-            else if (state.isLoadingMore) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            // Show end-of-list padding
-            else {
-              return const SizedBox(height: 112);
-            }
-          },
-          childCount:
-              state.analyses.length +
-              (state.isLoadingMore ? 1 : 0) +
-              1, // +1 for bottom padding
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              // Show list items
+              if (index < state.analyses.length) {
+                final analysis = state.analyses[index];
+                return Column(
+                  children: [
+                    FormAnalysisCard(
+                      key: ValueKey(analysis.id),
+                      analysis: analysis,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _logger.track('Form Analysis Card Tapped', properties: {
+                          'analysis_id': analysis.id,
+                          'item_index': index,
+                        });
+                        Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => BlocProvider.value(
+                              value: _historyCubit,
+                              child: FormAnalysisDetailScreen(analysis: analysis),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    if (index < state.analyses.length - 1)
+                      const SizedBox(height: 8),
+                  ],
+                );
+              }
+              // Show loading indicator at bottom when loading more
+              else if (state.isLoadingMore) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+            childCount:
+                state.analyses.length + (state.isLoadingMore ? 1 : 0),
+          ),
         ),
       );
     } else {

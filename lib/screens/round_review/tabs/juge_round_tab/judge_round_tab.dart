@@ -32,6 +32,7 @@ import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/auth_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 import 'package:yaml/yaml.dart';
 
@@ -901,8 +902,9 @@ highlightStats:
               isLoading: _currentState == JudgmentState.building ||
                   _currentState == JudgmentState.preparing,
               subtitle: 'Roast may be outdated',
-              regenerationsRemaining:
-                  _currentRound.aiJudgment?.regenerationsRemaining,
+              regenerationsRemaining: isCurrentUserAdmin()
+                  ? null
+                  : _currentRound.aiJudgment?.regenerationsRemaining,
             ),
 
           // Verdict card
@@ -1110,8 +1112,9 @@ highlightStats:
                         isLoading: _currentState == JudgmentState.building ||
                             _currentState == JudgmentState.preparing,
                         subtitle: 'Roast may be outdated',
-                        regenerationsRemaining:
-                            _currentRound.aiJudgment?.regenerationsRemaining,
+                        regenerationsRemaining: isCurrentUserAdmin()
+                            ? null
+                            : _currentRound.aiJudgment?.regenerationsRemaining,
                       ),
 
                     // Verdict card

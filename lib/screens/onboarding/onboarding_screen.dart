@@ -77,7 +77,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       resizeToAvoidBottomInset: false,
       appBar: GenericAppBar(
         topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: 'Complete Your Profile',
+        title: 'Complete your profile',
         hasBackButton: true,
         onBackPressed: () async {
           await _authService.logout();

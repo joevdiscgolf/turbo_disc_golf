@@ -11,17 +11,19 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
+import 'package:turbo_disc_golf/components/buttons/animated_microphone_button_v2.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/education/hole_description_examples_screen.dart';
+import 'package:turbo_disc_golf/components/education/import_scorecard_education_panel.dart';
 import 'package:turbo_disc_golf/components/panels/date_time_picker_panel.dart';
-import 'package:turbo_disc_golf/components/panels/select_image_source_panel.dart';
+import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/components/voice_input/voice_description_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_steps/panels/select_course_panel.dart';
+import 'package:turbo_disc_golf/screens/record_round/panels/select_course_panel.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/temporary_holes_review_grid.dart';
 import 'package:turbo_disc_golf/screens/round_processing/round_processing_loading_screen.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
@@ -31,31 +33,33 @@ import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
+import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart'
     show testScorecardData;
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String _hasSeenEducationKey = 'hasSeenHoleDescriptionEducation';
+const String _hasSeenImportEducationKey = 'hasSeenImportScorecardEducation';
 
-class RecordRoundStepsScreen extends StatefulWidget {
-  const RecordRoundStepsScreen({
+class RecordRoundScreen extends StatefulWidget {
+  const RecordRoundScreen({
     super.key,
     required this.bottomViewPadding,
     this.skipIntroAnimations = false,
   });
 
-  static const String screenName = 'Record Round Steps';
-  static const String routeName = '/record-round-steps';
+  static const String screenName = 'Record Round';
+  static const String routeName = '/record-round';
 
   final double bottomViewPadding;
   final bool skipIntroAnimations;
 
   @override
-  State<RecordRoundStepsScreen> createState() => _RecordRoundStepsScreenState();
+  State<RecordRoundScreen> createState() => _RecordRoundScreenState();
 }
 
-class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
+class _RecordRoundScreenState extends State<RecordRoundScreen> {
   late final RecordRoundCubit _recordRoundCubit;
   late final LoggingServiceBase _logger;
 
@@ -99,7 +103,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     // Create scoped logger with base properties
     final LoggingService loggingService = locator.get<LoggingService>();
     _logger = loggingService.withBaseProperties({
-      'screen_name': RecordRoundStepsScreen.screenName,
+      'screen_name': RecordRoundScreen.screenName,
     });
 
     // Track screen impression
@@ -131,11 +135,36 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     if (!hasSeenEducation && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
-          await HoleDescriptionExamplesScreen.show(context);
+          await HoleDescriptionExamplesScreen.show(
+            context,
+            isFirstTimeShow: true,
+          );
           await prefs.setBool(_hasSeenEducationKey, true);
         }
       });
     }
+  }
+
+  Future<void> _checkFirstTimeImportEducation() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool hasSeenEducation =
+        prefs.getBool(_hasSeenImportEducationKey) ?? false;
+
+    if (!hasSeenEducation && mounted) {
+      await _showImportEducation();
+      await prefs.setBool(_hasSeenImportEducationKey, true);
+    }
+  }
+
+  Future<void> _showImportEducation() async {
+    if (!mounted) return;
+    await EducationPanel.show(
+      context,
+      title: 'Import your scorecard',
+      modalName: 'Import Scorecard Education',
+      accentColor: Colors.blue,
+      contentBuilder: (_) => const ImportScorecardEducationPanel(),
+    );
   }
 
   @override
@@ -146,6 +175,129 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _textEditingController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Calculates the projected relative score (total throws - total par)
+  int _calculateProjectedRelativeScore(RecordRoundActive state) {
+    if (state.importedScores == null || state.importedScores!.isEmpty) {
+      return 0;
+    }
+
+    int totalScore = 0;
+    state.importedScores!.forEach((_, score) => totalScore += score);
+
+    final int totalPar = _calculateTotalPar(state);
+    return totalScore - totalPar;
+  }
+
+  /// Calculates the total projected throws from imported scores
+  int _calculateProjectedTotalThrows(RecordRoundActive state) {
+    if (state.importedScores == null || state.importedScores!.isEmpty) {
+      return 0;
+    }
+
+    int totalScore = 0;
+    state.importedScores!.forEach((_, score) => totalScore += score);
+    return totalScore;
+  }
+
+  /// Calculates the total par for the selected course layout
+  int _calculateTotalPar(RecordRoundActive state) {
+    final CourseLayout? layout =
+        state.selectedCourse?.getLayoutById(state.selectedLayoutId ?? '') ??
+        state.selectedCourse?.defaultLayout;
+
+    if (layout == null) return 0;
+
+    int totalPar = 0;
+    for (final hole in layout.holes) {
+      totalPar += hole.par;
+    }
+    return totalPar;
+  }
+
+  /// Returns true if projection row should be shown
+  bool _shouldShowProjection(RecordRoundActive state) {
+    // Check feature flag first
+    if (!locator.get<FeatureFlagService>().showProjectedScoreInRecordRound) {
+      return false;
+    }
+
+    // Must have course selected (for par data)
+    if (state.selectedCourse == null) return false;
+
+    // Must have imported scores
+    if (state.importedScores == null || state.importedScores!.isEmpty) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Builds the projection row showing projected score, throws, and par
+  Widget _buildProjectionRow(RecordRoundActive state) {
+    final int projectedRelative = _calculateProjectedRelativeScore(state);
+    final int projectedTotal = _calculateProjectedTotalThrows(state);
+    final int totalPar = _calculateTotalPar(state);
+
+    // Determine color and text based on relative score
+    final Color scoreColor;
+    final String scoreText;
+    if (projectedRelative < 0) {
+      scoreColor = HoleScoreColors.birdieColor;
+      scoreText = '$projectedRelative';
+    } else if (projectedRelative == 0) {
+      scoreColor = Colors.grey[600]!;
+      scoreText = 'E';
+    } else {
+      scoreColor = HoleScoreColors.bogeyColor;
+      scoreText = '+$projectedRelative';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 0, left: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          // Relative score (color coded)
+          Text(
+            scoreText,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: scoreColor,
+            ),
+          ),
+          const SizedBox(width: 4),
+          // Total throws in parentheses
+          Text(
+            '($projectedTotal)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Colors.grey[600],
+            ),
+          ),
+          // Bullet separator
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              '•',
+              style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+            ),
+          ),
+          // Total par
+          Text(
+            'Par $totalPar',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onFocusChange() {
@@ -216,7 +368,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
             // GenericAppBar on top
             GenericAppBar(
               topViewPadding: MediaQuery.of(context).viewPadding.top,
-              title: 'Record Round',
+              title: 'Record round',
               hasBackButton: false,
               backgroundColor: Colors.transparent,
               leftWidget: _clearAllButton(),
@@ -272,7 +424,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).viewPadding.top + 112,
+                    top: MediaQuery.of(context).viewPadding.top + 100,
                   ),
                   decoration: BoxDecoration(
                     color: SenseiColors.gray[50],
@@ -284,7 +436,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                   child: _mainBody(recordRoundState),
                 ),
               ),
-              if (_isParsingScorecard) _buildParsingOverlay(),
             ],
           );
         },
@@ -343,22 +494,34 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     final bool isListening = recordRoundState.isListening;
     final bool isStartingListening = recordRoundState.isStartingListening;
     final double bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+    final FeatureFlagService featureFlags = locator.get<FeatureFlagService>();
+    final bool useFixedNav = featureFlags.useFixedBottomNavInRecordRound;
+    final bool useFlatMic = featureFlags.useFlatMicrophoneButton;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: bottomPadding + 16),
+    // Calculate footer height for scroll padding when using fixed nav
+    final double footerHeight = useFlatMic
+        ? (12 + 48 + 8 + 56 + 12) // 136: padding + mic + spacer + nav + padding
+        : (12 + 56 + 12); // 80: padding + nav + padding
+
+    final Widget scrollableContent = SingleChildScrollView(
+      padding: EdgeInsets.only(
+        bottom: useFixedNav ? footerHeight + 48 : bottomPadding + 16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildHeader(recordRoundState),
-          const SizedBox(height: 8),
+          if (featureFlags.showHoleDetailCardInRecordRound) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildHoleInfoCard(recordRoundState),
+            ),
+          ],
+          const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildHoleInfoCard(recordRoundState),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(height: 200, child: _buildVoiceCard(isListening)),
+            child: _buildVoiceCard(isListening),
           ),
           if (kDebugMode) ...[
             const SizedBox(height: 8),
@@ -367,22 +530,80 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               child: _buildDebugButtons(),
             ),
           ],
-          const SizedBox(height: 20),
-          Center(
-            child: _buildMicrophoneButton(
-              isListening,
-              recordRoundState.pausingBetweenHoles,
-              isStartingListening,
+          // Only show circular mic button if NOT using flat mic in footer
+          if (!(useFixedNav && useFlatMic)) ...[
+            const SizedBox(height: 20),
+            Center(
+              child: _buildMicrophoneButton(
+                isListening,
+                recordRoundState.pausingBetweenHoles,
+                isStartingListening,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildNavigationButtons(),
-          ),
+          ],
+          // Only include nav buttons in scroll if NOT using fixed nav
+          if (!useFixedNav) ...[
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildNavigationButtons(),
+            ),
+          ],
         ],
       ),
     );
+
+    // If using fixed nav, wrap in Column with fixed bottom bar
+    if (useFixedNav) {
+      return Column(
+        children: [
+          Expanded(child: scrollableContent),
+          Container(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding + 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Flat mic button in footer when enabled
+                if (useFlatMic) ...[
+                  AnimatedMicrophoneButtonV2(
+                    showListeningWaveState:
+                        isListening || recordRoundState.pausingBetweenHoles,
+                    isLoading: isStartingListening,
+                    onTap: () {
+                      _logger.track(
+                        'Microphone Button Tapped',
+                        properties: {
+                          'action': isListening
+                              ? 'stop_listening'
+                              : 'start_listening',
+                          'hole_number': recordRoundState.currentHoleIndex + 1,
+                          'button_style': 'flat',
+                        },
+                      );
+                      _toggleListening();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _buildNavigationButtons(),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return scrollableContent;
   }
 
   Widget _buildHeader(RecordRoundActive state) {
@@ -392,18 +613,24 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
     return Column(
       children: [
-        // Course card + Import button
+        // Import/Clear buttons row
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _buildCourseAndImportRow(state),
+          child: _buildImportButtonsRow(state),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        // Course card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _buildCourseCard(state),
+        ),
+        const SizedBox(height: 4),
         // Date card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _buildDateCard(state),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         // Hole Progress / Mini Holes Grid
         if (locator.get<FeatureFlagService>().showInlineMiniHoleGrid) ...[
           Padding(
@@ -422,10 +649,25 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
                   ),
                 ],
               ),
-              child: _MiniHolesGrid(
-                state: state,
-                currentHoleIndex: currentHoleIndex,
-                onHoleTap: _onHoleTapFromGrid,
+              child: Column(
+                children: [
+                  // Projection row (only show if conditions met)
+                  if (_shouldShowProjection(state)) ...[
+                    _buildProjectionRow(state),
+                    Divider(
+                      height: 16,
+                      thickness: 1,
+                      color: SenseiColors.gray[100],
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                  // Mini holes grid
+                  _MiniHolesGrid(
+                    state: state,
+                    currentHoleIndex: currentHoleIndex,
+                    onHoleTap: _onHoleTapFromGrid,
+                  ),
+                ],
               ),
             ),
           ),
@@ -528,6 +770,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       focusNode: _focusNode,
       isListening: isListening,
       accent: _accent,
+      height: 200,
       onClear: () {
         _logger.track(
           'Clear Text Button Tapped',
@@ -694,7 +937,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     );
   }
 
-  Widget _buildCourseAndImportRow(RecordRoundActive state) {
+  Widget _buildCourseCard(RecordRoundActive state) {
     String subtitle;
     if (state.selectedCourse != null) {
       subtitle = state.selectedCourse!.name;
@@ -714,45 +957,33 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     const Color courseAccent = _accent;
     final bool noCourseSelected = state.selectedCourse == null;
 
-    final Widget row = Row(
-      children: [
-        // Course card (takes remaining space)
-        Expanded(
-          child: RoundDataInputCard(
-            icon: Icons.landscape,
-            subtitle: subtitle,
-            showRequiredIndicator: noCourseSelected,
-            onTap: () {
-              _logger.track(
-                'Select Course Button Tapped',
-                properties: {
-                  'has_course_selected': state.selectedCourse != null,
-                },
-              );
+    final Widget card = RoundDataInputCard(
+      icon: Icons.landscape,
+      subtitle: subtitle,
+      showRequiredIndicator: noCourseSelected,
+      onTap: () {
+        _logger.track(
+          'Select Course Button Tapped',
+          properties: {'has_course_selected': state.selectedCourse != null},
+        );
 
-              _logger.track(
-                'Modal Opened',
-                properties: {
-                  'modal_type': 'bottom_sheet',
-                  'modal_name': 'Course Selector',
-                  'trigger_source': 'button',
-                },
-              );
+        _logger.track(
+          'Modal Opened',
+          properties: {
+            'modal_type': 'bottom_sheet',
+            'modal_name': 'Course Selector',
+            'trigger_source': 'button',
+          },
+        );
 
-              _showCourseSelector();
-            },
-            accent: courseAccent,
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Import button (icon only)
-        _buildImportScorecardButton(),
-      ],
+        _showCourseSelector();
+      },
+      accent: courseAccent,
     );
 
     return widget.skipIntroAnimations
-        ? row
-        : row
+        ? card
+        : card
               .animate()
               .fadeIn(duration: 280.ms, curve: Curves.easeOut)
               .slideY(
@@ -797,26 +1028,159 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
               );
   }
 
-  Widget _buildImportScorecardButton() {
+  Widget _buildImportButtonsRow(RecordRoundActive state) {
+    final bool hasImportedScores =
+        state.importedScores != null && state.importedScores!.isNotEmpty;
+
+    final Widget row = hasImportedScores
+        ? Row(
+            children: [
+              Expanded(flex: 2, child: _buildImportScorecardButton(state)),
+              const SizedBox(width: 8),
+              Expanded(flex: 1, child: _buildClearImportedButton(state)),
+            ],
+          )
+        : _buildImportScorecardButton(state);
+
+    return widget.skipIntroAnimations
+        ? row
+        : row
+              .animate()
+              .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+              .slideY(
+                begin: 0.08,
+                end: 0.0,
+                duration: 280.ms,
+                curve: Curves.easeOut,
+              );
+  }
+
+  Widget _buildImportScorecardButton(RecordRoundActive state) {
+    final bool hasImportedScores =
+        state.importedScores != null && state.importedScores!.isNotEmpty;
+
+    return GestureDetector(
+      onTap: _isParsingScorecard
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              _logger.track('Import Scorecard Button Tapped', properties: {});
+
+              _logger.track(
+                'Modal Opened',
+                properties: {
+                  'modal_type': 'bottom_sheet',
+                  'modal_name': 'Image Source Selection',
+                  'trigger_source': 'button',
+                },
+              );
+
+              _handleImportScorecard();
+            },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Left: green checkmark if imported data exists
+            SizedBox(
+              width: 32,
+              child: hasImportedScores
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Icon(
+                        Icons.check_circle,
+                        size: 14,
+                        color: Colors.green,
+                      ),
+                    )
+                  : const SizedBox(),
+            ),
+            // Center: icon + text (always centered)
+            Expanded(
+              child: Center(
+                child: _isParsingScorecard
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.blue.shade600,
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.file_download_outlined,
+                            size: 16,
+                            color: SenseiColors.gray[600],
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Import scorecard',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: SenseiColors.gray[600],
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+            // Right: question mark icon
+            SizedBox(
+              width: 32,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showImportEducation();
+                },
+                behavior: HitTestBehavior.translucent,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Icon(
+                    Icons.help_outline,
+                    size: 16,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClearImportedButton(RecordRoundActive state) {
     return GestureDetector(
       onTap: () {
-        _logger.track('Import Scorecard Button Tapped', properties: {});
-
+        HapticFeedback.lightImpact();
         _logger.track(
-          'Modal Opened',
-          properties: {
-            'modal_type': 'bottom_sheet',
-            'modal_name': 'Image Source Selection',
-            'trigger_source': 'button',
-          },
+          'Imported Scores Cleared',
+          properties: {'holes_cleared': state.importedScores?.length ?? 0},
         );
-
-        _handleImportScorecard();
+        _recordRoundCubit.clearImportedScores();
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 64,
-        height: 48,
+        height: 44,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -832,16 +1196,13 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.file_download_outlined,
-                size: 16,
-                color: SenseiColors.gray[600],
-              ),
+              Icon(Icons.clear, size: 14, color: SenseiColors.gray[600]),
               const SizedBox(height: 2),
               Text(
-                'Import',
+                'Clear Import',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 9,
                   fontWeight: FontWeight.w600,
                   color: SenseiColors.gray[600],
                 ),
@@ -1112,45 +1473,6 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     } else {
       return const Color(0xFFB71C1C); // Triple bogey+ - dark red
     }
-  }
-
-  Widget _buildParsingOverlay() {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.5),
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CupertinoActivityIndicator(radius: 16),
-                const SizedBox(height: 16),
-                Text(
-                  'Parsing scorecard...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildNavigationButtons() {
@@ -1459,7 +1781,7 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
     _logger.track(
       'Navigation Action',
       properties: {
-        'from_screen': RecordRoundStepsScreen.screenName,
+        'from_screen': RecordRoundScreen.screenName,
         'to_screen': 'Round Processing Loading',
         'action_type': 'replace',
         'trigger': 'button',
@@ -1483,6 +1805,16 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
   }
 
   void _parseTestDescription() {
+    final RecordRoundState state = _recordRoundCubit.state;
+
+    // Ensure a course is selected before parsing
+    if (state is! RecordRoundActive || state.selectedCourse == null) {
+      locator.get<ToastService>().showError(
+        'Please select a course before parsing',
+      );
+      return;
+    }
+
     // Update the cubit with the test transcript before navigating
     // Set hole 0's description to the full test transcript
     _recordRoundCubit.setHoleDescription(
@@ -1541,6 +1873,10 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
 
   Future<void> _handleImportScorecard() async {
     HapticFeedback.lightImpact();
+
+    // Show import education on first import before proceeding
+    await _checkFirstTimeImportEducation();
+
     String imagePath;
 
     // In debug mode with test constant enabled, use test scorecard directly
@@ -1559,11 +1895,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       imagePath = tempFile.path;
       debugPrint('Temp file created at: $imagePath');
     } else {
-      // Show image source selection panel
-      final ImageSource? source = await SelectImageSourcePanel.show(context);
-      if (source == null || !mounted) return;
+      // Pick image from gallery
+      const ImageSource source = ImageSource.gallery;
 
-      // Pick image
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
@@ -1636,7 +1970,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
       }
 
       if (holeMetadata.isEmpty) {
-        locator.get<ToastService>().showError('Could not parse scorecard. Please try again.');
+        locator.get<ToastService>().showError(
+          'Could not parse scorecard. Please try again.',
+        );
         return;
       }
 
@@ -1648,7 +1984,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         properties: {'holes_imported': holeMetadata.length},
       );
 
-      locator.get<ToastService>().showSuccess('Imported ${holeMetadata.length} hole scores');
+      locator.get<ToastService>().showSuccess(
+        'Imported ${holeMetadata.length} hole scores',
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isParsingScorecard = false);
@@ -1658,7 +1996,9 @@ class _RecordRoundStepsScreenState extends State<RecordRoundStepsScreen> {
         properties: {'error': e.toString()},
       );
 
-      locator.get<ToastService>().showError('Error parsing scorecard: ${e.toString()}');
+      locator.get<ToastService>().showError(
+        'Error parsing scorecard: ${e.toString()}',
+      );
     }
   }
 

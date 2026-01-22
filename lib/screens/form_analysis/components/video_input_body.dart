@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
+import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -9,6 +12,8 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_to
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+
+const String _hasSeenFormAnalysisEducationKey = 'hasSeenFormAnalysisEducation';
 
 /// Panel for initiating video capture/import.
 /// Always uses backhand throw type.
@@ -101,6 +106,31 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       'assets/test_videos/joe_example_throw_2.mov'; // Default to joe #2
 
   CameraAngle _selectedCameraAngle = CameraAngle.side; // Default to side view
+
+  /// Checks if this is the first time user is importing a video for form analysis.
+  /// Shows education panel if first time, then proceeds with import.
+  Future<void> _checkFirstTimeEducation() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool hasSeenEducation =
+        prefs.getBool(_hasSeenFormAnalysisEducationKey) ?? false;
+
+    if (!hasSeenEducation && mounted) {
+      await _showFormAnalysisEducation();
+      await prefs.setBool(_hasSeenFormAnalysisEducationKey, true);
+    }
+  }
+
+  /// Shows the form analysis education panel.
+  Future<void> _showFormAnalysisEducation() async {
+    if (!mounted) return;
+    await EducationPanel.show(
+      context,
+      title: 'Tips for Best Results',
+      modalName: 'Form Analysis Education',
+      accentColor: const Color(0xFF137e66),
+      contentBuilder: (_) => const FormAnalysisEducationPanel(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,42 +243,51 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Side-by-side action cards
-        Row(
+        // Import video card with help button
+        Stack(
           children: [
-            Expanded(
-              child: _ActionCard(
-                icon: Icons.videocam,
-                title: 'RECORD VIDEO',
-                subtitle: 'Capture your throw live',
-                gradient: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
-                onPressed: () {
-                  logger.track('Record Video Button Tapped', properties: {
-                    'camera_angle': _selectedCameraAngle.name,
-                  });
-                  cubit.recordVideo(
-                    throwType: ThrowTechnique.backhand,
-                    cameraAngle: _selectedCameraAngle,
-                  );
-                },
-              ),
+            _ActionCard(
+              icon: Icons.photo_library,
+              title: 'IMPORT VIDEO',
+              subtitle: 'Choose from your gallery',
+              gradient: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
+              onPressed: () async {
+                logger.track('Import Video Button Tapped', properties: {
+                  'camera_angle': _selectedCameraAngle.name,
+                });
+                // Show education on first time, then proceed with import
+                await _checkFirstTimeEducation();
+                if (!mounted) return;
+                cubit.importVideo(
+                  throwType: ThrowTechnique.backhand,
+                  cameraAngle: _selectedCameraAngle,
+                );
+              },
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ActionCard(
-                icon: Icons.photo_library,
-                title: 'IMPORT VIDEO',
-                subtitle: 'Choose from your gallery',
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                onPressed: () {
-                  logger.track('Import Video Button Tapped', properties: {
-                    'camera_angle': _selectedCameraAngle.name,
-                  });
-                  cubit.importVideo(
-                    throwType: ThrowTechnique.backhand,
-                    cameraAngle: _selectedCameraAngle,
-                  );
+            // Help button in top-right corner
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  logger.track('Form Analysis Help Button Tapped');
+                  _showFormAnalysisEducation();
                 },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.help_outline,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
           ],
@@ -457,7 +496,6 @@ class _ActionCard extends StatelessWidget {
     required this.subtitle,
     required this.onPressed,
     this.gradient,
-    this.backgroundColor,
   });
 
   final IconData icon;
@@ -465,7 +503,6 @@ class _ActionCard extends StatelessWidget {
   final String subtitle;
   final VoidCallback onPressed;
   final List<Color>? gradient;
-  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -478,7 +515,6 @@ class _ActionCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: gradient != null ? LinearGradient(colors: gradient!) : null,
-          color: backgroundColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: Colors.white.withValues(alpha: 0.15),

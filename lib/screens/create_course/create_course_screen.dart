@@ -361,7 +361,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   }
 
   String? _getCountryDisplayText(CreateCourseState state) {
-    if (state.countryCode == null) return null;
+    if (state.countryCode == null || state.countryCode!.isEmpty) return null;
 
     final Country? country = allCountries
         .where((c) => c.code == state.countryCode)
@@ -409,8 +409,9 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     final bool hasCountry = displayText != null;
 
     return GestureDetector(
-      onTap: () => _openCountryPicker(context, state),
+      onTap: hasCountry ? null : () => _openCountryPicker(context, state),
       child: Container(
+        height: 56,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -418,32 +419,42 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(
-              hasCountry ? Icons.flag : Icons.public_outlined,
-              color: SenseiColors.gray.shade600,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                displayText ?? 'Select country',
-                style: TextStyle(
-                  fontWeight: hasCountry ? FontWeight.w600 : FontWeight.normal,
-                  color: hasCountry
-                      ? SenseiColors.gray.shade800
-                      : SenseiColors.gray.shade600,
+            if (hasCountry)
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  displayText,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    height: 1,
+                  ),
+                ),
+              )
+            else ...[
+              Icon(
+                Icons.public_outlined,
+                color: SenseiColors.gray.shade600,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Select country',
+                  style: TextStyle(
+                    fontWeight: FontWeight.normal,
+                    color: SenseiColors.gray.shade600,
+                  ),
                 ),
               ),
-            ),
-            if (hasCountry)
-              IconButton(
-                icon: Icon(
-                  Icons.close,
-                  size: 20,
-                  color: SenseiColors.gray.shade600,
-                ),
-                onPressed: () {
+              Icon(Icons.chevron_right, color: SenseiColors.gray.shade400),
+            ],
+            if (hasCountry) ...[
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
                   _logger.track(
                     'Clear Country Button Tapped',
                     properties: {'previous_country_code': state.countryCode},
@@ -451,8 +462,13 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                   HapticFeedback.lightImpact();
                   _createCourseCubit.updateCountrySelection('', '');
                 },
+                child: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: SenseiColors.gray.shade600,
+                ),
               ),
-            Icon(Icons.chevron_right, color: SenseiColors.gray.shade400),
+            ],
           ],
         ),
       ),
@@ -575,7 +591,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       child: PrimaryButton(
         width: double.infinity,
         height: 56,
-        label: 'Create course',
+        label: 'Create',
         loading: state.isSaving,
         gradientBackground: canSave
             ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]

@@ -1,11 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class RoundHistoryRow extends StatelessWidget {
   const RoundHistoryRow({
@@ -41,11 +45,18 @@ class RoundHistoryRow extends StatelessWidget {
     final double c1InRegPct = round.analysis?.coreStats.c1InRegPct ?? 0.0;
     final double c1xPuttingPct =
         round.analysis?.puttingStats.c1xPercentage ?? 0.0;
+    final int totalMistakes = round.analysis?.totalMistakes ?? 0;
+
+    // Get layout name if available
+    final String layoutName = round.playedLayout.name;
+
+    // Format date with time
+    final String? formattedDateTime = _formatDateTime(round.playedRoundAt);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: GestureDetector(
         onTap: () {
@@ -60,7 +71,6 @@ class RoundHistoryRow extends StatelessWidget {
           );
 
           HapticFeedback.lightImpact();
-          // Set the existing round so the parser can calculate stats
           locator.get<RoundParser>().setRound(round);
 
           Navigator.push(
@@ -71,7 +81,7 @@ class RoundHistoryRow extends StatelessWidget {
           );
         },
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +91,7 @@ class RoundHistoryRow extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Course name and hole count
+                  // Course name and layout
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,22 +101,15 @@ class RoundHistoryRow extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.pin_drop,
-                              size: 14,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${round.holes.length} holes',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
+                        if (layoutName.isNotEmpty &&
+                            layoutName.toLowerCase() != 'default layout') ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            layoutName,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -119,46 +122,71 @@ class RoundHistoryRow extends StatelessWidget {
                   ),
                 ],
               ),
-              // const SizedBox(height: 12),
-              // Divider
-              // Divider(height: 1, color: Colors.grey[300]),
               const SizedBox(height: 16),
-              // Stats row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _StatItem(
-                    icon: '🕊️',
-                    value: '$birdies',
-                    label: birdies == 1 ? 'Birdie' : 'Birdies',
+              // Compact stats row
+              IntrinsicHeight(
+                child: Row(
+                  children: addDividers(
+                    [
+                      _CompactStatItem(
+                        icon: '🕊️',
+                        value: '$birdies',
+                        label: birdies == 1 ? 'Birdie' : 'Birdies',
+                      ),
+                      _CompactStatItem(
+                        icon: '🎯',
+                        value: '${c1InRegPct.toStringAsFixed(0)}%',
+                        label: 'C1 in Reg',
+                      ),
+                      _CompactStatItem(
+                        icon: '🥏',
+                        value: '${c1xPuttingPct.toStringAsFixed(0)}%',
+                        label: 'C1X Putt',
+                      ),
+                      _CompactStatItem(
+                        icon: '⚠️',
+                        value: '$totalMistakes',
+                        label: totalMistakes == 1 ? 'Mistake' : 'Mistakes',
+                      ),
+                    ],
+                    axis: Axis.vertical,
+                    dividerColor: SenseiColors.gray[50],
                   ),
-                  Container(
-                    height: 50,
-                    width: 1,
-                    color: Colors.grey[300]?.withValues(alpha: 0.5),
-                  ),
-                  _StatItem(
-                    icon: '🎯',
-                    value: '${c1InRegPct.toStringAsFixed(0)}%',
-                    label: 'C1 in Reg',
-                  ),
-                  Container(
-                    height: 50,
-                    width: 1,
-                    color: Colors.grey[300]?.withValues(alpha: 0.5),
-                  ),
-                  _StatItem(
-                    icon: '🥏',
-                    value: '${c1xPuttingPct.toStringAsFixed(0)}%',
-                    label: 'C1X Putting',
-                  ),
-                ],
+                ),
               ),
+              const SizedBox(height: 16),
+              // Score distribution bar
+              ScoreDistributionBar(round: round, height: 32),
+              // Bottom row: Date/time
+              if (formattedDateTime != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  formattedDateTime,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  String? _formatDateTime(String? isoString) {
+    if (isoString == null || isoString.isEmpty) {
+      return null;
+    }
+
+    try {
+      final DateTime dateTime = DateTime.parse(isoString);
+      final DateFormat formatter = DateFormat('MMM d, yyyy • h:mm a');
+      return formatter.format(dateTime);
+    } catch (e) {
+      return null;
+    }
   }
 }
 
@@ -239,13 +267,13 @@ class _ScoreBadge extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 2),
           Text(
             '($totalStrokes)',
             style: const TextStyle(
               fontSize: 14,
               color: Colors.white,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.normal,
             ),
           ),
         ],
@@ -254,9 +282,9 @@ class _ScoreBadge extends StatelessWidget {
   }
 }
 
-/// Individual stat item with icon, value, and label
-class _StatItem extends StatelessWidget {
-  const _StatItem({
+/// Compact stat item with icon, value, and label on single row
+class _CompactStatItem extends StatelessWidget {
+  const _CompactStatItem({
     required this.icon,
     required this.value,
     required this.label,
@@ -270,26 +298,27 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(icon, style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 4),
+              Text(icon, style: const TextStyle(fontSize: 12)),
+              const SizedBox(width: 3),
               Text(
                 value,
                 style: Theme.of(
                   context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.grey[600],
-              fontSize: 11,
+              fontSize: 10,
             ),
             textAlign: TextAlign.center,
           ),

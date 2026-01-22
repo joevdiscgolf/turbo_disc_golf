@@ -135,6 +135,20 @@ class AiParsingService {
           );
         }
 
+        // Check if pre-parsed data is available and flag is enabled
+        if (flags.expectParsedRoundFromBackend &&
+            response.data.parsedData != null) {
+          debugPrint('Using pre-parsed round data from backend');
+          return _buildPotentialRoundFromParsedData(
+            parsedData: response.data.parsedData!,
+            course: course,
+            layoutId: layoutId,
+            numHoles: numHoles,
+            uid: uid,
+          );
+        }
+
+        // Fallback: parse rawResponse locally
         responseText = response.data.rawResponse;
       } else {
         final prompt = _buildParsingPrompt(
@@ -399,6 +413,31 @@ class AiParsingService {
       createdAt: round.createdAt,
       playedRoundAt: round.playedRoundAt,
     );
+  }
+
+  /// Build PotentialDGRound from pre-parsed backend data.
+  /// Used when backend provides parsedRound JSON directly.
+  PotentialDGRound _buildPotentialRoundFromParsedData({
+    required Map<String, dynamic> parsedData,
+    required Course? course,
+    required String? layoutId,
+    required int numHoles,
+    required String uid,
+  }) {
+    // Create a mutable copy and inject runtime context
+    final Map<String, dynamic> jsonMap = Map<String, dynamic>.from(parsedData);
+
+    jsonMap['id'] = _uuid.v4();
+    jsonMap['uid'] = uid;
+    jsonMap['courseId'] = course?.id;
+    jsonMap['courseName'] ??= course?.name; // Use backend value if present
+    jsonMap['course'] = course?.toJson();
+    jsonMap['layoutId'] = layoutId ?? course?.defaultLayout.id;
+
+    debugPrint('Building PotentialDGRound from pre-parsed data...');
+    final PotentialDGRound potentialRound = PotentialDGRound.fromJson(jsonMap);
+
+    return _fillMissingHoles(uid, potentialRound, numHoles);
   }
 
   /// Parse a single hole description and return the updated hole

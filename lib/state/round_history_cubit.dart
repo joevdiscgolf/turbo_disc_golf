@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 
 /// Cubit for managing round history state

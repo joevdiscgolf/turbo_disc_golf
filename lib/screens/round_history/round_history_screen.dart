@@ -8,16 +8,17 @@ import 'package:turbo_disc_golf/animations/page_transitions.dart';
 import 'package:turbo_disc_golf/components/shimmer_box.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_steps/record_round_steps_screen.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/round_history_row_v2.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/welcome_empty_state.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -75,7 +76,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
     Navigator.of(context).push(
       BannerExpandPageRoute(
         builder: (context) =>
-            RecordRoundStepsScreen(bottomViewPadding: widget.bottomViewPadding),
+            RecordRoundScreen(bottomViewPadding: widget.bottomViewPadding),
       ),
     );
   }
@@ -105,12 +106,20 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   Widget _buildContent(RoundHistoryState state) {
     if (state is RoundHistoryLoading) {
       // Initial loading - show shimmer skeletons
+      const int shimmerCount = 3;
       return SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => const _RoundHistoryShimmer(),
-            childCount: 3,
+            (context, index) {
+              return Column(
+                children: [
+                  const _RoundHistoryShimmer(),
+                  if (index < shimmerCount - 1) const SizedBox(height: 8),
+                ],
+              );
+            },
+            childCount: shimmerCount,
           ),
         ),
       );
@@ -133,9 +142,12 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final DGRound round = sortedRounds[index];
-            return locator.get<FeatureFlagService>().useRoundHistoryRowV2
-                ? RoundHistoryRowV2(round: round, logger: _logger, index: index)
-                : RoundHistoryRow(round: round, logger: _logger, index: index);
+            return Column(
+              children: [
+                RoundHistoryRow(round: round, logger: _logger, index: index),
+                if (index < sortedRounds.length - 1) const SizedBox(height: 8),
+              ],
+            );
           }, childCount: sortedRounds.length),
         ),
       );
@@ -185,37 +197,58 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           return const SizedBox.shrink();
         }
 
-        return BlocBuilder<RecordRoundCubit, RecordRoundState>(
-          builder: (context, recordRoundState) {
-            // Show continue banner only when recording is active AND course is selected
-            if (recordRoundState is RecordRoundActive &&
-                recordRoundState.selectedCourse != null) {
-              return Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ContinueRecordingBanner(
-                  state: recordRoundState,
-                  bottomViewPadding: widget.bottomViewPadding,
-                ),
-              );
+        return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
+          builder: (context, confirmationState) {
+            // Show finalize banner when confirming is active
+            if (confirmationState is ConfirmingRoundActive) {
+              // Get the recording state to pass to banner
+              final recordRoundState = context.read<RecordRoundCubit>().state;
+              if (recordRoundState is RecordRoundActive) {
+                return Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: ContinueRecordingBanner(
+                    state: recordRoundState,
+                    bottomViewPadding: widget.bottomViewPadding,
+                  ),
+                );
+              }
             }
 
-            final double bottomViewPadding = MediaQuery.of(
-              context,
-            ).viewPadding.bottom;
+            return BlocBuilder<RecordRoundCubit, RecordRoundState>(
+              builder: (context, recordRoundState) {
+                // Show continue banner only when recording is active AND course is selected
+                if (recordRoundState is RecordRoundActive &&
+                    recordRoundState.selectedCourse != null) {
+                  return Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: ContinueRecordingBanner(
+                      state: recordRoundState,
+                      bottomViewPadding: widget.bottomViewPadding,
+                    ),
+                  );
+                }
 
-            // When bottom nav bar is present, body ends at nav bar - just need 20px margin
-            // When no nav bar, need to account for safe area
-            final double bottomMargin =
-                locator.get<FeatureFlagService>().useFormAnalysisTab
-                ? 20
-                : (bottomViewPadding + 20);
+                final double bottomViewPadding = MediaQuery.of(
+                  context,
+                ).viewPadding.bottom;
 
-            return Positioned(
-              right: 20,
-              bottom: bottomMargin,
-              child: _buildNewRoundButton(),
+                // When bottom nav bar is present, body ends at nav bar - just need 20px margin
+                // When no nav bar, need to account for safe area
+                final double bottomMargin =
+                    locator.get<FeatureFlagService>().useFormAnalysisTab
+                    ? 20
+                    : (bottomViewPadding + 20);
+
+                return Positioned(
+                  right: 20,
+                  bottom: bottomMargin,
+                  child: _buildNewRoundButton(),
+                );
+              },
             );
           },
         );
@@ -304,62 +337,14 @@ class _RoundHistoryShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row: course name and score badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ShimmerBox(width: 140, height: 24, color: SenseiColors.gray.shade100),
-                      const SizedBox(height: 6),
-                      ShimmerBox(width: 80, height: 18, color: SenseiColors.gray.shade50),
-                    ],
-                  ),
-                ),
-                ShimmerBox(width: 64, height: 44, borderRadius: 8, color: SenseiColors.gray.shade100),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Stats row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatShimmer(),
-                _buildStatShimmer(),
-                _buildStatShimmer(),
-                _buildStatShimmer(),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Score distribution bar
-            ShimmerBox(height: 36, borderRadius: 8, color: SenseiColors.gray.shade50),
-            const SizedBox(height: 12),
-            // Date
-            ShimmerBox(width: 120, height: 16, color: SenseiColors.gray.shade100),
-          ],
-        ),
+      child: SizedBox(
+        height: 204,
+        child: ShimmerBox(borderRadius: 12, color: SenseiColors.gray.shade100),
       ),
-    );
-  }
-
-  Widget _buildStatShimmer() {
-    return Column(
-      children: [
-        ShimmerBox(width: 32, height: 20, color: SenseiColors.gray.shade100),
-        const SizedBox(height: 4),
-        ShimmerBox(width: 48, height: 16, color: SenseiColors.gray.shade50),
-      ],
     );
   }
 }

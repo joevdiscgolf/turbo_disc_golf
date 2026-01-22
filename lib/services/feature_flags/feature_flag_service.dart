@@ -133,6 +133,26 @@ class FeatureFlagService {
   bool get showDistancePreferences =>
       getBool(FeatureFlag.showDistancePreferences);
 
+  bool get showProjectedScoreInRecordRound =>
+      getBool(FeatureFlag.showProjectedScoreInRecordRound);
+
+  bool get showHoleDetailCardInRecordRound =>
+      getBool(FeatureFlag.showHoleDetailCardInRecordRound);
+
+  bool get useThrowCardV2 => getBool(FeatureFlag.useThrowCardV2);
+
+  /// Throw card layout style: 'inline', 'split', or empty for default (v2 with timeline)
+  String get throwCardLayoutStyle => getString(FeatureFlag.throwCardLayoutStyle);
+
+  bool get showMissingThrowDetailsInScoreDetail =>
+      getBool(FeatureFlag.showMissingThrowDetailsInScoreDetail);
+
+  bool get useFixedBottomNavInRecordRound =>
+      getBool(FeatureFlag.useFixedBottomNavInRecordRound);
+
+  bool get useFlatMicrophoneButton =>
+      getBool(FeatureFlag.useFlatMicrophoneButton);
+
   // ===== Voice Service =====
 
   bool get useIosVoiceService => getBool(FeatureFlag.useIosVoiceService);
@@ -195,6 +215,9 @@ class FeatureFlagService {
 
   bool get generateAiContentFromBackend =>
       getBool(FeatureFlag.generateAiContentFromBackend);
+
+  bool get expectParsedRoundFromBackend =>
+      getBool(FeatureFlag.expectParsedRoundFromBackend);
 
   // ===== Story Feature =====
 

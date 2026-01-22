@@ -101,12 +101,12 @@ class _MyAppState extends State<MyApp> {
 
     // Create cubits once
     _roundHistoryCubit = RoundHistoryCubit();
+    _recordRoundCubit = RecordRoundCubit();
     _roundConfirmationCubit = RoundConfirmationCubit(
       roundHistoryCubit: _roundHistoryCubit,
+      recordRoundCubit: _recordRoundCubit,
     );
     _roundReviewCubit = RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit);
-    // Warm up voice recognition (fire and forget - don't block app startup)
-    _recordRoundCubit = RecordRoundCubit();
     _createCourseCubit = CreateCourseCubit();
     _userDataCubit = UserDataCubit();
     // Load user data on app startup (fire and forget)

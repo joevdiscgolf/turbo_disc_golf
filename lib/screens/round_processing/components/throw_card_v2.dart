@@ -1,0 +1,471 @@
+// throw_card_v2.dart
+//
+// V2 throw card with compact 2-row layout.
+// Row 1: Title + inline mini-chips (technique, shape, disc) + icons
+// Row 2: Arrow result (distance → landing spot)
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
+/// V2 throw card with inline mini-chips and arrow result row.
+class ThrowCardV2 extends StatefulWidget {
+  const ThrowCardV2({
+    super.key,
+    required this.title,
+    required this.accentColor,
+    this.technique,
+    this.shotShape,
+    this.discName,
+    this.distance,
+    this.distanceAfter,
+    this.landingSpot,
+    this.previousLandingSpot,
+    required this.isInBasket,
+    this.isOutOfBounds = false,
+    required this.isTeeShot,
+    required this.animationDelay,
+    required this.onEdit,
+    required this.onDragStateChange,
+    required this.showDragHandle,
+    required this.visualIndex,
+  });
+
+  /// Title like "Tee shot", "Approach", "Putt"
+  final String title;
+
+  /// Purpose-based accent color
+  final Color accentColor;
+
+  /// Technique like "Backhand", "Forehand" (nullable)
+  final String? technique;
+
+  /// Shot shape like "Hyzer", "Anhyzer" (nullable)
+  final String? shotShape;
+
+  /// Disc name like "Star Destroyer" (nullable)
+  final String? discName;
+
+  /// Distance before throw like "350 ft" (nullable)
+  final String? distance;
+
+  /// Distance after throw like "25 ft" (nullable) - shown on right side
+  final String? distanceAfter;
+
+  /// Landing spot like "Fairway", "Circle 1", "Basket" (nullable)
+  final String? landingSpot;
+
+  /// Previous throw's landing spot (used as starting location for non-tee shots)
+  final String? previousLandingSpot;
+
+  /// Whether the throw landed in the basket (shows checkmark)
+  final bool isInBasket;
+
+  /// Whether the throw went out of bounds (shows red border)
+  final bool isOutOfBounds;
+
+  /// Whether this is a tee shot (shows "Tee" on left of arrow)
+  final bool isTeeShot;
+
+  /// Animation delay in milliseconds
+  final int animationDelay;
+
+  /// Called when card is tapped for editing
+  final VoidCallback onEdit;
+
+  /// Called when drag state changes
+  final void Function(bool isDragging) onDragStateChange;
+
+  /// Whether to show the drag handle
+  final bool showDragHandle;
+
+  /// The index for reorderable list
+  final int visualIndex;
+
+  @override
+  State<ThrowCardV2> createState() => _ThrowCardV2State();
+}
+
+class _ThrowCardV2State extends State<ThrowCardV2> {
+  bool _isDraggingLocal = false;
+
+  void _handleLocalDragState(bool dragging) {
+    if (_isDraggingLocal == dragging) return;
+    setState(() => _isDraggingLocal = dragging);
+    widget.onDragStateChange(dragging);
+    HapticFeedback.lightImpact();
+  }
+
+  bool get _hasResult =>
+      widget.distance != null ||
+      widget.landingSpot != null ||
+      widget.previousLandingSpot != null ||
+      widget.isTeeShot;
+
+  /// Abbreviate technique to all-caps short form
+  String _abbreviateTechnique(String technique) {
+    const Map<String, String> abbreviations = {
+      'Backhand': 'BH',
+      'Forehand': 'FH',
+      'Tomahawk': 'TOM',
+      'Thumber': 'THU',
+      'Overhand': 'OH',
+      'Backhand roller': 'BH ROLL',
+      'Forehand roller': 'FH ROLL',
+      'Grenade': 'GREN',
+      'Other': 'OTHER',
+    };
+    return abbreviations[technique] ?? technique.toUpperCase();
+  }
+
+  /// Truncate long disc names to just the model name
+  String _truncateDisc(String name) {
+    // If short enough, keep full name
+    if (name.length <= 12) return name;
+    // Otherwise take the last word (usually the disc model)
+    final List<String> parts = name.split(' ');
+    if (parts.length > 1) {
+      return parts.last;
+    }
+    return name;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onEdit();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: widget.isOutOfBounds
+                ? Colors.red.withValues(alpha: 0.6)
+                : widget.accentColor.withValues(alpha: 0.28),
+            width: widget.isOutOfBounds ? 1.5 : 1,
+          ),
+          boxShadow: _isDraggingLocal
+              ? null
+              : [
+                  BoxShadow(
+                    color: widget.accentColor.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        padding: const EdgeInsets.only(left: 8, right: 12, top: 4, bottom: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Row 1: Title + chips (inline, wrap if needed) + icons
+            _buildTitleRow(context),
+
+            // Row 2: Arrow result (only if distance or landing exists)
+            if (_hasResult) ...[
+              const SizedBox(height: 6),
+              _ArrowResultRow(
+                distance: widget.distance,
+                distanceAfter: widget.distanceAfter,
+                landingSpot: widget.landingSpot,
+                previousLandingSpot: widget.previousLandingSpot,
+                isInBasket: widget.isInBasket,
+                isOutOfBounds: widget.isOutOfBounds,
+                isTeeShot: widget.isTeeShot,
+                accentColor: widget.accentColor,
+              ),
+            ],
+          ],
+        ),
+      )
+          .animate(delay: Duration(milliseconds: widget.animationDelay))
+          .fadeIn(duration: 280.ms, curve: Curves.easeOut)
+          .slideY(
+            begin: 0.08,
+            end: 0.0,
+            duration: 280.ms,
+            curve: Curves.easeOut,
+          ),
+    );
+  }
+
+  Widget _buildTitleRow(BuildContext context) {
+    final TextStyle titleStyle = Theme.of(context).textTheme.bodyMedium!.copyWith(
+          fontWeight: FontWeight.w600,
+          color: HSLColor.fromColor(widget.accentColor)
+              .withLightness(
+                (HSLColor.fromColor(widget.accentColor).lightness - 0.15)
+                    .clamp(0.0, 0.5),
+              )
+              .toColor(),
+        );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title + chips (inline, wrap if needed)
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              // Title (never truncated)
+              Text(widget.title, style: titleStyle),
+              // Inline chips
+              if (widget.technique != null)
+                _MiniChip(
+                  label: _abbreviateTechnique(widget.technique!),
+                  accentColor: widget.accentColor,
+                ),
+              if (widget.shotShape != null)
+                _MiniChip(
+                  label: widget.shotShape!,
+                  accentColor: widget.accentColor,
+                ),
+              if (widget.discName != null)
+                _MiniChip(
+                  label: _truncateDisc(widget.discName!),
+                  accentColor: widget.accentColor,
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Edit icon
+        Icon(
+          Icons.edit_outlined,
+          size: 18,
+          color: SenseiColors.gray[600],
+        ),
+
+        // Drag handle (if enabled)
+        if (widget.showDragHandle) ...[
+          const SizedBox(width: 6),
+          ReorderableDragStartListener(
+            index: widget.visualIndex,
+            child: Listener(
+              onPointerDown: (_) => _handleLocalDragState(true),
+              onPointerUp: (_) => _handleLocalDragState(false),
+              onPointerCancel: (_) => _handleLocalDragState(false),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+                child: Icon(
+                  Icons.drag_handle,
+                  size: 20,
+                  color: SenseiColors.gray[600],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// A compact mini-chip for inline display.
+class _MiniChip extends StatelessWidget {
+  const _MiniChip({
+    required this.label,
+    required this.accentColor,
+  });
+
+  final String label;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: SenseiColors.gray[600],
+        ),
+      ),
+    );
+  }
+}
+
+/// Arrow row showing: [starting location] ───────────► landing spot [✓]
+class _ArrowResultRow extends StatelessWidget {
+  const _ArrowResultRow({
+    this.distance,
+    this.distanceAfter,
+    this.landingSpot,
+    this.previousLandingSpot,
+    required this.isInBasket,
+    this.isOutOfBounds = false,
+    required this.isTeeShot,
+    required this.accentColor,
+  });
+
+  final String? distance;
+  final String? distanceAfter;
+  final String? landingSpot;
+  final String? previousLandingSpot;
+  final bool isInBasket;
+  final bool isOutOfBounds;
+  final bool isTeeShot;
+  final Color accentColor;
+
+  /// Abbreviate location names for compact display
+  String _abbreviateLocation(String location) {
+    switch (location) {
+      case 'Circle 1':
+        return 'C1';
+      case 'Circle 2':
+        return 'C2';
+      case 'Out of bounds':
+        return 'OB';
+      case 'Hazard':
+        return 'HZ';
+      default:
+        return location;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Build the left side label based on available data:
+    // 1. Tee shots: "Tee"
+    // 2. Other throws: previous landing spot + distance if available
+    String? leftLabel;
+    if (isTeeShot) {
+      leftLabel = 'Tee';
+    } else if (previousLandingSpot != null && distance != null) {
+      // Show both: "C1 · 150 ft"
+      leftLabel = '${_abbreviateLocation(previousLandingSpot!)} · $distance';
+    } else if (previousLandingSpot != null) {
+      leftLabel = _abbreviateLocation(previousLandingSpot!);
+    } else if (distance != null) {
+      leftLabel = distance;
+    }
+
+    // Build the right side label: prioritize special spots (basket/OB), then distance, then landing spot
+    String? rightLabel;
+    if (isOutOfBounds && landingSpot != null) {
+      // Always show OB/Hazard
+      rightLabel = landingSpot == 'Hazard' ? 'HZ' : 'OB';
+    } else if (isInBasket && landingSpot != null) {
+      // Always show Basket
+      rightLabel = _abbreviateLocation(landingSpot!);
+    } else if (distanceAfter != null) {
+      // Prefer distance over generic landing spots (C1, C2, fairway, etc.)
+      rightLabel = distanceAfter;
+    } else if (landingSpot != null) {
+      // Fall back to landing spot if no distance
+      rightLabel = _abbreviateLocation(landingSpot!);
+    }
+
+    // Consistent text style for both sides
+    final TextStyle labelStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
+          color: SenseiColors.gray[600],
+          fontWeight: FontWeight.w500,
+        );
+
+    return Row(
+      children: [
+        // Left side label (Tee or distance)
+        if (leftLabel != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Text(leftLabel, style: labelStyle),
+          ),
+
+        // Arrow line with arrowhead
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: CustomPaint(
+              size: const Size(double.infinity, 12),
+              painter: _ArrowLinePainter(color: accentColor),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Landing spot text (right side)
+        if (rightLabel != null)
+          Text(
+            rightLabel,
+            style: labelStyle.copyWith(
+              color: isOutOfBounds
+                  ? Colors.red.withValues(alpha: 0.7)
+                  : SenseiColors.gray[600],
+            ),
+          ),
+
+        // Basket checkmark
+        if (isInBasket) ...[
+          const SizedBox(width: 6),
+          Icon(
+            Icons.check_circle,
+            size: 16,
+            color: Colors.green.shade600,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Custom painter for drawing a line with an arrowhead at the end.
+class _ArrowLinePainter extends CustomPainter {
+  const _ArrowLinePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = color.withValues(alpha: 0.4)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final double centerY = size.height / 2;
+    const double arrowSize = 5.0;
+
+    // Draw the main line (leaving space for arrowhead)
+    final Path linePath = Path()
+      ..moveTo(0, centerY)
+      ..lineTo(size.width - arrowSize, centerY);
+    canvas.drawPath(linePath, paint);
+
+    // Draw the filled arrowhead
+    final Paint arrowPaint = Paint()
+      ..color = color.withValues(alpha: 0.6)
+      ..style = PaintingStyle.fill;
+
+    final Path arrowPath = Path()
+      ..moveTo(size.width - arrowSize - 4, centerY - 4)
+      ..lineTo(size.width, centerY)
+      ..lineTo(size.width - arrowSize - 4, centerY + 4)
+      ..close();
+    canvas.drawPath(arrowPath, arrowPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArrowLinePainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}

@@ -74,7 +74,6 @@ const _$ThrowPurposeEnumMap = {
   ThrowPurpose.approach: 'approach',
   ThrowPurpose.putt: 'putt',
   ThrowPurpose.scramble: 'scramble',
-  ThrowPurpose.penalty: 'penalty',
   ThrowPurpose.other: 'other',
 };
 

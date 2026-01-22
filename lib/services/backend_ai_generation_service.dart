@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/ai_generation_service.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
@@ -164,6 +165,7 @@ class BackendAIGenerationService implements AIGenerationService {
       }
 
       // Add required fields not from AI response
+      jsonMap['uid'] = locator.get<AuthService>().currentUid ?? '';
       jsonMap['id'] = _uuid.v4();
       jsonMap['courseName'] = course?.name;
       jsonMap['courseId'] = course?.id;

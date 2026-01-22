@@ -674,6 +674,13 @@ class _CourseSearchResultItemState extends State<_CourseSearchResultItem> {
 
   void _toggleExpanded() {
     HapticFeedback.lightImpact();
+
+    // If there's only one layout, auto-select it instead of expanding
+    if (widget.hit.layouts.length == 1) {
+      widget.onLayoutSelected(widget.hit.layouts[0]);
+      return;
+    }
+
     setState(() {
       _isExpanded = !_isExpanded;
     });

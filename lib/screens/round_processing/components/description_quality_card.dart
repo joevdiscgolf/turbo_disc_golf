@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/description_quality_analyzer.dart';
 
 /// A collapsible card displaying description quality feedback.
@@ -10,10 +11,14 @@ class DescriptionQualityCard extends StatefulWidget {
     super.key,
     required this.report,
     required this.onHoleTap,
+    this.isReadOnly = false,
   });
 
   final DescriptionQualityReport report;
   final void Function(int holeIndex) onHoleTap;
+
+  /// When true, hides the "tap to edit" hint and disables row taps
+  final bool isReadOnly;
 
   @override
   State<DescriptionQualityCard> createState() => _DescriptionQualityCardState();
@@ -34,18 +39,20 @@ class _DescriptionQualityCardState extends State<DescriptionQualityCard> {
       curve: Curves.easeInOut,
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFE1BEE7).withValues(alpha: 0.4),
-            const Color(0xFFE1BEE7).withValues(alpha: 0.2),
-          ],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFCE93D8).withValues(alpha: 0.4),
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -68,10 +75,10 @@ class _DescriptionQualityCardState extends State<DescriptionQualityCard> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               FlutterRemix.lightbulb_line,
               size: 18,
-              color: Color(0xFF7E57C2),
+              color: SenseiColors.gray[500],
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -100,92 +107,101 @@ class _DescriptionQualityCardState extends State<DescriptionQualityCard> {
   }
 
   Widget _buildExpandedContent() {
+    final List<ThrowQualityIssue> throwIssues = widget.report.allThrowIssues;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          ...widget.report.holeIssues.map((issue) => _buildHoleIssueRow(issue)),
+          Divider(height: 1, color: SenseiColors.gray[100]),
           const SizedBox(height: 8),
-          Text(
-            'Tap a hole to add details',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
+          ...throwIssues.asMap().entries.map((entry) {
+            final int index = entry.key;
+            final ThrowQualityIssue issue = entry.value;
+            final bool isLast = index == throwIssues.length - 1;
+            return _buildThrowIssueRow(issue, isLast: isLast);
+          }),
+          if (!widget.isReadOnly) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Tap a row to edit that hole',
+              style: TextStyle(
+                fontSize: 12,
+                color: SenseiColors.gray[400],
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildHoleIssueRow(HoleQualityIssue issue) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        // Convert hole number to 0-based index
-        widget.onHoleTap(issue.holeNumber - 1);
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: const Color(0xFF7E57C2).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Center(
-                child: Text(
-                  '${issue.holeNumber}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF7E57C2),
+  Widget _buildThrowIssueRow(ThrowQualityIssue issue, {required bool isLast}) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: widget.isReadOnly
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  // Convert hole number to 0-based index
+                  widget.onHoleTap(issue.holeNumber - 1);
+                },
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                // Hole and shot info
+                Text(
+                  'H${issue.holeNumber}, T${issue.throwNumber}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: SenseiColors.gray[700],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _formatMissingFields(issue.missingFields),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[700],
+                const SizedBox(width: 8),
+                Text(
+                  '—',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: SenseiColors.gray[300],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                // Missing info
+                Expanded(
+                  child: Text(
+                    _formatMissingForThrow(issue),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: SenseiColors.gray[500],
+                    ),
+                  ),
+                ),
+                if (!widget.isReadOnly)
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: SenseiColors.gray[300],
+                  ),
+              ],
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: Colors.grey[400],
-            ),
-          ],
+          ),
         ),
-      ),
+        if (!isLast) Divider(height: 1, color: SenseiColors.gray[100]),
+      ],
     );
   }
 
-  String _formatMissingFields(List<String> fields) {
-    if (fields.isEmpty) return '';
-    final List<String> formatted = fields.map((f) {
-      switch (f) {
-        case 'disc':
-          return 'disc name';
-        case 'technique':
-          return 'shot type';
-        default:
-          return f;
-      }
-    }).toList();
-    return 'Missing ${formatted.join(', ')}';
+  String _formatMissingForThrow(ThrowQualityIssue issue) {
+    final List<String> missing = [];
+    if (issue.missingDisc) missing.add('Disc name');
+    if (issue.missingTechnique) missing.add('Throw type');
+    return missing.join(', ');
   }
 }

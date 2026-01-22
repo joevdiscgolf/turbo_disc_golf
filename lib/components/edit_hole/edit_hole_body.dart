@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/components/edit_hole/edit_par_distance_row.dart'
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/editable_throw_timeline.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
 import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 /// A reusable, stateless component for editing hole data.
@@ -125,9 +126,12 @@ class EditHoleBody extends StatelessWidget {
                         child: PrimaryButton(
                           height: 56,
                           width: double.infinity,
-                          label: 'Voice',
+                          label: 'Re-record',
                           onPressed: onVoiceRecord,
-                          backgroundColor: const Color(0xFF9D4EDD),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          borderColor: const Color(0xFF9D4EDD),
+                          labelColor: const Color(0xFF9D4EDD),
+                          iconColor: const Color(0xFF9D4EDD),
                           icon: Icons.mic,
                         ),
                       ),
@@ -171,21 +175,11 @@ class EditHoleBody extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.golf_course,
-                size: 24,
-                color: hasRequiredFields ? scoreColor : Colors.black,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Hole ${holeNumber ?? '?'}',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          Text(
+            'Hole ${holeNumber ?? '?'}',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           Builder(
             builder: (context) {
@@ -244,19 +238,12 @@ class EditHoleBody extends StatelessWidget {
     }
 
     if (par == null || par == 0 || throws.isEmpty) {
-      return Colors.grey;
+      return HoleScoreColors.getScoreColor(0); // Default to par color
     }
 
-    final int relativeScore = throws.length - par!;
-
-    if (relativeScore < 0) {
-      return const Color(0xFF137e66); // Birdie - green
-    } else if (relativeScore == 0) {
-      return Colors.grey; // Par - grey
-    } else if (relativeScore == 1) {
-      return const Color(0xFFFF7A7A); // Bogey - light red
-    } else {
-      return const Color(0xFFD32F2F); // Double bogey+ - dark red
-    }
+    // Use actual score (includes OB penalties) instead of just throws.length
+    final int actualScore = getScoreFromThrows(throws);
+    final int relativeScore = actualScore - par!;
+    return HoleScoreColors.getScoreColor(relativeScore);
   }
 }

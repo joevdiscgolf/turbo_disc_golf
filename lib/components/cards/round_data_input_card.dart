@@ -32,7 +32,7 @@ class RoundDataInputCard extends StatelessWidget {
           : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 48,
+        height: 44,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),

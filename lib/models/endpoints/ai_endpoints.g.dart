@@ -63,7 +63,7 @@ ParseRoundDataResponseData _$ParseRoundDataResponseDataFromJson(Map json) =>
         Map<String, dynamic>.from(json['metadata'] as Map),
       ),
       error: json['error'] as String?,
-      parsedData: (json['parsedData'] as Map?)?.map(
+      parsedData: (json['parsedRound'] as Map?)?.map(
         (k, e) => MapEntry(k as String, e),
       ),
     );
@@ -76,7 +76,7 @@ Map<String, dynamic> _$ParseRoundDataResponseDataToJson(
   'tokensUsed': instance.tokensUsed?.toJson(),
   'metadata': instance.metadata.toJson(),
   'error': instance.error,
-  'parsedData': instance.parsedData,
+  'parsedRound': instance.parsedData,
 };
 
 ParseRoundDataResponse _$ParseRoundDataResponseFromJson(Map json) =>

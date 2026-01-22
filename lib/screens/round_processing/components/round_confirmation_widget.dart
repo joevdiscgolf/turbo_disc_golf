@@ -16,6 +16,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/description_quality_analyzer.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
@@ -99,8 +100,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
     bool hasRequiredFields,
   ) {
     return Container(
-      color: const Color(0xFFF5F0FA), // Lighter purple-gray background
-      // color: Colors.blue,
+      color: SenseiColors.gray[50],
       child: Column(
         children: [
           // Scrollable content (everything except bottom bar)
@@ -254,7 +254,7 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
             bottom: 16 + MediaQuery.of(context).padding.bottom,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: SenseiColors.gray[50],
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),

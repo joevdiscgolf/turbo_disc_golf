@@ -31,7 +31,6 @@ const Map<ThrowPurpose, String> throwPurposeToName = {
   ThrowPurpose.approach: 'Approach',
   ThrowPurpose.putt: 'Putt',
   ThrowPurpose.scramble: 'Scramble',
-  ThrowPurpose.penalty: 'Penalty',
   ThrowPurpose.other: 'Other',
 };
 
