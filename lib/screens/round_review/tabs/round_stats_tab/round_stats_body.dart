@@ -31,6 +31,8 @@ import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class RoundStatsBody extends StatefulWidget {
   final DGRound round;
@@ -136,7 +138,7 @@ class _RoundStatsBodyState extends State<RoundStatsBody>
         break;
       case 6: // Discs
         detailScreen = DiscsDetailScreen(round: widget.round);
-        title = 'Top Discs';
+        title = 'Top discs';
         break;
       case 7: // Mistakes
         detailScreen = MistakesDetailScreen(round: widget.round);
@@ -144,7 +146,7 @@ class _RoundStatsBodyState extends State<RoundStatsBody>
         break;
       case 8: // Psych
         detailScreen = PsychDetailScreen(round: widget.round);
-        title = 'Mental Game';
+        title = 'Mental game';
         break;
     }
 
@@ -268,86 +270,75 @@ class _RoundStatsBodyState extends State<RoundStatsBody>
 
     return ListView(
       padding: const EdgeInsets.only(top: 12, bottom: 80),
-      children: [
-        if (shouldShowBanner)
-          _JudgeBanner(
-            onTap: _navigateToJudgeTab,
-            shouldAnimate: isFirstView,
-            roundId: widget.round.id,
+      children: addRunSpacing(
+        [
+          if (shouldShowBanner)
+            _JudgeBanner(
+              onTap: _navigateToJudgeTab,
+              shouldAnimate: isFirstView,
+              roundId: widget.round.id,
+            ),
+          ScoreKPICard(
+            round: widget.round,
+            isDetailScreen: false,
+            onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
+            showMetadata: locator
+                .get<FeatureFlagService>()
+                .showRoundMetadataInfoBar,
           ),
-        ScoreKPICard(
-          round: widget.round,
-          isDetailScreen: false,
-          onTap: widget.isReviewV2Screen ? _navigateToScoreDetail : null,
-          showMetadata: locator
-              .get<FeatureFlagService>()
-              .showRoundMetadataInfoBar,
-        ),
-        const SizedBox(height: 8),
-
-        // const SizedBox(height: 8),
-        // Scorecard now included in ScoreKPICard above
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   child: _ScorecardCard(
-        //     round: widget.round,
-        //     onTap: () => _navigateToTab(2), // Course tab (moved down)
-        //   ),
-        // ),
-        // const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: compact.DrivingStatsCard(
-                  round: widget.round,
-                  onTap: () => _navigateToDetailView(4), // Drives tab
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: compact.DrivingStatsCard(
+                    round: widget.round,
+                    onTap: () => _navigateToDetailView(4), // Drives tab
+                  ),
                 ),
-              ),
-              Expanded(
-                child: compact.PuttingStatsCard(
-                  round: widget.round,
-                  onTap: () => _navigateToDetailView(5), // Putting tab
+                const SizedBox(width: 8),
+                Expanded(
+                  child: compact.PuttingStatsCard(
+                    round: widget.round,
+                    onTap: () => _navigateToDetailView(5), // Putting tab
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: MistakesCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(7), // Mistakes tab
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: MistakesCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(7), // Mistakes tab
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _MentalGameCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(8), // Psych tab
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _MentalGameCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(8), // Psych tab
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _DiscUsageCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(6), // Discs tab
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _DiscUsageCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(6), // Discs tab
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SkillsOverviewCard(
-            round: widget.round,
-            onTap: () => _navigateToDetailView(1), // Skills tab
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SkillsOverviewCard(
+              round: widget.round,
+              onTap: () => _navigateToDetailView(1), // Skills tab
+            ),
           ),
-        ),
-      ],
+        ],
+        runSpacing: 8,
+        axis: Axis.vertical,
+      ),
     );
   }
 }
@@ -412,6 +403,10 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
     final bool hasData = stats['hasData'] as bool;
 
     return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
       child: InkWell(
         onTap: widget.onTap != null
             ? () {
@@ -725,6 +720,10 @@ class _PuttingStatsCardState extends State<PuttingStatsCard>
     final bool hasData = stats['hasData'] as bool;
 
     return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
       child: InkWell(
         onTap: widget.onTap != null
             ? () {
@@ -1271,6 +1270,25 @@ class _CompactHeatMapPainter extends CustomPainter {
   }
 }
 
+// Disc with rank data for podium display
+class _DiscWithRank {
+  final String name;
+  final double c1InRegPct;
+  final int throwCount;
+  final int fairwayHits;
+  final int rank; // 1, 2, or 3
+  final bool isTied;
+
+  const _DiscWithRank({
+    required this.name,
+    required this.c1InRegPct,
+    required this.throwCount,
+    required this.fairwayHits,
+    required this.rank,
+    required this.isTied,
+  });
+}
+
 // Disc Usage Card
 class _DiscUsageCard extends StatelessWidget {
   final DGRound round;
@@ -1282,6 +1300,7 @@ class _DiscUsageCard extends StatelessWidget {
     final Map<String, int> discCounts = {};
     final Map<String, int> discC1InReg = {};
     final Map<String, int> discC1Attempts = {};
+    final Map<String, int> discFairwayHits = {};
     int totalThrows = 0;
 
     for (final DGHole hole in round.holes) {
@@ -1303,6 +1322,13 @@ class _DiscUsageCard extends StatelessWidget {
               discThrow.landingSpot == LandingSpot.circle1 ||
               discThrow.landingSpot == LandingSpot.inBasket) {
             discC1InReg[discName] = (discC1InReg[discName] ?? 0) + 1;
+          }
+
+          // Track fairway hits (anything not hazard, OB, or off_fairway)
+          if (discThrow.landingSpot != LandingSpot.hazard &&
+              discThrow.landingSpot != LandingSpot.outOfBounds &&
+              discThrow.landingSpot != LandingSpot.offFairway) {
+            discFairwayHits[discName] = (discFairwayHits[discName] ?? 0) + 1;
           }
         }
       }
@@ -1326,7 +1352,14 @@ class _DiscUsageCard extends StatelessWidget {
           return (discCounts[b.key] ?? 0).compareTo(discCounts[a.key] ?? 0);
         });
 
-    // Get top 3 discs
+    // Assign ranks with tie handling
+    final List<_DiscWithRank> rankedDiscs = _assignRanksWithTies(
+      sortedDiscs,
+      discCounts,
+      discFairwayHits,
+    );
+
+    // Get top 3 discs (for legacy compatibility)
     final List<Map<String, dynamic>> topDiscs = sortedDiscs.take(3).map((
       entry,
     ) {
@@ -1339,20 +1372,78 @@ class _DiscUsageCard extends StatelessWidget {
 
     return {
       'topDiscs': topDiscs,
+      'rankedDiscs': rankedDiscs,
       'totalThrows': totalThrows,
       'uniqueDiscs': discCounts.length,
       'hasData': totalThrows > 0,
     };
   }
 
+  List<_DiscWithRank> _assignRanksWithTies(
+    List<MapEntry<String, double>> sortedDiscs,
+    Map<String, int> discCounts,
+    Map<String, int> discFairwayHits,
+  ) {
+    final List<_DiscWithRank> ranked = [];
+    int currentRank = 1;
+    double? previousPercentage;
+
+    for (int i = 0; i < sortedDiscs.length; i++) {
+      final entry = sortedDiscs[i];
+      final double pct = entry.value;
+
+      // Check if tied with previous (within 0.01%)
+      bool isTied = false;
+      if (previousPercentage != null &&
+          (pct - previousPercentage).abs() < 0.01) {
+        isTied = true;
+        // Keep same rank as previous when tied
+      } else if (i > 0) {
+        // Not tied: rank = number of discs already added + 1
+        currentRank = ranked.length + 1;
+      }
+
+      // Stop if we've exceeded 3rd place (but allow ties for 3rd)
+      if (currentRank > 3) break;
+
+      ranked.add(
+        _DiscWithRank(
+          name: entry.key,
+          c1InRegPct: pct,
+          throwCount: discCounts[entry.key] ?? 0,
+          fairwayHits: discFairwayHits[entry.key] ?? 0,
+          rank: currentRank,
+          isTied: isTied,
+        ),
+      );
+
+      previousPercentage = pct;
+    }
+
+    return ranked;
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> stats = _calculateDiscStats();
+    final bool usePodiumCard = locator
+        .get<FeatureFlagService>()
+        .usePodiumDiscCard;
+
+    if (usePodiumCard) {
+      return _PodiumDiscsCard(round: round, stats: stats, onTap: onTap);
+    }
+
+    // EXISTING DESIGN (for fallback)
     final bool hasData = stats['hasData'] as bool;
     final List<Map<String, dynamic>> topDiscs =
         stats['topDiscs'] as List<Map<String, dynamic>>;
 
     return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
       child: InkWell(
         onTap: onTap != null
             ? () {
@@ -1369,7 +1460,7 @@ class _DiscUsageCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
                   Text(
-                    '🥏 Top Discs',
+                    '🥏 Top discs',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Icon(Icons.chevron_right, color: Colors.black, size: 20),
@@ -1515,6 +1606,342 @@ class _MiniMedalCard extends StatelessWidget {
   }
 }
 
+// Podium Discs Card - New Design
+class _PodiumDiscsCard extends StatelessWidget {
+  final DGRound round;
+  final Map<String, dynamic> stats;
+  final VoidCallback? onTap;
+
+  const _PodiumDiscsCard({
+    required this.round,
+    required this.stats,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasData = stats['hasData'] as bool;
+    final List<_DiscWithRank> rankedDiscs =
+        stats['rankedDiscs'] as List<_DiscWithRank>;
+    final int uniqueDiscs = stats['uniqueDiscs'] as int;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
+      child: InkWell(
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    '🥏 Top discs',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (!hasData)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'No disc data available',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+              else ...[
+                // MVP Card (First Place)
+                if (rankedDiscs.isNotEmpty) _MvpDiscCard(disc: rankedDiscs[0]),
+                const SizedBox(height: 8),
+                // Runner-ups (Second and Third)
+                if (rankedDiscs.length >= 2)
+                  Row(
+                    children: [
+                      Expanded(child: _RunnerUpDiscCard(disc: rankedDiscs[1])),
+                      const SizedBox(width: 8),
+                      if (rankedDiscs.length >= 3)
+                        Expanded(child: _RunnerUpDiscCard(disc: rankedDiscs[2]))
+                      else
+                        const Expanded(child: SizedBox()),
+                    ],
+                  ),
+                const SizedBox(height: 12),
+                // Divider
+                Container(height: 1, color: SenseiColors.gray.shade50),
+                const SizedBox(height: 12),
+                // Summary Stats
+                if (rankedDiscs.isNotEmpty)
+                  _BagSummaryPanel(
+                    uniqueDiscs: uniqueDiscs,
+                    topDiscNames: rankedDiscs
+                        .where((d) => d.throwCount == rankedDiscs[0].throwCount)
+                        .map((d) => d.name)
+                        .toList(),
+                    topDiscThrows: rankedDiscs[0].throwCount,
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// MVP Disc Card (First Place) - Podium Design
+class _MvpDiscCard extends StatelessWidget {
+  final _DiscWithRank disc;
+
+  const _MvpDiscCard({required this.disc});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFD700), width: 2),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFFFD700).withValues(alpha: 0.05),
+            Colors.white,
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          const Text('🥇', style: TextStyle(fontSize: 32)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        disc.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF137e66),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${disc.c1InRegPct.toStringAsFixed(0)}% C1 reg',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                _buildProgressBar(disc.c1InRegPct, 5),
+                const SizedBox(height: 6),
+                Text(
+                  '${disc.throwCount} ${disc.throwCount == 1 ? 'drive' : 'drives'} • ${disc.fairwayHits} fairway ${disc.fairwayHits == 1 ? 'hit' : 'hits'}',
+                  style: const TextStyle(fontSize: 11, color: Colors.black87),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(double percentage, double height) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(height / 2),
+      child: Stack(
+        children: [
+          Container(
+            height: height,
+            decoration: const BoxDecoration(color: Color(0xFFE0E0E0)),
+          ),
+          FractionallySizedBox(
+            widthFactor: percentage / 100,
+            child: Container(
+              height: height,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF137e66), Color(0xFF1a9977)],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Runner-up Disc Card (Second/Third Place) - Compact Podium Design
+class _RunnerUpDiscCard extends StatelessWidget {
+  final _DiscWithRank disc;
+
+  const _RunnerUpDiscCard({required this.disc});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isSecondPlace = disc.rank == 2;
+    final Color borderColor = isSecondPlace
+        ? const Color(0xFFC0C0C0)
+        : const Color(0xFFCD7F32);
+    final String medal = isSecondPlace ? '🥈' : '🥉';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(medal, style: const TextStyle(fontSize: 28)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  disc.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF137e66),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${disc.c1InRegPct.toStringAsFixed(0)}% C1 reg',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          _buildProgressBar(disc.c1InRegPct, 4),
+          const SizedBox(height: 6),
+          Text(
+            '${disc.throwCount} ${disc.throwCount == 1 ? 'drive' : 'drives'} • ${disc.fairwayHits} fairway',
+            style: const TextStyle(fontSize: 10, color: Colors.black87),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(double percentage, double height) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(height / 2),
+      child: Stack(
+        children: [
+          Container(
+            height: height,
+            decoration: const BoxDecoration(color: Color(0xFFE0E0E0)),
+          ),
+          FractionallySizedBox(
+            widthFactor: percentage / 100,
+            child: Container(
+              height: height,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF137e66), Color(0xFF1a9977)],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Bag Summary Stats Panel
+class _BagSummaryPanel extends StatelessWidget {
+  final int uniqueDiscs;
+  final List<String> topDiscNames;
+  final int topDiscThrows;
+
+  const _BagSummaryPanel({
+    required this.uniqueDiscs,
+    required this.topDiscNames,
+    required this.topDiscThrows,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final String discsText = topDiscNames.join(', ');
+    final String throwsLabel = topDiscThrows == 1 ? 'throw' : 'throws';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$uniqueDiscs discs used',
+          style: const TextStyle(fontSize: 12, color: Colors.black87),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Most used: $discsText ($topDiscThrows $throwsLabel)',
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF137e66),
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
+
 // Mental Game Card
 class _MentalGameCard extends StatelessWidget {
   final DGRound round;
@@ -1560,6 +1987,18 @@ class _MentalGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool useRedesign = locator
+        .get<FeatureFlagService>()
+        .useRedesignedMentalGameCard;
+
+    if (useRedesign) {
+      return _buildRedesignedCard(context);
+    } else {
+      return _buildOriginalCard(context);
+    }
+  }
+
+  Widget _buildOriginalCard(BuildContext context) {
     final PsychAnalysisService psychService = locator
         .get<PsychAnalysisService>();
     final psychStats = psychService.getPsychStats(round);
@@ -1578,6 +2017,10 @@ class _MentalGameCard extends StatelessWidget {
     final double bounceBack = psychStats.bounceBackRate;
 
     return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
       child: InkWell(
         onTap: onTap != null
             ? () {
@@ -1594,7 +2037,7 @@ class _MentalGameCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
                   Text(
-                    '🧠 Mental Game',
+                    '🧠 Mental game',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Icon(Icons.chevron_right, color: Colors.black, size: 20),
@@ -1719,6 +2162,315 @@ class _MentalGameCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildRedesignedCard(BuildContext context) {
+    final PsychAnalysisService psychService = locator
+        .get<PsychAnalysisService>();
+    final PsychStats psychStats = psychService.getPsychStats(round);
+
+    // Check if we have enough data
+    final bool hasData = psychStats.mentalProfile != 'Insufficient Data';
+
+    // Get key transition stats
+    final ScoringTransition? birdieTransition =
+        psychStats.transitionMatrix['Birdie'];
+    final ScoringTransition? bogeyTransition =
+        psychStats.transitionMatrix['Bogey'];
+
+    final double hotStreakEnergy = birdieTransition?.toBirdiePercent ?? 0.0;
+    final double tiltMeter = bogeyTransition?.bogeyOrWorsePercent ?? 0.0;
+    final double bounceBack = psychStats.bounceBackRate;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
+      child: InkWell(
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    '🧠 Mental game',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (!hasData)
+                const Text(
+                  'Play at least 3 holes to see your mental game analysis.',
+                  style: TextStyle(color: Colors.grey),
+                )
+              else ...[
+                _buildMinimalMetricRow(
+                  context: context,
+                  emoji: '🔥',
+                  label: 'Hot Streak',
+                  percentage: hotStreakEnergy,
+                  color: const Color(0xFFFF8A65),
+                ),
+                _buildMinimalMetricRow(
+                  context: context,
+                  emoji: '😡',
+                  label: 'Tilt Meter',
+                  percentage: tiltMeter,
+                  color: const Color(0xFFEF5350),
+                ),
+                _buildMinimalMetricRow(
+                  context: context,
+                  emoji: '💪',
+                  label: 'Bounce-Back',
+                  percentage: bounceBack,
+                  color: const Color(0xFF66BB6A),
+                ),
+                // Divider before flow state
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Colors.grey.withValues(alpha: 0.2),
+                  ),
+                ),
+                // Flow state section
+                _buildFlowStateSection(context, psychStats),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMinimalMetricRow({
+    required BuildContext context,
+    required String emoji,
+    required String label,
+    required double percentage,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF616161),
+                  ),
+                ),
+              ),
+              Text(
+                '${percentage.toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF424242),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Progress bar
+          Stack(
+            children: [
+              Container(
+                height: 5,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              FractionallySizedBox(
+                widthFactor: percentage / 100,
+                child: Container(
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlowStateSection(BuildContext context, PsychStats psychStats) {
+    final FlowStateAnalysis? flowAnalysis = psychStats.flowStateAnalysis;
+
+    if (flowAnalysis == null || !flowAnalysis.hasFlowStates) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Text('🌊', style: TextStyle(fontSize: 18)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Flow State',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF616161),
+                    ),
+                  ),
+                ),
+                Text(
+                  '0%',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF424242),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No flow states detected this round',
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Has flow states - show full visualization
+    final int totalHoles = round.holes.length;
+    final double flowPercentage = flowAnalysis.flowPercentage;
+    final int flowHoles = flowAnalysis.totalFlowHoles;
+    final int flowPeriods = flowAnalysis.flowCount;
+
+    // Get best flow quality
+    String? bestFlowQuality;
+    String? bestFlowLabel;
+    if (flowAnalysis.bestFlow != null) {
+      bestFlowQuality = flowAnalysis.bestFlow!.flowQuality;
+      bestFlowLabel = flowAnalysis.bestFlow!.label;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🌊', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Flow State',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF616161),
+                  ),
+                ),
+              ),
+              Text(
+                '${flowPercentage.toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF424242),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '· $flowHoles holes',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF616161)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Mini timeline
+          SizedBox(
+            height: 24,
+            child: CustomPaint(
+              size: Size(MediaQuery.of(context).size.width - 64, 24),
+              painter: MiniFlowTimelinePainter(
+                flowPeriods: flowAnalysis.flowPeriods,
+                totalHoles: totalHoles,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Details text
+          Text(
+            '$flowPeriods ${flowPeriods == 1 ? 'period' : 'periods'}${bestFlowQuality != null ? ' • Best: $bestFlowLabel ($bestFlowQuality)' : ''}',
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Mini Flow Timeline Painter for Overview Card
+class MiniFlowTimelinePainter extends CustomPainter {
+  final List<FlowStatePeriod> flowPeriods;
+  final int totalHoles;
+
+  MiniFlowTimelinePainter({
+    required this.flowPeriods,
+    required this.totalHoles,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint baseLinePaint = Paint()
+      ..color = Colors.grey.withValues(alpha: 0.3)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
+    final Paint flowPaint = Paint()
+      ..color = const Color(0xFF26A69A)
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+
+    // Draw base timeline
+    final double y = size.height / 2;
+    canvas.drawLine(Offset(0, y), Offset(size.width, y), baseLinePaint);
+
+    // Draw flow periods
+    for (final FlowStatePeriod period in flowPeriods) {
+      final double startX = ((period.startHole - 1) / totalHoles) * size.width;
+      final double endX = (period.endHole / totalHoles) * size.width;
+
+      canvas.drawLine(Offset(startX, y), Offset(endX, y), flowPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // Skills Overview Card
@@ -1744,6 +2496,10 @@ class _SkillsOverviewCardState extends State<SkillsOverviewCard>
     final SkillsAnalysis analysis = service.getSkillsAnalysis(widget.round);
 
     return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
       child: InkWell(
         onTap: widget.onTap != null
             ? () {
@@ -1767,7 +2523,7 @@ class _SkillsOverviewCardState extends State<SkillsOverviewCard>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
                     Text(
-                      '⭐ Skills Overview',
+                      '⭐ Skills',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -2157,29 +2913,14 @@ class _DetailScreenWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5), // Light gray with faint purple tint
-            Color(0xFFECECEE), // Light gray
-            Color(0xFFE8F4E8), // Light gray with faint green tint
-            Color(0xFFEAE8F0), // Light gray with subtle purple
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
-        ),
+    return Scaffold(
+      backgroundColor: SenseiColors.gray[50],
+      appBar: GenericAppBar(
+        topViewPadding: MediaQuery.of(context).viewPadding.top,
+        title: title,
+        backgroundColor: SenseiColors.gray[50],
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: GenericAppBar(
-          topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: title,
-          backgroundColor: Colors.transparent,
-        ),
-        body: child,
-      ),
+      body: child,
     );
   }
 }
@@ -2253,7 +2994,7 @@ class _JudgeBannerState extends State<_JudgeBanner>
       },
       child: Container(
         padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [

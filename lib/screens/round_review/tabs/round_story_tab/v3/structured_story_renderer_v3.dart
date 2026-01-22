@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/stat_card_registry.dart';
 import 'package:turbo_disc_golf/components/story/story_callout_card.dart';
+import 'package:turbo_disc_golf/components/what_could_have_been_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
@@ -285,147 +286,24 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
   Widget _buildWhatCouldHaveBeen(BuildContext context) {
     final WhatCouldHaveBeenV2 data = widget.content.whatCouldHaveBeen;
 
+    // Convert scenarios to the new format
+    final List<WhatCouldHaveBeenScenario> scenarios = data.scenarios
+        .map(
+          (s) => WhatCouldHaveBeenScenario(
+            fix: s.fix,
+            resultScore: s.resultScore,
+            strokesSaved: s.strokesSaved.toString(),
+          ),
+        )
+        .toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Divider
-          Container(
-            height: 1,
-            color: SenseiColors.gray[200],
-            margin: const EdgeInsets.symmetric(vertical: 24),
-          ),
-
-          // Section header
-          Row(
-            children: [
-              const Icon(Icons.insights, color: Color(0xFF6366F1), size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'What Could Have Been',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6366F1),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Current vs Potential Score
-          _buildScoreComparison(data.currentScore, data.potentialScore),
-
-          const SizedBox(height: 16),
-
-          // Improvement scenarios
-          ...data.scenarios.map((scenario) => _buildScenarioRow(scenario)),
-
-          // Encouragement message
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.emoji_events,
-                  color: Color(0xFF6366F1),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    data.encouragement,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreComparison(String current, String potential) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildScoreBox('Current Score', current, SenseiColors.gray[600]!),
-        Icon(Icons.arrow_forward, color: SenseiColors.gray[400]),
-        _buildScoreBox('Potential Score', potential, const Color(0xFF4CAF50)),
-      ],
-    );
-  }
-
-  Widget _buildScoreBox(String label, String score, Color color) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: SenseiColors.gray[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          score,
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScenarioRow(ImprovementScenarioV2 scenario) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF6366F1),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  scenario.fix,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Result: ${scenario.resultScore} (${scenario.strokesSaved} strokes saved)',
-                  style: TextStyle(fontSize: 12, color: SenseiColors.gray[600]),
-                ),
-              ],
-            ),
-          ),
-        ],
+      child: WhatCouldHaveBeenCard(
+        currentScore: data.currentScore,
+        potentialScore: data.potentialScore,
+        scenarios: scenarios,
+        encouragement: data.encouragement,
       ),
     );
   }

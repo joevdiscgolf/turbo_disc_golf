@@ -69,8 +69,14 @@ class ToastService {
     );
   }
 
-  void showError(String message) {
-    show(message: message, type: ToastType.error);
+  void showError(String message, {bool showIcon = true, double iconSize = 18}) {
+    show(
+      message: message,
+      type: ToastType.error,
+      icon: showIcon ? Icons.warning : null,
+      iconSize: iconSize,
+      iconColor: Colors.red[300],
+    );
   }
 
   void showInfo(String message) {

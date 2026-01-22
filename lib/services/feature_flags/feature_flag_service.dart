@@ -19,7 +19,7 @@ class FeatureFlagService {
   bool _initialized = false;
 
   FeatureFlagService({required FeatureFlagProvider provider})
-      : _provider = provider;
+    : _provider = provider;
 
   /// Initialize the service and fetch initial values.
   Future<bool> initialize() async {
@@ -125,7 +125,8 @@ class FeatureFlagService {
 
   bool get useRoundHistoryRowV2 => getBool(FeatureFlag.useRoundHistoryRowV2);
 
-  bool get useBeautifulDatePicker => getBool(FeatureFlag.useBeautifulDatePicker);
+  bool get useBeautifulDatePicker =>
+      getBool(FeatureFlag.useBeautifulDatePicker);
 
   bool get showHoleDistancesInScorecard =>
       getBool(FeatureFlag.showHoleDistancesInScorecard);
@@ -142,7 +143,11 @@ class FeatureFlagService {
   bool get useThrowCardV2 => getBool(FeatureFlag.useThrowCardV2);
 
   /// Throw card layout style: 'inline', 'split', or empty for default (v2 with timeline)
-  String get throwCardLayoutStyle => getString(FeatureFlag.throwCardLayoutStyle);
+  String get throwCardLayoutStyle =>
+      getString(FeatureFlag.throwCardLayoutStyle);
+
+  /// Throw timeline visual style: 'default', 'journey_rail', or 'flow_connectors'
+  String get throwTimelineStyle => getString(FeatureFlag.throwTimelineStyle);
 
   bool get showMissingThrowDetailsInScoreDetail =>
       getBool(FeatureFlag.showMissingThrowDetailsInScoreDetail);
@@ -153,6 +158,11 @@ class FeatureFlagService {
   bool get useFlatMicrophoneButton =>
       getBool(FeatureFlag.useFlatMicrophoneButton);
 
+  bool get useRedesignedMentalGameCard =>
+      getBool(FeatureFlag.useRedesignedMentalGameCard);
+
+  bool get usePodiumDiscCard => getBool(FeatureFlag.usePodiumDiscCard);
+
   // ===== Voice Service =====
 
   bool get useIosVoiceService => getBool(FeatureFlag.useIosVoiceService);
@@ -161,8 +171,7 @@ class FeatureFlagService {
 
   /// Debug-only: Uses test courses instead of MeiliSearch.
   /// Always returns false in release builds.
-  bool get useTestCourseProvider =>
-      getBool(FeatureFlag.useTestCourseProvider);
+  bool get useTestCourseProvider => getBool(FeatureFlag.useTestCourseProvider);
 
   /// Uses Supabase for course search instead of MeiliSearch.
   bool get useSupabaseSearchProvider =>
@@ -173,8 +182,7 @@ class FeatureFlagService {
   bool get useLocalMeiliSearchOnSimulator =>
       getBool(FeatureFlag.useLocalMeiliSearchOnSimulator);
 
-  String get meiliLocalServerUrl =>
-      getString(FeatureFlag.meiliLocalServerUrl);
+  String get meiliLocalServerUrl => getString(FeatureFlag.meiliLocalServerUrl);
 
   // ===== Judgment/Roast Feature =====
 

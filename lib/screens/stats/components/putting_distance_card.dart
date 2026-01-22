@@ -18,67 +18,65 @@ class PuttingDistanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Text(
-          //   'Putting Distance Stats',
-          //   style: Theme.of(
-          //     context,
-          //   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          // ),
-          // const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatBox(
-                  context,
-                  'Avg made',
-                  '${avgMakeDistance.toStringAsFixed(1)} ft',
-                  const Color(0xFF137e66),
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Text(
+            //   'Putting Distance Stats',
+            //   style: Theme.of(
+            //     context,
+            //   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            // ),
+            // const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatBox(
+                    context,
+                    'Avg made',
+                    '${avgMakeDistance.toStringAsFixed(1)} ft',
+                    const Color(0xFF137e66),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatBox(
-                  context,
-                  'Avg attempted',
-                  '${avgAttemptDistance.toStringAsFixed(1)} ft',
-                  const Color(0xFF10E5FF),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatBox(
+                    context,
+                    'Avg attempted',
+                    '${avgAttemptDistance.toStringAsFixed(1)} ft',
+                    const Color(0xFF10E5FF),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatBox(
-                  context,
-                  'Avg birdie putt',
-                  '${avgBirdiePuttDistance.toStringAsFixed(1)} ft',
-                  const Color(0xFFFFB800),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatBox(
+                    context,
+                    'Avg birdie putt',
+                    '${avgBirdiePuttDistance.toStringAsFixed(1)} ft',
+                    const Color(0xFFFFB800),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatBox(
-                  context,
-                  'Total dst made',
-                  '${totalMadeDistance.toStringAsFixed(0)} ft',
-                  const Color(0xFFFF7A7A),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatBox(
+                    context,
+                    'Total dst made',
+                    '${totalMadeDistance.toStringAsFixed(0)} ft',
+                    const Color(0xFFFF7A7A),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

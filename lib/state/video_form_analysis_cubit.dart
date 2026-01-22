@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,7 @@ import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
 import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -28,6 +30,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   VideoFormAnalysisCubit() : super(const VideoFormAnalysisInitial());
 
   final ImagePicker _imagePicker = ImagePicker();
+  Timer? _loaderDelayTimer;
 
   /// Start a new analysis session by recording video
   Future<void> recordVideo({
@@ -39,6 +42,16 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     );
 
     try {
+      debugPrint('[VideoFormAnalysisCubit] Waiting for video recording from camera...');
+
+      // Start timer to show loader after 200ms if picker is still open
+      _loaderDelayTimer = Timer(const Duration(milliseconds: 200), () {
+        debugPrint('[VideoFormAnalysisCubit] 200ms elapsed - showing loader');
+        emit(const VideoFormAnalysisRecording(
+          progressMessage: 'Loading video...',
+        ));
+      });
+
       final XFile? video = await _imagePicker.pickVideo(
         source: ImageSource.camera,
         maxDuration: const Duration(
@@ -46,10 +59,17 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         ),
       );
 
+      // Cancel timer - picker has returned
+      _loaderDelayTimer?.cancel();
+      _loaderDelayTimer = null;
+
       if (video == null) {
+        debugPrint('[VideoFormAnalysisCubit] Video recording cancelled');
         emit(const VideoFormAnalysisInitial());
         return;
       }
+
+      debugPrint('[VideoFormAnalysisCubit] Video recorded: ${video.path}');
 
       await _processVideo(
         videoPath: video.path,
@@ -58,6 +78,9 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         cameraAngle: cameraAngle,
       );
     } catch (e) {
+      _loaderDelayTimer?.cancel();
+      _loaderDelayTimer = null;
+      debugPrint('[VideoFormAnalysisCubit] Failed to record video: $e');
       emit(VideoFormAnalysisError(
         message: 'Failed to record video: ${e.toString()}',
       ));
@@ -69,11 +92,17 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
   }) async {
-    emit(const VideoFormAnalysisRecording(
-      progressMessage: 'Opening gallery...',
-    ));
-
     try {
+      debugPrint('[VideoFormAnalysisCubit] Waiting for video selection from gallery...');
+
+      // Start timer to show loader after 200ms if picker is still open
+      _loaderDelayTimer = Timer(const Duration(milliseconds: 200), () {
+        debugPrint('[VideoFormAnalysisCubit] 200ms elapsed - showing loader');
+        emit(const VideoFormAnalysisRecording(
+          progressMessage: 'Loading video...',
+        ));
+      });
+
       final XFile? video = await _imagePicker.pickVideo(
         source: ImageSource.gallery,
         maxDuration: const Duration(
@@ -81,10 +110,17 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         ),
       );
 
+      // Cancel timer - picker has returned
+      _loaderDelayTimer?.cancel();
+      _loaderDelayTimer = null;
+
       if (video == null) {
-        emit(const VideoFormAnalysisInitial());
+        debugPrint('[VideoFormAnalysisCubit] Video selection cancelled');
+        // User cancelled - stay in current state (no change needed)
         return;
       }
+
+      debugPrint('[VideoFormAnalysisCubit] Video imported: ${video.path}');
 
       await _processVideo(
         videoPath: video.path,
@@ -93,6 +129,9 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         cameraAngle: cameraAngle,
       );
     } catch (e) {
+      _loaderDelayTimer?.cancel();
+      _loaderDelayTimer = null;
+      debugPrint('[VideoFormAnalysisCubit] Failed to import video: $e');
       emit(VideoFormAnalysisError(
         message: 'Failed to import video: ${e.toString()}',
       ));
@@ -140,12 +179,15 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
   }) async {
+    debugPrint('[VideoFormAnalysisCubit] Starting video processing: $videoPath');
+
     final VideoFormAnalysisService analysisService =
         locator.get<VideoFormAnalysisService>();
     final AuthService authService = locator.get<AuthService>();
 
     final String? uid = authService.currentUid;
     if (uid == null) {
+      debugPrint('[VideoFormAnalysisCubit] Error: User not authenticated');
       emit(const VideoFormAnalysisError(message: 'User not authenticated'));
       return;
     }
@@ -161,19 +203,35 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       status: SessionStatus.created,
     );
 
+    debugPrint('[VideoFormAnalysisCubit] Validating video...');
     emit(VideoFormAnalysisValidating(
       session: session,
       progressMessage: 'Validating video...',
     ));
 
-    // Validate video
+    // Yield to event loop so UI can render the loader
+    await Future.delayed(Duration.zero);
+
+    // 1. Validate video duration FIRST (most actionable error)
+    final (double? duration, String? durationError) =
+        await analysisService.validateVideoDuration(videoPath);
+
+    debugPrint('[VideoFormAnalysisCubit] Duration validation - Duration: $duration seconds, Error: $durationError');
+
+    if (durationError != null) {
+      locator.get<ToastService>().showError(durationError);
+      emit(const VideoFormAnalysisInitial());
+      return;
+    }
+
+    // 2. Validate file size and format
     final VideoValidationResult validation =
         await analysisService.validateVideo(videoPath);
     if (!validation.isValid) {
-      emit(VideoFormAnalysisError(
-        message: validation.errorMessage ?? 'Video validation failed',
-        session: session,
-      ));
+      locator.get<ToastService>().showError(
+        validation.errorMessage ?? 'Video validation failed',
+      );
+      emit(const VideoFormAnalysisInitial());
       return;
     }
 
@@ -237,12 +295,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
 
     // Save to history (fire-and-forget, don't block UI)
     if (poseResult != null) {
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('💾 SAVING TO HISTORY: Starting save...');
-      debugPrint('💾 User ID: $uid');
-      debugPrint('💾 Session ID: ${session.id}');
-      debugPrint('💾 Checkpoints: ${poseResult.checkpoints.length}');
-      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[VideoFormAnalysisCubit] Saving analysis to history (session: ${session.id})');
       _saveAnalysisToHistory(
         uid: uid,
         sessionId: session.id,
@@ -251,10 +304,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         poseAnalysis: poseResult,
       );
     } else {
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('⚠️ SKIPPING HISTORY SAVE: poseResult is null');
-      debugPrint('⚠️ Pose analysis warning: $poseAnalysisWarning');
-      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[VideoFormAnalysisCubit] Skipping history save - no pose analysis result');
     }
 
     emit(VideoFormAnalysisComplete(
@@ -311,20 +361,19 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required String sessionId,
     required String userId,
   }) async {
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('🎯 POSE ANALYSIS: Starting...');
-    debugPrint('🎯 Video path: $videoPath');
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
-    debugPrint('🎯 Backend URL: ${flags.poseAnalysisBaseUrl}');
-    debugPrint('═══════════════════════════════════════════════════════');
 
     try {
+      debugPrint('[VideoFormAnalysisCubit] Starting pose analysis');
+      debugPrint('[VideoFormAnalysisCubit] Backend URL: ${flags.poseAnalysisBaseUrl}');
+      debugPrint('[VideoFormAnalysisCubit] Video: $videoPath');
+
       final PoseAnalysisApiClient poseClient =
           locator.get<PoseAnalysisApiClient>();
 
       // Map throw type to backend format
       final String throwTypeStr = _mapThrowTypeToString(throwType);
-      debugPrint('🎯 Throw type: $throwTypeStr');
+      debugPrint('[VideoFormAnalysisCubit] Throw type: $throwTypeStr, Camera: ${cameraAngle.name}');
 
       final PoseAnalysisResponse response = await poseClient.analyzeVideo(
         videoFile: File(videoPath),
@@ -334,22 +383,16 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         userId: userId,
       );
 
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('✅ POSE ANALYSIS: SUCCESS!');
-      debugPrint('✅ Checkpoints found: ${response.checkpoints.length}');
+      debugPrint('[VideoFormAnalysisCubit] ✅ Pose analysis successful - ${response.checkpoints.length} checkpoints');
       for (final checkpoint in response.checkpoints) {
-        debugPrint('   - ${checkpoint.checkpointName}: ${checkpoint.deviationSeverity}');
+        debugPrint('[VideoFormAnalysisCubit]   - ${checkpoint.checkpointName}: ${checkpoint.deviationSeverity}');
       }
-      debugPrint('═══════════════════════════════════════════════════════');
 
       return (response, null);
     } catch (e, stackTrace) {
       final String errorMessage = e.toString();
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('❌ POSE ANALYSIS: FAILED!');
-      debugPrint('❌ Error: $errorMessage');
-      debugPrint('❌ Stack trace: $stackTrace');
-      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('[VideoFormAnalysisCubit] ❌ Pose analysis failed: $errorMessage');
+      debugPrint('[VideoFormAnalysisCubit] Stack trace: $stackTrace');
 
       // Return user-friendly error message
       String userMessage;
@@ -409,6 +452,8 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
 
   @override
   Future<void> clearOnLogout() async {
+    _loaderDelayTimer?.cancel();
+    _loaderDelayTimer = null;
     emit(const VideoFormAnalysisInitial());
   }
 }

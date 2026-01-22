@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/models/error/app_error_type.dart';
 import 'package:turbo_disc_golf/models/error/error_context.dart';
 import 'package:turbo_disc_golf/models/error/error_severity.dart';
 import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 class BackendLLMService {
   /// Converts a request object to a Firebase-safe JSON map.
@@ -31,7 +32,9 @@ class BackendLLMService {
         Map<String, dynamic>.from(result.data as Map),
       );
     } catch (e, trace) {
-      _logError(e, trace, operation: 'parseRoundData');
+      if (!_handleRateLimitError(e)) {
+        _logError(e, trace, operation: 'parseRoundData');
+      }
       return null;
     }
   }
@@ -55,7 +58,9 @@ class BackendLLMService {
         Map<String, dynamic>.from(result.data as Map),
       );
     } catch (e, trace) {
-      _logError(e, trace, operation: 'generateRoundStory');
+      if (!_handleRateLimitError(e)) {
+        _logError(e, trace, operation: 'generateRoundStory');
+      }
       return null;
     }
   }
@@ -76,9 +81,32 @@ class BackendLLMService {
         Map<String, dynamic>.from(result.data as Map),
       );
     } catch (e, trace) {
-      _logError(e, trace, operation: 'generateRoundJudgment');
+      if (!_handleRateLimitError(e)) {
+        _logError(e, trace, operation: 'generateRoundJudgment');
+      }
       return null;
     }
+  }
+
+  /// Returns true if the error was a rate limit error and was handled.
+  bool _handleRateLimitError(dynamic e) {
+    if (e is FirebaseFunctionsException && e.code == 'resource-exhausted') {
+      final Map<String, dynamic>? details =
+          e.details != null ? Map<String, dynamic>.from(e.details as Map) : null;
+      final int retryAfterSeconds = details?['retryAfterSeconds'] as int? ?? 60;
+
+      String message;
+      if (retryAfterSeconds >= 60) {
+        final int minutes = (retryAfterSeconds / 60).ceil();
+        message = 'Too many requests. Try again in $minutes minute${minutes > 1 ? 's' : ''}.';
+      } else {
+        message = 'Too many requests. Try again in $retryAfterSeconds seconds.';
+      }
+
+      locator.get<ToastService>().showWarning(message);
+      return true;
+    }
+    return false;
   }
 
   /// Log LLM errors to Crashlytics with context

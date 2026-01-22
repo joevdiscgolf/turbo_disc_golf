@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_edit_dialog.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Bottom sheet showing hole details with editable metadata and throws.
 ///
@@ -96,7 +97,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         throws: currentHole.throws ?? [],
         parFocusNode: _parFocusNode,
         distanceFocusNode: _distanceFocusNode,
-        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        bottomViewPadding: autoBottomPadding(context),
         hasRequiredFields: currentHole.hasRequiredFields,
         onParChanged: (int newPar) => _handleMetadataChanged(
           currentHole: currentHole,
@@ -172,20 +173,24 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       // If addAtIndex is null, previous throw is the last throw
       // If addAtIndex is a number, previous throw is the throw at that index
       final DiscThrow? previousThrow = addAtIndex != null
-          ? (currentHole.throws != null && addAtIndex < currentHole.throws!.length
-              ? currentHole.throws![addAtIndex]
-              : null)
+          ? (currentHole.throws != null &&
+                    addAtIndex < currentHole.throws!.length
+                ? currentHole.throws![addAtIndex]
+                : null)
           : (currentHole.throws?.isNotEmpty ?? false
-              ? currentHole.throws!.last
-              : null);
+                ? currentHole.throws!.last
+                : null);
 
       // Track modal opened
-      locator.get<LoggingService>().track('Modal Opened', properties: {
-        'modal_type': 'bottom_sheet',
-        'modal_name': 'Add Throw Panel',
-        'hole_number': currentHole.number ?? widget.holeIndex + 1,
-        'is_new_throw': true,
-      });
+      locator.get<LoggingService>().track(
+        'Modal Opened',
+        properties: {
+          'modal_type': 'bottom_sheet',
+          'modal_name': 'Add Throw Panel',
+          'hole_number': currentHole.number ?? widget.holeIndex + 1,
+          'is_new_throw': true,
+        },
+      );
 
       // Show the panel
       showModalBottomSheet(
@@ -208,12 +213,15 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       );
     } else {
       // Track modal opened
-      locator.get<LoggingService>().track('Modal Opened', properties: {
-        'modal_type': 'dialog',
-        'modal_name': 'Throw Edit Dialog',
-        'hole_number': currentHole.number ?? widget.holeIndex + 1,
-        'is_new_throw': true,
-      });
+      locator.get<LoggingService>().track(
+        'Modal Opened',
+        properties: {
+          'modal_type': 'dialog',
+          'modal_name': 'Throw Edit Dialog',
+          'hole_number': currentHole.number ?? widget.holeIndex + 1,
+          'is_new_throw': true,
+        },
+      );
 
       await showDialog(
         context: context,
@@ -255,20 +263,24 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
 
     if (locator.get<FeatureFlagService>().useAddThrowPanelV2) {
       // Determine the previous throw for smart auto-selection
-      final DiscThrow? previousThrow = throwIndex > 0 &&
+      final DiscThrow? previousThrow =
+          throwIndex > 0 &&
               currentHole.throws != null &&
               throwIndex - 1 < currentHole.throws!.length
           ? currentHole.throws![throwIndex - 1]
           : null;
 
       // Track modal opened
-      locator.get<LoggingService>().track('Modal Opened', properties: {
-        'modal_type': 'bottom_sheet',
-        'modal_name': 'Add Throw Panel',
-        'hole_number': currentHole.number ?? widget.holeIndex + 1,
-        'throw_index': throwIndex,
-        'is_new_throw': false,
-      });
+      locator.get<LoggingService>().track(
+        'Modal Opened',
+        properties: {
+          'modal_type': 'bottom_sheet',
+          'modal_name': 'Add Throw Panel',
+          'hole_number': currentHole.number ?? widget.holeIndex + 1,
+          'throw_index': throwIndex,
+          'is_new_throw': false,
+        },
+      );
 
       // Show the panel
       showModalBottomSheet(
@@ -294,13 +306,16 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
       );
     } else {
       // Track modal opened
-      locator.get<LoggingService>().track('Modal Opened', properties: {
-        'modal_type': 'dialog',
-        'modal_name': 'Throw Edit Dialog',
-        'hole_number': currentHole.number ?? widget.holeIndex + 1,
-        'throw_index': throwIndex,
-        'is_new_throw': false,
-      });
+      locator.get<LoggingService>().track(
+        'Modal Opened',
+        properties: {
+          'modal_type': 'dialog',
+          'modal_name': 'Throw Edit Dialog',
+          'hole_number': currentHole.number ?? widget.holeIndex + 1,
+          'throw_index': throwIndex,
+          'is_new_throw': false,
+        },
+      );
 
       await showDialog(
         context: context,

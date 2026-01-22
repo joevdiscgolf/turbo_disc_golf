@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class SkillsDetailScreen extends StatelessWidget {
   static const String screenName = 'Skills Detail';
@@ -39,26 +40,19 @@ class SkillsDetailScreen extends StatelessWidget {
           top: 16,
           bottom: 80,
         ),
-        children: [
-          // Overall score card
-          _OverallScoreCard(overallScore: analysis.overallScore),
-          const SizedBox(height: 16),
-
-          // Spider chart card
-          _SkillsSpiderChartCard(analysis: analysis),
-          const SizedBox(height: 16),
-
-          // Individual skill breakdowns
-          _SkillBreakdownCard(skill: analysis.backhandDriving),
-          const SizedBox(height: 8),
-          _SkillBreakdownCard(skill: analysis.forehandDriving),
-          const SizedBox(height: 8),
-          _SkillBreakdownCard(skill: analysis.approaching),
-          const SizedBox(height: 8),
-          _SkillBreakdownCard(skill: analysis.putting),
-          const SizedBox(height: 8),
-          _SkillBreakdownCard(skill: analysis.mentalFocus),
-        ],
+        children: addRunSpacing(
+          [
+            _OverallScoreCard(overallScore: analysis.overallScore),
+            _SkillsSpiderChartCard(analysis: analysis),
+            _SkillBreakdownCard(skill: analysis.backhandDriving),
+            _SkillBreakdownCard(skill: analysis.forehandDriving),
+            _SkillBreakdownCard(skill: analysis.approaching),
+            _SkillBreakdownCard(skill: analysis.putting),
+            _SkillBreakdownCard(skill: analysis.mentalFocus),
+          ],
+          runSpacing: 8,
+          axis: Axis.vertical,
+        ),
       ),
     );
   }
@@ -72,6 +66,7 @@ class _OverallScoreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -84,18 +79,11 @@ class _OverallScoreCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '${overallScore.toStringAsFixed(1)}%',
+              '${overallScore.toStringAsFixed(0)}%',
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF137e66),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Average across all skills',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -112,6 +100,7 @@ class _SkillsSpiderChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -351,6 +340,7 @@ class _SkillBreakdownCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -366,7 +356,7 @@ class _SkillBreakdownCard extends StatelessWidget {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${skill.percentage.toStringAsFixed(1)}%',
+                  '${skill.percentage.toStringAsFixed(0)}%',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: _color,

@@ -11,12 +11,29 @@ class FormAnalysisEducationPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
-        _buildInstructionsCard(context),
+        _buildSectionHeader(context, 'General tips'),
+        const SizedBox(height: 12),
+        _buildGeneralTipsCard(context),
+        const SizedBox(height: 20),
+        _buildSectionHeader(context, 'Camera angles'),
+        const SizedBox(height: 12),
+        _buildCameraPositionCard(context),
       ],
     );
   }
 
-  Widget _buildInstructionsCard(BuildContext context) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Colors.grey[800],
+      ),
+    );
+  }
+
+  Widget _buildGeneralTipsCard(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -30,65 +47,114 @@ class FormAnalysisEducationPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildBulletPoint(context, 'Keep videos under 3 seconds'),
           _buildBulletPoint(
             context,
-            'Film from the side for best results',
-            Icons.videocam_outlined,
+            'Start recording before your x-step (right, left, right)',
           ),
-          const SizedBox(height: 16),
+          _buildBulletPoint(context, 'End after the disc is released'),
           _buildBulletPoint(
             context,
-            'Ensure good lighting so your form is visible',
-            Icons.wb_sunny_outlined,
+            'Landscape orientation preferred (portrait works too)',
           ),
-          const SizedBox(height: 16),
-          _buildBulletPoint(
+          _buildBulletPoint(context, 'Keep your full body in frame at all times'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraPositionCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCameraAngleSection(
             context,
-            'Capture your full throwing motion',
-            Icons.sports_outlined,
+            'Side View',
+            'Position slightly behind, not directly to the side',
           ),
-          const SizedBox(height: 16),
-          _buildBulletPoint(
+          const SizedBox(height: 12),
+          _buildCameraAngleSection(
             context,
-            'Keep the camera steady',
-            Icons.stay_current_portrait_outlined,
-          ),
-          const SizedBox(height: 16),
-          _buildBulletPoint(
-            context,
-            'Videos should be 5-30 seconds long',
-            Icons.timer_outlined,
+            'Rear View',
+            'Position directly behind the thrower',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBulletPoint(
+  Widget _buildCameraAngleSection(
     BuildContext context,
-    String text,
-    IconData icon,
+    String title,
+    String description,
   ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: const Color(0xFF137e66).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '•',
+            style: TextStyle(
+              fontSize: 18,
+              height: 1.35,
+              color: Colors.blue[700],
+            ),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: const Color(0xFF137e66),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                    height: 1.4,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 6),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletPoint(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '•',
+            style: TextStyle(
+              fontSize: 18,
+              height: 1.35,
+              color: const Color(0xFF137e66),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
             child: Text(
               text,
               style: TextStyle(
@@ -98,8 +164,8 @@ class FormAnalysisEducationPanel extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

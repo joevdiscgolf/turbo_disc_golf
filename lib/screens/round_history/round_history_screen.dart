@@ -24,11 +24,16 @@ import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class RoundHistoryScreen extends StatefulWidget {
-  const RoundHistoryScreen({super.key, required this.bottomViewPadding});
+  const RoundHistoryScreen({
+    super.key,
+    required this.topViewPadding,
+    required this.bottomViewPadding,
+  });
 
   static const String screenName = 'Round History';
   static const String routeName = '/round-history';
 
+  final double topViewPadding;
   final double bottomViewPadding;
 
   @override
@@ -75,8 +80,10 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
     Navigator.of(context).push(
       BannerExpandPageRoute(
-        builder: (context) =>
-            RecordRoundScreen(bottomViewPadding: widget.bottomViewPadding),
+        builder: (context) => RecordRoundScreen(
+          topViewPadding: widget.topViewPadding,
+          bottomViewPadding: widget.bottomViewPadding,
+        ),
       ),
     );
   }
@@ -110,17 +117,14 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
       return SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              return Column(
-                children: [
-                  const _RoundHistoryShimmer(),
-                  if (index < shimmerCount - 1) const SizedBox(height: 8),
-                ],
-              );
-            },
-            childCount: shimmerCount,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            return Column(
+              children: [
+                const _RoundHistoryShimmer(),
+                if (index < shimmerCount - 1) const SizedBox(height: 8),
+              ],
+            );
+          }, childCount: shimmerCount),
         ),
       );
     } else if (state is RoundHistoryError) {
@@ -138,7 +142,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         );
       }
       return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 148),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final DGRound round = sortedRounds[index];
@@ -210,6 +214,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
                   bottom: 0,
                   child: ContinueRecordingBanner(
                     state: recordRoundState,
+                    topViewPadding: widget.topViewPadding,
                     bottomViewPadding: widget.bottomViewPadding,
                   ),
                 );
@@ -227,6 +232,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
                     bottom: 0,
                     child: ContinueRecordingBanner(
                       state: recordRoundState,
+                      topViewPadding: widget.topViewPadding,
                       bottomViewPadding: widget.bottomViewPadding,
                     ),
                   );
@@ -342,7 +348,7 @@ class _RoundHistoryShimmer extends StatelessWidget {
       shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SizedBox(
-        height: 204,
+        height: 196,
         child: ShimmerBox(borderRadius: 12, color: SenseiColors.gray.shade100),
       ),
     );

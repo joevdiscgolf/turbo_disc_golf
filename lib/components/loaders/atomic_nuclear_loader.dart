@@ -14,8 +14,8 @@ import 'package:flutter/scheduler.dart';
 /// ✅ Background green morphing circles NOT rendered (code kept)
 /// ✅ Whole brain + orbitals 1.5x bigger (internal scale)
 /// ✅ Accepts ValueNotifier for dynamic speed changes without position jumps
-class GPTAtomicNucleusLoader extends StatefulWidget {
-  const GPTAtomicNucleusLoader({
+class AtomicNucleusLoader extends StatefulWidget {
+  const AtomicNucleusLoader({
     super.key,
     this.size = 240.0,
     this.particleCount = 3,
@@ -32,10 +32,10 @@ class GPTAtomicNucleusLoader extends StatefulWidget {
   final ValueNotifier<double>? speedMultiplierNotifier;
 
   @override
-  State<GPTAtomicNucleusLoader> createState() => _GPTAtomicNucleusLoaderState();
+  State<AtomicNucleusLoader> createState() => _AtomicNucleusLoaderState();
 }
 
-class _GPTAtomicNucleusLoaderState extends State<GPTAtomicNucleusLoader>
+class _AtomicNucleusLoaderState extends State<AtomicNucleusLoader>
     with SingleTickerProviderStateMixin {
   late final AnimationController _brainController;
   late final Animation<double> _brainScale;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:turbo_disc_golf/components/what_could_have_been_card.dart';
 import 'package:turbo_disc_golf/components/stat_card_registry.dart';
 import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/hole_type_story_card.dart';
@@ -10,16 +9,14 @@ import 'package:turbo_disc_golf/components/stat_cards/shot_shape_story_card.dart
 import 'package:turbo_disc_golf/components/stat_cards/throw_type_story_card.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
-import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
+import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/practice_advice_list.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/components/story_section_header.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_navigation_helper.dart';
+import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
-import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// Renderer for structured story content with specific sections
@@ -50,11 +47,11 @@ class StructuredStoryRenderer extends StatelessWidget {
         _buildHeadline(context),
         const SizedBox(height: 12),
         // What Could Have Been - After headline (from AI data)
-        if (locator.get<FeatureFlagService>().showWhatCouldHaveBeenCard &&
-            content.whatCouldHaveBeen != null) ...[
-          WhatCouldHaveBeenCard(data: content.whatCouldHaveBeen!),
-          const SizedBox(height: 12),
-        ],
+        // if (locator.get<FeatureFlagService>().showWhatCouldHaveBeenCard &&
+        //     content.whatCouldHaveBeen != null) ...[
+        //   WhatCouldHaveBeenCard(data: content.whatCouldHaveBeen!),
+        //   const SizedBox(height: 12),
+        // ],
         if (content.strengths.isNotEmpty) ...[
           _buildStrengths(context),
           const SizedBox(height: 12),

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Unified Mistakes Card component with configurable sizing
 ///
@@ -41,16 +41,28 @@ class MistakesCard extends StatelessWidget {
     return colors[index % colors.length];
   }
 
+  String _formatScore(int score) {
+    if (score == 0) return 'E';
+    return score > 0 ? '+$score' : '$score';
+  }
+
+  Color _getScoreColor(int score) {
+    if (score < 0) return const Color(0xFF137e66); // Green for under par
+    if (score > 0) return const Color(0xFFFF7A7A); // Red for over par
+    return Colors.grey; // Even par
+  }
+
   @override
   Widget build(BuildContext context) {
-    final MistakesAnalysisService mistakesService =
-        locator.get<MistakesAnalysisService>();
+    final MistakesAnalysisService mistakesService = locator
+        .get<MistakesAnalysisService>();
     final int totalMistakes = mistakesService.getTotalMistakesCount(round);
     final List<dynamic> mistakeTypes = mistakesService.getMistakeTypes(round);
 
     // Filter out mistakes with count > 0
-    final List<dynamic> topMistakes =
-        mistakeTypes.where((mistake) => mistake.count > 0).toList();
+    final List<dynamic> topMistakes = mistakeTypes
+        .where((mistake) => mistake.count > 0)
+        .toList();
 
     final Widget content = _buildContent(
       context,
@@ -63,6 +75,10 @@ class MistakesCard extends StatelessWidget {
     }
 
     return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
       child: InkWell(
         onTap: onTap != null
             ? () {
@@ -70,10 +86,7 @@ class MistakesCard extends StatelessWidget {
                 onTap!();
               }
             : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: content,
-        ),
+        child: Padding(padding: const EdgeInsets.all(16), child: content),
       ),
     );
   }
@@ -91,7 +104,7 @@ class MistakesCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
               Text(
-                '⚠️ Mistakes Breakdown',
+                '⚠️ Mistakes',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Icon(Icons.chevron_right, color: Colors.black, size: 20),
@@ -117,8 +130,9 @@ class MistakesCard extends StatelessWidget {
 
               return Padding(
                 padding: EdgeInsets.only(
-                  bottom:
-                      index < topMistakes.length - 1 ? (compact ? 8 : 12) : 0,
+                  bottom: index < topMistakes.length - 1
+                      ? (compact ? 8 : 12)
+                      : 0,
                 ),
                 child: _buildBarItem(
                   context,
@@ -136,60 +150,64 @@ class MistakesCard extends StatelessWidget {
   }
 
   Widget _buildTotalCount(BuildContext context, int totalMistakes) {
-    if (compact) {
-      // Compact style for story tab
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Text(
-            '$totalMistakes',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFF7A7A),
-                ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            totalMistakes == 1 ? 'mistake' : 'mistakes',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey,
-                ),
-          ),
-        ],
-      );
-    }
+    final int currentScore = round.getRelativeToPar();
+    final int potentialScore = currentScore - totalMistakes;
+    final String potentialScoreFormatted = _formatScore(potentialScore);
 
-    // Full size style for stats tab
-    final Widget totalDisplay = Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          '$totalMistakes',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+        // Mistakes count on the left
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              '$totalMistakes',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFFFF7A7A),
               ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              totalMistakes == 1 ? 'mistake' : 'mistakes',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          'mistakes',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.grey,
+        // Arrow fill in the middle
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: CustomPaint(
+              size: const Size(double.infinity, 20),
+              painter: _ArrowLinePainter(),
+            ),
+          ),
+        ),
+        // Mistake-free on the right
+        Row(
+          children: [
+            Text(
+              'Mistake-free: ',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              potentialScoreFormatted,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: _getScoreColor(potentialScore),
               ),
+            ),
+          ],
         ),
       ],
     );
-
-    if (locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview) {
-      return Hero(
-        tag: 'mistakes_count',
-        child: Material(color: Colors.transparent, child: totalDisplay),
-      );
-    }
-    return totalDisplay;
   }
+
 
   Widget _buildBarItem(
     BuildContext context, {
@@ -212,24 +230,24 @@ class MistakesCard extends StatelessWidget {
                 label,
                 style: compact
                     ? Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        )
+                        fontWeight: FontWeight.w600,
+                      )
                     : Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        fontWeight: FontWeight.w600,
+                      ),
               ),
             ),
             Text(
               '$count',
               style: compact
                   ? Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      )
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    )
                   : Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
             ),
           ],
         ),
@@ -269,4 +287,40 @@ class MistakesCard extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Custom painter for arrow line separator
+class _ArrowLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = Colors.grey[400]!
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    final double lineY = size.height / 2;
+    const double arrowSize = 6;
+
+    // Draw line
+    canvas.drawLine(
+      Offset(0, lineY),
+      Offset(size.width - arrowSize, lineY),
+      paint,
+    );
+
+    // Draw arrowhead
+    canvas.drawLine(
+      Offset(size.width - arrowSize, lineY),
+      Offset(size.width - arrowSize * 1.5, lineY - arrowSize / 2),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - arrowSize, lineY),
+      Offset(size.width - arrowSize * 1.5, lineY + arrowSize / 2),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

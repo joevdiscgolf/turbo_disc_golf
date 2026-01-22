@@ -53,36 +53,35 @@ class RoundHistoryRow extends StatelessWidget {
     // Format date with time
     final String? formattedDateTime = _formatDateTime(round.playedRoundAt);
 
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: GestureDetector(
-        onTap: () {
-          // Track analytics FIRST (Screen Name already in logger!)
-          logger.track(
-            'Round History Row Tapped',
-            properties: {
-              'Round Id': round.id,
-              'Course Name': round.courseName,
-              if (index != null) 'Item Index': index,
-            },
-          );
+    return GestureDetector(
+      onTap: () {
+        // Track analytics FIRST (Screen Name already in logger!)
+        logger.track(
+          'Round History Row Tapped',
+          properties: {
+            'Round Id': round.id,
+            'Course Name': round.courseName,
+            if (index != null) 'Item Index': index,
+          },
+        );
 
-          HapticFeedback.lightImpact();
-          locator.get<RoundParser>().setRound(round);
+        HapticFeedback.lightImpact();
+        locator.get<RoundParser>().setRound(round);
 
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (context) => RoundReviewScreen(round: round),
-            ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+        Navigator.push(
+          context,
+          CupertinoPageRoute(
+            builder: (context) => RoundReviewScreen(round: round),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: defaultCardBoxShadow(),
+        ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -171,8 +170,7 @@ class RoundHistoryRow extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   String? _formatDateTime(String? isoString) {
