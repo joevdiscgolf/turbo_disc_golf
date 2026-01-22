@@ -1386,7 +1386,6 @@ class _DiscUsageCard extends StatelessWidget {
   ) {
     final List<_DiscWithRank> ranked = [];
     int currentRank = 1;
-    int podiumPosition = 1; // Track actual podium position (1, 2, or 3)
     double? previousPercentage;
 
     for (int i = 0; i < sortedDiscs.length; i++) {
@@ -1400,12 +1399,12 @@ class _DiscUsageCard extends StatelessWidget {
         isTied = true;
         // Keep same rank as previous when tied
       } else if (i > 0) {
-        // Not tied: increment to next podium position
-        currentRank = podiumPosition;
-        podiumPosition++;
+        // Not tied: rank = number of discs already added + 1
+        currentRank = ranked.length + 1;
       }
 
-      if (podiumPosition > 3 && !isTied) break;
+      // Stop if we've exceeded 3rd place (but allow ties for 3rd)
+      if (currentRank > 3) break;
 
       ranked.add(
         _DiscWithRank(

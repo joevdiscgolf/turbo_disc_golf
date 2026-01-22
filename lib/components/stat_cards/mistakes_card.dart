@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Unified Mistakes Card component with configurable sizing
@@ -145,77 +144,70 @@ class MistakesCard extends StatelessWidget {
               );
             }),
           ],
-          _buildMistakeFreeSection(context, totalMistakes),
         ],
       ],
     );
   }
 
   Widget _buildTotalCount(BuildContext context, int totalMistakes) {
-    if (true) {
-      // Compact style for story tab
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Text(
-            '$totalMistakes',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFF7A7A),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            totalMistakes == 1 ? 'mistake' : 'mistakes',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-          ),
-        ],
-      );
-    }
-  }
-
-  Widget _buildMistakeFreeSection(BuildContext context, int totalMistakes) {
     final int currentScore = round.getRelativeToPar();
     final int potentialScore = currentScore - totalMistakes;
     final String potentialScoreFormatted = _formatScore(potentialScore);
 
-    return Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(height: compact ? 12 : 16),
-        Divider(color: SenseiColors.gray[100], height: 1),
-        SizedBox(height: compact ? 10 : 14),
+        // Mistakes count on the left
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Mistake-free: ',
-                  style: compact
-                      ? Theme.of(context).textTheme.bodySmall
-                      : Theme.of(context).textTheme.bodyMedium,
-                ),
-                Text(
-                  potentialScoreFormatted,
-                  style:
-                      (compact
-                              ? Theme.of(context).textTheme.bodySmall
-                              : Theme.of(context).textTheme.bodyMedium)
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: _getScoreColor(potentialScore),
-                          ),
-                ),
-              ],
+            Text(
+              '$totalMistakes',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFFF7A7A),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              totalMistakes == 1 ? 'mistake' : 'mistakes',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
+          ],
+        ),
+        // Arrow fill in the middle
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: CustomPaint(
+              size: const Size(double.infinity, 20),
+              painter: _ArrowLinePainter(),
+            ),
+          ),
+        ),
+        // Mistake-free on the right
+        Row(
+          children: [
+            Text(
+              'Mistake-free: ',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              potentialScoreFormatted,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: _getScoreColor(potentialScore),
+              ),
             ),
           ],
         ),
       ],
     );
   }
+
 
   Widget _buildBarItem(
     BuildContext context, {
@@ -295,4 +287,40 @@ class MistakesCard extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Custom painter for arrow line separator
+class _ArrowLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = Colors.grey[400]!
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    final double lineY = size.height / 2;
+    const double arrowSize = 6;
+
+    // Draw line
+    canvas.drawLine(
+      Offset(0, lineY),
+      Offset(size.width - arrowSize, lineY),
+      paint,
+    );
+
+    // Draw arrowhead
+    canvas.drawLine(
+      Offset(size.width - arrowSize, lineY),
+      Offset(size.width - arrowSize * 1.5, lineY - arrowSize / 2),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width - arrowSize, lineY),
+      Offset(size.width - arrowSize * 1.5, lineY + arrowSize / 2),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
