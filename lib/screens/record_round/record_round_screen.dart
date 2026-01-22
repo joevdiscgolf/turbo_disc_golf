@@ -523,13 +523,13 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _buildVoiceCard(isListening),
           ),
-          // if (kDebugMode) ...[
-          //   const SizedBox(height: 8),
-          //   Padding(
-          //     padding: const EdgeInsets.symmetric(horizontal: 16),
-          //     child: _buildDebugButtons(),
-          //   ),
-          // ],
+          if (kDebugMode) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildDebugButtons(),
+            ),
+          ],
           // Only show circular mic button if NOT using flat mic in footer
           if (!(useFixedNav && useFlatMic)) ...[
             const SizedBox(height: 20),
