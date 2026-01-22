@@ -37,10 +37,20 @@ enum FeatureFlag {
   useThrowCardV2('use_throw_card_v2', true),
   useFixedBottomNavInRecordRound('use_fixed_bottom_nav_in_record_round', true),
   useFlatMicrophoneButton('use_flat_microphone_button', true),
+  useVideoInputBodyV2('use_video_input_body_v2', true),
+  useRedesignedMentalGameCard('use_redesigned_mental_game_card', true),
+  usePodiumDiscCard('use_podium_disc_card', true),
 
   /// Throw card layout style: 'inline' for full-width with inline number badge,
   /// 'split' for left-right split layout, empty for default (v2 with timeline)
   throwCardLayoutStyle('throw_card_layout_style', 'split'),
+
+  /// Throw timeline visual style: 'default', 'journey_rail', 'flow_connectors', or 'connected_arrows'
+  /// - 'default': Current behavior with cards only
+  /// - 'journey_rail': Left-side visual timeline with location badges
+  /// - 'flow_connectors': Curved connectors between cards showing transitions
+  /// - 'connected_arrows': Left-side circles showing landing spots connected by arrows
+  throwTimelineStyle('throw_timeline_style', 'default'),
   showMissingThrowDetailsInScoreDetail(
     'show_missing_throw_details_in_score_detail',
     true,

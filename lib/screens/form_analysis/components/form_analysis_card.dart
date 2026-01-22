@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class FormAnalysisCard extends StatelessWidget {
   const FormAnalysisCard({
@@ -24,19 +25,18 @@ class FormAnalysisCard extends StatelessWidget {
         : 'Forehand';
     final String? formattedDateTime = _formatDateTime(analysis.createdAt);
 
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: defaultCardBoxShadow(),
+        ),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -59,8 +59,7 @@ class FormAnalysisCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildHeader(BuildContext context, String? formattedDateTime) {

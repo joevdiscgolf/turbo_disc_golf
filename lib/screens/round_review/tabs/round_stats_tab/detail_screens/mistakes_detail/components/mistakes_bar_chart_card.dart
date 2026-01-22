@@ -1,27 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
-class MistakesBarChartCard extends StatefulWidget {
+class MistakesBarChartCard extends StatelessWidget {
   final int totalMistakes;
   final List<dynamic> mistakeTypes;
-  final List<Map<String, dynamic>> mistakeDetails;
 
   const MistakesBarChartCard({
     super.key,
     required this.totalMistakes,
     required this.mistakeTypes,
-    required this.mistakeDetails,
   });
-
-  @override
-  State<MistakesBarChartCard> createState() => _MistakesBarChartCardState();
-}
-
-class _MistakesBarChartCardState extends State<MistakesBarChartCard> {
-  bool _isExpanded = false;
 
   Color _getColorForIndex(int index) {
     final List<Color> colors = [
@@ -40,7 +29,7 @@ class _MistakesBarChartCardState extends State<MistakesBarChartCard> {
   @override
   Widget build(BuildContext context) {
     // Filter out mistakes with count > 0
-    final List<dynamic> nonZeroMistakes = widget.mistakeTypes
+    final List<dynamic> nonZeroMistakes = mistakeTypes
         .where((mistake) => mistake.count > 0)
         .toList();
 
@@ -53,175 +42,64 @@ class _MistakesBarChartCardState extends State<MistakesBarChartCard> {
         .reduce((a, b) => a > b ? a : b);
 
     return Card(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          setState(() {
-            _isExpanded = !_isExpanded;
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Expanded(
-                    child: locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
-                        ? Hero(
-                            tag: 'mistakes_count',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '${widget.totalMistakes}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .displaySmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFFFF7A7A),
-                                        ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'mistakes',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '${widget.totalMistakes}',
-                                style: Theme.of(context).textTheme.displaySmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFFF7A7A),
-                                    ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'mistakes',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
-                          ),
-                  ),
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Icon(
-                      Icons.keyboard_arrow_down,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'mistakes_count',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: _buildHeaderRow(context),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              ...nonZeroMistakes.asMap().entries.map((entry) {
-                final int index = entry.key;
-                final dynamic mistake = entry.value;
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: index < nonZeroMistakes.length - 1 ? 16 : 0,
-                  ),
-                  child: _buildBarItem(
-                    context,
-                    label: mistake.label,
-                    count: mistake.count,
-                    maxCount: maxCount,
-                    color: _getColorForIndex(index),
-                  ),
-                );
-              }),
-              // Expandable section with all mistakes
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                child: _isExpanded
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24),
-                          const Divider(),
-                          const SizedBox(height: 16),
-                          Text(
-                            'All Mistakes',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 16),
-                          ...widget.mistakeDetails.map((mistake) {
-                            return _buildMistakeListItem(context, mistake);
-                          }),
-                        ],
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ),
+                  )
+                : _buildHeaderRow(context),
+            const SizedBox(height: 24),
+            ...nonZeroMistakes.asMap().entries.map((entry) {
+              final int index = entry.key;
+              final dynamic mistake = entry.value;
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index < nonZeroMistakes.length - 1 ? 16 : 0,
+                ),
+                child: _buildBarItem(
+                  context,
+                  label: mistake.label,
+                  count: mistake.count,
+                  maxCount: maxCount,
+                  color: _getColorForIndex(index),
+                ),
+              );
+            }),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMistakeListItem(
-    BuildContext context,
-    Map<String, dynamic> mistake,
-  ) {
-    final int holeNumber = mistake['holeNumber'];
-    final int throwIndex = mistake['throwIndex'];
-    final DiscThrow discThrow = mistake['throw'];
-    final String label = mistake['label'];
-
-    final List<String> subtitleParts = [];
-    subtitleParts.add('Shot ${throwIndex + 1}');
-    if (discThrow.distanceFeetBeforeThrow != null) {
-      subtitleParts.add('${discThrow.distanceFeetBeforeThrow} ft');
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: Theme.of(
-        context,
-      ).colorScheme.errorContainer.withValues(alpha: 0.2),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFFFF7A7A),
-          child: Text(
-            '$holeNumber',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildHeaderRow(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          '$totalMistakes',
+          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFFFF7A7A),
           ),
         ),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitleParts.join(' • ')),
-      ),
+        const SizedBox(width: 8),
+        Text(
+          'mistakes',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 

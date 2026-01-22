@@ -183,36 +183,36 @@ class BagService extends ChangeNotifier implements ClearOnLogoutProtocol {
         .doc(uid)
         .snapshots()
         .listen(
-      (DocumentSnapshot snapshot) {
-        if (snapshot.exists && snapshot.data() != null) {
-          try {
-            final Map<String, dynamic> rawData =
-                snapshot.data() as Map<String, dynamic>;
-            debugPrint('[BagService] Raw usage stats data: $rawData');
-            _usageStats = AllDiscUsageStats.fromJson(rawData);
-            debugPrint(
-              '[BagService] Loaded usage stats: '
-              '${_usageStats.statsByDiscName.length} discs from '
-              '${_usageStats.totalRoundsProcessed} rounds',
-            );
-          } catch (e, stackTrace) {
-            debugPrint('[BagService] Error parsing usage stats: $e');
-            debugPrint('[BagService] Stack trace: $stackTrace');
-            _usageStats = AllDiscUsageStats.empty();
-          }
-        } else {
-          debugPrint('[BagService] No usage stats document found');
-          _usageStats = AllDiscUsageStats.empty();
-        }
-        _usageStatsLoaded = true;
-        notifyListeners();
-      },
-      onError: (Object e) {
-        debugPrint('[BagService] Error listening to usage stats: $e');
-        _usageStatsLoaded = true;
-        notifyListeners();
-      },
-    );
+          (DocumentSnapshot snapshot) {
+            if (snapshot.exists && snapshot.data() != null) {
+              try {
+                final Map<String, dynamic> rawData =
+                    snapshot.data() as Map<String, dynamic>;
+                debugPrint('[BagService] Loaded raw usage stats data');
+                _usageStats = AllDiscUsageStats.fromJson(rawData);
+                debugPrint(
+                  '[BagService] Loaded usage stats: '
+                  '${_usageStats.statsByDiscName.length} discs from '
+                  '${_usageStats.totalRoundsProcessed} rounds',
+                );
+              } catch (e, stackTrace) {
+                debugPrint('[BagService] Error parsing usage stats: $e');
+                debugPrint('[BagService] Stack trace: $stackTrace');
+                _usageStats = AllDiscUsageStats.empty();
+              }
+            } else {
+              debugPrint('[BagService] No usage stats document found');
+              _usageStats = AllDiscUsageStats.empty();
+            }
+            _usageStatsLoaded = true;
+            notifyListeners();
+          },
+          onError: (Object e) {
+            debugPrint('[BagService] Error listening to usage stats: $e');
+            _usageStatsLoaded = true;
+            notifyListeners();
+          },
+        );
   }
 
   /// Stop listening to Firestore (call on logout)
@@ -263,8 +263,10 @@ class BagService extends ChangeNotifier implements ClearOnLogoutProtocol {
     }
 
     // Sort by usage count descending
-    usageEntries.sort((MapEntry<String, int> a, MapEntry<String, int> b) =>
-        b.value.compareTo(a.value));
+    usageEntries.sort(
+      (MapEntry<String, int> a, MapEntry<String, int> b) =>
+          b.value.compareTo(a.value),
+    );
 
     // Return top disc names up to limit
     return usageEntries

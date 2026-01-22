@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_toggle.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 const String _hasSeenFormAnalysisEducationKey = 'hasSeenFormAnalysisEducation';
 
@@ -125,7 +123,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     if (!mounted) return;
     await EducationPanel.show(
       context,
-      title: 'Tips for Best Results',
+      title: 'Tips for best results',
       modalName: 'Form Analysis Education',
       accentColor: const Color(0xFF137e66),
       contentBuilder: (_) => const FormAnalysisEducationPanel(),
@@ -141,22 +139,21 @@ class _VideoInputBodyState extends State<VideoInputBody> {
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Padding(
               padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: widget.topViewpadding + 40,
-                bottom: 16,
+                left: 24,
+                right: 24,
+                top: widget.topViewpadding + 32,
+                bottom: 24,
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildHeader(context),
+                  _buildV2Header(context),
+                  const SizedBox(height: 32),
+                  _buildV2GlassUploadCard(context),
                   const SizedBox(height: 24),
-                  _buildCameraAngleSelector(context),
-                  const SizedBox(height: 24),
-                  _buildVideoOptions(context),
-                  const SizedBox(height: 24),
-                  _buildTips(context),
-                  const SizedBox(height: 40),
+                  _buildV2Tips(context),
+                  _buildV2DebugSection(context),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -166,230 +163,282 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Row(
+  Widget _buildV2Header(BuildContext context) {
+    return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.2),
-              width: 2,
-            ),
-          ),
-          child: const Icon(
-            Icons.slow_motion_video_rounded,
-            size: 40,
+        Text(
+          'Form Analysis',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
             color: Colors.white,
+            fontSize: 24,
           ),
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Analyze Your Form',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Get AI-powered feedback on your form',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
-              ),
-            ],
+        const SizedBox(height: 8),
+        Text(
+          'Upload a video to get AI-powered feedback',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 14,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        // Gradient underline
+        Container(
+          width: 60,
+          height: 3,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF137e66), Color(0xFF1a9f7f)],
+            ),
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCameraAngleSelector(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 1,
-        ),
-      ),
-      child: CameraAngleToggle(
-        selectedAngle: _selectedCameraAngle,
-        onAngleChanged: (CameraAngle angle) {
-          setState(() {
-            _selectedCameraAngle = angle;
-            // Update selected video to match the new camera angle
-            _updateSelectedVideoForCameraAngle();
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildVideoOptions(BuildContext context) {
+  Widget _buildV2GlassUploadCard(BuildContext context) {
     final VideoFormAnalysisCubit cubit =
         BlocProvider.of<VideoFormAnalysisCubit>(context);
     final LoggingService logger = locator.get<LoggingService>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Import video card with help button
-        Stack(
+    return GestureDetector(
+      onTap: () async {
+        HapticFeedback.lightImpact();
+        logger.track(
+          'Import Video Button Tapped',
+          properties: {
+            'camera_angle': _selectedCameraAngle.name,
+            'version': 'v2',
+          },
+        );
+        await _checkFirstTimeEducation();
+        if (!mounted) return;
+        cubit.importVideo(
+          throwType: ThrowTechnique.backhand,
+          cameraAngle: _selectedCameraAngle,
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+        child: Column(
           children: [
-            _ActionCard(
-              icon: Icons.photo_library,
-              title: 'IMPORT VIDEO',
-              subtitle: 'Choose from your gallery',
-              gradient: const [Color(0xFF137e66), Color(0xFF1a9f7f)],
-              onPressed: () async {
-                logger.track('Import Video Button Tapped', properties: {
-                  'camera_angle': _selectedCameraAngle.name,
-                });
-                // Show education on first time, then proceed with import
-                await _checkFirstTimeEducation();
-                if (!mounted) return;
-                cubit.importVideo(
-                  throwType: ThrowTechnique.backhand,
-                  cameraAngle: _selectedCameraAngle,
-                );
-              },
+            _buildV2UploadArea(context),
+            const SizedBox(height: 20),
+            _buildV2Divider(),
+            const SizedBox(height: 20),
+            _buildV2CameraAngleSection(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildV2UploadArea(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedBorderPainter(
+        color: Colors.white.withValues(alpha: 0.3),
+        strokeWidth: 1.5,
+        dashWidth: 8,
+        dashSpace: 6,
+        borderRadius: 16,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF137e66).withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.videocam_outlined,
+                size: 48,
+                color: Colors.white,
+              ),
             ),
-            // Help button in top-right corner
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  logger.track('Form Analysis Help Button Tapped');
-                  _showFormAnalysisEducation();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.help_outline,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                ),
+            const SizedBox(height: 16),
+            Text(
+              'Tap to import video',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Select from your gallery',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.6),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
 
-        // Debug test section (only visible in debug mode)
-        if (locator.get<FeatureFlagService>().showFormAnalysisTestButton) ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.orange.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(child: _buildTestVideoSelector()),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      cubit.testWithAssetVideo(
-                        throwType: ThrowTechnique.backhand,
-                        cameraAngle: _selectedCameraAngle,
-                        assetPath: _selectedTestVideoPath,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    child: const Text('Run Test'),
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildV2Divider() {
+    return Container(
+      width: double.infinity,
+      height: 1,
+      color: Colors.white.withValues(alpha: 0.1),
+    );
+  }
+
+  Widget _buildV2CameraAngleSection(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'Camera Angle',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w500,
           ),
-        ],
+        ),
+        const SizedBox(height: 12),
+        _V2CameraAngleToggle(
+          selectedAngle: _selectedCameraAngle,
+          onAngleChanged: (CameraAngle angle) {
+            setState(() {
+              _selectedCameraAngle = angle;
+              _updateSelectedVideoForCameraAngle();
+            });
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildTips(BuildContext context) {
+  Widget _buildV2Tips(BuildContext context) {
+    final LoggingService logger = locator.get<LoggingService>();
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: Colors.white.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
+          Expanded(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                const _V2TipChip(text: '3s max'),
+                const _V2TipChip(text: 'Full body in view'),
+                _V2TipChip(
+                  text: _selectedCameraAngle == CameraAngle.side
+                      ? 'Position slightly behind perpendicular'
+                      : 'Position directly behind',
                 ),
-                child: const Icon(
-                  Icons.tips_and_updates_rounded,
-                  color: Color(0xFF81C784),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Pro Tips for Best Results',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: const [
-              _TipItem(text: 'Film from side', compact: true),
-              _TipItem(text: 'Good lighting', compact: true),
-              _TipItem(text: 'Full motion', compact: true),
-              _TipItem(text: 'Steady camera', compact: true),
-              _TipItem(text: '5-30 seconds', compact: true),
-            ],
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              logger.track(
+                'Form Analysis Help Button Tapped',
+                properties: {'version': 'v2'},
+              );
+              _showFormAnalysisEducation();
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                Icons.help_outline,
+                size: 20,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildV2DebugSection(BuildContext context) {
+    if (!locator.get<FeatureFlagService>().showFormAnalysisTestButton) {
+      return const SizedBox.shrink();
+    }
+
+    final VideoFormAnalysisCubit cubit =
+        BlocProvider.of<VideoFormAnalysisCubit>(context);
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.orange.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: _buildTestVideoSelector()),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    cubit.testWithAssetVideo(
+                      throwType: ThrowTechnique.backhand,
+                      cameraAngle: _selectedCameraAngle,
+                      assetPath: _selectedTestVideoPath,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: const Text('Run Test'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================================
+  // Shared Helper Methods
+  // ==========================================================================
 
   /// Update selected video when camera angle changes to ensure it matches
   void _updateSelectedVideoForCameraAngle() {
@@ -489,115 +538,176 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onPressed,
-    this.gradient,
+/// Camera angle toggle with green selected state and dark background
+class _V2CameraAngleToggle extends StatelessWidget {
+  const _V2CameraAngleToggle({
+    required this.selectedAngle,
+    required this.onAngleChanged,
   });
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onPressed;
-  final List<Color>? gradient;
+  final CameraAngle selectedAngle;
+  final ValueChanged<CameraAngle> onAngleChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _V2ToggleButton(
+            label: 'Side',
+            isSelected: selectedAngle == CameraAngle.side,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onAngleChanged(CameraAngle.side);
+            },
+          ),
+          _V2ToggleButton(
+            label: 'Rear',
+            isSelected: selectedAngle == CameraAngle.rear,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onAngleChanged(CameraAngle.rear);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Individual toggle button for camera angle
+class _V2ToggleButton extends StatelessWidget {
+  const _V2ToggleButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onPressed();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          gradient: gradient != null ? LinearGradient(colors: gradient!) : null,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.15),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: isSelected ? const Color(0xFF137e66) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: Colors.white),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.6),
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 14,
+          ),
         ),
       ),
     );
   }
 }
 
-class _TipItem extends StatelessWidget {
-  const _TipItem({required this.text, this.compact = false});
+/// Compact tip chip with green dot
+class _V2TipChip extends StatelessWidget {
+  const _V2TipChip({required this.text});
 
   final String text;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          margin: const EdgeInsets.only(top: 5),
-          width: 5,
-          height: 5,
+          width: 6,
+          height: 6,
           decoration: const BoxDecoration(
-            color: Color(0xFF81C784),
+            color: Color(0xFF137e66),
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 8),
-        if (compact)
-          Text(
-            text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.85),
-            ),
-          )
-        else
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white.withValues(alpha: 0.85),
-                height: 1.5,
-              ),
-            ),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white.withValues(alpha: 0.7),
           ),
+        ),
       ],
     );
+  }
+}
+
+/// CustomPainter for dashed border effect
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.dashWidth,
+    required this.dashSpace,
+    required this.borderRadius,
+  });
+
+  final Color color;
+  final double strokeWidth;
+  final double dashWidth;
+  final double dashSpace;
+  final double borderRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final RRect rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Radius.circular(borderRadius),
+    );
+
+    final Path path = Path()..addRRect(rrect);
+    final Path dashedPath = _createDashedPath(path);
+    canvas.drawPath(dashedPath, paint);
+  }
+
+  Path _createDashedPath(Path source) {
+    final Path dashedPath = Path();
+    for (final metric in source.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final double segmentLength = (distance + dashWidth < metric.length)
+            ? dashWidth
+            : metric.length - distance;
+        dashedPath.addPath(
+          metric.extractPath(distance, distance + segmentLength),
+          Offset.zero,
+        );
+        distance += dashWidth + dashSpace;
+      }
+    }
+    return dashedPath;
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.dashWidth != dashWidth ||
+        oldDelegate.dashSpace != dashSpace ||
+        oldDelegate.borderRadius != borderRadius;
   }
 }

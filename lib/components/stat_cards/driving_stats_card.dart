@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Compact driving stats card showing 4 key metrics in a 2x2 grid
 ///
@@ -49,6 +50,10 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
     final bool hasData = stats['hasData'] as bool;
 
     return Card(
+      margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: defaultCardShape(),
       child: InkWell(
         onTap: widget.onTap,
         child: Padding(

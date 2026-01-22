@@ -24,20 +24,34 @@ class PsychAnalysisService {
       );
     }
 
-    // Step 1: Build transition counts
-    final Map<String, Map<String, int>> transitionCounts = {
-      'Birdie': {'Birdie': 0, 'Par': 0, 'Bogey': 0, 'Double+': 0},
-      'Par': {'Birdie': 0, 'Par': 0, 'Bogey': 0, 'Double+': 0},
-      'Bogey': {'Birdie': 0, 'Par': 0, 'Bogey': 0, 'Double+': 0},
-      'Double+': {'Birdie': 0, 'Par': 0, 'Bogey': 0, 'Double+': 0},
-    };
+    // Step 1: Collect all unique score categories that occurred in the round
+    final Set<String> scoreCategories = {};
 
     // Helper to categorize score
     String categorizeScore(int relativeScore) {
-      if (relativeScore < 0) return 'Birdie';
+      if (relativeScore <= -4) return 'Condor';
+      if (relativeScore == -3) return 'Albatross';
+      if (relativeScore == -2) return 'Eagle';
+      if (relativeScore == -1) return 'Birdie';
       if (relativeScore == 0) return 'Par';
       if (relativeScore == 1) return 'Bogey';
-      return 'Double+';
+      if (relativeScore == 2) return 'Double Bogey';
+      if (relativeScore >= 3) return 'Triple Bogey+';
+      return 'Par'; // Fallback
+    }
+
+    // First pass: collect all categories that occur
+    for (var hole in round.holes) {
+      scoreCategories.add(categorizeScore(hole.relativeHoleScore));
+    }
+
+    // Build transition counts dynamically based on what categories exist
+    final Map<String, Map<String, int>> transitionCounts = {};
+    for (var fromCategory in scoreCategories) {
+      transitionCounts[fromCategory] = {};
+      for (var toCategory in scoreCategories) {
+        transitionCounts[fromCategory]![toCategory] = 0;
+      }
     }
 
     // Iterate through holes sequentially to build transitions
@@ -49,7 +63,7 @@ class PsychAnalysisService {
       final toCategory = categorizeScore(nextHole.relativeHoleScore);
 
       transitionCounts[fromCategory]![toCategory] =
-          transitionCounts[fromCategory]![toCategory]! + 1;
+          (transitionCounts[fromCategory]![toCategory] ?? 0) + 1;
     }
 
     // Step 2: Convert counts to percentages and build transition matrix
@@ -58,42 +72,86 @@ class PsychAnalysisService {
     transitionCounts.forEach((from, toCounts) {
       final total = toCounts.values.reduce((a, b) => a + b);
       if (total > 0) {
+        // Calculate percentages for each category
+        final Map<String, double> percentages = {};
+        toCounts.forEach((to, count) {
+          percentages[to] = (count / total) * 100;
+        });
+
+        // For backward compatibility, calculate aggregated percentages
+        // Birdie or better (all negative scores)
+        final birdieOrBetterPercent = percentages.entries
+            .where((e) => ['Condor', 'Albatross', 'Eagle', 'Birdie'].contains(e.key))
+            .fold<double>(0.0, (sum, e) => sum + e.value);
+
+        // Par
+        final parPercent = percentages['Par'] ?? 0.0;
+
+        // Bogey
+        final bogeyPercent = percentages['Bogey'] ?? 0.0;
+
+        // Double or worse
+        final doubleOrWorsePercent = percentages.entries
+            .where((e) => ['Double Bogey', 'Triple Bogey+'].contains(e.key))
+            .fold<double>(0.0, (sum, e) => sum + e.value);
+
         transitionMatrix[from] = ScoringTransition(
           fromScore: from,
-          toBirdiePercent: (toCounts['Birdie']! / total) * 100,
-          toParPercent: (toCounts['Par']! / total) * 100,
-          toBogeyPercent: (toCounts['Bogey']! / total) * 100,
-          toDoublePercent: (toCounts['Double+']! / total) * 100,
+          toBirdiePercent: birdieOrBetterPercent,
+          toParPercent: parPercent,
+          toBogeyPercent: bogeyPercent,
+          toDoublePercent: doubleOrWorsePercent,
         );
       }
     });
 
     // Step 3: Calculate momentum multiplier
+    // Use the best score category that exists in the round
     double momentumMultiplier = 1.0;
-    if (transitionMatrix.containsKey('Birdie') &&
-        transitionMatrix.containsKey('Bogey')) {
-      final birdieAfterBirdie = transitionMatrix['Birdie']!.toBirdiePercent;
-      final birdieAfterBogey = transitionMatrix['Bogey']!.toBirdiePercent;
-      if (birdieAfterBogey > 0) {
-        momentumMultiplier = birdieAfterBirdie / birdieAfterBogey;
+    final bestScoreKey = scoreCategories.contains('Condor')
+        ? 'Condor'
+        : scoreCategories.contains('Albatross')
+            ? 'Albatross'
+            : scoreCategories.contains('Eagle')
+                ? 'Eagle'
+                : scoreCategories.contains('Birdie')
+                    ? 'Birdie'
+                    : null;
+
+    final worstScoreKey = scoreCategories.contains('Triple Bogey+')
+        ? 'Triple Bogey+'
+        : scoreCategories.contains('Double Bogey')
+            ? 'Double Bogey'
+            : scoreCategories.contains('Bogey')
+                ? 'Bogey'
+                : null;
+
+    if (bestScoreKey != null && worstScoreKey != null &&
+        transitionMatrix.containsKey(bestScoreKey) &&
+        transitionMatrix.containsKey(worstScoreKey)) {
+      final birdieAfterBest = transitionMatrix[bestScoreKey]!.toBirdiePercent;
+      final birdieAfterWorst = transitionMatrix[worstScoreKey]!.toBirdiePercent;
+      if (birdieAfterWorst > 0) {
+        momentumMultiplier = birdieAfterBest / birdieAfterWorst;
       }
     }
 
     // Step 4: Calculate tilt factor (performance drop after bad holes)
     double tiltFactor = 0.0;
-    if (transitionMatrix.containsKey('Bogey') ||
-        transitionMatrix.containsKey('Double+')) {
+    final badScoreCategories = scoreCategories
+        .where((cat) => ['Bogey', 'Double Bogey', 'Triple Bogey+'].contains(cat))
+        .toList();
+
+    if (badScoreCategories.isNotEmpty) {
       double avgBogeyPlusAfterBad = 0.0;
       int count = 0;
 
-      if (transitionMatrix.containsKey('Bogey')) {
-        avgBogeyPlusAfterBad += transitionMatrix['Bogey']!.bogeyOrWorsePercent;
-        count++;
-      }
-      if (transitionMatrix.containsKey('Double+')) {
-        avgBogeyPlusAfterBad +=
-            transitionMatrix['Double+']!.bogeyOrWorsePercent;
-        count++;
+      for (var category in badScoreCategories) {
+        if (transitionMatrix.containsKey(category)) {
+          avgBogeyPlusAfterBad +=
+              transitionMatrix[category]!.bogeyOrWorsePercent;
+          count++;
+        }
       }
 
       if (count > 0) {

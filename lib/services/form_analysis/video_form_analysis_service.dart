@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/protocols/llm_service.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:uuid/uuid.dart';
+import 'package:video_player/video_player.dart';
 import 'package:yaml/yaml.dart';
 
 /// Service that orchestrates video form analysis.
@@ -20,7 +21,7 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
   // Video constraints
   static const int maxVideoSizeBytes = 20 * 1024 * 1024; // 20MB
-  static const int maxVideoDurationSeconds = 30;
+  static const int maxVideoDurationSeconds = 3;
   static const int minVideoDurationSeconds = 2;
   static const List<String> supportedFormats = [
     'mp4',
@@ -61,6 +62,32 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     }
 
     return VideoValidationResult(isValid: true, fileSize: fileSize);
+  }
+
+  /// Validates video is playable and within duration limits.
+  /// Returns (durationSeconds, errorMessage) - errorMessage is null if valid.
+  Future<(double?, String?)> validateVideoDuration(String videoPath) async {
+    try {
+      final VideoPlayerController controller = VideoPlayerController.file(
+        File(videoPath),
+      );
+      await controller.initialize();
+      final Duration duration = controller.value.duration;
+      await controller.dispose();
+
+      final double seconds = duration.inMilliseconds / 1000.0;
+
+      if (seconds > maxVideoDurationSeconds) {
+        return (null, 'Video must be $maxVideoDurationSeconds seconds or less');
+      }
+      if (seconds < minVideoDurationSeconds) {
+        return (null, 'Video must be at least $minVideoDurationSeconds seconds');
+      }
+
+      return (seconds, null);
+    } catch (e) {
+      return (null, 'Unable to read video. Please select a valid video file.');
+    }
   }
 
   /// Analyze a video for throwing form

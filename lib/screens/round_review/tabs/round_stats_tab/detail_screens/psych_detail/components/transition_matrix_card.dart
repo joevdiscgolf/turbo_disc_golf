@@ -8,6 +8,13 @@ class TransitionMatrixCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get all score categories that exist in the transition matrix
+    final scoreCategories = _getSortedScoreCategories();
+
+    if (scoreCategories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -23,30 +30,24 @@ class TransitionMatrixCard extends StatelessWidget {
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'How your next hole score depends on the current hole',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
 
           // Matrix header row
           Row(
             children: [
-              const SizedBox(width: 100), // Space for row labels
-              Expanded(child: _buildHeaderCell(context, 'Birdie')),
-              Expanded(child: _buildHeaderCell(context, 'Par')),
-              Expanded(child: _buildHeaderCell(context, 'Bogey')),
-              Expanded(child: _buildHeaderCell(context, 'Dbl+')),
+              const SizedBox(width: 80), // Space for row labels
+              ...scoreCategories.map(
+                (category) => Expanded(
+                  child: _buildHeaderCell(context, _getShortLabel(category)),
+                ),
+              ),
             ],
           ),
 
           const SizedBox(height: 8),
 
           // Matrix rows
-          ..._buildMatrixRows(context),
+          ..._buildMatrixRows(context, scoreCategories),
         ],
       ),
     );
@@ -64,33 +65,21 @@ class TransitionMatrixCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildMatrixRows(BuildContext context) {
+  List<Widget> _buildMatrixRows(
+    BuildContext context,
+    List<String> scoreCategories,
+  ) {
     final List<Widget> rows = [];
 
-    final categories = ['Birdie', 'Par', 'Bogey', 'Double+'];
-    final emojis = {
-      'Birdie': '🔥',
-      'Par': '⚖️',
-      'Bogey': '⚠️',
-      'Double+': '🆘',
-    };
-    final labels = {
-      'Birdie': 'Riding high',
-      'Par': 'Steady',
-      'Bogey': 'Danger zone',
-      'Double+': 'TILT!',
-    };
-
-    for (var category in categories) {
+    for (var category in scoreCategories) {
       final transition = stats.transitionMatrix[category];
       if (transition != null) {
         rows.add(
           _buildMatrixRow(
             context,
-            emoji: emojis[category]!,
-            label: 'After $category',
-            description: labels[category]!,
-            transition: transition,
+            label: _getRowLabel(category),
+            category: category,
+            scoreCategories: scoreCategories,
           ),
         );
         rows.add(const SizedBox(height: 8));
@@ -102,71 +91,43 @@ class TransitionMatrixCard extends StatelessWidget {
 
   Widget _buildMatrixRow(
     BuildContext context, {
-    required String emoji,
     required String label,
-    required String description,
-    required ScoringTransition transition,
+    required String category,
+    required List<String> scoreCategories,
   }) {
+    final transition = stats.transitionMatrix[category];
+    if (transition == null) return const SizedBox.shrink();
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Row label
         SizedBox(
-          width: 100,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(emoji, style: const TextStyle(fontSize: 16)),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+          width: 80,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
 
-        // Percentage cells
-        Expanded(
-          child: _buildPercentageCell(
-            context,
-            transition.toBirdiePercent,
-            'Birdie',
-          ),
-        ),
-        Expanded(
-          child: _buildPercentageCell(context, transition.toParPercent, 'Par'),
-        ),
-        Expanded(
-          child: _buildPercentageCell(
-            context,
-            transition.toBogeyPercent,
-            'Bogey',
-          ),
-        ),
-        Expanded(
-          child: _buildPercentageCell(
-            context,
-            transition.toDoublePercent,
-            'Double+',
-          ),
-        ),
+        // Percentage cells - dynamically show only categories that exist
+        ...scoreCategories.map((toCategory) {
+          final percentage = _getTransitionPercentage(
+            transition,
+            toCategory,
+          );
+          return Expanded(
+            child: _buildPercentageCell(
+              context,
+              percentage,
+              toCategory,
+            ),
+          );
+        }),
       ],
     );
   }
@@ -176,10 +137,11 @@ class TransitionMatrixCard extends StatelessWidget {
     double percentage,
     String toCategory,
   ) {
-    // Determine cell color based on percentage and outcome type
+    // Determine cell color based on outcome type
     Color cellColor;
-    if (toCategory == 'Birdie') {
-      // Green scale for birdies
+
+    if (_isGoodScore(toCategory)) {
+      // Green scale for good scores (birdie or better)
       if (percentage >= 20) {
         cellColor = const Color(0xFF4CAF50); // Dark green
       } else if (percentage >= 10) {
@@ -208,8 +170,10 @@ class TransitionMatrixCard extends StatelessWidget {
     }
 
     // Adjust opacity for very low percentages
-    if (percentage < 5) {
-      cellColor = cellColor.withValues(alpha: 0.3);
+    if (percentage == 0) {
+      cellColor = cellColor.withValues(alpha: 0.5); // 50% opacity for 0%
+    } else if (percentage < 5) {
+      cellColor = cellColor.withValues(alpha: 0.35); // 35% opacity for 1-4%
     }
 
     return Container(
@@ -231,5 +195,59 @@ class TransitionMatrixCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Get sorted list of score categories that exist in the transition matrix
+  List<String> _getSortedScoreCategories() {
+    const scoreOrder = [
+      'Condor',
+      'Albatross',
+      'Eagle',
+      'Birdie',
+      'Par',
+      'Bogey',
+      'Double Bogey',
+      'Triple Bogey+',
+    ];
+
+    return scoreOrder
+        .where((score) => stats.transitionMatrix.containsKey(score))
+        .toList();
+  }
+
+  /// Get label for column headers
+  String _getShortLabel(String category) {
+    // Return full names, not abbreviations
+    return category;
+  }
+
+  /// Get label for row (e.g., "After birdie")
+  String _getRowLabel(String category) {
+    // Convert to lowercase for second word
+    final lowercase = category.toLowerCase();
+    return 'After $lowercase';
+  }
+
+  /// Check if a score is good (birdie or better)
+  bool _isGoodScore(String category) {
+    return ['Condor', 'Albatross', 'Eagle', 'Birdie'].contains(category);
+  }
+
+  /// Get the transition percentage for a specific "to" category
+  double _getTransitionPercentage(
+    ScoringTransition transition,
+    String toCategory,
+  ) {
+    // Map each category to the appropriate aggregated percentage field
+    if (_isGoodScore(toCategory)) {
+      return transition.toBirdiePercent;
+    } else if (toCategory == 'Par') {
+      return transition.toParPercent;
+    } else if (toCategory == 'Bogey') {
+      return transition.toBogeyPercent;
+    } else {
+      // Double Bogey or worse
+      return transition.toDoublePercent;
+    }
   }
 }

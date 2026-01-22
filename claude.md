@@ -98,6 +98,40 @@ final List<ClearOnLogoutProtocol> clearOnLogoutComponents = [
 4. ListView.builder for long lists
 5. `.withValues(alpha: ...)` not `.withOpacity()`
 
+### Card Spacing
+
+**Best Practice: Use SizedBox between cards, not margins inside cards.**
+
+- Standard spacing between cards: 8px
+- Use `addRunSpacing()` from `lib/utils/layout_helpers.dart` for lists of cards
+
+**Example:**
+```dart
+// ✅ CORRECT: Use addRunSpacing helper
+ListView(
+  children: addRunSpacing(
+    [Card1(), Card2(), Card3()],
+    runSpacing: 8,
+    axis: Axis.vertical,
+  ),
+)
+
+// ✅ CORRECT: Manual SizedBox
+Column(
+  children: [
+    Card1(),
+    const SizedBox(height: 8),
+    Card2(),
+  ],
+)
+
+// ❌ WRONG: Margins inside cards
+Card(
+  margin: EdgeInsets.only(bottom: 8), // Don't do this
+  child: ...,
+)
+```
+
 ### Naming
 
 - Classes: PascalCase (`RoundReviewScreen`)
@@ -105,6 +139,7 @@ final List<ClearOnLogoutProtocol> clearOnLogoutComponents = [
 - Variables/Functions: camelCase (`currentRound`)
 - Private: underscore prefix (`_cubit`)
 - Constants: camelCase const (`const defaultPadding = 16.0`)
+- **UI Text/Headings**: Sentence case - capitalize first letter only (`'General tips'` not `'General Tips'`)
 
 ### Variables
 

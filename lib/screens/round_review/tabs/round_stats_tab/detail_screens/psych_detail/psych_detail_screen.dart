@@ -9,6 +9,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/components/transition_matrix_card.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class PsychDetailScreen extends StatelessWidget {
   static const String screenName = 'Psych Detail';
@@ -69,39 +70,22 @@ class PsychDetailScreen extends StatelessWidget {
 
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
-      children: [
-        // Overview card
-        PsychOverviewCard(stats: psychStats),
-
-        const SizedBox(height: 16),
-
-        // Flow State card (if available)
-        if (psychStats.flowStateAnalysis != null)
-          FlowStateCard(
-            flowAnalysis: psychStats.flowStateAnalysis!,
-            totalHoles: round.holes.length,
-          ),
-
-        if (psychStats.flowStateAnalysis != null) const SizedBox(height: 16),
-
-        // Transition matrix
-        TransitionMatrixCard(stats: psychStats),
-
-        const SizedBox(height: 16),
-
-        // Key metrics
-        PsychMetricsCard(stats: psychStats),
-
-        const SizedBox(height: 16),
-
-        // Conditioning & Focus
-        ConditioningCard(stats: psychStats, round: round),
-
-        const SizedBox(height: 16),
-
-        // Insights
-        InsightsCard(stats: psychStats),
-      ],
+      children: addRunSpacing(
+        [
+          PsychOverviewCard(stats: psychStats),
+          if (psychStats.flowStateAnalysis != null)
+            FlowStateCard(
+              flowAnalysis: psychStats.flowStateAnalysis!,
+              totalHoles: round.holes.length,
+            ),
+          TransitionMatrixCard(stats: psychStats),
+          PsychMetricsCard(stats: psychStats),
+          ConditioningCard(stats: psychStats, round: round),
+          InsightsCard(stats: psychStats),
+        ],
+        runSpacing: 8,
+        axis: Axis.vertical,
+      ),
     );
   }
 }

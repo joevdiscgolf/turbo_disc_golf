@@ -37,6 +37,7 @@ import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart'
     show testScorecardData;
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/panel_helpers.dart';
 
 const String _hasSeenEducationKey = 'hasSeenHoleDescriptionEducation';
@@ -45,6 +46,7 @@ const String _hasSeenImportEducationKey = 'hasSeenImportScorecardEducation';
 class RecordRoundScreen extends StatefulWidget {
   const RecordRoundScreen({
     super.key,
+    required this.topViewPadding,
     required this.bottomViewPadding,
     this.skipIntroAnimations = false,
   });
@@ -52,6 +54,7 @@ class RecordRoundScreen extends StatefulWidget {
   static const String screenName = 'Record Round';
   static const String routeName = '/record-round';
 
+  final double topViewPadding;
   final double bottomViewPadding;
   final bool skipIntroAnimations;
 
@@ -327,7 +330,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(
-          56 + MediaQuery.of(context).viewPadding.top,
+          widget.topViewPadding + kDefaultAppBarHeight,
         ),
         child: Stack(
           children: [
@@ -367,7 +370,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
             ),
             // GenericAppBar on top
             GenericAppBar(
-              topViewPadding: MediaQuery.of(context).viewPadding.top,
+              topViewPadding: widget.topViewPadding,
               title: 'Record round',
               hasBackButton: false,
               backgroundColor: Colors.transparent,
@@ -424,15 +427,9 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).viewPadding.top + 100,
+                    top: widget.topViewPadding + kDefaultAppBarHeight + 8,
                   ),
-                  decoration: BoxDecoration(
-                    color: SenseiColors.gray[50],
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: SenseiColors.gray[50]),
                   child: _mainBody(recordRoundState),
                 ),
               ),
@@ -493,7 +490,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
 
     final bool isListening = recordRoundState.isListening;
     final bool isStartingListening = recordRoundState.isStartingListening;
-    final double bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+    final double bottomPadding = widget.bottomViewPadding;
     final FeatureFlagService featureFlags = locator.get<FeatureFlagService>();
     final bool useFixedNav = featureFlags.useFixedBottomNavInRecordRound;
     final bool useFlatMic = featureFlags.useFlatMicrophoneButton;
@@ -559,9 +556,17 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
         children: [
           Expanded(child: scrollableContent),
           Container(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding + 12),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              12,
+              16,
+              autoBottomPadding(context),
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
+              border: Border(
+                top: BorderSide(color: SenseiColors.gray.shade200),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
@@ -1523,7 +1528,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
               child: PrimaryButton(
                 label: showFinalize ? 'Finalize' : 'Next',
                 width: double.infinity,
-                height: 56,
+                height: 48,
                 backgroundColor: showFinalize ? Colors.green : Colors.blue,
                 labelColor: Colors.white,
                 icon: showFinalize ? Icons.check : null,
@@ -1565,8 +1570,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     displayBottomSheet(
       context,
       SelectCoursePanel(
-        topViewPadding: MediaQuery.of(context).viewPadding.top,
-        bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+        topViewPadding: widget.topViewPadding,
+        bottomViewPadding: widget.bottomViewPadding,
       ),
     );
   }
@@ -2118,7 +2123,7 @@ class _AnimatedPreviousButton extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         width: targetWidth,
-        height: 56,
+        height: 48,
         child: Material(
           color: Colors.transparent,
           child: InkWell(

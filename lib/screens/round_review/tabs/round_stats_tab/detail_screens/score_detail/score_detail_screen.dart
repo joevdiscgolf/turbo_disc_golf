@@ -72,6 +72,7 @@ class _ScoreDetailScreenState extends State<ScoreDetailScreen>
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
           title: 'Score details',
+          backgroundColor: SenseiColors.gray[50],
           bottomWidget: TabBar(
             controller: _tabController,
             splashFactory: NoSplash.splashFactory,

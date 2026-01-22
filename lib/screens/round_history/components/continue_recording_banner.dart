@@ -15,10 +15,12 @@ class ContinueRecordingBanner extends StatelessWidget {
   const ContinueRecordingBanner({
     super.key,
     required this.state,
+    required this.topViewPadding,
     required this.bottomViewPadding,
   });
 
   final RecordRoundActive state;
+  final double topViewPadding;
   final double bottomViewPadding;
 
   @override
@@ -73,6 +75,7 @@ class ContinueRecordingBanner extends StatelessWidget {
               Navigator.of(context).push(
                 BannerExpandPageRoute(
                   builder: (context) => RecordRoundScreen(
+                    topViewPadding: topViewPadding,
                     bottomViewPadding: bottomViewPadding,
                     skipIntroAnimations: true,
                   ),

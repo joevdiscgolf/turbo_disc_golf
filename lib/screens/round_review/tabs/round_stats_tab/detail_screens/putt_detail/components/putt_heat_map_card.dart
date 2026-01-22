@@ -82,6 +82,7 @@ class _PuttHeatMapCardState extends State<PuttHeatMapCard>
     final displayPutts = _showCircle1 ? circle1Putts : circle2Putts;
 
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

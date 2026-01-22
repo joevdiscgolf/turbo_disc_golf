@@ -189,7 +189,7 @@ class _ThrowCardV3SplitState extends State<ThrowCardV3Split> {
 
               // Throw info column: title + chips
               Expanded(
-                flex: 50,
+                flex: 28,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -210,7 +210,7 @@ class _ThrowCardV3SplitState extends State<ThrowCardV3Split> {
               // Arrow result column
               if (_hasResult)
                 Expanded(
-                  flex: 35,
+                  flex: 28,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -456,40 +456,37 @@ class _CompactArrowResult extends StatelessWidget {
       rightLabelColor = Colors.green.shade600;
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (leftLabel != null)
-          Flexible(
-            child: Text(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (leftLabel != null)
+            Text(
               leftLabel,
               style: labelStyle,
-              overflow: TextOverflow.ellipsis,
+            ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Icon(
+              Icons.arrow_forward,
+              size: 10,
+              color: accentColor.withValues(alpha: 0.6),
             ),
           ),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: Icon(
-            Icons.arrow_forward,
-            size: 10,
-            color: accentColor.withValues(alpha: 0.6),
-          ),
-        ),
-
-        if (rightLabel != null)
-          Flexible(
-            child: Text(
+          if (rightLabel != null)
+            Text(
               rightLabel,
               style: labelStyle.copyWith(
                 color: rightLabelColor,
                 fontWeight: isInBasket ? FontWeight.w600 : FontWeight.w500,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

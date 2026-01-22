@@ -102,21 +102,8 @@ class _MainWrapperState extends State<MainWrapper> {
       appBar: GenericAppBar(
         topViewPadding: MediaQuery.of(context).viewPadding.top,
         title: 'ScoreSensei',
-        titleIcon: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.asset(
-            'assets/icon/app_icon_clear_bg.png',
-            width: 28,
-            height: 28,
-          ),
-        ),
-        titleStyle: GoogleFonts.exo2(
-          fontSize: 20,
-          fontWeight: FontWeight.w700, // SemiBold/Bold
-          fontStyle: FontStyle.italic, // optional sporty slant
-          letterSpacing: 0.5,
-          color: SenseiColors.senseiBlue,
-        ),
+        titleIcon: _buildAppTitleIcon(),
+        titleStyle: _buildAppTitleStyle(),
         hasBackButton: false,
         backgroundColor: SenseiColors.gray.shade50,
         leftWidget: _buildSettingsButton(
@@ -125,6 +112,7 @@ class _MainWrapperState extends State<MainWrapper> {
         ),
       ),
       body: RoundHistoryScreen(
+        topViewPadding: MediaQuery.of(context).viewPadding.top,
         bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
       ),
     );
@@ -144,25 +132,8 @@ class _MainWrapperState extends State<MainWrapper> {
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
           title: appBarTitle,
-          titleIcon: _selectedIndex == 0
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.asset(
-                    'assets/icon/app_icon_clear_bg.png',
-                    width: 28,
-                    height: 28,
-                  ),
-                )
-              : null,
-          titleStyle: _selectedIndex == 0
-              ? GoogleFonts.exo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: 0.5,
-                  color: SenseiColors.senseiBlue,
-                )
-              : null,
+          titleIcon: _selectedIndex == 0 ? _buildAppTitleIcon() : null,
+          titleStyle: _selectedIndex == 0 ? _buildAppTitleStyle() : null,
           hasBackButton: false,
           backgroundColor: SenseiColors.gray.shade50,
           leftWidget: _buildLeftWidget(context),
@@ -171,6 +142,7 @@ class _MainWrapperState extends State<MainWrapper> {
           index: _selectedIndex,
           children: [
             RoundHistoryScreen(
+              topViewPadding: MediaQuery.of(context).viewPadding.top,
               bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             ),
             FormAnalysisHistoryScreen(
@@ -193,13 +165,41 @@ class _MainWrapperState extends State<MainWrapper> {
             showSelectedLabels: true,
             showUnselectedLabels: true,
             enableFeedback: false,
-            items: const [
-              BottomNavigationBarItem(
+            items: [
+              const BottomNavigationBarItem(
                 icon: Text('🥏', style: TextStyle(fontSize: 20)),
                 label: 'Rounds',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.school, size: 24),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.school, size: 24),
+                    Positioned(
+                      right: -12,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 3,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'beta',
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 label: 'Form Coach',
               ),
             ],
@@ -264,6 +264,7 @@ class _MainWrapperState extends State<MainWrapper> {
         index: _selectedIndex,
         children: [
           RoundHistoryScreen(
+            topViewPadding: MediaQuery.of(context).viewPadding.top,
             bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
           ),
           // const RecordRoundScreen(),
@@ -282,10 +283,7 @@ class _MainWrapperState extends State<MainWrapper> {
             icon: Icon(Icons.play_arrow),
             label: 'Rounds',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Stats',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: 'Stats'),
           BottomNavigationBarItem(
             icon: Icon(Icons.psychology),
             label: 'Test AI',
@@ -324,6 +322,27 @@ class _MainWrapperState extends State<MainWrapper> {
       );
     }
     return null;
+  }
+
+  Widget _buildAppTitleIcon() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Image.asset(
+        'assets/icon/app_icon_clear_bg.png',
+        width: 40,
+        height: 40,
+      ),
+    );
+  }
+
+  TextStyle _buildAppTitleStyle() {
+    return GoogleFonts.exo2(
+      fontSize: 24,
+      fontWeight: FontWeight.w800,
+      fontStyle: FontStyle.italic,
+      letterSpacing: -0.5,
+      color: SenseiColors.senseiBlue,
+    );
   }
 
   Widget _buildSettingsButton(BuildContext context, String currentScreenName) {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/app_bar/app_bar_back_button.dart';
 
+const double kDefaultAppBarHeight = 48;
+
 class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   const GenericAppBar({
     super.key,
@@ -32,8 +34,9 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Function? onBackPressed;
 
   @override
-  Size get preferredSize =>
-      Size.fromHeight(48 + topViewPadding + (bottomWidgetHeight ?? 0));
+  Size get preferredSize => Size.fromHeight(
+    kDefaultAppBarHeight + topViewPadding + (bottomWidgetHeight ?? 0),
+  );
 
   static const double sideWidgetWidth = 44;
 

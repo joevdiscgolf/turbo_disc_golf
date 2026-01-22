@@ -15,6 +15,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/connected_arrows_timeline.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/flow_connectors_timeline.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/journey_rail_timeline.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v2.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v3_inline.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v3_split.dart';
@@ -54,6 +57,10 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
   /// Get the current throw card layout style from feature flags
   String get _layoutStyle =>
       locator.get<FeatureFlagService>().throwCardLayoutStyle;
+
+  /// Get the current timeline visual style from feature flags
+  String get _timelineStyle =>
+      locator.get<FeatureFlagService>().throwTimelineStyle;
 
   /// Whether we're using a V3 layout (no external timeline)
   bool get _isV3Layout =>
@@ -170,6 +177,41 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
 
   @override
   Widget build(BuildContext context) {
+    // Check for alternate timeline styles first
+    switch (_timelineStyle) {
+      case 'journey_rail':
+        return JourneyRailTimeline(
+          throws: widget.throws,
+          onEditThrow: widget.onEditThrow,
+          onAddThrowAt: widget.onAddThrowAt,
+          showAddButtons: widget.showAddButtons,
+          enableReorder: widget.enableReorder,
+          onReorder: widget.onReorder,
+        );
+      case 'flow_connectors':
+        return FlowConnectorsTimeline(
+          throws: widget.throws,
+          onEditThrow: widget.onEditThrow,
+          onAddThrowAt: widget.onAddThrowAt,
+          showAddButtons: widget.showAddButtons,
+          enableReorder: widget.enableReorder,
+          onReorder: widget.onReorder,
+        );
+      case 'connected_arrows':
+        return ConnectedArrowsTimeline(
+          throws: widget.throws,
+          onEditThrow: widget.onEditThrow,
+          onAddThrowAt: widget.onAddThrowAt,
+          showAddButtons: widget.showAddButtons,
+          enableReorder: widget.enableReorder,
+          onReorder: widget.onReorder,
+        );
+      case 'default':
+      default:
+        // Continue with existing implementation below
+        break;
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return SizedBox(

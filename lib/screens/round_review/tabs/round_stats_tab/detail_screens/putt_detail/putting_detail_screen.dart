@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class PuttingDetailScreen extends StatelessWidget {
   static const String screenName = 'Putting Detail';
@@ -47,56 +48,45 @@ class PuttingDetailScreen extends StatelessWidget {
       return const Center(child: Text('No putting data available'));
     }
 
-    return ListView(
-      padding: const EdgeInsets.only(top: 12, bottom: 80),
-      children: addRunSpacing(
-        [
-          // // New cards from deep analysis
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 16),
-          //   child: PuttingSummaryCards(
-          //     puttingSummary: puttingStats,
-          //     horizontalPadding: 0,
-          //   ),
-          // ),
-          // Putting stats KPIs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildPuttingStatsKPIs(context, puttingStats),
-          ),
-
-          // Heat map visualization
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PuttHeatMapCard(round: round, shouldAnimate: true),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildAllPuttsCard(context, allPutts),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: PuttingDistanceCard(
-              avgMakeDistance: puttingStats.avgMakeDistance,
-              avgAttemptDistance: puttingStats.avgAttemptDistance,
-              avgBirdiePuttDistance: avgBirdiePuttDist,
-              totalMadeDistance: puttingStats.totalMadeDistance,
-              horizontalPadding: 0,
+    return Container(
+      color: SenseiColors.gray[50],
+      child: ListView(
+        padding: const EdgeInsets.only(top: 12, bottom: 80),
+        children: addRunSpacing(
+          [
+            // Putting stats KPIs
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildPuttingStatsKPIs(context, puttingStats),
             ),
-          ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildComebackPutts(context, comebackStats),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildSummaryInsight(context, puttingStats),
-          ),
-        ],
-        runSpacing: 16,
-        axis: Axis.vertical,
+            // Heat map visualization
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: PuttHeatMapCard(round: round, shouldAnimate: true),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildAllPuttsCard(context, allPutts),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildComebackPutts(context, comebackStats),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: PuttingDistanceCard(
+                avgMakeDistance: puttingStats.avgMakeDistance,
+                avgAttemptDistance: puttingStats.avgAttemptDistance,
+                avgBirdiePuttDistance: avgBirdiePuttDist,
+                totalMadeDistance: puttingStats.totalMadeDistance,
+                horizontalPadding: 0,
+              ),
+            ),
+          ],
+          runSpacing: 8,
+          axis: Axis.vertical,
+        ),
       ),
     );
   }
@@ -114,6 +104,7 @@ class PuttingDetailScreen extends StatelessWidget {
     final c1xPct = c1xAttempts > 0 ? (c1xMakes / c1xAttempts) * 100 : 0.0;
 
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
         child: Row(
@@ -210,9 +201,13 @@ class PuttingDetailScreen extends StatelessWidget {
     }
 
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
+        ),
         child: ExpansionTile(
           onExpansionChanged: (_) => HapticFeedback.lightImpact(),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -349,45 +344,6 @@ class PuttingDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryInsight(BuildContext context, puttingSummary) {
-    final c1Pct = puttingSummary.c1Percentage;
-    final c2Pct = puttingSummary.c2Percentage;
-
-    String worstRange = 'N/A';
-    double worstPercentage = 100;
-
-    puttingSummary.bucketStats.forEach((key, bucket) {
-      if (bucket.attempts > 0 && bucket.makePercentage < worstPercentage) {
-        worstPercentage = bucket.makePercentage;
-        worstRange = key;
-      }
-    });
-
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              Icons.insights,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'You made ${c1Pct.toStringAsFixed(0)}% of C1 putts and ${c2Pct.toStringAsFixed(0)}% of C2 putts. ${worstRange != 'N/A' ? 'Misses were most common in the $worstRange range.' : ''}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAllPuttsCard(
     BuildContext context,
     List<Map<String, dynamic>> allPutts,
@@ -400,9 +356,13 @@ class PuttingDetailScreen extends StatelessWidget {
     final int totalAttempts = allPutts.length;
 
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
+        ),
         child: ExpansionTile(
           onExpansionChanged: (_) => HapticFeedback.lightImpact(),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
