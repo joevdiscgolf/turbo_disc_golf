@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/animated_microphone_button.dart';
+import 'package:turbo_disc_golf/components/buttons/animated_microphone_button_v2.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/cards/round_data_input_card.dart';
 import 'package:turbo_disc_golf/components/education/hole_description_examples_screen.dart';
@@ -134,7 +135,10 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     if (!hasSeenEducation && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
-          await HoleDescriptionExamplesScreen.show(context, isFirstTimeShow: true);
+          await HoleDescriptionExamplesScreen.show(
+            context,
+            isFirstTimeShow: true,
+          );
           await prefs.setBool(_hasSeenEducationKey, true);
         }
       });
@@ -251,7 +255,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 0, left: 8),
+      padding: const EdgeInsets.only(bottom: 0, left: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -420,7 +424,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).viewPadding.top + 112,
+                    top: MediaQuery.of(context).viewPadding.top + 100,
                   ),
                   decoration: BoxDecoration(
                     color: SenseiColors.gray[50],
@@ -490,46 +494,116 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     final bool isListening = recordRoundState.isListening;
     final bool isStartingListening = recordRoundState.isStartingListening;
     final double bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+    final FeatureFlagService featureFlags = locator.get<FeatureFlagService>();
+    final bool useFixedNav = featureFlags.useFixedBottomNavInRecordRound;
+    final bool useFlatMic = featureFlags.useFlatMicrophoneButton;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(bottom: bottomPadding + 16),
+    // Calculate footer height for scroll padding when using fixed nav
+    final double footerHeight = useFlatMic
+        ? (12 + 48 + 8 + 56 + 12) // 136: padding + mic + spacer + nav + padding
+        : (12 + 56 + 12); // 80: padding + nav + padding
+
+    final Widget scrollableContent = SingleChildScrollView(
+      padding: EdgeInsets.only(
+        bottom: useFixedNav ? footerHeight + 48 : bottomPadding + 16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildHeader(recordRoundState),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildHoleInfoCard(recordRoundState),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(height: 200, child: _buildVoiceCard(isListening)),
-          ),
-          if (kDebugMode) ...[
+          if (featureFlags.showHoleDetailCardInRecordRound) ...[
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildDebugButtons(),
+              child: _buildHoleInfoCard(recordRoundState),
             ),
           ],
-          const SizedBox(height: 20),
-          Center(
-            child: _buildMicrophoneButton(
-              isListening,
-              recordRoundState.pausingBetweenHoles,
-              isStartingListening,
-            ),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildNavigationButtons(),
+            child: _buildVoiceCard(isListening),
           ),
+          // if (kDebugMode) ...[
+          //   const SizedBox(height: 8),
+          //   Padding(
+          //     padding: const EdgeInsets.symmetric(horizontal: 16),
+          //     child: _buildDebugButtons(),
+          //   ),
+          // ],
+          // Only show circular mic button if NOT using flat mic in footer
+          if (!(useFixedNav && useFlatMic)) ...[
+            const SizedBox(height: 20),
+            Center(
+              child: _buildMicrophoneButton(
+                isListening,
+                recordRoundState.pausingBetweenHoles,
+                isStartingListening,
+              ),
+            ),
+          ],
+          // Only include nav buttons in scroll if NOT using fixed nav
+          if (!useFixedNav) ...[
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildNavigationButtons(),
+            ),
+          ],
         ],
       ),
     );
+
+    // If using fixed nav, wrap in Column with fixed bottom bar
+    if (useFixedNav) {
+      return Column(
+        children: [
+          Expanded(child: scrollableContent),
+          Container(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding + 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Flat mic button in footer when enabled
+                if (useFlatMic) ...[
+                  AnimatedMicrophoneButtonV2(
+                    showListeningWaveState:
+                        isListening || recordRoundState.pausingBetweenHoles,
+                    isLoading: isStartingListening,
+                    onTap: () {
+                      _logger.track(
+                        'Microphone Button Tapped',
+                        properties: {
+                          'action': isListening
+                              ? 'stop_listening'
+                              : 'start_listening',
+                          'hole_number': recordRoundState.currentHoleIndex + 1,
+                          'button_style': 'flat',
+                        },
+                      );
+                      _toggleListening();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _buildNavigationButtons(),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return scrollableContent;
   }
 
   Widget _buildHeader(RecordRoundActive state) {
@@ -544,19 +618,19 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _buildImportButtonsRow(state),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         // Course card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _buildCourseCard(state),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         // Date card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _buildDateCard(state),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         // Hole Progress / Mini Holes Grid
         if (locator.get<FeatureFlagService>().showInlineMiniHoleGrid) ...[
           Padding(
@@ -581,10 +655,11 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
                   if (_shouldShowProjection(state)) ...[
                     _buildProjectionRow(state),
                     Divider(
-                      height: 20,
+                      height: 16,
                       thickness: 1,
                       color: SenseiColors.gray[100],
                     ),
+                    const SizedBox(height: 4),
                   ],
                   // Mini holes grid
                   _MiniHolesGrid(
@@ -695,6 +770,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
       focusNode: _focusNode,
       isListening: isListening,
       accent: _accent,
+      height: 200,
       onClear: () {
         _logger.track(
           'Clear Text Button Tapped',
@@ -1003,7 +1079,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
             },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 48,
+        height: 44,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -1104,7 +1180,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 48,
+        height: 44,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),

@@ -1,18 +1,22 @@
-// throw_card_v2.dart
+// throw_card_v3_split.dart
 //
-// V2 throw card with compact 2-row layout.
-// Row 1: Title + inline mini-chips (technique, shape, disc) + icons
-// Row 2: Arrow result (distance → landing spot)
+// V3 split throw card with left-right layout.
+// Design:
+// ┌──────────────────────────────────────────────────────────────┐
+// │     │ Tee shot                    │                   │  ✎  │
+// │  1  │ [Flex shot] [Destroyer]     │  Tee ───▶ Fairway │  ≡  │
+// └──────────────────────────────────────────────────────────────┘
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-/// V2 throw card with inline mini-chips and arrow result row.
-class ThrowCardV2 extends StatefulWidget {
-  const ThrowCardV2({
+/// V3 split throw card with left-right layout.
+class ThrowCardV3Split extends StatefulWidget {
+  const ThrowCardV3Split({
     super.key,
+    required this.throwNumber,
     required this.title,
     required this.accentColor,
     this.technique,
@@ -31,6 +35,9 @@ class ThrowCardV2 extends StatefulWidget {
     required this.showDragHandle,
     required this.visualIndex,
   });
+
+  /// The throw number (1-indexed) to display in the gutter
+  final int throwNumber;
 
   /// Title like "Tee shot", "Approach", "Putt"
   final String title;
@@ -84,10 +91,10 @@ class ThrowCardV2 extends StatefulWidget {
   final int visualIndex;
 
   @override
-  State<ThrowCardV2> createState() => _ThrowCardV2State();
+  State<ThrowCardV3Split> createState() => _ThrowCardV3SplitState();
 }
 
-class _ThrowCardV2State extends State<ThrowCardV2> {
+class _ThrowCardV3SplitState extends State<ThrowCardV3Split> {
   bool _isDraggingLocal = false;
 
   void _handleLocalDragState(bool dragging) {
@@ -121,9 +128,7 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
 
   /// Truncate long disc names to just the model name
   String _truncateDisc(String name) {
-    // If short enough, keep full name
     if (name.length <= 12) return name;
-    // Otherwise take the last word (usually the disc model)
     final List<String> parts = name.split(' ');
     if (parts.length > 1) {
       return parts.last;
@@ -133,6 +138,10 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
 
   @override
   Widget build(BuildContext context) {
+    final Color badgeColor = widget.isOutOfBounds
+        ? Colors.red.withValues(alpha: 0.7)
+        : widget.accentColor;
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -158,28 +167,97 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
                   ),
                 ],
         ),
-        padding: const EdgeInsets.only(left: 8, right: 12, top: 4, bottom: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Row 1: Title + chips (inline, wrap if needed) + icons
-            _buildTitleRow(context),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left gutter with number
+              Container(
+                width: 32,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Center(
+                  child: Text(
+                    '${widget.throwNumber}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+              ),
 
-            // Row 2: Arrow result (only if distance or landing exists)
-            if (_hasResult) ...[
-              const SizedBox(height: 6),
-              _ArrowResultRow(
-                distance: widget.distance,
-                distanceAfter: widget.distanceAfter,
-                landingSpot: widget.landingSpot,
-                previousLandingSpot: widget.previousLandingSpot,
-                isInBasket: widget.isInBasket,
-                isOutOfBounds: widget.isOutOfBounds,
-                isTeeShot: widget.isTeeShot,
-                accentColor: widget.accentColor,
+              // Throw info column: title + chips
+              Expanded(
+                flex: 50,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: widget.accentColor.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: _buildThrowInfoColumn(context),
+                ),
+              ),
+
+              // Arrow result column
+              if (_hasResult)
+                Expanded(
+                  flex: 35,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: widget.accentColor.withValues(alpha: 0.15),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: _CompactArrowResult(
+                        distance: widget.distance,
+                        distanceAfter: widget.distanceAfter,
+                        landingSpot: widget.landingSpot,
+                        previousLandingSpot: widget.previousLandingSpot,
+                        isInBasket: widget.isInBasket,
+                        isOutOfBounds: widget.isOutOfBounds,
+                        isTeeShot: widget.isTeeShot,
+                        accentColor: widget.accentColor,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Icons column (stacked vertically)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: widget.accentColor.withValues(alpha: 0.15),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: _buildIconsColumn(context),
               ),
             ],
-          ],
+          ),
         ),
       )
           .animate(delay: Duration(milliseconds: widget.animationDelay))
@@ -193,61 +271,63 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
     );
   }
 
-  Widget _buildTitleRow(BuildContext context) {
-    final TextStyle titleStyle = Theme.of(context).textTheme.bodyMedium!.copyWith(
-          fontWeight: FontWeight.w600,
-          color: HSLColor.fromColor(widget.accentColor)
-              .withLightness(
-                (HSLColor.fromColor(widget.accentColor).lightness - 0.15)
-                    .clamp(0.0, 0.5),
-              )
-              .toColor(),
-        );
+  Widget _buildThrowInfoColumn(BuildContext context) {
+    final TextStyle titleStyle =
+        Theme.of(context).textTheme.bodyMedium!.copyWith(
+              fontWeight: FontWeight.w600,
+              color: HSLColor.fromColor(widget.accentColor)
+                  .withLightness(
+                    (HSLColor.fromColor(widget.accentColor).lightness - 0.15)
+                        .clamp(0.0, 0.5),
+                  )
+                  .toColor(),
+            );
 
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Title + chips (inline, wrap if needed)
-        Expanded(
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              // Title (never truncated)
-              Text(widget.title, style: titleStyle),
-              // Inline chips
-              if (widget.technique != null)
-                _MiniChip(
-                  label: _abbreviateTechnique(widget.technique!),
-                  accentColor: widget.accentColor,
-                ),
-              if (widget.shotShape != null)
-                _MiniChip(
-                  label: widget.shotShape!,
-                  accentColor: widget.accentColor,
-                ),
-              if (widget.discName != null)
-                _MiniChip(
-                  label: _truncateDisc(widget.discName!),
-                  accentColor: widget.accentColor,
-                ),
-            ],
-          ),
+        Text(widget.title, style: titleStyle),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            if (widget.technique != null)
+              _MiniChip(
+                label: _abbreviateTechnique(widget.technique!),
+                accentColor: widget.accentColor,
+              ),
+            if (widget.shotShape != null)
+              _MiniChip(
+                label: widget.shotShape!,
+                accentColor: widget.accentColor,
+              ),
+            if (widget.discName != null)
+              _MiniChip(
+                label: _truncateDisc(widget.discName!),
+                accentColor: widget.accentColor,
+              ),
+          ],
         ),
+      ],
+    );
+  }
 
-        const SizedBox(width: 8),
-
-        // Edit icon
+  Widget _buildIconsColumn(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Edit icon (smaller)
         Icon(
           Icons.edit_outlined,
-          size: 18,
+          size: 16,
           color: SenseiColors.gray[600],
         ),
 
-        // Drag handle (if enabled)
+        // Drag handle below edit
         if (widget.showDragHandle) ...[
-          const SizedBox(width: 6),
+          const SizedBox(height: 4),
           ReorderableDragStartListener(
             index: widget.visualIndex,
             child: Listener(
@@ -255,14 +335,11 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
               onPointerUp: (_) => _handleLocalDragState(false),
               onPointerCancel: (_) => _handleLocalDragState(false),
               behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 8,
-                ),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
                 child: Icon(
                   Icons.drag_handle,
-                  size: 20,
+                  size: 18,
                   color: SenseiColors.gray[600],
                 ),
               ),
@@ -304,9 +381,9 @@ class _MiniChip extends StatelessWidget {
   }
 }
 
-/// Arrow row showing: [starting location] ───────────► landing spot [✓]
-class _ArrowResultRow extends StatelessWidget {
-  const _ArrowResultRow({
+/// Compact arrow result for the split layout right column.
+class _CompactArrowResult extends StatelessWidget {
+  const _CompactArrowResult({
     this.distance,
     this.distanceAfter,
     this.landingSpot,
@@ -344,128 +421,75 @@ class _ArrowResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build the left side label based on available data:
-    // 1. Tee shots: "Tee"
-    // 2. Other throws: previous landing spot + distance if available
     String? leftLabel;
     if (isTeeShot) {
       leftLabel = 'Tee';
-    } else if (previousLandingSpot != null && distance != null) {
-      // Show both: "C1 · 150 ft"
-      leftLabel = '${_abbreviateLocation(previousLandingSpot!)} · $distance';
     } else if (previousLandingSpot != null) {
       leftLabel = _abbreviateLocation(previousLandingSpot!);
     } else if (distance != null) {
       leftLabel = distance;
     }
 
-    // Build the right side label: prioritize special spots (basket/OB), then distance, then landing spot
     String? rightLabel;
     if (isOutOfBounds && landingSpot != null) {
-      // Always show OB/Hazard
       rightLabel = landingSpot == 'Hazard' ? 'HZ' : 'OB';
     } else if (isInBasket && landingSpot != null) {
-      // Always show Basket
       rightLabel = _abbreviateLocation(landingSpot!);
     } else if (distanceAfter != null) {
-      // Prefer distance over generic landing spots (C1, C2, fairway, etc.)
       rightLabel = distanceAfter;
     } else if (landingSpot != null) {
-      // Fall back to landing spot if no distance
       rightLabel = _abbreviateLocation(landingSpot!);
     }
 
-    // Consistent text style for both sides
-    final TextStyle labelStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
-          color: SenseiColors.gray[600],
-          fontWeight: FontWeight.w500,
-        );
+    final TextStyle labelStyle =
+        Theme.of(context).textTheme.bodySmall!.copyWith(
+              color: SenseiColors.gray[600],
+              fontWeight: FontWeight.w500,
+              fontSize: 11,
+            );
+
+    // Determine right label color
+    Color rightLabelColor = SenseiColors.gray[600]!;
+    if (isOutOfBounds) {
+      rightLabelColor = Colors.red.withValues(alpha: 0.7);
+    } else if (isInBasket) {
+      rightLabelColor = Colors.green.shade600;
+    }
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Left side label (Tee or distance)
         if (leftLabel != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Text(leftLabel, style: labelStyle),
+          Flexible(
+            child: Text(
+              leftLabel,
+              style: labelStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
 
-        // Arrow line with arrowhead
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: CustomPaint(
-              size: const Size(double.infinity, 12),
-              painter: _ArrowLinePainter(color: accentColor),
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          child: Icon(
+            Icons.arrow_forward,
+            size: 10,
+            color: accentColor.withValues(alpha: 0.6),
           ),
         ),
 
-        const SizedBox(width: 8),
-
-        // Landing spot text (right side)
         if (rightLabel != null)
-          Text(
-            rightLabel,
-            style: labelStyle.copyWith(
-              color: isOutOfBounds
-                  ? Colors.red.withValues(alpha: 0.7)
-                  : SenseiColors.gray[600],
+          Flexible(
+            child: Text(
+              rightLabel,
+              style: labelStyle.copyWith(
+                color: rightLabelColor,
+                fontWeight: isInBasket ? FontWeight.w600 : FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-
-        // Basket checkmark
-        if (isInBasket) ...[
-          const SizedBox(width: 6),
-          Icon(
-            Icons.check_circle,
-            size: 16,
-            color: Colors.green.shade600,
-          ),
-        ],
       ],
     );
-  }
-}
-
-/// Custom painter for drawing a line with an arrowhead at the end.
-class _ArrowLinePainter extends CustomPainter {
-  const _ArrowLinePainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color.withValues(alpha: 0.4)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final double centerY = size.height / 2;
-    const double arrowSize = 5.0;
-
-    // Draw the main line (leaving space for arrowhead)
-    final Path linePath = Path()
-      ..moveTo(0, centerY)
-      ..lineTo(size.width - arrowSize, centerY);
-    canvas.drawPath(linePath, paint);
-
-    // Draw the filled arrowhead
-    final Paint arrowPaint = Paint()
-      ..color = color.withValues(alpha: 0.6)
-      ..style = PaintingStyle.fill;
-
-    final Path arrowPath = Path()
-      ..moveTo(size.width - arrowSize - 4, centerY - 4)
-      ..lineTo(size.width, centerY)
-      ..lineTo(size.width - arrowSize - 4, centerY + 4)
-      ..close();
-    canvas.drawPath(arrowPath, arrowPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _ArrowLinePainter oldDelegate) {
-    return oldDelegate.color != color;
   }
 }

@@ -85,6 +85,7 @@ abstract class SenseiColors {
 
   static const Color darkGray = Color(0xff111111);
 
+  static const Color blueSecondary = Color.fromARGB(255, 12, 190, 255);
   static const Color blue = Colors.blue;
   static const Color darkBlue = Color(0xff0E7DD6);
   static const Color white = Colors.white;

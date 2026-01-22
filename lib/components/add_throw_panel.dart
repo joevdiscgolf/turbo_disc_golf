@@ -87,7 +87,6 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
 
     // Initialize form values from throw, with smart auto-selection
     _purpose = widget.existingThrow?.purpose ?? _getAutoSelectedPurpose();
-    _technique = widget.existingThrow?.technique;
     _landingSpot = widget.existingThrow?.landingSpot;
     _distanceBefore = widget.existingThrow?.distanceFeetBeforeThrow;
     _distanceAfter = widget.existingThrow?.distanceFeetAfterThrow;
@@ -95,8 +94,13 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     _selectedDiscName =
         widget.existingThrow?.disc?.name ?? widget.existingThrow?.discName;
     _shotShape = widget.existingThrow?.shotShape;
-    _puttStyle =
-        widget.existingThrow?.puttStyle ??
+
+    // Default technique to Backhand for non-putts if not set
+    _technique = widget.existingThrow?.technique ??
+        (_purpose != ThrowPurpose.putt ? ThrowTechnique.backhand : null);
+
+    // Default puttStyle to Staggered for putts if not set
+    _puttStyle = widget.existingThrow?.puttStyle ??
         (_purpose == ThrowPurpose.putt ? PuttStyle.staggered : null);
 
     _customDistanceBeforeController = TextEditingController(
@@ -105,11 +109,13 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     _customDistanceAfterController = TextEditingController(
       text: _distanceAfter?.toString() ?? '',
     );
-    _customLandingDistanceController = TextEditingController();
+    _customLandingDistanceController = TextEditingController(
+      text: _distanceAfter?.toString() ?? '',
+    );
     _discSearchController = TextEditingController();
 
-    // Initialize landing distance from text controller if available
-    _landingDistance = int.tryParse(_customLandingDistanceController.text);
+    // Initialize landing distance from existing distanceAfter value
+    _landingDistance = _distanceAfter;
   }
 
   @override
@@ -556,6 +562,10 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
         ),
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        onChanged: (value) {
+          // Update _landingDistance so _handleSave uses the latest value
+          _landingDistance = int.tryParse(value);
+        },
       ),
     );
   }
@@ -704,31 +714,16 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     );
   }
 
-  /// Get recommended disc names based on the currently selected purpose
-  /// Returns disc names from usage stats (not dependent on local bag)
+  /// Get recommended disc names based on the currently selected purpose.
+  /// Returns disc names from usage stats (not dependent on local bag).
   List<String> _getRecommendedDiscNames() {
-    debugPrint('[AddThrowPanel] Stats loaded: ${_bagService.usageStatsLoaded}');
-    debugPrint(
-      '[AddThrowPanel] Stats disc names: ${_bagService.usageStats.statsByDiscName.keys.toList()}',
-    );
-
-    final List<String> recommendedNames;
     if (_purpose != null) {
-      recommendedNames = _bagService.getRecommendedDiscNamesForPurpose(
+      return _bagService.getRecommendedDiscNamesForPurpose(
         purpose: _purpose!,
         limit: 3,
       );
-      debugPrint(
-        '[AddThrowPanel] Recommended names for $_purpose: $recommendedNames',
-      );
-    } else {
-      recommendedNames = _bagService.getMostUsedDiscNames(limit: 3);
-      debugPrint(
-        '[AddThrowPanel] Most used disc names (no purpose): $recommendedNames',
-      );
     }
-
-    return recommendedNames;
+    return _bagService.getMostUsedDiscNames(limit: 3);
   }
 
   /// Find a disc in the user's bag by name
@@ -1145,9 +1140,10 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     final int? distanceBefore = int.tryParse(
       _customDistanceBeforeController.text,
     );
-    final int? distanceAfter = int.tryParse(
-      _customDistanceAfterController.text,
-    );
+    // Use landing distance from slider/text field for distance after throw
+    final int? distanceAfter = _landingDistance ??
+        int.tryParse(_customLandingDistanceController.text) ??
+        int.tryParse(_customDistanceAfterController.text);
 
     // Find selected disc in bag (if available)
     DGDisc? selectedDisc;

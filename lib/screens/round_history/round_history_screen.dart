@@ -106,12 +106,20 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   Widget _buildContent(RoundHistoryState state) {
     if (state is RoundHistoryLoading) {
       // Initial loading - show shimmer skeletons
+      const int shimmerCount = 3;
       return SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => const _RoundHistoryShimmer(),
-            childCount: 3,
+            (context, index) {
+              return Column(
+                children: [
+                  const _RoundHistoryShimmer(),
+                  if (index < shimmerCount - 1) const SizedBox(height: 8),
+                ],
+              );
+            },
+            childCount: shimmerCount,
           ),
         ),
       );
@@ -134,7 +142,12 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final DGRound round = sortedRounds[index];
-            return RoundHistoryRow(round: round, logger: _logger, index: index);
+            return Column(
+              children: [
+                RoundHistoryRow(round: round, logger: _logger, index: index),
+                if (index < sortedRounds.length - 1) const SizedBox(height: 8),
+              ],
+            );
           }, childCount: sortedRounds.length),
         ),
       );
@@ -324,9 +337,9 @@ class _RoundHistoryShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SizedBox(
         height: 204,

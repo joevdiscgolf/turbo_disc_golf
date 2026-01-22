@@ -25,9 +25,9 @@ class FormAnalysisCard extends StatelessWidget {
     final String? formattedDateTime = _formatDateTime(analysis.createdAt);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.zero,
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: GestureDetector(
         onTap: () {
@@ -35,7 +35,7 @@ class FormAnalysisCard extends StatelessWidget {
           onTap();
         },
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: IntrinsicHeight(
             child: Row(
@@ -73,9 +73,9 @@ class FormAnalysisCard extends StatelessWidget {
           child: formattedDateTime != null
               ? Text(
                   formattedDateTime,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 )
               : const SizedBox.shrink(),
         ),
@@ -131,7 +131,7 @@ class FormAnalysisCard extends StatelessWidget {
 
     try {
       final DateTime dateTime = DateTime.parse(isoString).toLocal();
-      final DateFormat formatter = DateFormat('MMM d, yyyy • h:mm a');
+      final DateFormat formatter = DateFormat('MMM d, yyyy');
       return formatter.format(dateTime);
     } catch (e) {
       return null;
@@ -326,9 +326,7 @@ class _CameraAngleBadge extends StatelessWidget {
     final Color color2 = isSideView
         ? const Color(0xFF2196F3)
         : const Color(0xFF26A69A);
-    final IconData icon = isSideView
-        ? Icons.photo_camera
-        : Icons.videocam;
+    final IconData icon = isSideView ? Icons.photo_camera : Icons.videocam;
     final String label = angle.displayName;
 
     return Container(

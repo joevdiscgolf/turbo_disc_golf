@@ -10,6 +10,7 @@ import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
+import 'package:turbo_disc_golf/utils/throw_distance_helper.dart';
 
 /// Cubit for managing round review workflow state
 /// Tracks the completed round being edited and the current hole being edited
@@ -218,7 +219,8 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
     updateHole(holeIndex, updatedHole);
   }
 
-  /// Update a throw within a hole
+  /// Update a throw within a hole.
+  /// Uses [ThrowDistanceHelper] to cascade distance changes to adjacent throws.
   void updateThrow(int holeIndex, int throwIndex, DiscThrow updatedThrow) {
     if (state is! ReviewingRoundActive) {
       return;
@@ -234,29 +236,12 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
       return;
     }
 
-    final List<DiscThrow> updatedThrows = List<DiscThrow>.from(hole.throws);
-    updatedThrows[throwIndex] = DiscThrow(
-      index: updatedThrow.index,
-      purpose: updatedThrow.purpose,
-      technique: updatedThrow.technique,
-      puttStyle: updatedThrow.puttStyle,
-      shotShape: updatedThrow.shotShape,
-      stance: updatedThrow.stance,
-      power: updatedThrow.power,
-      distanceFeetBeforeThrow: updatedThrow.distanceFeetBeforeThrow,
-      distanceFeetAfterThrow: updatedThrow.distanceFeetAfterThrow,
-      elevationChangeFeet: updatedThrow.elevationChangeFeet,
-      windDirection: updatedThrow.windDirection,
-      windStrength: updatedThrow.windStrength,
-      resultRating: updatedThrow.resultRating,
-      landingSpot: updatedThrow.landingSpot,
-      fairwayWidth: updatedThrow.fairwayWidth,
-      customPenaltyStrokes: updatedThrow.customPenaltyStrokes,
-      notes: updatedThrow.notes,
-      rawText: updatedThrow.rawText,
-      parseConfidence: updatedThrow.parseConfidence,
-      discName: updatedThrow.discName,
-      disc: updatedThrow.disc,
+    // Use helper to update throw and cascade distances
+    final List<DiscThrow> updatedThrows =
+        ThrowDistanceHelper.updateThrowWithCascade(
+      throws: hole.throws,
+      throwIndex: throwIndex,
+      updatedThrow: updatedThrow,
     );
 
     final DGHole updatedHole = DGHole(

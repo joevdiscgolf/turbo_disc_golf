@@ -328,9 +328,8 @@ class _MainWrapperState extends State<MainWrapper> {
 
   Widget _buildSettingsButton(BuildContext context, String currentScreenName) {
     return Center(
-      child: IconButton(
-        icon: const Icon(Icons.person, size: 24),
-        onPressed: () {
+      child: GestureDetector(
+        onTap: () {
           // Track analytics with dynamic screen name
           _logger.track(
             'Settings Button Tapped',
@@ -343,6 +342,18 @@ class _MainWrapperState extends State<MainWrapper> {
           HapticFeedback.lightImpact();
           pushCupertinoRoute(context, const SettingsScreen());
         },
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: SenseiColors.gray[400]!, width: 1.5),
+          ),
+          child: Center(
+            child: Icon(Icons.person, size: 18, color: SenseiColors.gray[400]),
+          ),
+        ),
       ),
     );
   }

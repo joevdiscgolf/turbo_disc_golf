@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/description_quality_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/tabs/scores_tab/components/hole_score_scatterplot.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/tabs/scores_tab/components/insight_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/tabs/scores_tab/components/performance_comparison_card.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
+import 'package:turbo_disc_golf/utils/description_quality_analyzer.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class ScoresTab extends StatelessWidget {
@@ -23,6 +27,10 @@ class ScoresTab extends StatelessWidget {
         [
           _buildInsightCards(context, statsService),
           _buildPerformanceByPar(context, statsService),
+
+          // Missing throw details card (controlled by feature flag)
+          if (locator.get<FeatureFlagService>().showMissingThrowDetailsInScoreDetail)
+            _buildMissingDetailsCard(),
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -405,6 +413,20 @@ class ScoresTab extends StatelessWidget {
     return PerformanceComparisonCard(
       title: 'Performance by Fairway Width',
       items: items,
+    );
+  }
+
+  Widget _buildMissingDetailsCard() {
+    final DescriptionQualityReport report =
+        DescriptionQualityAnalyzer.analyzeFinalizedRound(round);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: DescriptionQualityCard(
+        report: report,
+        onHoleTap: (_) {},
+        isReadOnly: true,
+      ),
     );
   }
 

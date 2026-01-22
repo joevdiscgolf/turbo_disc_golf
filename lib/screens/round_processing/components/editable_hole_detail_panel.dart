@@ -54,6 +54,7 @@ class EditableHoleDetailPanel extends StatefulWidget {
 class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
   late final FocusNode _parFocusNode;
   late final FocusNode _distanceFocusNode;
+  bool _hasChanges = false;
 
   @override
   void initState() {
@@ -113,11 +114,16 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
             _handleEditThrow(currentHole, throwIndex),
         onVoiceRecord: () => widget.onVoiceRecord(),
         onDone: () {
-          // Save to Firestore when done is pressed (for existing rounds)
-          widget.onRoundUpdated?.call();
+          // Only save to Firestore if changes were made
+          if (_hasChanges) {
+            widget.onRoundUpdated?.call();
+          }
           Navigator.of(context).pop();
         },
-        onReorder: (oldIndex, newIndex) => widget.onReorder(oldIndex, newIndex),
+        onReorder: (oldIndex, newIndex) {
+          _hasChanges = true;
+          widget.onReorder(oldIndex, newIndex);
+        },
       ),
     );
   }
@@ -127,6 +133,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
     required int? newPar,
     required int? newDistance,
   }) {
+    _hasChanges = true;
     // Preserve the current value of whichever field isn't being changed
     widget.onMetadataChanged(
       newPar: newPar ?? currentHole.par,
@@ -190,6 +197,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
           previousThrow: previousThrow,
           throwIndex: 0,
           onSave: (savedThrow) {
+            _hasChanges = true;
             // Pass the original addAtIndex to parent - it handles actual insertion
             widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
             Navigator.of(context).pop();
@@ -214,6 +222,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
           throwIndex: displayThrowNumber,
           isNewThrow: true,
           onSave: (savedThrow) {
+            _hasChanges = true;
             // Pass the original addAtIndex to parent - it handles actual insertion
             widget.onThrowAdded(savedThrow, addThrowAtIndex: addAtIndex);
             Navigator.of(context).pop();
@@ -271,10 +280,12 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
           previousThrow: previousThrow,
           throwIndex: throwIndex,
           onSave: (updatedThrow) {
+            _hasChanges = true;
             widget.onThrowEdited(throwIndex, updatedThrow);
             Navigator.of(context).pop();
           },
           onDelete: () {
+            _hasChanges = true;
             widget.onThrowDeleted(throwIndex);
             Navigator.of(context).pop();
           },
@@ -297,10 +308,12 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
           throw_: currentThrow,
           throwIndex: throwIndex,
           onSave: (updatedThrow) {
+            _hasChanges = true;
             widget.onThrowEdited(throwIndex, updatedThrow);
             Navigator.of(context).pop();
           },
           onDelete: () {
+            _hasChanges = true;
             widget.onThrowDeleted(throwIndex);
             Navigator.of(context).pop();
           },

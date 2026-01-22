@@ -11,10 +11,14 @@ class DescriptionQualityCard extends StatefulWidget {
     super.key,
     required this.report,
     required this.onHoleTap,
+    this.isReadOnly = false,
   });
 
   final DescriptionQualityReport report;
   final void Function(int holeIndex) onHoleTap;
+
+  /// When true, hides the "tap to edit" hint and disables row taps
+  final bool isReadOnly;
 
   @override
   State<DescriptionQualityCard> createState() => _DescriptionQualityCardState();
@@ -119,15 +123,17 @@ class _DescriptionQualityCardState extends State<DescriptionQualityCard> {
             final bool isLast = index == throwIssues.length - 1;
             return _buildThrowIssueRow(issue, isLast: isLast);
           }),
-          const SizedBox(height: 8),
-          Text(
-            'Tap a row to edit that hole',
-            style: TextStyle(
-              fontSize: 12,
-              color: SenseiColors.gray[400],
-              fontStyle: FontStyle.italic,
+          if (!widget.isReadOnly) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Tap a row to edit that hole',
+              style: TextStyle(
+                fontSize: 12,
+                color: SenseiColors.gray[400],
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -137,11 +143,13 @@ class _DescriptionQualityCardState extends State<DescriptionQualityCard> {
     return Column(
       children: [
         GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            // Convert hole number to 0-based index
-            widget.onHoleTap(issue.holeNumber - 1);
-          },
+          onTap: widget.isReadOnly
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  // Convert hole number to 0-based index
+                  widget.onHoleTap(issue.holeNumber - 1);
+                },
           behavior: HitTestBehavior.opaque,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -175,11 +183,12 @@ class _DescriptionQualityCardState extends State<DescriptionQualityCard> {
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: SenseiColors.gray[300],
-                ),
+                if (!widget.isReadOnly)
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: SenseiColors.gray[300],
+                  ),
               ],
             ),
           ),

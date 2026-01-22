@@ -1,18 +1,22 @@
-// throw_card_v2.dart
+// throw_card_v3_inline.dart
 //
-// V2 throw card with compact 2-row layout.
-// Row 1: Title + inline mini-chips (technique, shape, disc) + icons
-// Row 2: Arrow result (distance → landing spot)
+// V3 inline throw card with full-width layout and inline number badge.
+// Design:
+// ┌──────────────────────────────────────────────────────────┐
+// │ ①  Tee shot   [Flex shot] [Destroyer]          ✎    ≡  │
+// │     Tee ──────────────────────────────────▶ Fairway     │
+// └──────────────────────────────────────────────────────────┘
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-/// V2 throw card with inline mini-chips and arrow result row.
-class ThrowCardV2 extends StatefulWidget {
-  const ThrowCardV2({
+/// V3 inline throw card with full-width layout and inline number badge.
+class ThrowCardV3Inline extends StatefulWidget {
+  const ThrowCardV3Inline({
     super.key,
+    required this.throwNumber,
     required this.title,
     required this.accentColor,
     this.technique,
@@ -31,6 +35,9 @@ class ThrowCardV2 extends StatefulWidget {
     required this.showDragHandle,
     required this.visualIndex,
   });
+
+  /// The throw number (1-indexed) to display in the badge
+  final int throwNumber;
 
   /// Title like "Tee shot", "Approach", "Putt"
   final String title;
@@ -84,10 +91,10 @@ class ThrowCardV2 extends StatefulWidget {
   final int visualIndex;
 
   @override
-  State<ThrowCardV2> createState() => _ThrowCardV2State();
+  State<ThrowCardV3Inline> createState() => _ThrowCardV3InlineState();
 }
 
-class _ThrowCardV2State extends State<ThrowCardV2> {
+class _ThrowCardV3InlineState extends State<ThrowCardV3Inline> {
   bool _isDraggingLocal = false;
 
   void _handleLocalDragState(bool dragging) {
@@ -121,9 +128,7 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
 
   /// Truncate long disc names to just the model name
   String _truncateDisc(String name) {
-    // If short enough, keep full name
     if (name.length <= 12) return name;
-    // Otherwise take the last word (usually the disc model)
     final List<String> parts = name.split(' ');
     if (parts.length > 1) {
       return parts.last;
@@ -158,25 +163,28 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
                   ),
                 ],
         ),
-        padding: const EdgeInsets.only(left: 8, right: 12, top: 4, bottom: 8),
+        padding: const EdgeInsets.only(left: 10, right: 12, top: 8, bottom: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Row 1: Title + chips (inline, wrap if needed) + icons
+            // Row 1: Number badge + Title + chips + icons
             _buildTitleRow(context),
 
-            // Row 2: Arrow result (only if distance or landing exists)
+            // Row 2: Arrow result (always on separate line)
             if (_hasResult) ...[
-              const SizedBox(height: 6),
-              _ArrowResultRow(
-                distance: widget.distance,
-                distanceAfter: widget.distanceAfter,
-                landingSpot: widget.landingSpot,
-                previousLandingSpot: widget.previousLandingSpot,
-                isInBasket: widget.isInBasket,
-                isOutOfBounds: widget.isOutOfBounds,
-                isTeeShot: widget.isTeeShot,
-                accentColor: widget.accentColor,
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(left: 28),
+                child: _ArrowResultRow(
+                  distance: widget.distance,
+                  distanceAfter: widget.distanceAfter,
+                  landingSpot: widget.landingSpot,
+                  previousLandingSpot: widget.previousLandingSpot,
+                  isInBasket: widget.isInBasket,
+                  isOutOfBounds: widget.isOutOfBounds,
+                  isTeeShot: widget.isTeeShot,
+                  accentColor: widget.accentColor,
+                ),
               ),
             ],
           ],
@@ -194,19 +202,47 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
   }
 
   Widget _buildTitleRow(BuildContext context) {
-    final TextStyle titleStyle = Theme.of(context).textTheme.bodyMedium!.copyWith(
-          fontWeight: FontWeight.w600,
-          color: HSLColor.fromColor(widget.accentColor)
-              .withLightness(
-                (HSLColor.fromColor(widget.accentColor).lightness - 0.15)
-                    .clamp(0.0, 0.5),
-              )
-              .toColor(),
-        );
+    final Color badgeColor = widget.isOutOfBounds
+        ? Colors.red.withValues(alpha: 0.7)
+        : widget.accentColor;
+
+    final TextStyle titleStyle =
+        Theme.of(context).textTheme.bodyMedium!.copyWith(
+              fontWeight: FontWeight.w600,
+              color: HSLColor.fromColor(widget.accentColor)
+                  .withLightness(
+                    (HSLColor.fromColor(widget.accentColor).lightness - 0.15)
+                        .clamp(0.0, 0.5),
+                  )
+                  .toColor(),
+            );
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Number badge (20x20)
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: badgeColor.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(color: badgeColor, width: 1.5),
+          ),
+          child: Center(
+            child: Text(
+              '${widget.throwNumber}',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: badgeColor,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
         // Title + chips (inline, wrap if needed)
         Expanded(
           child: Wrap(
@@ -214,9 +250,7 @@ class _ThrowCardV2State extends State<ThrowCardV2> {
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              // Title (never truncated)
               Text(widget.title, style: titleStyle),
-              // Inline chips
               if (widget.technique != null)
                 _MiniChip(
                   label: _abbreviateTechnique(widget.technique!),
@@ -344,14 +378,10 @@ class _ArrowResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build the left side label based on available data:
-    // 1. Tee shots: "Tee"
-    // 2. Other throws: previous landing spot + distance if available
     String? leftLabel;
     if (isTeeShot) {
       leftLabel = 'Tee';
     } else if (previousLandingSpot != null && distance != null) {
-      // Show both: "C1 · 150 ft"
       leftLabel = '${_abbreviateLocation(previousLandingSpot!)} · $distance';
     } else if (previousLandingSpot != null) {
       leftLabel = _abbreviateLocation(previousLandingSpot!);
@@ -359,38 +389,31 @@ class _ArrowResultRow extends StatelessWidget {
       leftLabel = distance;
     }
 
-    // Build the right side label: prioritize special spots (basket/OB), then distance, then landing spot
     String? rightLabel;
     if (isOutOfBounds && landingSpot != null) {
-      // Always show OB/Hazard
       rightLabel = landingSpot == 'Hazard' ? 'HZ' : 'OB';
     } else if (isInBasket && landingSpot != null) {
-      // Always show Basket
       rightLabel = _abbreviateLocation(landingSpot!);
     } else if (distanceAfter != null) {
-      // Prefer distance over generic landing spots (C1, C2, fairway, etc.)
       rightLabel = distanceAfter;
     } else if (landingSpot != null) {
-      // Fall back to landing spot if no distance
       rightLabel = _abbreviateLocation(landingSpot!);
     }
 
-    // Consistent text style for both sides
-    final TextStyle labelStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
-          color: SenseiColors.gray[600],
-          fontWeight: FontWeight.w500,
-        );
+    final TextStyle labelStyle =
+        Theme.of(context).textTheme.bodySmall!.copyWith(
+              color: SenseiColors.gray[600],
+              fontWeight: FontWeight.w500,
+            );
 
     return Row(
       children: [
-        // Left side label (Tee or distance)
         if (leftLabel != null)
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Text(leftLabel, style: labelStyle),
           ),
 
-        // Arrow line with arrowhead
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -403,7 +426,6 @@ class _ArrowResultRow extends StatelessWidget {
 
         const SizedBox(width: 8),
 
-        // Landing spot text (right side)
         if (rightLabel != null)
           Text(
             rightLabel,
@@ -414,7 +436,6 @@ class _ArrowResultRow extends StatelessWidget {
             ),
           ),
 
-        // Basket checkmark
         if (isInBasket) ...[
           const SizedBox(width: 6),
           Icon(
@@ -445,13 +466,11 @@ class _ArrowLinePainter extends CustomPainter {
     final double centerY = size.height / 2;
     const double arrowSize = 5.0;
 
-    // Draw the main line (leaving space for arrowhead)
     final Path linePath = Path()
       ..moveTo(0, centerY)
       ..lineTo(size.width - arrowSize, centerY);
     canvas.drawPath(linePath, paint);
 
-    // Draw the filled arrowhead
     final Paint arrowPaint = Paint()
       ..color = color.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;

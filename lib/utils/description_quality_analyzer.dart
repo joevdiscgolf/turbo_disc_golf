@@ -1,4 +1,5 @@
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 
 /// Analyzes hole description quality based on parsed throw data.
@@ -66,6 +67,85 @@ class DescriptionQualityAnalyzer {
       if (holeMissingFields.isNotEmpty) {
         issues.add(HoleQualityIssue(
           holeNumber: hole.number ?? 0,
+          missingFields: holeMissingFields,
+          throwsMissingDisc: holeThrowsMissingDisc,
+          throwsMissingTechnique: holeThrowsMissingTechnique,
+          throwIssues: holeThrowIssues,
+        ));
+      }
+    }
+
+    return DescriptionQualityReport(
+      totalThrows: totalThrows,
+      throwsMissingDisc: throwsMissingDisc,
+      throwsMissingTechnique: throwsMissingTechnique,
+      holeIssues: issues,
+      allThrowIssues: allThrowIssues,
+    );
+  }
+
+  /// Analyzes a finalized DGRound and returns a quality report.
+  static DescriptionQualityReport analyzeFinalizedRound(DGRound round) {
+    final List<HoleQualityIssue> issues = [];
+    final List<ThrowQualityIssue> allThrowIssues = [];
+    int totalThrows = 0;
+    int throwsMissingDisc = 0;
+    int throwsMissingTechnique = 0;
+
+    for (final hole in round.holes) {
+      final List<String> holeMissingFields = [];
+      final List<ThrowQualityIssue> holeThrowIssues = [];
+      int holeThrowsMissingDisc = 0;
+      int holeThrowsMissingTechnique = 0;
+      int throwIndex = 0;
+
+      for (final throw_ in hole.throws) {
+        totalThrows++;
+        throwIndex++;
+
+        // Skip disc and technique checks for putts - they don't typically need these
+        final bool isPutt = throw_.purpose == ThrowPurpose.putt;
+
+        final bool missingDisc =
+            !isPutt && throw_.discName == null && throw_.disc == null;
+        final bool missingTechnique = !isPutt && throw_.technique == null;
+
+        // Check for missing disc name
+        if (missingDisc) {
+          throwsMissingDisc++;
+          holeThrowsMissingDisc++;
+        }
+
+        // Check for missing technique
+        if (missingTechnique) {
+          throwsMissingTechnique++;
+          holeThrowsMissingTechnique++;
+        }
+
+        // Track individual throw issues
+        if (missingDisc || missingTechnique) {
+          final ThrowQualityIssue throwIssue = ThrowQualityIssue(
+            holeNumber: hole.number,
+            throwNumber: throwIndex,
+            missingDisc: missingDisc,
+            missingTechnique: missingTechnique,
+          );
+          holeThrowIssues.add(throwIssue);
+          allThrowIssues.add(throwIssue);
+        }
+      }
+
+      // Add issue if this hole has any missing fields
+      if (holeThrowsMissingDisc > 0) {
+        holeMissingFields.add('disc');
+      }
+      if (holeThrowsMissingTechnique > 0) {
+        holeMissingFields.add('technique');
+      }
+
+      if (holeMissingFields.isNotEmpty) {
+        issues.add(HoleQualityIssue(
+          holeNumber: hole.number,
           missingFields: holeMissingFields,
           throwsMissingDisc: holeThrowsMissingDisc,
           throwsMissingTechnique: holeThrowsMissingTechnique,

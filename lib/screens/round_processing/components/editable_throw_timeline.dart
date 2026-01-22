@@ -16,6 +16,8 @@ import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v2.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v3_inline.dart';
+import 'package:turbo_disc_golf/screens/round_processing/components/throw_card_v3_split.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
@@ -48,6 +50,14 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
   List<double> _iconCenterY = [];
   bool _isDragging = false;
   Timer? _recomputeTimer;
+
+  /// Get the current throw card layout style from feature flags
+  String get _layoutStyle =>
+      locator.get<FeatureFlagService>().throwCardLayoutStyle;
+
+  /// Whether we're using a V3 layout (no external timeline)
+  bool get _isV3Layout =>
+      _layoutStyle == 'inline' || _layoutStyle == 'split';
 
   @override
   void initState() {
@@ -212,6 +222,17 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                       inferredDistanceAfter = nextThrow.distanceFeetBeforeThrow;
                     }
 
+                    // Infer distance before: PREVIOUS throw's distanceAfter is
+                    // the authority (where we landed = where next throw starts)
+                    int? inferredDistanceBefore = discThrow.distanceFeetBeforeThrow;
+                    if (index > 0) {
+                      final prevThrow = widget.throws[index - 1];
+                      // Previous throw's distanceAfter takes precedence
+                      if (prevThrow.distanceFeetAfterThrow != null) {
+                        inferredDistanceBefore = prevThrow.distanceFeetAfterThrow;
+                      }
+                    }
+
                     return Container(
                       key: ValueKey('throw_$index'),
                       margin: EdgeInsets.only(
@@ -228,17 +249,19 @@ class _EditableThrowTimelineState extends State<EditableThrowTimeline> {
                         showDragHandle: widget.enableReorder,
                         accentColor: purposeColor,
                         previousLandingSpot: previousLandingSpot,
+                        inferredDistanceBefore: inferredDistanceBefore,
                         inferredDistanceAfter: inferredDistanceAfter,
                         isOutOfBounds: discThrow.landingSpot == LandingSpot.outOfBounds ||
                             discThrow.landingSpot == LandingSpot.hazard,
+                        layoutStyle: _layoutStyle,
                       ),
                     );
                   },
                 ),
               ),
 
-              // Overlay connectors between icons
-              if (_iconCenterY.isNotEmpty)
+              // Overlay connectors between icons (only for non-V3 layouts)
+              if (!_isV3Layout && _iconCenterY.isNotEmpty)
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Stack(
@@ -350,8 +373,10 @@ class _MeasuredThrowRow extends StatelessWidget {
     required this.showDragHandle,
     required this.accentColor,
     this.previousLandingSpot,
+    this.inferredDistanceBefore,
     this.inferredDistanceAfter,
     this.isOutOfBounds = false,
+    this.layoutStyle = '',
   });
 
   final GlobalKey measurementKey;
@@ -364,8 +389,12 @@ class _MeasuredThrowRow extends StatelessWidget {
   final bool showDragHandle;
   final Color accentColor;
   final String? previousLandingSpot;
+  final int? inferredDistanceBefore;
   final int? inferredDistanceAfter;
   final bool isOutOfBounds;
+
+  /// Layout style: 'inline', 'split', or empty for default
+  final String layoutStyle;
 
   String _getThrowTitle() {
     if (discThrow.purpose != null) {
@@ -398,8 +427,16 @@ class _MeasuredThrowRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool useV2 = locator.get<FeatureFlagService>().useThrowCardV2;
+    // V3 layouts: no external number circle, card is full-width
+    if (layoutStyle == 'inline') {
+      return _buildV3InlineCard(context);
+    }
+    if (layoutStyle == 'split') {
+      return _buildV3SplitCard(context);
+    }
 
+    // Legacy layouts with external number circle
+    final bool useV2 = locator.get<FeatureFlagService>().useThrowCardV2;
     if (useV2) {
       return _buildV2Card(context);
     }
@@ -456,8 +493,8 @@ class _MeasuredThrowRow extends StatelessWidget {
                     ? shotShapeToName[discThrow.shotShape]
                     : null,
                 discName: discThrow.disc?.name ?? discThrow.discName,
-                distance: discThrow.distanceFeetBeforeThrow != null
-                    ? '${discThrow.distanceFeetBeforeThrow} ft'
+                distance: inferredDistanceBefore != null
+                    ? '$inferredDistanceBefore ft'
                     : null,
                 distanceAfter: inferredDistanceAfter != null
                     ? '$inferredDistanceAfter ft'
@@ -466,7 +503,7 @@ class _MeasuredThrowRow extends StatelessWidget {
                     ? landingSpotToName[discThrow.landingSpot]
                     : null,
                 // Only show previous landing spot if exact distance before isn't available
-                previousLandingSpot: discThrow.distanceFeetBeforeThrow == null
+                previousLandingSpot: inferredDistanceBefore == null
                     ? previousLandingSpot
                     : null,
                 isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
@@ -481,6 +518,84 @@ class _MeasuredThrowRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// V3 inline layout - full-width card with inline number badge
+  Widget _buildV3InlineCard(BuildContext context) {
+    return Container(
+      key: measurementKey,
+      child: ThrowCardV3Inline(
+        throwNumber: throwIndex + 1,
+        title: _getThrowTitle(),
+        accentColor: accentColor,
+        technique: discThrow.technique != null
+            ? throwTechniqueToName[discThrow.technique]
+            : null,
+        shotShape: discThrow.shotShape != null
+            ? shotShapeToName[discThrow.shotShape]
+            : null,
+        discName: discThrow.disc?.name ?? discThrow.discName,
+        distance: inferredDistanceBefore != null
+            ? '$inferredDistanceBefore ft'
+            : null,
+        distanceAfter: inferredDistanceAfter != null
+            ? '$inferredDistanceAfter ft'
+            : null,
+        landingSpot: discThrow.landingSpot != null
+            ? landingSpotToName[discThrow.landingSpot]
+            : null,
+        previousLandingSpot: inferredDistanceBefore == null
+            ? previousLandingSpot
+            : null,
+        isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
+        isOutOfBounds: isOutOfBounds,
+        isTeeShot: discThrow.purpose == ThrowPurpose.teeDrive,
+        animationDelay: animationDelay,
+        onEdit: onEdit,
+        onDragStateChange: onDragStateChange,
+        showDragHandle: showDragHandle,
+        visualIndex: throwIndex,
+      ),
+    );
+  }
+
+  /// V3 split layout - left-right split with number in gutter
+  Widget _buildV3SplitCard(BuildContext context) {
+    return Container(
+      key: measurementKey,
+      child: ThrowCardV3Split(
+        throwNumber: throwIndex + 1,
+        title: _getThrowTitle(),
+        accentColor: accentColor,
+        technique: discThrow.technique != null
+            ? throwTechniqueToName[discThrow.technique]
+            : null,
+        shotShape: discThrow.shotShape != null
+            ? shotShapeToName[discThrow.shotShape]
+            : null,
+        discName: discThrow.disc?.name ?? discThrow.discName,
+        distance: inferredDistanceBefore != null
+            ? '$inferredDistanceBefore ft'
+            : null,
+        distanceAfter: inferredDistanceAfter != null
+            ? '$inferredDistanceAfter ft'
+            : null,
+        landingSpot: discThrow.landingSpot != null
+            ? landingSpotToName[discThrow.landingSpot]
+            : null,
+        previousLandingSpot: inferredDistanceBefore == null
+            ? previousLandingSpot
+            : null,
+        isInBasket: discThrow.landingSpot == LandingSpot.inBasket,
+        isOutOfBounds: isOutOfBounds,
+        isTeeShot: discThrow.purpose == ThrowPurpose.teeDrive,
+        animationDelay: animationDelay,
+        onEdit: onEdit,
+        onDragStateChange: onDragStateChange,
+        showDragHandle: showDragHandle,
+        visualIndex: throwIndex,
       ),
     );
   }
