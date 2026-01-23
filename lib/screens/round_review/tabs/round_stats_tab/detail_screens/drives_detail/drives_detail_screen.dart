@@ -196,10 +196,16 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
     final birdieData = teeShotBirdieRates[throwType];
     final c1c2Data = circleInRegByType[throwType];
 
-    // Calculate average distance
+    // Calculate average distance and landing spot stats
     double? averageDistance;
+    int parkedCount = 0;
+    int fairwayCount = 0;
+    int totalTeeShotsByType = 0;
+
     final teeShots = allTeeShotsByType[throwType];
     if (teeShots != null && teeShots.isNotEmpty) {
+      totalTeeShotsByType = teeShots.length;
+
       final holesWithDistance = teeShots
           .where((entry) => entry.key.feet > 0)
           .toList();
@@ -210,7 +216,31 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
         );
         averageDistance = totalDistance / holesWithDistance.length;
       }
+
+      // Count parked and fairway landings
+      for (final entry in teeShots) {
+        final DiscThrow throw_ = entry.value;
+        final LandingSpot? landing = throw_.landingSpot;
+
+        if (landing == LandingSpot.parked) {
+          parkedCount++;
+        }
+
+        if (landing == LandingSpot.fairway ||
+            landing == LandingSpot.circle1 ||
+            landing == LandingSpot.circle2 ||
+            landing == LandingSpot.parked) {
+          fairwayCount++;
+        }
+      }
     }
+
+    final double parkedPct = totalTeeShotsByType > 0
+        ? (parkedCount / totalTeeShotsByType) * 100
+        : 0.0;
+    final double fairwayPct = totalTeeShotsByType > 0
+        ? (fairwayCount / totalTeeShotsByType) * 100
+        : 0.0;
 
     if (birdieData == null || c1c2Data == null) {
       return ThrowTypeStats(
@@ -225,6 +255,10 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
         c2Count: 0,
         c2Total: 0,
         averageDistance: averageDistance,
+        parkedPct: parkedPct,
+        parkedCount: parkedCount,
+        fairwayPct: fairwayPct,
+        fairwayCount: fairwayCount,
       );
     }
 
@@ -240,6 +274,10 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
       c2Count: (c1c2Data['c2Count'] ?? 0).toInt(),
       c2Total: (c1c2Data['totalAttempts'] ?? 0).toInt(),
       averageDistance: averageDistance,
+      parkedPct: parkedPct,
+      parkedCount: parkedCount,
+      fairwayPct: fairwayPct,
+      fairwayCount: fairwayCount,
     );
   }
 
@@ -579,10 +617,8 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
       padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
       children: addRunSpacing(
         [
-          SizedBox(
-            height: 240,
-            child: ThrowTypeRadarChart(throwTypes: allThrowTypes),
-          ),
+          ThrowTypeRadarChart.buildLegendCard(context, allThrowTypes),
+          ThrowTypeRadarChart(throwTypes: allThrowTypes),
           ThrowTypeListCard(
             throwTypes: allThrowTypes,
             onThrowTypeTap: (ThrowTypeStats stats) {

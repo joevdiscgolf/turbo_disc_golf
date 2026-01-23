@@ -125,8 +125,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
             SliverToBoxAdapter(child: _buildAngleDeviations(context)),
-            if (widget.analysis.topCoachingTips?.isNotEmpty ?? false)
-              SliverToBoxAdapter(child: _buildCoachingTips(context)),
             const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
           ],
         ),
@@ -563,12 +561,16 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     BuildContext context,
     CheckpointRecord checkpoint,
   ) {
+    // Get first 3 coaching tips
+    final List<String> topTips = checkpoint.coachingTips.take(3).toList();
+
     return GestureDetector(
       onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
@@ -580,18 +582,47 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  if (topTips.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ...topTips.map(
+                      (tip) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '• ',
+                              style: TextStyle(color: Color(0xFF137e66)),
+                            ),
+                            Expanded(
+                              child: Text(
+                                tip,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[700],
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Text(
-                    'View coaching tips',
+                    checkpoint.coachingTips.length > 3
+                        ? 'View all ${checkpoint.coachingTips.length} tips'
+                        : 'View details',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
+                      fontSize: 12,
+                      color: Colors.grey[500],
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
               ),
             ),
-            SeverityBadge(severity: checkpoint.deviationSeverity),
             const SizedBox(width: 8),
             Icon(
               Icons.chevron_right,
@@ -913,62 +944,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCoachingTips(BuildContext context) {
-    final List<String> tips = widget.analysis.topCoachingTips ?? [];
-    if (tips.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF137e66).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.tips_and_updates,
-                size: 20,
-                color: Color(0xFF137e66),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Top Tips',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: const Color(0xFF137e66),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...tips.map(
-            (tip) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('• ', style: TextStyle(color: Color(0xFF137e66))),
-                  Expanded(
-                    child: Text(
-                      tip,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[800]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1830,6 +1805,107 @@ class _FullscreenComparisonDialogState
               ),
       errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      ),
+    );
+  }
+}
+
+/// Content widget for checkpoint details education panel.
+class _CheckpointDetailsContent extends StatelessWidget {
+  const _CheckpointDetailsContent({required this.checkpoint});
+
+  final CheckpointRecord checkpoint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        // Severity indicator
+        Row(
+          children: [
+            Text(
+              'Form quality: ',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[700],
+              ),
+            ),
+            SeverityBadge(severity: checkpoint.deviationSeverity),
+          ],
+        ),
+        if (checkpoint.coachingTips.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Text(
+            'Coaching tips',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF137e66).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF137e66).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: checkpoint.coachingTips
+                  .map((tip) => _buildBulletPoint(context, tip))
+                  .toList(),
+            ),
+          ),
+        ],
+        if (checkpoint.coachingTips.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: Text(
+              'No specific coaching tips for this checkpoint.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBulletPoint(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '•',
+            style: TextStyle(
+              fontSize: 18,
+              height: 1.35,
+              color: Color(0xFF137e66),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[800],
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

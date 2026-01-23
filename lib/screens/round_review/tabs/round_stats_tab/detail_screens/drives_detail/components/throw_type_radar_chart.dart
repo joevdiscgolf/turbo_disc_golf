@@ -10,6 +10,73 @@ class ThrowTypeRadarChart extends StatefulWidget {
 
   @override
   State<ThrowTypeRadarChart> createState() => _ThrowTypeRadarChartState();
+
+  /// Build a legend card for display above the chart
+  static Widget buildLegendCard(BuildContext context, List<ThrowTypeStats> throwTypes) {
+    const List<Color> throwTypeColors = [
+      Color(0xFF137e66), // Forehand - Green
+      Color(0xFF2196F3), // Backhand - Blue
+      Color(0xFF9C27B0), // Overhand - Purple
+      Color(0xFFFF9800), // Thumber - Orange
+      Color(0xFFF44336), // Roller - Red
+      Color(0xFF009688), // Scoober - Teal
+      Color(0xFF3F51B5), // Tomahawk - Indigo
+      Color(0xFFFF5722), // Grenade - Deep Orange
+      Color(0xFF00BCD4), // Push Putt - Cyan
+      Color(0xFF9E9E9E), // Other - Grey
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: throwTypes.asMap().entries.map((entry) {
+            final int index = entry.key;
+            final ThrowTypeStats throwType = entry.value;
+            final Color color = throwTypeColors[index % throwTypeColors.length];
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  throwType.displayName,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
 }
 
 class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
@@ -52,10 +119,6 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
     }
   }
 
-  Color _getColorForThrowType(String throwType, int index) {
-    return _throwTypeColors[index % _throwTypeColors.length];
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.throwTypes.isEmpty) {
@@ -77,12 +140,12 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 180,
+              height: 320,
               child: CustomPaint(
                 painter: _RadarChartPainter(
                   throwTypes: widget.throwTypes,
@@ -103,8 +166,6 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            _buildLegend(context),
             if (_highlightedThrowType != null) ...[
               const SizedBox(height: 12),
               _buildHighlightedStats(context),
@@ -112,42 +173,6 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLegend(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: widget.throwTypes.asMap().entries.map((entry) {
-        final int index = entry.key;
-        final ThrowTypeStats throwType = entry.value;
-        final Color color = _getColorForThrowType(throwType.throwType, index);
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              throwType.displayName,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-                color: const Color(0xFF6B7280),
-              ),
-            ),
-          ],
-        );
-      }).toList(),
     );
   }
 
