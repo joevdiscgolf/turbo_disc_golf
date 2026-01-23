@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class MistakesBarChartCard extends StatelessWidget {
   final int totalMistakes;
@@ -43,6 +44,8 @@ class MistakesBarChartCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -57,23 +60,22 @@ class MistakesBarChartCard extends StatelessWidget {
                     ),
                   )
                 : _buildHeaderRow(context),
-            const SizedBox(height: 24),
-            ...nonZeroMistakes.asMap().entries.map((entry) {
-              final int index = entry.key;
-              final dynamic mistake = entry.value;
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index < nonZeroMistakes.length - 1 ? 16 : 0,
-                ),
-                child: _buildBarItem(
+            const SizedBox(height: 12),
+            ...addRunSpacing(
+              nonZeroMistakes.asMap().entries.map((entry) {
+                final int index = entry.key;
+                final dynamic mistake = entry.value;
+                return _buildBarItem(
                   context,
                   label: mistake.label,
                   count: mistake.count,
                   maxCount: maxCount,
                   color: _getColorForIndex(index),
-                ),
-              );
-            }),
+                );
+              }).toList(),
+              axis: Axis.vertical,
+              runSpacing: 12,
+            ),
           ],
         ),
       ),
@@ -87,16 +89,19 @@ class MistakesBarChartCard extends StatelessWidget {
       children: [
         Text(
           '$totalMistakes',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
             color: const Color(0xFFFF7A7A),
           ),
         ),
         const SizedBox(width: 8),
         Text(
           'mistakes',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 24,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -111,6 +116,7 @@ class MistakesBarChartCard extends StatelessWidget {
     required Color color,
   }) {
     final double barWidth = maxCount > 0 ? count / maxCount : 0.0;
+    const double barHeight = 5.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,49 +124,45 @@ class MistakesBarChartCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF616161),
+                ),
+              ),
             ),
             Text(
               '$count',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              style: TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Stack(
           children: [
             // Background bar
             Container(
-              height: 12,
+              height: barHeight,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(barHeight / 2),
               ),
             ),
             // Foreground bar (actual value)
             FractionallySizedBox(
               widthFactor: barWidth,
               child: Container(
-                height: 12,
+                height: barHeight,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: count > 0
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
+                  borderRadius: BorderRadius.circular(barHeight / 2),
                 ),
               ),
             ),

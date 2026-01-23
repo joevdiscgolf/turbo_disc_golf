@@ -11,6 +11,14 @@ class ThrowTypeStats {
     required this.c2Count,
     required this.c2Total,
     this.averageDistance,
+    this.parkedPct = 0.0,
+    this.parkedCount = 0,
+    this.fairwayPct = 0.0,
+    this.fairwayCount = 0,
+    this.obPct = 0.0,
+    this.obCount = 0,
+    this.averageThrowDistance,
+    this.shotShapeDistribution = const {},
   });
 
   final String throwType;
@@ -23,7 +31,17 @@ class ThrowTypeStats {
   final double c2InRegPct;
   final int c2Count;
   final int c2Total;
-  final double? averageDistance;
+  final double? averageDistance; // Hole distance (deprecated, use averageThrowDistance)
+
+  // NEW FIELDS FOR DRIVES DETAIL SCREEN V2
+  final double parkedPct; // Percentage of tee shots that landed parked
+  final int parkedCount; // Count of parked landings
+  final double fairwayPct; // Percentage of tee shots that hit fairway
+  final int fairwayCount; // Count of fairway hits
+  final double obPct; // Percentage of out of bounds
+  final int obCount; // Count of OB throws
+  final double? averageThrowDistance; // Actual throw distance (not hole distance)
+  final Map<String, int> shotShapeDistribution; // Map of shot shape name to count
 
   String get displayName {
     return throwType.substring(0, 1).toUpperCase() + throwType.substring(1);
@@ -32,8 +50,11 @@ class ThrowTypeStats {
   bool get hasSufficientData => totalHoles >= 3;
 
   String get distanceDisplay {
-    if (averageDistance == null) return 'N/A';
-    return '${averageDistance!.round()} ft';
+    if (averageThrowDistance != null) {
+      return '${averageThrowDistance!.round()} ft avg';
+    }
+    if (averageDistance != null) return '${averageDistance!.round()} ft avg';
+    return 'N/A';
   }
 }
 

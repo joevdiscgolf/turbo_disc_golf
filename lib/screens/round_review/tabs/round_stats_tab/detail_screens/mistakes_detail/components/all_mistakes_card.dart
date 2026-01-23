@@ -1,21 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class AllMistakesCard extends StatefulWidget {
   final List<Map<String, dynamic>> mistakeDetails;
 
-  const AllMistakesCard({
-    super.key,
-    required this.mistakeDetails,
-  });
+  const AllMistakesCard({super.key, required this.mistakeDetails});
 
   @override
   State<AllMistakesCard> createState() => _AllMistakesCardState();
 }
 
-class _AllMistakesCardState extends State<AllMistakesCard> {
+class _AllMistakesCardState extends State<AllMistakesCard>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,26 +39,23 @@ class _AllMistakesCardState extends State<AllMistakesCard> {
       return const SizedBox.shrink();
     }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Theme.of(context).colorScheme.surface,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          if (_isExpanded) _buildExpandedContent(),
+          ClipRect(
+            child: SizeTransition(
+              axisAlignment: -1,
+              sizeFactor: _animationController,
+              child: _buildExpandedContent(),
+            ),
+          ),
         ],
       ),
     );
@@ -55,18 +68,23 @@ class _AllMistakesCardState extends State<AllMistakesCard> {
         setState(() {
           _isExpanded = !_isExpanded;
         });
+        if (_isExpanded) {
+          _animationController.forward();
+        } else {
+          _animationController.reverse();
+        }
       },
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Expanded(
               child: Text(
-                'View all mistakes',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                'All mistakes',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             AnimatedRotation(
@@ -86,14 +104,18 @@ class _AllMistakesCardState extends State<AllMistakesCard> {
   Widget _buildExpandedContent() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
-          ...widget.mistakeDetails.map((mistake) {
-            return _buildMistakeListItem(context, mistake);
-          }),
+          const SizedBox(height: 8),
+          ...addRunSpacing(
+            widget.mistakeDetails.map((mistake) {
+              return _buildMistakeListItem(context, mistake);
+            }).toList(),
+            axis: Axis.vertical,
+            runSpacing: 8,
+          ),
         ],
       ),
     );
@@ -115,10 +137,15 @@ class _AllMistakesCardState extends State<AllMistakesCard> {
     }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: Theme.of(
-        context,
-      ).colorScheme.errorContainer.withValues(alpha: 0.2),
+      margin: EdgeInsets.zero,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: flattenedOverWhite(Color(0xFFFF7A7A), 0.5),
+          width: 1,
+        ),
+      ),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFFF7A7A),

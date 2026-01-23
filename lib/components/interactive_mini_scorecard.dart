@@ -15,59 +15,6 @@ class InteractiveMiniScorecard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        12,
-        12,
-        12,
-        8 + MediaQuery.of(context).viewPadding.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Section label (commented out to save vertical space)
-          // if (highlightedHoleRange != null)
-          //   _buildSectionLabel(highlightedHoleRange!),
-          //
-          // const SizedBox(height: 12),
-
-          // Scorecard rows
-          _buildScorecard(),
-        ],
-      ),
-    );
-  }
-
-  // Widget _buildSectionLabel(HoleRange range) {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-  //     decoration: BoxDecoration(
-  //       color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-  //       borderRadius: BorderRadius.circular(12),
-  //     ),
-  //     child: Text(
-  //       range.displayString,
-  //       style: const TextStyle(
-  //         fontSize: 13,
-  //         fontWeight: FontWeight.w600,
-  //         color: Color(0xFF6366F1),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  Widget _buildScorecard() {
     // Split into two rows (front/back)
     final int halfLength = (holes.length / 2).ceil();
     final List<DGHole> firstRow = holes.take(halfLength).toList();

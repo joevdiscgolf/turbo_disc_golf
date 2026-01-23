@@ -103,14 +103,6 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildCircularIndicator(
-                        key: ValueKey('driving_ob_${widget.round.id}'),
-                        heroTag: 'driving_ob',
-                        label: 'OB',
-                        percentage: hasData ? stats['obPct'] as double : 0.0,
-                        color: const Color(0xFFFF7A7A),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildCircularIndicator(
                         key: ValueKey('driving_parked_${widget.round.id}'),
                         heroTag: 'driving_parked',
                         label: 'Parked',
@@ -118,6 +110,14 @@ class _DrivingStatsCardState extends State<DrivingStatsCard>
                             ? stats['parkedPct'] as double
                             : 0.0,
                         color: const Color(0xFFFFA726),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildCircularIndicator(
+                        key: ValueKey('driving_ob_${widget.round.id}'),
+                        heroTag: 'driving_ob',
+                        label: 'OB',
+                        percentage: hasData ? stats['obPct'] as double : 0.0,
+                        color: const Color(0xFFFF7A7A),
                       ),
                     ],
                   ),

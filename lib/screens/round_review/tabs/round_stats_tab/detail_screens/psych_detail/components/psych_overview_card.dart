@@ -125,15 +125,8 @@ class PsychOverviewCard extends StatelessWidget {
         worstTransition?.bogeyOrWorsePercent ?? 0.0;
     final double bounceBackDrive = stats.bounceBackRate;
 
-    // Calculate dynamic mindset state
-    final MindsetState mindsetState = _calculateMindsetState(
-      hotStreakEnergy,
-      coldStreakControl,
-      bounceBackDrive,
-    );
-
     return Container(
-      padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 0),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
@@ -182,34 +175,6 @@ class PsychOverviewCard extends StatelessWidget {
             subtitle: 'Birdie after bogey rate',
             percentage: bounceBackDrive,
             color: const Color(0xFF66BB6A),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Summary line
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.1),
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Text(
-              mindsetState.summaryText,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w300,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
           ),
         ],
       ),

@@ -66,7 +66,7 @@ class MistakesDetailScreen extends StatelessWidget {
             // What Could Have Been section (V3 design)
             _buildWhatCouldHaveBeen(currentScore, mistakeTypes),
           ],
-          runSpacing: 8,
+          runSpacing: 12,
           axis: Axis.vertical,
         ),
       ),
@@ -105,10 +105,19 @@ class MistakesDetailScreen extends StatelessWidget {
       );
     }).toList();
 
-    return WhatCouldHaveBeenCard(
-      currentScore: _formatScore(currentScore),
-      potentialScore: _formatScore(currentScore - totalMistakeCount),
-      scenarios: scenarios,
+    return Card(
+      margin: EdgeInsets.zero,
+      color: Colors.white,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: WhatCouldHaveBeenCard(
+          currentScore: _formatScore(currentScore),
+          potentialScore: _formatScore(currentScore - totalMistakeCount),
+          scenarios: scenarios,
+        ),
+      ),
     );
   }
 
@@ -119,7 +128,9 @@ class MistakesDetailScreen extends StatelessWidget {
 
   String _getImprovementLabel(String mistakeLabel) {
     // Convert mistake labels to positive improvement actions (shortened)
-    if (mistakeLabel.toLowerCase().contains('missed c1x')) {
+    if (mistakeLabel.toLowerCase().contains('missed tap-in')) {
+      return 'Make tap-in putts';
+    } else if (mistakeLabel.toLowerCase().contains('missed c1x')) {
       return 'Make C1X putts';
     } else if (mistakeLabel.toLowerCase().contains('missed c2')) {
       return 'Make C2 putts';

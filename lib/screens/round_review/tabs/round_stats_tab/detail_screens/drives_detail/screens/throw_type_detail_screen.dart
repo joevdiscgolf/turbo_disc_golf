@@ -114,38 +114,12 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.disc_full,
-                    size: 28,
-                    color: Color(0xFF10B981),
-                  ),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Overall Performance',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: const Color(0xFF6B7280),
-                              fontWeight: FontWeight.w500,
-                            ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.overallStats.displayName,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ],
+                  child: Text(
+                    widget.overallStats.displayName,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 if (widget.overallStats.averageDistance != null) ...[
@@ -158,25 +132,13 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
                       color: const Color(0xFFF3F4F6),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.straighten,
-                          size: 14,
-                          color: Color(0xFF6B7280),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.overallStats.distanceDisplay,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: const Color(0xFF111827),
-                              ),
-                        ),
-                      ],
+                    child: Text(
+                      widget.overallStats.distanceDisplay,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: const Color(0xFF111827),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -192,7 +154,7 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
             const SizedBox(height: 20),
             _StatPill(
               icon: Icons.emoji_events_outlined,
-              label: 'Birdie Rate',
+              label: 'Birdie rate',
               value: '${widget.overallStats.birdieRate.toStringAsFixed(0)}%',
               detail:
                   '${widget.overallStats.birdieCount}/${widget.overallStats.totalHoles} holes',
@@ -357,14 +319,14 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
 /// Stat pill display for header card
 class _StatPill extends StatelessWidget {
   const _StatPill({
-    required this.icon,
+    this.icon,
     required this.label,
     required this.value,
     required this.detail,
     required this.color,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String label;
   final String value;
   final String detail;
@@ -386,8 +348,12 @@ class _StatPill extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 12),
+              if (icon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Icon(icon, size: 20, color: color),
+                ),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

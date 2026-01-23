@@ -157,7 +157,7 @@ class MistakesAnalysisService {
     if (purpose == ThrowPurpose.putt &&
         discThrow.distanceFeetBeforeThrow != null) {
       final distance = discThrow.distanceFeetBeforeThrow!;
-      if (distance <= 12) return 'Missed short putt';
+      if (distance <= 11) return 'Missed tap-in';
       if (distance <= 33) return 'Missed C1X putt';
       if (distance <= 66) return 'Missed C2 putt';
       return 'Missed long putt';
