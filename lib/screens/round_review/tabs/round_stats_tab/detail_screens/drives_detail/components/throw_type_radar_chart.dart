@@ -195,7 +195,7 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
           ),
           const SizedBox(height: 8),
           _StatRow(
-            label: 'Birdie Rate',
+            label: 'Birdie rate',
             value: '${stats.birdieRate.toStringAsFixed(0)}%',
             detail: '${stats.birdieCount}/${stats.totalHoles}',
           ),

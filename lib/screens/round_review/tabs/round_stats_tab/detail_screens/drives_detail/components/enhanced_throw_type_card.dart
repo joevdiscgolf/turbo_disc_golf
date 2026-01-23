@@ -64,7 +64,10 @@ class _EnhancedThrowTypeCardState extends State<EnhancedThrowTypeCard> {
             ),
             if (_isExpanded)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -99,24 +102,13 @@ class _EnhancedThrowTypeCardState extends State<EnhancedThrowTypeCard> {
               color: const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.straighten,
-                  size: 14,
-                  color: Color(0xFF6B7280),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${widget.throwType.averageThrowDistance!.round()} ft',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-              ],
+            child: Text(
+              '${widget.throwType.averageThrowDistance!.round()} ft',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: const Color(0xFF111827),
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -241,10 +233,7 @@ class _EnhancedThrowTypeCardState extends State<EnhancedThrowTypeCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          icon,
-          style: const TextStyle(fontSize: 16),
-        ),
+        Text(icon, style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 4),
         Text(
           isDistance
@@ -270,19 +259,14 @@ class _EnhancedThrowTypeCardState extends State<EnhancedThrowTypeCard> {
 
   /// Shot shape distribution as chips/pills
   Widget _buildShotShapeChips(BuildContext context) {
-    final shapes = widget.throwType.shotShapeDistribution.entries
-        .map((e) {
-          final total = widget.throwType.shotShapeDistribution.values
-              .fold<int>(0, (a, b) => a + b);
-          final pct =
-              total > 0 ? ((e.value.toDouble() / total) * 100) : 0.0;
-          return _ShapeChip(
-            label: e.key,
-            percentage: pct,
-            count: e.value,
-          );
-        })
-        .toList();
+    final shapes = widget.throwType.shotShapeDistribution.entries.map((e) {
+      final total = widget.throwType.shotShapeDistribution.values.fold<int>(
+        0,
+        (a, b) => a + b,
+      );
+      final pct = total > 0 ? ((e.value.toDouble() / total) * 100) : 0.0;
+      return _ShapeChip(label: e.key, percentage: pct, count: e.value);
+    }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,11 +280,7 @@ class _EnhancedThrowTypeCardState extends State<EnhancedThrowTypeCard> {
           ),
         ),
         const SizedBox(height: 6),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: shapes,
-        ),
+        Wrap(spacing: 6, runSpacing: 6, children: shapes),
       ],
     );
   }
