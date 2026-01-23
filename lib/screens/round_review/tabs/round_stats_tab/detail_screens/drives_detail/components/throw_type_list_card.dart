@@ -28,15 +28,6 @@ class ThrowTypeListCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        //   child: Text(
-        //     'Throw Type Performance',
-        //     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        //           fontWeight: FontWeight.w600,
-        //         ),
-        //   ),
-        // ),
         const SizedBox(height: 8),
         ...throwTypes.map((throwType) {
           String? badge;
@@ -135,25 +126,25 @@ class _ThrowTypeCard extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.disc_full,
-            size: 20,
-            color: Color(0xFF10B981),
-          ),
-        ),
-        const SizedBox(width: 12),
+        // Container(
+        //   padding: const EdgeInsets.all(8),
+        //   decoration: BoxDecoration(
+        //     color: const Color(0xFF10B981).withValues(alpha: 0.1),
+        //     borderRadius: BorderRadius.circular(8),
+        //   ),
+        //   child: const Icon(
+        //     Icons.disc_full,
+        //     size: 20,
+        //     color: Color(0xFF10B981),
+        //   ),
+        // ),
+        // const SizedBox(width: 12),
         Expanded(
           child: Text(
             throwType.displayName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
             ),
           ),
         ),

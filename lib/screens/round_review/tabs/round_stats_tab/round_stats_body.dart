@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 import 'package:turbo_disc_golf/components/stat_cards/driving_stats_card.dart'
     as compact;
 import 'package:turbo_disc_golf/components/stat_cards/mistakes_card.dart';
@@ -11,28 +12,27 @@ import 'package:turbo_disc_golf/components/stat_cards/putting_stats_card.dart'
     as compact;
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
-import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_kpi_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/score_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/discs_detail/discs_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/drives_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/mistakes_detail/mistakes_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/psych_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/putt_detail/putting_detail_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_kpi_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/score_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/skills_detail/skills_detail_screen.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
-import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
-import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
-import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class RoundStatsBody extends StatefulWidget {
   final DGRound round;
@@ -1677,10 +1677,11 @@ class _PodiumDiscsCard extends StatelessWidget {
                         const Expanded(child: SizedBox()),
                     ],
                   ),
-                const SizedBox(height: 12),
-                // Divider
-                Container(height: 1, color: SenseiColors.gray.shade50),
-                const SizedBox(height: 12),
+                Divider(
+                  height: 32,
+                  thickness: 1,
+                  color: SenseiColors.gray.shade100,
+                ),
                 // Summary Stats
                 if (rankedDiscs.isNotEmpty)
                   _BagSummaryPanel(
@@ -1923,14 +1924,14 @@ class _BagSummaryPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$uniqueDiscs discs used',
-          style: const TextStyle(fontSize: 12, color: Colors.black87),
+          '$uniqueDiscs ${uniqueDiscs == 1 ? 'disc' : 'discs'} used',
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
         ),
         const SizedBox(height: 4),
         Text(
           'Most used: $discsText ($topDiscThrows $throwsLabel)',
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             color: Color(0xFF137e66),
             fontWeight: FontWeight.w600,
           ),
@@ -1949,221 +1950,8 @@ class _MentalGameCard extends StatelessWidget {
 
   const _MentalGameCard({required this.round, this.onTap});
 
-  String _getHotStreakInsight(double percentage) {
-    if (percentage > 75) {
-      return 'You thrive on momentum!';
-    } else if (percentage > 50) {
-      return 'Good momentum player.';
-    } else if (percentage > 25) {
-      return 'Moderate momentum.';
-    } else {
-      return 'Build momentum together.';
-    }
-  }
-
-  String _getTiltMeterInsight(double percentage) {
-    if (percentage == 0) {
-      return 'Ice in your veins 🧊';
-    } else if (percentage < 20) {
-      return 'Excellent composure!';
-    } else if (percentage < 40) {
-      return 'Moderate tilt control.';
-    } else {
-      return 'High tilt. Take a breath.';
-    }
-  }
-
-  String _getBounceBackInsight(double percentage) {
-    if (percentage > 60) {
-      return 'Excellent recovery!';
-    } else if (percentage > 40) {
-      return 'Solid bounce-back.';
-    } else if (percentage > 20) {
-      return 'Room to grow.';
-    } else {
-      return 'Practice recovering.';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final bool useRedesign = locator
-        .get<FeatureFlagService>()
-        .useRedesignedMentalGameCard;
-
-    if (useRedesign) {
-      return _buildRedesignedCard(context);
-    } else {
-      return _buildOriginalCard(context);
-    }
-  }
-
-  Widget _buildOriginalCard(BuildContext context) {
-    final PsychAnalysisService psychService = locator
-        .get<PsychAnalysisService>();
-    final psychStats = psychService.getPsychStats(round);
-
-    // Check if we have enough data
-    final bool hasData = psychStats.mentalProfile != 'Insufficient Data';
-
-    // Get key transition stats
-    final ScoringTransition? birdieTransition =
-        psychStats.transitionMatrix['Birdie'];
-    final ScoringTransition? bogeyTransition =
-        psychStats.transitionMatrix['Bogey'];
-
-    final double hotStreakEnergy = birdieTransition?.toBirdiePercent ?? 0.0;
-    final double tiltMeter = bogeyTransition?.bogeyOrWorsePercent ?? 0.0;
-    final double bounceBack = psychStats.bounceBackRate;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: defaultCardElevation,
-      shadowColor: defaultCardShadowColor,
-      shape: defaultCardShape(),
-      child: InkWell(
-        onTap: onTap != null
-            ? () {
-                HapticFeedback.lightImpact();
-                onTap!();
-              }
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    '🧠 Mental game',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (!hasData)
-                const Text(
-                  'Play at least 3 holes to see your mental game analysis.',
-                  style: TextStyle(color: Colors.grey),
-                )
-              else ...[
-                _buildCompactMoodRow(
-                  context,
-                  emoji: '🔥',
-                  label: 'Hot Streak',
-                  percentage: hotStreakEnergy,
-                  insight: _getHotStreakInsight(hotStreakEnergy),
-                  color: const Color(0xFFFF6B35),
-                ),
-                const SizedBox(height: 8),
-                _buildCompactMoodRow(
-                  context,
-                  emoji: '😡',
-                  label: 'Tilt Meter',
-                  percentage: tiltMeter,
-                  insight: _getTiltMeterInsight(tiltMeter),
-                  color: const Color(0xFFD32F2F),
-                ),
-                const SizedBox(height: 8),
-                _buildCompactMoodRow(
-                  context,
-                  emoji: '💪',
-                  label: 'Bounce-Back',
-                  percentage: bounceBack,
-                  insight: _getBounceBackInsight(bounceBack),
-                  color: const Color(0xFF4CAF50),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactMoodRow(
-    BuildContext context, {
-    required String emoji,
-    required String label,
-    required double percentage,
-    required String insight,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ),
-              Text(
-                '${percentage.toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Progress bar
-          Stack(
-            children: [
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              FractionallySizedBox(
-                widthFactor: percentage / 100,
-                child: Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '➜ $insight',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
-              fontStyle: FontStyle.italic,
-              fontSize: 11,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRedesignedCard(BuildContext context) {
     final PsychAnalysisService psychService = locator
         .get<PsychAnalysisService>();
     final PsychStats psychStats = psychService.getPsychStats(round);
@@ -2237,13 +2025,10 @@ class _MentalGameCard extends StatelessWidget {
                   color: const Color(0xFF66BB6A),
                 ),
                 // Divider before flow state
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: Colors.grey.withValues(alpha: 0.2),
-                  ),
+                Divider(
+                  height: 32,
+                  thickness: 1,
+                  color: SenseiColors.gray.shade100,
                 ),
                 // Flow state section
                 _buildFlowStateSection(context, psychStats),

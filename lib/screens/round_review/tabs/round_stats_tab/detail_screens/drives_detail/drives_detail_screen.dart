@@ -478,15 +478,6 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen> {
               );
             },
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Text(
-              'Throw Type Performance',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
           ViewModeToggle(
             selectedMode: _viewMode,
             onModeChanged: (DriveViewMode mode) {
