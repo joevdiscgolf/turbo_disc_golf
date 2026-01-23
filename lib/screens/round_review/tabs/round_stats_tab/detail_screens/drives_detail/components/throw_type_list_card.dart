@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/throw_type_stats.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class ThrowTypeListCard extends StatelessWidget {
   const ThrowTypeListCard({
@@ -17,52 +18,27 @@ class ThrowTypeListCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // Find best and worst performers for badges
-    final ThrowTypeStats? bestType = throwTypes.isNotEmpty
-        ? throwTypes.first
-        : null;
-    final ThrowTypeStats? worstType = throwTypes.length > 1
-        ? throwTypes.last
-        : null;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        ...throwTypes.map((throwType) {
-          String? badge;
-          if (throwTypes.length > 1) {
-            if (throwType == bestType) {
-              badge = 'Best';
-            } else if (throwType == worstType) {
-              badge = 'Worst';
-            }
-          }
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _ThrowTypeCard(
-              throwType: throwType,
-              badge: badge,
-              onTap: () => onThrowTypeTap(throwType),
-            ),
+      children: addRunSpacing(
+        throwTypes.map((throwType) {
+          return _ThrowTypeCard(
+            throwType: throwType,
+            onTap: () => onThrowTypeTap(throwType),
           );
-        }),
-      ],
+        }).toList(),
+        runSpacing: 8,
+        axis: Axis.vertical,
+      ),
     );
   }
 }
 
 /// Individual throw type card with compact visual design
 class _ThrowTypeCard extends StatelessWidget {
-  const _ThrowTypeCard({
-    required this.throwType,
-    this.badge,
-    required this.onTap,
-  });
+  const _ThrowTypeCard({required this.throwType, required this.onTap});
 
   final ThrowTypeStats throwType;
-  final String? badge;
   final VoidCallback onTap;
 
   @override
@@ -75,13 +51,7 @@ class _ThrowTypeCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: defaultCardBoxShadow(),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,49 +125,17 @@ class _ThrowTypeCard extends StatelessWidget {
               color: const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.straighten,
-                  size: 14,
-                  color: Color(0xFF6B7280),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  throwType.distanceDisplay,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-              ],
+            child: Text(
+              throwType.distanceDisplay,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: const Color(0xFF111827),
+              ),
             ),
           ),
           const SizedBox(width: 8),
         ],
-        if (badge != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: badge == 'Best'
-                  ? const Color(0xFF10B981).withValues(alpha: 0.1)
-                  : const Color(0xFFEF4444).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              badge!,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-                color: badge == 'Best'
-                    ? const Color(0xFF10B981)
-                    : const Color(0xFFEF4444),
-              ),
-            ),
-          ),
-        const SizedBox(width: 8),
         Icon(
           Icons.chevron_right,
           size: 20,

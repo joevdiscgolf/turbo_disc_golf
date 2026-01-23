@@ -28,13 +28,6 @@ class WhatCouldHaveBeenCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Divider
-        Container(
-          height: 1,
-          color: SenseiColors.gray[200],
-          margin: const EdgeInsets.symmetric(vertical: 24),
-        ),
-
         // Section header
         Row(
           children: [

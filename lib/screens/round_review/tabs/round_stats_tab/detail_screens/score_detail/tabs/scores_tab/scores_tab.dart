@@ -29,7 +29,9 @@ class ScoresTab extends StatelessWidget {
           _buildPerformanceByPar(context, statsService),
 
           // Missing throw details card (controlled by feature flag)
-          if (locator.get<FeatureFlagService>().showMissingThrowDetailsInScoreDetail)
+          if (locator
+              .get<FeatureFlagService>()
+              .showMissingThrowDetailsInScoreDetail)
             _buildMissingDetailsCard(),
 
           Padding(
@@ -40,7 +42,7 @@ class ScoresTab extends StatelessWidget {
           _buildPerformanceByHoleType(context, statsService),
           _buildPerformanceByFairwayWidth(context, statsService),
         ],
-        runSpacing: 8,
+        runSpacing: 12,
         axis: Axis.vertical,
       ),
     );

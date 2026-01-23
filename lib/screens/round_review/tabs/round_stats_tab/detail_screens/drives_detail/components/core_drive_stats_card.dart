@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class CoreDriveStatsCard extends StatefulWidget {
   final dynamic coreStats;
@@ -33,10 +34,15 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Row(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+        boxShadow: defaultCardBoxShadow(),
+      ),
+      child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
@@ -95,28 +101,6 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                   ),
             locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
-                    tag: 'driving_ob',
-                    child: CircularStatIndicator(
-                      label: 'OB',
-                      percentage: widget.coreStats.obPct,
-                      color: const Color(0xFFFF7A7A),
-                      size: 70,
-                      shouldAnimate: true,
-                      shouldGlow: true,
-                      onPressed: widget.onOBPressed,
-                    ),
-                  )
-                : CircularStatIndicator(
-                    label: 'OB',
-                    percentage: widget.coreStats.obPct,
-                    color: const Color(0xFFFF7A7A),
-                    size: 70,
-                    shouldAnimate: true,
-                    shouldGlow: true,
-                    onPressed: widget.onOBPressed,
-                  ),
-            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
-                ? Hero(
                     tag: 'driving_parked',
                     child: CircularStatIndicator(
                       label: 'Parked',
@@ -137,9 +121,30 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                     shouldGlow: true,
                     onPressed: widget.onParkedPressed,
                   ),
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'driving_ob',
+                    child: CircularStatIndicator(
+                      label: 'OB',
+                      percentage: widget.coreStats.obPct,
+                      color: const Color(0xFFFF7A7A),
+                      size: 70,
+                      shouldAnimate: true,
+                      shouldGlow: true,
+                      onPressed: widget.onOBPressed,
+                    ),
+                  )
+                : CircularStatIndicator(
+                    label: 'OB',
+                    percentage: widget.coreStats.obPct,
+                    color: const Color(0xFFFF7A7A),
+                    size: 70,
+                    shouldAnimate: true,
+                    shouldGlow: true,
+                    onPressed: widget.onOBPressed,
+                  ),
           ],
         ),
-      ),
     );
   }
 }

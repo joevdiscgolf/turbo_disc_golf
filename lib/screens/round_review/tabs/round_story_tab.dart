@@ -4,14 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/banners/regenerate_prompt_banner.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
-import 'package:turbo_disc_golf/components/interactive_mini_scorecard.dart';
+import 'package:turbo_disc_golf/components/mini_scorecard_with_share.dart';
 import 'package:turbo_disc_golf/components/story/story_highlights_share_card.dart';
 import 'package:turbo_disc_golf/components/story/story_poster_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
-import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
@@ -279,7 +278,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
                 ),
               ),
               // Fixed mini scorecard (only for V3 stories)
-              if (isV3Story) _buildMiniScorecard(story!),
+              if (isV3Story) _buildMiniScorecardWithShare(story!),
               // Fixed bottom action bar (hidden when testing V3)
               if (!locator.get<FeatureFlagService>().storyV3Enabled)
                 _buildShareActionBar(),
@@ -366,20 +365,16 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     );
   }
 
-  Widget _buildMiniScorecard(AIContent story) {
-    return ValueListenableBuilder<int?>(
-      valueListenable: _activeSectionIndex,
-      builder: (context, activeSectionIndex, child) {
-        final HoleRange? activeRange =
-            activeSectionIndex != null && story.structuredContentV3 != null
-            ? story.structuredContentV3!.sections[activeSectionIndex].holeRange
-            : null;
+  Widget _buildMiniScorecardWithShare(AIContent story) {
+    final bool showShareButton =
+        locator.get<FeatureFlagService>().showStoryShareButton;
 
-        return InteractiveMiniScorecard(
-          holes: _currentRound.holes,
-          highlightedHoleRange: activeRange,
-        );
-      },
+    return MiniScorecardWithShare(
+      holes: _currentRound.holes,
+      highlightedHoleRangeNotifier: _activeSectionIndex,
+      story: story,
+      showShareButton: showShareButton,
+      onSharePressed: _showShareCardPreview,
     );
   }
 

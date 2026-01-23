@@ -41,17 +41,6 @@ class MistakesCard extends StatelessWidget {
     return colors[index % colors.length];
   }
 
-  String _formatScore(int score) {
-    if (score == 0) return 'E';
-    return score > 0 ? '+$score' : '$score';
-  }
-
-  Color _getScoreColor(int score) {
-    if (score < 0) return const Color(0xFF137e66); // Green for under par
-    if (score > 0) return const Color(0xFFFF7A7A); // Red for over par
-    return Colors.grey; // Even par
-  }
-
   @override
   Widget build(BuildContext context) {
     final MistakesAnalysisService mistakesService = locator
@@ -102,112 +91,68 @@ class MistakesCard extends StatelessWidget {
         if (showHeader) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                '⚠️ Mistakes',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            children: [
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$totalMistakes ',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFFF7A7A),
+                      ),
+                    ),
+                    TextSpan(
+                      text: totalMistakes == 1 ? 'mistake' : 'mistakes',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Icon(Icons.chevron_right, color: Colors.black, size: 20),
             ],
           ),
           const SizedBox(height: 16),
         ],
-        if (totalMistakes == 0)
-          Text(
-            showHeader
-                ? 'No mistakes detected - perfect round!'
-                : 'Perfect round - no mistakes!',
-            style: const TextStyle(color: Colors.grey),
-          )
-        else ...[
-          _buildTotalCount(context, totalMistakes),
+        // if (totalMistakes == 0)
+        // Text(
+        //   showHeader
+        //       ? 'No mistakes detected - perfect round!'
+        //       : 'Perfect round - no mistakes!',
+        //   style: const TextStyle(color: Colors.grey),
+        // )
+        // else
+        ...[
+          // _buildTotalCount(context, totalMistakes),
           if (topMistakes.isNotEmpty) ...[
-            SizedBox(height: compact ? 10 : 16),
-            ...topMistakes.asMap().entries.map((entry) {
-              final int index = entry.key;
-              final dynamic mistake = entry.value;
-              final int maxCount = topMistakes.first.count;
+            // SizedBox(height: compact ? 10 : 16),
+            ...addRunSpacing(
+              topMistakes.asMap().entries.map((entry) {
+                final int index = entry.key;
+                final dynamic mistake = entry.value;
+                final int maxCount = topMistakes.first.count;
 
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index < topMistakes.length - 1
-                      ? (compact ? 8 : 12)
-                      : 0,
-                ),
-                child: _buildBarItem(
+                return _buildBarItem(
                   context,
                   label: mistake.label,
                   count: mistake.count,
                   maxCount: maxCount,
                   color: _getColorForIndex(index),
-                ),
-              );
-            }),
+                );
+              }).toList(),
+              axis: Axis.vertical,
+              runSpacing: compact ? 8 : 12,
+            ),
           ],
         ],
       ],
     );
   }
-
-  Widget _buildTotalCount(BuildContext context, int totalMistakes) {
-    final int currentScore = round.getRelativeToPar();
-    final int potentialScore = currentScore - totalMistakes;
-    final String potentialScoreFormatted = _formatScore(potentialScore);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Mistakes count on the left
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              '$totalMistakes',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFFF7A7A),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              totalMistakes == 1 ? 'mistake' : 'mistakes',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-            ),
-          ],
-        ),
-        // Arrow fill in the middle
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: CustomPaint(
-              size: const Size(double.infinity, 20),
-              painter: _ArrowLinePainter(),
-            ),
-          ),
-        ),
-        // Mistake-free on the right
-        Row(
-          children: [
-            Text(
-              'Mistake-free: ',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            Text(
-              potentialScoreFormatted,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: _getScoreColor(potentialScore),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
 
   Widget _buildBarItem(
     BuildContext context, {
@@ -217,7 +162,7 @@ class MistakesCard extends StatelessWidget {
     required Color color,
   }) {
     final double barWidth = maxCount > 0 ? count / maxCount : 0.0;
-    final double barHeight = compact ? 8.0 : 10.0;
+    const double barHeight = 5.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,37 +173,31 @@ class MistakesCard extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: compact
-                    ? Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      )
-                    : Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF616161),
+                ),
               ),
             ),
             Text(
               '$count',
-              style: compact
-                  ? Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    )
-                  : Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ),
-        SizedBox(height: compact ? 4 : 6),
+        const SizedBox(height: 4),
         Stack(
           children: [
             // Background bar
             Container(
               height: barHeight,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
+                color: color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(barHeight / 2),
               ),
             ),
@@ -270,15 +209,6 @@ class MistakesCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(barHeight / 2),
-                  boxShadow: count > 0
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
                 ),
               ),
             ),
@@ -287,40 +217,4 @@ class MistakesCard extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Custom painter for arrow line separator
-class _ArrowLinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.grey[400]!
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-
-    final double lineY = size.height / 2;
-    const double arrowSize = 6;
-
-    // Draw line
-    canvas.drawLine(
-      Offset(0, lineY),
-      Offset(size.width - arrowSize, lineY),
-      paint,
-    );
-
-    // Draw arrowhead
-    canvas.drawLine(
-      Offset(size.width - arrowSize, lineY),
-      Offset(size.width - arrowSize * 1.5, lineY - arrowSize / 2),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width - arrowSize, lineY),
-      Offset(size.width - arrowSize * 1.5, lineY + arrowSize / 2),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

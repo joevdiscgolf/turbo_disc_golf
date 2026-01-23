@@ -1486,6 +1486,604 @@ class RoundStatisticsService {
     return opportunities.first;
   }
 
+  // ===== Throw Distance & Landing Spot Analysis (for Drives Detail Screen V2) =====
+
+  /// Calculate actual throw distance from before/after measurements
+  /// Returns null if data is missing or invalid
+  int? calculateThrowDistance(DiscThrow discThrow) {
+    final beforeDistance = discThrow.distanceFeetBeforeThrow;
+    final afterDistance = discThrow.distanceFeetAfterThrow;
+
+    if (beforeDistance == null || afterDistance == null) {
+      return null;
+    }
+
+    final distance = beforeDistance - afterDistance;
+    // Only return positive distances
+    return distance > 0 ? distance : null;
+  }
+
+  /// Get throw distance statistics for all tee shots
+  /// Returns: {min, max, average, count}
+  Map<String, dynamic> getThrowDistanceStats() {
+    final List<int> distances = [];
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive) {
+        final distance = calculateThrowDistance(teeShot);
+        if (distance != null) {
+          distances.add(distance);
+        }
+      }
+    }
+
+    if (distances.isEmpty) {
+      return {
+        'min': 0,
+        'max': 0,
+        'average': 0.0,
+        'count': 0,
+        'distances': [],
+      };
+    }
+
+    distances.sort();
+    final sum = distances.reduce((a, b) => a + b);
+    final average = sum / distances.length;
+
+    return {
+      'min': distances.first,
+      'max': distances.last,
+      'average': average,
+      'count': distances.length,
+      'distances': distances,
+    };
+  }
+
+  /// Get throw distance statistics grouped by throw type (technique)
+  Map<String, Map<String, dynamic>> getThrowDistanceStatsByType() {
+    final Map<String, List<int>> distancesByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive && teeShot.technique != null) {
+        final distance = calculateThrowDistance(teeShot);
+        if (distance != null) {
+          final throwType = teeShot.technique!.name;
+          distancesByType.putIfAbsent(throwType, () => []);
+          distancesByType[throwType]!.add(distance);
+        }
+      }
+    }
+
+    return distancesByType.map((throwType, distances) {
+      if (distances.isEmpty) {
+        return MapEntry(throwType, {
+          'min': 0,
+          'max': 0,
+          'average': 0.0,
+          'count': 0,
+        });
+      }
+
+      distances.sort();
+      final sum = distances.reduce((a, b) => a + b);
+      final average = sum / distances.length;
+
+      return MapEntry(throwType, {
+        'min': distances.first,
+        'max': distances.last,
+        'average': average,
+        'count': distances.length,
+      });
+    });
+  }
+
+  /// Get landing spot distribution for all tee shots
+  /// Returns count and percentage for each landing spot
+  Map<String, Map<String, dynamic>> getLandingSpotDistribution() {
+    final Map<LandingSpot, int> spotCounts = {};
+    int totalTeeShots = 0;
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive) {
+        totalTeeShots++;
+        final spot = teeShot.landingSpot;
+        if (spot != null) {
+          spotCounts[spot] = (spotCounts[spot] ?? 0) + 1;
+        }
+      }
+    }
+
+    return spotCounts.map((spot, count) {
+      final percentage = totalTeeShots > 0 ? (count / totalTeeShots) * 100 : 0.0;
+      return MapEntry(
+        spot.name,
+        {
+          'count': count,
+          'percentage': percentage,
+          'total': totalTeeShots,
+        },
+      );
+    });
+  }
+
+  /// Get landing spot distribution grouped by par
+  /// Returns: {par -> {spot -> {count, percentage, total}}}
+  Map<int, Map<String, Map<String, dynamic>>> getLandingSpotDistributionByPar() {
+    final Map<int, Map<LandingSpot, int>> spotCountsByPar = {};
+    final Map<int, int> totalsByPar = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive) {
+        final par = hole.par;
+        totalsByPar[par] = (totalsByPar[par] ?? 0) + 1;
+
+        final spot = teeShot.landingSpot;
+        if (spot != null) {
+          spotCountsByPar.putIfAbsent(par, () => {});
+          spotCountsByPar[par]![spot] =
+              (spotCountsByPar[par]![spot] ?? 0) + 1;
+        }
+      }
+    }
+
+    // Convert to output format
+    final result = <int, Map<String, Map<String, dynamic>>>{};
+    for (var par in totalsByPar.keys) {
+      final spotCounts = spotCountsByPar[par] ?? {};
+      final parTotal = totalsByPar[par]!;
+
+      result[par] = spotCounts.map((spot, count) {
+        final percentage = parTotal > 0 ? (count / parTotal) * 100 : 0.0;
+        return MapEntry(
+          spot.name,
+          {
+            'count': count,
+            'percentage': percentage,
+            'total': parTotal,
+          },
+        );
+      });
+    }
+
+    return result;
+  }
+
+  /// Get distance bucket distribution
+  /// Buckets: <200, 200-250, 250-300, 300-350, 350-400, 400+
+  Map<String, Map<String, dynamic>> getDistanceBucketDistribution() {
+    final Map<String, int> buckets = {
+      '<200 ft': 0,
+      '200-250 ft': 0,
+      '250-300 ft': 0,
+      '300-350 ft': 0,
+      '350-400 ft': 0,
+      '400+ ft': 0,
+    };
+    int totalThrows = 0;
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive) {
+        final distance = calculateThrowDistance(teeShot);
+        if (distance != null) {
+          totalThrows++;
+
+          if (distance < 200) {
+            buckets['<200 ft'] = buckets['<200 ft']! + 1;
+          } else if (distance < 250) {
+            buckets['200-250 ft'] = buckets['200-250 ft']! + 1;
+          } else if (distance < 300) {
+            buckets['250-300 ft'] = buckets['250-300 ft']! + 1;
+          } else if (distance < 350) {
+            buckets['300-350 ft'] = buckets['300-350 ft']! + 1;
+          } else if (distance < 400) {
+            buckets['350-400 ft'] = buckets['350-400 ft']! + 1;
+          } else {
+            buckets['400+ ft'] = buckets['400+ ft']! + 1;
+          }
+        }
+      }
+    }
+
+    return buckets.map((bucket, count) {
+      final percentage = totalThrows > 0 ? (count / totalThrows) * 100 : 0.0;
+      return MapEntry(
+        bucket,
+        {
+          'count': count,
+          'percentage': percentage,
+          'total': totalThrows,
+        },
+      );
+    });
+  }
+
+  /// Get shot shape distribution for a specific throw type
+  /// Returns count and percentage for each shot shape
+  Map<String, Map<String, dynamic>> getShotShapeDistributionByType(
+    String throwType,
+  ) {
+    final Map<ShotShape, int> shapeCounts = {};
+    int totalShots = 0;
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive &&
+          teeShot.technique?.name == throwType) {
+        totalShots++;
+        final shape = teeShot.shotShape;
+        if (shape != null) {
+          shapeCounts[shape] = (shapeCounts[shape] ?? 0) + 1;
+        }
+      }
+    }
+
+    return shapeCounts.map((shape, count) {
+      final percentage = totalShots > 0 ? (count / totalShots) * 100 : 0.0;
+      return MapEntry(
+        shape.name,
+        {
+          'count': count,
+          'percentage': percentage,
+          'total': totalShots,
+        },
+      );
+    });
+  }
+
+  /// Get parked percentage by throw type
+  Map<String, Map<String, dynamic>> getParkedPercentageByThrowType() {
+    final Map<String, int> parkedByType = {};
+    final Map<String, int> totalByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive && teeShot.technique != null) {
+        final throwType = teeShot.technique!.name;
+        totalByType[throwType] = (totalByType[throwType] ?? 0) + 1;
+
+        if (teeShot.landingSpot == LandingSpot.parked) {
+          parkedByType[throwType] = (parkedByType[throwType] ?? 0) + 1;
+        }
+      }
+    }
+
+    return totalByType.map((throwType, total) {
+      final parked = parkedByType[throwType] ?? 0;
+      final percentage = total > 0 ? (parked / total) * 100 : 0.0;
+      return MapEntry(
+        throwType,
+        {
+          'count': parked,
+          'percentage': percentage,
+          'total': total,
+        },
+      );
+    });
+  }
+
+  /// Get fairway percentage by throw type
+  /// Fairway: fairway, C1, C2, parked, or in basket
+  Map<String, Map<String, dynamic>> getFairwayPercentageByThrowType() {
+    final Map<String, int> fairwayByType = {};
+    final Map<String, int> totalByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive && teeShot.technique != null) {
+        final throwType = teeShot.technique!.name;
+        totalByType[throwType] = (totalByType[throwType] ?? 0) + 1;
+
+        if (teeShot.landingSpot == LandingSpot.fairway ||
+            teeShot.landingSpot == LandingSpot.circle1 ||
+            teeShot.landingSpot == LandingSpot.circle2 ||
+            teeShot.landingSpot == LandingSpot.parked ||
+            teeShot.landingSpot == LandingSpot.inBasket) {
+          fairwayByType[throwType] = (fairwayByType[throwType] ?? 0) + 1;
+        }
+      }
+    }
+
+    return totalByType.map((throwType, total) {
+      final fairway = fairwayByType[throwType] ?? 0;
+      final percentage = total > 0 ? (fairway / total) * 100 : 0.0;
+      return MapEntry(
+        throwType,
+        {
+          'count': fairway,
+          'percentage': percentage,
+          'total': total,
+        },
+      );
+    });
+  }
+
+  /// Get OB percentage by throw type
+  Map<String, Map<String, dynamic>> getOBPercentageByThrowType() {
+    final Map<String, int> obByType = {};
+    final Map<String, int> totalByType = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive && teeShot.technique != null) {
+        final throwType = teeShot.technique!.name;
+        totalByType[throwType] = (totalByType[throwType] ?? 0) + 1;
+
+        if (teeShot.landingSpot == LandingSpot.outOfBounds) {
+          obByType[throwType] = (obByType[throwType] ?? 0) + 1;
+        }
+      }
+    }
+
+    return totalByType.map((throwType, total) {
+      final ob = obByType[throwType] ?? 0;
+      final percentage = total > 0 ? (ob / total) * 100 : 0.0;
+      return MapEntry(
+        throwType,
+        {
+          'count': ob,
+          'percentage': percentage,
+          'total': total,
+        },
+      );
+    });
+  }
+
+  /// Get performance breakdown by shot shape for a throw type
+  /// Returns birdie rate and C1 rate by shape
+  Map<String, Map<String, dynamic>> getPerformanceBreakdownByShape(
+    String throwType,
+  ) {
+    final Map<ShotShape, int> birdiesByShape = {};
+    final Map<ShotShape, int> c1ByShape = {};
+    final Map<ShotShape, int> totalByShape = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive &&
+          teeShot.technique?.name == throwType) {
+        final shape = teeShot.shotShape ?? ShotShape.other;
+        totalByShape[shape] = (totalByShape[shape] ?? 0) + 1;
+
+        // Check birdie
+        if (hole.relativeHoleScore < 0) {
+          birdiesByShape[shape] = (birdiesByShape[shape] ?? 0) + 1;
+        }
+
+        // Check C1 in regulation
+        final regulationStrokes = hole.par - 2;
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1ByShape[shape] = (c1ByShape[shape] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByShape.map((shape, total) {
+      final birdies = birdiesByShape[shape] ?? 0;
+      final c1s = c1ByShape[shape] ?? 0;
+      return MapEntry(
+        shape.name,
+        {
+          'birdieRate': total > 0 ? (birdies / total) * 100 : 0.0,
+          'birdieCount': birdies,
+          'c1Rate': total > 0 ? (c1s / total) * 100 : 0.0,
+          'c1Count': c1s,
+          'total': total,
+        },
+      );
+    });
+  }
+
+  /// Get performance breakdown by power level for a throw type
+  Map<String, Map<String, dynamic>> getPerformanceBreakdownByPower(
+    String throwType,
+  ) {
+    final Map<String, int> birdiesByPower = {};
+    final Map<String, int> c1ByPower = {};
+    final Map<String, int> totalByPower = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive &&
+          teeShot.technique?.name == throwType) {
+        final power = teeShot.power?.name ?? 'unknown';
+        totalByPower[power] = (totalByPower[power] ?? 0) + 1;
+
+        // Check birdie
+        if (hole.relativeHoleScore < 0) {
+          birdiesByPower[power] = (birdiesByPower[power] ?? 0) + 1;
+        }
+
+        // Check C1 in regulation
+        final regulationStrokes = hole.par - 2;
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1ByPower[power] = (c1ByPower[power] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByPower.map((power, total) {
+      final birdies = birdiesByPower[power] ?? 0;
+      final c1s = c1ByPower[power] ?? 0;
+      return MapEntry(
+        power,
+        {
+          'birdieRate': total > 0 ? (birdies / total) * 100 : 0.0,
+          'birdieCount': birdies,
+          'c1Rate': total > 0 ? (c1s / total) * 100 : 0.0,
+          'c1Count': c1s,
+          'total': total,
+        },
+      );
+    });
+  }
+
+  /// Get performance breakdown by hole distance range for a throw type
+  Map<String, Map<String, dynamic>> getPerformanceBreakdownByDistance(
+    String throwType,
+  ) {
+    final Map<String, int> birdiesByDistance = {
+      '<300 ft': 0,
+      '300-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
+    };
+    final Map<String, int> c1ByDistance = {
+      '<300 ft': 0,
+      '300-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
+    };
+    final Map<String, int> totalByDistance = {
+      '<300 ft': 0,
+      '300-400 ft': 0,
+      '400-550 ft': 0,
+      '550+ ft': 0,
+    };
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive &&
+          teeShot.technique?.name == throwType) {
+        final holeDistance = hole.feet;
+        late String bucket;
+
+        if (holeDistance < 300) {
+          bucket = '<300 ft';
+        } else if (holeDistance < 400) {
+          bucket = '300-400 ft';
+        } else if (holeDistance < 550) {
+          bucket = '400-550 ft';
+        } else {
+          bucket = '550+ ft';
+        }
+
+        totalByDistance[bucket] = totalByDistance[bucket]! + 1;
+
+        // Check birdie
+        if (hole.relativeHoleScore < 0) {
+          birdiesByDistance[bucket] = birdiesByDistance[bucket]! + 1;
+        }
+
+        // Check C1 in regulation
+        final regulationStrokes = hole.par - 2;
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1ByDistance[bucket] = c1ByDistance[bucket]! + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByDistance.map((bucket, total) {
+      final birdies = birdiesByDistance[bucket]!;
+      final c1s = c1ByDistance[bucket]!;
+      return MapEntry(
+        bucket,
+        {
+          'birdieRate': total > 0 ? (birdies / total) * 100 : 0.0,
+          'birdieCount': birdies,
+          'c1Rate': total > 0 ? (c1s / total) * 100 : 0.0,
+          'c1Count': c1s,
+          'total': total,
+        },
+      );
+    });
+  }
+
+  /// Get performance breakdown by fairway width for a throw type
+  Map<String, Map<String, dynamic>> getPerformanceBreakdownByFairwayWidth(
+    String throwType,
+  ) {
+    final Map<String, int> birdiesByWidth = {};
+    final Map<String, int> c1ByWidth = {};
+    final Map<String, int> totalByWidth = {};
+
+    for (var hole in round.holes) {
+      if (hole.throws.isEmpty) continue;
+
+      final teeShot = hole.throws.first;
+      if (teeShot.purpose == ThrowPurpose.teeDrive &&
+          teeShot.technique?.name == throwType) {
+        final width = teeShot.fairwayWidth?.name ?? 'unknown';
+        totalByWidth[width] = (totalByWidth[width] ?? 0) + 1;
+
+        // Check birdie
+        if (hole.relativeHoleScore < 0) {
+          birdiesByWidth[width] = (birdiesByWidth[width] ?? 0) + 1;
+        }
+
+        // Check C1 in regulation
+        final regulationStrokes = hole.par - 2;
+        for (int i = 0; i < hole.throws.length && i < regulationStrokes; i++) {
+          final discThrow = hole.throws[i];
+          if (discThrow.landingSpot == LandingSpot.circle1 ||
+              discThrow.landingSpot == LandingSpot.parked) {
+            c1ByWidth[width] = (c1ByWidth[width] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    return totalByWidth.map((width, total) {
+      final birdies = birdiesByWidth[width] ?? 0;
+      final c1s = c1ByWidth[width] ?? 0;
+      return MapEntry(
+        width,
+        {
+          'birdieRate': total > 0 ? (birdies / total) * 100 : 0.0,
+          'birdieCount': birdies,
+          'c1Rate': total > 0 ? (c1s / total) * 100 : 0.0,
+          'c1Count': c1s,
+          'total': total,
+        },
+      );
+    });
+  }
+
   String _formatHoleTypeName(String holeType) {
     switch (holeType.toLowerCase()) {
       case 'open':

@@ -50,7 +50,7 @@ class SkillsDetailScreen extends StatelessWidget {
             _SkillBreakdownCard(skill: analysis.putting),
             _SkillBreakdownCard(skill: analysis.mentalFocus),
           ],
-          runSpacing: 8,
+          runSpacing: 12,
           axis: Axis.vertical,
         ),
       ),

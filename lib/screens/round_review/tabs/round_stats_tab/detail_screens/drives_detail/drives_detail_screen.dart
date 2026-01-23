@@ -4,7 +4,10 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/core_drive_stats_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/distance_distribution_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/landing_spot_distribution_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/throw_type_list_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/throw_type_radar_chart.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/view_mode_toggle.dart';
@@ -12,6 +15,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/screens/driving_stat_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/screens/throw_type_detail_screen.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
@@ -399,6 +403,8 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen> {
     final RoundStatisticsService statsService = RoundStatisticsService(
       widget.round,
     );
+    final featureFlagService = locator.get<FeatureFlagService>();
+    final useV2 = featureFlagService.drivesDetailScreenV2;
 
     final coreStats = statsService.getCoreStats();
     final teeShotBirdieRates = statsService.getTeeShotBirdieRateStats();
@@ -426,6 +432,164 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen> {
     // Sort by birdie rate descending to identify best/worst performers
     allThrowTypes.sort((a, b) => b.birdieRate.compareTo(a.birdieRate));
 
+    // V2 ONLY: Calculate new metrics for landing spot and distance cards
+    Map<int, Map<String, Map<String, dynamic>>>? landingSpotDistributionByPar;
+    Map<String, Map<String, dynamic>>? distanceBucketDistribution;
+    Map<String, dynamic>? distanceStats;
+    Map<String, Map<String, dynamic>>? throwTypeDistanceStats;
+
+    if (useV2) {
+      // Get new V2 statistics for landing spot and distance analysis
+      landingSpotDistributionByPar = statsService.getLandingSpotDistributionByPar();
+      distanceBucketDistribution = statsService.getDistanceBucketDistribution();
+      distanceStats = statsService.getThrowDistanceStats();
+      throwTypeDistanceStats = statsService.getThrowDistanceStatsByType();
+    }
+
+    // Build appropriate layout based on feature flag
+    return useV2
+        ? _buildLayoutV2(
+            context,
+            coreStats,
+            allThrowTypes,
+            landingSpotDistributionByPar!,
+            distanceBucketDistribution!,
+            distanceStats!,
+            throwTypeDistanceStats!,
+            performanceByFairwayWidth,
+            shotShapeBirdieRates,
+            circleInRegByShape,
+          )
+        : _buildLayoutV1(
+            context,
+            allThrowTypes,
+            coreStats,
+            performanceByFairwayWidth,
+            shotShapeBirdieRates,
+            circleInRegByShape,
+          );
+  }
+
+  /// Build V2 layout with V1 throw type cards + new landing spot and distance cards
+  Widget _buildLayoutV2(
+    BuildContext context,
+    CoreStats coreStats,
+    List<ThrowTypeStats> allThrowTypes,
+    Map<int, Map<String, Map<String, dynamic>>> landingSpotDistributionByPar,
+    Map<String, Map<String, dynamic>> distanceBucketDistribution,
+    Map<String, dynamic> distanceStats,
+    Map<String, Map<String, dynamic>> throwTypeDistanceStats,
+    Map<String, Map<String, double>> performanceByFairwayWidth,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
+      children: addRunSpacing(
+        [
+          CoreDriveStatsCard(
+            coreStats: coreStats,
+            onC1InRegPressed: () {
+              _navigateToStatDetail(
+                context,
+                'C1 in Reg',
+                coreStats.c1InRegPct,
+                const Color(0xFF137e66),
+                _getC1InRegHoles(),
+              );
+            },
+            onC2InRegPressed: () {
+              _navigateToStatDetail(
+                context,
+                'C2 in Reg',
+                coreStats.c2InRegPct,
+                const Color.fromARGB(255, 13, 21, 28),
+                _getC2InRegHoles(),
+              );
+            },
+            onFairwayPressed: () {
+              _navigateToStatDetail(
+                context,
+                'Fairway',
+                coreStats.fairwayHitPct,
+                const Color(0xFF4CAF50),
+                _getFairwayHoles(),
+              );
+            },
+            onOBPressed: () {
+              _navigateToStatDetail(
+                context,
+                'OB',
+                coreStats.obPct,
+                const Color(0xFFFF7A7A),
+                _getOBHoles(),
+              );
+            },
+            onParkedPressed: () {
+              _navigateToStatDetail(
+                context,
+                'Parked',
+                coreStats.parkedPct,
+                const Color(0xFFFFA726),
+                _getParkedHoles(),
+              );
+            },
+          ),
+          ViewModeToggle(
+            selectedMode: _viewMode,
+            onModeChanged: (DriveViewMode mode) {
+              _logger.track(
+                'Drives View Mode Changed',
+                properties: {
+                  'view_mode': mode == DriveViewMode.cards ? 'cards' : 'radar',
+                },
+              );
+              setState(() {
+                _viewMode = mode;
+              });
+            },
+          ),
+          if (_viewMode == DriveViewMode.cards)
+            ThrowTypeListCard(
+              throwTypes: allThrowTypes,
+              onThrowTypeTap: (ThrowTypeStats stats) {
+                _navigateToThrowTypeDetail(
+                  context,
+                  stats.throwType,
+                  stats,
+                  shotShapeBirdieRates,
+                  circleInRegByShape,
+                );
+              },
+            )
+          else
+            ThrowTypeRadarChart(throwTypes: allThrowTypes),
+          LandingSpotDistributionCard(
+            landingSpotDistributionByPar: landingSpotDistributionByPar,
+          ),
+          DistanceDistributionCard(
+            distanceStats: distanceStats,
+            distanceBucketDistribution: distanceBucketDistribution,
+            throwTypeDistanceStats: throwTypeDistanceStats,
+          ),
+          if (performanceByFairwayWidth.isNotEmpty)
+            _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
+        ],
+        runSpacing: 8,
+        axis: Axis.vertical,
+      ),
+    );
+  }
+
+  /// Build V1 layout (original layout)
+  Widget _buildLayoutV1(
+    BuildContext context,
+    List<ThrowTypeStats> allThrowTypes,
+    CoreStats coreStats,
+    Map<String, Map<String, double>> performanceByFairwayWidth,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
       children: addRunSpacing(

@@ -84,7 +84,7 @@ class PuttingDetailScreen extends StatelessWidget {
               ),
             ),
           ],
-          runSpacing: 8,
+          runSpacing: 12,
           axis: Axis.vertical,
         ),
       ),

@@ -83,7 +83,7 @@ class PsychDetailScreen extends StatelessWidget {
           ConditioningCard(stats: psychStats, round: round),
           InsightsCard(stats: psychStats),
         ],
-        runSpacing: 8,
+        runSpacing: 12,
         axis: Axis.vertical,
       ),
     );

@@ -96,11 +96,13 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
     _shotShape = widget.existingThrow?.shotShape;
 
     // Default technique to Backhand for non-putts if not set
-    _technique = widget.existingThrow?.technique ??
+    _technique =
+        widget.existingThrow?.technique ??
         (_purpose != ThrowPurpose.putt ? ThrowTechnique.backhand : null);
 
     // Default puttStyle to Staggered for putts if not set
-    _puttStyle = widget.existingThrow?.puttStyle ??
+    _puttStyle =
+        widget.existingThrow?.puttStyle ??
         (_purpose == ThrowPurpose.putt ? PuttStyle.staggered : null);
 
     _customDistanceBeforeController = TextEditingController(
@@ -423,10 +425,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
           child: Center(
             child: Text(
               'Distance not applicable',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
             ),
           ),
         ),
@@ -441,8 +440,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       final int maxDistance = _landingSpot == LandingSpot.parked
           ? 11
           : _landingSpot == LandingSpot.circle1
-              ? 33
-              : 66;
+          ? 33
+          : 66;
 
       // Initialize landing distance if null or out of range
       if (_landingDistance == null ||
@@ -490,10 +489,12 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
                     thumbColor: _buttonAccent,
                     overlayColor: _buttonAccent.withValues(alpha: 0.15),
                     trackHeight: 4,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 8),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 16),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 8,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 16,
+                    ),
                   ),
                   child: Slider(
                     value: _landingDistance!.toDouble(),
@@ -504,8 +505,9 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
                       setState(() => _landingDistance = value.round());
                     },
                     onChangeEnd: (value) {
-                      _customLandingDistanceController.text =
-                          value.round().toString();
+                      _customLandingDistanceController.text = value
+                          .round()
+                          .toString();
                     },
                   ),
                 ),
@@ -533,9 +535,7 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
         style: const TextStyle(color: Colors.black87),
         decoration: InputDecoration(
           hintText: 'Distance to basket',
-          hintStyle: TextStyle(
-            color: Colors.grey.shade400,
-          ),
+          hintStyle: TextStyle(color: Colors.grey.shade400),
           suffixText: 'ft',
           suffixStyle: TextStyle(
             color: Colors.grey.shade600,
@@ -569,61 +569,6 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       ),
     );
   }
-
-  // Widget _buildDistanceField({
-  //   required String label,
-  //   required TextEditingController controller,
-  //   required int? currentValue,
-  //   required void Function(int) onQuickSelect,
-  // }) {
-  //   return _FieldCard(
-  //     label: label,
-  //     accentColor: _distanceAccent,
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.stretch,
-  //       children: [
-  //         Wrap(
-  //           spacing: 8,
-  //           runSpacing: 8,
-  //           children: _quickDistances
-  //               .map(
-  //                 (distance) => _buildOptionButton(
-  //                   label: '$distance ft',
-  //                   isSelected: currentValue == distance,
-  //                   accentColor: _distanceAccent,
-  //                   onTap: () => onQuickSelect(distance),
-  //                 ),
-  //               )
-  //               .toList(),
-  //         ),
-  //         const SizedBox(height: 12),
-  //         TextField(
-  //           controller: controller,
-  //           decoration: const InputDecoration(
-  //             labelText: 'Custom Distance',
-  //             border: OutlineInputBorder(),
-  //             isDense: true,
-  //             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-  //           ),
-  //           keyboardType: TextInputType.number,
-  //           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-  //           onChanged: (value) {
-  //             final int? parsed = int.tryParse(value);
-  //             if (currentValue != parsed) {
-  //               setState(() {
-  //                 if (label.contains('BEFORE')) {
-  //                   _distanceBefore = parsed;
-  //                 } else {
-  //                   _distanceAfter = parsed;
-  //                 }
-  //               });
-  //             }
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildDiscTypeField() {
     final String searchText = _discSearchController.text.toLowerCase();
@@ -670,7 +615,10 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: SenseiColors.blue, width: 2),
+                borderSide: const BorderSide(
+                  color: SenseiColors.blue,
+                  width: 2,
+                ),
               ),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(
@@ -1141,7 +1089,8 @@ class _AddThrowPanelState extends State<AddThrowPanel> {
       _customDistanceBeforeController.text,
     );
     // Use landing distance from slider/text field for distance after throw
-    final int? distanceAfter = _landingDistance ??
+    final int? distanceAfter =
+        _landingDistance ??
         int.tryParse(_customLandingDistanceController.text) ??
         int.tryParse(_customDistanceAfterController.text);
 

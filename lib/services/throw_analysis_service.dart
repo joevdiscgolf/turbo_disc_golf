@@ -57,7 +57,7 @@ class CoachingCard {
 /// The analysis service with deterministic rules & weights
 class ThrowAnalysisService {
   // Tunable thresholds
-  static const double shortC1Feet = 12.0; // 0-12ft: short C1 putts
+  static const double tapInFeet = 11.0; // 0-11ft: tap-in putts (gimmes)
   static const double circle1Feet = 33.0; // 0-33ft: C1 range
   static const double circle2Feet = 66.0; // 33-66ft: C2 range
   static const double puttThresholdFeet =
@@ -94,8 +94,8 @@ class ThrowAnalysisService {
     if (isPutt) {
       // made?
       final made = t.landingSpot == LandingSpot.inBasket;
-      if (dist != null && dist <= shortC1Feet) {
-        // Short C1 (0-12 ft)
+      if (dist != null && dist <= tapInFeet) {
+        // Tap-in (0-11 ft)
         if (made) {
           return ThrowAnalysis(
             discThrow: t,
@@ -103,21 +103,21 @@ class ThrowAnalysisService {
             lossReason: LossReason.none,
             weight: goodWeight,
             confidence: parseConf,
-            note: 'Made short C1 putt',
+            note: 'Made tap-in',
           );
         } else {
-          // Missed short C1 — major mistake
+          // Missed tap-in — major mistake
           return ThrowAnalysis(
             discThrow: t,
             execCategory: ExecCategory.bad,
             lossReason: LossReason.missedC1,
             weight: majorWeight,
             confidence: parseConf,
-            note: 'Missed short C1 putt',
+            note: 'Missed tap-in',
           );
         }
       } else if (dist != null && dist <= circle1Feet) {
-        // C1X (12-33 ft)
+        // C1X (11-33 ft)
         if (made) {
           return ThrowAnalysis(
             discThrow: t,
@@ -290,11 +290,11 @@ class ThrowAnalysisService {
           cards.add(
             CoachingCard(
               reason: reason,
-              title: 'Short putting (≤12 ft) misses',
+              title: 'Missed tap-ins (≤11 ft)',
               summary:
-                  'You missed $n short putts — these are high-impact mistakes that are usually fixable with short practice.',
+                  'You missed $n tap-in putts — these are high-impact mistakes that are usually fixable with short practice.',
               drills: [
-                'Tap & Step: 5 sets × 10 reps from 8–12 ft (goal: 80% makes)',
+                'Tap & Step: 5 sets × 10 reps from 8–11 ft (goal: 80% makes)',
                 'Pressure Ladder: 2-in-a-row to advance distance; repeat 10 times',
               ],
               priorityScore: priority,
@@ -305,9 +305,9 @@ class ThrowAnalysisService {
           cards.add(
             CoachingCard(
               reason: reason,
-              title: 'C1X putting (12-33 ft) misses',
+              title: 'C1X putting (11-33 ft) misses',
               summary:
-                  'You missed $n putts in the 12-33 ft range — work on distance control and form consistency.',
+                  'You missed $n putts in the 11-33 ft range — work on distance control and form consistency.',
               drills: [
                 'Circle drill: 10 putts from each station (15, 20, 25, 30 ft)',
                 'Run it: Practice aggressive putts from 20-25 ft for 15 minutes',
@@ -385,9 +385,9 @@ class ThrowAnalysisService {
       case LossReason.outOfBounds:
         return 'Out-of-bounds';
       case LossReason.missedC1:
-        return 'Missed short putt (≤12 ft)';
+        return 'Missed tap-in (≤11 ft)';
       case LossReason.missedC1X:
-        return 'Missed C1X putt (12-33 ft)';
+        return 'Missed C1X putt (11-33 ft)';
       case LossReason.missedC2:
         return 'Missed C2 putt (33-66 ft)';
       case LossReason.missedApproach:

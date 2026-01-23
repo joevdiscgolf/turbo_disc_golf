@@ -29,7 +29,6 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
-import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
@@ -138,7 +137,7 @@ class _RoundStatsBodyState extends State<RoundStatsBody>
         break;
       case 6: // Discs
         detailScreen = DiscsDetailScreen(round: widget.round);
-        title = 'Top discs';
+        title = 'Discs';
         break;
       case 7: // Mistakes
         detailScreen = MistakesDetailScreen(round: widget.round);
@@ -336,276 +335,8 @@ class _RoundStatsBodyState extends State<RoundStatsBody>
             ),
           ),
         ],
-        runSpacing: 8,
+        runSpacing: 12,
         axis: Axis.vertical,
-      ),
-    );
-  }
-}
-
-// Driving Stats Card
-class DrivingStatsCard extends StatefulWidget {
-  final DGRound round;
-  final VoidCallback? onTap;
-
-  const DrivingStatsCard({super.key, required this.round, this.onTap});
-
-  @override
-  State<DrivingStatsCard> createState() => _DrivingStatsCardState();
-}
-
-class _DrivingStatsCardState extends State<DrivingStatsCard>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  Map<String, dynamic> _calculateDrivingStats() {
-    final RoundStatisticsService statsService = RoundStatisticsService(
-      widget.round,
-    );
-    final dynamic coreStats = statsService.getCoreStats();
-    final Map<String, Map<String, double>> circleInRegByType = statsService
-        .getCircleInRegByThrowType();
-
-    // Get C1 in reg % by throw type
-    final List<Map<String, dynamic>> throwTypeStats = [];
-    circleInRegByType.forEach((String throwType, Map<String, double> stats) {
-      final double c1Percentage = stats['c1Percentage'] ?? 0;
-      final int totalAttempts = (stats['totalAttempts'] ?? 0).toInt();
-      if (totalAttempts > 0) {
-        throwTypeStats.add({
-          'type': throwType,
-          'c1Pct': c1Percentage,
-          'attempts': totalAttempts,
-        });
-      }
-    });
-
-    // Sort by C1 percentage descending
-    throwTypeStats.sort(
-      (a, b) => (b['c1Pct'] as double).compareTo(a['c1Pct'] as double),
-    );
-
-    return {
-      'fairwayPct': coreStats.fairwayHitPct,
-      'c1InRegPct': coreStats.c1InRegPct,
-      'obPct': coreStats.obPct,
-      'parkedPct': coreStats.parkedPct,
-      'hasData': widget.round.holes.isNotEmpty,
-      'throwTypeStats': throwTypeStats,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
-    final Map<String, dynamic> stats = _calculateDrivingStats();
-    final bool hasData = stats['hasData'] as bool;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: defaultCardElevation,
-      shadowColor: defaultCardShadowColor,
-      shape: defaultCardShape(),
-      child: InkWell(
-        onTap: widget.onTap != null
-            ? () {
-                HapticFeedback.lightImpact();
-                widget.onTap!();
-              }
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    '🎯 Driving',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.black, size: 20),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      locator
-                              .get<FeatureFlagService>()
-                              .useHeroAnimationsForRoundReview
-                          ? Hero(
-                              tag: 'driving_c1_in_reg',
-                              child: CircularStatIndicator(
-                                key: ValueKey(
-                                  'driving_c1_in_reg_${widget.round.id}',
-                                ),
-                                label: 'C1 in Reg',
-                                percentage: hasData
-                                    ? stats['c1InRegPct'] as double
-                                    : 0.0,
-                                color: const Color(0xFF137e66),
-                                size: 70,
-                                shouldAnimate: true,
-                                shouldGlow: true,
-                                roundId: widget.round.id,
-                              ),
-                            )
-                          : CircularStatIndicator(
-                              key: ValueKey(
-                                'driving_c1_in_reg_${widget.round.id}',
-                              ),
-                              label: 'C1 in Reg',
-                              percentage: hasData
-                                  ? stats['c1InRegPct'] as double
-                                  : 0.0,
-                              color: const Color(0xFF137e66),
-                              size: 70,
-                              shouldAnimate: true,
-                              shouldGlow: true,
-                              roundId: widget.round.id,
-                            ),
-                      locator
-                              .get<FeatureFlagService>()
-                              .useHeroAnimationsForRoundReview
-                          ? Hero(
-                              tag: 'driving_fairway',
-                              child: CircularStatIndicator(
-                                key: ValueKey(
-                                  'driving_fairway_${widget.round.id}',
-                                ),
-                                label: 'Fairway',
-                                percentage: hasData
-                                    ? stats['fairwayPct'] as double
-                                    : 0.0,
-                                color: const Color(0xFF4CAF50),
-                                size: 70,
-                                shouldAnimate: true,
-                                shouldGlow: true,
-                                roundId: widget.round.id,
-                              ),
-                            )
-                          : CircularStatIndicator(
-                              key: ValueKey(
-                                'driving_fairway_${widget.round.id}',
-                              ),
-                              label: 'Fairway',
-                              percentage: hasData
-                                  ? stats['fairwayPct'] as double
-                                  : 0.0,
-                              color: const Color(0xFF4CAF50),
-                              size: 70,
-                              shouldAnimate: true,
-                              shouldGlow: true,
-                              roundId: widget.round.id,
-                            ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      locator
-                              .get<FeatureFlagService>()
-                              .useHeroAnimationsForRoundReview
-                          ? Hero(
-                              tag: 'driving_ob',
-                              child: CircularStatIndicator(
-                                key: ValueKey('driving_ob_${widget.round.id}'),
-                                label: 'OB',
-                                percentage: hasData
-                                    ? stats['obPct'] as double
-                                    : 0.0,
-                                color: const Color(0xFFFF7A7A),
-                                size: 70,
-                                shouldAnimate: true,
-                                shouldGlow: true,
-                                roundId: widget.round.id,
-                              ),
-                            )
-                          : CircularStatIndicator(
-                              key: ValueKey('driving_ob_${widget.round.id}'),
-                              label: 'OB',
-                              percentage: hasData
-                                  ? stats['obPct'] as double
-                                  : 0.0,
-                              color: const Color(0xFFFF7A7A),
-                              size: 70,
-                              shouldAnimate: true,
-                              shouldGlow: true,
-                              roundId: widget.round.id,
-                            ),
-                      locator
-                              .get<FeatureFlagService>()
-                              .useHeroAnimationsForRoundReview
-                          ? Hero(
-                              tag: 'driving_parked',
-                              child: CircularStatIndicator(
-                                key: ValueKey(
-                                  'driving_parked_${widget.round.id}',
-                                ),
-                                label: 'Parked',
-                                percentage: hasData
-                                    ? stats['parkedPct'] as double
-                                    : 0.0,
-                                color: const Color(0xFFFFA726),
-                                size: 70,
-                                shouldAnimate: true,
-                                shouldGlow: true,
-                                roundId: widget.round.id,
-                              ),
-                            )
-                          : CircularStatIndicator(
-                              key: ValueKey(
-                                'driving_parked_${widget.round.id}',
-                              ),
-                              label: 'Parked',
-                              percentage: hasData
-                                  ? stats['parkedPct'] as double
-                                  : 0.0,
-                              color: const Color(0xFFFFA726),
-                              size: 70,
-                              shouldAnimate: true,
-                              shouldGlow: true,
-                              roundId: widget.round.id,
-                            ),
-                    ],
-                  ),
-                ],
-              ),
-              // C1 in Reg by Throw Type section hidden for cleaner overview
-              // if (throwTypeStats.isNotEmpty) ...[
-              //   const SizedBox(height: 16),
-              //   const Divider(),
-              //   const SizedBox(height: 8),
-              //   Text(
-              //     'C1 in Reg by Throw Type',
-              //     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              //           fontWeight: FontWeight.w600,
-              //           color: Colors.grey[700],
-              //         ),
-              //   ),
-              //   const SizedBox(height: 8),
-              //   Wrap(
-              //     spacing: 8,
-              //     runSpacing: 8,
-              //     children: throwTypeStats.map((typeStats) {
-              //       return _buildThrowTypeChip(
-              //         context,
-              //         typeStats['type'] as String,
-              //         typeStats['c1Pct'] as double,
-              //         typeStats['attempts'] as int,
-              //       );
-              //     }).toList(),
-              //   ),
-              // ],
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1387,15 +1118,18 @@ class _DiscUsageCard extends StatelessWidget {
     final List<_DiscWithRank> ranked = [];
     int currentRank = 1;
     double? previousPercentage;
+    int? previousThrowCount;
 
     for (int i = 0; i < sortedDiscs.length; i++) {
       final entry = sortedDiscs[i];
       final double pct = entry.value;
+      final int throwCount = discCounts[entry.key] ?? 0;
 
-      // Check if tied with previous (within 0.01%)
+      // Check if tied with previous (same C1% within 0.01% AND same throw count)
       bool isTied = false;
       if (previousPercentage != null &&
-          (pct - previousPercentage).abs() < 0.01) {
+          (pct - previousPercentage).abs() < 0.01 &&
+          previousThrowCount == throwCount) {
         isTied = true;
         // Keep same rank as previous when tied
       } else if (i > 0) {
@@ -1410,7 +1144,7 @@ class _DiscUsageCard extends StatelessWidget {
         _DiscWithRank(
           name: entry.key,
           c1InRegPct: pct,
-          throwCount: discCounts[entry.key] ?? 0,
+          throwCount: throwCount,
           fairwayHits: discFairwayHits[entry.key] ?? 0,
           rank: currentRank,
           isTied: isTied,
@@ -1418,6 +1152,7 @@ class _DiscUsageCard extends StatelessWidget {
       );
 
       previousPercentage = pct;
+      previousThrowCount = throwCount;
     }
 
     return ranked;
@@ -1712,14 +1447,11 @@ class _MvpDiscCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD700), width: 2),
+        border: Border.all(color: const Color(0xFFDAA520), width: 2),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFFFD700).withValues(alpha: 0.05),
-            Colors.white,
-          ],
+          colors: [const Color(0xFFFFF9E6), Colors.white],
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1745,22 +1477,12 @@ class _MvpDiscCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF137e66),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${disc.c1InRegPct.toStringAsFixed(0)}% C1 reg',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    Text(
+                      '${disc.c1InRegPct.toStringAsFixed(0)}% C1 reg',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
                       ),
                     ),
                   ],
@@ -1769,7 +1491,7 @@ class _MvpDiscCard extends StatelessWidget {
                 _buildProgressBar(disc.c1InRegPct, 5),
                 const SizedBox(height: 6),
                 Text(
-                  '${disc.throwCount} ${disc.throwCount == 1 ? 'drive' : 'drives'} • ${disc.fairwayHits} fairway ${disc.fairwayHits == 1 ? 'hit' : 'hits'}',
+                  '${disc.throwCount} ${disc.throwCount == 1 ? 'drive' : 'drives'}',
                   style: const TextStyle(fontSize: 11, color: Colors.black87),
                 ),
               ],
@@ -1795,7 +1517,7 @@ class _MvpDiscCard extends StatelessWidget {
               height: height,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF137e66), Color(0xFF1a9977)],
+                  colors: [Color(0xFFDAA520), Color(0xFFF4D03F)],
                 ),
               ),
             ),
@@ -1814,17 +1536,37 @@ class _RunnerUpDiscCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isSecondPlace = disc.rank == 2;
-    final Color borderColor = isSecondPlace
-        ? const Color(0xFFC0C0C0)
-        : const Color(0xFFCD7F32);
-    final String medal = isSecondPlace ? '🥈' : '🥉';
+    // Determine medal and colors based on rank
+    final String medal;
+    final Color borderColor;
+    final List<Color> bgGradient;
+
+    if (disc.rank == 1) {
+      // Tied for 1st place
+      medal = '🥇';
+      borderColor = const Color(0xFFDAA520); // Gold
+      bgGradient = [const Color(0xFFFFF9E6), Colors.white];
+    } else if (disc.rank == 2) {
+      // 2nd place or tied for 2nd
+      medal = '🥈';
+      borderColor = const Color(0xFF9CA3AF); // Silver
+      bgGradient = [const Color(0xFFF9FAFB), Colors.white];
+    } else {
+      // 3rd place or tied for 3rd
+      medal = '🥉';
+      borderColor = const Color(0xFFCD7F32); // Bronze
+      bgGradient = [const Color(0xFFFFF5ED), Colors.white];
+    }
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor, width: 1.5),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: bgGradient,
+        ),
       ),
       padding: const EdgeInsets.all(10),
       child: Column(
@@ -1849,26 +1591,19 @@ class _RunnerUpDiscCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFF137e66),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              '${disc.c1InRegPct.toStringAsFixed(0)}% C1 reg',
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+          Text(
+            '${disc.c1InRegPct.toStringAsFixed(0)}% C1 reg',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
           const SizedBox(height: 6),
           _buildProgressBar(disc.c1InRegPct, 4),
           const SizedBox(height: 6),
           Text(
-            '${disc.throwCount} ${disc.throwCount == 1 ? 'drive' : 'drives'} • ${disc.fairwayHits} fairway',
+            '${disc.throwCount} ${disc.throwCount == 1 ? 'drive' : 'drives'}',
             style: const TextStyle(fontSize: 10, color: Colors.black87),
             overflow: TextOverflow.ellipsis,
           ),
@@ -1878,6 +1613,22 @@ class _RunnerUpDiscCard extends StatelessWidget {
   }
 
   Widget _buildProgressBar(double percentage, double height) {
+    // Determine progress bar gradient based on rank
+    final List<Color> barGradient;
+    if (disc.rank == 1) {
+      barGradient = [const Color(0xFFDAA520), const Color(0xFFF4D03F)]; // Gold
+    } else if (disc.rank == 2) {
+      barGradient = [
+        const Color(0xFF9CA3AF),
+        const Color(0xFFD1D5DB),
+      ]; // Silver
+    } else {
+      barGradient = [
+        const Color(0xFFCD7F32),
+        const Color(0xFFE89D6A),
+      ]; // Bronze
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(height / 2),
       child: Stack(
@@ -1890,10 +1641,8 @@ class _RunnerUpDiscCard extends StatelessWidget {
             widthFactor: percentage / 100,
             child: Container(
               height: height,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF137e66), Color(0xFF1a9977)],
-                ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: barGradient),
               ),
             ),
           ),
@@ -1996,33 +1745,39 @@ class _MentalGameCard extends StatelessWidget {
                   Icon(Icons.chevron_right, color: Colors.black, size: 20),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               if (!hasData)
                 const Text(
                   'Play at least 3 holes to see your mental game analysis.',
                   style: TextStyle(color: Colors.grey),
                 )
               else ...[
-                _buildMinimalMetricRow(
-                  context: context,
-                  emoji: '🔥',
-                  label: 'Hot Streak',
-                  percentage: hotStreakEnergy,
-                  color: const Color(0xFFFF8A65),
-                ),
-                _buildMinimalMetricRow(
-                  context: context,
-                  emoji: '😡',
-                  label: 'Tilt Meter',
-                  percentage: tiltMeter,
-                  color: const Color(0xFFEF5350),
-                ),
-                _buildMinimalMetricRow(
-                  context: context,
-                  emoji: '💪',
-                  label: 'Bounce-Back',
-                  percentage: bounceBack,
-                  color: const Color(0xFF66BB6A),
+                ...addRunSpacing(
+                  [
+                    _buildMinimalMetricRow(
+                      context: context,
+                      emoji: '🔥',
+                      label: 'Hot Streak',
+                      percentage: hotStreakEnergy,
+                      color: const Color(0xFFFF8A65),
+                    ),
+                    _buildMinimalMetricRow(
+                      context: context,
+                      emoji: '😡',
+                      label: 'Tilt Meter',
+                      percentage: tiltMeter,
+                      color: const Color(0xFFEF5350),
+                    ),
+                    _buildMinimalMetricRow(
+                      context: context,
+                      emoji: '💪',
+                      label: 'Bounce-Back',
+                      percentage: bounceBack,
+                      color: const Color(0xFF66BB6A),
+                    ),
+                  ],
+                  axis: Axis.vertical,
+                  runSpacing: 12,
                 ),
                 // Divider before flow state
                 Divider(
@@ -2047,60 +1802,57 @@ class _MentalGameCard extends StatelessWidget {
     required double percentage,
     required Color color,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF616161),
-                  ),
-                ),
-              ),
-              Text(
-                '${percentage.toStringAsFixed(0)}%',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF424242),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF616161),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Progress bar
-          Stack(
-            children: [
-              Container(
+            ),
+            Text(
+              '${percentage.toStringAsFixed(0)}%',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF424242),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Progress bar
+        Stack(
+          children: [
+            Container(
+              height: 5,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            FractionallySizedBox(
+              widthFactor: percentage / 100,
+              child: Container(
                 height: 5,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.08),
+                  color: color.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              FractionallySizedBox(
-                widthFactor: percentage / 100,
-                child: Container(
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -2161,60 +1913,57 @@ class _MentalGameCard extends StatelessWidget {
       bestFlowLabel = flowAnalysis.bestFlow!.label;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('🌊', style: TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Flow State',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF616161),
-                  ),
-                ),
-              ),
-              Text(
-                '${flowPercentage.toStringAsFixed(0)}%',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('🌊', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Flow State',
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF424242),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF616161),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '· $flowHoles holes',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF616161)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Mini timeline
-          SizedBox(
-            height: 24,
-            child: CustomPaint(
-              size: Size(MediaQuery.of(context).size.width - 64, 24),
-              painter: MiniFlowTimelinePainter(
-                flowPeriods: flowAnalysis.flowPeriods,
-                totalHoles: totalHoles,
               ),
             ),
+            Text(
+              '${flowPercentage.toStringAsFixed(0)}%',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF424242),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '· $flowHoles holes',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF616161)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Mini timeline
+        SizedBox(
+          height: 24,
+          child: CustomPaint(
+            size: Size(MediaQuery.of(context).size.width - 64, 24),
+            painter: MiniFlowTimelinePainter(
+              flowPeriods: flowAnalysis.flowPeriods,
+              totalHoles: totalHoles,
+            ),
           ),
-          const SizedBox(height: 8),
-          // Details text
-          Text(
-            '$flowPeriods ${flowPeriods == 1 ? 'period' : 'periods'}${bestFlowQuality != null ? ' • Best: $bestFlowLabel ($bestFlowQuality)' : ''}',
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        // Details text
+        Text(
+          '$flowPeriods ${flowPeriods == 1 ? 'period' : 'periods'}${bestFlowQuality != null ? ' • Best: $bestFlowLabel ($bestFlowQuality)' : ''}',
+          style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+        ),
+      ],
     );
   }
 }

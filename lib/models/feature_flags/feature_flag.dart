@@ -40,6 +40,7 @@ enum FeatureFlag {
   useVideoInputBodyV2('use_video_input_body_v2', true),
   useRedesignedMentalGameCard('use_redesigned_mental_game_card', true),
   usePodiumDiscCard('use_podium_disc_card', true),
+  drivesDetailScreenV2('drives_detail_screen_v2', true),
 
   /// Throw card layout style: 'inline' for full-width with inline number badge,
   /// 'split' for left-right split layout, empty for default (v2 with timeline)
@@ -105,6 +106,7 @@ enum FeatureFlag {
   storyV2Enabled('story_v2_enabled', true),
   storyV3Enabled('story_v3_enabled', true),
   highlightActiveStorySection('highlight_active_story_section', true),
+  showStoryShareButton('show_story_share_button', true),
 
   // ===== Scorecard Import =====
   /// Debug-only: Uses test scorecard for import testing

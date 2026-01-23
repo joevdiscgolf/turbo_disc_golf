@@ -163,6 +163,8 @@ class FeatureFlagService {
 
   bool get usePodiumDiscCard => getBool(FeatureFlag.usePodiumDiscCard);
 
+  bool get drivesDetailScreenV2 => getBool(FeatureFlag.drivesDetailScreenV2);
+
   // ===== Voice Service =====
 
   bool get useIosVoiceService => getBool(FeatureFlag.useIosVoiceService);
@@ -250,6 +252,9 @@ class FeatureFlagService {
 
   bool get highlightActiveStorySection =>
       getBool(FeatureFlag.highlightActiveStorySection);
+
+  bool get showStoryShareButton =>
+      getBool(FeatureFlag.showStoryShareButton);
 
   // ===== Scorecard Import =====
 
