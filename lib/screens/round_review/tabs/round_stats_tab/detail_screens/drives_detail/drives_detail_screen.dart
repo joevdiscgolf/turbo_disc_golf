@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/core_drive_stats_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/distance_distribution_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/landing_spot_distribution_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/throw_type_list_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/components/throw_type_radar_chart.dart';
@@ -31,17 +31,26 @@ class DrivesDetailScreen extends StatefulWidget {
   State<DrivesDetailScreen> createState() => _DrivesDetailScreenState();
 }
 
-class _DrivesDetailScreenState extends State<DrivesDetailScreen> {
+class _DrivesDetailScreenState extends State<DrivesDetailScreen>
+    with SingleTickerProviderStateMixin {
   DriveViewMode _viewMode = DriveViewMode.cards;
   late final LoggingServiceBase _logger;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _logger = locator.get<LoggingService>().withBaseProperties({
       'screen_name': DrivesDetailScreen.screenName,
     });
     _logger.logScreenImpression('DrivesTab');
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _navigateToStatDetail(
@@ -432,56 +441,70 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen> {
     // Sort by birdie rate descending to identify best/worst performers
     allThrowTypes.sort((a, b) => b.birdieRate.compareTo(a.birdieRate));
 
-    // V2 ONLY: Calculate new metrics for landing spot and distance cards
-    Map<int, Map<String, Map<String, dynamic>>>? landingSpotDistributionByPar;
-    Map<String, Map<String, dynamic>>? distanceBucketDistribution;
-    Map<String, dynamic>? distanceStats;
-    Map<String, Map<String, dynamic>>? throwTypeDistanceStats;
-
     if (useV2) {
-      // Get new V2 statistics for landing spot and distance analysis
-      landingSpotDistributionByPar = statsService.getLandingSpotDistributionByPar();
-      distanceBucketDistribution = statsService.getDistanceBucketDistribution();
-      distanceStats = statsService.getThrowDistanceStats();
-      throwTypeDistanceStats = statsService.getThrowDistanceStatsByType();
+      // Get landing spot distribution for V2 layout
+      final landingSpotData = statsService.getLandingSpotDistributionByPar();
+
+      return Column(
+        children: [
+          TabBar(
+            controller: _tabController,
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            labelColor: Colors.black,
+            unselectedLabelColor: Colors.black54,
+            indicatorColor: Colors.black,
+            indicatorWeight: 2,
+            labelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+            ),
+            labelPadding: EdgeInsets.zero,
+            padding: EdgeInsets.zero,
+            indicatorPadding: EdgeInsets.zero,
+            onTap: (_) => HapticFeedback.lightImpact(),
+            tabs: const [
+              Tab(text: 'Landing spots'),
+              Tab(text: 'Technique'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildLandingSpotsTab(context, coreStats, landingSpotData),
+                _buildShotTypesTab(
+                  context,
+                  allThrowTypes,
+                  shotShapeBirdieRates,
+                  circleInRegByShape,
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
     }
 
-    // Build appropriate layout based on feature flag
-    return useV2
-        ? _buildLayoutV2(
-            context,
-            coreStats,
-            allThrowTypes,
-            landingSpotDistributionByPar!,
-            distanceBucketDistribution!,
-            distanceStats!,
-            throwTypeDistanceStats!,
-            performanceByFairwayWidth,
-            shotShapeBirdieRates,
-            circleInRegByShape,
-          )
-        : _buildLayoutV1(
-            context,
-            allThrowTypes,
-            coreStats,
-            performanceByFairwayWidth,
-            shotShapeBirdieRates,
-            circleInRegByShape,
-          );
+    return _buildLayoutV1(
+      context,
+      allThrowTypes,
+      coreStats,
+      performanceByFairwayWidth,
+      shotShapeBirdieRates,
+      circleInRegByShape,
+    );
   }
 
-  /// Build V2 layout with V1 throw type cards + new landing spot and distance cards
-  Widget _buildLayoutV2(
+  /// Build Landing Spots tab content
+  Widget _buildLandingSpotsTab(
     BuildContext context,
     CoreStats coreStats,
-    List<ThrowTypeStats> allThrowTypes,
     Map<int, Map<String, Map<String, dynamic>>> landingSpotDistributionByPar,
-    Map<String, Map<String, dynamic>> distanceBucketDistribution,
-    Map<String, dynamic> distanceStats,
-    Map<String, Map<String, dynamic>> throwTypeDistanceStats,
-    Map<String, Map<String, double>> performanceByFairwayWidth,
-    Map<String, dynamic> shotShapeBirdieRates,
-    Map<String, Map<String, double>> circleInRegByShape,
   ) {
     return ListView(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
@@ -535,45 +558,43 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen> {
               );
             },
           ),
-          ViewModeToggle(
-            selectedMode: _viewMode,
-            onModeChanged: (DriveViewMode mode) {
-              _logger.track(
-                'Drives View Mode Changed',
-                properties: {
-                  'view_mode': mode == DriveViewMode.cards ? 'cards' : 'radar',
-                },
-              );
-              setState(() {
-                _viewMode = mode;
-              });
-            },
-          ),
-          if (_viewMode == DriveViewMode.cards)
-            ThrowTypeListCard(
-              throwTypes: allThrowTypes,
-              onThrowTypeTap: (ThrowTypeStats stats) {
-                _navigateToThrowTypeDetail(
-                  context,
-                  stats.throwType,
-                  stats,
-                  shotShapeBirdieRates,
-                  circleInRegByShape,
-                );
-              },
-            )
-          else
-            ThrowTypeRadarChart(throwTypes: allThrowTypes),
           LandingSpotDistributionCard(
             landingSpotDistributionByPar: landingSpotDistributionByPar,
           ),
-          DistanceDistributionCard(
-            distanceStats: distanceStats,
-            distanceBucketDistribution: distanceBucketDistribution,
-            throwTypeDistanceStats: throwTypeDistanceStats,
+        ],
+        runSpacing: 8,
+        axis: Axis.vertical,
+      ),
+    );
+  }
+
+  /// Build Shot Types tab content
+  Widget _buildShotTypesTab(
+    BuildContext context,
+    List<ThrowTypeStats> allThrowTypes,
+    Map<String, dynamic> shotShapeBirdieRates,
+    Map<String, Map<String, double>> circleInRegByShape,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
+      children: addRunSpacing(
+        [
+          SizedBox(
+            height: 240,
+            child: ThrowTypeRadarChart(throwTypes: allThrowTypes),
           ),
-          if (performanceByFairwayWidth.isNotEmpty)
-            _buildPerformanceByFairwayWidth(context, performanceByFairwayWidth),
+          ThrowTypeListCard(
+            throwTypes: allThrowTypes,
+            onThrowTypeTap: (ThrowTypeStats stats) {
+              _navigateToThrowTypeDetail(
+                context,
+                stats.throwType,
+                stats,
+                shotShapeBirdieRates,
+                circleInRegByShape,
+              );
+            },
+          ),
         ],
         runSpacing: 8,
         axis: Axis.vertical,

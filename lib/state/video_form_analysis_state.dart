@@ -47,13 +47,13 @@ class VideoFormAnalysisAnalyzing extends VideoFormAnalysisState {
 class VideoFormAnalysisComplete extends VideoFormAnalysisState {
   const VideoFormAnalysisComplete({
     required this.session,
-    required this.result,
+    this.result,
     this.poseAnalysis,
     this.poseAnalysisWarning,
   });
 
   final VideoAnalysisSession session;
-  final FormAnalysisResult result;
+  final FormAnalysisResult? result;
 
   /// Pose analysis from Cloud Run backend (skeleton comparison, angles, etc.)
   final PoseAnalysisResponse? poseAnalysis;

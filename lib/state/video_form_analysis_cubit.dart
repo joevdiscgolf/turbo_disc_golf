@@ -9,7 +9,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
+// Gemini analysis commented out - uncomment when re-enabling
+// import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -116,7 +117,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
 
       if (video == null) {
         debugPrint('[VideoFormAnalysisCubit] Video selection cancelled');
-        // User cancelled - stay in current state (no change needed)
+        emit(const VideoFormAnalysisInitial());
         return;
       }
 
@@ -272,26 +273,18 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       }
     }
 
-    // Run Gemini analysis with pose data (if available) for informed feedback
-    final FormAnalysisResult? result = await analysisService.analyzeVideo(
-      videoPath: videoPath,
-      throwType: throwType,
-      poseAnalysis: poseResult, // Pass pose data to inform Gemini
-      onProgressUpdate: (String message) {
-        emit(VideoFormAnalysisAnalyzing(
-          session: session,
-          progressMessage: message,
-        ));
-      },
-    );
-
-    if (result == null) {
-      emit(VideoFormAnalysisError(
-        message: 'Analysis failed. Please try again with a clearer video.',
-        session: session.copyWith(status: SessionStatus.failed),
-      ));
-      return;
-    }
+    // Gemini analysis commented out - only using pose analysis for now
+    // final FormAnalysisResult? result = await analysisService.analyzeVideo(
+    //   videoPath: videoPath,
+    //   throwType: throwType,
+    //   poseAnalysis: poseResult, // Pass pose data to inform Gemini
+    //   onProgressUpdate: (String message) {
+    //     emit(VideoFormAnalysisAnalyzing(
+    //       session: session,
+    //       progressMessage: message,
+    //     ));
+    //   },
+    // );
 
     // Save to history (fire-and-forget, don't block UI)
     if (poseResult != null) {
@@ -310,9 +303,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     emit(VideoFormAnalysisComplete(
       session: session.copyWith(
         status: SessionStatus.completed,
-        analysisResult: result,
       ),
-      result: result,
       poseAnalysis: poseResult,
       poseAnalysisWarning: poseAnalysisWarning,
     ));
@@ -396,6 +387,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
 
       // Return user-friendly error message
       String userMessage;
+      final String errorLower = errorMessage.toLowerCase();
       if (errorMessage.contains('SocketException') ||
           errorMessage.contains('Connection refused') ||
           errorMessage.contains('Network error')) {
@@ -404,8 +396,14 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
             'Make sure the backend is running.';
       } else if (errorMessage.contains('timed out')) {
         userMessage = 'Pose analysis timed out. The server may be overloaded.';
+      } else if (errorLower.contains('not a video') ||
+          errorLower.contains('invalid video') ||
+          errorLower.contains('image file') ||
+          errorLower.contains('unsupported format') ||
+          errorLower.contains('cannot process')) {
+        userMessage = 'Please select a video file, not a photo';
       } else {
-        userMessage = 'Pose analysis failed: $errorMessage';
+        userMessage = 'Analysis failed. Please try again with a different video.';
       }
 
       return (null, userMessage);

@@ -22,7 +22,6 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
   // Video constraints
   static const int maxVideoSizeBytes = 20 * 1024 * 1024; // 20MB
   static const int maxVideoDurationSeconds = 3;
-  static const int minVideoDurationSeconds = 2;
   static const List<String> supportedFormats = [
     'mp4',
     'mov',
@@ -30,6 +29,20 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     'webm',
     'm4v',
     '3gp',
+  ];
+
+  // Common image formats to detect when user selects a photo instead of video
+  static const List<String> _imageFormats = [
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'heic',
+    'heif',
+    'webp',
+    'bmp',
+    'tiff',
+    'tif',
   ];
 
   /// Validate video file before processing
@@ -53,6 +66,15 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     }
 
     final String extension = videoPath.split('.').last.toLowerCase();
+
+    // Check if user selected a photo instead of a video
+    if (_imageFormats.contains(extension)) {
+      return const VideoValidationResult(
+        isValid: false,
+        errorMessage: 'Please select a video, not a photo',
+      );
+    }
+
     if (!supportedFormats.contains(extension)) {
       return VideoValidationResult(
         isValid: false,
@@ -79,9 +101,6 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
       if (seconds > maxVideoDurationSeconds) {
         return (null, 'Video must be $maxVideoDurationSeconds seconds or less');
-      }
-      if (seconds < minVideoDurationSeconds) {
-        return (null, 'Video must be at least $minVideoDurationSeconds seconds');
       }
 
       return (seconds, null);

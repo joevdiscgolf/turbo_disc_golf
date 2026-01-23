@@ -8,6 +8,7 @@ import 'package:flutter_remix/flutter_remix.dart';
 import 'package:intl/intl.dart';
 
 import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
+import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/components/form_analysis/synchronized_video_player.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
@@ -26,7 +27,7 @@ class HistoryAnalysisView extends StatefulWidget {
     super.key,
     required this.analysis,
     required this.onBack,
-    this.topViewPadding = 0,
+    this.topPadding = 0,
     this.videoUrl,
     this.throwType,
     this.cameraAngle,
@@ -36,7 +37,7 @@ class HistoryAnalysisView extends StatefulWidget {
 
   final FormAnalysisRecord analysis;
   final VoidCallback onBack;
-  final double topViewPadding;
+  final double topPadding;
 
   /// Optional: URL of user's form video for video comparison feature
   final String? videoUrl;
@@ -115,7 +116,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       children: [
         CustomScrollView(
           slivers: [
-            SliverPadding(padding: EdgeInsets.only(top: widget.topViewPadding)),
+            SliverPadding(padding: EdgeInsets.only(top: widget.topPadding)),
             SliverToBoxAdapter(child: _buildHeader(context)),
             if (locator
                 .get<FeatureFlagService>()
@@ -143,7 +144,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         widget.analysis.throwType.toLowerCase() == 'backhand';
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -157,8 +158,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       ),
       child: Column(
         children: [
-          _buildHeroScore(context),
-          Divider(height: 1, color: Colors.grey[300]),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -166,30 +165,10 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: _buildInfoChip(
-                        label: isBackhand ? 'Backhand' : 'Forehand',
-                        icon: Icons.sports_golf,
-                        color: isBackhand
-                            ? const Color(0xFF2196F3)
-                            : const Color(0xFF9C27B0),
-                      ),
-                    ),
+                    _buildThrowTypeBadge(isBackhand),
                     if (widget.analysis.cameraAngle != null) ...[
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildCameraAngleChip(
-                          widget.analysis.cameraAngle!,
-                        ),
-                      ),
-                    ],
-                    if (widget.analysis.worstDeviationSeverity != null) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SeverityBadge(
-                          severity: widget.analysis.worstDeviationSeverity!,
-                        ),
-                      ),
+                      _buildCameraAngleBadge(widget.analysis.cameraAngle!),
                     ],
                   ],
                 ),
@@ -268,178 +247,84 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     }
   }
 
-  Widget _buildHeroScore(BuildContext context) {
-    final int? score = widget.analysis.overallFormScore;
+  Widget _buildThrowTypeBadge(bool isBackhand) {
+    final Color color1 = isBackhand
+        ? const Color(0xFF5E35B1)
+        : const Color(0xFFFF6F00);
+    final Color color2 = isBackhand
+        ? const Color(0xFF7E57C2)
+        : const Color(0xFFFF8F00);
 
-    if (score == null) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        child: Column(
-          children: [
-            Text(
-              '--',
-              style: TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[400],
-                height: 1.0,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Overall Form Score',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color1, color2],
         ),
-      );
-    }
-
-    final Color scoreColor = _getScoreColor(score);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$score',
-                style: TextStyle(
-                  fontSize: 64,
-                  fontWeight: FontWeight.bold,
-                  color: scoreColor,
-                  height: 1.0,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8, left: 3),
-                child: Text(
-                  '/100',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-            ],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color1.withValues(alpha: 0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Overall Form Score',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 10),
-          _buildProgressBar(score, scoreColor),
         ],
       ),
-    );
-  }
-
-  Widget _buildProgressBar(int score, Color color) {
-    final double progress = (score / 100).clamp(0.0, 1.0);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          height: 8,
-          width: constraints.maxWidth,
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              height: 8,
-              width: constraints.maxWidth * progress,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildInfoChip({
-    required String label,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+      child: Text(
+        isBackhand ? 'Backhand' : 'Forehand',
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );
   }
 
-  Widget _buildCameraAngleChip(CameraAngle cameraAngle) {
+  Widget _buildCameraAngleBadge(CameraAngle cameraAngle) {
     final bool isSideView = cameraAngle == CameraAngle.side;
-    final Color color = isSideView
+    final Color color1 = isSideView
         ? const Color(0xFF1976D2)
         : const Color(0xFF00897B);
+    final Color color2 = isSideView
+        ? const Color(0xFF2196F3)
+        : const Color(0xFF26A69A);
     final IconData icon = isSideView ? Icons.photo_camera : Icons.videocam;
-    final String label = cameraAngle.displayName;
+    final String label = isSideView ? 'Side' : 'Rear';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color1, color2],
         ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color1.withValues(alpha: 0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -667,53 +552,69 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             ),
             const SizedBox(height: 16),
             Divider(height: 1, color: Colors.grey[200]),
-            Padding(
-              padding: const EdgeInsets.all(16),
+            _buildCheckpointDetailsButton(context, checkpoint),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckpointDetailsButton(
+    BuildContext context,
+    CheckpointRecord checkpoint,
+  ) {
+    return GestureDetector(
+      onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          checkpoint.checkpointName,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      SeverityBadge(severity: checkpoint.deviationSeverity),
-                    ],
-                  ),
-                  if (checkpoint.coachingTips.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    ...checkpoint.coachingTips.map(
-                      (tip) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '• ',
-                              style: TextStyle(color: Color(0xFF137e66)),
-                            ),
-                            Expanded(
-                              child: Text(
-                                tip,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: Colors.grey[800]),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  Text(
+                    checkpoint.checkpointName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'View coaching tips',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
                 ],
               ),
+            ),
+            SeverityBadge(severity: checkpoint.deviationSeverity),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey[400],
+              size: 24,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showCheckpointDetailsPanel(
+    BuildContext context,
+    CheckpointRecord checkpoint,
+  ) {
+    EducationPanel.show(
+      context,
+      title: checkpoint.checkpointName,
+      modalName: 'Checkpoint Details',
+      accentColor: const Color(0xFF137e66),
+      buttonLabel: 'Done',
+      contentBuilder: (_) => _CheckpointDetailsContent(checkpoint: checkpoint),
     );
   }
 
@@ -1069,13 +970,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ],
       ),
     );
-  }
-
-  Color _getScoreColor(int score) {
-    if (score >= 80) return const Color(0xFF4CAF50);
-    if (score >= 60) return const Color(0xFF2196F3);
-    if (score >= 40) return const Color(0xFFFF9800);
-    return const Color(0xFFF44336);
   }
 
   Widget _buildAngleDeviations(BuildContext context) {

@@ -141,7 +141,7 @@ enum FeatureFlag {
   useMockFormAnalysisResponse('use_mock_form_analysis_response', true),
   showFormAnalysisScoreAndSummary('show_form_analysis_score_and_summary', true),
   saveFormAnalysisToFirestore('save_form_analysis_to_firestore', true),
-  showFormAnalysisVideoComparison('show_form_analysis_video_comparison', true),
+  showFormAnalysisVideoComparison('show_form_analysis_video_comparison', false),
 
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs

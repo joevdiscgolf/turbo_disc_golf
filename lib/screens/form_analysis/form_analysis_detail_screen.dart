@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -69,13 +68,12 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           title: 'Form analysis',
           backgroundColor: Colors.transparent,
           hasBackButton: true,
-          rightWidget: kDebugMode ? _buildMenuButton() : null,
+          rightWidget: _buildMenuButton(),
         ),
         body: HistoryAnalysisView(
           analysis: widget.analysis,
           onBack: () => Navigator.pop(context),
-          topViewPadding: topViewPadding,
-          // Pass video data for video comparison feature (if available)
+          topPadding: 12,
           videoUrl: widget.analysis.videoUrl,
           throwType: _parseThrowTechnique(widget.analysis.throwType),
           cameraAngle: widget.analysis.cameraAngle,
@@ -148,7 +146,8 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
       builder: (BuildContext context) {
         return CustomCupertinoActionSheet(
           title: 'Delete Analysis?',
-          message: 'This will permanently delete this form analysis and all associated images. This action cannot be undone.',
+          message:
+              'This will permanently delete this form analysis and all associated images. This action cannot be undone.',
           destructiveActionLabel: 'Delete',
           onDestructiveActionPressed: () {
             _logger.track(

@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/throw_type_stats.dart';
@@ -45,11 +45,10 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
   }
 
   void _initializeVisibleThrowTypes() {
-    // Show top 3 throw types by default
+    // Show all throw types
     _visibleThrowTypes.clear();
-    final int visibleCount = min(3, widget.throwTypes.length);
-    for (int i = 0; i < visibleCount; i++) {
-      _visibleThrowTypes.add(widget.throwTypes[i].throwType);
+    for (var throwType in widget.throwTypes) {
+      _visibleThrowTypes.add(throwType.throwType);
     }
   }
 
@@ -78,19 +77,12 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Throw Type Comparison',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            AspectRatio(
-              aspectRatio: 1,
+            SizedBox(
+              height: 180,
               child: CustomPaint(
                 painter: _RadarChartPainter(
                   throwTypes: widget.throwTypes,
@@ -111,18 +103,8 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             _buildLegend(context),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                'Tap legend items to show/hide • Tap polygon for details',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
             if (_highlightedThrowType != null) ...[
               const SizedBox(height: 12),
               _buildHighlightedStats(context),
@@ -135,28 +117,35 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
 
   Widget _buildLegend(BuildContext context) {
     return Wrap(
-      spacing: 8,
+      spacing: 12,
       runSpacing: 8,
       alignment: WrapAlignment.center,
       children: widget.throwTypes.asMap().entries.map((entry) {
         final int index = entry.key;
         final ThrowTypeStats throwType = entry.value;
         final Color color = _getColorForThrowType(throwType.throwType, index);
-        final bool isVisible = _visibleThrowTypes.contains(throwType.throwType);
 
-        return _PillToggle(
-          color: color,
-          label: throwType.displayName,
-          isSelected: isVisible,
-          onTap: () {
-            setState(() {
-              if (isVisible) {
-                _visibleThrowTypes.remove(throwType.throwType);
-              } else {
-                _visibleThrowTypes.add(throwType.throwType);
-              }
-            });
-          },
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              throwType.displayName,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: const Color(0xFF6B7280),
+              ),
+            ),
+          ],
         );
       }).toList(),
     );
@@ -209,6 +198,16 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
             value: '${stats.c2InRegPct.toStringAsFixed(0)}%',
             detail: '${stats.c2Count}/${stats.c2Total}',
           ),
+          _StatRow(
+            label: 'Parked',
+            value: '${stats.parkedPct.toStringAsFixed(0)}%',
+            detail: '${stats.parkedCount}',
+          ),
+          _StatRow(
+            label: 'Fairway',
+            value: '${stats.fairwayPct.toStringAsFixed(0)}%',
+            detail: '${stats.fairwayCount}',
+          ),
         ],
       ),
     );
@@ -217,66 +216,6 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
   String? _getThrowTypeAtPosition(Offset position) {
     // Simplified hit detection - would need more sophisticated logic in production
     return null;
-  }
-}
-
-/// Pill-style toggle for legend items
-class _PillToggle extends StatelessWidget {
-  const _PillToggle({
-    required this.color,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final Color color;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: 0.15)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? color : color.withValues(alpha: 0.3),
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: isSelected ? color : color.withValues(alpha: 0.4),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 13,
-                color: isSelected
-                    ? color
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -342,7 +281,7 @@ class _RadarChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Offset center = Offset(size.width / 2, size.height / 2);
-    final double radius = min(size.width, size.height) / 2 - 40;
+    final double radius = math.min(size.width, size.height) / 2 - 40;
 
     // Draw background grid
     _drawGrid(canvas, center, radius);
@@ -379,26 +318,26 @@ class _RadarChartPainter extends CustomPainter {
     }
 
     // Draw axes
-    const int sides = 3; // Birdie, C1, C2
+    const int sides = 5; // Birdie, C1, C2, Parked, Fairway
     for (int i = 0; i < sides; i++) {
-      final double angle = (2 * pi / sides) * i - pi / 2;
+      final double angle = (2 * math.pi / sides) * i - math.pi / 2;
       final Offset end = Offset(
-        center.dx + radius * cos(angle),
-        center.dy + radius * sin(angle),
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
       );
       canvas.drawLine(center, end, gridPaint);
     }
   }
 
   void _drawAxes(Canvas canvas, Offset center, double radius) {
-    const List<String> labels = ['Birdie\nRate', 'C1 in\nReg', 'C2 in\nReg'];
-    const int sides = 3;
+    const List<String> labels = ['Birdie', 'C1', 'C2', 'Parked', 'Fairway'];
+    const int sides = 5;
 
     for (int i = 0; i < sides; i++) {
-      final double angle = (2 * pi / sides) * i - pi / 2;
+      final double angle = (2 * math.pi / sides) * i - math.pi / 2;
       final Offset labelPos = Offset(
-        center.dx + (radius + 30) * cos(angle),
-        center.dy + (radius + 30) * sin(angle),
+        center.dx + (radius + 25) * math.cos(angle),
+        center.dy + (radius + 25) * math.sin(angle),
       );
 
       final TextPainter textPainter = TextPainter(
@@ -435,19 +374,21 @@ class _RadarChartPainter extends CustomPainter {
       stats.birdieRate,
       stats.c1InRegPct,
       stats.c2InRegPct,
+      stats.parkedPct,
+      stats.fairwayPct,
     ];
 
     final Path path = Path();
-    const int sides = 3;
+    const int sides = 5;
 
     for (int i = 0; i < sides; i++) {
-      final double angle = (2 * pi / sides) * i - pi / 2;
+      final double angle = (2 * math.pi / sides) * i - math.pi / 2;
       final double normalizedValue = values[i] / 100;
       final double pointRadius = radius * normalizedValue;
 
       final Offset point = Offset(
-        center.dx + pointRadius * cos(angle),
-        center.dy + pointRadius * sin(angle),
+        center.dx + pointRadius * math.cos(angle),
+        center.dy + pointRadius * math.sin(angle),
       );
 
       if (i == 0) {
@@ -476,13 +417,13 @@ class _RadarChartPainter extends CustomPainter {
 
     // Draw points
     for (int i = 0; i < sides; i++) {
-      final double angle = (2 * pi / sides) * i - pi / 2;
+      final double angle = (2 * math.pi / sides) * i - math.pi / 2;
       final double normalizedValue = values[i] / 100;
       final double pointRadius = radius * normalizedValue;
 
       final Offset point = Offset(
-        center.dx + pointRadius * cos(angle),
-        center.dy + pointRadius * sin(angle),
+        center.dx + pointRadius * math.cos(angle),
+        center.dy + pointRadius * math.sin(angle),
       );
 
       canvas.drawCircle(point, isHighlighted ? 5 : 3, Paint()..color = color);

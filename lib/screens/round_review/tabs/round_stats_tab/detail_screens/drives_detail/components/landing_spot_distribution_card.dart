@@ -10,7 +10,8 @@ class LandingSpotDistributionCard extends StatelessWidget {
   });
 
   /// Map of par -> landing spot name -> {count, percentage, total}
-  final Map<int, Map<String, Map<String, dynamic>>> landingSpotDistributionByPar;
+  final Map<int, Map<String, Map<String, dynamic>>>
+  landingSpotDistributionByPar;
 
   static const Color _parkedColor = Color(0xFFFFA726); // Orange
   static const Color _c1Color = Color(0xFF10B981); // Green
@@ -33,9 +34,9 @@ class LandingSpotDistributionCard extends StatelessWidget {
         child: Center(
           child: Text(
             'No landing spot data',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF9CA3AF),
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
           ),
         ),
       );
@@ -56,7 +57,7 @@ class LandingSpotDistributionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Landing Spot Distribution',
+            'Landing spots',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -68,8 +69,12 @@ class LandingSpotDistributionCard extends StatelessWidget {
             final par = entry.value;
             final isLast = index == sortedPars.length - 1;
             final spotDistribution = landingSpotDistributionByPar[par]!;
-            return _buildParSection(context, par, spotDistribution,
-                showDivider: !isLast);
+            return _buildParSection(
+              context,
+              par,
+              spotDistribution,
+              showDivider: !isLast,
+            );
           }),
         ],
       ),
@@ -84,17 +89,39 @@ class LandingSpotDistributionCard extends StatelessWidget {
     bool showDivider = true,
   }) {
     final sortedSpots = _getSortedSpots(spotDistribution);
+    final totalHoles = spotDistribution.values.first['total'] as int;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Par $par',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: const Color(0xFF111827),
-          ),
+        Row(
+          children: [
+            Text(
+              'Par $par',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: const Color(0xFF111827),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              width: 4,
+              height: 4,
+              decoration: const BoxDecoration(
+                color: Color(0xFF9CA3AF),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$totalHoles hole${totalHoles == 1 ? '' : 's'}',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontSize: 14,
+                color: const Color(0xFF6B7280),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         _buildDotGrid(context, sortedSpots),
@@ -113,7 +140,15 @@ class LandingSpotDistributionCard extends StatelessWidget {
   List<MapEntry<String, Map<String, dynamic>>> _getSortedSpots(
     Map<String, Map<String, dynamic>> spotDistribution,
   ) {
-    const order = ['parked', 'circle1', 'circle2', 'fairway', 'offFairway', 'outOfBounds', 'hazard'];
+    const order = [
+      'parked',
+      'circle1',
+      'circle2',
+      'fairway',
+      'offFairway',
+      'outOfBounds',
+      'hazard',
+    ];
 
     final result = <MapEntry<String, Map<String, dynamic>>>[];
     for (var spotName in order) {
@@ -149,9 +184,9 @@ class LandingSpotDistributionCard extends StatelessWidget {
       return Center(
         child: Text(
           'No tee shot data',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF9CA3AF),
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
         ),
       );
     }
@@ -174,15 +209,9 @@ class LandingSpotDistributionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white, width: 1),
         boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 2,
-          ),
+          BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 2),
         ],
       ),
     );
@@ -261,15 +290,6 @@ class LandingSpotDistributionCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Text(
                       displayName,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
