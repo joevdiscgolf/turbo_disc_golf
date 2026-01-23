@@ -11,21 +11,19 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysi
 class AnalysisResultsView extends StatelessWidget {
   const AnalysisResultsView({
     super.key,
-    required this.result,
+    this.result,
     this.poseAnalysis,
     required this.topViewPadding,
   });
 
-  final FormAnalysisResult result;
+  final FormAnalysisResult? result;
   final PoseAnalysisResponse? poseAnalysis;
   final double topViewPadding;
 
   @override
   Widget build(BuildContext context) {
     if (poseAnalysis == null) {
-      return const Center(
-        child: Text('No pose analysis data available'),
-      );
+      return const Center(child: Text('No pose analysis data available'));
     }
 
     // Convert PoseAnalysisResponse to FormAnalysisRecord format
@@ -37,7 +35,7 @@ class AnalysisResultsView extends StatelessWidget {
     return HistoryAnalysisView(
       analysis: analysisRecord,
       onBack: () {}, // No-op for fresh analysis
-      topViewPadding: topViewPadding + appBarHeight,
+      topPadding: topViewPadding + appBarHeight,
       // Pass video data for video comparison feature
       videoUrl: poseAnalysis!.videoUrl,
       throwType: _parseThrowTechnique(poseAnalysis!.throwType),
@@ -50,8 +48,9 @@ class AnalysisResultsView extends StatelessWidget {
 
   FormAnalysisRecord _convertToRecord(PoseAnalysisResponse poseAnalysis) {
     // Convert checkpoints from CheckpointPoseData to CheckpointRecord
-    final List<CheckpointRecord> checkpoints =
-        poseAnalysis.checkpoints.map((cp) {
+    final List<CheckpointRecord> checkpoints = poseAnalysis.checkpoints.map((
+      cp,
+    ) {
       // Use base64 as data URLs (they'll be converted inline by the display code)
       final String? userImageUrl = cp.userImageBase64 != null
           ? 'data:image/jpeg;base64,${cp.userImageBase64}'
@@ -61,19 +60,20 @@ class AnalysisResultsView extends StatelessWidget {
           : null;
       final String? referenceImageUrl =
           cp.referenceSilhouetteWithSkeletonBase64 != null
-              ? 'data:image/jpeg;base64,${cp.referenceSilhouetteWithSkeletonBase64}'
-              : (cp.referenceImageBase64 != null
-                  ? 'data:image/jpeg;base64,${cp.referenceImageBase64}'
-                  : null);
+          ? 'data:image/jpeg;base64,${cp.referenceSilhouetteWithSkeletonBase64}'
+          : (cp.referenceImageBase64 != null
+                ? 'data:image/jpeg;base64,${cp.referenceImageBase64}'
+                : null);
       final String? referenceSkeletonUrl =
           cp.referenceSkeletonOnlyBase64 != null
-              ? 'data:image/jpeg;base64,${cp.referenceSkeletonOnlyBase64}'
-              : null;
+          ? 'data:image/jpeg;base64,${cp.referenceSkeletonOnlyBase64}'
+          : null;
 
       // Convert angle deviations from AngleDeviations object to Map
       final Map<String, double> angleDeviations = {};
       if (cp.deviationsRaw.shoulderRotation != null) {
-        angleDeviations['shoulder_rotation'] = cp.deviationsRaw.shoulderRotation!;
+        angleDeviations['shoulder_rotation'] =
+            cp.deviationsRaw.shoulderRotation!;
       }
       if (cp.deviationsRaw.elbowAngle != null) {
         angleDeviations['elbow_angle'] = cp.deviationsRaw.elbowAngle!;
@@ -93,8 +93,7 @@ class AnalysisResultsView extends StatelessWidget {
         checkpointName: cp.checkpointName,
         deviationSeverity: cp.deviationSeverity,
         coachingTips: cp.coachingTips,
-        angleDeviations:
-            angleDeviations.isNotEmpty ? angleDeviations : null,
+        angleDeviations: angleDeviations.isNotEmpty ? angleDeviations : null,
         userImageUrl: userImageUrl,
         userSkeletonUrl: userSkeletonUrl,
         referenceImageUrl: referenceImageUrl,
@@ -103,10 +102,8 @@ class AnalysisResultsView extends StatelessWidget {
         referenceHorizontalOffsetPercent: cp.referenceHorizontalOffsetPercent,
         referenceScale: cp.referenceScale,
         // Individual joint angles - User
-        userLeftKneeBendAngle:
-            cp.userIndividualAngles?.leftKneeBendAngle,
-        userRightKneeBendAngle:
-            cp.userIndividualAngles?.rightKneeBendAngle,
+        userLeftKneeBendAngle: cp.userIndividualAngles?.leftKneeBendAngle,
+        userRightKneeBendAngle: cp.userIndividualAngles?.rightKneeBendAngle,
         userLeftElbowFlexionAngle:
             cp.userIndividualAngles?.leftElbowFlexionAngle,
         userRightElbowFlexionAngle:
@@ -119,18 +116,13 @@ class AnalysisResultsView extends StatelessWidget {
             cp.userIndividualAngles?.leftWristExtensionAngle,
         userRightWristExtensionAngle:
             cp.userIndividualAngles?.rightWristExtensionAngle,
-        userLeftHipFlexionAngle:
-            cp.userIndividualAngles?.leftHipFlexionAngle,
-        userRightHipFlexionAngle:
-            cp.userIndividualAngles?.rightHipFlexionAngle,
+        userLeftHipFlexionAngle: cp.userIndividualAngles?.leftHipFlexionAngle,
+        userRightHipFlexionAngle: cp.userIndividualAngles?.rightHipFlexionAngle,
         userLeftAnkleAngle: cp.userIndividualAngles?.leftAnkleAngle,
-        userRightAnkleAngle:
-            cp.userIndividualAngles?.rightAnkleAngle,
+        userRightAnkleAngle: cp.userIndividualAngles?.rightAnkleAngle,
         // Individual joint angles - Reference
-        refLeftKneeBendAngle:
-            cp.referenceIndividualAngles?.leftKneeBendAngle,
-        refRightKneeBendAngle:
-            cp.referenceIndividualAngles?.rightKneeBendAngle,
+        refLeftKneeBendAngle: cp.referenceIndividualAngles?.leftKneeBendAngle,
+        refRightKneeBendAngle: cp.referenceIndividualAngles?.rightKneeBendAngle,
         refLeftElbowFlexionAngle:
             cp.referenceIndividualAngles?.leftElbowFlexionAngle,
         refRightElbowFlexionAngle:
@@ -147,15 +139,11 @@ class AnalysisResultsView extends StatelessWidget {
             cp.referenceIndividualAngles?.leftHipFlexionAngle,
         refRightHipFlexionAngle:
             cp.referenceIndividualAngles?.rightHipFlexionAngle,
-        refLeftAnkleAngle:
-            cp.referenceIndividualAngles?.leftAnkleAngle,
-        refRightAnkleAngle:
-            cp.referenceIndividualAngles?.rightAnkleAngle,
+        refLeftAnkleAngle: cp.referenceIndividualAngles?.leftAnkleAngle,
+        refRightAnkleAngle: cp.referenceIndividualAngles?.rightAnkleAngle,
         // Individual joint angle deviations
-        devLeftKneeBendAngle:
-            cp.individualDeviations?.leftKneeBendAngle,
-        devRightKneeBendAngle:
-            cp.individualDeviations?.rightKneeBendAngle,
+        devLeftKneeBendAngle: cp.individualDeviations?.leftKneeBendAngle,
+        devRightKneeBendAngle: cp.individualDeviations?.rightKneeBendAngle,
         devLeftElbowFlexionAngle:
             cp.individualDeviations?.leftElbowFlexionAngle,
         devRightElbowFlexionAngle:
@@ -168,13 +156,10 @@ class AnalysisResultsView extends StatelessWidget {
             cp.individualDeviations?.leftWristExtensionAngle,
         devRightWristExtensionAngle:
             cp.individualDeviations?.rightWristExtensionAngle,
-        devLeftHipFlexionAngle:
-            cp.individualDeviations?.leftHipFlexionAngle,
-        devRightHipFlexionAngle:
-            cp.individualDeviations?.rightHipFlexionAngle,
+        devLeftHipFlexionAngle: cp.individualDeviations?.leftHipFlexionAngle,
+        devRightHipFlexionAngle: cp.individualDeviations?.rightHipFlexionAngle,
         devLeftAnkleAngle: cp.individualDeviations?.leftAnkleAngle,
-        devRightAnkleAngle:
-            cp.individualDeviations?.rightAnkleAngle,
+        devRightAnkleAngle: cp.individualDeviations?.rightAnkleAngle,
       );
     }).toList();
 
@@ -189,8 +174,11 @@ class AnalysisResultsView extends StatelessWidget {
       overallFormScore: poseAnalysis.overallFormScore,
       worstDeviationSeverity: worstSeverity,
       checkpoints: checkpoints,
-      topCoachingTips: result.prioritizedImprovements.isNotEmpty
-          ? result.prioritizedImprovements.map((imp) => imp.description).toList()
+      topCoachingTips:
+          result != null && result!.prioritizedImprovements.isNotEmpty
+          ? result!.prioritizedImprovements
+                .map((imp) => imp.description)
+                .toList()
           : null,
       cameraAngle: poseAnalysis.cameraAngle,
       videoOrientation: poseAnalysis.videoOrientation,
@@ -213,8 +201,9 @@ class AnalysisResultsView extends StatelessWidget {
     int worstIndex = -1;
 
     for (final checkpoint in checkpoints) {
-      final int index =
-          severityOrder.indexOf(checkpoint.deviationSeverity.toLowerCase());
+      final int index = severityOrder.indexOf(
+        checkpoint.deviationSeverity.toLowerCase(),
+      );
       if (index > worstIndex) {
         worstIndex = index;
         worstSeverity = checkpoint.deviationSeverity;

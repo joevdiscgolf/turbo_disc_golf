@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// A reusable CupertinoActionSheet with consistent styling across the app.
 ///
@@ -28,8 +29,17 @@ class CustomCupertinoActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoActionSheet(
-      title: Text(title),
-      message: message != null ? Text(message!) : null,
+      title: Text(
+        title,
+        textAlign: TextAlign.center,
+      ),
+      message: message != null
+          ? Text(
+              message!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: SenseiColors.gray.shade50),
+            )
+          : null,
       actions: [
         CupertinoActionSheetAction(
           isDestructiveAction: true,

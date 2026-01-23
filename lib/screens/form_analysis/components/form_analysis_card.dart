@@ -95,32 +95,8 @@ class FormAnalysisCard extends StatelessWidget {
           const SizedBox(width: 8),
           _CameraAngleBadge(angle: analysis.cameraAngle!),
         ],
-        if (analysis.overallFormScore != null) ...[
-          const SizedBox(width: 8),
-          _buildScoreChip(context),
-        ],
       ],
     );
-  }
-
-  Widget _buildScoreChip(BuildContext context) {
-    return _InfoChip(
-      icon: Icons.star,
-      label: '${analysis.overallFormScore}',
-      color: _getScoreColor(analysis.overallFormScore!),
-    );
-  }
-
-  Color _getScoreColor(int score) {
-    if (score >= 90) {
-      return const Color(0xFF137e66); // Excellent - green
-    } else if (score >= 75) {
-      return const Color(0xFF1976D2); // Good - blue
-    } else if (score >= 60) {
-      return const Color(0xFFFF8F00); // Fair - orange
-    } else {
-      return const Color(0xFFD32F2F); // Needs work - red
-    }
   }
 
   String? _formatDateTime(String? isoString) {
@@ -326,7 +302,7 @@ class _CameraAngleBadge extends StatelessWidget {
         ? const Color(0xFF2196F3)
         : const Color(0xFF26A69A);
     final IconData icon = isSideView ? Icons.photo_camera : Icons.videocam;
-    final String label = angle.displayName;
+    final String label = isSideView ? 'Side' : 'Rear';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -361,63 +337,5 @@ class _CameraAngleBadge extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Small info chip with icon and label
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color2 = _getLighterColor(color);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color, color2],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.white),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getLighterColor(Color color) {
-    // Create a lighter version of the color for gradient
-    final HSLColor hsl = HSLColor.fromColor(color);
-    return hsl.withLightness((hsl.lightness + 0.1).clamp(0.0, 1.0)).toColor();
   }
 }

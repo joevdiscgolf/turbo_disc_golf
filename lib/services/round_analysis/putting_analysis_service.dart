@@ -1,6 +1,8 @@
+import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/putt_detail/models/putt_attempt.dart';
 
 class PuttingAnalysisService {
   /// Get putting statistics by distance range
@@ -241,5 +243,62 @@ class PuttingAnalysisService {
     }
 
     return puttAttempts;
+  }
+
+  /// Get all putt attempts as PuttAttempt objects with full context
+  List<PuttAttempt> getAllPuttAttempts(DGRound round) {
+    final List<PuttAttempt> puttAttempts = [];
+
+    for (final hole in round.holes) {
+      bool previousPuttMissed = false;
+
+      for (int i = 0; i < hole.throws.length; i++) {
+        final discThrow = hole.throws[i];
+        if (discThrow.purpose == ThrowPurpose.putt &&
+            discThrow.distanceFeetBeforeThrow != null) {
+          final made = discThrow.landingSpot == LandingSpot.inBasket;
+          final puttFor = _calculatePuttFor(hole, i);
+
+          puttAttempts.add(PuttAttempt(
+            hole: hole,
+            throwIndex: i,
+            distance: discThrow.distanceFeetBeforeThrow!.toDouble(),
+            made: made,
+            puttFor: puttFor,
+            isComeback: previousPuttMissed,
+          ));
+
+          previousPuttMissed = !made;
+        }
+      }
+    }
+
+    return puttAttempts;
+  }
+
+  /// Get comeback putt attempts as PuttAttempt objects
+  List<PuttAttempt> getComebackPuttAttempts(DGRound round) {
+    return getAllPuttAttempts(round).where((p) => p.isComeback).toList();
+  }
+
+  /// Calculate what score making this putt would result in
+  PuttFor _calculatePuttFor(DGHole hole, int throwIndex) {
+    // Count throws before this one (including this throw = score if made)
+    final scoreIfMade = throwIndex + 1;
+    final relativeScore = scoreIfMade - hole.par;
+
+    if (relativeScore <= -2) {
+      return PuttFor.eagle;
+    } else if (relativeScore == -1) {
+      return PuttFor.birdie;
+    } else if (relativeScore == 0) {
+      return PuttFor.par;
+    } else if (relativeScore == 1) {
+      return PuttFor.bogey;
+    } else if (relativeScore == 2) {
+      return PuttFor.doubleBogey;
+    } else {
+      return PuttFor.triplePlus;
+    }
   }
 }

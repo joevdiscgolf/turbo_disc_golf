@@ -474,7 +474,7 @@ class _SynchronizedVideoPlaybackViewState extends State<SynchronizedVideoPlaybac
           VideoPanelWithSkeleton(
             controller: widget.playerService.proController!,
             framePoses: _proLandmarks!.framePoses,
-            label: 'Pro Reference',
+            label: 'Pro reference',
             skeletonColor: Colors.green,
           ),
 

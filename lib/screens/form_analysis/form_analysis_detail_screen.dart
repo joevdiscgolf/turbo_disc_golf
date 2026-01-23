@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -49,19 +49,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     final double topViewPadding = MediaQuery.of(context).padding.top;
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5),
-            Color(0xFFECECEE),
-            Color(0xFFE8F4E8),
-            Color(0xFFEAE8F0),
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
-        ),
-      ),
+      color: Colors.grey[50],
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GenericAppBar(
@@ -69,13 +57,12 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           title: 'Form analysis',
           backgroundColor: Colors.transparent,
           hasBackButton: true,
-          rightWidget: kDebugMode ? _buildMenuButton() : null,
+          rightWidget: _buildMenuButton(),
         ),
         body: HistoryAnalysisView(
           analysis: widget.analysis,
           onBack: () => Navigator.pop(context),
-          topViewPadding: topViewPadding,
-          // Pass video data for video comparison feature (if available)
+          topPadding: 8,
           videoUrl: widget.analysis.videoUrl,
           throwType: _parseThrowTechnique(widget.analysis.throwType),
           cameraAngle: widget.analysis.cameraAngle,
@@ -108,7 +95,11 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_horiz),
       enabled: !_isDeleting,
+      onOpened: () {
+        HapticFeedback.lightImpact();
+      },
       onSelected: (String value) {
+        HapticFeedback.lightImpact();
         if (value == 'delete') {
           _logger.track(
             'Delete Analysis Menu Item Tapped',
@@ -148,7 +139,8 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
       builder: (BuildContext context) {
         return CustomCupertinoActionSheet(
           title: 'Delete Analysis?',
-          message: 'This will permanently delete this form analysis and all associated images. This action cannot be undone.',
+          message:
+              'This will permanently delete this form analysis and all associated images. This action cannot be undone.',
           destructiveActionLabel: 'Delete',
           onDestructiveActionPressed: () {
             _logger.track(
@@ -185,7 +177,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
 
     if (success) {
       // Show success message
-      locator.get<ToastService>().showSuccess('Analysis deleted successfully');
+      locator.get<ToastService>().showSuccess('Deleted analysis');
 
       // Navigate back to history screen
       Navigator.pop(context);

@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_remix/flutter_remix.dart';
-import 'package:intl/intl.dart';
-
-import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
 import 'package:turbo_disc_golf/components/form_analysis/synchronized_video_player.dart';
+import 'package:turbo_disc_golf/components/panels/education_panel.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_checkpoint.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/form_analysis_video_helper.dart';
 
 /// View for displaying a historical form analysis from Firestore.
@@ -26,7 +26,7 @@ class HistoryAnalysisView extends StatefulWidget {
     super.key,
     required this.analysis,
     required this.onBack,
-    this.topViewPadding = 0,
+    this.topPadding = 0,
     this.videoUrl,
     this.throwType,
     this.cameraAngle,
@@ -36,7 +36,7 @@ class HistoryAnalysisView extends StatefulWidget {
 
   final FormAnalysisRecord analysis;
   final VoidCallback onBack;
-  final double topViewPadding;
+  final double topPadding;
 
   /// Optional: URL of user's form video for video comparison feature
   final String? videoUrl;
@@ -115,97 +115,19 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       children: [
         CustomScrollView(
           slivers: [
-            SliverPadding(padding: EdgeInsets.only(top: widget.topViewPadding)),
-            SliverToBoxAdapter(child: _buildHeader(context)),
+            SliverPadding(padding: EdgeInsets.only(top: widget.topPadding)),
+            // SliverToBoxAdapter(child: _buildHeader(context)),
             if (locator
                 .get<FeatureFlagService>()
                 .showFormAnalysisVideoComparison)
               _buildVideoComparisonSliver(),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
-            SliverToBoxAdapter(child: _buildAngleDeviations(context)),
-            if (widget.analysis.topCoachingTips?.isNotEmpty ?? false)
-              SliverToBoxAdapter(child: _buildCoachingTips(context)),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+            // SliverToBoxAdapter(child: _buildAngleDeviations(context)),
           ],
         ),
         _buildFloatingViewToggle(),
       ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    final DateTime createdAt = DateTime.parse(widget.analysis.createdAt);
-    final String formattedDateTime = DateFormat(
-      'EEEE, MMM d \'at\' h:mm a',
-    ).format(createdAt);
-    final bool isBackhand =
-        widget.analysis.throwType.toLowerCase() == 'backhand';
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildHeroScore(context),
-          Divider(height: 1, color: Colors.grey[300]),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInfoChip(
-                        label: isBackhand ? 'Backhand' : 'Forehand',
-                        icon: Icons.sports_golf,
-                        color: isBackhand
-                            ? const Color(0xFF2196F3)
-                            : const Color(0xFF9C27B0),
-                      ),
-                    ),
-                    if (widget.analysis.cameraAngle != null) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildCameraAngleChip(
-                          widget.analysis.cameraAngle!,
-                        ),
-                      ),
-                    ],
-                    if (widget.analysis.worstDeviationSeverity != null) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SeverityBadge(
-                          severity: widget.analysis.worstDeviationSeverity!,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  formattedDateTime,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -266,182 +188,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ),
       );
     }
-  }
-
-  Widget _buildHeroScore(BuildContext context) {
-    final int? score = widget.analysis.overallFormScore;
-
-    if (score == null) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        child: Column(
-          children: [
-            Text(
-              '--',
-              style: TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[400],
-                height: 1.0,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Overall Form Score',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final Color scoreColor = _getScoreColor(score);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$score',
-                style: TextStyle(
-                  fontSize: 64,
-                  fontWeight: FontWeight.bold,
-                  color: scoreColor,
-                  height: 1.0,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8, left: 3),
-                child: Text(
-                  '/100',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Overall Form Score',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 10),
-          _buildProgressBar(score, scoreColor),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar(int score, Color color) {
-    final double progress = (score / 100).clamp(0.0, 1.0);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          height: 8,
-          width: constraints.maxWidth,
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              height: 8,
-              width: constraints.maxWidth * progress,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildInfoChip({
-    required String label,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCameraAngleChip(CameraAngle cameraAngle) {
-    final bool isSideView = cameraAngle == CameraAngle.side;
-    final Color color = isSideView
-        ? const Color(0xFF1976D2)
-        : const Color(0xFF00897B);
-    final IconData icon = isSideView ? Icons.photo_camera : Icons.videocam;
-    final String label = cameraAngle.displayName;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildFloatingViewToggle() {
@@ -556,6 +302,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       height: 56,
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
       ),
@@ -665,30 +412,60 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: _buildImageComparison(checkpoint),
             ),
-            const SizedBox(height: 16),
-            Divider(height: 1, color: Colors.grey[200]),
-            Padding(
-              padding: const EdgeInsets.all(16),
+            const SizedBox(height: 12),
+            Divider(
+              height: 1,
+              color: SenseiColors.gray.shade100,
+              indent: 16,
+              endIndent: 16,
+            ),
+            const SizedBox(height: 12),
+            _buildCheckpointDetailsButton(context, checkpoint),
+            const SizedBox(height: 120),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckpointDetailsButton(
+    BuildContext context,
+    CheckpointRecord checkpoint,
+  ) {
+    // Get first 3 coaching tips
+    final List<String> topTips = checkpoint.coachingTips.take(3).toList();
+
+    return GestureDetector(
+      onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 8, right: 0, top: 8, bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          // border: Border.all(color: SenseiColors.gray.shade100),
+          // boxShadow: defaultCardBoxShadow(),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          checkpoint.checkpointName,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      SeverityBadge(severity: checkpoint.deviationSeverity),
-                    ],
+                  Text(
+                    checkpoint.checkpointName,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
                   ),
-                  if (checkpoint.coachingTips.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    ...checkpoint.coachingTips.map(
+                  if (topTips.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ...topTips.map(
                       (tip) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.only(bottom: 4),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -699,21 +476,49 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                             Expanded(
                               child: Text(
                                 tip,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: Colors.grey[800]),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[700],
+                                  height: 1.3,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
+                    const SizedBox(height: 6),
                   ],
+                  Text(
+                    'View details',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF137e66),
+                    ),
+                  ),
                 ],
               ),
             ),
+            const SizedBox(width: 12),
+            Icon(Icons.chevron_right, color: const Color(0xFF137e66), size: 28),
           ],
         ),
       ),
+    );
+  }
+
+  void _showCheckpointDetailsPanel(
+    BuildContext context,
+    CheckpointRecord checkpoint,
+  ) {
+    EducationPanel.show(
+      context,
+      title: 'Key positions',
+      modalName: 'Checkpoint Details',
+      accentColor: const Color(0xFF137e66),
+      buttonLabel: 'Done',
+      contentBuilder: (_) => _CheckpointDetailsContent(checkpoint: checkpoint),
     );
   }
 
@@ -734,7 +539,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         children: [
           Expanded(
             child: _buildLabeledImage(
-              label: 'Your Form',
+              label: 'You',
               imageUrl: userImageUrl,
               showArrow: false,
               onTap: () => _showFullscreenComparison(checkpoint),
@@ -756,7 +561,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabeledImage(
-          label: 'Your Form',
+          label: 'You',
           imageUrl: userImageUrl,
           showArrow: true,
           onTap: () => _showFullscreenComparison(checkpoint),
@@ -780,7 +585,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 6),
           child: Text(
-            'Pro Reference',
+            'Pro reference',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -986,7 +791,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                 Icon(
                   FlutterRemix.arrow_right_s_line,
                   size: 20,
-                  color: Colors.grey[400],
+                  color: SenseiColors.gray.shade400,
                 ),
             ],
           ),
@@ -1013,353 +818,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ),
       ],
     );
-  }
-
-  Widget _buildCoachingTips(BuildContext context) {
-    final List<String> tips = widget.analysis.topCoachingTips ?? [];
-    if (tips.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF137e66).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.tips_and_updates,
-                size: 20,
-                color: Color(0xFF137e66),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Top Tips',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: const Color(0xFF137e66),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...tips.map(
-            (tip) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('• ', style: TextStyle(color: Color(0xFF137e66))),
-                  Expanded(
-                    child: Text(
-                      tip,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[800]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getScoreColor(int score) {
-    if (score >= 80) return const Color(0xFF4CAF50);
-    if (score >= 60) return const Color(0xFF2196F3);
-    if (score >= 40) return const Color(0xFFFF9800);
-    return const Color(0xFFF44336);
-  }
-
-  Widget _buildAngleDeviations(BuildContext context) {
-    if (widget.analysis.checkpoints.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final CheckpointRecord checkpoint =
-        widget.analysis.checkpoints[_selectedCheckpointIndex];
-
-    // Convert angleDeviations map to List<AngleDeviation> format
-    final List<AngleDeviation> deviations = _convertAngleDeviationsToList(
-      checkpoint,
-    );
-
-    if (deviations.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Angle Analysis',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 16),
-          ...deviations.map((deviation) {
-            // For knee_bend, add back leg detail if available
-            if (deviation.angleName == 'knee_bend') {
-              return _buildKneeDeviationWithBackLegDetail(
-                context,
-                deviation,
-                checkpoint,
-              );
-            }
-            // Other angles use existing row
-            return _buildDeviationRow(context, deviation);
-          }),
-        ],
-      ),
-    );
-  }
-
-  List<AngleDeviation> _convertAngleDeviationsToList(
-    CheckpointRecord checkpoint,
-  ) {
-    final List<AngleDeviation> deviations = [];
-    final Map<String, double>? angleDeviations = checkpoint.angleDeviations;
-
-    if (angleDeviations == null) return deviations;
-
-    // For each angle deviation, we need to look up the user and reference values
-    // Since we don't have them stored separately in the old format, we'll calculate them
-    angleDeviations.forEach((angleName, deviationValue) {
-      // We can't get the exact user and reference values from the old format
-      // So we'll just show a simplified version
-      deviations.add(
-        AngleDeviation(
-          angleName: angleName,
-          userValue: 0, // Not available in old format
-          referenceValue: 0, // Not available in old format
-          deviation: deviationValue,
-          withinTolerance: deviationValue.abs() < 10,
-        ),
-      );
-    });
-
-    return deviations;
-  }
-
-  Widget _buildDeviationRow(BuildContext context, AngleDeviation deviation) {
-    final bool isGood = deviation.withinTolerance;
-    final Color statusColor = isGood
-        ? const Color(0xFF4CAF50)
-        : (deviation.deviation != null && deviation.deviation!.abs() > 20)
-        ? const Color(0xFFF44336)
-        : const Color(0xFFFF9800);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              isGood ? Icons.check : Icons.warning_amber,
-              size: 18,
-              color: statusColor,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _formatAngleName(deviation.angleName),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                ),
-                if (deviation.userValue != 0 && deviation.referenceValue != 0)
-                  Text(
-                    'You: ${deviation.userValue.toStringAsFixed(0)}° • '
-                    'Pro: ${deviation.referenceValue?.toStringAsFixed(0) ?? '--'}°',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                  ),
-              ],
-            ),
-          ),
-          if (deviation.deviation != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: statusColor, width: 1),
-              ),
-              child: Text(
-                '${deviation.deviation! >= 0 ? '+' : ''}${deviation.deviation!.toStringAsFixed(1)}°',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKneeDeviationWithBackLegDetail(
-    BuildContext context,
-    AngleDeviation deviation,
-    CheckpointRecord checkpoint,
-  ) {
-    return Column(
-      children: [
-        // Existing aggregate knee bend row
-        _buildDeviationRow(context, deviation),
-
-        // Add back leg (left knee) detail if available
-        if (checkpoint.userIndividualAngles?.leftKneeBendAngle != null) ...[
-          const SizedBox(height: 6),
-          _buildBackLegKneeDetail(context, checkpoint),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildBackLegKneeDetail(
-    BuildContext context,
-    CheckpointRecord checkpoint,
-  ) {
-    final double? userLeftKnee =
-        checkpoint.userIndividualAngles?.leftKneeBendAngle;
-    final double? refLeftKnee =
-        checkpoint.referenceIndividualAngles?.leftKneeBendAngle;
-    final double? deviation =
-        checkpoint.individualDeviations?.leftKneeBendAngle;
-
-    if (userLeftKnee == null) return const SizedBox.shrink();
-
-    final Color deviationColor = _getDeviationColor(deviation?.abs());
-    final String deviationText = deviation != null
-        ? '${deviation >= 0 ? '+' : ''}${deviation.toStringAsFixed(1)}°'
-        : 'N/A';
-
-    return Container(
-      margin: const EdgeInsets.only(left: 16, top: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2), width: 1),
-      ),
-      child: Row(
-        children: [
-          // Back leg label
-          Expanded(
-            flex: 2,
-            child: Text(
-              'Back Leg (Left)',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-
-          // User angle
-          Text(
-            '${userLeftKnee.toStringAsFixed(1)}°',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-
-          // "vs" separator
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              'vs',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-            ),
-          ),
-
-          // Reference angle
-          Text(
-            refLeftKnee != null ? '${refLeftKnee.toStringAsFixed(1)}°' : 'N/A',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Deviation badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: deviationColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: deviationColor, width: 1),
-            ),
-            child: Text(
-              deviationText,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: deviationColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getDeviationColor(double? deviationAbs) {
-    if (deviationAbs == null) return Colors.grey;
-
-    if (deviationAbs < 5) return Colors.green; // Excellent
-    if (deviationAbs < 15) return Colors.lightGreen; // Good
-    if (deviationAbs < 20) return Colors.orange; // Moderate
-    return Colors.red; // Significant
-  }
-
-  String _formatAngleName(String name) {
-    return name
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map(
-          (word) => word.isNotEmpty
-              ? '${word[0].toUpperCase()}${word.substring(1)}'
-              : word,
-        )
-        .join(' ');
   }
 
   Widget _buildImageWidget(String imageUrl, BoxFit fit) {
@@ -1671,7 +1129,7 @@ class _FullscreenComparisonDialogState
     if (isPortrait) {
       return Row(
         children: [
-          Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
+          Expanded(child: _buildFullscreenPanel('You', userImageUrl)),
           const SizedBox(width: 4),
           Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
         ],
@@ -1681,7 +1139,7 @@ class _FullscreenComparisonDialogState
     // Landscape: vertical stack layout (default)
     return Column(
       children: [
-        Expanded(child: _buildFullscreenPanel('Your Form', userImageUrl)),
+        Expanded(child: _buildFullscreenPanel('You', userImageUrl)),
         Container(height: 2, color: Colors.grey[800]),
         Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
       ],
@@ -1694,7 +1152,7 @@ class _FullscreenComparisonDialogState
         Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
-            'Pro Reference',
+            'Pro reference',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -1936,6 +1394,93 @@ class _FullscreenComparisonDialogState
               ),
       errorWidget: (context, url, error) => const Center(
         child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+      ),
+    );
+  }
+}
+
+/// Content widget for checkpoint details education panel.
+class _CheckpointDetailsContent extends StatelessWidget {
+  const _CheckpointDetailsContent({required this.checkpoint});
+
+  final CheckpointRecord checkpoint;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<FormCheckpoint> allPositions =
+        FormReferencePositions.backhandCheckpoints;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: allPositions
+          .map((position) => _buildPositionCard(context, position))
+          .toList(),
+    );
+  }
+
+  Widget _buildPositionCard(BuildContext context, FormCheckpoint position) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${position.orderIndex + 1}. ${position.name}',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            position.description,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.4,
+            ),
+          ),
+          if (position.keyPoints.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...position.keyPoints.map(
+              (keyPoint) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${keyPoint.name}: ${keyPoint.idealState}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -21,8 +21,7 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
   // Video constraints
   static const int maxVideoSizeBytes = 20 * 1024 * 1024; // 20MB
-  static const int maxVideoDurationSeconds = 3;
-  static const int minVideoDurationSeconds = 2;
+  static const int maxVideoDurationSeconds = 4;
   static const List<String> supportedFormats = [
     'mp4',
     'mov',
@@ -30,6 +29,20 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     'webm',
     'm4v',
     '3gp',
+  ];
+
+  // Common image formats to detect when user selects a photo instead of video
+  static const List<String> _imageFormats = [
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'heic',
+    'heif',
+    'webp',
+    'bmp',
+    'tiff',
+    'tif',
   ];
 
   /// Validate video file before processing
@@ -53,6 +66,15 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     }
 
     final String extension = videoPath.split('.').last.toLowerCase();
+
+    // Check if user selected a photo instead of a video
+    if (_imageFormats.contains(extension)) {
+      return const VideoValidationResult(
+        isValid: false,
+        errorMessage: 'Please select a video, not a photo',
+      );
+    }
+
     if (!supportedFormats.contains(extension)) {
       return VideoValidationResult(
         isValid: false,
@@ -79,9 +101,6 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
       if (seconds > maxVideoDurationSeconds) {
         return (null, 'Video must be $maxVideoDurationSeconds seconds or less');
-      }
-      if (seconds < minVideoDurationSeconds) {
-        return (null, 'Video must be at least $minVideoDurationSeconds seconds');
       }
 
       return (seconds, null);
@@ -111,7 +130,8 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
       }
 
       // Return mock response in debug mode when flag is enabled
-      if (kDebugMode && locator.get<FeatureFlagService>().useMockFormAnalysisResponse) {
+      if (kDebugMode &&
+          locator.get<FeatureFlagService>().useMockFormAnalysisResponse) {
         debugPrint('Using mock form analysis response (Gemini skipped)');
         onProgressUpdate?.call('Processing results...');
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -162,16 +182,19 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     final List<FormCheckpoint> checkpoints =
         FormReferencePositions.getCheckpointsForThrowType(throwType);
 
-    final List<CheckpointAnalysisResult> checkpointResults =
-        checkpoints.map((FormCheckpoint cp) {
+    final List<CheckpointAnalysisResult> checkpointResults = checkpoints.map((
+      FormCheckpoint cp,
+    ) {
       return CheckpointAnalysisResult(
         checkpointId: cp.id,
         checkpointName: cp.name,
         score: 75,
-        feedback: 'Mock feedback for ${cp.name}. This is placeholder text '
+        feedback:
+            'Mock feedback for ${cp.name}. This is placeholder text '
             'for testing the UI layout without hitting the Gemini API.',
         timestampSeconds: (cp.orderIndex + 1) * 0.5,
-        comparisonToReference: 'Mock comparison - your form looks reasonable '
+        comparisonToReference:
+            'Mock comparison - your form looks reasonable '
             'but there is room for improvement in this area.',
         keyPointResults: cp.keyPoints.map((FormKeyPoint kp) {
           return KeyPointResult(
@@ -191,7 +214,8 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
       createdAt: DateTime.now().toIso8601String(),
       checkpointResults: checkpointResults,
       overallScore: 72,
-      overallFeedback: 'This is a mock response for testing the form analysis '
+      overallFeedback:
+          'This is a mock response for testing the form analysis '
           'UI. The Gemini API was skipped because useMockFormAnalysisResponse '
           'is enabled in testing_constants.dart.',
       prioritizedImprovements: [
@@ -200,13 +224,15 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
           checkpointId: 'reachback',
           title: 'Improve Reachback',
           description: 'Mock improvement #1: Work on your reachback extension.',
-          drillSuggestion: 'Practice slow-motion reachbacks in front of a mirror.',
+          drillSuggestion:
+              'Practice slow-motion reachbacks in front of a mirror.',
         ),
         const FormImprovement(
           priority: 2,
           checkpointId: 'power_pocket',
           title: 'Tighten Power Pocket',
-          description: 'Mock improvement #2: Keep the disc closer to your body.',
+          description:
+              'Mock improvement #2: Keep the disc closer to your body.',
           drillSuggestion: 'Do standstill throws focusing on elbow position.',
         ),
         const FormImprovement(
@@ -227,20 +253,24 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     PoseAnalysisResponse? poseAnalysis,
   }) {
     final String throwTypeName = _getThrowTypeName(throwType);
-    final String checkpointsDescription = checkpoints.map((FormCheckpoint cp) {
-      final String keyPointsText = cp.keyPoints.map((FormKeyPoint kp) {
-        final String mistakes = kp.commonMistakes?.join(', ') ?? 'None';
-        return '    - ${kp.name}: ${kp.description}\n'
-            '      Ideal: ${kp.idealState}\n'
-            '      Common mistakes: $mistakes';
-      }).join('\n');
-      return '''
+    final String checkpointsDescription = checkpoints
+        .map((FormCheckpoint cp) {
+          final String keyPointsText = cp.keyPoints
+              .map((FormKeyPoint kp) {
+                final String mistakes = kp.commonMistakes?.join(', ') ?? 'None';
+                return '    - ${kp.name}: ${kp.description}\n'
+                    '      Ideal: ${kp.idealState}\n'
+                    '      Common mistakes: $mistakes';
+              })
+              .join('\n');
+          return '''
 Checkpoint: ${cp.name} (ID: ${cp.id})
   Description: ${cp.description}
   ${cp.referenceDescription != null ? 'Reference: ${cp.referenceDescription}' : ''}
   Key Points to Evaluate:
 $keyPointsText''';
-    }).join('\n\n');
+        })
+        .join('\n\n');
 
     // Build pose analysis section if available
     final String poseDataSection = _buildPoseDataSection(poseAnalysis);
@@ -392,8 +422,10 @@ CRITICAL RULES:
         cleanedResponse = cleanedResponse.substring(3);
       }
       if (cleanedResponse.endsWith('```')) {
-        cleanedResponse =
-            cleanedResponse.substring(0, cleanedResponse.length - 3);
+        cleanedResponse = cleanedResponse.substring(
+          0,
+          cleanedResponse.length - 3,
+        );
       }
       cleanedResponse = cleanedResponse.trim();
 
@@ -407,10 +439,13 @@ CRITICAL RULES:
       final Map<dynamic, dynamic> yamlMap = yaml;
 
       // Extract overall score and feedback
-      final int overallScore =
-          _parseIntSafely(yamlMap['overall_score'], defaultValue: 0);
-      final String overallFeedback =
-          _parseStringSafely(yamlMap['overall_feedback']);
+      final int overallScore = _parseIntSafely(
+        yamlMap['overall_score'],
+        defaultValue: 0,
+      );
+      final String overallFeedback = _parseStringSafely(
+        yamlMap['overall_feedback'],
+      );
 
       // Parse checkpoint results
       final List<CheckpointAnalysisResult> checkpointResults = [];
@@ -418,8 +453,9 @@ CRITICAL RULES:
       if (checkpointResultsYaml is List) {
         for (final dynamic cpResult in checkpointResultsYaml) {
           if (cpResult is Map) {
-            final CheckpointAnalysisResult? parsed =
-                _parseCheckpointResult(cpResult);
+            final CheckpointAnalysisResult? parsed = _parseCheckpointResult(
+              cpResult,
+            );
             if (parsed != null) {
               checkpointResults.add(parsed);
             }
@@ -466,17 +502,17 @@ CRITICAL RULES:
     Map<dynamic, dynamic> cpResult,
   ) {
     try {
-      final String checkpointId =
-          _parseStringSafely(cpResult['checkpoint_id']);
-      final String checkpointName =
-          _parseStringSafely(cpResult['checkpoint_name']);
-      final int score =
-          _parseIntSafely(cpResult['score'], defaultValue: 0);
+      final String checkpointId = _parseStringSafely(cpResult['checkpoint_id']);
+      final String checkpointName = _parseStringSafely(
+        cpResult['checkpoint_name'],
+      );
+      final int score = _parseIntSafely(cpResult['score'], defaultValue: 0);
       final String feedback = _parseStringSafely(cpResult['feedback']);
-      final double? timestampSeconds =
-          _parseDoubleSafely(cpResult['timestamp_seconds']);
-      final String? comparisonToReference =
-          cpResult['comparison_to_reference']?.toString();
+      final double? timestampSeconds = _parseDoubleSafely(
+        cpResult['timestamp_seconds'],
+      );
+      final String? comparisonToReference = cpResult['comparison_to_reference']
+          ?.toString();
 
       // Parse key point results
       final List<KeyPointResult> keyPointResults = [];
@@ -510,8 +546,9 @@ CRITICAL RULES:
   KeyPointResult? _parseKeyPointResult(Map<dynamic, dynamic> kpResult) {
     try {
       final String keyPointId = _parseStringSafely(kpResult['key_point_id']);
-      final String keyPointName =
-          _parseStringSafely(kpResult['key_point_name']);
+      final String keyPointName = _parseStringSafely(
+        kpResult['key_point_name'],
+      );
       final String statusStr = _parseStringSafely(kpResult['status']);
       final String observation = _parseStringSafely(kpResult['observation']);
       final String? suggestion = kpResult['suggestion']?.toString();
@@ -550,14 +587,13 @@ CRITICAL RULES:
 
   FormImprovement? _parseImprovement(Map<dynamic, dynamic> imp) {
     try {
-      final int priority =
-          _parseIntSafely(imp['priority'], defaultValue: 99);
-      final String checkpointId =
-          _parseStringSafely(imp['checkpoint_id']);
+      final int priority = _parseIntSafely(imp['priority'], defaultValue: 99);
+      final String checkpointId = _parseStringSafely(imp['checkpoint_id']);
       final String title = _parseStringSafely(imp['title']);
       final String description = _parseStringSafely(imp['description']);
-      final String drillSuggestion =
-          _parseStringSafely(imp['drill_suggestion']);
+      final String drillSuggestion = _parseStringSafely(
+        imp['drill_suggestion'],
+      );
 
       return FormImprovement(
         priority: priority,

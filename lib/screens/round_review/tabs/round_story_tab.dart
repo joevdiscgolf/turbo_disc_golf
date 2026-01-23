@@ -26,6 +26,7 @@ import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
+import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -150,15 +151,20 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       await storageService.saveRound(updatedRound);
 
       if (mounted) {
-        // Update the RoundReviewCubit so it knows about the new story
-        // This ensures the updated round is available when switching tabs
+        // Update cubits so the round data persists across navigation
         try {
-          final RoundReviewCubit? reviewCubit = context
-              .read<RoundReviewCubit?>();
+          // Update RoundReviewCubit for tab switching within this screen
+          final RoundReviewCubit? reviewCubit =
+              context.read<RoundReviewCubit?>();
           reviewCubit?.updateRoundData(updatedRound);
+
+          // Update RoundHistoryCubit so story persists when navigating away and back
+          final RoundHistoryCubit? historyCubit =
+              context.read<RoundHistoryCubit?>();
+          historyCubit?.updateRound(updatedRound);
         } catch (e) {
           // Cubit might not be available in all contexts (e.g., standalone usage)
-          debugPrint('RoundReviewCubit not available: $e');
+          debugPrint('Cubit not available: $e');
         }
 
         setState(() {

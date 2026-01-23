@@ -41,6 +41,7 @@ enum FeatureFlag {
   useRedesignedMentalGameCard('use_redesigned_mental_game_card', true),
   usePodiumDiscCard('use_podium_disc_card', true),
   drivesDetailScreenV2('drives_detail_screen_v2', true),
+  useThrowTypeComparisonCard('use_throw_type_comparison_card', true),
 
   /// Throw card layout style: 'inline' for full-width with inline number badge,
   /// 'split' for left-right split layout, empty for default (v2 with timeline)
@@ -141,7 +142,7 @@ enum FeatureFlag {
   useMockFormAnalysisResponse('use_mock_form_analysis_response', true),
   showFormAnalysisScoreAndSummary('show_form_analysis_score_and_summary', true),
   saveFormAnalysisToFirestore('save_form_analysis_to_firestore', true),
-  showFormAnalysisVideoComparison('show_form_analysis_video_comparison', true),
+  showFormAnalysisVideoComparison('show_form_analysis_video_comparison', false),
 
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs

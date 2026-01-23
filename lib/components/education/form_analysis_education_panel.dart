@@ -47,17 +47,74 @@ class FormAnalysisEducationPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // High priority tips with emphasis
+          _buildHighPriorityBulletPoint(context, 'Select throwing hand'),
+          _buildHighPriorityBulletPoint(
+            context,
+            'Full body in frame at all times!',
+          ),
+          _buildHighPriorityBulletPoint(
+            context,
+            'Start recording before your x-step',
+          ),
+          _buildHighPriorityBulletPoint(context, 'End ~1s after disc release'),
+          const SizedBox(height: 8),
+          // Regular tips
           _buildBulletPoint(context, 'Keep videos under 3 seconds'),
           _buildBulletPoint(
             context,
-            'Start recording before your x-step (right, left, right)',
+            'High contrast environment (bright, avoid shadows)',
           ),
-          _buildBulletPoint(context, 'End after the disc is released'),
+          _buildBulletPoint(
+            context,
+            'Closer is better (fill more of frame with body)',
+          ),
           _buildBulletPoint(
             context,
             'Landscape orientation preferred (portrait works too)',
           ),
-          _buildBulletPoint(context, 'Keep your full body in frame at all times'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighPriorityBulletPoint(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFF137e66),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Text(
+                '!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  height: 1.0,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF137e66),
+                height: 1.4,
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -29,6 +29,7 @@ import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
+import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -416,10 +417,21 @@ highlightStats:
     await storageService.saveRound(updatedRound);
 
     if (mounted) {
+      // Update RoundReviewCubit for tab switching within this screen
       final RoundReviewCubit reviewCubit = BlocProvider.of<RoundReviewCubit>(
         context,
       );
       reviewCubit.updateRoundData(updatedRound);
+
+      // Update RoundHistoryCubit so judgment persists when navigating away and back
+      try {
+        final RoundHistoryCubit? historyCubit =
+            context.read<RoundHistoryCubit?>();
+        historyCubit?.updateRound(updatedRound);
+      } catch (e) {
+        debugPrint('RoundHistoryCubit not available: $e');
+      }
+
       _currentRound = updatedRound;
     }
   }

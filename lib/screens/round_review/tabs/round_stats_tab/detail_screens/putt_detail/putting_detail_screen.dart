@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/putt_detail/components/putt_details_list.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/putt_detail/components/putt_heat_map_card.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/putt_detail/models/putt_attempt.dart';
 import 'package:turbo_disc_golf/screens/stats/components/putting_distance_card.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/putting_analysis_service.dart';
-import 'package:turbo_disc_golf/utils/layout_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
-import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class PuttingDetailScreen extends StatelessWidget {
   static const String screenName = 'Putting Detail';
@@ -41,8 +43,8 @@ class PuttingDetailScreen extends StatelessWidget {
     );
     final avgBirdiePuttDist = puttingAnalysisService
         .getAverageBirdiePuttDistance(round);
-    final comebackStats = puttingAnalysisService.getComebackPuttStats(round);
-    final allPutts = puttingAnalysisService.getPuttAttempts(round);
+    final List<PuttAttempt> allPutts = puttingAnalysisService.getAllPuttAttempts(round);
+    final List<PuttAttempt> comebackPutts = allPutts.where((p) => p.isComeback).toList();
 
     if (puttingStats.totalAttempts == 0) {
       return const Center(child: Text('No putting data available'));
@@ -71,7 +73,7 @@ class PuttingDetailScreen extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildComebackPutts(context, comebackStats),
+              child: _buildComebackPuttsCard(context, comebackPutts),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -186,19 +188,17 @@ class PuttingDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildComebackPutts(
+  Widget _buildComebackPuttsCard(
     BuildContext context,
-    Map<String, dynamic> comebackStats,
+    List<PuttAttempt> comebackPutts,
   ) {
-    final attempts = comebackStats['attempts'] ?? 0;
-    final makes = comebackStats['makes'] ?? 0;
-    final details =
-        comebackStats['details'] as List<Map<String, dynamic>>? ?? [];
-    final percentage = attempts > 0 ? (makes / attempts) * 100 : 0.0;
-
-    if (attempts == 0) {
+    if (comebackPutts.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final int makes = comebackPutts.where((p) => p.made).length;
+    final int attempts = comebackPutts.length;
+    final double percentage = attempts > 0 ? (makes / attempts) * 100 : 0.0;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -223,7 +223,6 @@ class PuttingDetailScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  // CircularStatIndicator on the left
                   CircularStatIndicator(
                     label: '',
                     percentage: percentage,
@@ -234,18 +233,16 @@ class PuttingDetailScreen extends StatelessWidget {
                     shouldGlow: true,
                   ),
                   const SizedBox(width: 16),
-                  // Dots to the right
                   Expanded(
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: details.map((putt) {
-                        final made = putt['made'] as bool;
+                      children: comebackPutts.map((putt) {
                         return Container(
                           width: 12,
                           height: 12,
                           decoration: BoxDecoration(
-                            color: made
+                            color: putt.made
                                 ? const Color(0xFF4CAF50)
                                 : const Color(0xFFFF7A7A),
                             shape: BoxShape.circle,
@@ -258,87 +255,18 @@ class PuttingDetailScreen extends StatelessWidget {
               ),
             ],
           ),
-          children: details.isEmpty
-              ? []
-              : [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        ...details.map((putt) {
-                          final holeNumber = putt['holeNumber'];
-                          final distance = putt['distance'];
-                          final made = putt['made'] as bool;
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: made
-                                        ? const Color(0xFF4CAF50)
-                                        : const Color(0xFFFF7A7A),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '$holeNumber',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Hole $holeNumber${distance != null ? ' - $distance ft' : ''}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: made
-                                        ? const Color(
-                                            0xFF4CAF50,
-                                          ).withValues(alpha: 0.1)
-                                        : const Color(
-                                            0xFFFF7A7A,
-                                          ).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    made ? 'Made' : 'Missed',
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: made
-                                              ? const Color(0xFF4CAF50)
-                                              : const Color(0xFFFF7A7A),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  PuttDetailsList(puttAttempts: comebackPutts),
                 ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -346,13 +274,13 @@ class PuttingDetailScreen extends StatelessWidget {
 
   Widget _buildAllPuttsCard(
     BuildContext context,
-    List<Map<String, dynamic>> allPutts,
+    List<PuttAttempt> allPutts,
   ) {
     if (allPutts.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final int totalMade = allPutts.where((putt) => putt['made'] as bool).length;
+    final int totalMade = allPutts.where((putt) => putt.made).length;
     final int totalAttempts = allPutts.length;
 
     return Card(
@@ -380,12 +308,11 @@ class PuttingDetailScreen extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: allPutts.map((putt) {
-                  final bool made = putt['made'] as bool;
                   return Container(
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: made
+                      color: putt.made
                           ? const Color(0xFF4CAF50)
                           : const Color(0xFFFF7A7A),
                       shape: BoxShape.circle,
@@ -398,72 +325,7 @@ class PuttingDetailScreen extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                children: allPutts.map((putt) {
-                  final holeNumber = putt['holeNumber'];
-                  final distance = putt['distance'];
-                  final made = putt['made'] as bool;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: made
-                                ? const Color(0xFF4CAF50)
-                                : const Color(0xFFFF7A7A),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$holeNumber',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Hole $holeNumber - ${distance.toStringAsFixed(0)} ft',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: made
-                                ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                                : const Color(
-                                    0xFFFF7A7A,
-                                  ).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            made ? 'Made' : 'Missed',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: made
-                                      ? const Color(0xFF4CAF50)
-                                      : const Color(0xFFFF7A7A),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+              child: PuttDetailsList(puttAttempts: allPutts),
             ),
           ],
         ),
