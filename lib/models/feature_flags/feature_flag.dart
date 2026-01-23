@@ -41,6 +41,7 @@ enum FeatureFlag {
   useRedesignedMentalGameCard('use_redesigned_mental_game_card', true),
   usePodiumDiscCard('use_podium_disc_card', true),
   drivesDetailScreenV2('drives_detail_screen_v2', true),
+  useThrowTypeComparisonCard('use_throw_type_comparison_card', true),
 
   /// Throw card layout style: 'inline' for full-width with inline number badge,
   /// 'split' for left-right split layout, empty for default (v2 with timeline)

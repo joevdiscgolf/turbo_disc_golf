@@ -91,7 +91,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
           releaseCheckpoint.proTimestamp - releaseCheckpoint.userTimestamp;
 
       debugPrint('🎬 Video sync: simple constant offset');
-      debugPrint('   Disc release: user=${releaseCheckpoint.userTimestamp}s, pro=${releaseCheckpoint.proTimestamp}s');
+      debugPrint(
+        '   Disc release: user=${releaseCheckpoint.userTimestamp}s, pro=${releaseCheckpoint.proTimestamp}s',
+      );
       debugPrint('   Sync offset: ${_syncOffsetSeconds}s');
 
       // Log all checkpoints for debugging
@@ -99,7 +101,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       for (final checkpoint in metadata.checkpointSyncPoints) {
         final double proCalc = checkpoint.userTimestamp + _syncOffsetSeconds;
         final double diff = (checkpoint.proTimestamp - proCalc).abs();
-        debugPrint('   ${checkpoint.checkpointId}: user=${checkpoint.userTimestamp.toStringAsFixed(3)}s, pro=${checkpoint.proTimestamp.toStringAsFixed(3)}s, calculated=${proCalc.toStringAsFixed(3)}s, diff=${diff.toStringAsFixed(3)}s');
+        debugPrint(
+          '   ${checkpoint.checkpointId}: user=${checkpoint.userTimestamp.toStringAsFixed(3)}s, pro=${checkpoint.proTimestamp.toStringAsFixed(3)}s, calculated=${proCalc.toStringAsFixed(3)}s, diff=${diff.toStringAsFixed(3)}s',
+        );
       }
     } else {
       _syncOffsetSeconds = 0.0;
@@ -220,7 +224,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       debugPrint('   User: ${userSeconds.toStringAsFixed(2)}s');
       debugPrint('   Pro (calculated): ${proSeconds.toStringAsFixed(2)}s');
       debugPrint('   Pro (clamped): ${clampedProSeconds.toStringAsFixed(2)}s');
-      debugPrint('   Status: Pro video clamped to 0 (will start when user reaches ${(-_syncOffsetSeconds).toStringAsFixed(2)}s)');
+      debugPrint(
+        '   Status: Pro video clamped to 0 (will start when user reaches ${(-_syncOffsetSeconds).toStringAsFixed(2)}s)',
+      );
     }
 
     return Duration(milliseconds: (clampedProSeconds * 1000).toInt());
@@ -256,8 +262,12 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       _isPlaying = true;
     });
 
-    debugPrint('▶️ Play: user=${(userPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s, pro=${(proPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${_playbackSpeed}x speed');
-    debugPrint('   Sync verification: offset=${_syncOffsetSeconds.toStringAsFixed(3)}s, calculated correctly: ${((userPosition.inMilliseconds / 1000.0) + _syncOffsetSeconds - (proPosition.inMilliseconds / 1000.0)).abs() < 0.001}');
+    debugPrint(
+      '▶️ Play: user=${(userPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s, pro=${(proPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${_playbackSpeed}x speed',
+    );
+    debugPrint(
+      '   Sync verification: offset=${_syncOffsetSeconds.toStringAsFixed(3)}s, calculated correctly: ${((userPosition.inMilliseconds / 1000.0) + _syncOffsetSeconds - (proPosition.inMilliseconds / 1000.0)).abs() < 0.001}',
+    );
 
     // Start playback simulation timer
     _playbackSimulationTimer = Timer.periodic(_playbackFrameInterval, (_) {
@@ -267,9 +277,12 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       }
 
       // Calculate next position based on playback speed
-      final Duration nextPosition = _currentPosition +
+      final Duration nextPosition =
+          _currentPosition +
           Duration(
-            milliseconds: (_playbackFrameInterval.inMilliseconds * _playbackSpeed).round(),
+            milliseconds:
+                (_playbackFrameInterval.inMilliseconds * _playbackSpeed)
+                    .round(),
           );
 
       // Check if reached end of video
@@ -279,7 +292,8 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       }
 
       // Seek to next position (triggers VideoSyncService calculation)
-      final double normalizedValue = nextPosition.inMilliseconds / _shortestDuration.inMilliseconds;
+      final double normalizedValue =
+          nextPosition.inMilliseconds / _shortestDuration.inMilliseconds;
       _onSeek(normalizedValue);
     });
   }
@@ -356,7 +370,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
 
     setState(() => _isPlaying = false);
 
-    debugPrint('⏸️ Pause: user=${(_currentPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s');
+    debugPrint(
+      '⏸️ Pause: user=${(_currentPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s',
+    );
   }
 
   Future<void> _onSeek(double value) async {
@@ -382,7 +398,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     final double proSec = proPosition.inMilliseconds / 1000.0;
     if ((userSec * 2).round() == userSec * 2) {
       // Log at 0.0s, 0.5s, 1.0s, 1.5s, etc.
-      debugPrint('🎬 Seek: user=${userSec.toStringAsFixed(2)}s → pro=${proSec.toStringAsFixed(2)}s (offset=${_syncOffsetSeconds.toStringAsFixed(3)}s)');
+      debugPrint(
+        '🎬 Seek: user=${userSec.toStringAsFixed(2)}s → pro=${proSec.toStringAsFixed(2)}s (offset=${_syncOffsetSeconds.toStringAsFixed(3)}s)',
+      );
     }
   }
 
@@ -474,7 +492,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     return Column(
       children: [
         const Text(
-          'Pro Reference',
+          'Pro reference',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),

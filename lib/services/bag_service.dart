@@ -4,12 +4,17 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:turbo_disc_golf/models/data/auth_data/auth_user.dart';
 import 'package:turbo_disc_golf/models/data/disc_data.dart';
 import 'package:turbo_disc_golf/models/data/disc_usage_stats_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 
 class BagService extends ChangeNotifier implements ClearOnLogoutProtocol {
+  final AuthService _authService;
+  StreamSubscription<AuthUser?>? _authSubscription;
+
   static const String _bagKey = 'user_disc_bag';
   List<DGDisc> _userBag = [];
 
@@ -17,6 +22,32 @@ class BagService extends ChangeNotifier implements ClearOnLogoutProtocol {
   StreamSubscription<DocumentSnapshot>? _statsSubscription;
   AllDiscUsageStats _usageStats = AllDiscUsageStats.empty();
   bool _usageStatsLoaded = false;
+
+  BagService({required AuthService authService}) : _authService = authService {
+    _authSubscription = _authService.authState
+        .distinct((previous, next) => previous?.uid == next?.uid)
+        .listen(_handleAuthStateChange);
+  }
+
+  void _handleAuthStateChange(AuthUser? user) {
+    if (user != null) {
+      // Start listening to new user's doc (cancels old subscription internally)
+      startListeningToUsageStats(user.uid);
+    } else {
+      // User logged out - stop listening and clear stats
+      stopListeningToUsageStats();
+      _usageStats = AllDiscUsageStats.empty();
+      _usageStatsLoaded = false;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    _statsSubscription?.cancel();
+    super.dispose();
+  }
 
   List<DGDisc> get userBag => List.unmodifiable(_userBag);
 

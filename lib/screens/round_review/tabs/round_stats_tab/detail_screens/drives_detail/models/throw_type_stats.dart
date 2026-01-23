@@ -71,6 +71,10 @@ class ShotShapeStats {
     required this.c2InRegPct,
     required this.c2Count,
     required this.c2Total,
+    this.parkedPct = 0.0,
+    this.parkedCount = 0,
+    this.obPct = 0.0,
+    this.obCount = 0,
   });
 
   final String shapeName;
@@ -84,6 +88,10 @@ class ShotShapeStats {
   final double c2InRegPct;
   final int c2Count;
   final int c2Total;
+  final double parkedPct;
+  final int parkedCount;
+  final double obPct;
+  final int obCount;
 
   String get displayName {
     String shape = shapeName.replaceAll(throwType, '').trim();

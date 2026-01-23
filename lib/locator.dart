@@ -125,6 +125,14 @@ Future<void> setUpLocator() async {
     locator.get<AuthDatabaseService>(),
   );
   locator.registerSingleton<AuthService>(authService);
+
+  // BagService must be registered before AppPhaseController because
+  // AppPhaseController subscribes to authState immediately in its constructor,
+  // and BagService also listens to authState for self-managing its lifecycle.
+  locator.registerSingleton<BagService>(
+    BagService(authService: authService),
+  );
+
   locator.registerSingleton(AppPhaseController(authService: authService));
 
   // Initialize the logging service (must be after AuthService is registered)
@@ -217,7 +225,6 @@ Future<void> setUpLocator() async {
     );
   }
 
-  locator.registerSingleton<BagService>(BagService());
   locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());
   locator.registerSingleton<WebScraperService>(WebScraperService());

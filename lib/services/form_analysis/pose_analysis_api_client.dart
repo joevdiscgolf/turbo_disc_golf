@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
 
 /// Client for the Cloud Run pose analysis API
 class PoseAnalysisApiClient {
@@ -24,6 +25,7 @@ class PoseAnalysisApiClient {
   /// [videoFile] - The video file to analyze
   /// [throwType] - Type of throw (currently only 'backhand' supported)
   /// [cameraAngle] - Camera angle enum value
+  /// [handedness] - Whether the player throws right or left-handed
   /// [sessionId] - Unique session identifier
   /// [userId] - User identifier
   /// [proPlayerId] - Optional pro player ID for reference comparison (e.g., 'paul_mcbeth')
@@ -31,6 +33,7 @@ class PoseAnalysisApiClient {
     required File videoFile,
     required String throwType,
     required CameraAngle cameraAngle,
+    required Handedness handedness,
     required String sessionId,
     required String userId,
     String? proPlayerId,
@@ -48,6 +51,7 @@ class PoseAnalysisApiClient {
     // Add form fields
     request.fields['throw_type'] = throwType;
     request.fields['camera_angle'] = cameraAngle.toApiString();
+    request.fields['handedness'] = handedness.toApiString();
     request.fields['session_id'] = sessionId;
     request.fields['user_id'] = userId;
     if (proPlayerId != null) {
@@ -158,6 +162,7 @@ class PoseAnalysisApiClient {
     required File videoFile,
     required String throwType,
     required CameraAngle cameraAngle,
+    required Handedness handedness,
     required String sessionId,
     required String userId,
     String? proPlayerId,
@@ -177,6 +182,7 @@ class PoseAnalysisApiClient {
       'video_format': videoFormat,
       'throw_type': throwType,
       'camera_angle': cameraAngle.toApiString(),
+      'handedness': handedness.toApiString(),
       'session_id': sessionId,
       'user_id': userId,
       if (proPlayerId != null) 'pro_player_id': proPlayerId,

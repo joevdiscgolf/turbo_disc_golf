@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
@@ -64,6 +65,11 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       angle: CameraAngle.side,
     ),
     (
+      path: 'assets/test_videos/joe_example_throw_2_mirrored.mp4',
+      name: 'Joe #2 Mirrored',
+      angle: CameraAngle.side,
+    ),
+    (
       path: 'assets/test_videos/joe_example_throw_rear_1.mov',
       name: 'Joe Rear #1',
       angle: CameraAngle.rear,
@@ -76,6 +82,11 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     (
       path: 'assets/test_videos/joe_example_throw_rear_3.mp4',
       name: 'Joe Rear #3',
+      angle: CameraAngle.rear,
+    ),
+    (
+      path: 'assets/test_videos/joe_example_throw_rear_3_mirrored.mp4',
+      name: 'Joe Rear #3 Mirrored',
       angle: CameraAngle.rear,
     ),
     (
@@ -104,6 +115,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       'assets/test_videos/joe_example_throw_2.mov'; // Default to joe #2
 
   CameraAngle _selectedCameraAngle = CameraAngle.side; // Default to side view
+  Handedness _selectedHandedness = Handedness.right; // Default to right-handed
 
   /// Checks if this is the first time user is importing a video for form analysis.
   /// Shows education panel if first time, then proceeds with import.
@@ -150,7 +162,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                   _buildV2Header(context),
                   const SizedBox(height: 32),
                   _buildV2GlassUploadCard(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   _buildV2Tips(context),
                   _buildV2DebugSection(context),
                   const SizedBox(height: 32),
@@ -212,6 +224,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
           'Import Video Button Tapped',
           properties: {
             'camera_angle': _selectedCameraAngle.name,
+            'handedness': _selectedHandedness.name,
             'version': 'v2',
           },
         );
@@ -220,6 +233,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
         cubit.importVideo(
           throwType: ThrowTechnique.backhand,
           cameraAngle: _selectedCameraAngle,
+          handedness: _selectedHandedness,
         );
       },
       child: Container(
@@ -239,7 +253,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
             const SizedBox(height: 20),
             _buildV2Divider(),
             const SizedBox(height: 20),
-            _buildV2CameraAngleSection(context),
+            _buildV2SettingsRow(context),
           ],
         ),
       ),
@@ -301,23 +315,62 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     );
   }
 
+  Widget _buildV2SettingsRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: _buildV2CameraAngleSection(context)),
+        const SizedBox(width: 12),
+        Expanded(child: _buildV2HandednessSection(context)),
+      ],
+    );
+  }
+
   Widget _buildV2CameraAngleSection(BuildContext context) {
     return Column(
       children: [
         Text(
-          'Camera Angle',
+          'Camera',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.white.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 12),
-        _V2CameraAngleToggle(
-          selectedAngle: _selectedCameraAngle,
-          onAngleChanged: (CameraAngle angle) {
+        const SizedBox(height: 8),
+        _V2CompactToggle(
+          options: const ['Side', 'Rear'],
+          selectedIndex: _selectedCameraAngle == CameraAngle.side ? 0 : 1,
+          onChanged: (int index) {
             setState(() {
-              _selectedCameraAngle = angle;
+              _selectedCameraAngle = index == 0
+                  ? CameraAngle.side
+                  : CameraAngle.rear;
               _updateSelectedVideoForCameraAngle();
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildV2HandednessSection(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'Throwing hand',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _V2CompactToggle(
+          options: const ['Left', 'Right'],
+          selectedIndex: _selectedHandedness == Handedness.left ? 0 : 1,
+          onChanged: (int index) {
+            setState(() {
+              _selectedHandedness = index == 0
+                  ? Handedness.left
+                  : Handedness.right;
             });
           },
         ),
@@ -328,60 +381,182 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   Widget _buildV2Tips(BuildContext context) {
     final LoggingService logger = locator.get<LoggingService>();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        logger.track(
+          'Form Analysis Tips Card Tapped',
+          properties: {'version': 'v2'},
+        );
+        _showFormAnalysisEducation();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 8,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                const _V2TipChip(text: '3s max'),
-                const _V2TipChip(text: 'Full body in view'),
-                _V2TipChip(
-                  text: _selectedCameraAngle == CameraAngle.side
-                      ? 'Position slightly behind perpendicular'
-                      : 'Position directly behind',
+                Expanded(
+                  child: Text(
+                    'For best results',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(
+                    Icons.help_outline,
+                    size: 20,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              logger.track(
-                'Form Analysis Help Button Tapped',
-                properties: {'version': 'v2'},
-              );
-              _showFormAnalysisEducation();
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(
-                Icons.help_outline,
-                size: 20,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
+            const SizedBox(height: 12),
+            // High priority tips - one per row for emphasis
+            const _V2TipChip(
+              text: 'Select throwing hand',
+              isHighPriority: true,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const _V2TipChip(text: 'Full body in view', isHighPriority: true),
+            const SizedBox(height: 8),
+            const _V2TipChip(
+              text: 'Record before x-step',
+              isHighPriority: true,
+            ),
+            const SizedBox(height: 8),
+            const _V2TipChip(
+              text: 'End 1s after release',
+              isHighPriority: true,
+            ),
+            const SizedBox(height: 12),
+            // Regular tips in a 2-column grid
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF137e66),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Text(
+                          '${kMaxVideoSeconds}s max',
+                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF137e66),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Text(
+                          'High contrast',
+                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF137e66),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Text(
+                          'Closer is better',
+                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF137e66),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _selectedCameraAngle == CameraAngle.side
+                              ? 'Position slightly behind'
+                              : 'Position directly behind',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -418,6 +593,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                     cubit.testWithAssetVideo(
                       throwType: ThrowTechnique.backhand,
                       cameraAngle: _selectedCameraAngle,
+                      handedness: _selectedHandedness,
                       assetPath: _selectedTestVideoPath,
                     );
                   },
@@ -538,115 +714,126 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   }
 }
 
-/// Camera angle toggle with green selected state and dark background
-class _V2CameraAngleToggle extends StatelessWidget {
-  const _V2CameraAngleToggle({
-    required this.selectedAngle,
-    required this.onAngleChanged,
+/// Compact toggle that scales to fit available width
+class _V2CompactToggle extends StatelessWidget {
+  const _V2CompactToggle({
+    required this.options,
+    required this.selectedIndex,
+    required this.onChanged,
   });
 
-  final CameraAngle selectedAngle;
-  final ValueChanged<CameraAngle> onAngleChanged;
+  final List<String> options;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        children: List.generate(options.length, (index) {
+          final bool isSelected = index == selectedIndex;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onChanged(index);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF137e66)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(
+                  options[index],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.6),
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+/// Compact tip chip with green dot or exclamation mark for high priority tips
+class _V2TipChip extends StatelessWidget {
+  const _V2TipChip({required this.text, this.isHighPriority = false});
+
+  final String text;
+  final bool isHighPriority;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isHighPriority
+            ? const Color(0xFF137e66).withValues(alpha: 0.3)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        border: isHighPriority
+            ? Border.all(
+                color: const Color(0xFF137e66).withValues(alpha: 0.5),
+                width: 1,
+              )
+            : null,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _V2ToggleButton(
-            label: 'Side',
-            isSelected: selectedAngle == CameraAngle.side,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onAngleChanged(CameraAngle.side);
-            },
-          ),
-          _V2ToggleButton(
-            label: 'Rear',
-            isSelected: selectedAngle == CameraAngle.rear,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onAngleChanged(CameraAngle.rear);
-            },
+          if (isHighPriority)
+            const Padding(
+              padding: EdgeInsets.only(right: 6),
+              child: Text(
+                '!',
+                style: TextStyle(
+                  color: Color(0xFF137e66),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            )
+          else
+            Container(
+              width: 4,
+              height: 4,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: const BoxDecoration(
+                color: Color(0xFF137e66),
+                shape: BoxShape.circle,
+              ),
+            ),
+          Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: isHighPriority
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.7),
+              fontWeight: isHighPriority ? FontWeight.w600 : FontWeight.normal,
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Individual toggle button for camera angle
-class _V2ToggleButton extends StatelessWidget {
-  const _V2ToggleButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF137e66) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.6),
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Compact tip chip with green dot
-class _V2TipChip extends StatelessWidget {
-  const _V2TipChip({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 6,
-          height: 6,
-          decoration: const BoxDecoration(
-            color: Color(0xFF137e66),
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.white.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -20,6 +20,8 @@ import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_statistics_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:turbo_disc_golf/utils/constants/regulation_constants.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class DrivesDetailScreen extends StatefulWidget {
   static const String screenName = 'Drives Detail';
@@ -374,24 +376,19 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
   /// Calculate whether a shot was successful for various metrics
   ShotOutcome _calculateShotOutcome(DGHole hole, int throwIndex) {
     final DiscThrow discThrow = hole.throws[throwIndex];
-    final bool isTeeShot = throwIndex == 0;
+    final bool isEligibleForCircleInReg =
+        isThrowEligibleForCircleInReg(throwIndex, hole.par);
 
     // Determine if this led to a birdie
     final bool wasBirdie = hole.relativeHoleScore < 0;
 
-    // Determine if this was C1 in regulation (tee shot that landed in C1)
+    // Only count circle in regulation for throws that could realistically reach C1
+    // Par 3: tee shot (throwIndex 0), Par 4: approach (throwIndex 1), etc.
     bool wasC1InReg = false;
-    if (isTeeShot) {
-      final LandingSpot? landing = discThrow.landingSpot;
-      wasC1InReg =
-          landing == LandingSpot.circle1 || landing == LandingSpot.parked;
-    }
-
-    // Determine if this was C2 in regulation (tee shot that landed in C2)
     bool wasC2InReg = false;
-    if (isTeeShot) {
-      final LandingSpot? landing = discThrow.landingSpot;
-      wasC2InReg = landing == LandingSpot.circle2;
+    if (isEligibleForCircleInReg) {
+      wasC1InReg = isC1Landing(discThrow.landingSpot);
+      wasC2InReg = isC2Landing(discThrow.landingSpot);
     }
 
     return ShotOutcome(
@@ -433,15 +430,14 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
       },
     );
 
-    Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (context) => ThrowTypeDetailScreen(
-          throwType: throwType,
-          overallStats: overallStats,
-          shotShapeStats: shotShapes,
-          overallShotDetails: overallShotDetails,
-          shotShapeDetails: shotShapeDetails,
-        ),
+    pushCupertinoRoute(
+      context,
+      ThrowTypeDetailScreen(
+        throwType: throwType,
+        overallStats: overallStats,
+        shotShapeStats: shotShapes,
+        overallShotDetails: overallShotDetails,
+        shotShapeDetails: shotShapeDetails,
       ),
     );
   }
@@ -594,7 +590,6 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
       circleInRegByShape,
     );
   }
-
 
   /// Build V1 layout (original layout)
   Widget _buildLayoutV1(

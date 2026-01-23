@@ -3,8 +3,6 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/shot_detail.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/throw_type_stats.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/shared/components/metric_row.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/shared/components/shot_details_list.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/shared/components/shot_shape_card.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
@@ -32,9 +30,12 @@ class ThrowTypeDetailScreen extends StatefulWidget {
   State<ThrowTypeDetailScreen> createState() => _ThrowTypeDetailScreenState();
 }
 
-class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
+class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen>
+    with TickerProviderStateMixin {
   bool _isOverallExpanded = false;
+  late AnimationController _overallAnimationController;
   final Map<String, bool> _shotShapeExpanded = {};
+  final Map<String, AnimationController> _shotShapeAnimationControllers = {};
   late final LoggingServiceBase _logger;
 
   @override
@@ -49,6 +50,29 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
 
     // Track screen impression
     _logger.logScreenImpression('ThrowTypeDetailScreen');
+
+    // Initialize overall animation controller - start collapsed
+    _overallAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    // Initialize animation controllers for shot shapes - start collapsed
+    for (final shape in widget.shotShapeStats) {
+      _shotShapeAnimationControllers[shape.shapeName] = AnimationController(
+        duration: const Duration(milliseconds: 150),
+        vsync: this,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _overallAnimationController.dispose();
+    for (final controller in _shotShapeAnimationControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -63,7 +87,25 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildHeaderCard(context),
+          ThrowStatsCard(
+            title: widget.overallStats.displayName,
+            shotDetails: widget.overallShotDetails,
+            averageDistance: widget.overallStats.averageThrowDistance?.round(),
+            isExpanded: _isOverallExpanded,
+            animationController: _overallAnimationController,
+            showThrowTechnique: false,
+            useLandingSpotAbbreviations: false,
+            onToggleExpand: () {
+              setState(() {
+                _isOverallExpanded = !_isOverallExpanded;
+              });
+              if (_isOverallExpanded) {
+                _overallAnimationController.forward();
+              } else {
+                _overallAnimationController.reverse();
+              }
+            },
+          ),
           const SizedBox(height: 16),
           if (widget.shotShapeStats.isNotEmpty) ...[
             Padding(
@@ -77,15 +119,26 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
             ...widget.shotShapeStats.map(
               (shape) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: ShotShapeCard(
-                  shape: shape,
+                child: ThrowStatsCard(
+                  title: shape.displayName,
                   shotDetails: widget.shotShapeDetails[shape.shapeName] ?? [],
                   isExpanded: _shotShapeExpanded[shape.shapeName] ?? false,
+                  animationController: _shotShapeAnimationControllers[shape.shapeName]!,
+                  showThrowTechnique: false,
+                  useLandingSpotAbbreviations: false,
                   onToggleExpand: () {
                     setState(() {
                       _shotShapeExpanded[shape.shapeName] =
                           !(_shotShapeExpanded[shape.shapeName] ?? false);
                     });
+                    final controller = _shotShapeAnimationControllers[shape.shapeName];
+                    if (controller != null) {
+                      if (_shotShapeExpanded[shape.shapeName] ?? false) {
+                        controller.forward();
+                      } else {
+                        controller.reverse();
+                      }
+                    }
                   },
                 ),
               ),
@@ -121,106 +174,4 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen> {
       ),
     );
   }
-
-  Widget _buildHeaderCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isOverallExpanded = !_isOverallExpanded;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.overallStats.displayName,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (widget.overallStats.averageDistance != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      widget.overallStats.distanceDisplay,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: const Color(0xFF111827),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Icon(
-                  _isOverallExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  color: const Color(0xFF6B7280),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            MetricRow(
-              label: 'Birdie Rate',
-              percentage: widget.overallStats.birdieRate,
-              count: widget.overallStats.birdieCount,
-              total: widget.overallStats.totalHoles,
-              color: const Color(0xFF10B981),
-            ),
-            const SizedBox(height: 12),
-            MetricRow(
-              label: 'C1 in Reg',
-              percentage: widget.overallStats.c1InRegPct,
-              count: widget.overallStats.c1Count,
-              total: widget.overallStats.c1Total,
-              color: const Color(0xFF3B82F6),
-            ),
-            const SizedBox(height: 12),
-            MetricRow(
-              label: 'C2 in Reg',
-              percentage: widget.overallStats.c2InRegPct,
-              count: widget.overallStats.c2Count,
-              total: widget.overallStats.c2Total,
-              color: const Color(0xFF8B5CF6),
-            ),
-            if (_isOverallExpanded) ...[
-              const SizedBox(height: 20),
-              const Divider(color: Color(0xFFE5E7EB)),
-              const SizedBox(height: 16),
-              ShotDetailsList(shotDetails: widget.overallShotDetails),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-
-
 }

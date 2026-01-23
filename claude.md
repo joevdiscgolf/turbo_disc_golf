@@ -167,6 +167,23 @@ class RoundReviewScreen extends StatefulWidget {
 }
 ```
 
+**Navigation:**
+✅ ALWAYS use `pushCupertinoRoute()` from `lib/utils/navigation_helpers.dart`
+❌ NEVER use `Navigator.of(context).push(CupertinoPageRoute...` directly
+
+```dart
+// ✅ CORRECT
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
+
+pushCupertinoRoute(context, const SettingsScreen());
+pushCupertinoRoute(context, MyScreen(), pushFromBottom: true);
+
+// ❌ WRONG
+Navigator.of(context).push(
+  CupertinoPageRoute(builder: (_) => const SettingsScreen()),
+);
+```
+
 **Conditional UI:**
 ```dart
 if (state is LoadingState) return const LoadingIndicator();

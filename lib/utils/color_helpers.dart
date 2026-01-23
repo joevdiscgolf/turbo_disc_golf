@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/throw_technique_constants.dart';
 
 /// Shared text style for story card section headers
 /// Used by headline card and section headers for consistency
@@ -126,6 +127,54 @@ Color getSemanticColor(double percentage) {
   } else {
     // Pure red (0-25%)
     return red;
+  }
+}
+
+/// Returns a smoothly interpolated color based on metric performance.
+///
+/// Uses the metric's thresholds as anchor points:
+/// - Below good: interpolates red → amber
+/// - Between good and excellent: interpolates amber → green
+/// - At or above excellent: solid green
+///
+/// For inverse metrics (lower is better), the logic is reversed:
+/// - At or below excellent: solid green
+/// - Between excellent and good: interpolates green → amber
+/// - Above good: interpolates amber → red
+Color getMetricColor(double percentage, MetricThresholds thresholds) {
+  const Color red = Color(0xFFEF4444);
+  const Color amber = Color(0xFFF59E0B);
+  const Color green = Color(0xFF10B981);
+
+  // Clamp to reasonable range
+  final double p = percentage.clamp(thresholds.floor, thresholds.ceiling);
+
+  if (thresholds.inverse) {
+    // Lower is better: green at low values, red at high
+    if (p <= thresholds.excellent) {
+      return green;
+    } else if (p <= thresholds.good) {
+      final double t =
+          (p - thresholds.excellent) / (thresholds.good - thresholds.excellent);
+      return Color.lerp(green, amber, t)!;
+    } else {
+      final double t =
+          (p - thresholds.good) / (thresholds.ceiling - thresholds.good);
+      return Color.lerp(amber, red, t.clamp(0.0, 1.0))!;
+    }
+  } else {
+    // Higher is better: green at high values, red at low
+    if (p >= thresholds.excellent) {
+      return green;
+    } else if (p >= thresholds.good) {
+      final double t =
+          (p - thresholds.good) / (thresholds.excellent - thresholds.good);
+      return Color.lerp(amber, green, t)!;
+    } else {
+      final double t =
+          (p - thresholds.floor) / (thresholds.good - thresholds.floor);
+      return Color.lerp(red, amber, t.clamp(0.0, 1.0))!;
+    }
   }
 }
 

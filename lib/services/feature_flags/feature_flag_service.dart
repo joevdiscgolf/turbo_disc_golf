@@ -165,6 +165,9 @@ class FeatureFlagService {
 
   bool get drivesDetailScreenV2 => getBool(FeatureFlag.drivesDetailScreenV2);
 
+  bool get useThrowTypeComparisonCard =>
+      getBool(FeatureFlag.useThrowTypeComparisonCard);
+
   // ===== Voice Service =====
 
   bool get useIosVoiceService => getBool(FeatureFlag.useIosVoiceService);

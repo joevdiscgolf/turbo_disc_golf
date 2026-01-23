@@ -40,10 +40,10 @@ class ThrowTypeRadarChart extends StatefulWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
         child: Wrap(
-          spacing: 12,
-          runSpacing: 8,
+          spacing: 8,
+          runSpacing: 6,
           alignment: WrapAlignment.center,
           children: throwTypes.asMap().entries.map((entry) {
             final int index = entry.key;
@@ -140,12 +140,14 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildLegend(context),
+            const SizedBox(height: 8),
             SizedBox(
-              height: 320,
+              height: 248,
               child: CustomPaint(
                 painter: _RadarChartPainter(
                   throwTypes: widget.throwTypes,
@@ -167,7 +169,7 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
               ),
             ),
             if (_highlightedThrowType != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               _buildHighlightedStats(context),
             ],
           ],
@@ -241,6 +243,42 @@ class _ThrowTypeRadarChartState extends State<ThrowTypeRadarChart> {
   String? _getThrowTypeAtPosition(Offset position) {
     // Simplified hit detection - would need more sophisticated logic in production
     return null;
+  }
+
+  Widget _buildLegend(BuildContext context) {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 8,
+      alignment: WrapAlignment.start,
+      children: widget.throwTypes.asMap().entries.map((entry) {
+        final int index = entry.key;
+        final ThrowTypeStats throwType = entry.value;
+        final Color color = _throwTypeColors[index % _throwTypeColors.length];
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              throwType.displayName,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                color: const Color(0xFF6B7280),
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
   }
 }
 
