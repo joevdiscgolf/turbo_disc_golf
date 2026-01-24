@@ -26,8 +26,18 @@ class AnalysisResultsView extends StatelessWidget {
       return const Center(child: Text('No pose analysis data available'));
     }
 
+    // Extract top coaching tips from result if available
+    final List<String>? topCoachingTips =
+        result != null && result!.prioritizedImprovements.isNotEmpty
+            ? result!.prioritizedImprovements
+                  .map((imp) => imp.description)
+                  .toList()
+            : null;
+
     // Convert PoseAnalysisResponse to FormAnalysisRecord format
-    final FormAnalysisRecord analysisRecord = _convertToRecord(poseAnalysis!);
+    final FormAnalysisRecord analysisRecord = poseAnalysis!.toFormAnalysisRecord(
+      topCoachingTips: topCoachingTips,
+    );
 
     // Use HistoryAnalysisView to display (no-op for onBack since we're in fresh analysis)
     // Add 48px for GenericAppBar height since FormAnalysisRecordingScreen uses extendBodyBehindAppBar
@@ -44,173 +54,6 @@ class AnalysisResultsView extends StatelessWidget {
       // Pass full pose analysis for video sync metadata
       poseAnalysisResponse: poseAnalysis,
     );
-  }
-
-  FormAnalysisRecord _convertToRecord(PoseAnalysisResponse poseAnalysis) {
-    // Convert checkpoints from CheckpointPoseData to CheckpointRecord
-    final List<CheckpointRecord> checkpoints = poseAnalysis.checkpoints.map((
-      cp,
-    ) {
-      // Use base64 as data URLs (they'll be converted inline by the display code)
-      final String? userImageUrl = cp.userImageBase64 != null
-          ? 'data:image/jpeg;base64,${cp.userImageBase64}'
-          : null;
-      final String? userSkeletonUrl = cp.userSkeletonOnlyBase64 != null
-          ? 'data:image/jpeg;base64,${cp.userSkeletonOnlyBase64}'
-          : null;
-      final String? referenceImageUrl =
-          cp.referenceSilhouetteWithSkeletonBase64 != null
-          ? 'data:image/jpeg;base64,${cp.referenceSilhouetteWithSkeletonBase64}'
-          : (cp.referenceImageBase64 != null
-                ? 'data:image/jpeg;base64,${cp.referenceImageBase64}'
-                : null);
-      final String? referenceSkeletonUrl =
-          cp.referenceSkeletonOnlyBase64 != null
-          ? 'data:image/jpeg;base64,${cp.referenceSkeletonOnlyBase64}'
-          : null;
-
-      // Convert angle deviations from AngleDeviations object to Map
-      final Map<String, double> angleDeviations = {};
-      if (cp.deviationsRaw.shoulderRotation != null) {
-        angleDeviations['shoulder_rotation'] =
-            cp.deviationsRaw.shoulderRotation!;
-      }
-      if (cp.deviationsRaw.elbowAngle != null) {
-        angleDeviations['elbow_angle'] = cp.deviationsRaw.elbowAngle!;
-      }
-      if (cp.deviationsRaw.hipRotation != null) {
-        angleDeviations['hip_rotation'] = cp.deviationsRaw.hipRotation!;
-      }
-      if (cp.deviationsRaw.kneeBend != null) {
-        angleDeviations['knee_bend'] = cp.deviationsRaw.kneeBend!;
-      }
-      if (cp.deviationsRaw.spineTilt != null) {
-        angleDeviations['spine_tilt'] = cp.deviationsRaw.spineTilt!;
-      }
-
-      return CheckpointRecord(
-        checkpointId: cp.checkpointId,
-        checkpointName: cp.checkpointName,
-        deviationSeverity: cp.deviationSeverity,
-        coachingTips: cp.coachingTips,
-        angleDeviations: angleDeviations.isNotEmpty ? angleDeviations : null,
-        userImageUrl: userImageUrl,
-        userSkeletonUrl: userSkeletonUrl,
-        referenceImageUrl: referenceImageUrl,
-        referenceSkeletonUrl: referenceSkeletonUrl,
-        proPlayerId: cp.proPlayerId,
-        referenceHorizontalOffsetPercent: cp.referenceHorizontalOffsetPercent,
-        referenceScale: cp.referenceScale,
-        // Individual joint angles - User
-        userLeftKneeBendAngle: cp.userIndividualAngles?.leftKneeBendAngle,
-        userRightKneeBendAngle: cp.userIndividualAngles?.rightKneeBendAngle,
-        userLeftElbowFlexionAngle:
-            cp.userIndividualAngles?.leftElbowFlexionAngle,
-        userRightElbowFlexionAngle:
-            cp.userIndividualAngles?.rightElbowFlexionAngle,
-        userLeftShoulderAbductionAngle:
-            cp.userIndividualAngles?.leftShoulderAbductionAngle,
-        userRightShoulderAbductionAngle:
-            cp.userIndividualAngles?.rightShoulderAbductionAngle,
-        userLeftWristExtensionAngle:
-            cp.userIndividualAngles?.leftWristExtensionAngle,
-        userRightWristExtensionAngle:
-            cp.userIndividualAngles?.rightWristExtensionAngle,
-        userLeftHipFlexionAngle: cp.userIndividualAngles?.leftHipFlexionAngle,
-        userRightHipFlexionAngle: cp.userIndividualAngles?.rightHipFlexionAngle,
-        userLeftAnkleAngle: cp.userIndividualAngles?.leftAnkleAngle,
-        userRightAnkleAngle: cp.userIndividualAngles?.rightAnkleAngle,
-        // Individual joint angles - Reference
-        refLeftKneeBendAngle: cp.referenceIndividualAngles?.leftKneeBendAngle,
-        refRightKneeBendAngle: cp.referenceIndividualAngles?.rightKneeBendAngle,
-        refLeftElbowFlexionAngle:
-            cp.referenceIndividualAngles?.leftElbowFlexionAngle,
-        refRightElbowFlexionAngle:
-            cp.referenceIndividualAngles?.rightElbowFlexionAngle,
-        refLeftShoulderAbductionAngle:
-            cp.referenceIndividualAngles?.leftShoulderAbductionAngle,
-        refRightShoulderAbductionAngle:
-            cp.referenceIndividualAngles?.rightShoulderAbductionAngle,
-        refLeftWristExtensionAngle:
-            cp.referenceIndividualAngles?.leftWristExtensionAngle,
-        refRightWristExtensionAngle:
-            cp.referenceIndividualAngles?.rightWristExtensionAngle,
-        refLeftHipFlexionAngle:
-            cp.referenceIndividualAngles?.leftHipFlexionAngle,
-        refRightHipFlexionAngle:
-            cp.referenceIndividualAngles?.rightHipFlexionAngle,
-        refLeftAnkleAngle: cp.referenceIndividualAngles?.leftAnkleAngle,
-        refRightAnkleAngle: cp.referenceIndividualAngles?.rightAnkleAngle,
-        // Individual joint angle deviations
-        devLeftKneeBendAngle: cp.individualDeviations?.leftKneeBendAngle,
-        devRightKneeBendAngle: cp.individualDeviations?.rightKneeBendAngle,
-        devLeftElbowFlexionAngle:
-            cp.individualDeviations?.leftElbowFlexionAngle,
-        devRightElbowFlexionAngle:
-            cp.individualDeviations?.rightElbowFlexionAngle,
-        devLeftShoulderAbductionAngle:
-            cp.individualDeviations?.leftShoulderAbductionAngle,
-        devRightShoulderAbductionAngle:
-            cp.individualDeviations?.rightShoulderAbductionAngle,
-        devLeftWristExtensionAngle:
-            cp.individualDeviations?.leftWristExtensionAngle,
-        devRightWristExtensionAngle:
-            cp.individualDeviations?.rightWristExtensionAngle,
-        devLeftHipFlexionAngle: cp.individualDeviations?.leftHipFlexionAngle,
-        devRightHipFlexionAngle: cp.individualDeviations?.rightHipFlexionAngle,
-        devLeftAnkleAngle: cp.individualDeviations?.leftAnkleAngle,
-        devRightAnkleAngle: cp.individualDeviations?.rightAnkleAngle,
-      );
-    }).toList();
-
-    // Calculate worst deviation severity from checkpoints
-    final String? worstSeverity = _calculateWorstSeverity(checkpoints);
-
-    return FormAnalysisRecord(
-      id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
-      uid: 'temp',
-      createdAt: DateTime.now().toIso8601String(),
-      throwType: poseAnalysis.throwType,
-      overallFormScore: poseAnalysis.overallFormScore,
-      worstDeviationSeverity: worstSeverity,
-      checkpoints: checkpoints,
-      topCoachingTips:
-          result != null && result!.prioritizedImprovements.isNotEmpty
-          ? result!.prioritizedImprovements
-                .map((imp) => imp.description)
-                .toList()
-          : null,
-      cameraAngle: poseAnalysis.cameraAngle,
-      videoOrientation: poseAnalysis.videoOrientation,
-      videoAspectRatio: poseAnalysis.videoAspectRatio,
-      videoUrl: poseAnalysis.videoUrl,
-    );
-  }
-
-  String? _calculateWorstSeverity(List<CheckpointRecord> checkpoints) {
-    if (checkpoints.isEmpty) return null;
-
-    const List<String> severityOrder = [
-      'good',
-      'minor',
-      'moderate',
-      'significant',
-    ];
-
-    String? worstSeverity;
-    int worstIndex = -1;
-
-    for (final checkpoint in checkpoints) {
-      final int index = severityOrder.indexOf(
-        checkpoint.deviationSeverity.toLowerCase(),
-      );
-      if (index > worstIndex) {
-        worstIndex = index;
-        worstSeverity = checkpoint.deviationSeverity;
-      }
-    }
-
-    return worstSeverity;
   }
 
   /// Parse throw technique string to enum (for video comparison feature)

@@ -1,9 +1,14 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/video_orientation.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_record_builder.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/models/video_orientation.dart';
 
 part 'pose_analysis_response.g.dart';
+
+Handedness? _handednessFromJson(String? value) => Handedness.fromApiString(value);
 
 /// Response from the Cloud Run pose analysis API
 @JsonSerializable(anyMap: true, explicitToJson: true)
@@ -23,8 +28,11 @@ class PoseAnalysisResponse {
     this.errorMessage,
     this.roundThumbnailBase64,
     this.videoUrl,
+    this.videoStoragePath,
+    this.skeletonVideoUrl,
     this.videoSyncMetadata,
     this.proVideoReference,
+    this.detectedHandedness,
   });
 
   @JsonKey(name: 'session_id')
@@ -67,11 +75,86 @@ class PoseAnalysisResponse {
   @JsonKey(name: 'video_url')
   final String? videoUrl;
 
+  /// Cloud Storage path for the video (e.g., "{uid}/{session_id}.mp4")
+  /// Used to generate fresh signed URLs when the original expires
+  @JsonKey(name: 'video_storage_path')
+  final String? videoStoragePath;
+
+  /// URL of the skeleton-only video (user pose rendered as skeleton overlay)
+  /// Used for video comparison when useSkeletonVideoInTimelinePlayer is enabled
+  @JsonKey(name: 'skeleton_video_url')
+  final String? skeletonVideoUrl;
+
   @JsonKey(name: 'video_sync_metadata')
   final VideoSyncMetadata? videoSyncMetadata;
 
   @JsonKey(name: 'pro_video_reference')
   final String? proVideoReference;
+
+  @JsonKey(name: 'detected_handedness', fromJson: _handednessFromJson)
+  final Handedness? detectedHandedness;
+
+  /// Convert PoseAnalysisResponse to FormAnalysisRecord for storage/display.
+  /// Optionally accepts topCoachingTips from external analysis results.
+  FormAnalysisRecord toFormAnalysisRecord({List<String>? topCoachingTips}) {
+    // Convert checkpoints using the unified builder
+    final List<CheckpointRecord> checkpointRecords = checkpoints.map((cp) {
+      return CheckpointRecordBuilder.build(
+        checkpoint: cp,
+        imageUrlProvider: (String? base64Data, String imageName) {
+          if (base64Data == null) return null;
+          return 'data:image/jpeg;base64,$base64Data';
+        },
+      );
+    }).toList();
+
+    // Calculate worst deviation severity from checkpoints
+    final String? worstSeverity = _calculateWorstSeverity(checkpointRecords);
+
+    return FormAnalysisRecord(
+      id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+      uid: 'temp',
+      createdAt: DateTime.now().toIso8601String(),
+      throwType: throwType,
+      overallFormScore: overallFormScore,
+      worstDeviationSeverity: worstSeverity,
+      checkpoints: checkpointRecords,
+      topCoachingTips: topCoachingTips,
+      cameraAngle: cameraAngle,
+      videoOrientation: videoOrientation,
+      videoAspectRatio: videoAspectRatio,
+      videoUrl: videoUrl,
+      videoStoragePath: videoStoragePath,
+      skeletonVideoUrl: skeletonVideoUrl,
+      detectedHandedness: detectedHandedness,
+    );
+  }
+
+  static String? _calculateWorstSeverity(List<CheckpointRecord> checkpoints) {
+    if (checkpoints.isEmpty) return null;
+
+    const List<String> severityOrder = [
+      'good',
+      'minor',
+      'moderate',
+      'significant',
+    ];
+
+    String? worstSeverity;
+    int worstIndex = -1;
+
+    for (final checkpoint in checkpoints) {
+      final int index = severityOrder.indexOf(
+        checkpoint.deviationSeverity.toLowerCase(),
+      );
+      if (index > worstIndex) {
+        worstIndex = index;
+        worstSeverity = checkpoint.deviationSeverity;
+      }
+    }
+
+    return worstSeverity;
+  }
 
   factory PoseAnalysisResponse.fromJson(Map<String, dynamic> json) =>
       _$PoseAnalysisResponseFromJson(json);
@@ -108,6 +191,7 @@ class CheckpointPoseData {
     this.userIndividualAngles,
     this.referenceIndividualAngles,
     this.individualDeviations,
+    this.detectedFrameNumber,
   });
 
   @JsonKey(name: 'checkpoint_id')
@@ -194,6 +278,10 @@ class CheckpointPoseData {
   /// Individual joint deviations (user - reference)
   @JsonKey(name: 'individual_deviations')
   final IndividualJointDeviations? individualDeviations;
+
+  /// Frame number detected by the backend for this checkpoint
+  @JsonKey(name: 'detected_frame_number')
+  final int? detectedFrameNumber;
 
   /// Get checkpoint description based on checkpoint ID
   String get checkpointDescription {

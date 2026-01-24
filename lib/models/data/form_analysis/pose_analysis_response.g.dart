@@ -32,12 +32,17 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   errorMessage: json['error_message'] as String?,
   roundThumbnailBase64: json['round_thumbnail_base64'] as String?,
   videoUrl: json['video_url'] as String?,
+  videoStoragePath: json['video_storage_path'] as String?,
+  skeletonVideoUrl: json['skeleton_video_url'] as String?,
   videoSyncMetadata: json['video_sync_metadata'] == null
       ? null
       : VideoSyncMetadata.fromJson(
           Map<String, dynamic>.from(json['video_sync_metadata'] as Map),
         ),
   proVideoReference: json['pro_video_reference'] as String?,
+  detectedHandedness: _handednessFromJson(
+    json['detected_handedness'] as String?,
+  ),
 );
 
 Map<String, dynamic> _$PoseAnalysisResponseToJson(
@@ -57,8 +62,11 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'error_message': instance.errorMessage,
   'round_thumbnail_base64': instance.roundThumbnailBase64,
   'video_url': instance.videoUrl,
+  'video_storage_path': instance.videoStoragePath,
+  'skeleton_video_url': instance.skeletonVideoUrl,
   'video_sync_metadata': instance.videoSyncMetadata?.toJson(),
   'pro_video_reference': instance.proVideoReference,
+  'detected_handedness': _$HandednessEnumMap[instance.detectedHandedness],
 };
 
 const _$CameraAngleEnumMap = {
@@ -69,6 +77,11 @@ const _$CameraAngleEnumMap = {
 const _$VideoOrientationEnumMap = {
   VideoOrientation.portrait: 'portrait',
   VideoOrientation.landscape: 'landscape',
+};
+
+const _$HandednessEnumMap = {
+  Handedness.left: 'left',
+  Handedness.right: 'right',
 };
 
 CheckpointPoseData _$CheckpointPoseDataFromJson(Map json) => CheckpointPoseData(
@@ -128,6 +141,7 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(Map json) => CheckpointPoseData(
       : IndividualJointDeviations.fromJson(
           Map<String, dynamic>.from(json['individual_deviations'] as Map),
         ),
+  detectedFrameNumber: (json['detected_frame_number'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$CheckpointPoseDataToJson(
@@ -163,6 +177,7 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'user_individual_angles': instance.userIndividualAngles?.toJson(),
   'reference_individual_angles': instance.referenceIndividualAngles?.toJson(),
   'individual_deviations': instance.individualDeviations?.toJson(),
+  'detected_frame_number': instance.detectedFrameNumber,
 };
 
 PoseLandmark _$PoseLandmarkFromJson(Map json) => PoseLandmark(
