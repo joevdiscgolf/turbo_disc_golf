@@ -466,11 +466,11 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       } else if (errorMessage.contains(
         'Could not detect all required positions',
       )) {
-        // Parse missing positions from error message
+        // Parse missing positions count from error message
         // Format: "Could not detect all required positions. Missing: HEISMAN, LOADED. Please..."
-        final String missingPositions = _extractMissingPositions(errorMessage);
+        final int missingCount = _countMissingPositions(errorMessage);
         userMessage =
-            'Couldn\'t detect $missingPositions. Please ensure your full body is visible throughout the throw.';
+            'Unable to detect $missingCount position${missingCount == 1 ? '' : 's'}';
       } else if (errorLower.contains('file must be a video')) {
         // Exact match for backend's specific error message when an image is uploaded
         userMessage = 'Please upload a video file, not a photo or image';
@@ -489,32 +489,35 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     }
   }
 
-  /// Extract missing position names from error message
+  /// Count missing positions from error message
   /// Example: "Could not detect all required positions. Missing: HEISMAN, LOADED. Please..."
-  /// Returns: "HEISMAN, LOADED" or "the required positions" if parsing fails
-  String _extractMissingPositions(String errorMessage) {
+  /// Returns: 2 (count of comma-separated positions) or 1 if parsing fails
+  int _countMissingPositions(String errorMessage) {
     try {
       final int startIndex = errorMessage.indexOf('Missing:');
       if (startIndex == -1) {
-        return 'the required positions';
+        return 1;
       }
 
       final int start = startIndex + 'Missing:'.length;
       final int endIndex = errorMessage.indexOf('.', start);
       if (endIndex == -1) {
-        return 'the required positions';
+        return 1;
       }
 
       final String missingStr = errorMessage.substring(start, endIndex).trim();
 
-      // Convert position names to lowercase for more natural display
-      // E.g., "HEISMAN, LOADED" -> "heisman, loaded"
-      return missingStr.toLowerCase();
+      // Count comma-separated positions
+      // E.g., "HEISMAN, LOADED" -> 2
+      if (missingStr.isEmpty) {
+        return 1;
+      }
+      return missingStr.split(',').length;
     } catch (e) {
       debugPrint(
         '[VideoFormAnalysisCubit] Failed to parse missing positions: $e',
       );
-      return 'the required positions';
+      return 1;
     }
   }
 

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,14 +13,61 @@ import 'package:turbo_disc_golf/models/handedness.dart';
 /// Client for the Cloud Run pose analysis API
 class PoseAnalysisApiClient {
   PoseAnalysisApiClient({String? baseUrl, http.Client? httpClient})
-    : _baseUrl = baseUrl ?? _defaultBaseUrl,
+    : _baseUrl = baseUrl ?? _localBaseUrl,
       _httpClient = httpClient ?? http.Client();
 
-  // todo: Update this to your Cloud Run URL after deployment
-  static const String _defaultBaseUrl = 'http://localhost:8080';
+  static const String _productionUrl =
+      'https://score-sensei-api-ys5bxtccka-uc.a.run.app';
+  static const String _localBaseUrl = 'http://localhost:8080';
 
   final String _baseUrl;
   final http.Client _httpClient;
+
+  /// Returns the appropriate base URL based on the runtime environment.
+  /// Uses production URL on physical devices unless in debug mode.
+  /// Simulators/emulators always use local URL.
+  static Future<String> getDefaultBaseUrl() async {
+    if (Platform.isIOS || Platform.isAndroid) {
+      final bool isPhysical = await _isPhysicalDevice();
+      if (isPhysical && !kDebugMode) {
+        return _productionUrl;
+      }
+    }
+    return _localBaseUrl;
+  }
+
+  static Future<bool> _isPhysicalDevice() async {
+    if (Platform.isIOS) {
+      final IosDeviceInfo info = await DeviceInfoPlugin().iosInfo;
+      return info.isPhysicalDevice;
+    }
+    if (Platform.isAndroid) {
+      final AndroidDeviceInfo info = await DeviceInfoPlugin().androidInfo;
+      return info.isPhysicalDevice;
+    }
+    return false;
+  }
+
+  /// Returns auth headers for production requests.
+  /// Throws if production URL and user is not authenticated.
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final bool isProduction = _baseUrl.contains('run.app');
+
+    if (!isProduction) {
+      return {}; // No auth needed for local development
+    }
+
+    final String? idToken = await FirebaseAuth.instance.currentUser
+        ?.getIdToken();
+
+    if (idToken == null) {
+      throw PoseAnalysisException(
+        'Authentication required. Please sign in to use form analysis.',
+      );
+    }
+
+    return {'Authorization': 'Bearer $idToken'};
+  }
 
   /// Analyze a video file for disc golf form
   ///
@@ -58,6 +107,20 @@ class PoseAnalysisApiClient {
       request.fields['pro_player_id'] = proPlayerId;
     }
 
+    // Add auth headers for production
+    final Map<String, String> authHeaders = await _getAuthHeaders();
+    request.headers.addAll(authHeaders);
+
+    // Debug: Log request details
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('📤 POSE ANALYSIS REQUEST:');
+    debugPrint('   URL: $uri');
+    debugPrint('   Fields: ${request.fields}');
+    debugPrint(
+      '   Files: ${request.files.map((f) => '${f.field}: ${f.filename} (${f.length} bytes)').toList()}',
+    );
+    debugPrint('═══════════════════════════════════════════════════════');
+
     try {
       // Send request with timeout
       final http.StreamedResponse streamedResponse = await request
@@ -75,6 +138,16 @@ class PoseAnalysisApiClient {
       final http.Response response = await http.Response.fromStream(
         streamedResponse,
       );
+
+      // Debug: Log response details
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('📥 POSE ANALYSIS RESPONSE:');
+      debugPrint('   Status Code: ${response.statusCode}');
+      debugPrint('   Headers: ${response.headers}');
+      if (response.statusCode != 200) {
+        debugPrint('   Body: ${response.body}');
+      }
+      debugPrint('═══════════════════════════════════════════════════════');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> json =
@@ -139,21 +212,40 @@ class PoseAnalysisApiClient {
         // Try to parse error message from response
         String errorMessage =
             'Analysis failed with status ${response.statusCode}';
+        debugPrint('❌ POSE ANALYSIS ERROR:');
+        debugPrint('   Status: ${response.statusCode}');
+        debugPrint('   Raw body: ${response.body}');
         try {
           final Map<String, dynamic> errorJson =
               jsonDecode(response.body) as Map<String, dynamic>;
-          errorMessage = errorJson['detail'] as String? ?? errorMessage;
-        } catch (_) {
-          // Use default error message
+          debugPrint('   Parsed error JSON: $errorJson');
+          errorMessage =
+              errorJson['detail'] as String? ??
+              errorJson['error_message'] as String? ??
+              errorJson['message'] as String? ??
+              errorMessage;
+        } catch (parseError) {
+          debugPrint('   Failed to parse error body: $parseError');
         }
+        debugPrint('   Final error message: $errorMessage');
         throw PoseAnalysisException(errorMessage);
       }
     } on SocketException catch (e) {
+      debugPrint('❌ SOCKET EXCEPTION: ${e.message}');
+      debugPrint('   Address: ${e.address}');
+      debugPrint('   Port: ${e.port}');
+      debugPrint('   OS Error: ${e.osError}');
       throw PoseAnalysisException(
         'Network error: Could not connect to analysis server. ${e.message}',
       );
     } on http.ClientException catch (e) {
+      debugPrint('❌ HTTP CLIENT EXCEPTION: ${e.message}');
+      debugPrint('   URI: ${e.uri}');
       throw PoseAnalysisException('HTTP error: ${e.message}');
+    } catch (e, stackTrace) {
+      debugPrint('❌ UNEXPECTED ERROR: $e');
+      debugPrint('   Stack trace: $stackTrace');
+      rethrow;
     }
   }
 
@@ -188,11 +280,28 @@ class PoseAnalysisApiClient {
       if (proPlayerId != null) 'pro_player_id': proPlayerId,
     };
 
+    // Add auth headers for production
+    final Map<String, String> authHeaders = await _getAuthHeaders();
+
+    // Debug: Log request details (without the base64 data)
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('📤 POSE ANALYSIS REQUEST (Base64):');
+    debugPrint('   URL: $uri');
+    debugPrint('   video_format: $videoFormat');
+    debugPrint('   video_base64 length: ${videoBase64.length} chars');
+    debugPrint('   throw_type: $throwType');
+    debugPrint('   camera_angle: ${cameraAngle.toApiString()}');
+    debugPrint('   handedness: ${handedness.toApiString()}');
+    debugPrint('   session_id: $sessionId');
+    debugPrint('   user_id: $userId');
+    debugPrint('   pro_player_id: $proPlayerId');
+    debugPrint('═══════════════════════════════════════════════════════');
+
     try {
       final http.Response response = await _httpClient
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json', ...authHeaders},
             body: jsonEncode(requestBody),
           )
           .timeout(
@@ -204,6 +313,16 @@ class PoseAnalysisApiClient {
             },
           );
 
+      // Debug: Log response details
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('📥 POSE ANALYSIS RESPONSE (Base64):');
+      debugPrint('   Status Code: ${response.statusCode}');
+      debugPrint('   Headers: ${response.headers}');
+      if (response.statusCode != 200) {
+        debugPrint('   Body: ${response.body}');
+      }
+      debugPrint('═══════════════════════════════════════════════════════');
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> json =
             jsonDecode(response.body) as Map<String, dynamic>;
@@ -211,17 +330,40 @@ class PoseAnalysisApiClient {
       } else {
         String errorMessage =
             'Analysis failed with status ${response.statusCode}';
+        debugPrint('❌ POSE ANALYSIS ERROR (Base64):');
+        debugPrint('   Status: ${response.statusCode}');
+        debugPrint('   Raw body: ${response.body}');
         try {
           final Map<String, dynamic> errorJson =
               jsonDecode(response.body) as Map<String, dynamic>;
-          errorMessage = errorJson['detail'] as String? ?? errorMessage;
-        } catch (_) {}
+          debugPrint('   Parsed error JSON: $errorJson');
+          errorMessage =
+              errorJson['detail'] as String? ??
+              errorJson['error_message'] as String? ??
+              errorJson['message'] as String? ??
+              errorMessage;
+        } catch (parseError) {
+          debugPrint('   Failed to parse error body: $parseError');
+        }
+        debugPrint('   Final error message: $errorMessage');
         throw PoseAnalysisException(errorMessage);
       }
     } on SocketException catch (e) {
+      debugPrint('❌ SOCKET EXCEPTION (Base64): ${e.message}');
+      debugPrint('   Address: ${e.address}');
+      debugPrint('   Port: ${e.port}');
+      debugPrint('   OS Error: ${e.osError}');
       throw PoseAnalysisException(
         'Network error: Could not connect to analysis server. ${e.message}',
       );
+    } on http.ClientException catch (e) {
+      debugPrint('❌ HTTP CLIENT EXCEPTION (Base64): ${e.message}');
+      debugPrint('   URI: ${e.uri}');
+      throw PoseAnalysisException('HTTP error: ${e.message}');
+    } catch (e, stackTrace) {
+      debugPrint('❌ UNEXPECTED ERROR (Base64): $e');
+      debugPrint('   Stack trace: $stackTrace');
+      rethrow;
     }
   }
 
@@ -229,8 +371,9 @@ class PoseAnalysisApiClient {
   Future<bool> healthCheck() async {
     try {
       final Uri uri = Uri.parse('$_baseUrl/health');
+      final Map<String, String> authHeaders = await _getAuthHeaders();
       final http.Response response = await _httpClient
-          .get(uri)
+          .get(uri, headers: authHeaders)
           .timeout(const Duration(seconds: 10));
       return response.statusCode == 200;
     } catch (e) {

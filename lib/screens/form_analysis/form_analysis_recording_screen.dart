@@ -60,6 +60,9 @@ class _FormAnalysisRecordingScreenState
   void initState() {
     super.initState();
 
+    // Set light status bar (light icons/text for dark background)
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+
     // Setup scoped logger
     final LoggingService loggingService = locator.get<LoggingService>();
     _logger = loggingService.withBaseProperties({
@@ -124,6 +127,8 @@ class _FormAnalysisRecordingScreenState
 
   @override
   void dispose() {
+    // Restore dark status bar (dark icons/text for light background)
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     _loaderSpeedNotifier.dispose();
     _brainOpacityNotifier.dispose();
     super.dispose();
