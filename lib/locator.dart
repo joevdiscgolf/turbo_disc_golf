@@ -129,9 +129,7 @@ Future<void> setUpLocator() async {
   // BagService must be registered before AppPhaseController because
   // AppPhaseController subscribes to authState immediately in its constructor,
   // and BagService also listens to authState for self-managing its lifecycle.
-  locator.registerSingleton<BagService>(
-    BagService(authService: authService),
-  );
+  locator.registerSingleton<BagService>(BagService(authService: authService));
 
   locator.registerSingleton(AppPhaseController(authService: authService));
 
@@ -161,8 +159,11 @@ Future<void> setUpLocator() async {
   locator.registerSingleton<VideoFormAnalysisService>(
     VideoFormAnalysisService(),
   );
+  final String poseAnalysisUrl =
+      await PoseAnalysisApiClient.getDefaultBaseUrl();
+  print('pose analysis url: $poseAnalysisUrl');
   locator.registerSingleton<PoseAnalysisApiClient>(
-    PoseAnalysisApiClient(baseUrl: featureFlagService.poseAnalysisBaseUrl),
+    PoseAnalysisApiClient(baseUrl: poseAnalysisUrl),
   );
   locator.registerSingleton<FormAnalysisHistoryCubit>(
     FormAnalysisHistoryCubit(),
