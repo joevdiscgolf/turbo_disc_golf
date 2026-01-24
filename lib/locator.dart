@@ -161,7 +161,6 @@ Future<void> setUpLocator() async {
   );
   final String poseAnalysisUrl =
       await PoseAnalysisApiClient.getDefaultBaseUrl();
-  print('pose analysis url: $poseAnalysisUrl');
   locator.registerSingleton<PoseAnalysisApiClient>(
     PoseAnalysisApiClient(baseUrl: poseAnalysisUrl),
   );
