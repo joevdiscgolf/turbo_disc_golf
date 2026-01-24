@@ -143,6 +143,17 @@ enum FeatureFlag {
   showFormAnalysisScoreAndSummary('show_form_analysis_score_and_summary', true),
   saveFormAnalysisToFirestore('save_form_analysis_to_firestore', true),
   showFormAnalysisVideoComparison('show_form_analysis_video_comparison', false),
+  showCheckpointTimelinePlayer('show_checkpoint_timeline_player', true),
+  useSkeletonVideoInTimelinePlayer(
+    'use_skeleton_video_in_timeline_player',
+    true,
+  ),
+
+  /// Checkpoint timeline player UI style: 'darkSlateOverlay' or 'cleanSportMinimal'
+  checkpointTimelinePlayerStyle(
+    'checkpoint_timeline_player_style',
+    'cleanSportMinimal',
+  ),
 
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs

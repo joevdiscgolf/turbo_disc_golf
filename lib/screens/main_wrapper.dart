@@ -174,7 +174,7 @@ class _MainWrapperState extends State<MainWrapper> {
                 icon: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    const Icon(Icons.school, size: 24),
+                    const Text('📹', style: TextStyle(fontSize: 20)),
                     Positioned(
                       right: -12,
                       top: -4,

@@ -165,7 +165,7 @@ class _FormAnalysisRecordingScreenState
             extendBodyBehindAppBar: true,
             appBar: GenericAppBar(
               topViewPadding: MediaQuery.of(context).viewPadding.top,
-              title: '',
+              title: isCompleted ? 'Form analysis' : '',
               hasBackButton: false,
               backgroundColor: appBarBackgroundColor,
               foregroundColor: foregroundColor,
@@ -239,6 +239,10 @@ class _FormAnalysisRecordingScreenState
                               speedMultiplierNotifier: _loaderSpeedNotifier,
                               brainOpacityNotifier: _brainOpacityNotifier,
                               onComplete: () {
+                                // Set dark status bar for light background
+                                SystemChrome.setSystemUIOverlayStyle(
+                                  SystemUiOverlayStyle.dark,
+                                );
                                 setState(() {
                                   _showingTransition = false;
                                   // Reset debug flag so loader hides after transition

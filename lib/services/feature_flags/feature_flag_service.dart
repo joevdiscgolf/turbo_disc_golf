@@ -309,6 +309,16 @@ class FeatureFlagService {
   bool get showFormAnalysisVideoComparison =>
       getBool(FeatureFlag.showFormAnalysisVideoComparison);
 
+  bool get showCheckpointTimelinePlayer =>
+      getBool(FeatureFlag.showCheckpointTimelinePlayer);
+
+  bool get useSkeletonVideoInTimelinePlayer =>
+      getBool(FeatureFlag.useSkeletonVideoInTimelinePlayer);
+
+  /// Checkpoint timeline player UI style: 'darkSlateOverlay' or 'cleanSportMinimal'
+  String get checkpointTimelinePlayerStyle =>
+      getString(FeatureFlag.checkpointTimelinePlayerStyle);
+
   // ===== Admin/Force Upgrade =====
 
   List<String> get adminUids {

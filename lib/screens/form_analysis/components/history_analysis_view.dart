@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:turbo_disc_golf/components/form_analysis/checkpoint_timeline_player.dart';
 import 'package:turbo_disc_golf/components/form_analysis/synchronized_video_player.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -13,6 +14,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.d
 import 'package:turbo_disc_golf/models/data/form_analysis/form_checkpoint.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
@@ -121,6 +123,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                 .get<FeatureFlagService>()
                 .showFormAnalysisVideoComparison)
               _buildVideoComparisonSliver(),
+            _buildCheckpointTimelineSliver(),
             SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
             // SliverToBoxAdapter(child: _buildAngleDeviations(context)),
@@ -188,6 +191,89 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ),
       );
     }
+  }
+
+  Widget _buildCheckpointTimelineSliver() {
+    debugPrint(
+      'show checkpoint timeline: ${locator.get<FeatureFlagService>().showCheckpointTimelinePlayer}',
+    );
+    if (!locator.get<FeatureFlagService>().showCheckpointTimelinePlayer) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    if (widget.videoUrl == null || widget.videoUrl!.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    // Debug: Check timestamp data sources
+    debugPrint('[CheckpointTimeline] Checking timestamp data...');
+    debugPrint('[CheckpointTimeline] FormAnalysisRecord checkpoints:');
+    for (final cp in widget.analysis.checkpoints) {
+      debugPrint('  - ${cp.checkpointId}: timestampSeconds=${cp.timestampSeconds}');
+    }
+    if (widget.poseAnalysisResponse != null) {
+      debugPrint('[CheckpointTimeline] PoseAnalysisResponse checkpoints:');
+      for (final cp in widget.poseAnalysisResponse!.checkpoints) {
+        debugPrint('  - ${cp.checkpointId}: timestampSeconds=${cp.timestampSeconds}');
+      }
+    }
+
+    // Check if FormAnalysisRecord has timestamp data
+    final bool recordHasTimestampData = widget.analysis.checkpoints.any(
+      (cp) => cp.timestampSeconds != null,
+    );
+
+    // Check if PoseAnalysisResponse has timestamp data (always has it as required field)
+    final bool responseHasTimestampData =
+        widget.poseAnalysisResponse?.checkpoints.isNotEmpty ?? false;
+
+    if (!recordHasTimestampData && !responseHasTimestampData) {
+      debugPrint('[CheckpointTimeline] No timestamp data available, hiding player');
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    // Use FormAnalysisRecord checkpoints if they have timestamp data,
+    // otherwise create temporary CheckpointRecords from PoseAnalysisResponse
+    final List<CheckpointRecord> checkpointsWithTimestamps;
+    if (recordHasTimestampData) {
+      checkpointsWithTimestamps = widget.analysis.checkpoints;
+      debugPrint('[CheckpointTimeline] Using FormAnalysisRecord checkpoints');
+    } else {
+      // Create CheckpointRecords from PoseAnalysisResponse
+      checkpointsWithTimestamps = widget.poseAnalysisResponse!.checkpoints
+          .map(
+            (cp) => CheckpointRecord(
+              checkpointId: cp.checkpointId,
+              checkpointName: cp.checkpointName,
+              deviationSeverity: cp.deviationSeverity,
+              coachingTips: cp.coachingTips,
+              timestampSeconds: cp.timestampSeconds,
+            ),
+          )
+          .toList();
+      debugPrint('[CheckpointTimeline] Using PoseAnalysisResponse checkpoints (fallback)');
+    }
+
+    final double videoDuration =
+        widget.poseAnalysisResponse?.videoDurationSeconds ??
+        widget.analysis.videoSyncMetadata?.userVideoDuration ??
+        3.0;
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 16),
+        child: CheckpointTimelinePlayer(
+          videoUrl: widget.videoUrl!,
+          skeletonVideoUrl: widget.analysis.skeletonVideoUrl,
+          checkpoints: checkpointsWithTimestamps,
+          videoDurationSeconds: videoDuration,
+          videoAspectRatio: widget.videoAspectRatio,
+          onCheckpointTapped: (checkpoint) =>
+              _showCheckpointDetailsPanel(context, checkpoint),
+          selectedCheckpointIndex: _selectedCheckpointIndex,
+        ),
+      ),
+    );
   }
 
   Widget _buildFloatingViewToggle() {
@@ -684,12 +770,25 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
           );
           debugPrint('   - Screen width: ${MediaQuery.of(context).size.width}');
 
+          // Check if user is left-handed to flip pro reference
+          debugPrint(
+            '   - isLeftHanded: ${widget.analysis.detectedHandedness == Handedness.left}',
+          );
+          final bool isLeftHanded =
+              widget.analysis.detectedHandedness == Handedness.left;
+          final Widget image = Image(
+            image: snapshot.data!,
+            fit: BoxFit.contain,
+          );
+
           return Transform.translate(
             offset: Offset(horizontalOffset, 0),
             child: Transform.scale(
               scale: scale,
               alignment: Alignment.center,
-              child: Image(image: snapshot.data!, fit: BoxFit.contain),
+              child: isLeftHanded
+                  ? Transform.flip(flipX: true, child: image)
+                  : image,
             ),
           );
         },
@@ -755,6 +854,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         showSkeletonOnly: _showSkeletonOnly,
         cameraAngle: widget.analysis.cameraAngle ?? CameraAngle.side,
         videoOrientation: widget.analysis.videoOrientation,
+        detectedHandedness: widget.analysis.detectedHandedness,
         onToggleMode: (bool newMode) {
           setState(() => _showSkeletonOnly = newMode);
         },
@@ -894,12 +994,14 @@ class _FullscreenComparisonDialog extends StatefulWidget {
     required this.onIndexChanged,
     required this.cameraAngle,
     this.videoOrientation,
+    this.detectedHandedness,
   });
 
   final List<CheckpointRecord> checkpoints;
   final String throwType;
   final ProReferenceLoader proRefLoader;
   final int initialIndex;
+  final Handedness? detectedHandedness;
   final bool showSkeletonOnly;
   final ValueChanged<bool> onToggleMode;
   final ValueChanged<int> onIndexChanged;
@@ -1247,12 +1349,25 @@ class _FullscreenComparisonDialogState
           );
           debugPrint('   - Screen width: ${MediaQuery.of(context).size.width}');
 
+          // Check if user is left-handed to flip pro reference
+          debugPrint(
+            '   - isLeftHanded: ${widget.detectedHandedness == Handedness.left}',
+          );
+          final bool isLeftHanded =
+              widget.detectedHandedness == Handedness.left;
+          final Widget image = Image(
+            image: snapshot.data!,
+            fit: BoxFit.contain,
+          );
+
           return Transform.translate(
             offset: Offset(horizontalOffset, 0),
             child: Transform.scale(
               scale: scale,
               alignment: Alignment.center,
-              child: Image(image: snapshot.data!, fit: BoxFit.contain),
+              child: isLeftHanded
+                  ? Transform.flip(flipX: true, child: image)
+                  : image,
             ),
           );
         },

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_record_builder.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
@@ -25,9 +26,13 @@ abstract class FBFormAnalysisDataLoader {
     // Check if saving is enabled
     if (!locator.get<FeatureFlagService>().saveFormAnalysisToFirestore) {
       debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('[FBFormAnalysisDataLoader] ⏭️  SAVE SKIPPED (saveFormAnalysisToFirestore = false)');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] ⏭️  SAVE SKIPPED (saveFormAnalysisToFirestore = false)',
+      );
       debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');
-      debugPrint('[FBFormAnalysisDataLoader] Analysis will be shown in UI but not saved to Firestore');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Analysis will be shown in UI but not saved to Firestore',
+      );
       debugPrint('═══════════════════════════════════════════════════════');
       // Return null since nothing was saved (testing mode)
       return null;
@@ -39,16 +44,20 @@ abstract class FBFormAnalysisDataLoader {
       debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');
       debugPrint('[FBFormAnalysisDataLoader] User ID: $uid');
       debugPrint('[FBFormAnalysisDataLoader] Throw type: $throwType');
-      debugPrint('[FBFormAnalysisDataLoader] Checkpoints to save: ${poseAnalysis.checkpoints.length}');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Checkpoints to save: ${poseAnalysis.checkpoints.length}',
+      );
       debugPrint('═══════════════════════════════════════════════════════');
 
       // Build checkpoint records with uploaded image URLs
       final List<CheckpointRecord> checkpointRecords = [];
 
       for (int i = 0; i < poseAnalysis.checkpoints.length; i++) {
-        final checkpoint = poseAnalysis.checkpoints[i];
+        final CheckpointPoseData checkpoint = poseAnalysis.checkpoints[i];
         debugPrint('');
-        debugPrint('[FBFormAnalysisDataLoader] Processing checkpoint ${i + 1}/${poseAnalysis.checkpoints.length}: ${checkpoint.checkpointId}');
+        debugPrint(
+          '[FBFormAnalysisDataLoader] Processing checkpoint ${i + 1}/${poseAnalysis.checkpoints.length}: ${checkpoint.checkpointId}',
+        );
 
         // Upload images to Cloud Storage in parallel for better performance
         // Pro reference images are loaded via ProReferenceLoader (bundled assets/cache/cloud)
@@ -74,7 +83,8 @@ abstract class FBFormAnalysisDataLoader {
             analysisId: analysisId,
             checkpointId: checkpoint.checkpointId,
             imageName: 'reference',
-            base64Data: checkpoint.referenceSilhouetteWithSkeletonBase64 ??
+            base64Data:
+                checkpoint.referenceSilhouetteWithSkeletonBase64 ??
                 checkpoint.referenceImageBase64,
           ),
           _uploadCheckpointImage(
@@ -86,94 +96,64 @@ abstract class FBFormAnalysisDataLoader {
           ),
         ]);
 
-        final String? userImageUrl = uploadResults[0];
-        final String? userSkeletonUrl = uploadResults[1];
-        final String? referenceImageUrl = uploadResults[2];
-        final String? referenceSkeletonUrl = uploadResults[3];
+        // Build map of image names to uploaded URLs
+        final Map<String, String?> uploadedUrls = {
+          'user': uploadResults[0],
+          'user_skeleton': uploadResults[1],
+          'reference': uploadResults[2],
+          'reference_skeleton': uploadResults[3],
+        };
 
         // Validate that critical user skeleton image uploaded successfully
         // Note: Pro reference images are NOT uploaded - they are loaded via ProReferenceLoader
-        if (userSkeletonUrl == null) {
-          debugPrint('[FBFormAnalysisDataLoader] ❌ Critical image upload failed for checkpoint ${checkpoint.checkpointId}');
-          debugPrint('[FBFormAnalysisDataLoader] userSkeletonUrl is null - this is required');
-          debugPrint('[FBFormAnalysisDataLoader] ⚠️  Aborting save - will not save to Firestore with missing images');
+        if (uploadedUrls['user_skeleton'] == null) {
+          debugPrint(
+            '[FBFormAnalysisDataLoader] ❌ Critical image upload failed for checkpoint ${checkpoint.checkpointId}',
+          );
+          debugPrint(
+            '[FBFormAnalysisDataLoader] userSkeletonUrl is null - this is required',
+          );
+          debugPrint(
+            '[FBFormAnalysisDataLoader] ⚠️  Aborting save - will not save to Firestore with missing images',
+          );
           return null;
         }
 
         // Log the reference loading strategy being used
         if (checkpoint.proPlayerId != null) {
-          debugPrint('[FBFormAnalysisDataLoader] ✅ Using ProReferenceLoader with proPlayerId: ${checkpoint.proPlayerId}');
-        } else if (referenceImageUrl != null) {
-          debugPrint('[FBFormAnalysisDataLoader] ✅ Using legacy referenceImageUrl (uploaded to Cloud Storage)');
+          debugPrint(
+            '[FBFormAnalysisDataLoader] ✅ Using ProReferenceLoader with proPlayerId: ${checkpoint.proPlayerId}',
+          );
+        } else if (uploadedUrls['reference'] != null) {
+          debugPrint(
+            '[FBFormAnalysisDataLoader] ✅ Using legacy referenceImageUrl (uploaded to Cloud Storage)',
+          );
         } else {
-          debugPrint('[FBFormAnalysisDataLoader] ⚠️  No reference image strategy - checkpoint will have no pro comparison');
+          debugPrint(
+            '[FBFormAnalysisDataLoader] ⚠️  No reference image strategy - checkpoint will have no pro comparison',
+          );
         }
 
-        // Build angle deviations map
-        final Map<String, double>? angleDeviations =
-            _buildAngleDeviationsMap(checkpoint.deviationsRaw);
+        // Use builder to create checkpoint record with uploaded URLs
+        final CheckpointRecord record = CheckpointRecordBuilder.build(
+          checkpoint: checkpoint,
+          imageUrlProvider: (String? base64Data, String imageName) {
+            // Return the pre-uploaded Cloud Storage URL for this image
+            return uploadedUrls[imageName];
+          },
+          proPlayerIdOverride: checkpoint.proPlayerId ?? 'paul_mcbeth',
+        );
 
-        // Create checkpoint record
-        checkpointRecords.add(CheckpointRecord(
-          checkpointId: checkpoint.checkpointId,
-          checkpointName: checkpoint.checkpointName,
-          deviationSeverity: checkpoint.deviationSeverity,
-          coachingTips: checkpoint.coachingTips,
-          angleDeviations: angleDeviations,
-          userImageUrl: userImageUrl,
-          userSkeletonUrl: userSkeletonUrl,
-          referenceImageUrl: referenceImageUrl,
-          referenceSkeletonUrl: referenceSkeletonUrl,
-          // New hybrid asset loading fields
-          proPlayerId: checkpoint.proPlayerId ?? 'paul_mcbeth', // Default to Paul McBeth
-          referenceHorizontalOffsetPercent:
-              checkpoint.referenceHorizontalOffsetPercent,
-          referenceScale: checkpoint.referenceScale,
-          // Individual joint angles - User
-          userLeftKneeBendAngle: checkpoint.userIndividualAngles?.leftKneeBendAngle,
-          userRightKneeBendAngle: checkpoint.userIndividualAngles?.rightKneeBendAngle,
-          userLeftElbowFlexionAngle: checkpoint.userIndividualAngles?.leftElbowFlexionAngle,
-          userRightElbowFlexionAngle: checkpoint.userIndividualAngles?.rightElbowFlexionAngle,
-          userLeftShoulderAbductionAngle: checkpoint.userIndividualAngles?.leftShoulderAbductionAngle,
-          userRightShoulderAbductionAngle: checkpoint.userIndividualAngles?.rightShoulderAbductionAngle,
-          userLeftWristExtensionAngle: checkpoint.userIndividualAngles?.leftWristExtensionAngle,
-          userRightWristExtensionAngle: checkpoint.userIndividualAngles?.rightWristExtensionAngle,
-          userLeftHipFlexionAngle: checkpoint.userIndividualAngles?.leftHipFlexionAngle,
-          userRightHipFlexionAngle: checkpoint.userIndividualAngles?.rightHipFlexionAngle,
-          userLeftAnkleAngle: checkpoint.userIndividualAngles?.leftAnkleAngle,
-          userRightAnkleAngle: checkpoint.userIndividualAngles?.rightAnkleAngle,
-          // Individual joint angles - Reference
-          refLeftKneeBendAngle: checkpoint.referenceIndividualAngles?.leftKneeBendAngle,
-          refRightKneeBendAngle: checkpoint.referenceIndividualAngles?.rightKneeBendAngle,
-          refLeftElbowFlexionAngle: checkpoint.referenceIndividualAngles?.leftElbowFlexionAngle,
-          refRightElbowFlexionAngle: checkpoint.referenceIndividualAngles?.rightElbowFlexionAngle,
-          refLeftShoulderAbductionAngle: checkpoint.referenceIndividualAngles?.leftShoulderAbductionAngle,
-          refRightShoulderAbductionAngle: checkpoint.referenceIndividualAngles?.rightShoulderAbductionAngle,
-          refLeftWristExtensionAngle: checkpoint.referenceIndividualAngles?.leftWristExtensionAngle,
-          refRightWristExtensionAngle: checkpoint.referenceIndividualAngles?.rightWristExtensionAngle,
-          refLeftHipFlexionAngle: checkpoint.referenceIndividualAngles?.leftHipFlexionAngle,
-          refRightHipFlexionAngle: checkpoint.referenceIndividualAngles?.rightHipFlexionAngle,
-          refLeftAnkleAngle: checkpoint.referenceIndividualAngles?.leftAnkleAngle,
-          refRightAnkleAngle: checkpoint.referenceIndividualAngles?.rightAnkleAngle,
-          // Individual joint angle deviations
-          devLeftKneeBendAngle: checkpoint.individualDeviations?.leftKneeBendAngle,
-          devRightKneeBendAngle: checkpoint.individualDeviations?.rightKneeBendAngle,
-          devLeftElbowFlexionAngle: checkpoint.individualDeviations?.leftElbowFlexionAngle,
-          devRightElbowFlexionAngle: checkpoint.individualDeviations?.rightElbowFlexionAngle,
-          devLeftShoulderAbductionAngle: checkpoint.individualDeviations?.leftShoulderAbductionAngle,
-          devRightShoulderAbductionAngle: checkpoint.individualDeviations?.rightShoulderAbductionAngle,
-          devLeftWristExtensionAngle: checkpoint.individualDeviations?.leftWristExtensionAngle,
-          devRightWristExtensionAngle: checkpoint.individualDeviations?.rightWristExtensionAngle,
-          devLeftHipFlexionAngle: checkpoint.individualDeviations?.leftHipFlexionAngle,
-          devRightHipFlexionAngle: checkpoint.individualDeviations?.rightHipFlexionAngle,
-          devLeftAnkleAngle: checkpoint.individualDeviations?.leftAnkleAngle,
-          devRightAnkleAngle: checkpoint.individualDeviations?.rightAnkleAngle,
-        ));
+        checkpointRecords.add(record);
 
-        debugPrint('[FBFormAnalysisDataLoader] ✅ Checkpoint ${checkpoint.checkpointId} images uploaded successfully');
+        debugPrint(
+          '[FBFormAnalysisDataLoader] ✅ Checkpoint ${checkpoint.checkpointId} images uploaded successfully',
+        );
       }
 
-      debugPrint('[FBFormAnalysisDataLoader] ✅ All checkpoint images uploaded successfully');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] ✅ All checkpoint images uploaded successfully',
+      );
 
       // Determine worst deviation severity
       final String? worstSeverity = _getWorstSeverity(checkpointRecords);
@@ -184,11 +164,19 @@ abstract class FBFormAnalysisDataLoader {
       // Use ONLY backend-generated thumbnail (256x256, centered on body, Heisman position with skeleton overlay)
       debugPrint('');
       debugPrint('[FBFormAnalysisDataLoader] ═══ THUMBNAIL HANDLING ═══');
-      debugPrint('[FBFormAnalysisDataLoader] Checking poseAnalysis.roundThumbnailBase64...');
-      debugPrint('[FBFormAnalysisDataLoader] - Is null: ${poseAnalysis.roundThumbnailBase64 == null}');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Checking poseAnalysis.roundThumbnailBase64...',
+      );
+      debugPrint(
+        '[FBFormAnalysisDataLoader] - Is null: ${poseAnalysis.roundThumbnailBase64 == null}',
+      );
       if (poseAnalysis.roundThumbnailBase64 != null) {
-        debugPrint('[FBFormAnalysisDataLoader] - Length: ${poseAnalysis.roundThumbnailBase64!.length} chars');
-        debugPrint('[FBFormAnalysisDataLoader] - First 30 chars: ${poseAnalysis.roundThumbnailBase64!.substring(0, poseAnalysis.roundThumbnailBase64!.length > 30 ? 30 : poseAnalysis.roundThumbnailBase64!.length)}');
+        debugPrint(
+          '[FBFormAnalysisDataLoader] - Length: ${poseAnalysis.roundThumbnailBase64!.length} chars',
+        );
+        debugPrint(
+          '[FBFormAnalysisDataLoader] - First 30 chars: ${poseAnalysis.roundThumbnailBase64!.substring(0, poseAnalysis.roundThumbnailBase64!.length > 30 ? 30 : poseAnalysis.roundThumbnailBase64!.length)}',
+        );
       }
 
       String? thumbnailBase64;
@@ -197,13 +185,23 @@ abstract class FBFormAnalysisDataLoader {
           poseAnalysis.roundThumbnailBase64!.isNotEmpty) {
         thumbnailBase64 = poseAnalysis.roundThumbnailBase64;
         final int thumbnailSize = poseAnalysis.roundThumbnailBase64!.length;
-        debugPrint('[FBFormAnalysisDataLoader] ✅ Using backend-generated thumbnail (~${(thumbnailSize / 1024).toStringAsFixed(1)} KB)');
+        debugPrint(
+          '[FBFormAnalysisDataLoader] ✅ Using backend-generated thumbnail (~${(thumbnailSize / 1024).toStringAsFixed(1)} KB)',
+        );
       } else {
         // Backend didn't provide thumbnail - log warning and continue without thumbnail
-        debugPrint('[FBFormAnalysisDataLoader] ❌ Backend thumbnail NOT available');
-        debugPrint('[FBFormAnalysisDataLoader] - roundThumbnailBase64 is ${poseAnalysis.roundThumbnailBase64 == null ? "NULL" : "EMPTY STRING"}');
-        debugPrint('[FBFormAnalysisDataLoader] ⚠️  Analysis will be saved WITHOUT thumbnail');
-        debugPrint('[FBFormAnalysisDataLoader] ⚠️  Frontend no longer generates fallback thumbnails');
+        debugPrint(
+          '[FBFormAnalysisDataLoader] ❌ Backend thumbnail NOT available',
+        );
+        debugPrint(
+          '[FBFormAnalysisDataLoader] - roundThumbnailBase64 is ${poseAnalysis.roundThumbnailBase64 == null ? "NULL" : "EMPTY STRING"}',
+        );
+        debugPrint(
+          '[FBFormAnalysisDataLoader] ⚠️  Analysis will be saved WITHOUT thumbnail',
+        );
+        debugPrint(
+          '[FBFormAnalysisDataLoader] ⚠️  Frontend no longer generates fallback thumbnails',
+        );
       }
       debugPrint('[FBFormAnalysisDataLoader] ═══════════════════════════');
 
@@ -220,9 +218,12 @@ abstract class FBFormAnalysisDataLoader {
         thumbnailBase64: thumbnailBase64,
         cameraAngle: cameraAngle,
         videoUrl: poseAnalysis.videoUrl,
+        videoStoragePath: poseAnalysis.videoStoragePath,
+        skeletonVideoUrl: poseAnalysis.skeletonVideoUrl,
         videoOrientation: poseAnalysis.videoOrientation,
         videoAspectRatio: poseAnalysis.videoAspectRatio,
         videoSyncMetadata: poseAnalysis.videoSyncMetadata,
+        detectedHandedness: poseAnalysis.detectedHandedness,
       );
 
       // Save to Firestore using utility
@@ -237,10 +238,14 @@ abstract class FBFormAnalysisDataLoader {
       );
 
       if (success) {
-        debugPrint('[FBFormAnalysisDataLoader][saveAnalysis] ✅ Successfully saved analysis: $analysisId');
+        debugPrint(
+          '[FBFormAnalysisDataLoader][saveAnalysis] ✅ Successfully saved analysis: $analysisId',
+        );
         return record; // Return the saved record
       } else {
-        debugPrint('[FBFormAnalysisDataLoader][saveAnalysis] ❌ Failed to save analysis to Firestore: $analysisId');
+        debugPrint(
+          '[FBFormAnalysisDataLoader][saveAnalysis] ❌ Failed to save analysis to Firestore: $analysisId',
+        );
         return null;
       }
     } catch (e, trace) {
@@ -262,7 +267,8 @@ abstract class FBFormAnalysisDataLoader {
   }) async {
     try {
       // Path: FormAnalyses/{uid}/FormAnalyses
-      final String path = '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection';
+      final String path =
+          '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection';
 
       // Build the query
       Query<Map<String, dynamic>> query = FirebaseFirestore.instance
@@ -279,14 +285,14 @@ abstract class FBFormAnalysisDataLoader {
           .get()
           .timeout(
             standardTimeout,
-            onTimeout: () => throw TimeoutException(
-              'Query timed out for path: $path',
-            ),
+            onTimeout: () =>
+                throw TimeoutException('Query timed out for path: $path'),
           );
 
       if (snapshot.docs.isEmpty) {
         debugPrint(
-            '[FBFormAnalysisDataLoader][loadRecentAnalyses] No documents found');
+          '[FBFormAnalysisDataLoader][loadRecentAnalyses] No documents found',
+        );
         return (<FormAnalysisRecord>[], false);
       }
 
@@ -299,21 +305,31 @@ abstract class FBFormAnalysisDataLoader {
       final bool hasMore = allRecords.length > limit;
 
       // Return only the requested limit
-      final List<FormAnalysisRecord> records =
-          hasMore ? allRecords.take(limit).toList() : allRecords;
+      final List<FormAnalysisRecord> records = hasMore
+          ? allRecords.take(limit).toList()
+          : allRecords;
 
       debugPrint(
-          '[FBFormAnalysisDataLoader][loadRecentAnalyses] Loaded ${records.length} analyses, hasMore: $hasMore');
+        '[FBFormAnalysisDataLoader][loadRecentAnalyses] Loaded ${records.length} analyses, hasMore: $hasMore',
+      );
 
       return (records, hasMore);
     } on TimeoutException catch (e) {
       // Handle timeout gracefully - likely Firebase emulator not running or no data
-      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Timeout: ${e.message}');
-      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] This is normal if Firebase emulator is not running or no data exists');
+      debugPrint(
+        '[FBFormAnalysisDataLoader][loadRecentAnalyses] Timeout: ${e.message}',
+      );
+      debugPrint(
+        '[FBFormAnalysisDataLoader][loadRecentAnalyses] This is normal if Firebase emulator is not running or no data exists',
+      );
       return (<FormAnalysisRecord>[], false);
     } catch (e, trace) {
-      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Exception: $e');
-      debugPrint('[FBFormAnalysisDataLoader][loadRecentAnalyses] Stack: $trace');
+      debugPrint(
+        '[FBFormAnalysisDataLoader][loadRecentAnalyses] Exception: $e',
+      );
+      debugPrint(
+        '[FBFormAnalysisDataLoader][loadRecentAnalyses] Stack: $trace',
+      );
       return (<FormAnalysisRecord>[], false);
     }
   }
@@ -328,13 +344,12 @@ abstract class FBFormAnalysisDataLoader {
       final String path =
           '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection/$analysisId';
       final DocumentSnapshot<Map<String, dynamic>>? snapshot =
-          await firestoreFetch(
-        path,
-        timeoutDuration: shortTimeout,
-      );
+          await firestoreFetch(path, timeoutDuration: shortTimeout);
 
       if (snapshot == null || !snapshot.exists || snapshot.data() == null) {
-        debugPrint('[FBFormAnalysisDataLoader][loadAnalysisById] Analysis not found: $analysisId');
+        debugPrint(
+          '[FBFormAnalysisDataLoader][loadAnalysisById] Analysis not found: $analysisId',
+        );
         return null;
       }
 
@@ -355,7 +370,9 @@ abstract class FBFormAnalysisDataLoader {
     String? base64Data,
   }) async {
     if (base64Data == null || base64Data.isEmpty) {
-      debugPrint('[FBFormAnalysisDataLoader] ⏭️  Skipping $imageName (no data)');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] ⏭️  Skipping $imageName (no data)',
+      );
       return null;
     }
 
@@ -379,30 +396,6 @@ abstract class FBFormAnalysisDataLoader {
     return url;
   }
 
-  /// Build angle deviations map from AngleDeviations object.
-  static Map<String, double>? _buildAngleDeviationsMap(
-      AngleDeviations deviations) {
-    final Map<String, double> map = {};
-
-    if (deviations.shoulderRotation != null) {
-      map['shoulder_rotation'] = deviations.shoulderRotation!;
-    }
-    if (deviations.elbowAngle != null) {
-      map['elbow_angle'] = deviations.elbowAngle!;
-    }
-    if (deviations.hipRotation != null) {
-      map['hip_rotation'] = deviations.hipRotation!;
-    }
-    if (deviations.kneeBend != null) {
-      map['knee_bend'] = deviations.kneeBend!;
-    }
-    if (deviations.spineTilt != null) {
-      map['spine_tilt'] = deviations.spineTilt!;
-    }
-
-    return map.isEmpty ? null : map;
-  }
-
   /// Get the worst severity from all checkpoints.
   static String? _getWorstSeverity(List<CheckpointRecord> checkpoints) {
     if (checkpoints.isEmpty) return null;
@@ -418,8 +411,9 @@ abstract class FBFormAnalysisDataLoader {
     int worstIndex = -1;
 
     for (final checkpoint in checkpoints) {
-      final int index =
-          severityOrder.indexOf(checkpoint.deviationSeverity.toLowerCase());
+      final int index = severityOrder.indexOf(
+        checkpoint.deviationSeverity.toLowerCase(),
+      );
       if (index > worstIndex) {
         worstIndex = index;
         worstSeverity = checkpoint.deviationSeverity;
@@ -461,7 +455,8 @@ abstract class FBFormAnalysisDataLoader {
       final String firestorePath =
           '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection/$analysisId';
       debugPrint(
-          '[FBFormAnalysisDataLoader] Deleting Firestore doc: $firestorePath');
+        '[FBFormAnalysisDataLoader] Deleting Firestore doc: $firestorePath',
+      );
 
       final bool firestoreSuccess = await firestoreDelete(
         firestorePath,
@@ -478,7 +473,8 @@ abstract class FBFormAnalysisDataLoader {
       // Step 2: Delete Cloud Storage images for this analysis
       final String storagePath = 'form_analyses/$uid/$analysisId';
       debugPrint(
-          '[FBFormAnalysisDataLoader] Deleting Cloud Storage folder: $storagePath');
+        '[FBFormAnalysisDataLoader] Deleting Cloud Storage folder: $storagePath',
+      );
 
       final bool storageSuccess = await storageDeleteFolder(
         storagePath,
@@ -487,10 +483,12 @@ abstract class FBFormAnalysisDataLoader {
 
       if (!storageSuccess) {
         debugPrint(
-            '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors');
+          '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors',
+        );
       } else {
         debugPrint(
-            '[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete');
+          '[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete',
+        );
       }
 
       debugPrint('═══════════════════════════════════════════════════════');
@@ -518,8 +516,11 @@ abstract class FBFormAnalysisDataLoader {
       debugPrint('═══════════════════════════════════════════════════════');
 
       // Step 1: Delete all Firestore documents
-      final String firestorePath = '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection';
-      debugPrint('[FBFormAnalysisDataLoader] Deleting Firestore collection: $firestorePath');
+      final String firestorePath =
+          '$kFormAnalysesCollection/$uid/$kFormAnalysesCollection';
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Deleting Firestore collection: $firestorePath',
+      );
 
       final bool firestoreSuccess = await firestoreDeleteCollection(
         firestorePath,
@@ -535,7 +536,9 @@ abstract class FBFormAnalysisDataLoader {
 
       // Step 2: Delete all Cloud Storage images
       final String storagePath = 'form_analyses/$uid';
-      debugPrint('[FBFormAnalysisDataLoader] Deleting Cloud Storage folder: $storagePath');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Deleting Cloud Storage folder: $storagePath',
+      );
 
       final bool storageSuccess = await storageDeleteFolder(
         storagePath,
@@ -543,9 +546,13 @@ abstract class FBFormAnalysisDataLoader {
       );
 
       if (!storageSuccess) {
-        debugPrint('[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors (may be partial)');
+        debugPrint(
+          '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors (may be partial)',
+        );
       } else {
-        debugPrint('[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete');
+        debugPrint(
+          '[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete',
+        );
       }
 
       debugPrint('═══════════════════════════════════════════════════════');

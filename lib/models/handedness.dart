@@ -43,4 +43,17 @@ enum Handedness {
         return 'right-handed';
     }
   }
+
+  /// Parses API string values: "right-handed" or "left-handed"
+  static Handedness? fromApiString(String? value) {
+    if (value == null) return null;
+    switch (value) {
+      case 'left-handed':
+        return Handedness.left;
+      case 'right-handed':
+        return Handedness.right;
+      default:
+        return null;
+    }
+  }
 }
