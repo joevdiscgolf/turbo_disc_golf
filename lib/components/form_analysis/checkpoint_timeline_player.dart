@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:video_player/video_player.dart';
-
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:video_player/video_player.dart';
 
 /// Playback mode for checkpoint auto-pause behavior.
 enum CheckpointPauseMode {
@@ -46,7 +45,10 @@ class CheckpointTimelinePlayer extends StatefulWidget {
     this.videoAspectRatio,
     this.initialSpeed = 0.25,
     this.onCheckpointTapped,
-    this.selectedCheckpointIndex,
+    this.onCheckpointIndexChanged,
+    this.videoSiblingWidget,
+    this.hideVideo = false,
+    this.hideControls = false,
   });
 
   /// Network URL for user's form video
@@ -70,15 +72,27 @@ class CheckpointTimelinePlayer extends StatefulWidget {
   /// Callback when the checkpoint label is tapped (opens education panel)
   final void Function(CheckpointRecord checkpoint)? onCheckpointTapped;
 
-  /// External checkpoint selection - when changed, player jumps to that checkpoint
-  final int? selectedCheckpointIndex;
+  /// Callback when the current checkpoint index changes (via auto-pause or timeline tap).
+  /// This is called whenever the player reaches or pauses at a checkpoint, allowing
+  /// the parent to sync the pro reference display.
+  final ValueChanged<int>? onCheckpointIndexChanged;
+
+  /// Optional widget to display side-by-side with the video (e.g., pro reference).
+  /// When provided, controls stay full width and video + this widget are shown in a row below.
+  final Widget? videoSiblingWidget;
+
+  /// When true, hides the video and only shows controls.
+  final bool hideVideo;
+
+  /// When true, hides controls and only shows video.
+  final bool hideControls;
 
   @override
-  State<CheckpointTimelinePlayer> createState() =>
-      _CheckpointTimelinePlayerState();
+  CheckpointTimelinePlayerState createState() =>
+      CheckpointTimelinePlayerState();
 }
 
-class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
+class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
   late VideoPlayerController _controller;
 
   bool _isInitialized = false;
@@ -98,31 +112,31 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
   /// Index of the last checkpoint we auto-paused at (to avoid re-pausing)
   int _lastAutoPausedCheckpointIndex = -1;
 
-  /// Index of checkpoint we're currently paused at (null if not at checkpoint)
-  int? _currentPausedCheckpointIndex;
+  /// Timestamp of last manual position set (to avoid stale position updates)
+  DateTime? _lastManualPositionSetAt;
+
+  /// Whether the video is at or near the end
+  bool get _isAtEnd =>
+      _videoDuration > Duration.zero &&
+      _currentPosition >= _videoDuration - _endThreshold;
 
   // Frame interval for playback simulation (~30fps)
   static const Duration _playbackFrameInterval = Duration(milliseconds: 33);
 
+  // Threshold for detecting end of video
+  static const Duration _endThreshold = Duration(milliseconds: 100);
+
   // Dark Slate Overlay colors
-  static const Color _darkOverlayBg = Color(0xFF0F172A);
-  static const Color _darkTrackInactive = Color(0xFF334155);
   static const Color _darkTrackActive = Color(0xFF06B6D4);
-  static const Color _darkThumbColor = Colors.white;
 
   // Clean Sport Minimal colors
   static const Color _cleanTrackInactive = Color(0xFFE2E8F0);
-  static const Color _cleanGradientStart = Color(0xFF3B82F6);
-  static const Color _cleanGradientEnd = Color(0xFF8B5CF6);
+  static const Color _cleanAccentColor = Color(0xFF3B82F6); // Blue
+  static const Color _cleanAccentColorDark = Color(0xFF2563EB); // Darker blue
   static const Color _cleanTextColor = Color(0xFF1E293B);
 
-  // Checkpoint colors by ID
-  static const Map<String, Color> _checkpointColors = {
-    'heisman': Colors.blue,
-    'loaded': Colors.green,
-    'magic': Colors.amber,
-    'pro': Colors.red,
-  };
+  // Testing: set to true to place controls above video, false for below
+  static const bool _controlsAboveVideo = true;
 
   @override
   void initState() {
@@ -141,15 +155,25 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     super.dispose();
   }
 
-  @override
-  void didUpdateWidget(CheckpointTimelinePlayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Jump to checkpoint when external selection changes
-    if (widget.selectedCheckpointIndex != oldWidget.selectedCheckpointIndex &&
-        widget.selectedCheckpointIndex != null &&
-        _isInitialized) {
-      _jumpToCheckpoint(widget.selectedCheckpointIndex!);
-    }
+  /// Public method to jump to a checkpoint. Called via GlobalKey from parent.
+  /// This avoids widget rebuilds and the associated performance overhead.
+  void jumpToCheckpoint(int index) {
+    if (!_isInitialized) return;
+    final CheckpointRecord cp = widget.checkpoints[index];
+    if (cp.timestampSeconds == null) return;
+
+    HapticFeedback.selectionClick();
+
+    final Duration position = Duration(
+      milliseconds: (cp.timestampSeconds! * 1000).toInt(),
+    );
+
+    _lastAutoPausedCheckpointIndex = index;
+    _lastManualPositionSetAt = DateTime.now();
+    _controller.seekTo(position);
+    setState(() {
+      _currentPosition = position;
+    });
   }
 
   Future<void> _initializeController() async {
@@ -231,6 +255,12 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
 
   void _updatePosition() {
     if (mounted && _isInitialized && !_isPlaying) {
+      // Skip if we recently set position manually (async seek may not have completed)
+      if (_lastManualPositionSetAt != null &&
+          DateTime.now().difference(_lastManualPositionSetAt!) <
+              const Duration(milliseconds: 150)) {
+        return;
+      }
       final Duration position = _controller.value.position;
       setState(() {
         _currentPosition = position;
@@ -248,8 +278,7 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
 
   Future<void> _play() async {
     // If at or near end of video, reset to beginning
-    const Duration endThreshold = Duration(milliseconds: 100);
-    final bool isAtEnd = _currentPosition >= _videoDuration - endThreshold;
+    final bool isAtEnd = _isAtEnd;
 
     final Duration startPosition = isAtEnd
         ? Duration.zero
@@ -261,9 +290,6 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     if (isAtEnd) {
       _lastAutoPausedCheckpointIndex = -1;
     }
-
-    // Clear paused checkpoint when playing
-    _currentPausedCheckpointIndex = null;
 
     setState(() {
       _currentPosition = startPosition;
@@ -344,14 +370,17 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
       final Duration exactPosition = Duration(
         milliseconds: (cp.timestampSeconds! * 1000).toInt(),
       );
+      _lastManualPositionSetAt = DateTime.now();
       _controller.seekTo(exactPosition);
       setState(() {
         _currentPosition = exactPosition;
-        _currentPausedCheckpointIndex = checkpointIndex;
       });
     }
 
     _pause();
+
+    // Notify parent to sync pro reference display
+    widget.onCheckpointIndexChanged?.call(checkpointIndex);
 
     // If timed pause mode, auto-resume after 2 seconds
     if (_pauseMode == CheckpointPauseMode.timedPause) {
@@ -392,14 +421,12 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
 
     await _controller.seekTo(position);
 
-    // Clear paused checkpoint on manual seek
-    _currentPausedCheckpointIndex = null;
-
     setState(() {
       _currentPosition = position;
     });
   }
 
+  /// Internal method for timeline marker taps - always notifies parent.
   void _jumpToCheckpoint(int index) {
     final CheckpointRecord cp = widget.checkpoints[index];
     if (cp.timestampSeconds == null) return;
@@ -410,18 +437,15 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
       milliseconds: (cp.timestampSeconds! * 1000).toInt(),
     );
 
-    // Reset auto-pause tracking so we can pause at this checkpoint again
-    _lastAutoPausedCheckpointIndex = -1;
-
+    _lastAutoPausedCheckpointIndex = index;
+    _lastManualPositionSetAt = DateTime.now();
     _controller.seekTo(position);
     setState(() {
       _currentPosition = position;
-      _currentPausedCheckpointIndex = index;
     });
 
-    debugPrint(
-      '[CheckpointTimelinePlayer] Jump to ${cp.checkpointName}: ${cp.timestampSeconds}s',
-    );
+    // Notify parent to sync pro reference
+    widget.onCheckpointIndexChanged?.call(index);
   }
 
   Future<void> _changePlaybackSpeed(double speed) async {
@@ -457,18 +481,6 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     }
   }
 
-  String _formatDuration(Duration duration) {
-    final int totalSeconds = duration.inSeconds;
-    final int minutes = totalSeconds ~/ 60;
-    final int seconds = totalSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  String _capitalizeFirst(String text) {
-    if (text.isEmpty) return text;
-    return text[0].toUpperCase() + text.substring(1).toLowerCase();
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_hasError) {
@@ -479,89 +491,67 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
       return _buildLoadingState();
     }
 
-    final FeatureFlagService featureFlags = locator.get<FeatureFlagService>();
-    final String style = featureFlags.checkpointTimelinePlayerStyle;
+    return _mainBody();
+  }
 
-    if (style == 'cleanSportMinimal') {
-      return _buildCleanSportStyle();
+  Widget _mainBody() {
+    // If hideControls is true, only show video
+    if (widget.hideControls) {
+      return _buildVideoPlayerFullWidth();
     }
 
-    return _buildDarkSlateStyle();
-  }
-
-  Widget _buildDarkSlateStyle() {
-    return Column(
-      children: [
-        _buildVideoPlayer(),
-        // Dark overlay controls container
-        Container(
-          margin: const EdgeInsets.only(top: 8),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          decoration: BoxDecoration(
-            color: _darkOverlayBg.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              // Checkpoint label (shows when paused at checkpoint)
-              _buildCheckpointLabel(),
-              // Timeline with markers
-              _buildDarkSlateTimeline(),
-              const SizedBox(height: 16),
-              // Controls row
-              _buildDarkSlateControls(),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCleanSportStyle() {
-    return Column(
-      children: [
-        // Video with overlaid checkpoint label (full width)
-        Stack(
-          children: [
-            _buildVideoPlayerFullWidth(),
-            // Checkpoint label overlaid on top right of video
-            _buildCheckpointLabelOverlay(),
-          ],
-        ),
-        // Controls area with gradient background (no spacing from video)
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white,
-                SenseiColors.gray[50]!,
-              ],
-            ),
-          ),
-          child: Column(
-            children: [
-              // Timeline with tick marks
-              _buildCleanSportTimeline(),
-              const SizedBox(height: 8),
-              // Controls row
-              _buildCleanSportControlsRow(),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVideoPlayer() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: AspectRatio(
-        aspectRatio: widget.videoAspectRatio ?? _controller.value.aspectRatio,
-        child: VideoPlayer(_controller),
+    final Widget controlsSection = Container(
+      padding: EdgeInsets.fromLTRB(
+        12,
+        _controlsAboveVideo ? 0 : 4,
+        12,
+        _controlsAboveVideo ? 12 : 8,
       ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [SenseiColors.gray[50]!, Colors.white],
+        ),
+      ),
+      child: Column(
+        children: [
+          // Timeline with tick marks
+          _buildCleanSportTimeline(),
+          const SizedBox(height: 12),
+          // Controls row
+          _buildCleanSportControlsRow(),
+        ],
+      ),
+    );
+
+    // If hideVideo is true, only show controls
+    if (widget.hideVideo) {
+      return controlsSection;
+    }
+
+    // If videoSiblingWidget is provided, show controls full width,
+    // then video and sibling side by side below
+    if (widget.videoSiblingWidget != null) {
+      return Column(
+        children: [
+          controlsSection,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildVideoPlayerFullWidth()),
+              Expanded(child: widget.videoSiblingWidget!),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Normal layout: controls above/below video
+    return Column(
+      children: _controlsAboveVideo
+          ? [controlsSection, _buildVideoPlayerFullWidth()]
+          : [_buildVideoPlayerFullWidth(), controlsSection],
     );
   }
 
@@ -572,271 +562,35 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     );
   }
 
-  Widget _buildCheckpointLabel() {
-    final bool shouldShow = !_isPlaying && _currentPausedCheckpointIndex != null;
-    final CheckpointRecord? checkpoint = _currentPausedCheckpointIndex != null
-        ? widget.checkpoints[_currentPausedCheckpointIndex!]
-        : null;
-
-    return AnimatedOpacity(
-      opacity: shouldShow ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 200),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: shouldShow ? 56 : 0,
-        child: shouldShow && checkpoint != null
-            ? GestureDetector(
-                onTap: () => widget.onCheckpointTapped?.call(checkpoint),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        checkpoint.checkpointName.toUpperCase(),
-                        style: const TextStyle(
-                          color: _darkTrackActive,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Tap to learn more',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : const SizedBox.shrink(),
-      ),
-    );
-  }
-
-  Widget _buildCheckpointLabelOverlay() {
-    // Show checkpoint label if paused at checkpoint OR if current position is at a checkpoint
-    final int nearbyCheckpointIndex = _findCheckpointAtPosition(_currentPosition);
-    final bool hasNearbyCheckpoint = nearbyCheckpointIndex != -1;
-    final bool shouldShow = _currentPausedCheckpointIndex != null || hasNearbyCheckpoint;
-
-    final CheckpointRecord? checkpoint = _currentPausedCheckpointIndex != null
-        ? widget.checkpoints[_currentPausedCheckpointIndex!]
-        : (hasNearbyCheckpoint ? widget.checkpoints[nearbyCheckpointIndex] : null);
-
-    return Positioned(
-      top: 12,
-      right: 12,
-      child: AnimatedOpacity(
-        opacity: shouldShow ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 150),
-        child: shouldShow && checkpoint != null
-            ? GestureDetector(
-                onTap: () => widget.onCheckpointTapped?.call(checkpoint),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _capitalizeFirst(checkpoint.checkpointName),
-                        style: const TextStyle(
-                          color: _cleanTextColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.help_outline,
-                        size: 14,
-                        color: _cleanTextColor.withValues(alpha: 0.6),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : const SizedBox.shrink(),
-      ),
-    );
-  }
-
-  Widget _buildDarkSlateTimeline() {
-    return Column(
-      children: [
-        SizedBox(
-          height: 48,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final double sliderWidth = constraints.maxWidth - 32;
-              return Stack(
-                children: [
-                  // Custom slider track
-                  Positioned.fill(
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 4,
-                        activeTrackColor: _darkTrackActive,
-                        inactiveTrackColor: _darkTrackInactive,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 8,
-                        ),
-                        thumbColor: _darkThumbColor,
-                        overlayColor: _darkTrackActive.withValues(alpha: 0.2),
-                      ),
-                      child: Slider(
-                        value: _videoDuration.inMilliseconds > 0
-                            ? (_currentPosition.inMilliseconds /
-                                      _videoDuration.inMilliseconds)
-                                  .clamp(0.0, 1.0)
-                            : 0.0,
-                        min: 0.0,
-                        max: 1.0,
-                        onChanged: _onSeek,
-                      ),
-                    ),
-                  ),
-                  // Diamond checkpoint markers
-                  ...widget.checkpoints.asMap().entries.map((entry) {
-                    final int index = entry.key;
-                    final CheckpointRecord cp = entry.value;
-                    if (cp.timestampSeconds == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return _buildDarkSlateDiamondMarker(
-                      index,
-                      cp,
-                      sliderWidth: sliderWidth,
-                    );
-                  }),
-                ],
-              );
-            },
-          ),
-        ),
-        // Time labels
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _formatDuration(_currentPosition),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-              Text(
-                _formatDuration(_videoDuration),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDarkSlateDiamondMarker(
-    int index,
-    CheckpointRecord cp, {
-    required double sliderWidth,
-  }) {
-    final double position = cp.timestampSeconds! / widget.videoDurationSeconds;
-    final Color color = _checkpointColors[cp.checkpointId] ?? Colors.purple;
-    final String label = _getCheckpointLabel(cp.checkpointId);
-
-    // Calculate horizontal position (accounting for slider padding)
-    final double markerX = 16 + (sliderWidth * position);
-
-    return Positioned(
-      left: markerX - 12,
-      top: 4,
-      child: GestureDetector(
-        onTap: () => _jumpToCheckpoint(index),
-        child: Column(
-          children: [
-            // Diamond shape
-            Transform.rotate(
-              angle: 0.785398, // 45 degrees
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(3),
-                  border: Border.all(color: Colors.white, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.5),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            // Label
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildCleanSportTimeline() {
     // Thumb radius for padding calculations
     const double thumbRadius = 8;
+    // Larger touch target for easier slider interaction
+    const double touchTargetHeight = 48;
 
     return SizedBox(
-      height: 56,
+      height: touchTargetHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Full width minus padding for thumb on each side
           final double trackWidth = constraints.maxWidth - (thumbRadius * 2);
           final double progress = _videoDuration.inMilliseconds > 0
               ? (_currentPosition.inMilliseconds /
-                      _videoDuration.inMilliseconds)
-                  .clamp(0.0, 1.0)
+                        _videoDuration.inMilliseconds)
+                    .clamp(0.0, 1.0)
               : 0.0;
 
-          return Padding(
+          return Container(
             padding: const EdgeInsets.symmetric(horizontal: thumbRadius),
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTapDown: (details) {
                 final double tapPosition =
                     details.localPosition.dx / trackWidth;
                 _onSeek(tapPosition.clamp(0.0, 1.0));
+              },
+              onHorizontalDragStart: (details) {
+                HapticFeedback.lightImpact();
               },
               onHorizontalDragUpdate: (details) {
                 final double tapPosition =
@@ -844,7 +598,7 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
                 _onSeek(tapPosition.clamp(0.0, 1.0));
               },
               child: SizedBox(
-                height: 56,
+                height: touchTargetHeight,
                 child: Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
@@ -865,10 +619,7 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
                         width: trackWidth * progress,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [
-                              _cleanGradientStart,
-                              _cleanGradientEnd,
-                            ],
+                            colors: [_cleanAccentColor, _cleanAccentColorDark],
                           ),
                           borderRadius: BorderRadius.circular(1),
                         ),
@@ -897,16 +648,12 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              _cleanGradientStart,
-                              _cleanGradientEnd,
-                            ],
+                            colors: [_cleanAccentColor, _cleanAccentColorDark],
                           ),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  _cleanGradientStart.withValues(alpha: 0.4),
+                              color: _cleanAccentColor.withValues(alpha: 0.4),
                               blurRadius: 6,
                               spreadRadius: 1,
                             ),
@@ -935,37 +682,43 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
 
     // Width of the tick tap area for easier tapping
     const double tickTapWidth = 32;
+    // Dot size
+    const double dotSize = 6;
 
-    // Position tick above the track (track is centered, so bottom: 28 puts tick above)
+    // Position tick with dot exactly centered on track line (which is at center of 56px touch target)
     return Positioned(
       left: markerX - (tickTapWidth / 2),
-      bottom: 28, // Position above the centered track
+      top: 0,
+      bottom: 0,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _jumpToCheckpoint(index),
         child: SizedBox(
           width: tickTapWidth,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
             children: [
-              // Label (at top)
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: _cleanTextColor.withValues(alpha: 0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 2),
-              // Tick mark (extends down toward track)
+              // Dot exactly centered on track line
               Container(
-                width: 2,
-                height: 12,
+                width: dotSize,
+                height: dotSize,
                 decoration: BoxDecoration(
                   color: _cleanTextColor.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              // Label positioned below the dot
+              Positioned(
+                top: 28 + (dotSize / 2) + 4, // Center (28) + half dot + spacing
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _cleanTextColor.withValues(alpha: 0.5),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -993,8 +746,10 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
   /// Returns checkpoints sorted by z-index (H lowest, P on top)
   /// so that when rendered in a Stack, P appears on top when ticks overlap.
   List<MapEntry<int, CheckpointRecord>> _getSortedCheckpointsForStacking() {
-    final List<MapEntry<int, CheckpointRecord>> entries =
-        widget.checkpoints.asMap().entries.toList();
+    final List<MapEntry<int, CheckpointRecord>> entries = widget.checkpoints
+        .asMap()
+        .entries
+        .toList();
     entries.sort((a, b) {
       final int zIndexA = _getCheckpointZIndex(a.value.checkpointId);
       final int zIndexB = _getCheckpointZIndex(b.value.checkpointId);
@@ -1003,39 +758,8 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     return entries;
   }
 
-  Widget _buildDarkSlateControls() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: _darkTrackInactive.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          // Play/pause button
-          IconButton(
-            onPressed: _togglePlayPause,
-            icon: Icon(
-              _isPlaying ? Icons.pause : Icons.play_arrow,
-              color: Colors.white,
-            ),
-            iconSize: 28,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          ),
-          const SizedBox(width: 8),
-          // Pause mode pills
-          Expanded(child: _buildPauseModePills(isDark: true)),
-          const SizedBox(width: 8),
-          // Speed dropdown
-          _buildSpeedDropdown(isDark: true),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCleanSportControlsRow() {
-    const double controlHeight = 40.0;
+    const double controlHeight = 36.0;
 
     return Row(
       children: [
@@ -1047,14 +771,16 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [_cleanGradientStart, _cleanGradientEnd],
+              colors: [_cleanAccentColor, _cleanAccentColorDark],
             ),
             borderRadius: BorderRadius.circular(10),
           ),
           child: IconButton(
             onPressed: _togglePlayPause,
             icon: Icon(
-              _isPlaying ? Icons.pause : Icons.play_arrow,
+              _isPlaying
+                  ? Icons.pause
+                  : (_isAtEnd ? Icons.replay : Icons.play_arrow),
               color: Colors.white,
             ),
             iconSize: 22,
@@ -1066,75 +792,91 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
         Expanded(
           child: _buildPauseModePills(isDark: false, height: controlHeight),
         ),
-        const SizedBox(width: 12),
-        // Speed dropdown
-        _buildSpeedDropdown(isDark: false, height: controlHeight),
+        const SizedBox(width: 8),
+        // Speed pills
+        Expanded(child: _buildSpeedPills(isDark: false, height: controlHeight)),
       ],
     );
   }
 
   Widget _buildPauseModePills({required bool isDark, double? height}) {
-    final Color selectedBg = isDark ? _darkTrackActive : _cleanGradientStart;
+    final Color selectedBg = isDark ? _darkTrackActive : _cleanAccentColor;
     final Color selectedText = Colors.white;
     final Color unselectedBg = isDark
         ? Colors.white.withValues(alpha: 0.1)
-        : Colors.grey.withValues(alpha: 0.1);
+        : Colors.white;
     final Color unselectedText = isDark
         ? Colors.white.withValues(alpha: 0.7)
         : _cleanTextColor.withValues(alpha: 0.7);
+    final Color dividerColor = isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : SenseiColors.gray[100]!;
+    final double radius = height != null ? 12 : 16;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildPausePill(
-          label: '2s',
-          isSelected: _pauseMode == CheckpointPauseMode.timedPause,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _autoResumeTimer?.cancel();
-            setState(() => _pauseMode = CheckpointPauseMode.timedPause);
-          },
-          selectedBg: selectedBg,
-          selectedText: selectedText,
-          unselectedBg: unselectedBg,
-          unselectedText: unselectedText,
-          height: height,
-        ),
-        const SizedBox(width: 4),
-        _buildPausePill(
-          label: 'Hold',
-          isSelected: _pauseMode == CheckpointPauseMode.pauseIndefinitely,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _autoResumeTimer?.cancel();
-            setState(() => _pauseMode = CheckpointPauseMode.pauseIndefinitely);
-          },
-          selectedBg: selectedBg,
-          selectedText: selectedText,
-          unselectedBg: unselectedBg,
-          unselectedText: unselectedText,
-          height: height,
-        ),
-        const SizedBox(width: 4),
-        _buildPausePill(
-          label: 'None',
-          isSelected: _pauseMode == CheckpointPauseMode.continuous,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _autoResumeTimer?.cancel();
-            setState(() => _pauseMode = CheckpointPauseMode.continuous);
-          },
-          selectedBg: selectedBg,
-          selectedText: selectedText,
-          unselectedBg: unselectedBg,
-          unselectedText: unselectedText,
-          height: height,
-        ),
-      ],
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: SenseiColors.gray[100]!, width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildPillContent(
+              label: '2s',
+              isSelected: _pauseMode == CheckpointPauseMode.timedPause,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _autoResumeTimer?.cancel();
+                setState(() => _pauseMode = CheckpointPauseMode.timedPause);
+              },
+              selectedBg: selectedBg,
+              selectedText: selectedText,
+              unselectedBg: unselectedBg,
+              unselectedText: unselectedText,
+            ),
+          ),
+          Container(width: 1, color: dividerColor),
+          Expanded(
+            child: _buildPillContent(
+              label: 'Hold',
+              isSelected: _pauseMode == CheckpointPauseMode.pauseIndefinitely,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _autoResumeTimer?.cancel();
+                setState(
+                  () => _pauseMode = CheckpointPauseMode.pauseIndefinitely,
+                );
+              },
+              selectedBg: selectedBg,
+              selectedText: selectedText,
+              unselectedBg: unselectedBg,
+              unselectedText: unselectedText,
+            ),
+          ),
+          Container(width: 1, color: dividerColor),
+          Expanded(
+            child: _buildPillContent(
+              label: 'None',
+              isSelected: _pauseMode == CheckpointPauseMode.continuous,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _autoResumeTimer?.cancel();
+                setState(() => _pauseMode = CheckpointPauseMode.continuous);
+              },
+              selectedBg: selectedBg,
+              selectedText: selectedText,
+              unselectedBg: unselectedBg,
+              unselectedText: unselectedText,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildPausePill({
+  Widget _buildPillContent({
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
@@ -1142,25 +884,16 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     required Color selectedText,
     required Color unselectedBg,
     required Color unselectedText,
-    double? height,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: height,
-        padding: EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: height != null ? 0 : 6,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? selectedBg : unselectedBg,
-          borderRadius: BorderRadius.circular(height != null ? 10 : 16),
-        ),
         alignment: Alignment.center,
+        color: isSelected ? selectedBg : unselectedBg,
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             color: isSelected ? selectedText : unselectedText,
           ),
@@ -1169,56 +902,74 @@ class _CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     );
   }
 
-  Widget _buildSpeedDropdown({required bool isDark, double? height}) {
-    final Color textColor = isDark
-        ? Colors.white.withValues(alpha: 0.9)
-        : _cleanTextColor;
-    final Color dropdownBg = isDark
-        ? _darkOverlayBg
+  Widget _buildSpeedPills({required bool isDark, double? height}) {
+    final Color selectedBg = isDark ? _darkTrackActive : _cleanAccentColor;
+    final Color selectedText = Colors.white;
+    final Color unselectedBg = isDark
+        ? Colors.white.withValues(alpha: 0.1)
         : Colors.white;
+    final Color unselectedText = isDark
+        ? Colors.white.withValues(alpha: 0.7)
+        : _cleanTextColor.withValues(alpha: 0.7);
+    final Color dividerColor = isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : SenseiColors.gray[100]!;
+    final double radius = height != null ? 12 : 16;
 
     return Container(
       height: height,
-      padding: EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: height != null ? 0 : 4,
-      ),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.1)
-            : Colors.grey.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(height != null ? 10 : 8),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: SenseiColors.gray[100]!, width: 1),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<double>(
-          value: _playbackSpeed,
-          isDense: true,
-          dropdownColor: dropdownBg,
-          icon: Icon(
-            Icons.arrow_drop_down,
-            color: textColor,
-            size: 20,
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildPillContent(
+              label: '0.25',
+              isSelected: _playbackSpeed == 0.25,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _changePlaybackSpeed(0.25);
+              },
+              selectedBg: selectedBg,
+              selectedText: selectedText,
+              unselectedBg: unselectedBg,
+              unselectedText: unselectedText,
+            ),
           ),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: textColor,
+          Container(width: 1, color: dividerColor),
+          Expanded(
+            child: _buildPillContent(
+              label: '0.5',
+              isSelected: _playbackSpeed == 0.5,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _changePlaybackSpeed(0.5);
+              },
+              selectedBg: selectedBg,
+              selectedText: selectedText,
+              unselectedBg: unselectedBg,
+              unselectedText: unselectedText,
+            ),
           ),
-          items: [0.25, 0.5, 1.0].map((speed) {
-            return DropdownMenuItem<double>(
-              value: speed,
-              child: Text(
-                '${speed}x',
-                style: TextStyle(color: textColor),
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              _changePlaybackSpeed(value);
-            }
-          },
-        ),
+          Container(width: 1, color: dividerColor),
+          Expanded(
+            child: _buildPillContent(
+              label: '1x',
+              isSelected: _playbackSpeed == 1.0,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _changePlaybackSpeed(1.0);
+              },
+              selectedBg: selectedBg,
+              selectedText: selectedText,
+              unselectedBg: unselectedBg,
+              unselectedText: unselectedText,
+            ),
+          ),
+        ],
       ),
     );
   }

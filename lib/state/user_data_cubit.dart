@@ -38,6 +38,40 @@ class UserDataCubit extends Cubit<UserDataState> implements ClearOnLogoutProtoco
     await loadUserData();
   }
 
+  /// Update the user's PDGA division.
+  Future<bool> updateDivision(String division) async {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return false;
+
+    final bool success = await FBUserDataLoader.updateUserDivision(
+      uid,
+      division,
+    );
+
+    if (success) {
+      await refreshUserData();
+    }
+
+    return success;
+  }
+
+  /// Update the user's PDGA rating.
+  Future<bool> updateRating(int rating) async {
+    final String? uid = locator.get<AuthService>().currentUid;
+    if (uid == null) return false;
+
+    final bool success = await FBUserDataLoader.updateUserRating(
+      uid,
+      rating,
+    );
+
+    if (success) {
+      await refreshUserData();
+    }
+
+    return success;
+  }
+
   @override
   Future<void> clearOnLogout() async {
     emit(const UserDataInitial());

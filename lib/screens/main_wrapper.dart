@@ -312,14 +312,11 @@ class _MainWrapperState extends State<MainWrapper> {
     if (_selectedIndex == 0) {
       return _buildSettingsButton(context, RoundHistoryScreen.screenName);
     } else if (_selectedIndex == 1) {
+      // Form Coach tab - only show delete button in debug mode, no settings button
       if (kDebugMode) {
         return _buildDeleteButton(context);
       }
-      // When Form Analysis tab is selected
-      return _buildSettingsButton(
-        context,
-        FormAnalysisHistoryScreen.screenName,
-      );
+      return null;
     }
     return null;
   }
