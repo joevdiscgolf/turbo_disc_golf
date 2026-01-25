@@ -93,4 +93,22 @@ abstract class FBUserDataLoader {
         data?['displayName'] != null &&
         data?['uid'] != null;
   }
+
+  /// Update the user's PDGA division in Firestore.
+  static Future<bool> updateUserDivision(String uid, String division) async {
+    try {
+      await firestore.doc('$kUsersCollection/$uid').update({
+        'pdgaMetadata.division': division,
+      });
+      return true;
+    } catch (e, trace) {
+      log('[FBUserDataLoader][updateUserDivision] Error: $e');
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[FBUserDataLoader][updateUserDivision] Firestore Exception',
+      );
+      return false;
+    }
+  }
 }

@@ -5,16 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
+import 'package:turbo_disc_golf/components/panels/division_selection_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/user_data_cubit.dart';
 import 'package:turbo_disc_golf/state/user_data_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/pdga_constants.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   static const String routeName = '/settings';
@@ -269,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildProfileHeader(TurboUser user) {
     final PDGAMetadata? pdgaData = user.pdgaMetadata;
     final bool hasRating = pdgaData?.pdgaRating != null;
-    final bool hasDivision = pdgaData?.division != null;
+    final String? division = pdgaData?.division;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -285,6 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Username headline
           Text(
@@ -294,26 +295,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: SenseiColors.gray[800],
             ),
           ),
-          if (hasRating || hasDivision) ...[
-            const SizedBox(height: 16),
-            // Stats rows
-            if (hasRating)
-              _buildProfileStatRow(
-                'PDGA Rating',
-                pdgaData!.pdgaRating.toString(),
-                Icons.star_outline,
-              ),
-            if (hasRating && hasDivision) const SizedBox(height: 8),
-            if (hasDivision)
-              _buildProfileStatRow(
-                'Division',
-                PDGADivisions.getDisplayName(pdgaData!.division!),
-                Icons.emoji_events_outlined,
-              ),
+          const SizedBox(height: 16),
+          // Stats rows
+          if (hasRating) ...[
+            _buildProfileStatRow(
+              'PDGA Rating',
+              pdgaData!.pdgaRating.toString(),
+              Icons.star_outline,
+            ),
+            const SizedBox(height: 8),
           ],
+          _buildDivisionRow(division),
         ],
       ),
     );
+  }
+
+  Widget _buildDivisionRow(String? division) {
+    return GestureDetector(
+      onTap: () => _showDivisionPicker(division),
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Icon(Icons.emoji_events_outlined, size: 18, color: SenseiColors.gray[400]),
+          const SizedBox(width: 8),
+          Text(
+            'Division',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: SenseiColors.gray[500]),
+          ),
+          const Spacer(),
+          Text(
+            division ?? 'Not set',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: division != null ? SenseiColors.gray[700] : SenseiColors.gray[400],
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right, size: 20, color: SenseiColors.gray[400]),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showDivisionPicker(String? currentDivision) async {
+    _logger.track(
+      'Modal Opened',
+      properties: {'modal_type': 'bottom_sheet', 'modal_name': 'Division Picker'},
+    );
+
+    HapticFeedback.lightImpact();
+
+    final String? result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) =>
+          DivisionSelectionPanel(selectedDivision: currentDivision),
+    );
+
+    if (result != null && mounted) {
+      _logger.track(
+        'Division Selected',
+        properties: {'division': result},
+      );
+
+      final UserDataCubit cubit = BlocProvider.of<UserDataCubit>(context);
+      await cubit.updateDivision(result);
+    }
   }
 
   Widget _buildProfileStatRow(String label, String value, IconData icon) {

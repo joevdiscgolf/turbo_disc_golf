@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
-import 'package:turbo_disc_golf/components/panels/panel_header.dart';
+import 'package:turbo_disc_golf/components/panels/division_selection_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/feature_walkthrough_screen.dart';
@@ -14,7 +14,6 @@ import 'package:turbo_disc_golf/services/auth/auth_database_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/constants/pdga_constants.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -368,7 +367,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) =>
-          _DivisionSelectionPanel(selectedDivision: _selectedDivision),
+          DivisionSelectionPanel(selectedDivision: _selectedDivision),
     );
 
     // Dismiss keyboard again after panel closes to prevent refocus
@@ -542,209 +541,3 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 enum UsernameStatus { empty, tooShort, invalid, checking, available, taken }
-
-class _DivisionSelectionPanel extends StatefulWidget {
-  const _DivisionSelectionPanel({this.selectedDivision});
-
-  final String? selectedDivision;
-
-  @override
-  State<_DivisionSelectionPanel> createState() =>
-      _DivisionSelectionPanelState();
-}
-
-class _DivisionSelectionPanelState extends State<_DivisionSelectionPanel> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  List<String> get _filteredDivisions {
-    if (_searchQuery.isEmpty) return PDGADivisions.all;
-
-    final String query = _searchQuery.toLowerCase();
-    return PDGADivisions.all.where((division) {
-      final String displayName = PDGADivisions.getDisplayName(
-        division,
-      ).toLowerCase();
-      return division.toLowerCase().contains(query) ||
-          displayName.contains(query);
-    }).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, scrollController) {
-        final List<String> divisions = _filteredDivisions;
-
-        return Column(
-          children: [
-            PanelHeader(
-              title: 'Select Division',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search divisions...',
-                  hintStyle: TextStyle(color: SenseiColors.gray[400]),
-                  prefixIcon: Icon(
-                    FlutterRemix.search_line,
-                    color: SenseiColors.gray[400],
-                    size: 20,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          child: Icon(
-                            FlutterRemix.close_circle_fill,
-                            color: SenseiColors.gray[400],
-                            size: 20,
-                          ),
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: SenseiColors.gray[50],
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: SenseiColors.gray[200]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: SenseiColors.gray[200]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
-                  ),
-                ),
-                onChanged: (value) => setState(() => _searchQuery = value),
-              ),
-            ),
-            Expanded(
-              child: divisions.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No divisions found',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: SenseiColors.gray[500],
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 64),
-                      itemCount: divisions.length,
-                      itemBuilder: (context, index) {
-                        final String division = divisions[index];
-                        final bool isSelected =
-                            division == widget.selectedDivision;
-
-                        return _DivisionListItem(
-                          division: division,
-                          isSelected: isSelected,
-                          onTap: () => Navigator.of(context).pop(division),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _DivisionListItem extends StatelessWidget {
-  const _DivisionListItem({
-    required this.division,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String division;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        margin: const EdgeInsets.only(bottom: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? flattenedOverWhite(Colors.blue, 0.1)
-              : SenseiColors.gray[50],
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? Colors.blue : SenseiColors.gray[200]!,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Text(
-                    division,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.blue : SenseiColors.gray[700],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _getFullName(division),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: SenseiColors.gray[400],
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(
-                FlutterRemix.checkbox_circle_fill,
-                color: Colors.blue,
-                size: 18,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getFullName(String division) {
-    final String displayName = PDGADivisions.getDisplayName(division);
-    // Remove the division code prefix (e.g., "MPO – " from "MPO – Mixed Professional Open")
-    final int dashIndex = displayName.indexOf('–');
-    if (dashIndex != -1 && dashIndex + 2 < displayName.length) {
-      return displayName.substring(dashIndex + 2);
-    }
-    return displayName;
-  }
-}

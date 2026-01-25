@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_remix/flutter_remix.dart';
-import 'package:turbo_disc_golf/components/form_analysis/checkpoint_timeline_player.dart';
+import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
 import 'package:turbo_disc_golf/components/form_analysis/synchronized_video_player.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/timeline_analysis_view.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
@@ -113,6 +114,23 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
   @override
   Widget build(BuildContext context) {
+    // Delegate to TimelineAnalysisView when feature flag is enabled and video is available
+    if (locator.get<FeatureFlagService>().showCheckpointTimelinePlayer &&
+        widget.videoUrl != null &&
+        widget.videoUrl!.isNotEmpty) {
+      return TimelineAnalysisView(
+        analysis: widget.analysis,
+        onBack: widget.onBack,
+        topPadding: widget.topPadding,
+        videoUrl: widget.videoUrl,
+        throwType: widget.throwType,
+        cameraAngle: widget.cameraAngle,
+        videoAspectRatio: widget.videoAspectRatio,
+        poseAnalysisResponse: widget.poseAnalysisResponse,
+      );
+    }
+
+    // Default layout (feature flag OFF or no video)
     return Stack(
       children: [
         CustomScrollView(
@@ -123,8 +141,22 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                 .get<FeatureFlagService>()
                 .showFormAnalysisVideoComparison)
               _buildVideoComparisonSliver(),
-            _buildCheckpointTimelineSliver(),
-            SliverToBoxAdapter(child: _buildCheckpointSelector(context)),
+            SliverToBoxAdapter(
+              child: CheckpointSelector(
+                items: widget.analysis.checkpoints
+                    .map(
+                      (cp) => CheckpointSelectorItem(
+                        id: cp.checkpointId,
+                        label: cp.checkpointName,
+                      ),
+                    )
+                    .toList(),
+                selectedIndex: _selectedCheckpointIndex,
+                onChanged: (index) =>
+                    setState(() => _selectedCheckpointIndex = index),
+                formatLabel: _formatChipLabel,
+              ),
+            ),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
             // SliverToBoxAdapter(child: _buildAngleDeviations(context)),
           ],
@@ -191,89 +223,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         ),
       );
     }
-  }
-
-  Widget _buildCheckpointTimelineSliver() {
-    debugPrint(
-      'show checkpoint timeline: ${locator.get<FeatureFlagService>().showCheckpointTimelinePlayer}',
-    );
-    if (!locator.get<FeatureFlagService>().showCheckpointTimelinePlayer) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    if (widget.videoUrl == null || widget.videoUrl!.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    // Debug: Check timestamp data sources
-    debugPrint('[CheckpointTimeline] Checking timestamp data...');
-    debugPrint('[CheckpointTimeline] FormAnalysisRecord checkpoints:');
-    for (final cp in widget.analysis.checkpoints) {
-      debugPrint('  - ${cp.checkpointId}: timestampSeconds=${cp.timestampSeconds}');
-    }
-    if (widget.poseAnalysisResponse != null) {
-      debugPrint('[CheckpointTimeline] PoseAnalysisResponse checkpoints:');
-      for (final cp in widget.poseAnalysisResponse!.checkpoints) {
-        debugPrint('  - ${cp.checkpointId}: timestampSeconds=${cp.timestampSeconds}');
-      }
-    }
-
-    // Check if FormAnalysisRecord has timestamp data
-    final bool recordHasTimestampData = widget.analysis.checkpoints.any(
-      (cp) => cp.timestampSeconds != null,
-    );
-
-    // Check if PoseAnalysisResponse has timestamp data (always has it as required field)
-    final bool responseHasTimestampData =
-        widget.poseAnalysisResponse?.checkpoints.isNotEmpty ?? false;
-
-    if (!recordHasTimestampData && !responseHasTimestampData) {
-      debugPrint('[CheckpointTimeline] No timestamp data available, hiding player');
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    // Use FormAnalysisRecord checkpoints if they have timestamp data,
-    // otherwise create temporary CheckpointRecords from PoseAnalysisResponse
-    final List<CheckpointRecord> checkpointsWithTimestamps;
-    if (recordHasTimestampData) {
-      checkpointsWithTimestamps = widget.analysis.checkpoints;
-      debugPrint('[CheckpointTimeline] Using FormAnalysisRecord checkpoints');
-    } else {
-      // Create CheckpointRecords from PoseAnalysisResponse
-      checkpointsWithTimestamps = widget.poseAnalysisResponse!.checkpoints
-          .map(
-            (cp) => CheckpointRecord(
-              checkpointId: cp.checkpointId,
-              checkpointName: cp.checkpointName,
-              deviationSeverity: cp.deviationSeverity,
-              coachingTips: cp.coachingTips,
-              timestampSeconds: cp.timestampSeconds,
-            ),
-          )
-          .toList();
-      debugPrint('[CheckpointTimeline] Using PoseAnalysisResponse checkpoints (fallback)');
-    }
-
-    final double videoDuration =
-        widget.poseAnalysisResponse?.videoDurationSeconds ??
-        widget.analysis.videoSyncMetadata?.userVideoDuration ??
-        3.0;
-
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 16),
-        child: CheckpointTimelinePlayer(
-          videoUrl: widget.videoUrl!,
-          skeletonVideoUrl: widget.analysis.skeletonVideoUrl,
-          checkpoints: checkpointsWithTimestamps,
-          videoDurationSeconds: videoDuration,
-          videoAspectRatio: widget.videoAspectRatio,
-          onCheckpointTapped: (checkpoint) =>
-              _showCheckpointDetailsPanel(context, checkpoint),
-          selectedCheckpointIndex: _selectedCheckpointIndex,
-        ),
-      ),
-    );
   }
 
   Widget _buildFloatingViewToggle() {
@@ -374,80 +323,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             icon,
             size: 22,
             color: isSelected ? Colors.white : const Color(0xFF6B21B6),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCheckpointSelector(BuildContext context) {
-    final int checkpointCount = widget.analysis.checkpoints.length;
-    if (checkpointCount == 0) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Row(
-        children: List.generate(checkpointCount, (index) {
-          return Expanded(
-            child: _buildTabSegment(
-              _formatChipLabel(
-                widget.analysis.checkpoints[index].checkpointName,
-              ),
-              index == _selectedCheckpointIndex,
-              () {
-                HapticFeedback.selectionClick();
-                setState(() => _selectedCheckpointIndex = index);
-              },
-              isFirst: index == 0,
-              isLast: index == checkpointCount - 1,
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  Widget _buildTabSegment(
-    String name,
-    bool isSelected,
-    VoidCallback onTap, {
-    required bool isFirst,
-    required bool isLast,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF8B5CF6), Color(0xFF6B4EFF)],
-                )
-              : null,
-          color: isSelected ? null : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: isFirst ? const Radius.circular(11) : Radius.zero,
-            bottomLeft: isFirst ? const Radius.circular(11) : Radius.zero,
-            topRight: isLast ? const Radius.circular(11) : Radius.zero,
-            bottomRight: isLast ? const Radius.circular(11) : Radius.zero,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            name,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? Colors.white : Colors.grey[700],
-            ),
-            textAlign: TextAlign.center,
           ),
         ),
       ),

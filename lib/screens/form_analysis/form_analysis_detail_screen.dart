@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -58,7 +57,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           title: 'Form analysis',
           backgroundColor: Colors.transparent,
           hasBackButton: true,
-          rightWidget: kDebugMode ? _buildMenuButton() : null,
+          rightWidget: _buildMenuButton(),
         ),
         body: HistoryAnalysisView(
           analysis: widget.analysis,
