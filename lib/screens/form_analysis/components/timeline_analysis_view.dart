@@ -16,7 +16,6 @@ import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// View for timeline player layout with checkpoint selector above video.
 ///
@@ -58,6 +57,13 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
   final ProReferenceLoader _proRefLoader = ProReferenceLoader();
   final GlobalKey<CheckpointTimelinePlayerState> _playerKey = GlobalKey();
 
+  // Cached pro reference image and transforms to prevent jitter during loading
+  ImageProvider? _cachedProRefImage;
+  double _cachedHorizontalOffset = 0;
+  double _cachedScale = 1.0;
+  int? _cachedCheckpointIndex;
+  bool? _cachedShowSkeletonOnly;
+
   @override
   Widget build(BuildContext context) {
     final List<CheckpointRecord> checkpointsWithTimestamps =
@@ -66,6 +72,9 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
         widget.poseAnalysisResponse?.videoDurationSeconds ??
         widget.analysis.videoSyncMetadata?.userVideoDuration ??
         3.0;
+
+    // Check if video is portrait (aspect ratio < 1.0)
+    final bool isPortrait = (widget.videoAspectRatio ?? 1.0) < 1.0;
 
     return Stack(
       children: [
@@ -92,26 +101,40 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
                 formatLabel: _formatChipLabel,
               ),
             ),
-            // CheckpointTimelinePlayer
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 16),
-                child: CheckpointTimelinePlayer(
-                  key: _playerKey,
-                  videoUrl: widget.videoUrl!,
-                  skeletonVideoUrl: widget.analysis.skeletonVideoUrl,
-                  checkpoints: checkpointsWithTimestamps,
-                  videoDurationSeconds: videoDuration,
-                  videoAspectRatio: widget.videoAspectRatio,
-                  onCheckpointTapped: (checkpoint) =>
-                      _showCheckpointDetailsPanel(context, checkpoint),
-                  onCheckpointIndexChanged: (index) =>
-                      setState(() => _selectedCheckpointIndex = index),
+            // Portrait mode: side-by-side layout
+            if (isPortrait)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 0, bottom: 16),
+                  child: _buildPortraitSideBySideLayout(
+                    checkpointsWithTimestamps,
+                    videoDuration,
+                  ),
+                ),
+              )
+            // Landscape mode: vertical stack layout
+            else ...[
+              // CheckpointTimelinePlayer
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: CheckpointTimelinePlayer(
+                    key: _playerKey,
+                    videoUrl: widget.videoUrl!,
+                    skeletonVideoUrl: widget.analysis.skeletonVideoUrl,
+                    checkpoints: checkpointsWithTimestamps,
+                    videoDurationSeconds: videoDuration,
+                    videoAspectRatio: widget.videoAspectRatio,
+                    onCheckpointTapped: (checkpoint) =>
+                        _showCheckpointDetailsPanel(context, checkpoint),
+                    onCheckpointIndexChanged: (index) =>
+                        setState(() => _selectedCheckpointIndex = index),
+                  ),
                 ),
               ),
-            ),
-            // Pro reference section (full width, no horizontal margins)
-            SliverToBoxAdapter(child: _buildProReferenceSection()),
+              // Pro reference section (full width, no horizontal margins)
+              SliverToBoxAdapter(child: _buildProReferenceSection()),
+            ],
             // Checkpoint details button
             SliverToBoxAdapter(
               child: _buildCheckpointDetailsButton(
@@ -125,6 +148,69 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
         ),
         _buildFloatingViewToggle(),
       ],
+    );
+  }
+
+  /// Builds layout for portrait videos: full-width controls at top, then user video and pro reference side by side below.
+  Widget _buildPortraitSideBySideLayout(
+    List<CheckpointRecord> checkpointsWithTimestamps,
+    double videoDuration,
+  ) {
+    final CheckpointRecord checkpoint =
+        widget.analysis.checkpoints[_selectedCheckpointIndex];
+
+    // Build the pro reference widget to show beside the video
+    final Widget proReferenceWidget = GestureDetector(
+      onTap: () => _showFullscreenComparison(checkpoint),
+      child: AspectRatio(
+        aspectRatio: widget.videoAspectRatio ?? 0.5625,
+        child: Container(
+          color: Colors.black,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: _buildProReferenceImageContent(checkpoint),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'Pro reference',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Use videoSiblingWidget to show pro reference beside the video
+    return CheckpointTimelinePlayer(
+      key: _playerKey,
+      videoUrl: widget.videoUrl!,
+      skeletonVideoUrl: widget.analysis.skeletonVideoUrl,
+      checkpoints: checkpointsWithTimestamps,
+      videoDurationSeconds: videoDuration,
+      videoAspectRatio: widget.videoAspectRatio,
+      onCheckpointTapped: (cp) => _showCheckpointDetailsPanel(context, cp),
+      onCheckpointIndexChanged: (index) =>
+          setState(() => _selectedCheckpointIndex = index),
+      videoSiblingWidget: proReferenceWidget,
     );
   }
 
@@ -182,30 +268,37 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
     required CheckpointRecord checkpoint,
     VoidCallback? onTap,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 16, bottom: 6),
-          child: Text(
-            'Pro reference',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: SenseiColors.darkGray,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        color: Colors.black,
+        child: Stack(
+          children: [
+            Positioned.fill(child: _buildProReferenceImageContent(checkpoint)),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'Pro reference',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            height: 200,
-            width: double.infinity,
-            color: Colors.black,
-            child: _buildProReferenceImageContent(checkpoint),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -228,9 +321,24 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
             );
           }
 
+          // Check if this is a different checkpoint or skeleton mode than cached
+          final bool isSameCheckpoint =
+              _cachedCheckpointIndex == _selectedCheckpointIndex &&
+              _cachedShowSkeletonOnly == _showSkeletonOnly;
+
           if (!snapshot.hasData) {
+            // While loading: show cached image with cached transforms if available
+            if (_cachedProRefImage != null && !isSameCheckpoint) {
+              return _buildCachedProReferenceImage();
+            }
             return _buildShimmerPlaceholder();
           }
+
+          // Image loaded: update cache and show new image with new transforms
+          _updateProRefCache(
+            checkpoint: checkpoint,
+            imageProvider: snapshot.data!,
+          );
 
           return _buildProReferenceTransformedImage(
             checkpoint: checkpoint,
@@ -265,6 +373,38 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
     );
   }
 
+  /// Updates the cached pro reference image and transforms.
+  void _updateProRefCache({
+    required CheckpointRecord checkpoint,
+    required ImageProvider imageProvider,
+  }) {
+    _cachedProRefImage = imageProvider;
+    _cachedCheckpointIndex = _selectedCheckpointIndex;
+    _cachedShowSkeletonOnly = _showSkeletonOnly;
+    _cachedHorizontalOffset =
+        MediaQuery.of(context).size.width *
+        (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+        100;
+    final double rawScale = checkpoint.referenceScale ?? 1.0;
+    _cachedScale = rawScale.clamp(0.7, 1.5);
+  }
+
+  /// Builds the cached pro reference image with cached transforms.
+  Widget _buildCachedProReferenceImage() {
+    final bool isLeftHanded =
+        widget.analysis.detectedHandedness == Handedness.left;
+    final Widget image = Image(image: _cachedProRefImage!, fit: BoxFit.contain);
+
+    return Transform.translate(
+      offset: Offset(_cachedHorizontalOffset, 0),
+      child: Transform.scale(
+        scale: _cachedScale,
+        alignment: Alignment.center,
+        child: isLeftHanded ? Transform.flip(flipX: true, child: image) : image,
+      ),
+    );
+  }
+
   Widget _buildProReferenceTransformedImage({
     required CheckpointRecord checkpoint,
     required ImageProvider imageProvider,
@@ -282,10 +422,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
     // Check if user is left-handed to flip pro reference
     final bool isLeftHanded =
         widget.analysis.detectedHandedness == Handedness.left;
-    final Widget image = Image(
-      image: imageProvider,
-      fit: BoxFit.contain,
-    );
+    final Widget image = Image(image: imageProvider, fit: BoxFit.contain);
 
     return Transform.translate(
       offset: Offset(horizontalOffset, 0),
@@ -315,10 +452,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
           ),
         )
         .animate(onPlay: (controller) => controller.repeat())
-        .shimmer(
-          duration: 1500.ms,
-          color: Colors.white.withValues(alpha: 0.3),
-        );
+        .shimmer(duration: 1500.ms, color: Colors.white.withValues(alpha: 0.3));
   }
 
   Widget _buildCheckpointDetailsButton(
@@ -451,12 +585,12 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFD8B4FE), Color(0xFFC084FC)],
+              colors: [Color(0xFF93C5FD), Color(0xFF60A5FA)],
             ),
             borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF9333EA).withValues(alpha: 0.25),
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.25),
                 blurRadius: 16,
                 spreadRadius: 1,
                 offset: const Offset(0, 4),
@@ -485,7 +619,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
                     ),
                     borderRadius: BorderRadius.circular(22),
                   ),
@@ -534,7 +668,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
           child: Icon(
             icon,
             size: 22,
-            color: isSelected ? Colors.white : const Color(0xFF6B21B6),
+            color: isSelected ? Colors.white : const Color(0xFF1E40AF),
           ),
         ),
       ),
@@ -931,10 +1065,7 @@ class _FullscreenComparisonDialogState
           ),
         )
         .animate(onPlay: (controller) => controller.repeat())
-        .shimmer(
-          duration: 1500.ms,
-          color: Colors.white.withValues(alpha: 0.3),
-        );
+        .shimmer(duration: 1500.ms, color: Colors.white.withValues(alpha: 0.3));
   }
 
   Widget _buildFullscreenPanel(String label, String? imageUrl) {

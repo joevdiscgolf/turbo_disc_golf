@@ -178,14 +178,28 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   Widget _buildV2Header(BuildContext context) {
     return Column(
       children: [
-        Text(
-          'Form Analysis',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 24,
-          ),
-          textAlign: TextAlign.center,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/icon/app_icon_clear_bg.png',
+                width: 40,
+                height: 40,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Form analysis',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 24,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Text(

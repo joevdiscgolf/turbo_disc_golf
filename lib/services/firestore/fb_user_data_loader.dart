@@ -111,4 +111,22 @@ abstract class FBUserDataLoader {
       return false;
     }
   }
+
+  /// Update the user's PDGA rating in Firestore.
+  static Future<bool> updateUserRating(String uid, int rating) async {
+    try {
+      await firestore.doc('$kUsersCollection/$uid').update({
+        'pdgaMetadata.pdgaRating': rating,
+      });
+      return true;
+    } catch (e, trace) {
+      log('[FBUserDataLoader][updateUserRating] Error: $e');
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: '[FBUserDataLoader][updateUserRating] Firestore Exception',
+      );
+      return false;
+    }
+  }
 }

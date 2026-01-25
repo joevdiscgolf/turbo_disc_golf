@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
@@ -15,6 +16,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/user_data_cubit.dart';
 import 'package:turbo_disc_golf/state/user_data_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class SettingsScreen extends StatefulWidget {
   static const String routeName = '/settings';
@@ -79,15 +81,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       if (currentUser != null) ...[
+                        _buildSectionHeader('You'),
                         _buildProfileHeader(currentUser),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
                       ],
                       if (locator
                           .get<FeatureFlagService>()
                           .showDistancePreferences) ...[
                         _buildSectionHeader('Preferences'),
                         _buildSettingsCard([_buildUnitToggleRow()]),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
                       ],
                       _buildSectionHeader('Account'),
                       _buildSettingsCard([
@@ -268,14 +271,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildProfileHeader(TurboUser user) {
     final PDGAMetadata? pdgaData = user.pdgaMetadata;
-    final bool hasRating = pdgaData?.pdgaRating != null;
+    final int? rating = pdgaData?.pdgaRating;
     final String? division = pdgaData?.division;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -295,17 +298,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: SenseiColors.gray[800],
             ),
           ),
-          const SizedBox(height: 16),
-          // Stats rows
-          if (hasRating) ...[
-            _buildProfileStatRow(
-              'PDGA Rating',
-              pdgaData!.pdgaRating.toString(),
-              Icons.star_outline,
+          const SizedBox(height: 12),
+          // Stats rows with dividers
+          ...addDividers(
+            [
+              _buildRatingRow(rating),
+              _buildDivisionRow(division),
+            ],
+            height: 16,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingRow(int? rating) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showRatingPicker(rating);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: SenseiColors.gray[100],
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 8),
-          ],
-          _buildDivisionRow(division),
+            child: Icon(Icons.star_outline, color: SenseiColors.gray[600], size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'PDGA Rating',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            rating?.toString() ?? 'Not set',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: rating != null ? SenseiColors.gray[700] : SenseiColors.gray[400],
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 24),
         ],
       ),
     );
@@ -313,28 +357,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildDivisionRow(String? division) {
     return GestureDetector(
-      onTap: () => _showDivisionPicker(division),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showDivisionPicker(division);
+      },
       behavior: HitTestBehavior.opaque,
       child: Row(
         children: [
-          Icon(Icons.emoji_events_outlined, size: 18, color: SenseiColors.gray[400]),
-          const SizedBox(width: 8),
-          Text(
-            'Division',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: SenseiColors.gray[500]),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: SenseiColors.gray[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.emoji_events_outlined, color: SenseiColors.gray[600], size: 20),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Division',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
           Text(
             division ?? 'Not set',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
               color: division != null ? SenseiColors.gray[700] : SenseiColors.gray[400],
             ),
           ),
           const SizedBox(width: 4),
-          Icon(Icons.chevron_right, size: 20, color: SenseiColors.gray[400]),
+          Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 24),
         ],
       ),
     );
@@ -348,12 +406,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     HapticFeedback.lightImpact();
 
-    final String? result = await showModalBottomSheet<String>(
+    final String? result = await showBarModalBottomSheet<String>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      isScrollControlled: true,
+      barrierColor: SenseiColors.gray[800]!.withValues(alpha: 0.8),
+      duration: const Duration(milliseconds: 200),
+      topControl: Container(),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
       ),
       builder: (context) =>
           DivisionSelectionPanel(selectedDivision: currentDivision),
@@ -370,27 +432,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildProfileStatRow(String label, String value, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: SenseiColors.gray[400]),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: SenseiColors.gray[500]),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: SenseiColors.gray[700],
-          ),
-        ),
-      ],
+  Future<void> _showRatingPicker(int? currentRating) async {
+    _logger.track(
+      'Modal Opened',
+      properties: {'modal_type': 'bottom_sheet', 'modal_name': 'Rating Picker'},
     );
+
+    HapticFeedback.lightImpact();
+
+    final int? result = await showBarModalBottomSheet<int>(
+      context: context,
+      barrierColor: SenseiColors.gray[800]!.withValues(alpha: 0.8),
+      duration: const Duration(milliseconds: 200),
+      topControl: Container(),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      builder: (context) => _RatingInputPanel(currentRating: currentRating),
+    );
+
+    if (result != null && mounted) {
+      _logger.track(
+        'Rating Updated',
+        properties: {'rating': result},
+      );
+
+      final UserDataCubit cubit = BlocProvider.of<UserDataCubit>(context);
+      await cubit.updateRating(result);
+    }
   }
 
   Widget _buildDeleteAccountRow() {
@@ -561,5 +633,124 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
     // If success, AuthService automatically handles logout and navigation
+  }
+}
+
+class _RatingInputPanel extends StatefulWidget {
+  const _RatingInputPanel({this.currentRating});
+
+  final int? currentRating;
+
+  @override
+  State<_RatingInputPanel> createState() => _RatingInputPanelState();
+}
+
+class _RatingInputPanelState extends State<_RatingInputPanel> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.currentRating?.toString() ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  bool get _isValid {
+    final int? value = int.tryParse(_controller.text);
+    return value != null && value >= 0 && value <= 1200;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'PDGA Rating',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Icon(
+                  Icons.close,
+                  color: SenseiColors.gray[400],
+                  size: 24,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            maxLength: 4,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            decoration: InputDecoration(
+              hintText: 'Enter your rating',
+              counterText: '',
+              prefixIcon: Icon(
+                Icons.star_outline,
+                color: SenseiColors.gray[400],
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isValid ? _submit : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Save',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submit() {
+    final int? value = int.tryParse(_controller.text);
+    if (value != null) {
+      HapticFeedback.lightImpact();
+      Navigator.of(context).pop(value);
+    }
   }
 }

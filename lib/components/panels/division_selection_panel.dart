@@ -41,111 +41,72 @@ class _DivisionSelectionPanelState extends State<DivisionSelectionPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, scrollController) {
-        final List<String> divisions = _filteredDivisions;
+    final List<String> divisions = _filteredDivisions;
 
-        return Column(
-          children: [
-            PanelHeader(
-              title: 'Select division',
-              onClose: () => Navigator.of(context).pop(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search divisions...',
-                  hintStyle: TextStyle(color: SenseiColors.gray[400]),
-                  prefixIcon: Icon(
-                    FlutterRemix.search_line,
-                    color: SenseiColors.gray[400],
-                    size: 20,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          child: Icon(
-                            FlutterRemix.close_circle_fill,
-                            color: SenseiColors.gray[400],
-                            size: 20,
-                          ),
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: SenseiColors.gray[50],
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: SenseiColors.gray[200]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: SenseiColors.gray[200]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
-                  ),
-                ),
-                onChanged: (value) => setState(() => _searchQuery = value),
-              ),
-            ),
-            Expanded(
-              child: divisions.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No divisions found',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: SenseiColors.gray[500],
-                        ),
+    return Column(
+      children: [
+        PanelHeader(
+          title: 'Select division',
+          onClose: () => Navigator.of(context).pop(),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search divisions...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      child: Icon(
+                        FlutterRemix.close_circle_fill,
+                        color: SenseiColors.gray[400],
+                        size: 20,
                       ),
                     )
-                  : Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 64),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: ListView.separated(
-                          controller: scrollController,
-                          itemCount: divisions.length,
-                          separatorBuilder: (context, index) => Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: SenseiColors.gray[200],
-                          ),
-                          itemBuilder: (context, index) {
-                            final String division = divisions[index];
-                            final bool isSelected =
-                                division == widget.selectedDivision;
-
-                            return DivisionListItem(
-                              division: division,
-                              isSelected: isSelected,
-                              onTap: () => Navigator.of(context).pop(division),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                  : null,
             ),
-          ],
-        );
-      },
+            onChanged: (value) => setState(() => _searchQuery = value),
+          ),
+        ),
+        Expanded(
+          child: divisions.isEmpty
+              ? Center(
+                  child: Text(
+                    'No divisions found',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: SenseiColors.gray[500],
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: divisions.length,
+                  separatorBuilder: (context, index) => Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: SenseiColors.gray.shade50,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  physics: const ClampingScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final String division = divisions[index];
+                    final bool isSelected =
+                        division == widget.selectedDivision;
+
+                    return DivisionListItem(
+                      division: division,
+                      isSelected: isSelected,
+                      onTap: () => Navigator.of(context).pop(division),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -170,7 +131,7 @@ class DivisionListItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        color: isSelected ? flattenedOverWhite(Colors.blue, 0.08) : null,
+        color: Colors.transparent,
         child: Row(
           children: [
             Text(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 final ThemeData kThemeData = ThemeData(
   brightness: Brightness.light,
   useMaterial3: true,
+  focusColor: const Color(0xFF5B7EFF),
   // fontFamily: GoogleFonts.inter().fontFamily,
   colorScheme: ColorScheme.light(
     primary: const Color(0xFFB8E986), // Soft mint green
@@ -57,7 +58,7 @@ final ThemeData kThemeData = ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Color(0xFFB8E986), width: 2),
+      borderSide: const BorderSide(color: Color(0xFF5B7EFF), width: 2),
     ),
     labelStyle: const TextStyle(color: Color(0xFF6B7280)),
     hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),

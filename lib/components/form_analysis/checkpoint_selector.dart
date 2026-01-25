@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 
 /// A single item in the checkpoint selector.
 class CheckpointSelectorItem {
-  const CheckpointSelectorItem({
-    required this.id,
-    required this.label,
-  });
+  const CheckpointSelectorItem({required this.id, required this.label});
 
   /// Unique identifier for this checkpoint.
   final String id;
@@ -45,7 +42,7 @@ class CheckpointSelector extends StatelessWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       height: 56,
       decoration: BoxDecoration(
         color: Colors.white,
@@ -89,7 +86,7 @@ class CheckpointSelector extends StatelessWidget {
               ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF8B5CF6), Color(0xFF6B4EFF)],
+                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
                 )
               : null,
           color: isSelected ? null : Colors.white,

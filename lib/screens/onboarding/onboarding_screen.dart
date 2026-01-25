@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/division_selection_panel.dart';
@@ -359,12 +361,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // Dismiss keyboard before showing panel
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final String? result = await showModalBottomSheet<String>(
+    final String? result = await showBarModalBottomSheet<String>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      isScrollControlled: true,
+      barrierColor: SenseiColors.gray[800]!.withValues(alpha: 0.8),
+      duration: const Duration(milliseconds: 200),
+      topControl: Container(),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
       ),
       builder: (context) =>
           DivisionSelectionPanel(selectedDivision: _selectedDivision),
