@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/data/user_data/pdga_metadata.dart';
 import 'package:turbo_disc_golf/models/data/user_data/user_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
@@ -43,12 +44,25 @@ class UserDataCubit extends Cubit<UserDataState> implements ClearOnLogoutProtoco
     final String? uid = locator.get<AuthService>().currentUid;
     if (uid == null) return false;
 
+    // Optimistically update state to avoid flicker
+    final UserDataState currentState = state;
+    if (currentState is UserDataLoaded) {
+      final TurboUser currentUser = currentState.user;
+      final PDGAMetadata updatedMetadata =
+          (currentUser.pdgaMetadata ?? const PDGAMetadata())
+              .copyWith(division: division);
+      final TurboUser updatedUser =
+          currentUser.copyWith(pdgaMetadata: updatedMetadata);
+      emit(UserDataLoaded(updatedUser));
+    }
+
     final bool success = await FBUserDataLoader.updateUserDivision(
       uid,
       division,
     );
 
-    if (success) {
+    // If save failed, refresh to get correct state from server
+    if (!success) {
       await refreshUserData();
     }
 
@@ -60,12 +74,25 @@ class UserDataCubit extends Cubit<UserDataState> implements ClearOnLogoutProtoco
     final String? uid = locator.get<AuthService>().currentUid;
     if (uid == null) return false;
 
+    // Optimistically update state to avoid flicker
+    final UserDataState currentState = state;
+    if (currentState is UserDataLoaded) {
+      final TurboUser currentUser = currentState.user;
+      final PDGAMetadata updatedMetadata =
+          (currentUser.pdgaMetadata ?? const PDGAMetadata())
+              .copyWith(pdgaRating: rating);
+      final TurboUser updatedUser =
+          currentUser.copyWith(pdgaMetadata: updatedMetadata);
+      emit(UserDataLoaded(updatedUser));
+    }
+
     final bool success = await FBUserDataLoader.updateUserRating(
       uid,
       rating,
     );
 
-    if (success) {
+    // If save failed, refresh to get correct state from server
+    if (!success) {
       await refreshUserData();
     }
 
