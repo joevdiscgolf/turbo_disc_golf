@@ -108,9 +108,14 @@ class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
   Timer? _positionUpdateTimer;
   Timer? _playbackSimulationTimer;
   Timer? _autoResumeTimer;
+  Timer? _tapFeedbackTimer;
 
   /// Index of the last checkpoint we auto-paused at (to avoid re-pausing)
   int _lastAutoPausedCheckpointIndex = -1;
+
+  /// State for tap feedback animation (YouTube-style play/pause indicator)
+  bool _showTapFeedback = false;
+  bool _tapFeedbackIsPlay = true; // true = play icon, false = pause icon
 
   /// Timestamp of last manual position set (to avoid stale position updates)
   DateTime? _lastManualPositionSetAt;
@@ -119,6 +124,9 @@ class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
   bool get _isAtEnd =>
       _videoDuration > Duration.zero &&
       _currentPosition >= _videoDuration - _endThreshold;
+
+  /// Whether the video is at the start (for showing initial play overlay)
+  bool get _isAtStart => _currentPosition <= const Duration(milliseconds: 100);
 
   // Frame interval for playback simulation (~30fps)
   static const Duration _playbackFrameInterval = Duration(milliseconds: 33);
@@ -150,6 +158,7 @@ class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     _positionUpdateTimer?.cancel();
     _playbackSimulationTimer?.cancel();
     _autoResumeTimer?.cancel();
+    _tapFeedbackTimer?.cancel();
     _controller.removeListener(_onVideoPositionChanged);
     _controller.dispose();
     super.dispose();
@@ -269,11 +278,36 @@ class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
   }
 
   void _togglePlayPause() {
+    HapticFeedback.lightImpact();
     if (_isPlaying) {
       _pause(cancelAutoResume: true);
     } else {
       _play();
     }
+  }
+
+  /// Handle tap on video - toggles play/pause and shows feedback animation
+  void _onVideoTap() {
+    HapticFeedback.lightImpact();
+
+    // Determine which icon to show (the action being taken)
+    final bool willPlay = !_isPlaying;
+
+    _togglePlayPause();
+
+    // Show tap feedback animation
+    _tapFeedbackTimer?.cancel();
+    setState(() {
+      _showTapFeedback = true;
+      _tapFeedbackIsPlay = willPlay;
+    });
+
+    // Hide feedback after animation completes
+    _tapFeedbackTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() => _showTapFeedback = false);
+      }
+    });
   }
 
   Future<void> _play() async {
@@ -556,9 +590,64 @@ class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
   }
 
   Widget _buildVideoPlayerFullWidth() {
+    // Determine if we should show the persistent overlay (at start or end)
+    final bool showPlayOverlay = !_isPlaying && _isAtStart && !_showTapFeedback;
+    final bool showReplayOverlay = !_isPlaying && _isAtEnd && !_showTapFeedback;
+    final bool showPersistentOverlay = showPlayOverlay || showReplayOverlay;
+
     return AspectRatio(
       aspectRatio: widget.videoAspectRatio ?? _controller.value.aspectRatio,
-      child: VideoPlayer(_controller),
+      child: GestureDetector(
+        onTap: _onVideoTap,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            VideoPlayer(_controller),
+            // Persistent Play/Replay overlay (at start or end)
+            if (showPersistentOverlay)
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  showReplayOverlay ? Icons.replay : Icons.play_arrow,
+                  color: Colors.white,
+                  size: 36,
+                ),
+              ),
+            // Tap feedback overlay (YouTube-style fade out)
+            if (_showTapFeedback)
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _tapFeedbackIsPlay ? Icons.play_arrow : Icons.pause,
+                  color: Colors.white,
+                  size: 36,
+                ),
+              )
+                  .animate()
+                  .scale(
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1.2, 1.2),
+                    duration: 200.ms,
+                    curve: Curves.easeOut,
+                  )
+                  .fadeOut(
+                    delay: 100.ms,
+                    duration: 200.ms,
+                    curve: Curves.easeOut,
+                  ),
+          ],
+        ),
+      ),
     );
   }
 
