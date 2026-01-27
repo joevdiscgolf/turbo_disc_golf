@@ -165,12 +165,14 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
       // Navigate back to history
       if (mounted) {
         Navigator.of(context).pop();
-        locator.get<ToastService>().showSuccess('Round deleted successfully');
+        locator.get<ToastService>().showSuccess('Round deleted');
       }
     } else {
       // Show error
       if (mounted) {
-        locator.get<ToastService>().showError('Failed to delete round. Please try again.');
+        locator.get<ToastService>().showError(
+          'Failed to delete round. Please try again.',
+        );
       }
     }
   }

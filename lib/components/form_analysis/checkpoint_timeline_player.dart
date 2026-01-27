@@ -680,6 +680,9 @@ class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
               },
               onHorizontalDragStart: (details) {
                 HapticFeedback.lightImpact();
+                if (_isPlaying) {
+                  _pause(cancelAutoResume: true);
+                }
               },
               onHorizontalDragUpdate: (details) {
                 final double tapPosition =
@@ -765,7 +768,10 @@ class CheckpointTimelinePlayerState extends State<CheckpointTimelinePlayer> {
     CheckpointRecord cp, {
     required double trackWidth,
   }) {
-    final double position = cp.timestampSeconds! / widget.videoDurationSeconds;
+    final double videoDurationSecs = _videoDuration.inMilliseconds / 1000.0;
+    final double position = videoDurationSecs > 0
+        ? cp.timestampSeconds! / videoDurationSecs
+        : 0.0;
     final String label = _getCheckpointLabel(cp.checkpointId);
     final double markerX = trackWidth * position;
 

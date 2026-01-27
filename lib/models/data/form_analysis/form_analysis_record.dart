@@ -130,6 +130,9 @@ class CheckpointRecord {
     this.userIndividualAngles,
     this.referenceIndividualAngles,
     this.individualDeviations,
+    this.userV2Measurements,
+    this.referenceV2Measurements,
+    this.v2MeasurementDeviations,
   });
 
   /// Checkpoint identifier: "heisman", "loaded", "magic", "pro"
@@ -204,6 +207,18 @@ class CheckpointRecord {
   /// Individual joint deviations (user - reference)
   @JsonKey(name: 'individual_deviations')
   final IndividualJointDeviations? individualDeviations;
+
+  /// V2 side-view measurements for user
+  @JsonKey(name: 'user_v2_measurements')
+  final V2SideMeasurements? userV2Measurements;
+
+  /// V2 side-view measurements for reference/pro
+  @JsonKey(name: 'reference_v2_measurements')
+  final V2SideMeasurements? referenceV2Measurements;
+
+  /// V2 side-view measurement deviations (user - reference)
+  @JsonKey(name: 'v2_measurement_deviations')
+  final V2SideMeasurements? v2MeasurementDeviations;
 
   factory CheckpointRecord.fromJson(Map<String, dynamic> json) =>
       _$CheckpointRecordFromJson(json);

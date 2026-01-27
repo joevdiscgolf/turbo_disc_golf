@@ -1,5 +1,7 @@
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 
 /// Callback for converting base64 image data to a URL.
 /// Returns the URL for the image, or null if no image is available.
@@ -22,15 +24,25 @@ class CheckpointRecordBuilder {
     required CheckpointPoseData checkpoint,
     required ImageUrlProvider imageUrlProvider,
     String? proPlayerIdOverride,
+    CameraAngle? cameraAngle,
   }) {
     final CheckpointPoseData cp = checkpoint;
+
+    // Use backend tips; fall back to remote config / hardcoded defaults
+    List<String> tips = cp.coachingTips;
+    if (tips.isEmpty && cameraAngle != null) {
+      tips = FormReferencePositions.getCoachingTips(
+        cp.checkpointId,
+        cameraAngle,
+      );
+    }
 
     return CheckpointRecord(
       // === Core Identification ===
       checkpointId: cp.checkpointId,
       checkpointName: cp.checkpointName,
       deviationSeverity: cp.deviationSeverity,
-      coachingTips: cp.coachingTips,
+      coachingTips: tips,
 
       // === Timing/Position ===
       timestampSeconds: cp.timestampSeconds,
@@ -60,6 +72,11 @@ class CheckpointRecordBuilder {
       userIndividualAngles: cp.userIndividualAngles,
       referenceIndividualAngles: cp.referenceIndividualAngles,
       individualDeviations: cp.individualDeviations,
+
+      // === V2 Side Measurements - Copy directly ===
+      userV2Measurements: cp.userV2Measurements,
+      referenceV2Measurements: cp.referenceV2Measurements,
+      v2MeasurementDeviations: cp.v2MeasurementDeviations,
     );
   }
 

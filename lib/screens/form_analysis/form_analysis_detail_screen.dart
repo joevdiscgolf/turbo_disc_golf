@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
@@ -27,7 +26,6 @@ class FormAnalysisDetailScreen extends StatefulWidget {
 }
 
 class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
-  bool _isDeleting = false;
   late final LoggingServiceBase _logger;
 
   @override
@@ -94,7 +92,6 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
   Widget _buildMenuButton() {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_horiz),
-      enabled: !_isDeleting,
       onOpened: () {
         HapticFeedback.lightImpact();
       },
@@ -161,32 +158,18 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await _handleDelete();
+      _handleDelete();
     }
   }
 
-  Future<void> _handleDelete() async {
-    setState(() => _isDeleting = true);
-
+  void _handleDelete() {
     final FormAnalysisHistoryCubit cubit =
         BlocProvider.of<FormAnalysisHistoryCubit>(context);
 
-    final bool success = await cubit.deleteAnalysis(widget.analysis.id);
+    // Pop immediately for instant feel
+    Navigator.pop(context);
 
-    if (!mounted) return;
-
-    if (success) {
-      // Show success message
-      locator.get<ToastService>().showSuccess('Deleted analysis');
-
-      // Navigate back to history screen
-      Navigator.pop(context);
-    } else {
-      // Show error message
-      setState(() => _isDeleting = false);
-      locator.get<ToastService>().showError(
-        'Failed to delete analysis. Please try again.',
-      );
-    }
+    // Fire optimistic delete in background
+    cubit.deleteAnalysis(widget.analysis.id);
   }
 }

@@ -37,7 +37,7 @@ class CustomCupertinoActionSheet extends StatelessWidget {
           ? Text(
               message!,
               textAlign: TextAlign.center,
-              style: TextStyle(color: SenseiColors.gray.shade50),
+              style: TextStyle(color: SenseiColors.gray.shade500),
             )
           : null,
       actions: [

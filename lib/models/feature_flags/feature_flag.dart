@@ -140,6 +140,7 @@ enum FeatureFlag {
 
   /// Debug-only: Uses mock form analysis response
   useMockFormAnalysisResponse('use_mock_form_analysis_response', true),
+  formAnalysisCoachingTips('form_analysis_coaching_tips', ''),
   showFormAnalysisScoreAndSummary('show_form_analysis_score_and_summary', true),
   saveFormAnalysisToFirestore('save_form_analysis_to_firestore', true),
   showFormAnalysisVideoComparison('show_form_analysis_video_comparison', false),
@@ -154,6 +155,9 @@ enum FeatureFlag {
     'checkpoint_timeline_player_style',
     'cleanSportMinimal',
   ),
+
+  /// Maximum video duration in seconds for form analysis uploads
+  maxFormAnalysisVideoSeconds('max_form_analysis_video_seconds', 4),
 
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs
