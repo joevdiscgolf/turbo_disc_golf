@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_timeline_player.dart';
+import 'package:turbo_disc_golf/components/form_analysis/v2_measurements_card.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
@@ -142,6 +143,16 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
                 widget.analysis.checkpoints[_selectedCheckpointIndex],
               ),
             ),
+            // V2 measurements card
+            if (widget.analysis.checkpoints[_selectedCheckpointIndex]
+                    .userV2Measurements !=
+                null)
+              SliverToBoxAdapter(
+                child: V2MeasurementsCard(
+                  checkpoint:
+                      widget.analysis.checkpoints[_selectedCheckpointIndex],
+                ),
+              ),
             // Bottom spacing for floating button
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
@@ -233,7 +244,12 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
               checkpointId: cp.checkpointId,
               checkpointName: cp.checkpointName,
               deviationSeverity: cp.deviationSeverity,
-              coachingTips: cp.coachingTips,
+              coachingTips: cp.coachingTips.isNotEmpty
+                  ? cp.coachingTips
+                  : FormReferencePositions.getCoachingTips(
+                      cp.checkpointId,
+                      widget.analysis.cameraAngle ?? CameraAngle.side,
+                    ),
               timestampSeconds: cp.timestampSeconds,
             ),
           )

@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.d
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
 
 /// Cubit for managing form analysis history state.
@@ -183,53 +184,87 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
     }
   }
 
-  /// Delete a specific form analysis.
-  /// Removes from both Firestore and Cloud Storage, then updates local state.
-  Future<bool> deleteAnalysis(String analysisId) async {
-    try {
-      // Get current user ID
-      final AuthService authService = locator.get<AuthService>();
-      final String? uid = authService.currentUid;
+  /// Delete a specific form analysis optimistically.
+  /// Removes from local state immediately, then deletes from Firestore/Storage
+  /// in the background. Reverts and shows error toast on failure.
+  Future<void> deleteAnalysis(String analysisId) async {
+    // Save state for rollback
+    FormAnalysisRecord? removedAnalysis;
+    int? removedIndex;
 
+    // Optimistically remove from local state
+    if (state is FormAnalysisHistoryLoaded) {
+      final FormAnalysisHistoryLoaded loadedState =
+          state as FormAnalysisHistoryLoaded;
+      removedIndex =
+          loadedState.analyses.indexWhere((a) => a.id == analysisId);
+
+      if (removedIndex != -1) {
+        removedAnalysis = loadedState.analyses[removedIndex];
+        final List<FormAnalysisRecord> updatedAnalyses =
+            loadedState.analyses.where((a) => a.id != analysisId).toList();
+
+        emit(FormAnalysisHistoryLoaded(
+          analyses: updatedAnalyses,
+          selectedAnalysis: null,
+          hasMore: loadedState.hasMore,
+          isLoadingMore: loadedState.isLoadingMore,
+        ));
+      }
+    }
+
+    try {
+      final String? uid = locator.get<AuthService>().currentUid;
       if (uid == null) {
         debugPrint('[FormAnalysisHistoryCubit] No user logged in');
-        return false;
+        _revertDelete(removedAnalysis, removedIndex);
+        return;
       }
 
       debugPrint('[FormAnalysisHistoryCubit] Deleting analysis: $analysisId');
 
-      // Delete from Firestore and Cloud Storage
       final bool success = await FBFormAnalysisDataLoader.deleteAnalysis(
         uid: uid,
         analysisId: analysisId,
       );
 
       if (success) {
-        // Update local state by removing the deleted analysis
-        if (state is FormAnalysisHistoryLoaded) {
-          final FormAnalysisHistoryLoaded loadedState =
-              state as FormAnalysisHistoryLoaded;
-          final List<FormAnalysisRecord> updatedAnalyses =
-              loadedState.analyses.where((a) => a.id != analysisId).toList();
-
-          emit(FormAnalysisHistoryLoaded(
-            analyses: updatedAnalyses,
-            selectedAnalysis: null,
-            hasMore: loadedState.hasMore,
-            isLoadingMore: loadedState.isLoadingMore,
-          ));
-          debugPrint(
-              '[FormAnalysisHistoryCubit] ✅ Analysis deleted: $analysisId');
-        }
-        return true;
+        debugPrint(
+            '[FormAnalysisHistoryCubit] Analysis deleted: $analysisId');
       } else {
-        debugPrint('[FormAnalysisHistoryCubit] ❌ Failed to delete analysis');
-        return false;
+        debugPrint('[FormAnalysisHistoryCubit] Failed to delete analysis');
+        _revertDelete(removedAnalysis, removedIndex);
       }
     } catch (e) {
       debugPrint('[FormAnalysisHistoryCubit] Delete error: $e');
-      return false;
+      _revertDelete(removedAnalysis, removedIndex);
     }
+  }
+
+  /// Re-insert a removed analysis back into state and show error toast.
+  void _revertDelete(FormAnalysisRecord? analysis, int? index) {
+    if (analysis == null || index == null || index == -1) return;
+
+    if (state is FormAnalysisHistoryLoaded) {
+      final FormAnalysisHistoryLoaded loadedState =
+          state as FormAnalysisHistoryLoaded;
+      final List<FormAnalysisRecord> updatedAnalyses =
+          List<FormAnalysisRecord>.from(loadedState.analyses);
+
+      final int insertIndex = index.clamp(0, updatedAnalyses.length);
+      updatedAnalyses.insert(insertIndex, analysis);
+
+      emit(FormAnalysisHistoryLoaded(
+        analyses: updatedAnalyses,
+        selectedAnalysis: loadedState.selectedAnalysis,
+        hasMore: loadedState.hasMore,
+        isLoadingMore: loadedState.isLoadingMore,
+      ));
+    }
+
+    locator.get<ToastService>().showError(
+      'Failed to delete analysis. Please try again.',
+    );
   }
 
   /// Delete all form analyses for the current user (debug only).

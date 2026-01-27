@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
 import 'package:turbo_disc_golf/components/form_analysis/synchronized_video_player.dart';
+import 'package:turbo_disc_golf/components/form_analysis/v2_measurements_card.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/timeline_analysis_view.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -158,7 +159,6 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               ),
             ),
             SliverToBoxAdapter(child: _buildComparisonCard(context)),
-            // SliverToBoxAdapter(child: _buildAngleDeviations(context)),
           ],
         ),
         _buildFloatingViewToggle(),
@@ -334,6 +334,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
   }
 
   Widget _buildComparisonCard(BuildContext context) {
+    print('analysis checkpoints: ${widget.analysis.checkpoints.length}');
     if (widget.analysis.checkpoints.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -345,6 +346,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     final bool isPortrait =
         widget.analysis.videoOrientation == VideoOrientation.portrait;
     final double horizontalPadding = isPortrait ? 8.0 : 16.0;
+
+    print("user v2 measurements: ${checkpoint.userV2Measurements}");
 
     return GestureDetector(
       onTap: () => _showFullscreenComparison(checkpoint),
@@ -382,6 +385,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             ),
             const SizedBox(height: 12),
             _buildCheckpointDetailsButton(context, checkpoint),
+            if (checkpoint.userV2Measurements != null)
+              V2MeasurementsCard(checkpoint: checkpoint),
             const SizedBox(height: 120),
           ],
         ),

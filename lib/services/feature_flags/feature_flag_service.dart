@@ -300,6 +300,9 @@ class FeatureFlagService {
   bool get useMockFormAnalysisResponse =>
       getBool(FeatureFlag.useMockFormAnalysisResponse);
 
+  String get formAnalysisCoachingTips =>
+      getString(FeatureFlag.formAnalysisCoachingTips);
+
   bool get showFormAnalysisScoreAndSummary =>
       getBool(FeatureFlag.showFormAnalysisScoreAndSummary);
 
@@ -318,6 +321,10 @@ class FeatureFlagService {
   /// Checkpoint timeline player UI style: 'darkSlateOverlay' or 'cleanSportMinimal'
   String get checkpointTimelinePlayerStyle =>
       getString(FeatureFlag.checkpointTimelinePlayerStyle);
+
+  /// Maximum video duration in seconds for form analysis uploads
+  int get maxFormAnalysisVideoSeconds =>
+      getInt(FeatureFlag.maxFormAnalysisVideoSeconds);
 
   // ===== Admin/Force Upgrade =====
 

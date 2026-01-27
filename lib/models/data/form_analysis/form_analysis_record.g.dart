@@ -116,6 +116,21 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
           : IndividualJointDeviations.fromJson(
               json['individual_deviations'] as Map<String, dynamic>,
             ),
+      userV2Measurements: json['user_v2_measurements'] == null
+          ? null
+          : V2SideMeasurements.fromJson(
+              json['user_v2_measurements'] as Map<String, dynamic>,
+            ),
+      referenceV2Measurements: json['reference_v2_measurements'] == null
+          ? null
+          : V2SideMeasurements.fromJson(
+              json['reference_v2_measurements'] as Map<String, dynamic>,
+            ),
+      v2MeasurementDeviations: json['v2_measurement_deviations'] == null
+          ? null
+          : V2SideMeasurements.fromJson(
+              json['v2_measurement_deviations'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$CheckpointRecordToJson(
@@ -139,4 +154,7 @@ Map<String, dynamic> _$CheckpointRecordToJson(
   'user_individual_angles': instance.userIndividualAngles?.toJson(),
   'reference_individual_angles': instance.referenceIndividualAngles?.toJson(),
   'individual_deviations': instance.individualDeviations?.toJson(),
+  'user_v2_measurements': instance.userV2Measurements?.toJson(),
+  'reference_v2_measurements': instance.referenceV2Measurements?.toJson(),
+  'v2_measurement_deviations': instance.v2MeasurementDeviations?.toJson(),
 };

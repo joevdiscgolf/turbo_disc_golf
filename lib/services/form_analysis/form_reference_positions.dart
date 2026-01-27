@@ -1,5 +1,10 @@
+import 'dart:convert';
+
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_checkpoint.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Hardcoded reference positions based on Slingshot disc golf methodology.
 ///
@@ -51,9 +56,7 @@ class FormReferencePositions {
           'their elbow is still roughly at 90 degrees and neutral.',
       orderIndex: 0,
       referenceDescription:
-          'Step onto the ball of your back foot. Front leg should start '
-          'drifting in front of your back leg. You are on your back leg but '
-          'have not started to coil yet. Elbow is still roughly at 90 degrees '
+          'Step onto the ball of your back foot. Front has started drifting in front of the back leg. Coil has not yet started.'
           'and neutral. Target elbow angle: ~115°, hip rotation: ~80°.',
       keyPoints: [
         FormKeyPoint(
@@ -317,4 +320,94 @@ class FormReferencePositions {
       ],
     ),
   ];
+
+  /// Default coaching tips per checkpoint and camera angle.
+  /// This is also the expected JSON structure for the Remote Config override.
+  static const Map<String, Map<String, List<String>>> defaultCoachingTips = {
+    'heisman': {
+      'side': [
+        'Balancing and drifting on the back leg (ball of the foot)',
+        'Front leg has drifted past the back leg',
+        'Coil hasn\'t started yet',
+      ],
+      'rear': [
+        'Weight should be fully on your back foot',
+        'Front leg crossing in front creates the \'Heisman\' stance',
+        'Keep shoulders level and balanced',
+        'Head should be tracking forward toward target',
+      ],
+    },
+    'loaded': {
+      'side': [
+        'Front (plant) foot is about to touch the ground',
+        'You should be fully coiled at this point',
+        'Back leg should be bowed out',
+      ],
+      'rear': [
+        'Front (plant) foot about to touch the ground',
+        'Maximum rotation visible from rear - hips appear narrowest',
+        'Knees should show depth separation (back knee behind front knee)',
+        'Weight still primarily on back leg',
+      ],
+    },
+    'magic': {
+      'side': [
+        'Disc is just starting to move forward',
+        'Both knees are bent inward',
+        'Position should be athletic',
+      ],
+      'rear': [
+        'Hips begin to rotate forward (widening from rear view)',
+        'Both knees bent and driving inward',
+        'Weight starts transferring from back to front foot',
+        'Athletic balanced position visible',
+      ],
+    },
+    'pro': {
+      'side': [
+        'Pull-through is well in progress',
+        'Elbow is at a 90-degree angle',
+        'Back leg is bent at almost a 90-degree angle',
+        'Front leg is pretty straight',
+      ],
+      'rear': [
+        'Hips fully opened toward target (maximum width from rear)',
+        'Weight transferred to front leg (visible as body lean)',
+        'Back leg bent and supporting push-through',
+        'Arm follows through in line with body rotation',
+      ],
+    },
+  };
+
+  /// Get coaching tips for a checkpoint and camera angle.
+  /// Checks Remote Config for overrides, falls back to hardcoded defaults.
+  static List<String> getCoachingTips(
+    String checkpointId,
+    CameraAngle cameraAngle,
+  ) {
+    final String angleKey = cameraAngle.toApiString();
+
+    // Check Remote Config override
+    final String remoteJson =
+        locator.get<FeatureFlagService>().formAnalysisCoachingTips;
+    if (remoteJson.isNotEmpty) {
+      try {
+        final Map<String, dynamic> parsed =
+            json.decode(remoteJson) as Map<String, dynamic>;
+        final Map<String, dynamic>? checkpoint =
+            parsed[checkpointId] as Map<String, dynamic>?;
+        if (checkpoint != null) {
+          final List<dynamic>? tips = checkpoint[angleKey] as List<dynamic>?;
+          if (tips != null && tips.isNotEmpty) {
+            return tips.cast<String>();
+          }
+        }
+      } catch (_) {
+        // Invalid JSON — fall through to defaults
+      }
+    }
+
+    // Fall back to hardcoded defaults
+    return defaultCoachingTips[checkpointId]?[angleKey] ?? [];
+  }
 }

@@ -21,7 +21,6 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
   // Video constraints
   static const int maxVideoSizeBytes = 20 * 1024 * 1024; // 20MB
-  static const int maxVideoDurationSeconds = 4;
   static const List<String> supportedFormats = [
     'mp4',
     'mov',
@@ -99,8 +98,10 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
       final double seconds = duration.inMilliseconds / 1000.0;
 
-      if (seconds > maxVideoDurationSeconds) {
-        return (null, 'Video must be $maxVideoDurationSeconds seconds or less');
+      final int maxDuration =
+          locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds;
+      if (seconds > maxDuration) {
+        return (null, 'Video must be $maxDuration seconds or less');
       }
 
       return (seconds, null);

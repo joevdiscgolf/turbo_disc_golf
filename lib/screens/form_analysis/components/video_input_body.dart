@@ -480,10 +480,10 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          '${kMaxVideoSeconds}s max',
-                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                          '${locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds}s max',
+                          style: const TextStyle(fontSize: 13, color: Colors.white70),
                         ),
                       ),
                     ],
@@ -567,6 +567,35 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                     ],
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF137e66),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Expanded(
+                        child: Text(
+                          'Avoid others in background',
+                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(child: SizedBox.shrink()),
               ],
             ),
           ],

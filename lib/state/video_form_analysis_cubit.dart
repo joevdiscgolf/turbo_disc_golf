@@ -24,8 +24,6 @@ import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:uuid/uuid.dart';
 
-const int kMaxVideoSeconds = 4;
-
 /// Cubit for managing video form analysis workflow
 class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     implements ClearOnLogoutProtocol {
@@ -57,9 +55,11 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         );
       });
 
+      final int maxSeconds =
+          locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds;
       final XFile? video = await _imagePicker.pickVideo(
         source: ImageSource.camera,
-        maxDuration: const Duration(seconds: kMaxVideoSeconds),
+        maxDuration: Duration(seconds: maxSeconds),
       );
 
       // Cancel timer - picker has returned
@@ -112,9 +112,11 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         );
       });
 
+      final int maxSeconds =
+          locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds;
       final XFile? video = await _imagePicker.pickVideo(
         source: ImageSource.gallery,
-        maxDuration: const Duration(seconds: kMaxVideoSeconds),
+        maxDuration: Duration(seconds: maxSeconds),
       );
 
       // Cancel timer - picker has returned
