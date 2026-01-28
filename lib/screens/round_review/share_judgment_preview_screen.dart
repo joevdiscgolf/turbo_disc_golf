@@ -65,9 +65,10 @@ class _ShareJudgmentPreviewScreenState
   Future<void> _shareCard() async {
     if (_isSharing) return;
 
-    _logger.track('Share Judgment Button Tapped', properties: {
-      'is_glaze': widget.isGlaze,
-    });
+    _logger.track(
+      'Share Judgment Button Tapped',
+      properties: {'is_glaze': widget.isGlaze},
+    );
 
     setState(() => _isSharing = true);
 
@@ -103,36 +104,34 @@ class _ShareJudgmentPreviewScreenState
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).viewPadding.top;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      extendBodyBehindAppBar: true,
-      appBar: GenericAppBar(
-        topViewPadding: topPadding,
-        title: '',
-        backgroundColor: Colors.transparent,
-      ),
-      body: Stack(
-        children: [
-          // Full-screen share card
-          RepaintBoundary(
-            key: _shareCardKey,
-            child: JudgmentShareCard(
-              isGlaze: widget.isGlaze,
-              headline: widget.headline,
-              tagline: widget.tagline,
-              round: widget.round,
-              analysis: widget.analysis,
-              highlightStats: widget.highlightStats,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        extendBodyBehindAppBar: true,
+        appBar: GenericAppBar(
+          topViewPadding: topPadding,
+          title: '',
+          backgroundColor: Colors.transparent,
+        ),
+        body: Stack(
+          children: [
+            // Full-screen share card
+            RepaintBoundary(
+              key: _shareCardKey,
+              child: JudgmentShareCard(
+                isGlaze: widget.isGlaze,
+                headline: widget.headline,
+                tagline: widget.tagline,
+                round: widget.round,
+                analysis: widget.analysis,
+                highlightStats: widget.highlightStats,
+              ),
             ),
-          ),
-          // Share button overlay at bottom
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildBottomBar(),
-          ),
-        ],
+            // Share button overlay at bottom
+            Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomBar()),
+          ],
+        ),
       ),
     );
   }

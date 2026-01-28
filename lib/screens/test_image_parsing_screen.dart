@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
+import 'package:flutter/services.dart';
 
 class TestImageParsingScreen extends StatefulWidget {
   const TestImageParsingScreen({super.key});
@@ -12,7 +13,8 @@ class TestImageParsingScreen extends StatefulWidget {
 
 class _TestImageParsingScreenState extends State<TestImageParsingScreen> {
   final AiParsingService _aiParsingService = locator.get<AiParsingService>();
-  final String _testImagePath = 'assets/test_scorecards/flingsgiving_round_2.jpeg';
+  final String _testImagePath =
+      'assets/test_scorecards/flingsgiving_round_2.jpeg';
 
   bool _isLoading = false;
   List<HoleMetadata>? _parsedHoles;
@@ -56,150 +58,145 @@ class _TestImageParsingScreenState extends State<TestImageParsingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Test Image Parsing',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Test Image Parsing',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
 
-            // Test image preview
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    color: Colors.grey[900],
+              // Test image preview
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      color: Colors.grey[900],
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Test Scorecard',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          Image.asset(_testImagePath, fit: BoxFit.contain),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Parse button
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : _parseScorecard,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.image_search),
+                label: Text(_isLoading ? 'Parsing...' : 'Parse Scorecard'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Error message
+              if (_errorMessage != null)
+                Card(
+                  color: Colors.red.withValues(alpha: 0.2),
+                  child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
+                    child: Row(
                       children: [
-                        Text(
-                          'Test Scorecard',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Image.asset(
-                          _testImagePath,
-                          fit: BoxFit.contain,
+                        const Icon(Icons.error_outline, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Parse button
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _parseScorecard,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.image_search),
-              label: Text(_isLoading ? 'Parsing...' : 'Parse Scorecard'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Error message
-            if (_errorMessage != null)
-              Card(
-                color: Colors.red.withValues(alpha: 0.2),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
 
-            // Parsed holes section
-            if (_parsedHoles != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Parsed Holes',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+              // Parsed holes section
+              if (_parsedHoles != null) ...[
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Parsed Holes',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '${_parsedHoles!.length} holes',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${_parsedHoles!.length} holes',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (_parsedHoles!.isEmpty)
-                        const Text(
-                          'No holes found in image',
-                          style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey,
-                          ),
-                        )
-                      else
-                        ..._parsedHoles!.map((hole) => _buildHoleCard(hole)),
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (_parsedHoles!.isEmpty)
+                          const Text(
+                            'No holes found in image',
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey,
+                            ),
+                          )
+                        else
+                          ..._parsedHoles!.map((hole) => _buildHoleCard(hole)),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -210,8 +207,8 @@ class _TestImageParsingScreenState extends State<TestImageParsingScreen> {
     final relativeToParText = relativeToPar == 0
         ? 'E'
         : relativeToPar > 0
-            ? '+$relativeToPar'
-            : '$relativeToPar';
+        ? '+$relativeToPar'
+        : '$relativeToPar';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -272,10 +269,7 @@ class _TestImageParsingScreenState extends State<TestImageParsingScreen> {
 
             // Score
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: _getScoreColor(relativeToPar),
                 borderRadius: BorderRadius.circular(8),
@@ -292,10 +286,7 @@ class _TestImageParsingScreenState extends State<TestImageParsingScreen> {
                   ),
                   Text(
                     relativeToParText,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.white),
                   ),
                 ],
               ),

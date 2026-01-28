@@ -65,47 +65,50 @@ class _ScoreDetailScreenState extends State<ScoreDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: SenseiColors.gray[50],
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: GenericAppBar(
-          topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: 'Score details',
-          backgroundColor: SenseiColors.gray[50],
-          bottomWidget: TabBar(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Container(
+        color: SenseiColors.gray[50],
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: GenericAppBar(
+            topViewPadding: MediaQuery.of(context).viewPadding.top,
+            title: 'Score details',
+            backgroundColor: SenseiColors.gray[50],
+            bottomWidget: TabBar(
+              controller: _tabController,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: Colors.black,
+              indicatorWeight: 2,
+              labelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.normal,
+              ),
+              labelPadding: EdgeInsets.zero,
+              padding: EdgeInsets.zero,
+              indicatorPadding: EdgeInsets.zero,
+              onTap: (_) => HapticFeedback.lightImpact(),
+              tabs: const [
+                Tab(text: 'Course'),
+                Tab(text: 'Scores'),
+              ],
+            ),
+            bottomWidgetHeight: 48,
+          ),
+          body: TabBarView(
             controller: _tabController,
-            splashFactory: NoSplash.splashFactory,
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            labelColor: Colors.black,
-            unselectedLabelColor: Colors.black54,
-            indicatorColor: Colors.black,
-            indicatorWeight: 2,
-            labelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-            ),
-            labelPadding: EdgeInsets.zero,
-            padding: EdgeInsets.zero,
-            indicatorPadding: EdgeInsets.zero,
-            onTap: (_) => HapticFeedback.lightImpact(),
-            tabs: const [
-              Tab(text: 'Course'),
-              Tab(text: 'Scores'),
+            children: [
+              CourseTab(round: widget.round),
+              ScoresTab(round: widget.round),
             ],
           ),
-          bottomWidgetHeight: 48,
-        ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            CourseTab(round: widget.round),
-            ScoresTab(round: widget.round),
-          ],
         ),
       ),
     );

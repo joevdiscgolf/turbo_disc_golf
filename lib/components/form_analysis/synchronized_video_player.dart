@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:video_player/video_player.dart';
+
+import 'package:turbo_disc_golf/components/shimmer_box.dart';
 
 import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
 
@@ -26,12 +27,20 @@ class SynchronizedVideoPlayer extends StatefulWidget {
     super.key,
     required this.userVideoUrl,
     required this.proVideoAssetPath,
+    this.userSkeletonOnlyVideoUrl,
+    this.showSkeletonOnly = false,
     this.videoSyncMetadata,
     this.videoAspectRatio,
   });
 
-  /// Network URL for user's form video
+  /// Network URL for user's form video (overlay or original)
   final String userVideoUrl;
+
+  /// Network URL for user's skeleton-only video (just skeleton, no original)
+  final String? userSkeletonOnlyVideoUrl;
+
+  /// Whether to show skeleton-only video (true) or overlay video (false)
+  final bool showSkeletonOnly;
 
   /// Asset path for pro reference video
   final String proVideoAssetPath;
@@ -50,10 +59,28 @@ class SynchronizedVideoPlayer extends StatefulWidget {
 }
 
 class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
-  late VideoPlayerController _userController;
+  /// Controller for overlay user video (skeleton overlay or original)
+  late VideoPlayerController _userOverlayController;
+  bool _isUserOverlayInitialized = false;
+
+  /// Controller for skeleton-only user video
+  VideoPlayerController? _userSkeletonOnlyController;
+  bool _isUserSkeletonOnlyInitialized = false;
+
   late VideoPlayerController _proController;
 
-  bool _isUserVideoInitialized = false;
+  /// Returns the currently active user controller based on showSkeletonOnly
+  VideoPlayerController get _activeUserController =>
+      widget.showSkeletonOnly && _userSkeletonOnlyController != null
+          ? _userSkeletonOnlyController!
+          : _userOverlayController;
+
+  /// Whether the currently active user controller is initialized
+  bool get _isActiveUserInitialized =>
+      widget.showSkeletonOnly && _userSkeletonOnlyController != null
+          ? _isUserSkeletonOnlyInitialized
+          : _isUserOverlayInitialized;
+
   bool _isProVideoInitialized = false;
   bool _isPlaying = false;
   bool _hasError = false;
@@ -114,37 +141,86 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   }
 
   @override
+  void didUpdateWidget(SynchronizedVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // When showSkeletonOnly changes, sync position to newly active controller
+    if (oldWidget.showSkeletonOnly != widget.showSkeletonOnly) {
+      _swapActiveUserController();
+    }
+  }
+
+  /// Swap to the newly active user controller when showSkeletonOnly changes.
+  Future<void> _swapActiveUserController() async {
+    if (!_isActiveUserInitialized) return;
+
+    final bool wasPlaying = _isPlaying;
+
+    if (_isPlaying) {
+      _pause();
+    }
+
+    // Seek newly active controller to current position
+    await _activeUserController.seekTo(_currentPosition);
+
+    // Update duration
+    _userDuration = _activeUserController.value.duration;
+    _shortestDuration = _userDuration;
+
+    if (mounted) {
+      setState(() {});
+    }
+
+    if (wasPlaying) {
+      await _play();
+    }
+  }
+
+  @override
   void dispose() {
     _positionUpdateTimer?.cancel();
     _playbackSimulationTimer?.cancel();
-    _userController.removeListener(_onVideoPositionChanged);
-    _userController.dispose();
+    _userOverlayController.removeListener(_onVideoPositionChanged);
+    _userOverlayController.dispose();
+    _userSkeletonOnlyController?.removeListener(_onVideoPositionChanged);
+    _userSkeletonOnlyController?.dispose();
     _proController.dispose();
     super.dispose();
   }
 
   Future<void> _initializeControllers() async {
     try {
-      // Initialize user video from network URL
-      _userController = VideoPlayerController.networkUrl(
+      // Initialize overlay user video from network URL
+      _userOverlayController = VideoPlayerController.networkUrl(
         Uri.parse(widget.userVideoUrl),
       );
 
       // Initialize pro video from assets
       _proController = VideoPlayerController.asset(widget.proVideoAssetPath);
 
-      // Initialize both controllers
-      await Future.wait([
-        _userController.initialize(),
+      // Initialize both controllers in parallel
+      final List<Future<void>> initFutures = [
+        _userOverlayController.initialize(),
         _proController.initialize(),
-      ]);
+      ];
 
-      // Mute both videos
-      _userController.setVolume(0.0);
+      // Also initialize skeleton-only controller if URL is available
+      if (widget.userSkeletonOnlyVideoUrl != null) {
+        _userSkeletonOnlyController = VideoPlayerController.networkUrl(
+          Uri.parse(widget.userSkeletonOnlyVideoUrl!),
+        );
+        initFutures.add(_userSkeletonOnlyController!.initialize());
+      }
+
+      await Future.wait(initFutures);
+
+      // Mute all videos
+      _userOverlayController.setVolume(0.0);
       _proController.setVolume(0.0);
+      _userSkeletonOnlyController?.setVolume(0.0);
 
       // Store video durations
-      _userDuration = _userController.value.duration;
+      _userDuration = _activeUserController.value.duration;
       _proDuration = _proController.value.duration;
       _shortestDuration = _userDuration;
 
@@ -152,8 +228,9 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
       debugPrint('   User: ${_userDuration.inSeconds}s');
       debugPrint('   Pro: ${_proDuration.inSeconds}s');
 
-      // Add listener to track playback position
-      _userController.addListener(_onVideoPositionChanged);
+      // Add listeners to track playback position
+      _userOverlayController.addListener(_onVideoPositionChanged);
+      _userSkeletonOnlyController?.addListener(_onVideoPositionChanged);
 
       // Start position update timer
       _positionUpdateTimer = Timer.periodic(
@@ -163,8 +240,11 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
 
       if (mounted) {
         setState(() {
-          _isUserVideoInitialized = true;
+          _isUserOverlayInitialized = true;
           _isProVideoInitialized = true;
+          if (_userSkeletonOnlyController != null) {
+            _isUserSkeletonOnlyInitialized = true;
+          }
         });
       }
     } catch (e) {
@@ -186,12 +266,15 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   void _updatePosition() {
     // During playback simulation, _currentPosition is updated by _onSeek()
     // This timer only updates position when not playing (for paused state display)
-    if (mounted && _isUserVideoInitialized && !_isPlaying) {
-      final Duration userPosition = _userController.value.position;
+    if (mounted && _isActiveUserInitialized && !_isPlaying) {
+      final Duration userPosition = _activeUserController.value.position;
 
-      setState(() {
-        _currentPosition = userPosition;
-      });
+      // Only call setState if position has actually changed
+      if (userPosition != _currentPosition) {
+        setState(() {
+          _currentPosition = userPosition;
+        });
+      }
     }
   }
 
@@ -247,12 +330,12 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
 
     final Duration userPosition = isAtEnd
         ? Duration.zero
-        : _userController.value.position;
+        : _activeUserController.value.position;
 
     // Sync both videos to starting position
     final Duration proPosition = _calculateProPosition(userPosition);
     await Future.wait([
-      _userController.seekTo(userPosition),
+      _activeUserController.seekTo(userPosition),
       _proController.seekTo(proPosition),
     ]);
 
@@ -365,7 +448,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     _playbackSimulationTimer = null;
 
     // Pause both controllers to save resources
-    _userController.pause();
+    _activeUserController.pause();
     _proController.pause();
 
     setState(() => _isPlaying = false);
@@ -385,7 +468,7 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
 
     // Seek both videos and wait for completion
     await Future.wait([
-      _userController.seekTo(userPosition),
+      _activeUserController.seekTo(userPosition),
       _proController.seekTo(proPosition),
     ]);
 
@@ -429,10 +512,6 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
   Widget build(BuildContext context) {
     if (_hasError) {
       return _buildErrorState();
-    }
-
-    if (!_isUserVideoInitialized || !_isProVideoInitialized) {
-      return _buildLoadingState();
     }
 
     // Determine layout based on video aspect ratio
@@ -483,7 +562,10 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        _buildVideoContainer(_userController),
+        if (_isActiveUserInitialized)
+          _buildVideoContainer(_activeUserController)
+        else
+          _buildVideoShimmer(),
       ],
     );
   }
@@ -496,7 +578,10 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        _buildProVideoContainer(),
+        if (_isProVideoInitialized)
+          _buildProVideoContainer()
+        else
+          _buildVideoShimmer(),
       ],
     );
   }
@@ -636,56 +721,19 @@ class _SynchronizedVideoPlayerState extends State<SynchronizedVideoPlayer> {
     );
   }
 
-  Widget _buildLoadingState() {
-    // Determine if videos are landscape based on aspect ratio
-    final bool isLandscapeVideo = (widget.videoAspectRatio ?? 1.0) >= 1.0;
-
-    // Calculate constant height to prevent content shifting
-    // For landscape: use aspect ratio to maintain proper dimensions
-    // For portrait: use a reasonable fixed height
-    final double loadingHeight = isLandscapeVideo ? 200.0 : 400.0;
-
-    return Container(
-          height: loadingHeight,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey[900],
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Colors.grey[800]!,
-                  Colors.grey[700]!,
-                  Colors.grey[800]!,
-                ],
-              ),
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Loading videos...',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        )
-        .animate(onPlay: (controller) => controller.repeat())
-        .shimmer(
-          duration: const Duration(milliseconds: 1500),
-          color: Colors.white.withValues(alpha: 0.3),
-        );
+  Widget _buildVideoShimmer() {
+    if (widget.videoAspectRatio != null) {
+      return AspectRatio(
+        aspectRatio: widget.videoAspectRatio!,
+        child: ShimmerBox(borderRadius: 0, color: Colors.grey[900]),
+      );
+    }
+    // Fallback heuristic height
+    final double h = (widget.videoAspectRatio ?? 1.0) >= 1.0 ? 200.0 : 400.0;
+    return SizedBox(
+      height: h,
+      child: ShimmerBox(borderRadius: 0, color: Colors.grey[900]),
+    );
   }
 
   Widget _buildErrorState() {

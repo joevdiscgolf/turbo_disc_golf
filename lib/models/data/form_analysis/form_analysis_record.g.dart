@@ -30,9 +30,12 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
         json['video_orientation'],
       ),
       videoAspectRatio: (json['video_aspect_ratio'] as num?)?.toDouble(),
+      returnedVideoAspectRatio: (json['returned_video_aspect_ratio'] as num?)
+          ?.toDouble(),
       videoUrl: json['video_url'] as String?,
       videoStoragePath: json['video_storage_path'] as String?,
       skeletonVideoUrl: json['skeleton_video_url'] as String?,
+      skeletonOnlyVideoUrl: json['skeleton_only_video_url'] as String?,
       videoSyncMetadata: json['video_sync_metadata'] == null
           ? null
           : VideoSyncMetadata.fromJson(
@@ -58,9 +61,11 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
       'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle],
       'video_orientation': _$VideoOrientationEnumMap[instance.videoOrientation],
       'video_aspect_ratio': instance.videoAspectRatio,
+      'returned_video_aspect_ratio': instance.returnedVideoAspectRatio,
       'video_url': instance.videoUrl,
       'video_storage_path': instance.videoStoragePath,
       'skeleton_video_url': instance.skeletonVideoUrl,
+      'skeleton_only_video_url': instance.skeletonOnlyVideoUrl,
       'video_sync_metadata': instance.videoSyncMetadata?.toJson(),
       'detected_handedness': _$HandednessEnumMap[instance.detectedHandedness],
     };

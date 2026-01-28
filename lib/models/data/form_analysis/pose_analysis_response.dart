@@ -20,6 +20,7 @@ class PoseAnalysisResponse {
     required this.cameraAngle,
     this.videoOrientation,
     this.videoAspectRatio,
+    this.returnedVideoAspectRatio,
     required this.videoDurationSeconds,
     required this.totalFrames,
     required this.checkpoints,
@@ -30,6 +31,7 @@ class PoseAnalysisResponse {
     this.videoUrl,
     this.videoStoragePath,
     this.skeletonVideoUrl,
+    this.skeletonOnlyVideoUrl,
     this.videoSyncMetadata,
     this.proVideoReference,
     this.detectedHandedness,
@@ -51,6 +53,10 @@ class PoseAnalysisResponse {
 
   @JsonKey(name: 'video_aspect_ratio')
   final double? videoAspectRatio;
+
+  /// Aspect ratio (width/height) of the returned processed videos
+  @JsonKey(name: 'returned_video_aspect_ratio')
+  final double? returnedVideoAspectRatio;
 
   @JsonKey(name: 'video_duration_seconds')
   final double videoDurationSeconds;
@@ -85,6 +91,10 @@ class PoseAnalysisResponse {
   @JsonKey(name: 'skeleton_video_url')
   final String? skeletonVideoUrl;
 
+  /// URL of the skeleton-only video (skeleton on black background, no video)
+  @JsonKey(name: 'skeleton_only_video_url')
+  final String? skeletonOnlyVideoUrl;
+
   @JsonKey(name: 'video_sync_metadata')
   final VideoSyncMetadata? videoSyncMetadata;
 
@@ -105,7 +115,6 @@ class PoseAnalysisResponse {
           if (base64Data == null) return null;
           return 'data:image/jpeg;base64,$base64Data';
         },
-        cameraAngle: cameraAngle,
       );
     }).toList();
 
@@ -124,9 +133,11 @@ class PoseAnalysisResponse {
       cameraAngle: cameraAngle,
       videoOrientation: videoOrientation,
       videoAspectRatio: videoAspectRatio,
+      returnedVideoAspectRatio: returnedVideoAspectRatio,
       videoUrl: videoUrl,
       videoStoragePath: videoStoragePath,
       skeletonVideoUrl: skeletonVideoUrl,
+      skeletonOnlyVideoUrl: skeletonOnlyVideoUrl,
       detectedHandedness: detectedHandedness,
     );
   }

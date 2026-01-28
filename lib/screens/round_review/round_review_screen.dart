@@ -179,101 +179,109 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RoundReviewCubit, RoundReviewState>(
-      bloc: _reviewCubit,
-      builder: (context, state) {
-        // Get the round from the cubit state, or fall back to widget.round
-        final DGRound round = state is ReviewingRoundActive
-            ? state.round
-            : widget.round;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: BlocBuilder<RoundReviewCubit, RoundReviewState>(
+        bloc: _reviewCubit,
+        builder: (context, state) {
+          // Get the round from the cubit state, or fall back to widget.round
+          final DGRound round = state is ReviewingRoundActive
+              ? state.round
+              : widget.round;
 
-        return Container(
-          color: SenseiColors.gray[50],
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: GenericAppBar(
-              topViewPadding: MediaQuery.of(context).viewPadding.top,
-              title: locator.get<FeatureFlagService>().showRoundMetadataInfoBar
-                  ? 'Round overview'
-                  : round.courseName,
-              bottomWidget: _tabBar(),
-              bottomWidgetHeight: 40,
-              rightWidget: PopupMenuButton(
-                icon: const Icon(Icons.more_horiz),
-                itemBuilder: (BuildContext context) => [
-                  PopupMenuItem(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                        SizedBox(width: 12),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
+          return Container(
+            color: SenseiColors.gray[50],
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: GenericAppBar(
+                topViewPadding: MediaQuery.of(context).viewPadding.top,
+                title:
+                    locator.get<FeatureFlagService>().showRoundMetadataInfoBar
+                    ? 'Round overview'
+                    : round.courseName,
+                bottomWidget: _tabBar(),
+                bottomWidgetHeight: 40,
+                rightWidget: PopupMenuButton(
+                  icon: const Icon(Icons.more_horiz),
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                          SizedBox(width: 12),
+                          Text('Delete', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                      onTap: () => _handleDeleteRound(round),
                     ),
-                    onTap: () => _handleDeleteRound(round),
+                  ],
+                ),
+              ),
+              // AppBar(
+              //   backgroundColor: Colors.transparent,
+              //   title: Text(round.courseName),
+              //   actions: [
+              // IconButton(
+              //   icon: const Icon(Icons.auto_stories),
+              //   tooltip: 'View Fullscreen Story',
+              //   onPressed: () {
+              //     Navigator.of(context).push(
+              //       CupertinoPageRoute(
+              //         builder: (context) => RoundStoryView(round: round),
+              //         fullscreenDialog: true,
+              //       ),
+              //     );
+              //   },
+              // ),
+              //   ],
+              // bottom:
+              //  TabBar(
+              //   controller: _tabController,
+              //   splashFactory: NoSplash.splashFactory,
+              //   overlayColor: WidgetStateProperty.all(Colors.transparent),
+              //   labelColor: Colors.black,
+              //   unselectedLabelColor: Colors.black54,
+              //   indicatorColor: Colors.black,
+              //   indicatorWeight: 2,
+              //   labelStyle: const TextStyle(
+              //     fontSize: 14,
+              //     fontWeight: FontWeight.w600,
+              //   ),
+              //   unselectedLabelStyle: const TextStyle(
+              //     fontSize: 14,
+              //     fontWeight: FontWeight.normal,
+              //   ),
+              //   labelPadding: const EdgeInsets.symmetric(vertical: 8),
+              //   tabs: const [
+              //     Tab(text: 'Stats'),
+              //     Tab(text: 'Story'),
+              //   ],
+              // ),
+              // ),
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Stats tab - with optional info bar at top
+                  RoundStatsBody(
+                    round: round,
+                    isReviewV2Screen: true,
+                    tabController: _tabController,
                   ),
+                  // Story tab - no info bar
+                  RoundStoryTab(round: round, tabController: _tabController),
+                  // Judge tab - no info bar
+                  JudgeRoundTab(round: round),
                 ],
               ),
             ),
-            // AppBar(
-            //   backgroundColor: Colors.transparent,
-            //   title: Text(round.courseName),
-            //   actions: [
-            // IconButton(
-            //   icon: const Icon(Icons.auto_stories),
-            //   tooltip: 'View Fullscreen Story',
-            //   onPressed: () {
-            //     Navigator.of(context).push(
-            //       CupertinoPageRoute(
-            //         builder: (context) => RoundStoryView(round: round),
-            //         fullscreenDialog: true,
-            //       ),
-            //     );
-            //   },
-            // ),
-            //   ],
-            // bottom:
-            //  TabBar(
-            //   controller: _tabController,
-            //   splashFactory: NoSplash.splashFactory,
-            //   overlayColor: WidgetStateProperty.all(Colors.transparent),
-            //   labelColor: Colors.black,
-            //   unselectedLabelColor: Colors.black54,
-            //   indicatorColor: Colors.black,
-            //   indicatorWeight: 2,
-            //   labelStyle: const TextStyle(
-            //     fontSize: 14,
-            //     fontWeight: FontWeight.w600,
-            //   ),
-            //   unselectedLabelStyle: const TextStyle(
-            //     fontSize: 14,
-            //     fontWeight: FontWeight.normal,
-            //   ),
-            //   labelPadding: const EdgeInsets.symmetric(vertical: 8),
-            //   tabs: const [
-            //     Tab(text: 'Stats'),
-            //     Tab(text: 'Story'),
-            //   ],
-            // ),
-            // ),
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                // Stats tab - with optional info bar at top
-                RoundStatsBody(
-                  round: round,
-                  isReviewV2Screen: true,
-                  tabController: _tabController,
-                ),
-                // Story tab - no info bar
-                RoundStoryTab(round: round, tabController: _tabController),
-                // Judge tab - no info bar
-                JudgeRoundTab(round: round),
-              ],
-            ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

@@ -376,8 +376,10 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
   /// Calculate whether a shot was successful for various metrics
   ShotOutcome _calculateShotOutcome(DGHole hole, int throwIndex) {
     final DiscThrow discThrow = hole.throws[throwIndex];
-    final bool isEligibleForCircleInReg =
-        isThrowEligibleForCircleInReg(throwIndex, hole.par);
+    final bool isEligibleForCircleInReg = isThrowEligibleForCircleInReg(
+      throwIndex,
+      hole.par,
+    );
 
     // Determine if this led to a birdie
     final bool wasBirdie = hole.relativeHoleScore < 0;
@@ -581,13 +583,16 @@ class _DrivesDetailScreenState extends State<DrivesDetailScreen>
       );
     }
 
-    return _buildLayoutV1(
-      context,
-      allThrowTypes,
-      coreStats,
-      performanceByFairwayWidth,
-      shotShapeBirdieRates,
-      circleInRegByShape,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: _buildLayoutV1(
+        context,
+        allThrowTypes,
+        coreStats,
+        performanceByFairwayWidth,
+        shotShapeBirdieRates,
+        circleInRegByShape,
+      ),
     );
   }
 

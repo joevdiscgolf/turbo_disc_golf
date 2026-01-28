@@ -57,11 +57,7 @@ class _LandingScreenState extends State<LandingScreen>
 
     // Set status bar to light content for dark background
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
+      const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
     );
 
     _mainController = AnimationController(
@@ -119,36 +115,35 @@ class _LandingScreenState extends State<LandingScreen>
     _mainController.dispose();
     // Reset status bar style when leaving
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
+      const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
     );
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          const LandingBackground(),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 32),
-                  Expanded(child: _buildCards()),
-                  const SizedBox(height: 16),
-                  _buildButtons(),
-                ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+      child: Scaffold(
+        body: Stack(
+          children: [
+            const LandingBackground(),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 32),
+                    Expanded(child: _buildCards()),
+                    const SizedBox(height: 16),
+                    _buildButtons(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

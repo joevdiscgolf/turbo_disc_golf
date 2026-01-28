@@ -509,104 +509,109 @@ class _RoundProcessingLoadingScreenState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      child: Scaffold(
-        backgroundColor:
-            Colors.transparent, // Transparent to show body background
-        extendBodyBehindAppBar: true, // Body extends behind app bar
-        // App bar only shown during confirmation state
-        // During revealing state, app bar is built into _buildReviewContent
-        appBar: _processingState == _ProcessingState.confirming
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(kToolbarHeight),
-                child: GenericAppBar(
-                  topViewPadding: MediaQuery.of(context).viewPadding.top,
-                  title: 'Confirm round',
-                  backgroundColor: SenseiColors.gray[50],
-                  foregroundColor: Colors.black87,
-                  hasBackButton: false,
-                  leftWidget: _buildRestartButton(),
-                  rightWidget: _buildCloseButton(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: PopScope(
+        canPop: false,
+        child: Scaffold(
+          backgroundColor:
+              Colors.transparent, // Transparent to show body background
+          extendBodyBehindAppBar: true, // Body extends behind app bar
+          // App bar only shown during confirmation state
+          // During revealing state, app bar is built into _buildReviewContent
+          appBar: _processingState == _ProcessingState.confirming
+              ? PreferredSize(
+                  preferredSize: const Size.fromHeight(kToolbarHeight),
+                  child: GenericAppBar(
+                    topViewPadding: MediaQuery.of(context).viewPadding.top,
+                    title: 'Confirm round',
+                    backgroundColor: SenseiColors.gray[50],
+                    foregroundColor: Colors.black87,
+                    hasBackButton: false,
+                    leftWidget: _buildRestartButton(),
+                    rightWidget: _buildCloseButton(),
+                  ),
+                )
+              : null,
+
+          body: Stack(
+            children: [
+              // Layer 0: Base background color - consistent light color throughout
+              Container(
+                color: const Color(
+                  0xFFF5F0FA,
+                ), // Lighter purple-gray background
+              ),
+
+              // Layer 1: Background animations with smooth 300ms crossfades
+              // During revealing, hyperspace fades out as content fades in
+              if (_processingState == _ProcessingState.revealing)
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 2500),
+                  tween: Tween<double>(begin: 1.0, end: 0.0),
+                  curve: Curves.easeInOut,
+                  builder: (context, hyperspaceOpacity, child) {
+                    return Opacity(opacity: hyperspaceOpacity, child: child);
+                  },
+                  child: _buildZoomingContent(),
+                )
+              else if (_processingState != _ProcessingState.confirming)
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  switchInCurve: Curves.easeInOut,
+                  switchOutCurve: Curves.easeInOut,
+                  transitionBuilder: (child, animation) {
+                    // Smooth fade transition between states
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  child: _processingState == _ProcessingState.loading
+                      ? _buildLoadingContent()
+                      : _processingState == _ProcessingState.transitioning
+                      ? _buildTransitioningContent()
+                      : _processingState == _ProcessingState.exploding
+                      ? _buildExplodingContent()
+                      : _processingState == _ProcessingState.zooming
+                      ? _buildZoomingContent()
+                      : const SizedBox.shrink(),
                 ),
-              )
-            : null,
 
-        body: Stack(
-          children: [
-            // Layer 0: Base background color - consistent light color throughout
-            Container(
-              color: const Color(0xFFF5F0FA), // Lighter purple-gray background
-            ),
+              // Layer 2: Round review content that fades in with blur
+              // Much faster unblur for snappy reveal (1000ms)
+              if (_processingState == _ProcessingState.revealing)
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 1000),
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  curve: Curves.easeOut, // Faster easing at the end
+                  builder: (context, progress, child) {
+                    // Strong blur at start (20), clear at end (0)
+                    final double blur = 20.0 * (1.0 - progress);
 
-            // Layer 1: Background animations with smooth 300ms crossfades
-            // During revealing, hyperspace fades out as content fades in
-            if (_processingState == _ProcessingState.revealing)
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 2500),
-                tween: Tween<double>(begin: 1.0, end: 0.0),
-                curve: Curves.easeInOut,
-                builder: (context, hyperspaceOpacity, child) {
-                  return Opacity(opacity: hyperspaceOpacity, child: child);
-                },
-                child: _buildZoomingContent(),
-              )
-            else if (_processingState != _ProcessingState.confirming)
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                switchInCurve: Curves.easeInOut,
-                switchOutCurve: Curves.easeInOut,
-                transitionBuilder: (child, animation) {
-                  // Smooth fade transition between states
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                child: _processingState == _ProcessingState.loading
-                    ? _buildLoadingContent()
-                    : _processingState == _ProcessingState.transitioning
-                    ? _buildTransitioningContent()
-                    : _processingState == _ProcessingState.exploding
-                    ? _buildExplodingContent()
-                    : _processingState == _ProcessingState.zooming
-                    ? _buildZoomingContent()
-                    : const SizedBox.shrink(),
-              ),
+                    // Start at 0% opacity, fade to 100%
+                    final double contentOpacity = progress;
 
-            // Layer 2: Round review content that fades in with blur
-            // Much faster unblur for snappy reveal (1000ms)
-            if (_processingState == _ProcessingState.revealing)
-              TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 1000),
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                curve: Curves.easeOut, // Faster easing at the end
-                builder: (context, progress, child) {
-                  // Strong blur at start (20), clear at end (0)
-                  final double blur = 20.0 * (1.0 - progress);
+                    return ImageFiltered(
+                      imageFilter: ImageFilter.blur(
+                        sigmaX: blur,
+                        sigmaY: blur,
+                        tileMode: TileMode.decal,
+                      ),
+                      child: Opacity(opacity: contentOpacity, child: child),
+                    );
+                  },
+                  child: _buildReviewContent(),
+                ),
 
-                  // Start at 0% opacity, fade to 100%
-                  final double contentOpacity = progress;
+              // Layer 3: Confirmation widget - shows after parsing completes
+              if (_processingState == _ProcessingState.confirming)
+                _buildConfirmationContent(),
 
-                  return ImageFiltered(
-                    imageFilter: ImageFilter.blur(
-                      sigmaX: blur,
-                      sigmaY: blur,
-                      tileMode: TileMode.decal,
-                    ),
-                    child: Opacity(opacity: contentOpacity, child: child),
-                  );
-                },
-                child: _buildReviewContent(),
-              ),
-
-            // Layer 3: Confirmation widget - shows after parsing completes
-            if (_processingState == _ProcessingState.confirming)
-              _buildConfirmationContent(),
-
-            // Layer 4: Persistent triangle overlay - visible through entire animation
-            // Only hide during revealing and confirming
-            if (_processingState != _ProcessingState.revealing &&
-                _processingState != _ProcessingState.confirming)
-              IgnorePointer(child: _buildPersistentTriangle()),
-          ],
+              // Layer 4: Persistent triangle overlay - visible through entire animation
+              // Only hide during revealing and confirming
+              if (_processingState != _ProcessingState.revealing &&
+                  _processingState != _ProcessingState.confirming)
+                IgnorePointer(child: _buildPersistentTriangle()),
+            ],
+          ),
         ),
       ),
     );

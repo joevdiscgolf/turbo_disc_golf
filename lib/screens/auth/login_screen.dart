@@ -14,6 +14,7 @@ import 'package:turbo_disc_golf/screens/auth/components/google_sign_in_button.da
 import 'package:turbo_disc_golf/screens/auth/sign_up_screen.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:flutter/services.dart';
 
 class LoginScreen extends StatefulWidget {
   static const String routeName = '/login';
@@ -68,20 +69,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: GenericAppBar(
-        topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: 'ScoreSensei',
-        titleIcon: Image.asset(
-          'assets/icon/app_icon_clear_bg.png',
-          height: 32,
-          width: 32,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: 'ScoreSensei',
+          titleIcon: Image.asset(
+            'assets/icon/app_icon_clear_bg.png',
+            height: 32,
+            width: 32,
+          ),
+          hasBackButton: false,
         ),
-        hasBackButton: false,
+        resizeToAvoidBottomInset: false,
+        backgroundColor: Colors.white,
+        body: _mainBody(context),
       ),
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.white,
-      body: _mainBody(context),
     );
   }
 

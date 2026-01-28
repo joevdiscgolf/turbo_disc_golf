@@ -86,15 +86,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: GenericAppBar(
-        topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: 'Sign up',
-      ),
-      backgroundColor: SenseiColors.white,
-      body: Padding(
-        padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
-        child: _mainBody(context),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: 'Sign up',
+        ),
+        backgroundColor: SenseiColors.white,
+        body: Padding(
+          padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
+          child: _mainBody(context),
+        ),
       ),
     );
   }

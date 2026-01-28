@@ -90,23 +90,26 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
-          builder: (context, state) {
-            return CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                CupertinoSliverRefreshControl(
-                  onRefresh: () => _roundHistoryCubit.refreshRounds(),
-                ),
-                _buildContent(state),
-              ],
-            );
-          },
-        ),
-        _buildAddButton(),
-      ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Stack(
+        children: [
+          BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
+            builder: (context, state) {
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  CupertinoSliverRefreshControl(
+                    onRefresh: () => _roundHistoryCubit.refreshRounds(),
+                  ),
+                  _buildContent(state),
+                ],
+              );
+            },
+          ),
+          _buildAddButton(),
+        ],
+      ),
     );
   }
 

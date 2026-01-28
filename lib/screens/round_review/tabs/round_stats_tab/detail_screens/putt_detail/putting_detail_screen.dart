@@ -43,51 +43,57 @@ class PuttingDetailScreen extends StatelessWidget {
     );
     final avgBirdiePuttDist = puttingAnalysisService
         .getAverageBirdiePuttDistance(round);
-    final List<PuttAttempt> allPutts = puttingAnalysisService.getAllPuttAttempts(round);
-    final List<PuttAttempt> comebackPutts = allPutts.where((p) => p.isComeback).toList();
+    final List<PuttAttempt> allPutts = puttingAnalysisService
+        .getAllPuttAttempts(round);
+    final List<PuttAttempt> comebackPutts = allPutts
+        .where((p) => p.isComeback)
+        .toList();
 
     if (puttingStats.totalAttempts == 0) {
       return const Center(child: Text('No putting data available'));
     }
 
-    return Container(
-      color: SenseiColors.gray[50],
-      child: ListView(
-        padding: const EdgeInsets.only(top: 12, bottom: 80),
-        children: addRunSpacing(
-          [
-            // Putting stats KPIs
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildPuttingStatsKPIs(context, puttingStats),
-            ),
-
-            // Heat map visualization
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: PuttHeatMapCard(round: round, shouldAnimate: true),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildAllPuttsCard(context, allPutts),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildComebackPuttsCard(context, comebackPutts),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: PuttingDistanceCard(
-                avgMakeDistance: puttingStats.avgMakeDistance,
-                avgAttemptDistance: puttingStats.avgAttemptDistance,
-                avgBirdiePuttDistance: avgBirdiePuttDist,
-                totalMadeDistance: puttingStats.totalMadeDistance,
-                horizontalPadding: 0,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Container(
+        color: SenseiColors.gray[50],
+        child: ListView(
+          padding: const EdgeInsets.only(top: 12, bottom: 80),
+          children: addRunSpacing(
+            [
+              // Putting stats KPIs
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildPuttingStatsKPIs(context, puttingStats),
               ),
-            ),
-          ],
-          runSpacing: 12,
-          axis: Axis.vertical,
+
+              // Heat map visualization
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: PuttHeatMapCard(round: round, shouldAnimate: true),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildAllPuttsCard(context, allPutts),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildComebackPuttsCard(context, comebackPutts),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: PuttingDistanceCard(
+                  avgMakeDistance: puttingStats.avgMakeDistance,
+                  avgAttemptDistance: puttingStats.avgAttemptDistance,
+                  avgBirdiePuttDistance: avgBirdiePuttDist,
+                  totalMadeDistance: puttingStats.totalMadeDistance,
+                  horizontalPadding: 0,
+                ),
+              ),
+            ],
+            runSpacing: 12,
+            axis: Axis.vertical,
+          ),
         ),
       ),
     );
@@ -272,10 +278,7 @@ class PuttingDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAllPuttsCard(
-    BuildContext context,
-    List<PuttAttempt> allPutts,
-  ) {
+  Widget _buildAllPuttsCard(BuildContext context, List<PuttAttempt> allPutts) {
     if (allPutts.isEmpty) {
       return const SizedBox.shrink();
     }

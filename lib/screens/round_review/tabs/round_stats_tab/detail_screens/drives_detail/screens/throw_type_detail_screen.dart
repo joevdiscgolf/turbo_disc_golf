@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/throw_type_stats.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/shared/components/shot_shape_card.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:flutter/services.dart';
 
 /// Detail screen showing shot shape breakdown for a specific throw type
 class ThrowTypeDetailScreen extends StatefulWidget {
@@ -77,100 +78,110 @@ class _ThrowTypeDetailScreenState extends State<ThrowTypeDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: GenericAppBar(
-        topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: widget.overallStats.displayName,
-        backgroundColor: Colors.transparent,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          ThrowStatsCard(
-            title: widget.overallStats.displayName,
-            shotDetails: widget.overallShotDetails,
-            averageDistance: widget.overallStats.averageThrowDistance?.round(),
-            isExpanded: _isOverallExpanded,
-            animationController: _overallAnimationController,
-            showThrowTechnique: false,
-            useLandingSpotAbbreviations: false,
-            onToggleExpand: () {
-              setState(() {
-                _isOverallExpanded = !_isOverallExpanded;
-              });
-              if (_isOverallExpanded) {
-                _overallAnimationController.forward();
-              } else {
-                _overallAnimationController.reverse();
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          if (widget.shotShapeStats.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                'Shot Shape Breakdown',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: widget.overallStats.displayName,
+          backgroundColor: Colors.transparent,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            ThrowStatsCard(
+              title: widget.overallStats.displayName,
+              shotDetails: widget.overallShotDetails,
+              averageDistance: widget.overallStats.averageThrowDistance
+                  ?.round(),
+              isExpanded: _isOverallExpanded,
+              animationController: _overallAnimationController,
+              showThrowTechnique: false,
+              useLandingSpotAbbreviations: false,
+              onToggleExpand: () {
+                setState(() {
+                  _isOverallExpanded = !_isOverallExpanded;
+                });
+                if (_isOverallExpanded) {
+                  _overallAnimationController.forward();
+                } else {
+                  _overallAnimationController.reverse();
+                }
+              },
             ),
-            const SizedBox(height: 12),
-            ...widget.shotShapeStats.map(
-              (shape) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ThrowStatsCard(
-                  title: shape.displayName,
-                  shotDetails: widget.shotShapeDetails[shape.shapeName] ?? [],
-                  isExpanded: _shotShapeExpanded[shape.shapeName] ?? false,
-                  animationController: _shotShapeAnimationControllers[shape.shapeName]!,
-                  showThrowTechnique: false,
-                  useLandingSpotAbbreviations: false,
-                  onToggleExpand: () {
-                    setState(() {
-                      _shotShapeExpanded[shape.shapeName] =
-                          !(_shotShapeExpanded[shape.shapeName] ?? false);
-                    });
-                    final controller = _shotShapeAnimationControllers[shape.shapeName];
-                    if (controller != null) {
-                      if (_shotShapeExpanded[shape.shapeName] ?? false) {
-                        controller.forward();
-                      } else {
-                        controller.reverse();
+            const SizedBox(height: 16),
+            if (widget.shotShapeStats.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  'Shot Shape Breakdown',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...widget.shotShapeStats.map(
+                (shape) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ThrowStatsCard(
+                    title: shape.displayName,
+                    shotDetails: widget.shotShapeDetails[shape.shapeName] ?? [],
+                    isExpanded: _shotShapeExpanded[shape.shapeName] ?? false,
+                    animationController:
+                        _shotShapeAnimationControllers[shape.shapeName]!,
+                    showThrowTechnique: false,
+                    useLandingSpotAbbreviations: false,
+                    onToggleExpand: () {
+                      setState(() {
+                        _shotShapeExpanded[shape.shapeName] =
+                            !(_shotShapeExpanded[shape.shapeName] ?? false);
+                      });
+                      final controller =
+                          _shotShapeAnimationControllers[shape.shapeName];
+                      if (controller != null) {
+                        if (_shotShapeExpanded[shape.shapeName] ?? false) {
+                          controller.forward();
+                        } else {
+                          controller.reverse();
+                        }
                       }
-                    }
-                  },
+                    },
+                  ),
                 ),
               ),
-            ),
-          ] else
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-              ),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.insights_outlined,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'No shot shape data available',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ] else
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.insights_outlined,
+                        size: 48,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        'No shot shape data available',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

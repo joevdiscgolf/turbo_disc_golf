@@ -47,6 +47,7 @@ List<Widget> addRunSpacing(
 List<Widget> addDividers(
   List<Widget> children, {
   double horizontalPadding = 0,
+  double verticalPadding = 0,
   bool includeLastDivider = false,
   double height = 1,
   double thickness = 1,
@@ -77,7 +78,13 @@ List<Widget> addDividers(
                   endIndent: horizontalPadding,
                   indent: horizontalPadding,
                 )
-              : VerticalDivider(color: color, thickness: thickness, width: 1),
+              : VerticalDivider(
+                  color: color,
+                  thickness: thickness,
+                  width: 1,
+                  indent: verticalPadding,
+                  endIndent: verticalPadding,
+                ),
         ),
       );
     }

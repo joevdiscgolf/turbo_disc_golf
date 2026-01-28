@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/mistakes_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:flutter/services.dart';
 
 class MistakesDetailScreen extends StatelessWidget {
   static const String screenName = 'Mistakes Detail';
@@ -45,29 +46,32 @@ class MistakesDetailScreen extends StatelessWidget {
       return const Center(child: Text('No mistakes detected'));
     }
 
-    return Container(
-      color: SenseiColors.gray[50],
-      child: ListView(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 12,
-          bottom: 80,
-        ),
-        children: addRunSpacing(
-          [
-            // Mistakes breakdown card (bar chart only, not expandable)
-            MistakesBarChartCard(
-              totalMistakes: totalMistakes,
-              mistakeTypes: mistakeTypes,
-            ),
-            // View all mistakes card (expandable)
-            AllMistakesCard(mistakeDetails: mistakeDetails),
-            // What Could Have Been section (V3 design)
-            _buildWhatCouldHaveBeen(currentScore, mistakeTypes),
-          ],
-          runSpacing: 12,
-          axis: Axis.vertical,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Container(
+        color: SenseiColors.gray[50],
+        child: ListView(
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: 80,
+          ),
+          children: addRunSpacing(
+            [
+              // Mistakes breakdown card (bar chart only, not expandable)
+              MistakesBarChartCard(
+                totalMistakes: totalMistakes,
+                mistakeTypes: mistakeTypes,
+              ),
+              // View all mistakes card (expandable)
+              AllMistakesCard(mistakeDetails: mistakeDetails),
+              // What Could Have Been section (V3 design)
+              _buildWhatCouldHaveBeen(currentScore, mistakeTypes),
+            ],
+            runSpacing: 12,
+            axis: Axis.vertical,
+          ),
         ),
       ),
     );

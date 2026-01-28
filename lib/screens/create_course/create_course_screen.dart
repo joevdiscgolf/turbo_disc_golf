@@ -111,135 +111,140 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        final bool shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop();
-        }
-      },
-      child: BlocListener<CreateCourseCubit, CreateCourseState>(
-        listenWhen: (prev, curr) =>
-            prev.city != curr.city || prev.state != curr.state,
-        listener: (context, state) {
-          // Sync controllers when state changes from geocoding
-          if (_cityController.text != (state.city ?? '')) {
-            _cityController.text = state.city ?? '';
-          }
-          if (_stateController.text != (state.state ?? '')) {
-            _stateController.text = state.state ?? '';
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final bool shouldPop = await _onWillPop();
+          if (shouldPop && context.mounted) {
+            Navigator.of(context).pop();
           }
         },
-        child: Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          resizeToAvoidBottomInset: false,
-          appBar: GenericAppBar(
-            topViewPadding: widget.topViewPadding,
-            title: 'Create course',
-            rightWidget: IconButton(
-              icon: const Icon(
-                Icons.close,
-                size: PanelConstants.closeButtonIconSize,
+        child: BlocListener<CreateCourseCubit, CreateCourseState>(
+          listenWhen: (prev, curr) =>
+              prev.city != curr.city || prev.state != curr.state,
+          listener: (context, state) {
+            // Sync controllers when state changes from geocoding
+            if (_cityController.text != (state.city ?? '')) {
+              _cityController.text = state.city ?? '';
+            }
+            if (_stateController.text != (state.state ?? '')) {
+              _stateController.text = state.state ?? '';
+            }
+          },
+          child: Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            resizeToAvoidBottomInset: false,
+            appBar: GenericAppBar(
+              topViewPadding: widget.topViewPadding,
+              title: 'Create course',
+              rightWidget: IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  size: PanelConstants.closeButtonIconSize,
+                ),
+                onPressed: () async {
+                  _logger.track('Close Button Tapped');
+                  HapticFeedback.lightImpact();
+                  final bool shouldPop = await _onWillPop();
+                  if (shouldPop && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
               ),
-              onPressed: () async {
-                _logger.track('Close Button Tapped');
-                HapticFeedback.lightImpact();
-                final bool shouldPop = await _onWillPop();
-                if (shouldPop && context.mounted) {
-                  Navigator.of(context).pop();
-                }
+              hasBackButton: false,
+            ),
+            body: BlocBuilder<CreateCourseCubit, CreateCourseState>(
+              builder: (context, state) {
+                return GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: Column(
+                    children: [
+                      // Completeness indicator
+                      _buildCompletenessIndicator(state),
+                      // Scrollable content
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.only(top: 20, bottom: 48),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildCourseSection(context, state),
+                                  Divider(
+                                    height: 32,
+                                    color: SenseiColors.gray.shade100,
+                                    thickness: 1,
+                                  ),
+                                  LayoutInfoSection(
+                                    headerTitle: 'Default Layout',
+                                    layoutName: state.layoutName,
+                                    numberOfHoles: state.numberOfHoles,
+                                    isParsingImage: state.isParsingImage,
+                                    parseError: state.parseError,
+                                    onLayoutNameChanged:
+                                        _createCourseCubit.updateLayoutName,
+                                    onHoleCountChanged: (int newCount) =>
+                                        _handleHoleCountChange(state, newCount),
+                                    onParseImage: () async {
+                                      _logger.track(
+                                        'Parse Layout Image Button Tapped',
+                                      );
+                                      HapticFeedback.lightImpact();
+                                      FocusScope.of(context).unfocus();
+                                      await Future.delayed(
+                                        const Duration(milliseconds: 300),
+                                      );
+                                      if (context.mounted) {
+                                        _createCourseCubit.pickAndParseImage(
+                                          context,
+                                        );
+                                      }
+                                    },
+                                  ),
+                                  Divider(
+                                    height: 32,
+                                    color: SenseiColors.gray.shade100,
+                                    thickness: 1,
+                                  ),
+                                  HolesSection(
+                                    holes: state.holes,
+                                    onSnapshotBeforeApply:
+                                        _createCourseCubit.snapshotHolesForUndo,
+                                    onUndoQuickFill:
+                                        _createCourseCubit.undoQuickFill,
+                                    onApplyDefaults: _createCourseCubit
+                                        .applyDefaultsToAllHoles,
+                                    onHoleParChanged:
+                                        _createCourseCubit.updateHolePar,
+                                    onHoleFeetChanged:
+                                        _createCourseCubit.updateHoleFeet,
+                                    onHoleTypeChanged:
+                                        _createCourseCubit.updateHoleType,
+                                    onHoleShapeChanged:
+                                        _createCourseCubit.updateHoleShape,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Fixed bottom footer
+                      _buildFooter(context, state),
+                    ],
+                  ),
+                );
               },
             ),
-            hasBackButton: false,
-          ),
-          body: BlocBuilder<CreateCourseCubit, CreateCourseState>(
-            builder: (context, state) {
-              return GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: Column(
-                  children: [
-                    // Completeness indicator
-                    _buildCompletenessIndicator(state),
-                    // Scrollable content
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.only(top: 20, bottom: 48),
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildCourseSection(context, state),
-                                Divider(
-                                  height: 32,
-                                  color: SenseiColors.gray.shade100,
-                                  thickness: 1,
-                                ),
-                                LayoutInfoSection(
-                                  headerTitle: 'Default Layout',
-                                  layoutName: state.layoutName,
-                                  numberOfHoles: state.numberOfHoles,
-                                  isParsingImage: state.isParsingImage,
-                                  parseError: state.parseError,
-                                  onLayoutNameChanged:
-                                      _createCourseCubit.updateLayoutName,
-                                  onHoleCountChanged: (int newCount) =>
-                                      _handleHoleCountChange(state, newCount),
-                                  onParseImage: () async {
-                                    _logger.track(
-                                      'Parse Layout Image Button Tapped',
-                                    );
-                                    HapticFeedback.lightImpact();
-                                    FocusScope.of(context).unfocus();
-                                    await Future.delayed(
-                                      const Duration(milliseconds: 300),
-                                    );
-                                    if (context.mounted) {
-                                      _createCourseCubit.pickAndParseImage(
-                                        context,
-                                      );
-                                    }
-                                  },
-                                ),
-                                Divider(
-                                  height: 32,
-                                  color: SenseiColors.gray.shade100,
-                                  thickness: 1,
-                                ),
-                                HolesSection(
-                                  holes: state.holes,
-                                  onSnapshotBeforeApply:
-                                      _createCourseCubit.snapshotHolesForUndo,
-                                  onUndoQuickFill:
-                                      _createCourseCubit.undoQuickFill,
-                                  onApplyDefaults: _createCourseCubit
-                                      .applyDefaultsToAllHoles,
-                                  onHoleParChanged:
-                                      _createCourseCubit.updateHolePar,
-                                  onHoleFeetChanged:
-                                      _createCourseCubit.updateHoleFeet,
-                                  onHoleTypeChanged:
-                                      _createCourseCubit.updateHoleType,
-                                  onHoleShapeChanged:
-                                      _createCourseCubit.updateHoleShape,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Fixed bottom footer
-                    _buildFooter(context, state),
-                  ],
-                ),
-              );
-            },
           ),
         ),
       ),

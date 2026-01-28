@@ -24,9 +24,11 @@ class FormAnalysisRecord {
     this.cameraAngle,
     this.videoOrientation,
     this.videoAspectRatio,
+    this.returnedVideoAspectRatio,
     this.videoUrl,
     this.videoStoragePath,
     this.skeletonVideoUrl,
+    this.skeletonOnlyVideoUrl,
     this.videoSyncMetadata,
     this.detectedHandedness,
   });
@@ -79,6 +81,11 @@ class FormAnalysisRecord {
   @JsonKey(name: 'video_aspect_ratio')
   final double? videoAspectRatio;
 
+  /// Aspect ratio (width/height) of the returned processed videos
+  /// (skeleton overlay and skeleton-only share the same aspect ratio)
+  @JsonKey(name: 'returned_video_aspect_ratio')
+  final double? returnedVideoAspectRatio;
+
   /// URL of the user's form video (for video comparison feature)
   /// Network URL returned from pose analysis backend (signed URL, may expire)
   @JsonKey(name: 'video_url')
@@ -93,6 +100,10 @@ class FormAnalysisRecord {
   /// Used for video comparison when useSkeletonVideoInTimelinePlayer is enabled
   @JsonKey(name: 'skeleton_video_url')
   final String? skeletonVideoUrl;
+
+  /// URL of the skeleton-only video (skeleton on black background, no video)
+  @JsonKey(name: 'skeleton_only_video_url')
+  final String? skeletonOnlyVideoUrl;
 
   /// Video synchronization metadata for frame-perfect alignment with pro reference
   /// Contains playback speed multiplier and checkpoint sync points

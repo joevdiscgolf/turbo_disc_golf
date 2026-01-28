@@ -327,115 +327,118 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(
-          widget.topViewPadding + kDefaultAppBarHeight,
-        ),
-        child: Stack(
-          children: [
-            // Hero widget that morphs from banner - fades to transparent
-            Positioned.fill(
-              child: Hero(
-                tag: 'record_round_header',
-                flightShuttleBuilder:
-                    (
-                      BuildContext flightContext,
-                      Animation<double> animation,
-                      HeroFlightDirection flightDirection,
-                      BuildContext fromHeroContext,
-                      BuildContext toHeroContext,
-                    ) {
-                      // During the flight, fade out the banner content
-                      return FadeTransition(
-                        opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
-                          CurvedAnimation(
-                            parent: animation,
-                            curve: const Interval(
-                              0.0,
-                              0.7,
-                              curve: Curves.easeOut,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(
+            widget.topViewPadding + kDefaultAppBarHeight,
+          ),
+          child: Stack(
+            children: [
+              // Hero widget that morphs from banner - fades to transparent
+              Positioned.fill(
+                child: Hero(
+                  tag: 'record_round_header',
+                  flightShuttleBuilder:
+                      (
+                        BuildContext flightContext,
+                        Animation<double> animation,
+                        HeroFlightDirection flightDirection,
+                        BuildContext fromHeroContext,
+                        BuildContext toHeroContext,
+                      ) {
+                        // During the flight, fade out the banner content
+                        return FadeTransition(
+                          opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: const Interval(
+                                0.0,
+                                0.7,
+                                curve: Curves.easeOut,
+                              ),
                             ),
                           ),
-                        ),
-                        child:
-                            (flightDirection == HeroFlightDirection.push
-                                    ? fromHeroContext.widget
-                                    : toHeroContext.widget)
-                                as Hero,
-                      );
-                    },
-                child: const SizedBox(height: 56),
+                          child:
+                              (flightDirection == HeroFlightDirection.push
+                                      ? fromHeroContext.widget
+                                      : toHeroContext.widget)
+                                  as Hero,
+                        );
+                      },
+                  child: const SizedBox(height: 56),
+                ),
               ),
-            ),
-            // GenericAppBar on top
-            GenericAppBar(
-              topViewPadding: widget.topViewPadding,
-              title: 'Record round',
-              hasBackButton: false,
-              backgroundColor: Colors.transparent,
-              leftWidget: _clearAllButton(),
-              rightWidget: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  _logger.track(
-                    'Close Button Tapped',
-                    properties: {'has_unsaved_data': _hasUnsavedData()},
-                  );
-                  _handleClose();
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: true,
-      body: BlocConsumer<RecordRoundCubit, RecordRoundState>(
-        listener: (context, recordRoundstate) {
-          if (recordRoundstate is! RecordRoundActive) return;
-
-          final String? holeText = recordRoundstate
-              .holeDescriptions[recordRoundstate.currentHoleIndex];
-
-          // Only update if text is different to avoid loops and unnecessary updates
-          if (holeText != null && holeText != _textEditingController.text) {
-            // Temporarily remove listener to prevent triggering _onTextChanged
-            _textEditingController.removeListener(_onTextChanged);
-
-            _textEditingController.text = holeText;
-            _textEditingController.selection = TextSelection.fromPosition(
-              TextPosition(offset: holeText.length),
-            );
-
-            // Re-add listener
-            _textEditingController.addListener(_onTextChanged);
-          }
-        },
-        listenWhen: (previous, current) {
-          // Listen when hole descriptions change
-          if (previous is RecordRoundActive && current is RecordRoundActive) {
-            return previous.holeDescriptions != current.holeDescriptions;
-          }
-          return false;
-        },
-        builder: (context, recordRoundState) {
-          return Stack(
-            children: [
-              GestureDetector(
-                onTap: () => FocusScope.of(context).unfocus(),
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  padding: EdgeInsets.only(
-                    top: widget.topViewPadding + kDefaultAppBarHeight + 8,
-                  ),
-                  decoration: BoxDecoration(color: SenseiColors.gray[50]),
-                  child: _mainBody(recordRoundState),
+              // GenericAppBar on top
+              GenericAppBar(
+                topViewPadding: widget.topViewPadding,
+                title: 'Record round',
+                hasBackButton: false,
+                backgroundColor: Colors.transparent,
+                leftWidget: _clearAllButton(),
+                rightWidget: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    _logger.track(
+                      'Close Button Tapped',
+                      properties: {'has_unsaved_data': _hasUnsavedData()},
+                    );
+                    _handleClose();
+                  },
                 ),
               ),
             ],
-          );
-        },
+          ),
+        ),
+        extendBodyBehindAppBar: true,
+        resizeToAvoidBottomInset: true,
+        body: BlocConsumer<RecordRoundCubit, RecordRoundState>(
+          listener: (context, recordRoundstate) {
+            if (recordRoundstate is! RecordRoundActive) return;
+
+            final String? holeText = recordRoundstate
+                .holeDescriptions[recordRoundstate.currentHoleIndex];
+
+            // Only update if text is different to avoid loops and unnecessary updates
+            if (holeText != null && holeText != _textEditingController.text) {
+              // Temporarily remove listener to prevent triggering _onTextChanged
+              _textEditingController.removeListener(_onTextChanged);
+
+              _textEditingController.text = holeText;
+              _textEditingController.selection = TextSelection.fromPosition(
+                TextPosition(offset: holeText.length),
+              );
+
+              // Re-add listener
+              _textEditingController.addListener(_onTextChanged);
+            }
+          },
+          listenWhen: (previous, current) {
+            // Listen when hole descriptions change
+            if (previous is RecordRoundActive && current is RecordRoundActive) {
+              return previous.holeDescriptions != current.holeDescriptions;
+            }
+            return false;
+          },
+          builder: (context, recordRoundState) {
+            return Stack(
+              children: [
+                GestureDetector(
+                  onTap: () => FocusScope.of(context).unfocus(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: EdgeInsets.only(
+                      top: widget.topViewPadding + kDefaultAppBarHeight + 8,
+                    ),
+                    decoration: BoxDecoration(color: SenseiColors.gray[50]),
+                    child: _mainBody(recordRoundState),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -2115,58 +2118,61 @@ class _AnimatedPreviousButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      opacity: isFirstHole ? 0.0 : 1.0,
-      child: AnimatedContainer(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: AnimatedOpacity(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        width: targetWidth,
-        height: 48,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onPressed();
-            },
-            borderRadius: BorderRadius.circular(32),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(32),
-              ),
-              child: Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Text - visible when NOT last hole
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      opacity: isLastHole ? 0.0 : 1.0,
-                      child: Text(
-                        'Previous',
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+        opacity: isFirstHole ? 0.0 : 1.0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: targetWidth,
+          height: 48,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onPressed();
+              },
+              borderRadius: BorderRadius.circular(32),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Text - visible when NOT last hole
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        opacity: isLastHole ? 0.0 : 1.0,
+                        child: Text(
+                          'Previous',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    // Icon - visible when IS last hole
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      opacity: isLastHole ? 1.0 : 0.0,
-                      child: Icon(
-                        FlutterRemix.arrow_left_s_line,
-                        color: Colors.grey.shade700,
-                        size: 20,
+                      // Icon - visible when IS last hole
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        opacity: isLastHole ? 1.0 : 0.0,
+                        child: Icon(
+                          FlutterRemix.arrow_left_s_line,
+                          color: Colors.grey.shade700,
+                          size: 20,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

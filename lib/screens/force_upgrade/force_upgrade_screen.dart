@@ -28,11 +28,7 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     super.initState();
 
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
+      const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
     );
 
     _loadVersionInfo();
@@ -42,11 +38,7 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
   @override
   void dispose() {
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
+      const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
     );
     super.dispose();
   }
@@ -66,33 +58,39 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     final AppPhaseController controller = locator.get<AppPhaseController>();
     final AppVersionInfo? versionInfo = controller.appVersionInfo;
 
-    locator.get<LoggingService>().track('Screen Impression', properties: {
-      'screen_name': ForceUpgradeScreen.screenName,
-      'screen_class': 'ForceUpgradeScreen',
-      'current_version': _currentVersion ?? 'unknown',
-      'required_version': versionInfo?.minimumVersion ?? 'unknown',
-    });
+    locator.get<LoggingService>().track(
+      'Screen Impression',
+      properties: {
+        'screen_name': ForceUpgradeScreen.screenName,
+        'screen_class': 'ForceUpgradeScreen',
+        'current_version': _currentVersion ?? 'unknown',
+        'required_version': versionInfo?.minimumVersion ?? 'unknown',
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          const LandingBackground(),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const Spacer(flex: 2),
-                  _buildContent(context),
-                  const Spacer(flex: 3),
-                ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+      child: Scaffold(
+        body: Stack(
+          children: [
+            const LandingBackground(),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const Spacer(flex: 2),
+                    _buildContent(context),
+                    const Spacer(flex: 3),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -151,7 +149,8 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     final AppPhaseController controller = locator.get<AppPhaseController>();
     final AppVersionInfo? versionInfo = controller.appVersionInfo;
 
-    final String message = versionInfo?.upgradeMessage ??
+    final String message =
+        versionInfo?.upgradeMessage ??
         'A new version of ScoreSensei is available. Please update to continue.';
 
     return Text(
@@ -198,11 +197,14 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
       versionInfo?.playStoreUrl,
     );
 
-    locator.get<LoggingService>().track('Update Now Button Tapped', properties: {
-      'screen_name': ForceUpgradeScreen.screenName,
-      'platform': PlatformHelpers.isIOS ? 'iOS' : 'Android',
-      'store_url_configured': storeUrl != null && storeUrl.isNotEmpty,
-    });
+    locator.get<LoggingService>().track(
+      'Update Now Button Tapped',
+      properties: {
+        'screen_name': ForceUpgradeScreen.screenName,
+        'platform': PlatformHelpers.isIOS ? 'iOS' : 'Android',
+        'store_url_configured': storeUrl != null && storeUrl.isNotEmpty,
+      },
+    );
 
     if (storeUrl != null && storeUrl.isNotEmpty) {
       try {
