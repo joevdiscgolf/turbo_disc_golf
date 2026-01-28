@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/indicators/circular_stat_indicator.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:flutter/services.dart';
 
 enum HoleResultStatus { success, failure, noData }
 
@@ -45,53 +46,59 @@ class DrivingStatDetailScreen extends StatelessWidget {
         },
       );
     });
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: GenericAppBar(
-        topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: '$statName details',
-      ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularStatIndicator(
-                        label: 'C1 reg',
-                        percentage: percentage,
-                        color: color,
-                        size: 200,
-                        internalLabel: '$successCount / $totalHoles',
-                        internalLabelFontSize: 12,
-                      ),
-                      const SizedBox(width: 16),
-                      _DotsGrid(holeResults: holeResults),
-                    ],
-                  ),
-                  // const SizedBox(height: 16),
-                  // Text(
-                  //   '$successCount of $totalHoles holes hit $statName',
-                  //   style: Theme.of(context).textTheme.bodyLarge,
-                  // ),
-                ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: GenericAppBar(
+          topViewPadding: MediaQuery.of(context).viewPadding.top,
+          title: '$statName details',
+        ),
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 16,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularStatIndicator(
+                          label: 'C1 reg',
+                          percentage: percentage,
+                          color: color,
+                          size: 200,
+                          internalLabel: '$successCount / $totalHoles',
+                          internalLabelFontSize: 12,
+                        ),
+                        const SizedBox(width: 16),
+                        _DotsGrid(holeResults: holeResults),
+                      ],
+                    ),
+                    // const SizedBox(height: 16),
+                    // Text(
+                    //   '$successCount of $totalHoles holes hit $statName',
+                    //   style: Theme.of(context).textTheme.bodyLarge,
+                    // ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final HoleResult result = holeResults[index];
-                return _HoleResultTile(result: result);
-              }, childCount: holeResults.length),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final HoleResult result = holeResults[index];
+                  return _HoleResultTile(result: result);
+                }, childCount: holeResults.length),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

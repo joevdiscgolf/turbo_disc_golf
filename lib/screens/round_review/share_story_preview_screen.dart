@@ -102,29 +102,24 @@ class _ShareStoryPreviewScreenState extends State<ShareStoryPreviewScreen> {
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).viewPadding.top;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      extendBodyBehindAppBar: true,
-      appBar: GenericAppBar(
-        topViewPadding: topPadding,
-        title: '',
-        backgroundColor: Colors.transparent,
-      ),
-      body: Stack(
-        children: [
-          // Full-screen share card
-          RepaintBoundary(
-            key: _shareCardKey,
-            child: _buildShareCard(),
-          ),
-          // Share button overlay at bottom
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildBottomBar(),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        extendBodyBehindAppBar: true,
+        appBar: GenericAppBar(
+          topViewPadding: topPadding,
+          title: '',
+          backgroundColor: Colors.transparent,
+        ),
+        body: Stack(
+          children: [
+            // Full-screen share card
+            RepaintBoundary(key: _shareCardKey, child: _buildShareCard()),
+            // Share button overlay at bottom
+            Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomBar()),
+          ],
+        ),
       ),
     );
   }

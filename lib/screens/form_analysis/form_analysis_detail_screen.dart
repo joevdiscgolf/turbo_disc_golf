@@ -46,25 +46,33 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
   Widget build(BuildContext context) {
     final double topViewPadding = MediaQuery.of(context).padding.top;
 
-    return Container(
-      color: Colors.grey[50],
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: GenericAppBar(
-          topViewPadding: topViewPadding,
-          title: 'Form analysis',
-          backgroundColor: Colors.transparent,
-          hasBackButton: true,
-          rightWidget: _buildMenuButton(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarBrightness: Brightness.light,
         ),
-        body: HistoryAnalysisView(
-          analysis: widget.analysis,
-          onBack: () => Navigator.pop(context),
-          topPadding: 8,
-          videoUrl: widget.analysis.videoUrl,
-          throwType: _parseThrowTechnique(widget.analysis.throwType),
-          cameraAngle: widget.analysis.cameraAngle,
-          videoAspectRatio: widget.analysis.videoAspectRatio,
+        child: Container(
+          color: Colors.grey[50],
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: GenericAppBar(
+              topViewPadding: topViewPadding,
+              title: 'Form analysis',
+              backgroundColor: Colors.transparent,
+              hasBackButton: true,
+              rightWidget: _buildMenuButton(),
+            ),
+            body: HistoryAnalysisView(
+              analysis: widget.analysis,
+              onBack: () => Navigator.pop(context),
+              topPadding: 8,
+              videoUrl: widget.analysis.videoUrl,
+              throwType: _parseThrowTechnique(widget.analysis.throwType),
+              cameraAngle: widget.analysis.cameraAngle,
+              videoAspectRatio: widget.analysis.videoAspectRatio,
+            ),
+          ),
         ),
       ),
     );

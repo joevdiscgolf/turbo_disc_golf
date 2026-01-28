@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:flutter/services.dart';
 
 class TestAiSummaryScreen extends StatefulWidget {
   const TestAiSummaryScreen({super.key});
@@ -119,106 +120,111 @@ class _TestAiSummaryScreenState extends State<TestAiSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Test AI Summary Generator',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
-            // Round info card
-            if (_cachedRound != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Cached Round',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Course: ${_cachedRound!.courseName}'),
-                      Text('Holes: ${_cachedRound!.holes.length}'),
-                    ],
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // Generate button
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _generateAiSummary,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.psychology),
-              label: Text(_isLoading ? 'Generating...' : 'Generate AI Summary'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Error message
-            if (_errorMessage != null)
-              Card(
-                color: Colors.red.withValues(alpha: 0.2),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Unified AI Insights section
-            if (_aiInsights != null) ...[
-              const SizedBox(height: 16),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Scaffold(
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                'AI Insights (Analysis + Coaching)',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _analysis != null
-                      ? AIContentRenderer(
-                          aiContent: _aiInsights!,
-                          round: _cachedRound!,
-                          analysis: _analysis!,
-                        )
-                      : CustomMarkdownContent(data: _aiInsights!.content),
+                'Test AI Summary Generator',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // Round info card
+              if (_cachedRound != null)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cached Round',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Course: ${_cachedRound!.courseName}'),
+                        Text('Holes: ${_cachedRound!.holes.length}'),
+                      ],
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+
+              // Generate button
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : _generateAiSummary,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.psychology),
+                label: Text(
+                  _isLoading ? 'Generating...' : 'Generate AI Summary',
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Error message
+              if (_errorMessage != null)
+                Card(
+                  color: Colors.red.withValues(alpha: 0.2),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Unified AI Insights section
+              if (_aiInsights != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'AI Insights (Analysis + Coaching)',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _analysis != null
+                        ? AIContentRenderer(
+                            aiContent: _aiInsights!,
+                            round: _cachedRound!,
+                            analysis: _analysis!,
+                          )
+                        : CustomMarkdownContent(data: _aiInsights!.content),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

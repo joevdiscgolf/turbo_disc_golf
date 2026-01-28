@@ -89,24 +89,32 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
-          builder: (context, state) {
-            return CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                CupertinoSliverRefreshControl(
-                  onRefresh: () => _historyCubit.refreshHistory(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Stack(
+        children: [
+          BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
+            builder: (context, state) {
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarBrightness: Brightness.light,
                 ),
-                _buildContent(state),
-              ],
-            );
-          },
-        ),
-        _buildAddButton(),
-      ],
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    CupertinoSliverRefreshControl(
+                      onRefresh: () => _historyCubit.refreshHistory(),
+                    ),
+                    _buildContent(state),
+                  ],
+                ),
+              );
+            },
+          ),
+          _buildAddButton(),
+        ],
+      ),
     );
   }
 
@@ -132,50 +140,49 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
       return SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              // Show list items
-              if (index < state.analyses.length) {
-                final analysis = state.analyses[index];
-                return Column(
-                  children: [
-                    FormAnalysisCard(
-                      key: ValueKey(analysis.id),
-                      analysis: analysis,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        _logger.track('Form Analysis Card Tapped', properties: {
+          delegate: SliverChildBuilderDelegate((context, index) {
+            // Show list items
+            if (index < state.analyses.length) {
+              final analysis = state.analyses[index];
+              return Column(
+                children: [
+                  FormAnalysisCard(
+                    key: ValueKey(analysis.id),
+                    analysis: analysis,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _logger.track(
+                        'Form Analysis Card Tapped',
+                        properties: {
                           'analysis_id': analysis.id,
                           'item_index': index,
-                        });
-                        Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (context) => BlocProvider.value(
-                              value: _historyCubit,
-                              child: FormAnalysisDetailScreen(analysis: analysis),
-                            ),
+                        },
+                      );
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => BlocProvider.value(
+                            value: _historyCubit,
+                            child: FormAnalysisDetailScreen(analysis: analysis),
                           ),
-                        );
-                      },
-                    ),
-                    if (index < state.analyses.length - 1)
-                      const SizedBox(height: 8),
-                  ],
-                );
-              }
-              // Show loading indicator at bottom when loading more
-              else if (state.isLoadingMore) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-            childCount:
-                state.analyses.length + (state.isLoadingMore ? 1 : 0),
-          ),
+                        ),
+                      );
+                    },
+                  ),
+                  if (index < state.analyses.length - 1)
+                    const SizedBox(height: 8),
+                ],
+              );
+            }
+            // Show loading indicator at bottom when loading more
+            else if (state.isLoadingMore) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return const SizedBox.shrink();
+          }, childCount: state.analyses.length + (state.isLoadingMore ? 1 : 0)),
         ),
       );
     } else {
@@ -232,7 +239,8 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
 
         // When bottom nav bar is present, body ends at nav bar - just need 20px margin
         // When no nav bar, need to account for safe area
-        final double bottomMargin = locator.get<FeatureFlagService>().useFormAnalysisTab
+        final double bottomMargin =
+            locator.get<FeatureFlagService>().useFormAnalysisTab
             ? 20
             : (bottomViewPadding + 20);
 

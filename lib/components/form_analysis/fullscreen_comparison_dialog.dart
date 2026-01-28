@@ -1,0 +1,338 @@
+import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/form_analysis/form_analysis_image.dart';
+import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/models/video_orientation.dart';
+import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
+
+/// Fullscreen dialog for comparing user form to pro reference with PageView.
+class FullscreenComparisonDialog extends StatefulWidget {
+  const FullscreenComparisonDialog({
+    super.key,
+    required this.checkpoints,
+    required this.throwType,
+    required this.proRefLoader,
+    required this.initialIndex,
+    required this.showSkeletonOnly,
+    required this.onToggleMode,
+    required this.onIndexChanged,
+    required this.cameraAngle,
+    this.videoOrientation,
+    this.detectedHandedness,
+  });
+
+  final List<CheckpointRecord> checkpoints;
+  final String throwType;
+  final ProReferenceLoader proRefLoader;
+  final int initialIndex;
+  final Handedness? detectedHandedness;
+  final bool showSkeletonOnly;
+  final ValueChanged<bool> onToggleMode;
+  final ValueChanged<int> onIndexChanged;
+  final CameraAngle cameraAngle;
+  final VideoOrientation? videoOrientation;
+
+  @override
+  State<FullscreenComparisonDialog> createState() =>
+      _FullscreenComparisonDialogState();
+}
+
+class _FullscreenComparisonDialogState
+    extends State<FullscreenComparisonDialog> {
+  late PageController _pageController;
+  late int _currentIndex;
+  late bool _showSkeletonOnly;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _showSkeletonOnly = widget.showSkeletonOnly;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _goToPrevious() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _goToNext() {
+    if (_currentIndex < widget.checkpoints.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final CheckpointRecord currentCheckpoint =
+        widget.checkpoints[_currentIndex];
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          currentCheckpoint.checkpointName,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        centerTitle: true,
+        actions: [_buildToggleButton()],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: widget.checkpoints.length,
+              onPageChanged: (index) {
+                setState(() => _currentIndex = index);
+                widget.onIndexChanged(index);
+              },
+              itemBuilder: (context, index) {
+                return _buildCheckpointPage(widget.checkpoints[index]);
+              },
+            ),
+            if (_currentIndex > 0)
+              _buildNavigationArrow(isLeft: true, onTap: _goToPrevious),
+            if (_currentIndex < widget.checkpoints.length - 1)
+              _buildNavigationArrow(isLeft: false, onTap: _goToNext),
+            if (widget.checkpoints.length > 1)
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: _buildPageIndicator(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleButton() {
+    return Container(
+      margin: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: _showSkeletonOnly
+                ? () {
+                    setState(() => _showSkeletonOnly = false);
+                    widget.onToggleMode(false);
+                  }
+                : null,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: !_showSkeletonOnly
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: !_showSkeletonOnly ? 1.0 : 0.5,
+                  child: const Text('📹', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: !_showSkeletonOnly
+                ? () {
+                    setState(() => _showSkeletonOnly = true);
+                    widget.onToggleMode(true);
+                  }
+                : null,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _showSkeletonOnly
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: _showSkeletonOnly ? 1.0 : 0.5,
+                  child: const Text('💀', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationArrow({
+    required bool isLeft,
+    required VoidCallback onTap,
+  }) {
+    return Positioned(
+      left: isLeft ? 8 : null,
+      right: isLeft ? null : 8,
+      top: 0,
+      bottom: 0,
+      child: Center(
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isLeft ? Icons.chevron_left : Icons.chevron_right,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        widget.checkpoints.length,
+        (index) => Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: index == _currentIndex
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckpointPage(CheckpointRecord checkpoint) {
+    final String? userImageUrl = _showSkeletonOnly
+        ? checkpoint.userSkeletonUrl
+        : checkpoint.userImageUrl;
+
+    final bool isPortrait =
+        widget.videoOrientation == VideoOrientation.portrait;
+
+    if (isPortrait) {
+      return Row(
+        children: [
+          Expanded(child: _buildFullscreenPanel('You', userImageUrl)),
+          const SizedBox(width: 4),
+          Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(child: _buildFullscreenPanel('You', userImageUrl)),
+        Container(height: 2, color: Colors.grey[800]),
+        Expanded(child: _buildFullscreenProReferencePanel(checkpoint)),
+      ],
+    );
+  }
+
+  Widget _buildFullscreenProReferencePanel(CheckpointRecord checkpoint) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Pro reference',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[400],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Expanded(
+          child: InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: ProReferenceImageContent(
+              checkpoint: checkpoint,
+              throwType: widget.throwType,
+              cameraAngle: widget.cameraAngle,
+              showSkeletonOnly: _showSkeletonOnly,
+              proRefLoader: widget.proRefLoader,
+              detectedHandedness: widget.detectedHandedness,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFullscreenPanel(String label, String? imageUrl) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[400],
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Expanded(
+          child: InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 4.0,
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? FormAnalysisImage(imageUrl: imageUrl)
+                : const Center(
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+}

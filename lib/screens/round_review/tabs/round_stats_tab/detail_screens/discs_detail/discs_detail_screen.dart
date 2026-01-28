@@ -63,55 +63,58 @@ class DiscsDetailScreen extends StatelessWidget {
     final topDiscs = sortedDiscs.take(3).toList();
     final otherDiscs = sortedDiscs.skip(3).toList();
 
-    return ListView(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
-      children: addRunSpacing(
-        [
-          // Hero section - Top performing discs
-          if (topDiscs.isNotEmpty)
-            _buildTopPerformingDiscsSection(
-              context,
-              topDiscs,
-              discBirdieRates,
-              discAverageScores,
-              discThrowCounts,
-              discC1InRegPercentages,
-              discPerformances,
-            ),
-
-          // All discs section
-          if (otherDiscs.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 4),
-              child: Text(
-                'All Discs',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: ListView(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 80),
+        children: addRunSpacing(
+          [
+            // Hero section - Top performing discs
+            if (topDiscs.isNotEmpty)
+              _buildTopPerformingDiscsSection(
+                context,
+                topDiscs,
+                discBirdieRates,
+                discAverageScores,
+                discThrowCounts,
+                discC1InRegPercentages,
+                discPerformances,
               ),
-            ),
-            ...otherDiscs.map((entry) {
-              final discName = entry.key;
-              final c1InRegPct = entry.value;
-              final avgScore = discAverageScores[discName] ?? 0.0;
-              final throwCount = discThrowCounts[discName] ?? 0;
-              final performance = discPerformances.firstWhere(
-                (p) => p.discName == discName,
-              );
 
-              return _CompactDiscCard(
-                discName: discName,
-                c1InRegPct: c1InRegPct,
-                avgScore: avgScore,
-                throwCount: throwCount,
-                performance: performance,
-                round: round,
-              );
-            }),
+            // All discs section
+            if (otherDiscs.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                child: Text(
+                  'All Discs',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ...otherDiscs.map((entry) {
+                final discName = entry.key;
+                final c1InRegPct = entry.value;
+                final avgScore = discAverageScores[discName] ?? 0.0;
+                final throwCount = discThrowCounts[discName] ?? 0;
+                final performance = discPerformances.firstWhere(
+                  (p) => p.discName == discName,
+                );
+
+                return _CompactDiscCard(
+                  discName: discName,
+                  c1InRegPct: c1InRegPct,
+                  avgScore: avgScore,
+                  throwCount: throwCount,
+                  performance: performance,
+                  round: round,
+                );
+              }),
+            ],
           ],
-        ],
-        runSpacing: 12,
-        axis: Axis.vertical,
+          runSpacing: 12,
+          axis: Axis.vertical,
+        ),
       ),
     );
   }

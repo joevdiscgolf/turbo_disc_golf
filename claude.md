@@ -139,7 +139,22 @@ Card(
 - Variables/Functions: camelCase (`currentRound`)
 - Private: underscore prefix (`_cubit`)
 - Constants: camelCase const (`const defaultPadding = 16.0`)
-- **UI Text/Headings**: Sentence case - capitalize first letter only (`'General tips'` not `'General Tips'`)
+
+### UI Text Formatting
+
+**CRITICAL: Always use sentence case for user-facing text**
+
+- **Headings/Titles on Cards/Screens**: Capitalize only the first letter of the first word
+  - ✅ `'Uncover key moments'`
+  - ✅ `'Spot your patterns'`
+  - ✅ `'Learn what works'`
+  - ✅ `'General tips'`
+  - ❌ `'Uncover Key Moments'`
+  - ❌ `'General Tips'`
+
+- **Exceptions**: Proper nouns and acronyms should still be capitalized
+  - ✅ `'Connect to Udisc'`
+  - ✅ `'View GPS data'`
 
 ### Variables
 
@@ -158,6 +173,18 @@ var userName = 'John Doe';
 **CRITICAL: Use PrimaryButton from `lib/components/buttons/primary_button.dart`**
 
 ### Patterns
+
+**Screen structure:**
+Always start new screens with `AnnotatedRegion<SystemUiOverlayStyle>` to set status bar brightness:
+```dart
+@override
+Widget build(BuildContext context) {
+  return AnnotatedRegion<SystemUiOverlayStyle>(
+    value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+    child: Scaffold(...),
+  );
+}
+```
 
 **Screen routing:**
 ```dart

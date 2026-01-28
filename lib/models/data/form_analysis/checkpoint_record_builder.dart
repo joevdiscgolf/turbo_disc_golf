@@ -1,4 +1,3 @@
-import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
@@ -24,17 +23,13 @@ class CheckpointRecordBuilder {
     required CheckpointPoseData checkpoint,
     required ImageUrlProvider imageUrlProvider,
     String? proPlayerIdOverride,
-    CameraAngle? cameraAngle,
   }) {
     final CheckpointPoseData cp = checkpoint;
 
     // Use backend tips; fall back to remote config / hardcoded defaults
     List<String> tips = cp.coachingTips;
-    if (tips.isEmpty && cameraAngle != null) {
-      tips = FormReferencePositions.getCoachingTips(
-        cp.checkpointId,
-        cameraAngle,
-      );
+    if (tips.isEmpty) {
+      tips = FormReferencePositions.getCoachingTips(cp.checkpointId);
     }
 
     return CheckpointRecord(

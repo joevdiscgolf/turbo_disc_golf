@@ -16,6 +16,7 @@ import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:flutter/services.dart';
 
 class StatsScreen extends StatefulWidget {
   static const String routeName = '/stats';
@@ -55,151 +56,158 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
-      builder: (context, roundHistoryState) {
-        if (roundHistoryState is RoundHistoryLoading) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (roundHistoryState is RoundHistoryError) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (roundHistoryState is! RoundHistoryLoaded) {
-          return const SizedBox();
-        } else {
-          final List<DGRound> allRounds = roundHistoryState.rounds;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
+        builder: (context, roundHistoryState) {
+          if (roundHistoryState is RoundHistoryLoading) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (roundHistoryState is RoundHistoryError) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (roundHistoryState is! RoundHistoryLoaded) {
+            return const SizedBox();
+          } else {
+            final List<DGRound> allRounds = roundHistoryState.rounds;
 
-          if (allRounds.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.analytics_outlined,
-                    size: 80,
-                    color: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No rounds available',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Play some rounds to see your stats!',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Get filtered rounds based on selection
-          final filteredRounds = _selectedRoundCount == -1
-              ? allRounds
-              : locator.get<RoundsService>().getLastXRounds(
-                  allRounds,
-                  _selectedRoundCount,
-                );
-
-          if (filteredRounds.isEmpty) {
-            return const Center(
-              child: Text('No rounds match the selected filter'),
-            );
-          }
-
-          // Create statistics service for filtered rounds
-          final statsService = MultiRoundStatisticsService(filteredRounds);
-
-          // Calculate all stats
-          final scoringStats = statsService.getScoringStats();
-          final puttingStats = statsService.getPuttingStats();
-          final coreStats = statsService.getCoreStats();
-          final teeShotBirdieRates = statsService.getTeeShotBirdieRates();
-          final discPerformances = statsService.getDiscPerformanceSummaries();
-          final mistakeTypes = statsService.getMistakeTypes();
-          final avgBirdiePuttDistance = statsService
-              .getAverageBirdiePuttDistance();
-          final avgScoreRelativeToPar = statsService
-              .getAverageScoreRelativeToPar();
-          final backhandVsForehand = statsService
-              .compareBackhandVsForehandTeeShots();
-          final scrambleStats = statsService.getScrambleStats();
-
-          return Column(
-            children: [
-              // Filter dropdown
-              _buildFilterBar(context, allRounds.length),
-
-              // Stats content
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.only(top: 16, bottom: 80),
-                  children: addRunSpacing(
-                    [
-                      // Overview card
-                      _buildOverviewCard(
+            if (allRounds.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.analytics_outlined,
+                      size: 80,
+                      color: Theme.of(
                         context,
-                        filteredRounds.length,
-                        statsService.getTotalHolesPlayed(),
-                        avgScoreRelativeToPar,
-                      ),
+                      ).primaryColor.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No rounds available',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Play some rounds to see your stats!',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              );
+            }
 
-                      // Scoring stats
-                      _buildScoringStatsCard(context, scoringStats),
+            // Get filtered rounds based on selection
+            final filteredRounds = _selectedRoundCount == -1
+                ? allRounds
+                : locator.get<RoundsService>().getLastXRounds(
+                    allRounds,
+                    _selectedRoundCount,
+                  );
 
-                      // Core performance
-                      CoreStatsCard(coreStats: coreStats),
+            if (filteredRounds.isEmpty) {
+              return const Center(
+                child: Text('No rounds match the selected filter'),
+              );
+            }
 
-                      // Tee shot birdie rates
-                      if (teeShotBirdieRates.isNotEmpty)
-                        ShotTypeBirdieRatesCard(
-                          teeShotBirdieRateStats: teeShotBirdieRates,
-                          teeShotBirdieDetails:
-                              const {}, // Not showing details in multi-round view
-                        ),
+            // Create statistics service for filtered rounds
+            final statsService = MultiRoundStatisticsService(filteredRounds);
 
-                      // Backhand vs Forehand comparison
-                      if (backhandVsForehand.technique1Count > 0 ||
-                          backhandVsForehand.technique2Count > 0)
-                        _buildTechniqueComparisonCard(
+            // Calculate all stats
+            final scoringStats = statsService.getScoringStats();
+            final puttingStats = statsService.getPuttingStats();
+            final coreStats = statsService.getCoreStats();
+            final teeShotBirdieRates = statsService.getTeeShotBirdieRates();
+            final discPerformances = statsService.getDiscPerformanceSummaries();
+            final mistakeTypes = statsService.getMistakeTypes();
+            final avgBirdiePuttDistance = statsService
+                .getAverageBirdiePuttDistance();
+            final avgScoreRelativeToPar = statsService
+                .getAverageScoreRelativeToPar();
+            final backhandVsForehand = statsService
+                .compareBackhandVsForehandTeeShots();
+            final scrambleStats = statsService.getScrambleStats();
+
+            return Column(
+              children: [
+                // Filter dropdown
+                _buildFilterBar(context, allRounds.length),
+
+                // Stats content
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.only(top: 16, bottom: 80),
+                    children: addRunSpacing(
+                      [
+                        // Overview card
+                        _buildOverviewCard(
                           context,
-                          backhandVsForehand,
+                          filteredRounds.length,
+                          statsService.getTotalHolesPlayed(),
+                          avgScoreRelativeToPar,
                         ),
 
-                      // Putting summary
-                      if (puttingStats.totalAttempts > 0)
-                        PuttingSummaryCards(puttingSummary: puttingStats),
+                        // Scoring stats
+                        _buildScoringStatsCard(context, scoringStats),
 
-                      // Putting distance stats
-                      if (puttingStats.totalAttempts > 0)
-                        PuttingDistanceCard(
-                          avgMakeDistance: puttingStats.avgMakeDistance,
-                          avgAttemptDistance: puttingStats.avgAttemptDistance,
-                          avgBirdiePuttDistance: avgBirdiePuttDistance,
-                          totalMadeDistance: puttingStats.totalMadeDistance,
-                        ),
+                        // Core performance
+                        CoreStatsCard(coreStats: coreStats),
 
-                      // Scramble stats
-                      if (scrambleStats.scrambleOpportunities > 0)
-                        _buildScrambleStatsCard(context, scrambleStats),
+                        // Tee shot birdie rates
+                        if (teeShotBirdieRates.isNotEmpty)
+                          ShotTypeBirdieRatesCard(
+                            teeShotBirdieRateStats: teeShotBirdieRates,
+                            teeShotBirdieDetails:
+                                const {}, // Not showing details in multi-round view
+                          ),
 
-                      // Disc performance
-                      if (discPerformances.isNotEmpty)
-                        DiscPerformanceCard(discPerformances: discPerformances),
+                        // Backhand vs Forehand comparison
+                        if (backhandVsForehand.technique1Count > 0 ||
+                            backhandVsForehand.technique2Count > 0)
+                          _buildTechniqueComparisonCard(
+                            context,
+                            backhandVsForehand,
+                          ),
 
-                      // Mistakes breakdown
-                      if (mistakeTypes.isNotEmpty)
-                        MistakeReasonBreakdownCard(mistakeTypes: mistakeTypes),
-                    ],
-                    runSpacing: 12,
-                    axis: Axis.vertical,
+                        // Putting summary
+                        if (puttingStats.totalAttempts > 0)
+                          PuttingSummaryCards(puttingSummary: puttingStats),
+
+                        // Putting distance stats
+                        if (puttingStats.totalAttempts > 0)
+                          PuttingDistanceCard(
+                            avgMakeDistance: puttingStats.avgMakeDistance,
+                            avgAttemptDistance: puttingStats.avgAttemptDistance,
+                            avgBirdiePuttDistance: avgBirdiePuttDistance,
+                            totalMadeDistance: puttingStats.totalMadeDistance,
+                          ),
+
+                        // Scramble stats
+                        if (scrambleStats.scrambleOpportunities > 0)
+                          _buildScrambleStatsCard(context, scrambleStats),
+
+                        // Disc performance
+                        if (discPerformances.isNotEmpty)
+                          DiscPerformanceCard(
+                            discPerformances: discPerformances,
+                          ),
+
+                        // Mistakes breakdown
+                        if (mistakeTypes.isNotEmpty)
+                          MistakeReasonBreakdownCard(
+                            mistakeTypes: mistakeTypes,
+                          ),
+                      ],
+                      runSpacing: 12,
+                      axis: Axis.vertical,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        }
-      },
+              ],
+            );
+          }
+        },
+      ),
     );
   }
 

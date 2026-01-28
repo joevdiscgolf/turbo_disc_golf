@@ -98,7 +98,7 @@ enum FeatureFlag {
   // ===== Story Feature =====
   showStoryLoadingAnimation('show_story_loading_animation', false),
   showElitePotentialCard('show_elite_potential_card', true),
-  useStoryPosterShareCard('use_story_poster_share_card', true),
+  useStoryPosterShareCard('use_story_poster_share_card', false),
   showWhatCouldHaveBeenCard('show_what_could_have_been_card', true),
   showWhatCouldHaveBeenEncouragement(
     'show_what_could_have_been_encouragement',

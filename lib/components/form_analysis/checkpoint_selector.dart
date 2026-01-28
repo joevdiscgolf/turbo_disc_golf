@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// A single item in the checkpoint selector.
 class CheckpointSelectorItem {
@@ -42,31 +44,39 @@ class CheckpointSelector extends StatelessWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      height: 56,
+      margin: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+
+      height: 44,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        boxShadow: defaultCardBoxShadow(),
       ),
-      child: Row(
-        children: List.generate(items.length, (index) {
-          final String label = formatLabel != null
-              ? formatLabel!(items[index].label)
-              : items[index].label;
-          return Expanded(
-            child: _buildTabSegment(
-              label,
-              index == selectedIndex,
-              () {
-                HapticFeedback.selectionClick();
-                onChanged(index);
-              },
-              isFirst: index == 0,
-              isLast: index == items.length - 1,
-            ),
-          );
-        }),
+      child: IntrinsicHeight(
+        child: Row(
+          children: addDividers(
+            List.generate(items.length, (index) {
+              final String label = formatLabel != null
+                  ? formatLabel!(items[index].label)
+                  : items[index].label;
+              return Expanded(
+                child: _buildTabSegment(
+                  label,
+                  index == selectedIndex,
+                  () {
+                    HapticFeedback.selectionClick();
+                    onChanged(index);
+                  },
+                  isFirst: index == 0,
+                  isLast: index == items.length - 1,
+                ),
+              );
+            }),
+            thickness: 1,
+            dividerColor: SenseiColors.gray[50],
+            axis: Axis.vertical,
+          ),
+        ),
       ),
     );
   }

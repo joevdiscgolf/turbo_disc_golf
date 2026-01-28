@@ -48,61 +48,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5),
-            Color(0xFFECECEE),
-            Color(0xFFE8F4E8),
-            Color(0xFFEAE8F0),
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEEE8F5),
+              Color(0xFFECECEE),
+              Color(0xFFE8F4E8),
+              Color(0xFFEAE8F0),
+            ],
+            stops: [0.0, 0.3, 0.7, 1.0],
+          ),
         ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: GenericAppBar(
-          topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: 'Settings',
-        ),
-        body: BlocBuilder<UserDataCubit, UserDataState>(
-          builder: (context, userDataState) {
-            final TurboUser? currentUser = userDataState is UserDataLoaded
-                ? userDataState.user
-                : null;
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: GenericAppBar(
+            topViewPadding: MediaQuery.of(context).viewPadding.top,
+            title: 'Settings',
+          ),
+          body: BlocBuilder<UserDataCubit, UserDataState>(
+            builder: (context, userDataState) {
+              final TurboUser? currentUser = userDataState is UserDataLoaded
+                  ? userDataState.user
+                  : null;
 
-            return Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      if (currentUser != null) ...[
-                        _buildSectionHeader('You'),
-                        _buildProfileHeader(currentUser),
-                        const SizedBox(height: 16),
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        if (currentUser != null) ...[
+                          _buildSectionHeader('You'),
+                          _buildProfileHeader(currentUser),
+                          const SizedBox(height: 16),
+                        ],
+                        if (locator
+                            .get<FeatureFlagService>()
+                            .showDistancePreferences) ...[
+                          _buildSectionHeader('Preferences'),
+                          _buildSettingsCard([_buildUnitToggleRow()]),
+                          const SizedBox(height: 16),
+                        ],
+                        _buildSectionHeader('Account'),
+                        _buildSettingsCard([
+                          _buildLogoutRow(),
+                          _buildDeleteAccountRow(),
+                        ]),
                       ],
-                      if (locator
-                          .get<FeatureFlagService>()
-                          .showDistancePreferences) ...[
-                        _buildSectionHeader('Preferences'),
-                        _buildSettingsCard([_buildUnitToggleRow()]),
-                        const SizedBox(height: 16),
-                      ],
-                      _buildSectionHeader('Account'),
-                      _buildSettingsCard([
-                        _buildLogoutRow(),
-                        _buildDeleteAccountRow(),
-                      ]),
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -300,13 +303,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           // Stats rows with dividers
-          ...addDividers(
-            [
-              _buildRatingRow(rating),
-              _buildDivisionRow(division),
-            ],
-            height: 16,
-          ),
+          ...addDividers([
+            _buildRatingRow(rating),
+            _buildDivisionRow(division),
+          ], height: 16),
         ],
       ),
     );
@@ -328,16 +328,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: SenseiColors.gray[100],
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.star_outline, color: SenseiColors.gray[600], size: 20),
+            child: Icon(
+              Icons.star_outline,
+              color: SenseiColors.gray[600],
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'PDGA Rating',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
           Text(
@@ -345,7 +346,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: rating != null ? SenseiColors.gray[700] : SenseiColors.gray[400],
+              color: rating != null
+                  ? SenseiColors.gray[700]
+                  : SenseiColors.gray[400],
             ),
           ),
           const SizedBox(width: 4),
@@ -371,16 +374,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: SenseiColors.gray[100],
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.emoji_events_outlined, color: SenseiColors.gray[600], size: 20),
+            child: Icon(
+              Icons.emoji_events_outlined,
+              color: SenseiColors.gray[600],
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Division',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
           Text(
@@ -388,7 +392,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: division != null ? SenseiColors.gray[700] : SenseiColors.gray[400],
+              color: division != null
+                  ? SenseiColors.gray[700]
+                  : SenseiColors.gray[400],
             ),
           ),
           const SizedBox(width: 4),
@@ -401,7 +407,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _showDivisionPicker(String? currentDivision) async {
     _logger.track(
       'Modal Opened',
-      properties: {'modal_type': 'bottom_sheet', 'modal_name': 'Division Picker'},
+      properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': 'Division Picker',
+      },
     );
 
     HapticFeedback.lightImpact();
@@ -422,10 +431,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (result != null && mounted) {
-      _logger.track(
-        'Division Selected',
-        properties: {'division': result},
-      );
+      _logger.track('Division Selected', properties: {'division': result});
 
       final UserDataCubit cubit = BlocProvider.of<UserDataCubit>(context);
       await cubit.updateDivision(result);
@@ -455,10 +461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (result != null && mounted) {
-      _logger.track(
-        'Rating Updated',
-        properties: {'rating': result},
-      );
+      _logger.track('Rating Updated', properties: {'rating': result});
 
       final UserDataCubit cubit = BlocProvider.of<UserDataCubit>(context);
       await cubit.updateRating(result);
@@ -563,7 +566,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => CustomCupertinoActionSheet(
         title: 'Delete Account',
-        message: 'This will permanently delete your account and all data. This action cannot be undone.',
+        message:
+            'This will permanently delete your account and all data. This action cannot be undone.',
         destructiveActionLabel: 'Delete Account',
         onDestructiveActionPressed: () {
           _logger.track('Delete Account First Confirmation');
@@ -591,7 +595,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => CustomCupertinoActionSheet(
         title: 'Are you absolutely sure?',
-        message: 'Your account, rounds, and all data will be permanently deleted. This cannot be undone.',
+        message:
+            'Your account, rounds, and all data will be permanently deleted. This cannot be undone.',
         destructiveActionLabel: 'Yes, Delete Everything',
         onDestructiveActionPressed: () async {
           _logger.track('Delete Account Final Confirmed');
@@ -685,9 +690,9 @@ class _RatingInputPanelState extends State<_RatingInputPanel> {
             children: [
               Text(
                 'PDGA Rating',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
@@ -705,9 +710,7 @@ class _RatingInputPanelState extends State<_RatingInputPanel> {
             keyboardType: TextInputType.number,
             autofocus: true,
             maxLength: 4,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
               hintText: 'Enter your rating',
               counterText: '',
@@ -734,10 +737,7 @@ class _RatingInputPanelState extends State<_RatingInputPanel> {
               ),
               child: const Text(
                 'Save',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ),

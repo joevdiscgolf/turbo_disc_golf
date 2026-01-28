@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:turbo_disc_golf/firebase_options.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/app_phase_data.dart';
+import 'package:turbo_disc_golf/observers/status_bar_observer.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/screens/auth/landing_screen.dart';
 import 'package:turbo_disc_golf/screens/force_upgrade/force_upgrade_screen.dart';
@@ -165,13 +166,21 @@ class _MyAppState extends State<MyApp> {
             OverlayEntry(
               builder: (BuildContext context) => MultiBlocProvider(
                 providers: [
-                  BlocProvider<RoundHistoryCubit>.value(value: _roundHistoryCubit),
+                  BlocProvider<RoundHistoryCubit>.value(
+                    value: _roundHistoryCubit,
+                  ),
                   BlocProvider<RoundConfirmationCubit>.value(
                     value: _roundConfirmationCubit,
                   ),
-                  BlocProvider<RoundReviewCubit>.value(value: _roundReviewCubit),
-                  BlocProvider<RecordRoundCubit>.value(value: _recordRoundCubit),
-                  BlocProvider<CreateCourseCubit>.value(value: _createCourseCubit),
+                  BlocProvider<RoundReviewCubit>.value(
+                    value: _roundReviewCubit,
+                  ),
+                  BlocProvider<RecordRoundCubit>.value(
+                    value: _recordRoundCubit,
+                  ),
+                  BlocProvider<CreateCourseCubit>.value(
+                    value: _createCourseCubit,
+                  ),
                   BlocProvider<UserDataCubit>.value(value: _userDataCubit),
                 ],
                 child: ChangeNotifierProvider<RoundParser>.value(
@@ -195,6 +204,7 @@ class _MyAppState extends State<MyApp> {
 GoRouter createRouter(AppPhaseController controller) {
   return GoRouter(
     refreshListenable: controller,
+    observers: [StatusBarObserver()],
     redirect: (context, state) {
       switch (controller.phase) {
         case AppPhase.initial:

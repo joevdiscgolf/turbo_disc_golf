@@ -142,7 +142,6 @@ abstract class FBFormAnalysisDataLoader {
             return uploadedUrls[imageName];
           },
           proPlayerIdOverride: checkpoint.proPlayerId ?? 'paul_mcbeth',
-          cameraAngle: cameraAngle,
         );
 
         checkpointRecords.add(record);
@@ -221,8 +220,10 @@ abstract class FBFormAnalysisDataLoader {
         videoUrl: poseAnalysis.videoUrl,
         videoStoragePath: poseAnalysis.videoStoragePath,
         skeletonVideoUrl: poseAnalysis.skeletonVideoUrl,
+        skeletonOnlyVideoUrl: poseAnalysis.skeletonOnlyVideoUrl,
         videoOrientation: poseAnalysis.videoOrientation,
         videoAspectRatio: poseAnalysis.videoAspectRatio,
+        returnedVideoAspectRatio: poseAnalysis.returnedVideoAspectRatio,
         videoSyncMetadata: poseAnalysis.videoSyncMetadata,
         detectedHandedness: poseAnalysis.detectedHandedness,
       );

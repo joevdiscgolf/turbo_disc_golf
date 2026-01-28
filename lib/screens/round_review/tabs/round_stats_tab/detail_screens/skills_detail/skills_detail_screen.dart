@@ -7,6 +7,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/skills_analysis_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:flutter/services.dart';
 
 class SkillsDetailScreen extends StatelessWidget {
   static const String screenName = 'Skills Detail';
@@ -31,27 +32,30 @@ class SkillsDetailScreen extends StatelessWidget {
     final SkillsAnalysisService service = SkillsAnalysisService();
     final SkillsAnalysis analysis = service.getSkillsAnalysis(round);
 
-    return Container(
-      color: const Color(0xFFF8F9FA),
-      child: ListView(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: 80,
-        ),
-        children: addRunSpacing(
-          [
-            _OverallScoreCard(overallScore: analysis.overallScore),
-            _SkillsSpiderChartCard(analysis: analysis),
-            _SkillBreakdownCard(skill: analysis.backhandDriving),
-            _SkillBreakdownCard(skill: analysis.forehandDriving),
-            _SkillBreakdownCard(skill: analysis.approaching),
-            _SkillBreakdownCard(skill: analysis.putting),
-            _SkillBreakdownCard(skill: analysis.mentalFocus),
-          ],
-          runSpacing: 12,
-          axis: Axis.vertical,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: Container(
+        color: const Color(0xFFF8F9FA),
+        child: ListView(
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 80,
+          ),
+          children: addRunSpacing(
+            [
+              _OverallScoreCard(overallScore: analysis.overallScore),
+              _SkillsSpiderChartCard(analysis: analysis),
+              _SkillBreakdownCard(skill: analysis.backhandDriving),
+              _SkillBreakdownCard(skill: analysis.forehandDriving),
+              _SkillBreakdownCard(skill: analysis.approaching),
+              _SkillBreakdownCard(skill: analysis.putting),
+              _SkillBreakdownCard(skill: analysis.mentalFocus),
+            ],
+            runSpacing: 12,
+            axis: Axis.vertical,
+          ),
         ),
       ),
     );
