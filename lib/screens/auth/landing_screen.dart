@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -18,6 +19,8 @@ import 'package:turbo_disc_golf/screens/auth/components/shot_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/story_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
 import 'package:turbo_disc_golf/screens/auth/sign_up_screen.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class LandingScreen extends StatefulWidget {
   static const String routeName = '/landing';
@@ -130,11 +133,15 @@ class _LandingScreenState extends State<LandingScreen>
             const LandingBackground(),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  bottom: autoBottomPadding(context),
+                ),
                 child: Column(
                   children: [
                     _buildHeader(),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
                     Expanded(child: _buildCards()),
                     const SizedBox(height: 16),
                     _buildButtons(),
@@ -160,31 +167,37 @@ class _LandingScreenState extends State<LandingScreen>
       child: Column(
         children: [
           // Logo with glow effect
-          Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF4ECDC4).withValues(alpha: 0.3),
-                  blurRadius: 30,
-                  spreadRadius: 5,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4ECDC4).withValues(alpha: 0.3),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Image.asset(
-              'assets/icon/app_icon_clear_bg.png',
-              height: 80,
-              width: 80,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'ScoreSensei',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
+                child: Image.asset(
+                  'assets/icon/app_icon_clear_bg.png',
+                  height: 80,
+                  width: 80,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'ScoreSensei',
+                style: GoogleFonts.exo2(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: -0.5,
+                  color: SenseiColors.white,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           AnimatedBuilder(
@@ -296,7 +309,6 @@ class _LandingScreenState extends State<LandingScreen>
             },
           ),
         ),
-        const SizedBox(height: 16),
         // Page indicator
         SmoothPageIndicator(
           controller: _pageController,
@@ -335,7 +347,6 @@ class _LandingScreenState extends State<LandingScreen>
           GestureDetector(
             onTap: _navigateToLogin,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
               color: Colors.transparent,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

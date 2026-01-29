@@ -315,15 +315,18 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
 
         return Transform.translate(
           offset: Offset(0, floatOffset),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildFrame(0, _frame1Slide, _frame1Opacity, _showFlash1),
-              _buildArrow(),
-              _buildFrame(1, _frame2Slide, _frame2Opacity, _showFlash2),
-              _buildArrow(),
-              _buildFrame(2, _frame3Slide, _frame3Opacity, _showFlash3),
-            ],
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildFrame(0, _frame1Slide, _frame1Opacity, _showFlash1),
+                _buildArrow(),
+                _buildFrame(1, _frame2Slide, _frame2Opacity, _showFlash2),
+                _buildArrow(),
+                _buildFrame(2, _frame3Slide, _frame3Opacity, _showFlash3),
+              ],
+            ),
           ),
         );
       },

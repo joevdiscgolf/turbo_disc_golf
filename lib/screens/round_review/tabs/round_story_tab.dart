@@ -19,18 +19,18 @@ import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/story_
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/structured_story_renderer_v2.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab/v3/structured_story_renderer_v3.dart';
+import 'package:turbo_disc_golf/services/ai_generation_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/toast/toast_service.dart';
-import 'package:turbo_disc_golf/services/toast/toast_type.dart';
-import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/auth_helpers.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 /// AI narrative story tab that tells the story of your round
@@ -154,13 +154,13 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         // Update cubits so the round data persists across navigation
         try {
           // Update RoundReviewCubit for tab switching within this screen
-          final RoundReviewCubit? reviewCubit =
-              context.read<RoundReviewCubit?>();
+          final RoundReviewCubit? reviewCubit = context
+              .read<RoundReviewCubit?>();
           reviewCubit?.updateRoundData(updatedRound);
 
           // Update RoundHistoryCubit so story persists when navigating away and back
-          final RoundHistoryCubit? historyCubit =
-              context.read<RoundHistoryCubit?>();
+          final RoundHistoryCubit? historyCubit = context
+              .read<RoundHistoryCubit?>();
           historyCubit?.updateRound(updatedRound);
         } catch (e) {
           // Cubit might not be available in all contexts (e.g., standalone usage)
@@ -221,7 +221,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       return _buildScrollableContent(context);
     } else {
       // No story yet - show full-screen empty state
-      return _buildEmptyState(context);
+      return StoryEmptyState(onGenerateStory: _generateStory);
     }
   }
 
@@ -372,8 +372,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildMiniScorecardWithShare(AIContent story) {
-    final bool showShareButton =
-        locator.get<FeatureFlagService>().showStoryShareButton;
+    final bool showShareButton = locator
+        .get<FeatureFlagService>()
+        .showStoryShareButton;
 
     return MiniScorecardWithShare(
       holes: _currentRound.holes,
@@ -467,10 +468,6 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         ),
       ),
     );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return StoryEmptyState(onGenerateStory: _generateStory);
   }
 
   Widget _buildStoryContent(BuildContext context, RoundAnalysis analysis) {
