@@ -33,11 +33,13 @@ class CheckpointPlaybackState extends Equatable {
     required this.playbackSpeed,
     required this.pauseMode,
     required this.selectedCheckpointIndex,
+    required this.lastSelectedCheckpointIndex,
     required this.showSkeletonOnly,
     required this.videoInitStatus,
     required this.checkpoints,
     required this.showTapFeedback,
     required this.tapFeedbackIsPlay,
+    this.totalFrames,
     this.errorMessage,
   });
 
@@ -48,6 +50,7 @@ class CheckpointPlaybackState extends Equatable {
   factory CheckpointPlaybackState.initial({
     List<CheckpointRecord> checkpoints = const [],
     double initialSpeed = 0.25,
+    int? totalFrames,
   }) {
     return CheckpointPlaybackState(
       currentPosition: Duration.zero,
@@ -55,12 +58,14 @@ class CheckpointPlaybackState extends Equatable {
       isPlaying: false,
       playbackSpeed: initialSpeed,
       pauseMode: CheckpointPauseMode.timedPause,
-      selectedCheckpointIndex: 0,
+      selectedCheckpointIndex: null,
+      lastSelectedCheckpointIndex: null,
       showSkeletonOnly: false,
       videoInitStatus: VideoInitStatus.uninitialized,
       checkpoints: checkpoints,
       showTapFeedback: false,
       tapFeedbackIsPlay: true,
+      totalFrames: totalFrames,
     );
   }
 
@@ -73,12 +78,14 @@ class CheckpointPlaybackState extends Equatable {
   final bool isPlaying;
   final double playbackSpeed;
   final CheckpointPauseMode pauseMode;
-  final int selectedCheckpointIndex;
+  final int? selectedCheckpointIndex;
+  final int? lastSelectedCheckpointIndex;
   final bool showSkeletonOnly;
   final VideoInitStatus videoInitStatus;
   final List<CheckpointRecord> checkpoints;
   final bool showTapFeedback;
   final bool tapFeedbackIsPlay;
+  final int? totalFrames;
   final String? errorMessage;
 
   // ─────────────────────────────────────────────
@@ -114,11 +121,14 @@ class CheckpointPlaybackState extends Equatable {
     double? playbackSpeed,
     CheckpointPauseMode? pauseMode,
     int? selectedCheckpointIndex,
+    bool clearSelectedCheckpointIndex = false,
+    int? lastSelectedCheckpointIndex,
     bool? showSkeletonOnly,
     VideoInitStatus? videoInitStatus,
     List<CheckpointRecord>? checkpoints,
     bool? showTapFeedback,
     bool? tapFeedbackIsPlay,
+    int? totalFrames,
     String? errorMessage,
     bool clearErrorMessage = false,
   }) {
@@ -128,13 +138,17 @@ class CheckpointPlaybackState extends Equatable {
       isPlaying: isPlaying ?? this.isPlaying,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       pauseMode: pauseMode ?? this.pauseMode,
-      selectedCheckpointIndex:
-          selectedCheckpointIndex ?? this.selectedCheckpointIndex,
+      selectedCheckpointIndex: clearSelectedCheckpointIndex
+          ? null
+          : (selectedCheckpointIndex ?? this.selectedCheckpointIndex),
+      lastSelectedCheckpointIndex:
+          lastSelectedCheckpointIndex ?? this.lastSelectedCheckpointIndex,
       showSkeletonOnly: showSkeletonOnly ?? this.showSkeletonOnly,
       videoInitStatus: videoInitStatus ?? this.videoInitStatus,
       checkpoints: checkpoints ?? this.checkpoints,
       showTapFeedback: showTapFeedback ?? this.showTapFeedback,
       tapFeedbackIsPlay: tapFeedbackIsPlay ?? this.tapFeedbackIsPlay,
+      totalFrames: totalFrames ?? this.totalFrames,
       errorMessage:
           clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
     );
@@ -148,11 +162,13 @@ class CheckpointPlaybackState extends Equatable {
         playbackSpeed,
         pauseMode,
         selectedCheckpointIndex,
+        lastSelectedCheckpointIndex,
         showSkeletonOnly,
         videoInitStatus,
         checkpoints,
         showTapFeedback,
         tapFeedbackIsPlay,
+        totalFrames,
         errorMessage,
       ];
 }

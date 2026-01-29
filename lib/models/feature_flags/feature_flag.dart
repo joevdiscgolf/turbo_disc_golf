@@ -156,6 +156,9 @@ enum FeatureFlag {
     'cleanSportMinimal',
   ),
 
+  /// Shows empty state in pro reference when no checkpoint is selected
+  showProReferenceEmptyState('show_pro_reference_empty_state', true),
+
   /// Maximum video duration in seconds for form analysis uploads
   maxFormAnalysisVideoSeconds('max_form_analysis_video_seconds', 4),
 

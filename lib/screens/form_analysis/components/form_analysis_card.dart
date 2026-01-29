@@ -37,29 +37,29 @@ class FormAnalysisCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: defaultCardBoxShadow(),
         ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Content on the left
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(context, formattedDateTime),
-                      const Spacer(),
-                      _buildBottomRow(context, throwTypeDisplay),
-                    ],
-                  ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Content on the left
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context, formattedDateTime),
+                    const Spacer(),
+                    _buildBottomRow(context, throwTypeDisplay),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                // Thumbnail on the right (full height)
-                _buildThumbnail(context),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              // Thumbnail on the right (full height)
+              _buildThumbnail(context),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildHeader(BuildContext context, String? formattedDateTime) {
@@ -328,8 +328,8 @@ class _CameraAngleBadge extends StatelessWidget {
             height: 16,
             child: Image.asset(
               isSideView
-                  ? 'assets/icon/side_view_backhand_clear.png'
-                  : 'assets/icon/rear_view_backhand_clear.png',
+                  ? 'assets/form_icons/side_view_backhand_clear.png'
+                  : 'assets/form_icons/rear_view_backhand_clear.png',
               fit: BoxFit.contain,
             ),
           ),

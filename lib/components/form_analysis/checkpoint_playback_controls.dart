@@ -3,12 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pill_button_group.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Playback controls: play/pause button, pause mode pills, speed pills.
 ///
 /// Rebuilds infrequently — only on user interaction (play/pause, speed, mode).
 class CheckpointPlaybackControls extends StatelessWidget {
-  const CheckpointPlaybackControls({super.key});
+  const CheckpointPlaybackControls({super.key, this.hideBorder = false});
+
+  final bool hideBorder;
 
   static const Color _cleanAccentColor = Color(0xFF3B82F6);
   static const Color _cleanAccentColorDark = Color(0xFF2563EB);
@@ -49,6 +52,7 @@ class CheckpointPlaybackControls extends StatelessWidget {
               colors: [_cleanAccentColor, _cleanAccentColorDark],
             ),
             borderRadius: BorderRadius.circular(10),
+            boxShadow: defaultCardBoxShadow(),
           ),
           child: IconButton(
             onPressed: cubit.togglePlayPause,
@@ -68,6 +72,7 @@ class CheckpointPlaybackControls extends StatelessWidget {
           child: PillButtonGroup(
             height: controlHeight,
             isDark: false,
+            hideBorder: hideBorder,
             buttons: [
               PillButtonData(
                 label: '2s',
@@ -99,6 +104,7 @@ class CheckpointPlaybackControls extends StatelessWidget {
           child: PillButtonGroup(
             height: controlHeight,
             isDark: false,
+            hideBorder: hideBorder,
             buttons: [
               PillButtonData(
                 label: '0.25',

@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/components/form_analysis/checkpoint_timeline_scr
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_video_display.dart';
 import 'package:turbo_disc_golf/components/form_analysis/floating_view_toggle.dart';
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_comparison_dialog.dart';
+import 'package:turbo_disc_golf/components/form_analysis/pro_reference_empty_state.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/v2_measurements_card.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
@@ -15,12 +16,18 @@ import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
 import 'package:turbo_disc_golf/utils/checkpoint_helpers.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
+/// Testing constant: true = checkpoint selector above video, false = below controls
+const bool _showCheckpointSelectorAboveVideo = false;
 
 /// View for timeline player layout with checkpoint selector above video.
 ///
@@ -66,47 +73,50 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
 
   @override
   Widget build(BuildContext context) {
-    for (final CheckpointRecord checkpoint in widget.analysis.checkpoints) {
-      debugPrint(
-        'Checkpoint: ${checkpoint.checkpointName}, Detected frame: ${checkpoint.detectedFrameNumber}',
-      );
-    }
     final List<CheckpointRecord> checkpointsWithTimestamps =
         _getCheckpointsWithTimestamps();
 
     return BlocProvider<CheckpointPlaybackCubit>(
-      create: (_) =>
-          CheckpointPlaybackCubit(checkpoints: checkpointsWithTimestamps),
+      create: (_) => CheckpointPlaybackCubit(
+        checkpoints: checkpointsWithTimestamps,
+        totalFrames: widget.poseAnalysisResponse?.totalFrames,
+      ),
       child: BlocBuilder<CheckpointPlaybackCubit, CheckpointPlaybackState>(
         buildWhen: (prev, curr) =>
             prev.selectedCheckpointIndex != curr.selectedCheckpointIndex ||
+            prev.lastSelectedCheckpointIndex != curr.lastSelectedCheckpointIndex ||
             prev.showSkeletonOnly != curr.showSkeletonOnly,
         builder: (context, state) {
-          final int selectedIndex = state.selectedCheckpointIndex;
+          final int? selectedIndex = state.selectedCheckpointIndex;
+          final int? lastSelectedIndex = state.lastSelectedCheckpointIndex;
           final bool showSkeletonOnly = state.showSkeletonOnly;
           final CheckpointPlaybackCubit cubit =
               BlocProvider.of<CheckpointPlaybackCubit>(context);
           final CheckpointRecord checkpoint =
-              widget.analysis.checkpoints[selectedIndex];
+              widget.analysis.checkpoints[selectedIndex ?? lastSelectedIndex ?? 0];
 
           return Stack(
             children: [
               ListView(
                 padding: EdgeInsets.only(top: widget.topPadding, bottom: 120),
                 children: [
-                  CheckpointSelector(
-                    items: widget.analysis.checkpoints
-                        .map(
-                          (cp) => CheckpointSelectorItem(
-                            id: cp.checkpointId,
-                            label: cp.checkpointName,
-                          ),
-                        )
-                        .toList(),
-                    selectedIndex: selectedIndex,
-                    onChanged: (index) => cubit.jumpToCheckpoint(index),
-                    formatLabel: formatCheckpointChipLabel,
-                  ),
+                  if (_showCheckpointSelectorAboveVideo)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: CheckpointSelector(
+                        items: widget.analysis.checkpoints
+                            .map(
+                              (cp) => CheckpointSelectorItem(
+                                id: cp.checkpointId,
+                                label: cp.checkpointName,
+                              ),
+                            )
+                            .toList(),
+                        selectedIndex: selectedIndex ?? -1,
+                        onChanged: (index) => cubit.jumpToCheckpoint(index),
+                        formatLabel: formatCheckpointChipLabel,
+                      ),
+                    ),
                   CheckpointVideoDisplay(
                     videoUrl: widget.videoUrl!,
                     skeletonVideoUrl: widget.analysis.skeletonVideoUrl,
@@ -119,10 +129,11 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
                     proReferenceWidget: _buildProReferenceContent(
                       checkpoint,
                       selectedIndex,
+                      lastSelectedIndex,
                       showSkeletonOnly,
                     ),
                   ),
-                  _buildControlsAndDetailsSection(selectedIndex),
+                  _buildControlsAndDetailsSection(selectedIndex, cubit),
                   if (checkpoint.userV2Measurements != null)
                     V2MeasurementsCard(checkpoint: checkpoint),
                 ],
@@ -139,9 +150,12 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
     );
   }
 
-  Widget _buildControlsAndDetailsSection(int selectedIndex) {
+  Widget _buildControlsAndDetailsSection(
+    int? selectedIndex,
+    CheckpointPlaybackCubit cubit,
+  ) {
     final CheckpointRecord checkpoint =
-        widget.analysis.checkpoints[selectedIndex];
+        widget.analysis.checkpoints[selectedIndex ?? 0];
 
     return Container(
       padding: const EdgeInsets.only(bottom: 24),
@@ -164,11 +178,29 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: const CheckpointPlaybackControls(),
           ),
+          if (!_showCheckpointSelectorAboveVideo) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 0),
+              child: CheckpointSelector(
+                items: widget.analysis.checkpoints
+                    .map(
+                      (cp) => CheckpointSelectorItem(
+                        id: cp.checkpointId,
+                        label: cp.checkpointName,
+                      ),
+                    )
+                    .toList(),
+                selectedIndex: selectedIndex ?? -1,
+                onChanged: (index) => cubit.jumpToCheckpoint(index),
+                formatLabel: formatCheckpointChipLabel,
+              ),
+            ),
+          ],
           Divider(
             color: SenseiColors.gray.shade100,
             indent: 16,
             endIndent: 16,
-            height: 40,
+            height: _showCheckpointSelectorAboveVideo ? 40 : 32,
           ),
           CheckpointDetailsButton(
             checkpoint: checkpoint,
@@ -182,14 +214,30 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
   /// Pro reference content with badge and fullscreen tap.
   Widget _buildProReferenceContent(
     CheckpointRecord checkpoint,
-    int selectedIndex,
+    int? selectedIndex,
+    int? lastSelectedIndex,
     bool showSkeletonOnly,
   ) {
+    // Only show empty state if no checkpoint has ever been selected
+    final bool showEmptyState =
+        selectedIndex == null &&
+        lastSelectedIndex == null &&
+        locator.get<FeatureFlagService>().getBool(
+          FeatureFlag.showProReferenceEmptyState,
+        );
+
+    if (showEmptyState) {
+      return const ProReferenceEmptyState();
+    }
+
+    // Format the checkpoint name for the badge (remove " Position" suffix)
+    final String badgeText = formatCheckpointChipLabel(checkpoint.checkpointName);
+
     return GestureDetector(
       onTap: () => _showFullscreenComparison(
         context,
         checkpoint,
-        selectedIndex,
+        selectedIndex ?? lastSelectedIndex,
         showSkeletonOnly,
       ),
       child: Stack(
@@ -197,7 +245,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
           Positioned.fill(
             child: _buildProReferenceImageContent(
               checkpoint,
-              selectedIndex,
+              selectedIndex ?? lastSelectedIndex,
               showSkeletonOnly,
             ),
           ),
@@ -210,9 +258,9 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                'Pro reference',
-                style: TextStyle(
+              child: Text(
+                badgeText,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: Colors.black,
@@ -227,21 +275,15 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
 
   Widget _buildProReferenceImageContent(
     CheckpointRecord checkpoint,
-    int selectedIndex,
+    int? selectedIndex,
     bool showSkeletonOnly,
   ) {
     final CameraAngle cameraAngle =
         widget.analysis.cameraAngle ?? CameraAngle.side;
     final bool isSameCheckpoint =
-        _cachedCheckpointIndex == selectedIndex &&
+        _cachedCheckpointIndex == (selectedIndex ?? 0) &&
         _cachedShowSkeletonOnly == showSkeletonOnly &&
         _cachedCameraAngle == cameraAngle;
-
-    debugPrint(
-      'ProRef Cache Check: checkpoint=$selectedIndex, skeleton=$showSkeletonOnly, '
-      'camera=$cameraAngle, isSame=$isSameCheckpoint, '
-      'cached=(idx:$_cachedCheckpointIndex, skel:$_cachedShowSkeletonOnly, cam:$_cachedCameraAngle)',
-    );
 
     return ProReferenceImageContent(
       checkpoint: checkpoint,
@@ -255,12 +297,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
       cachedScale: _cachedScale,
       isCacheStale: !isSameCheckpoint,
       onImageLoaded: (image, horizontalOffset, scale) {
-        debugPrint(
-          'ProRef Cache Updated: checkpoint=$selectedIndex, skeleton=$showSkeletonOnly, '
-          'camera=$cameraAngle',
-        );
         _cachedProRefImage = image;
-        _cachedCheckpointIndex = selectedIndex;
+        _cachedCheckpointIndex = selectedIndex ?? 0;
         _cachedShowSkeletonOnly = showSkeletonOnly;
         _cachedCameraAngle = cameraAngle;
         _cachedHorizontalOffset = horizontalOffset;
@@ -314,7 +352,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
   void _showFullscreenComparison(
     BuildContext context,
     CheckpointRecord checkpoint,
-    int selectedIndex,
+    int? selectedIndex,
     bool showSkeletonOnly,
   ) {
     final CheckpointPlaybackCubit cubit =
@@ -328,7 +366,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView> {
         checkpoints: widget.analysis.checkpoints,
         throwType: widget.analysis.throwType,
         proRefLoader: _proRefLoader,
-        initialIndex: selectedIndex,
+        initialIndex: selectedIndex ?? 0,
         showSkeletonOnly: showSkeletonOnly,
         cameraAngle: widget.analysis.cameraAngle ?? CameraAngle.side,
         videoOrientation: widget.analysis.videoOrientation,
