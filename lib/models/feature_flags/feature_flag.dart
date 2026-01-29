@@ -159,6 +159,9 @@ enum FeatureFlag {
   /// Maximum video duration in seconds for form analysis uploads
   maxFormAnalysisVideoSeconds('max_form_analysis_video_seconds', 4),
 
+  /// Shows camera angle selection dialog after tapping import video
+  showCameraAngleSelectionDialog('show_camera_angle_selection_dialog', true),
+
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs
   adminUids('admin_uids', '9abVDwf3ZVM8unEzqMcWk95in2F3'),

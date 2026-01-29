@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_playback_controls.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
@@ -74,6 +75,13 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
       backgroundColor: Colors.black,
       body: BlocBuilder<CheckpointPlaybackCubit, CheckpointPlaybackState>(
         builder: (context, state) {
+          final bool showPlayOverlay =
+              !state.isPlaying && state.isAtStart && !state.showTapFeedback;
+          final bool showReplayOverlay =
+              !state.isPlaying && state.isAtEnd && !state.showTapFeedback;
+          final bool showPersistentOverlay =
+              showPlayOverlay || showReplayOverlay;
+
           return GestureDetector(
             onTap: cubit.onVideoTap,
             child: Stack(
@@ -82,7 +90,56 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                 Center(
                   child: AspectRatio(
                     aspectRatio: widget.videoController.value.aspectRatio,
-                    child: VideoPlayer(widget.videoController),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        VideoPlayer(widget.videoController),
+                        // Persistent play/replay overlay
+                        if (showPersistentOverlay)
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              showReplayOverlay ? Icons.replay : Icons.play_arrow,
+                              color: Colors.white,
+                              size: 36,
+                            ),
+                          ),
+                        // Tap feedback animation
+                        if (state.showTapFeedback)
+                          Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  state.tapFeedbackIsPlay
+                                      ? Icons.play_arrow
+                                      : Icons.pause,
+                                  color: Colors.white,
+                                  size: 36,
+                                ),
+                              )
+                              .animate()
+                              .scale(
+                                begin: const Offset(0.8, 0.8),
+                                end: const Offset(1.2, 1.2),
+                                duration: 200.ms,
+                                curve: Curves.easeOut,
+                              )
+                              .fadeOut(
+                                delay: 100.ms,
+                                duration: 200.ms,
+                                curve: Curves.easeOut,
+                              ),
+                      ],
+                    ),
                   ),
                 ),
                 // Close button at top right (above checkpoint selector)
@@ -92,7 +149,10 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                   child: SafeArea(
                     bottom: false,
                     child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).pop();
+                      },
                       child: Container(
                         width: 40,
                         height: 40,

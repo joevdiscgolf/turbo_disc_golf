@@ -326,6 +326,9 @@ class FeatureFlagService {
   int get maxFormAnalysisVideoSeconds =>
       getInt(FeatureFlag.maxFormAnalysisVideoSeconds);
 
+  bool get showCameraAngleSelectionDialog =>
+      getBool(FeatureFlag.showCameraAngleSelectionDialog);
+
   // ===== Admin/Force Upgrade =====
 
   List<String> get adminUids {

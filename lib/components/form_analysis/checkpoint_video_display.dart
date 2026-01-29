@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_video_dialog.dart';
@@ -351,7 +352,10 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
               bottom: 8,
               right: 8,
               child: GestureDetector(
-                onTap: _showFullscreenVideo,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showFullscreenVideo();
+                },
                 child: Container(
                   width: 32,
                   height: 32,
