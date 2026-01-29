@@ -3,13 +3,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Timeline scrubber with checkpoint markers for form analysis video.
 ///
 /// This is the ONLY widget that rebuilds at ~30fps (tracking position).
 /// All other widgets in the player tree rebuild only on user interaction.
 class CheckpointTimelineScrubber extends StatelessWidget {
-  const CheckpointTimelineScrubber({super.key});
+  const CheckpointTimelineScrubber({
+    super.key,
+    this.useWhiteMarkers = false,
+    this.height = 48,
+  });
+
+  final bool useWhiteMarkers;
+  final double height;
 
   // Clean Sport Minimal colors
   static const Color _cleanTrackInactive = Color(0xFFE2E8F0);
@@ -33,13 +41,12 @@ class CheckpointTimelineScrubber extends StatelessWidget {
 
   Widget _buildTimeline(BuildContext context, CheckpointPlaybackState state) {
     const double thumbRadius = 8;
-    const double touchTargetHeight = 48;
 
     final CheckpointPlaybackCubit cubit =
         BlocProvider.of<CheckpointPlaybackCubit>(context);
 
     return SizedBox(
-      height: touchTargetHeight,
+      height: height,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double trackWidth = constraints.maxWidth - (thumbRadius * 2);
@@ -61,7 +68,7 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                 cubit.seek(tapPosition.clamp(0.0, 1.0));
               },
               child: SizedBox(
-                height: touchTargetHeight,
+                height: height,
                 child: Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
@@ -103,6 +110,7 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                           cp,
                           trackWidth: trackWidth,
                           videoDurationMs: state.videoDuration.inMilliseconds,
+                          useWhiteMarkers: useWhiteMarkers,
                         );
                       }),
                     // Thumb with gradient
@@ -145,6 +153,7 @@ class CheckpointTimelineScrubber extends StatelessWidget {
     CheckpointRecord cp, {
     required double trackWidth,
     required int videoDurationMs,
+    required bool useWhiteMarkers,
   }) {
     final double videoDurationSecs = videoDurationMs / 1000.0;
     final double position = videoDurationSecs > 0
@@ -176,18 +185,22 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                 width: dotSize,
                 height: dotSize,
                 decoration: BoxDecoration(
-                  color: _cleanTextColor.withValues(alpha: 0.4),
+                  color: useWhiteMarkers
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : SenseiColors.gray[400]!,
                   shape: BoxShape.circle,
                 ),
               ),
               Positioned(
-                top: 28 + (dotSize / 2) + 4,
+                top: 20 + (dotSize / 2) + 8,
                 child: Text(
                   label,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: _cleanTextColor.withValues(alpha: 0.5),
+                    color: useWhiteMarkers
+                        ? Colors.white.withValues(alpha: 0.8)
+                        : _cleanTextColor.withValues(alpha: 0.5),
                   ),
                   textAlign: TextAlign.center,
                 ),

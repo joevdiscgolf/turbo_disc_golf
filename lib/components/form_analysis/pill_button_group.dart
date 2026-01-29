@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Data class for a single pill button in a pill button group.
 class PillButtonData {
@@ -27,11 +28,13 @@ class PillButtonGroup extends StatelessWidget {
     required this.buttons,
     required this.isDark,
     this.height,
+    this.hideBorder = false,
   });
 
   final List<PillButtonData> buttons;
   final double? height;
   final bool isDark;
+  final bool hideBorder;
 
   // Dark Slate Overlay colors
   static const Color _darkTrackActive = Color(0xFF06B6D4);
@@ -60,7 +63,8 @@ class PillButtonGroup extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderColor, width: 1),
+        border: hideBorder ? null : Border.all(color: borderColor, width: 1),
+        boxShadow: defaultCardBoxShadow(),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(

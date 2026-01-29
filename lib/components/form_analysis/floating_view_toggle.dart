@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:turbo_disc_golf/components/asset_image_icon.dart';
 
 /// Gradient color scheme for the floating view toggle.
 class FloatingViewToggleColors {
@@ -104,6 +105,7 @@ class FloatingViewToggle extends StatelessWidget {
                 children: [
                   _buildButton(
                     icon: Icons.videocam_outlined,
+                    iconSize: 22,
                     isSelected: !showSkeletonOnly,
                     onTap: () {
                       HapticFeedback.selectionClick();
@@ -111,7 +113,8 @@ class FloatingViewToggle extends StatelessWidget {
                     },
                   ),
                   _buildButton(
-                    icon: Icons.accessibility_new,
+                    imageAsset: 'assets/form_icons/white_skeleton_heisman_icon.png',
+                    iconSize: 31,
                     isSelected: showSkeletonOnly,
                     onTap: () {
                       HapticFeedback.selectionClick();
@@ -128,21 +131,31 @@ class FloatingViewToggle extends StatelessWidget {
   }
 
   Widget _buildButton({
-    required IconData icon,
+    IconData? icon,
+    String? imageAsset,
+    required double iconSize,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: 52,
         height: 44,
         child: Center(
-          child: Icon(
-            icon,
-            size: 22,
-            color: isSelected ? Colors.white : colors.unselectedIconColor,
-          ),
+          child: icon != null
+              ? Icon(
+                  icon,
+                  size: iconSize,
+                  color: isSelected ? Colors.white : colors.unselectedIconColor,
+                )
+              : AssetImageIcon(
+                  imageAsset!,
+                  size: iconSize,
+                  color:
+                      isSelected ? Colors.white : colors.unselectedIconColor,
+                ),
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -10,6 +12,7 @@ import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
 import 'package:turbo_disc_golf/utils/checkpoint_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:video_player/video_player.dart';
 
 /// Fullscreen video dialog that displays the user's video with playback controls.
@@ -30,6 +33,8 @@ class FullscreenVideoDialog extends StatefulWidget {
 }
 
 class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
+  bool _showControls = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,12 +57,10 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
 
   @override
   void dispose() {
-    // Restore orientation settings
+    // Force portrait orientation when dialog closes
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
@@ -104,7 +107,9 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              showReplayOverlay ? Icons.replay : Icons.play_arrow,
+                              showReplayOverlay
+                                  ? Icons.replay
+                                  : Icons.play_arrow,
                               color: Colors.white,
                               size: 36,
                             ),
@@ -142,85 +147,119 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                     ),
                   ),
                 ),
-                // Close button at top right (above checkpoint selector)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: SafeArea(
-                    bottom: false,
-                    child: GestureDetector(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.of(context).pop();
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.black,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Checkpoint selector below close button
+                // Top row with checkpoint selector and buttons
                 if (widget.checkpoints != null &&
                     widget.checkpoints!.isNotEmpty)
                   Positioned(
-                    top: 120,
+                    top: MediaQuery.of(context).viewPadding.top,
                     left: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                      child: SafeArea(
-                        top: false,
-                        bottom: false,
-                        child: CheckpointSelector(
-                          items: widget.checkpoints!
-                              .map(
-                                (cp) => CheckpointSelectorItem(
-                                  id: cp.checkpointId,
-                                  label: cp.checkpointName,
+                    right: 8,
+                    child: SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: SizedBox(
+                        height: 40,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: _showControls
+                                  ? CheckpointSelector(
+                                      items: widget.checkpoints!
+                                          .map(
+                                            (cp) => CheckpointSelectorItem(
+                                              id: cp.checkpointId,
+                                              label: cp.checkpointName,
+                                            ),
+                                          )
+                                          .toList(),
+                                      selectedIndex:
+                                          state.selectedCheckpointIndex ?? -1,
+                                      onChanged: (index) =>
+                                          cubit.jumpToCheckpoint(index),
+                                      formatLabel: formatCheckpointChipLabel,
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                setState(() => _showControls = !_showControls);
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
                                 ),
-                              )
-                              .toList(),
-                          selectedIndex: state.selectedCheckpointIndex,
-                          onChanged: (index) => cubit.jumpToCheckpoint(index),
-                          formatLabel: formatCheckpointChipLabel,
+                                child: Icon(
+                                  _showControls
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: Colors.black,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.of(context).pop();
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.black,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                // Controls at bottom with semi-transparent background
+                // Controls at bottom with blur and semi-transparent background
                 Positioned(
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: SafeArea(
-                      top: false,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CheckpointTimelineScrubber(),
-                          const SizedBox(height: 12),
-                          const CheckpointPlaybackControls(),
-                        ],
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                        ),
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 12,
+                          bottom: autoBottomPadding(context),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CheckpointTimelineScrubber(
+                              useWhiteMarkers: true,
+                              height: 32,
+                            ),
+                            if (_showControls) ...[
+                              const SizedBox(height: 32),
+                              const CheckpointPlaybackControls(
+                                hideBorder: true,
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

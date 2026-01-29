@@ -16,10 +16,14 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
   CheckpointPlaybackCubit({
     required List<CheckpointRecord> checkpoints,
     double initialSpeed = 0.25,
-  }) : super(CheckpointPlaybackState.initial(
-          checkpoints: checkpoints,
-          initialSpeed: initialSpeed,
-        ));
+    int? totalFrames,
+  }) : super(
+         CheckpointPlaybackState.initial(
+           checkpoints: checkpoints,
+           initialSpeed: initialSpeed,
+           totalFrames: totalFrames,
+         ),
+       );
 
   // ─────────────────────────────────────────────
   // Timers
@@ -41,18 +45,22 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
 
   /// Called by the video widget after its controller initializes successfully.
   void onVideoInitialized(Duration videoDuration) {
-    emit(state.copyWith(
-      videoInitStatus: VideoInitStatus.initialized,
-      videoDuration: videoDuration,
-    ));
+    emit(
+      state.copyWith(
+        videoInitStatus: VideoInitStatus.initialized,
+        videoDuration: videoDuration,
+      ),
+    );
   }
 
   /// Called by the video widget if initialization fails.
   void onVideoInitError(String message) {
-    emit(state.copyWith(
-      videoInitStatus: VideoInitStatus.error,
-      errorMessage: message,
-    ));
+    emit(
+      state.copyWith(
+        videoInitStatus: VideoInitStatus.error,
+        errorMessage: message,
+      ),
+    );
   }
 
   /// Called after the video widget swaps between skeleton/overlay controllers.
@@ -86,10 +94,7 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
 
     // Show tap feedback animation
     _tapFeedbackTimer?.cancel();
-    emit(state.copyWith(
-      showTapFeedback: true,
-      tapFeedbackIsPlay: willPlay,
-    ));
+    emit(state.copyWith(showTapFeedback: true, tapFeedbackIsPlay: willPlay));
 
     _tapFeedbackTimer = Timer(const Duration(milliseconds: 300), () {
       if (!isClosed) {
@@ -100,21 +105,22 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
 
   void _play() {
     final bool isAtEnd = state.isAtEnd;
-    final Duration startPosition =
-        isAtEnd ? Duration.zero : state.currentPosition;
+    final Duration startPosition = isAtEnd
+        ? Duration.zero
+        : state.currentPosition;
 
-    // Reset auto-pause tracking when starting fresh
+    // Reset auto-pause tracking and selection when starting from beginning
     if (isAtEnd) {
       _autoPausedCheckpointIndices.clear();
     }
 
-    emit(state.copyWith(
-      currentPosition: startPosition,
-      isPlaying: true,
-    ));
-
-    debugPrint(
-      '[CheckpointPlaybackCubit] Play: ${(startPosition.inMilliseconds / 1000.0).toStringAsFixed(2)}s at ${state.playbackSpeed}x speed',
+    emit(
+      state.copyWith(
+        currentPosition: startPosition,
+        isPlaying: true,
+        // Clear selection when playing - selection only shows when paused at checkpoint
+        clearSelectedCheckpointIndex: true,
+      ),
     );
 
     _playbackSimulationTimer?.cancel();
@@ -150,7 +156,7 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
         }
       }
 
-      // Advance to next position
+      // Simply advance position - selection was already cleared when playback started
       emit(state.copyWith(currentPosition: nextPosition));
     });
   }
@@ -178,8 +184,7 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
   /// Called from scrubber drag/tap with a normalized [0..1] value.
   void seek(double normalized) {
     final Duration position = Duration(
-      milliseconds:
-          (normalized * state.videoDuration.inMilliseconds).toInt(),
+      milliseconds: (normalized * state.videoDuration.inMilliseconds).toInt(),
     );
 
     // Check if we're exactly on a checkpoint for UI selection
@@ -187,13 +192,22 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
 
     if (exactCheckpointIndex != -1) {
       _autoPausedCheckpointIndices.add(exactCheckpointIndex);
-      emit(state.copyWith(
-        currentPosition: position,
-        selectedCheckpointIndex: exactCheckpointIndex,
-      ));
+      emit(
+        state.copyWith(
+          currentPosition: position,
+          selectedCheckpointIndex: exactCheckpointIndex,
+          lastSelectedCheckpointIndex: exactCheckpointIndex,
+        ),
+      );
     } else {
       _autoPausedCheckpointIndices.clear();
-      emit(state.copyWith(currentPosition: position));
+      emit(
+        state.copyWith(
+          currentPosition: position,
+          clearSelectedCheckpointIndex: true,
+          // Don't update lastSelectedCheckpointIndex - keep showing the last one
+        ),
+      );
     }
   }
 
@@ -220,10 +234,13 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
     );
 
     _autoPausedCheckpointIndices.add(index);
-    emit(state.copyWith(
-      currentPosition: position,
-      selectedCheckpointIndex: index,
-    ));
+    emit(
+      state.copyWith(
+        currentPosition: position,
+        selectedCheckpointIndex: index,
+        lastSelectedCheckpointIndex: index,
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────
@@ -286,9 +303,54 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
     return -1;
   }
 
+  /// Cached derived frame rate from checkpoint data.
+  double? _derivedFrameRate;
+
   /// Find checkpoint at EXACT position (strict threshold for UI selection).
+  /// Uses frame-based comparison, deriving frame rate from checkpoint data if needed.
   int _findExactCheckpointAtPosition(Duration position) {
-    const double thresholdSeconds = 0.033; // ~1 frame at 30fps
+    if (state.videoDuration.inMilliseconds == 0) return -1;
+
+    // Get or derive total frames
+    int? totalFrames = state.totalFrames;
+
+    // If we don't have totalFrames, try to derive frame rate from checkpoint data
+    if (totalFrames == null && _derivedFrameRate == null) {
+      for (final CheckpointRecord cp in state.checkpoints) {
+        if (cp.detectedFrameNumber != null &&
+            cp.timestampSeconds != null &&
+            cp.timestampSeconds! > 0) {
+          _derivedFrameRate = cp.detectedFrameNumber! / cp.timestampSeconds!;
+          break;
+        }
+      }
+    }
+
+    // Calculate totalFrames from derived frame rate if needed
+    if (totalFrames == null && _derivedFrameRate != null) {
+      final double videoDurationSeconds =
+          state.videoDuration.inMilliseconds / 1000.0;
+      totalFrames = (_derivedFrameRate! * videoDurationSeconds).round();
+    }
+
+    // If we have total frames (provided or derived), use frame-based comparison
+    if (totalFrames != null && totalFrames > 0) {
+      final double progress =
+          position.inMilliseconds / state.videoDuration.inMilliseconds;
+      final int currentFrame = (progress * totalFrames).round();
+
+      for (int i = 0; i < state.checkpoints.length; i++) {
+        final CheckpointRecord cp = state.checkpoints[i];
+        if (cp.detectedFrameNumber != null) {
+          if (currentFrame == cp.detectedFrameNumber) {
+            return i;
+          }
+        }
+      }
+      return -1;
+    }
+
+    const double thresholdSeconds = 0.001;
     final double positionSeconds = position.inMilliseconds / 1000.0;
 
     for (int i = 0; i < state.checkpoints.length; i++) {
@@ -322,11 +384,14 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
     _playbackSimulationTimer?.cancel();
     _playbackSimulationTimer = null;
 
-    emit(state.copyWith(
-      currentPosition: exactPosition,
-      isPlaying: false,
-      selectedCheckpointIndex: checkpointIndex,
-    ));
+    emit(
+      state.copyWith(
+        currentPosition: exactPosition,
+        isPlaying: false,
+        selectedCheckpointIndex: checkpointIndex,
+        lastSelectedCheckpointIndex: checkpointIndex,
+      ),
+    );
 
     // If timed pause mode, auto-resume after 2 seconds
     if (state.pauseMode == CheckpointPauseMode.timedPause) {

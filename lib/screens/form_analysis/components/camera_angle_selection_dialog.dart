@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:turbo_disc_golf/components/asset_image_icon.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 
 /// Dialog for selecting camera angle (side or rear view).
 /// Tapping a button immediately selects it and calls onSelected.
 class CameraAngleSelectionDialog extends StatelessWidget {
-  const CameraAngleSelectionDialog({
-    super.key,
-    required this.onSelected,
-  });
+  const CameraAngleSelectionDialog({super.key, required this.onSelected});
 
   final Function(CameraAngle angle) onSelected;
 
@@ -100,15 +98,12 @@ class CameraAngleSelectionDialog extends StatelessWidget {
         ),
         child: Column(
           children: [
-            SizedBox(
-              width: 80,
-              height: 80,
-              child: Image.asset(
-                angle == CameraAngle.side
-                    ? 'assets/icon/side_view_backhand_clear.png'
-                    : 'assets/icon/rear_view_backhand_clear.png',
-                fit: BoxFit.contain,
-              ),
+            AssetImageIcon(
+              angle == CameraAngle.side
+                  ? 'assets/form_icons/side_view_backhand_clear.png'
+                  : 'assets/form_icons/rear_view_backhand_clear.png',
+              size: 80,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 12),
             Text(
