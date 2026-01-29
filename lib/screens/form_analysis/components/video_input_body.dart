@@ -8,6 +8,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_dialog.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
@@ -230,25 +231,57 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     final VideoFormAnalysisCubit cubit =
         BlocProvider.of<VideoFormAnalysisCubit>(context);
     final LoggingService logger = locator.get<LoggingService>();
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
 
     return GestureDetector(
       onTap: () async {
         HapticFeedback.lightImpact();
-        logger.track(
-          'Import Video Button Tapped',
-          properties: {
-            'camera_angle': _selectedCameraAngle.name,
-            'handedness': _selectedHandedness.name,
-            'version': 'v2',
-          },
-        );
-        await _checkFirstTimeEducation();
-        if (!mounted) return;
-        cubit.importVideo(
-          throwType: ThrowTechnique.backhand,
-          cameraAngle: _selectedCameraAngle,
-          handedness: _selectedHandedness,
-        );
+
+        // Show camera angle selection dialog if feature flag is enabled
+        if (flags.showCameraAngleSelectionDialog) {
+          if (!mounted) return;
+          showDialog(
+            context: context,
+            barrierColor: Colors.black.withValues(alpha: 0.7),
+            builder: (BuildContext context) =>
+                CameraAngleSelectionDialog(
+                  onSelected: (CameraAngle angle) async {
+                    setState(() => _selectedCameraAngle = angle);
+                    logger.track(
+                      'Import Video Button Tapped',
+                      properties: {
+                        'camera_angle': angle.name,
+                        'handedness': _selectedHandedness.name,
+                        'version': 'v2',
+                      },
+                    );
+                    await _checkFirstTimeEducation();
+                    if (!mounted) return;
+                    cubit.importVideo(
+                      throwType: ThrowTechnique.backhand,
+                      cameraAngle: angle,
+                      handedness: _selectedHandedness,
+                    );
+                  },
+                ),
+          );
+        } else {
+          logger.track(
+            'Import Video Button Tapped',
+            properties: {
+              'camera_angle': _selectedCameraAngle.name,
+              'handedness': _selectedHandedness.name,
+              'version': 'v2',
+            },
+          );
+          await _checkFirstTimeEducation();
+          if (!mounted) return;
+          cubit.importVideo(
+            throwType: ThrowTechnique.backhand,
+            cameraAngle: _selectedCameraAngle,
+            handedness: _selectedHandedness,
+          );
+        }
       },
       child: Container(
         width: double.infinity,
@@ -330,6 +363,13 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   }
 
   Widget _buildV2SettingsRow(BuildContext context) {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+
+    // Hide camera angle selector if dialog is enabled
+    if (flags.showCameraAngleSelectionDialog) {
+      return _buildV2HandednessSection(context);
+    }
+
     return Row(
       children: [
         Expanded(child: _buildV2CameraAngleSection(context)),
@@ -456,11 +496,6 @@ class _VideoInputBodyState extends State<VideoInputBody> {
             const SizedBox(height: 8),
             const _V2TipChip(
               text: 'Record before x-step',
-              isHighPriority: true,
-            ),
-            const SizedBox(height: 8),
-            const _V2TipChip(
-              text: 'End 1s after release',
               isHighPriority: true,
             ),
             const SizedBox(height: 12),

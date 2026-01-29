@@ -301,7 +301,6 @@ class _CameraAngleBadge extends StatelessWidget {
     final Color color2 = isSideView
         ? const Color(0xFF2196F3)
         : const Color(0xFF26A69A);
-    final IconData icon = isSideView ? Icons.photo_camera : Icons.videocam;
     final String label = isSideView ? 'Side' : 'Rear';
 
     return Container(
@@ -324,7 +323,16 @@ class _CameraAngleBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.white),
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: Image.asset(
+              isSideView
+                  ? 'assets/icon/side_view_backhand_clear.png'
+                  : 'assets/icon/rear_view_backhand_clear.png',
+              fit: BoxFit.contain,
+            ),
+          ),
           const SizedBox(width: 4),
           Text(
             label,

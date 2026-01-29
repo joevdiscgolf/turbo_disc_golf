@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/form_analysis/form_analysis_image.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
@@ -51,10 +52,23 @@ class _FullscreenComparisonDialogState
     _currentIndex = widget.initialIndex;
     _showSkeletonOnly = widget.showSkeletonOnly;
     _pageController = PageController(initialPage: widget.initialIndex);
+
+    // Enable landscape orientation for fullscreen viewing
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
   }
 
   @override
   void dispose() {
+    // Force portrait orientation when dialog closes
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     _pageController.dispose();
     super.dispose();
   }
