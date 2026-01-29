@@ -278,7 +278,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   bool userHasOnboarded() {
-    return true;
+    return false;
     // return getCurrentUser()?.displayName?.contains('has_onboarded') == true;
   }
 
