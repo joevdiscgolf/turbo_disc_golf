@@ -1,16 +1,14 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class StoryEmptyState extends StatefulWidget {
   final VoidCallback onGenerateStory;
 
-  const StoryEmptyState({
-    super.key,
-    required this.onGenerateStory,
-  });
+  const StoryEmptyState({super.key, required this.onGenerateStory});
 
   @override
   State<StoryEmptyState> createState() => _StoryEmptyStateState();
@@ -69,19 +67,21 @@ class _StoryEmptyStateState extends State<StoryEmptyState>
       fit: StackFit.expand,
       children: [
         const FormAnalysisBackground(),
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 32),
-                _buildInfoCards(),
-                const SizedBox(height: 32),
-                _buildButton(),
-              ],
-            ),
+        Padding(
+          padding: EdgeInsets.only(
+            top: 8,
+            left: 16,
+            right: 16,
+            bottom: autoBottomPadding(context),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildHeader(),
+              Expanded(child: _buildInfoCards()),
+              const SizedBox(height: 16),
+              _buildButton(),
+            ],
           ),
         ),
       ],
@@ -94,41 +94,38 @@ class _StoryEmptyStateState extends State<StoryEmptyState>
       builder: (context, child) {
         return Opacity(
           opacity: _headerOpacity.value,
-          child: Transform.scale(
-            scale: _headerScale.value,
-            child: child,
-          ),
+          child: Transform.scale(scale: _headerScale.value, child: child),
         );
       },
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  blurRadius: 40,
-                  spreadRadius: 10,
+                  color: const Color(0xFF4ECDC4).withValues(alpha: 0.3),
+                  blurRadius: 30,
+                  spreadRadius: 5,
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.auto_stories,
-              size: 56,
-              color: Colors.white,
+            child: Image.asset(
+              'assets/icon/app_icon_clear_bg.png',
+              height: 64,
+              width: 64,
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Your Round Has a Story',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              height: 1.2,
+          const SizedBox(width: 4),
+          Text(
+            'Your round has a story',
+            style: GoogleFonts.exo2(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              fontStyle: FontStyle.italic,
+              letterSpacing: -0.5,
+              color: SenseiColors.white,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -138,25 +135,50 @@ class _StoryEmptyStateState extends State<StoryEmptyState>
   Widget _buildInfoCards() {
     return Column(
       children: [
-        _StoryInfoCard(
-          icon: '🎯',
-          title: 'Uncover Key Moments',
-          description:
-              'That clutch birdie on hole 14, or the comeback after a tough start — see what mattered most.',
-          slideDirection: _SlideDirection.left,
-          animationController: _controller,
-          slideInterval: const Interval(0.25, 0.458, curve: Curves.easeOutCubic),
-          floatPhaseOffset: 0.0,
+        Expanded(
+          child: _StoryInfoCard(
+            icon: '🎯',
+            title: 'Uncover key moments',
+            description:
+                'That clutch birdie on hole 14, or the comeback after a tough start — see what mattered most.',
+            slideDirection: _SlideDirection.right,
+            animationController: _controller,
+            slideInterval: const Interval(
+              0.25,
+              0.417,
+              curve: Curves.easeOutBack,
+            ),
+          ),
         ),
-        _StoryInfoCard(
-          icon: '📊',
-          title: 'Spot Your Patterns',
-          description:
-              'Which disc is your go-to scorer? How do you perform under pressure? The data reveals the truth.',
-          slideDirection: _SlideDirection.right,
-          animationController: _controller,
-          slideInterval: const Interval(0.417, 0.625, curve: Curves.easeOutCubic),
-          floatPhaseOffset: 0.33,
+        Expanded(
+          child: _StoryInfoCard(
+            icon: '📊',
+            title: 'Spot your patterns',
+            description:
+                'Which disc is your go-to scorer? How do you perform under pressure? The data reveals the truth.',
+            slideDirection: _SlideDirection.left,
+            animationController: _controller,
+            slideInterval: const Interval(
+              0.333,
+              0.5,
+              curve: Curves.easeOutBack,
+            ),
+          ),
+        ),
+        Expanded(
+          child: _StoryInfoCard(
+            icon: '💡',
+            title: 'Get personalized tips',
+            description:
+                'Receive AI-powered insights tailored to your playing style and areas where you can improve.',
+            slideDirection: _SlideDirection.right,
+            animationController: _controller,
+            slideInterval: const Interval(
+              0.417,
+              0.583,
+              curve: Curves.easeOutBack,
+            ),
+          ),
         ),
       ],
     );
@@ -172,10 +194,7 @@ class _StoryEmptyStateState extends State<StoryEmptyState>
         width: double.infinity,
         height: 56,
         label: 'Tell my story',
-        gradientBackground: const [
-          Color(0xFF4ECDC4),
-          Color(0xFF44CF9C),
-        ],
+        gradientBackground: const [Color(0xFF4ECDC4), Color(0xFF44CF9C)],
         fontSize: 18,
         fontWeight: FontWeight.bold,
         onPressed: widget.onGenerateStory,
@@ -193,7 +212,6 @@ class _StoryInfoCard extends StatefulWidget {
   final _SlideDirection slideDirection;
   final AnimationController animationController;
   final Interval slideInterval;
-  final double floatPhaseOffset;
 
   const _StoryInfoCard({
     required this.icon,
@@ -202,16 +220,13 @@ class _StoryInfoCard extends StatefulWidget {
     required this.slideDirection,
     required this.animationController,
     required this.slideInterval,
-    required this.floatPhaseOffset,
   });
 
   @override
   State<_StoryInfoCard> createState() => _StoryInfoCardState();
 }
 
-class _StoryInfoCardState extends State<_StoryInfoCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _floatController;
+class _StoryInfoCardState extends State<_StoryInfoCard> {
   late Animation<double> _slideAnimation;
   late Animation<double> _opacityAnimation;
 
@@ -219,13 +234,9 @@ class _StoryInfoCardState extends State<_StoryInfoCard>
   void initState() {
     super.initState();
 
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat();
-
-    final double startX =
-        widget.slideDirection == _SlideDirection.left ? -1.0 : 1.0;
+    final double startX = widget.slideDirection == _SlideDirection.left
+        ? -1.0
+        : 1.0;
 
     _slideAnimation = Tween<double>(begin: startX, end: 0.0).animate(
       CurvedAnimation(
@@ -234,90 +245,91 @@ class _StoryInfoCardState extends State<_StoryInfoCard>
       ),
     );
 
+    // Fade in during the first half of the slide animation
+    final double opacityEnd =
+        widget.slideInterval.begin +
+        (widget.slideInterval.end - widget.slideInterval.begin) * 0.5;
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: widget.animationController,
-        curve: widget.slideInterval,
+        curve: Interval(
+          widget.slideInterval.begin,
+          opacityEnd,
+          curve: Curves.easeOut,
+        ),
       ),
     );
   }
 
   @override
-  void dispose() {
-    _floatController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final double maxCardWidth = MediaQuery.of(context).size.width - 32;
+
     return AnimatedBuilder(
-      animation: Listenable.merge([widget.animationController, _floatController]),
+      animation: widget.animationController,
       builder: (context, child) {
-        final double floatOffset =
-            math.sin((_floatController.value + widget.floatPhaseOffset) * math.pi * 2) * 4;
-
-        final bool slideComplete = _slideAnimation.value == 0.0;
-        final double effectiveFloatOffset = slideComplete ? floatOffset : 0.0;
-
         return Transform.translate(
           offset: Offset(
             _slideAnimation.value * MediaQuery.of(context).size.width * 0.5,
-            effectiveFloatOffset,
+            0,
           ),
-          child: Opacity(
-            opacity: _opacityAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: _opacityAnimation.value, child: child),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.1),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  widget.icon,
-                  style: const TextStyle(fontSize: 20),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(
+            width: maxCardWidth,
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  widget.title,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    spreadRadius: 2,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              widget.description,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 14,
-                height: 1.4,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(widget.icon, style: const TextStyle(fontSize: 20)),
+                      const SizedBox(width: 10),
+                      Text(
+                        widget.title,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    widget.description,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

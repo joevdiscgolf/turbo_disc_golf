@@ -43,8 +43,9 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
         boxShadow: defaultCardBoxShadow(),
       ),
       child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: addRunSpacing(
+          [
             locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
                 ? Hero(
                     tag: 'driving_c1_in_reg',
@@ -144,7 +145,10 @@ class _CoreDriveStatsCardState extends State<CoreDriveStatsCard>
                     onPressed: widget.onOBPressed,
                   ),
           ],
+          axis: Axis.horizontal,
+          runSpacing: 4,
         ),
+      ),
     );
   }
 }
