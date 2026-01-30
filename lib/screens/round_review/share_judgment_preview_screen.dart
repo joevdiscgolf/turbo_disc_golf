@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
+import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
+import 'package:turbo_disc_golf/components/judgment/share_judgment/share_judgment_emoji_bg.dart';
+import 'package:turbo_disc_golf/components/judgment/share_judgment/share_judgment_verdict.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
@@ -11,6 +14,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Full-screen preview of the judgment share card.
 ///
@@ -116,20 +120,36 @@ class _ShareJudgmentPreviewScreenState
         ),
         body: Stack(
           children: [
-            // Full-screen share card
-            RepaintBoundary(
-              key: _shareCardKey,
-              child: JudgmentShareCard(
-                isGlaze: widget.isGlaze,
-                headline: widget.headline,
-                tagline: widget.tagline,
-                round: widget.round,
-                analysis: widget.analysis,
-                highlightStats: widget.highlightStats,
+            ShareJudgmentEmojiBg(isGlaze: widget.isGlaze),
+            Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: autoBottomPadding(context),
+                top: MediaQuery.of(context).viewPadding.top + 24,
+              ),
+              child: Column(
+                children: [
+                  // Full-screen share card
+                  ShareJudgmentVerdict(isGlaze: widget.isGlaze),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: FittedBox(
+                      child: JudgmentShareCard(
+                        isGlaze: widget.isGlaze,
+                        headline: widget.headline,
+                        tagline: widget.tagline,
+                        round: widget.round,
+                        analysis: widget.analysis,
+                        highlightStats: widget.highlightStats,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildBottomBar(),
+                ],
               ),
             ),
-            // Share button overlay at bottom
-            Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomBar()),
           ],
         ),
       ),
@@ -137,21 +157,16 @@ class _ShareJudgmentPreviewScreenState
   }
 
   Widget _buildBottomBar() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: PrimaryButton(
-          width: double.infinity,
-          height: 56,
-          label: widget.isGlaze ? 'Share my glaze' : 'Share my roast',
-          icon: Icons.ios_share,
-          gradientBackground: widget.isGlaze
-              ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]
-              : const [Color(0xFFFF6B6B), Color(0xFFFF8A8A)],
-          loading: _isSharing,
-          onPressed: _shareCard,
-        ),
-      ),
+    return PrimaryButton(
+      width: double.infinity,
+      height: 56,
+      label: widget.isGlaze ? 'Share my glaze' : 'Share my roast',
+      icon: Icons.ios_share,
+      gradientBackground: widget.isGlaze
+          ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]
+          : const [Color(0xFFFF6B6B), Color(0xFFFF8A8A)],
+      loading: _isSharing,
+      onPressed: _shareCard,
     );
   }
 }
