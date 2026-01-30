@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_video_dialog.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
@@ -53,7 +53,7 @@ class CheckpointVideoDisplay extends StatefulWidget {
   final VideoOrientation? videoOrientation;
 
   /// Checkpoints for the fullscreen video dialog selector.
-  final List<CheckpointRecord>? checkpoints;
+  final List<CheckpointDataV2>? checkpoints;
 
   @override
   State<CheckpointVideoDisplay> createState() =>

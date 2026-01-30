@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 
 /// Client for the Cloud Run pose analysis API
@@ -78,7 +78,7 @@ class PoseAnalysisApiClient {
   /// [sessionId] - Unique session identifier
   /// [userId] - User identifier
   /// [proPlayerId] - Optional pro player ID for reference comparison (e.g., 'paul_mcbeth')
-  Future<PoseAnalysisResponse> analyzeVideo({
+  Future<FormAnalysisResponseV2> analyzeVideo({
     required File videoFile,
     required String throwType,
     required CameraAngle cameraAngle,
@@ -207,7 +207,7 @@ class PoseAnalysisApiClient {
         }
         debugPrint('═══════════════════════════════════════════════════════');
 
-        return PoseAnalysisResponse.fromJson(json);
+        return FormAnalysisResponseV2.fromJson(json);
       } else {
         // Try to parse error message from response
         String errorMessage =
@@ -250,7 +250,7 @@ class PoseAnalysisApiClient {
   }
 
   /// Analyze a video using base64 encoding (alternative method)
-  Future<PoseAnalysisResponse> analyzeVideoBase64({
+  Future<FormAnalysisResponseV2> analyzeVideoBase64({
     required File videoFile,
     required String throwType,
     required CameraAngle cameraAngle,
@@ -326,7 +326,7 @@ class PoseAnalysisApiClient {
       if (response.statusCode == 200) {
         final Map<String, dynamic> json =
             jsonDecode(response.body) as Map<String, dynamic>;
-        return PoseAnalysisResponse.fromJson(json);
+        return FormAnalysisResponseV2.fromJson(json);
       } else {
         String errorMessage =
             'Analysis failed with status ${response.statusCode}';

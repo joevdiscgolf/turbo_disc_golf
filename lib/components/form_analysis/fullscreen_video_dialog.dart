@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_playback_controls.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_timeline_scrubber.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
@@ -26,7 +26,7 @@ class FullscreenVideoDialog extends StatefulWidget {
 
   final VideoPlayerController videoController;
   final VideoOrientation? videoOrientation;
-  final List<CheckpointRecord>? checkpoints;
+  final List<CheckpointDataV2>? checkpoints;
 
   @override
   State<FullscreenVideoDialog> createState() => _FullscreenVideoDialogState();
@@ -168,8 +168,8 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                                       items: widget.checkpoints!
                                           .map(
                                             (cp) => CheckpointSelectorItem(
-                                              id: cp.checkpointId,
-                                              label: cp.checkpointName,
+                                              id: cp.metadata.checkpointId,
+                                              label: cp.metadata.checkpointName,
                                             ),
                                           )
                                           .toList(),

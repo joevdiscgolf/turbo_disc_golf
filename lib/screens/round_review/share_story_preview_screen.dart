@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -14,6 +16,8 @@ import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Full-screen preview of the story share card.
 ///
@@ -49,6 +53,8 @@ class _ShareStoryPreviewScreenState extends State<ShareStoryPreviewScreen> {
   final GlobalKey _shareCardKey = GlobalKey();
   bool _isSharing = false;
   late final LoggingServiceBase _logger;
+
+  int get _randomSeed => widget.round.versionId.hashCode;
 
   @override
   void initState() {
@@ -112,13 +118,37 @@ class _ShareStoryPreviewScreenState extends State<ShareStoryPreviewScreen> {
           title: '',
           backgroundColor: Colors.transparent,
         ),
-        body: Stack(
-          children: [
-            // Full-screen share card
-            RepaintBoundary(key: _shareCardKey, child: _buildShareCard()),
-            // Share button overlay at bottom
-            Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomBar()),
-          ],
+        body: SizedBox(
+          height: double.infinity,
+          width: double.infinity,
+          child: Stack(
+            children: [
+              BackgroundEmojisLayer(randomSeed: _randomSeed),
+              Container(
+                height: double.infinity,
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 8,
+                  bottom: autoBottomPadding(context),
+                ),
+                child: Column(
+                  children: [
+                    // Full-screen share card
+                    Expanded(
+                      child: RepaintBoundary(
+                        key: _shareCardKey,
+                        child: _buildShareCard(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    _buildShareButton(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -146,20 +176,77 @@ class _ShareStoryPreviewScreenState extends State<ShareStoryPreviewScreen> {
     }
   }
 
-  Widget _buildBottomBar() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: PrimaryButton(
-          width: double.infinity,
-          height: 56,
-          label: 'Share my story',
-          icon: Icons.ios_share,
-          gradientBackground: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-          loading: _isSharing,
-          onPressed: _shareCard,
-        ),
-      ),
+  Widget _buildShareButton() {
+    return PrimaryButton(
+      width: double.infinity,
+      height: 56,
+      label: 'Share my story',
+      icon: Icons.ios_share,
+      gradientBackground: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+      loading: _isSharing,
+      onPressed: _shareCard,
     );
+  }
+}
+
+class BackgroundEmojisLayer extends StatelessWidget {
+  const BackgroundEmojisLayer({super.key, required this.randomSeed});
+
+  final int randomSeed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: SenseiColors.gray.shade100,
+      height: double.infinity,
+      width: double.infinity,
+      child: Stack(children: _buildBackgroundEmojis(context)),
+    );
+  }
+
+  /// Builds random background emojis
+  List<Widget> _buildBackgroundEmojis(BuildContext context) {
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
+
+    final Random random = Random(randomSeed);
+    const String bgEmoji = '\u{1F94F}'; // Flying disc emoji
+    final List<Widget> emojis = [];
+
+    const int cols = 6;
+    const int rows = 10;
+
+    final double cellWidth = screenWidth / cols;
+    final double cellHeight = screenHeight / rows;
+
+    for (int row = 0; row < rows; row++) {
+      for (int col = 0; col < cols; col++) {
+        final double offsetX = 0.1 + random.nextDouble() * 0.8;
+        final double offsetY = 0.1 + random.nextDouble() * 0.8;
+
+        final double left = col * cellWidth + offsetX * cellWidth;
+        final double top = row * cellHeight + offsetY * cellHeight;
+
+        final double rotation = (random.nextDouble() - 0.5) * 1.2;
+        final double opacity = 0.05 + random.nextDouble() * 0.06;
+        final double size = 14 + random.nextDouble() * 10;
+
+        emojis.add(
+          Positioned(
+            top: top,
+            left: left,
+            child: Transform.rotate(
+              angle: rotation,
+              child: Opacity(
+                opacity: opacity,
+                child: Text(bgEmoji, style: TextStyle(fontSize: size)),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return emojis;
   }
 }

@@ -76,6 +76,10 @@ class CheckpointRecordBuilder {
       // === Pose Landmarks - Copy directly for alignment calculations ===
       userLandmarks: cp.userLandmarks,
       referenceLandmarks: cp.referenceLandmarks,
+
+      // === Body Anchor Alignment - For aligning pro overlays with user skeleton ===
+      userBodyAnchor: cp.userBodyAnchor,
+      userTorsoHeightNormalized: cp.userTorsoHeightNormalized,
     );
   }
 

@@ -38,6 +38,8 @@ class PoseAnalysisResponse {
     this.detectedHandedness,
     this.proComparisons,
     this.defaultProId,
+    this.userVideoWidth,
+    this.userVideoHeight,
   });
 
   @JsonKey(name: 'session_id')
@@ -116,6 +118,14 @@ class PoseAnalysisResponse {
   @JsonKey(name: 'default_pro_id')
   final String? defaultProId;
 
+  /// Width of user's video in pixels (after rotation correction)
+  @JsonKey(name: 'user_video_width')
+  final int? userVideoWidth;
+
+  /// Height of user's video in pixels (after rotation correction)
+  @JsonKey(name: 'user_video_height')
+  final int? userVideoHeight;
+
   /// Convert PoseAnalysisResponse to FormAnalysisRecord for storage/display.
   /// Optionally accepts topCoachingTips from external analysis results.
   FormAnalysisRecord toFormAnalysisRecord({List<String>? topCoachingTips}) {
@@ -179,6 +189,8 @@ class PoseAnalysisResponse {
       detectedHandedness: detectedHandedness,
       proComparisons: convertedProComparisons,
       defaultProId: defaultProId,
+      userVideoWidth: userVideoWidth,
+      userVideoHeight: userVideoHeight,
     );
   }
 
@@ -247,6 +259,8 @@ class CheckpointPoseData {
     this.referenceV2Measurements,
     this.v2MeasurementDeviations,
     this.detectedFrameNumber,
+    this.userBodyAnchor,
+    this.userTorsoHeightNormalized,
   });
 
   @JsonKey(name: 'checkpoint_id')
@@ -349,6 +363,14 @@ class CheckpointPoseData {
   /// Frame number detected by the backend for this checkpoint
   @JsonKey(name: 'detected_frame_number')
   final int? detectedFrameNumber;
+
+  /// User body anchor point (hip center) for alignment with pro overlays
+  @JsonKey(name: 'user_body_anchor')
+  final UserBodyAnchor? userBodyAnchor;
+
+  /// User torso height as a fraction of frame height (for scaling pro overlays)
+  @JsonKey(name: 'user_torso_height_normalized')
+  final double? userTorsoHeightNormalized;
 
   /// Get checkpoint description based on checkpoint ID
   String get checkpointDescription {
@@ -699,6 +721,29 @@ class AngleDeviation {
   final double? referenceValue;
   final double? deviation;
   final bool withinTolerance;
+}
+
+/// User body anchor point for alignment with pro reference overlays
+@JsonSerializable(anyMap: true, explicitToJson: true)
+class UserBodyAnchor {
+  const UserBodyAnchor({
+    required this.name,
+    required this.x,
+    required this.y,
+  });
+
+  /// Anchor point name (always "hip_center")
+  final String name;
+
+  /// Normalized x position (0-1)
+  final double x;
+
+  /// Normalized y position (0-1)
+  final double y;
+
+  factory UserBodyAnchor.fromJson(Map<String, dynamic> json) =>
+      _$UserBodyAnchorFromJson(json);
+  Map<String, dynamic> toJson() => _$UserBodyAnchorToJson(this);
 }
 
 /// Frame pose data for video scrubber

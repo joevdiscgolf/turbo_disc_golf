@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 
 /// State for form analysis history.
 @immutable
@@ -28,10 +28,10 @@ class FormAnalysisHistoryLoaded extends FormAnalysisHistoryState {
   });
 
   /// List of recent form analyses (newest first).
-  final List<FormAnalysisRecord> analyses;
+  final List<FormAnalysisResponseV2> analyses;
 
   /// Currently selected analysis for viewing (if any).
-  final FormAnalysisRecord? selectedAnalysis;
+  final FormAnalysisResponseV2? selectedAnalysis;
 
   /// Whether there are more analyses to load.
   final bool hasMore;

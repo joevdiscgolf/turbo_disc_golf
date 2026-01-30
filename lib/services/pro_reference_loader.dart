@@ -76,7 +76,6 @@ class ProReferenceLoader {
       cameraAngle,
     );
 
-    // TODO: Re-enable cache check once cloud images are finalized
     if (await cachedFile.exists()) {
       return FileImage(cachedFile);
     }

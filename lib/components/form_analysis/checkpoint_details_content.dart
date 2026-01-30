@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_checkpoint.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 
@@ -9,7 +9,7 @@ import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.
 class CheckpointDetailsContent extends StatelessWidget {
   const CheckpointDetailsContent({super.key, required this.checkpoint});
 
-  final CheckpointRecord checkpoint;
+  final CheckpointDataV2 checkpoint;
 
   @override
   Widget build(BuildContext context) {

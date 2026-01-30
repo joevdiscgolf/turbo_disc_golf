@@ -50,6 +50,8 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
             MapEntry(k, ProComparisonData.fromJson(e as Map<String, dynamic>)),
       ),
       defaultProId: json['default_pro_id'] as String?,
+      userVideoWidth: (json['user_video_width'] as num?)?.toInt(),
+      userVideoHeight: (json['user_video_height'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
@@ -77,6 +79,8 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
         (k, e) => MapEntry(k, e.toJson()),
       ),
       'default_pro_id': instance.defaultProId,
+      'user_video_width': instance.userVideoWidth,
+      'user_video_height': instance.userVideoHeight,
     };
 
 const _$CameraAngleEnumMap = {
@@ -151,6 +155,13 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
       referenceLandmarks: (json['reference_landmarks'] as List<dynamic>?)
           ?.map((e) => PoseLandmark.fromJson(e as Map<String, dynamic>))
           .toList(),
+      userBodyAnchor: json['user_body_anchor'] == null
+          ? null
+          : UserBodyAnchor.fromJson(
+              json['user_body_anchor'] as Map<String, dynamic>,
+            ),
+      userTorsoHeightNormalized: (json['user_torso_height_normalized'] as num?)
+          ?.toDouble(),
     );
 
 Map<String, dynamic> _$CheckpointRecordToJson(
@@ -181,4 +192,6 @@ Map<String, dynamic> _$CheckpointRecordToJson(
   'reference_landmarks': instance.referenceLandmarks
       ?.map((e) => e.toJson())
       .toList(),
+  'user_body_anchor': instance.userBodyAnchor?.toJson(),
+  'user_torso_height_normalized': instance.userTorsoHeightNormalized,
 };

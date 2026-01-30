@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
 
 @immutable
@@ -56,7 +56,7 @@ class VideoFormAnalysisComplete extends VideoFormAnalysisState {
   final FormAnalysisResult? result;
 
   /// Pose analysis from Cloud Run backend (skeleton comparison, angles, etc.)
-  final PoseAnalysisResponse? poseAnalysis;
+  final FormAnalysisResponseV2? poseAnalysis;
 
   /// Warning message if pose analysis failed (analysis continued with Gemini only)
   final String? poseAnalysisWarning;

@@ -6,22 +6,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/handedness.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
-import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
-import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:uuid/uuid.dart';
 
 /// Cubit for managing video form analysis workflow
@@ -55,8 +52,9 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         );
       });
 
-      final int maxSeconds =
-          locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds;
+      final int maxSeconds = locator
+          .get<FeatureFlagService>()
+          .maxFormAnalysisVideoSeconds;
       final XFile? video = await _imagePicker.pickVideo(
         source: ImageSource.camera,
         maxDuration: Duration(seconds: maxSeconds),
@@ -112,8 +110,9 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         );
       });
 
-      final int maxSeconds =
-          locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds;
+      final int maxSeconds = locator
+          .get<FeatureFlagService>()
+          .maxFormAnalysisVideoSeconds;
       final XFile? video = await _imagePicker.pickVideo(
         source: ImageSource.gallery,
         maxDuration: Duration(seconds: maxSeconds),
@@ -275,13 +274,13 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     );
 
     // Run pose analysis first if enabled (provides objective measurements)
-    PoseAnalysisResponse? poseResult;
+    FormAnalysisResponseV2? poseResult;
     String? poseAnalysisWarning;
 
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
     if (flags.usePoseAnalysisBackend) {
       final (
-        PoseAnalysisResponse? result,
+        FormAnalysisResponseV2? result,
         String? error,
       ) = await _runPoseAnalysis(
         videoPath: videoPath,
@@ -329,23 +328,11 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     //   },
     // );
 
-    // Save to history (fire-and-forget, don't block UI)
-    if (poseResult != null) {
-      debugPrint(
-        '[VideoFormAnalysisCubit] Saving analysis to history (session: ${session.id})',
-      );
-      _saveAnalysisToHistory(
-        uid: uid,
-        sessionId: session.id,
-        throwType: throwType,
-        cameraAngle: cameraAngle,
-        poseAnalysis: poseResult,
-      );
-    } else {
-      debugPrint(
-        '[VideoFormAnalysisCubit] Skipping history save - no pose analysis result',
-      );
-    }
+    // NOTE: Backend now handles saving to Firestore automatically
+    // Frontend only needs to load from Firestore to display history
+    debugPrint(
+      '[VideoFormAnalysisCubit] Analysis will be saved by backend (session: ${session.id})',
+    );
 
     emit(
       VideoFormAnalysisComplete(
@@ -356,51 +343,52 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     );
   }
 
-  /// Save analysis to Firestore history and automatically update history list.
-  void _saveAnalysisToHistory({
-    required String uid,
-    required String sessionId,
-    required ThrowTechnique throwType,
-    required CameraAngle cameraAngle,
-    required PoseAnalysisResponse poseAnalysis,
-  }) {
-    // Fire-and-forget - don't await, just log result and update history
-    FBFormAnalysisDataLoader.saveAnalysis(
-      uid: uid,
-      analysisId: sessionId,
-      throwType: _mapThrowTypeToString(throwType),
-      cameraAngle: cameraAngle,
-      poseAnalysis: poseAnalysis,
-    ).then((savedRecord) {
-      if (savedRecord != null) {
-        debugPrint(
-          '[VideoFormAnalysisCubit] Analysis saved to history: ${savedRecord.id}',
-        );
+  // NOTE: Commented out - backend now handles saving to Firestore
+  // /// Save analysis to Firestore history and automatically update history list.
+  // void _saveAnalysisToHistory({
+  //   required String uid,
+  //   required String sessionId,
+  //   required ThrowTechnique throwType,
+  //   required CameraAngle cameraAngle,
+  //   required FormAnalysisResponseV2 poseAnalysis,
+  // }) {
+  //   // Fire-and-forget - don't await, just log result and update history
+  //   FBFormAnalysisDataLoader.saveAnalysis(
+  //     uid: uid,
+  //     analysisId: sessionId,
+  //     throwType: _mapThrowTypeToString(throwType),
+  //     cameraAngle: cameraAngle,
+  //     poseAnalysis: poseAnalysis,
+  //   ).then((savedRecord) {
+  //     if (savedRecord != null) {
+  //       debugPrint(
+  //         '[VideoFormAnalysisCubit] Analysis saved to history: ${savedRecord.id}',
+  //       );
 
-        // Automatically add to history list for instant UI update
-        try {
-          final FormAnalysisHistoryCubit historyCubit = locator
-              .get<FormAnalysisHistoryCubit>();
-          historyCubit.addAnalysis(savedRecord);
-          debugPrint(
-            '[VideoFormAnalysisCubit] ✅ Analysis added to history list',
-          );
-        } catch (e) {
-          debugPrint(
-            '[VideoFormAnalysisCubit] ⚠️  Failed to add analysis to history list: $e',
-          );
-        }
-      } else {
-        debugPrint(
-          '[VideoFormAnalysisCubit] Failed to save analysis to history',
-        );
-      }
-    });
-  }
-
+  //       // Automatically add to history list for instant UI update
+  //       try {
+  //         final FormAnalysisHistoryCubit historyCubit = locator
+  //             .get<FormAnalysisHistoryCubit>();
+  //         historyCubit.addAnalysis(savedRecord);
+  //         debugPrint(
+  //           '[VideoFormAnalysisCubit] ✅ Analysis added to history list',
+  //         );
+  //       } catch (e) {
+  //         debugPrint(
+  //           '[VideoFormAnalysisCubit] ⚠️  Failed to add analysis to history list: $e',
+  //         );
+  //       }
+  //     } else {
+  //       debugPrint(
+  //       debugPrint(
+  //         '[VideoFormAnalysisCubit] Failed to save analysis to history',
+  //       );
+  //     }
+  //   });
+  // }
   /// Run pose analysis using Cloud Run backend
   /// Returns a tuple of (response, errorMessage)
-  Future<(PoseAnalysisResponse?, String?)> _runPoseAnalysis({
+  Future<(FormAnalysisResponseV2?, String?)> _runPoseAnalysis({
     required String videoPath,
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
@@ -426,7 +414,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         '[VideoFormAnalysisCubit] Throw type: $throwTypeStr, Camera: ${cameraAngle.name}',
       );
 
-      final PoseAnalysisResponse response = await poseClient.analyzeVideo(
+      final FormAnalysisResponseV2 response = await poseClient.analyzeVideo(
         videoFile: File(videoPath),
         throwType: throwTypeStr,
         cameraAngle: cameraAngle,
@@ -440,7 +428,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       );
       for (final checkpoint in response.checkpoints) {
         debugPrint(
-          '[VideoFormAnalysisCubit]   - ${checkpoint.checkpointName}: ${checkpoint.deviationSeverity}',
+          '[VideoFormAnalysisCubit]   - ${checkpoint.metadata.checkpointName}: ${checkpoint.deviationAnalysis.severity}',
         );
       }
 

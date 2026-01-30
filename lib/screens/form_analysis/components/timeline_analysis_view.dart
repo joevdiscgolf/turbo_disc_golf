@@ -13,16 +13,17 @@ import 'package:turbo_disc_golf/components/form_analysis/pro_reference_empty_sta
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/v2_measurements_card.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/pro_comparison_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_player_models.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_pro_players_loader.dart';
-import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
@@ -50,14 +51,14 @@ class TimelineAnalysisView extends StatefulWidget {
     this.poseAnalysisResponse,
   });
 
-  final FormAnalysisRecord analysis;
+  final FormAnalysisResponseV2 analysis;
   final VoidCallback onBack;
   final double topPadding;
   final String? videoUrl;
   final ThrowTechnique? throwType;
   final CameraAngle? cameraAngle;
   final double? videoAspectRatio;
-  final PoseAnalysisResponse? poseAnalysisResponse;
+  final FormAnalysisResponseV2? poseAnalysisResponse;
 
   @override
   State<TimelineAnalysisView> createState() => _TimelineAnalysisViewState();
@@ -150,20 +151,20 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   String? get _activeProId {
     if (!_isMultiProEnabled) return null;
     return _selectedProId ??
-        widget.analysis.defaultProId ??
+        widget.analysis.proComparisonConfig?.defaultProId ??
         _proPlayersConfig?.defaultProId ??
         _availablePros.firstOrNull?.proPlayerId;
   }
 
   /// Get checkpoints for the currently selected pro player.
   /// Returns the default checkpoints if no pro comparison data is available.
-  List<CheckpointRecord> get _activeCheckpoints {
+  List<CheckpointDataV2> get _activeCheckpoints {
     if (!_isMultiProEnabled || _activeProId == null) {
       return widget.analysis.checkpoints;
     }
 
-    final ProComparisonData? proData =
-        widget.analysis.proComparisons?[_activeProId];
+    final ProComparisonDataV2? proData =
+        widget.analysis.proComparisonConfig?.proComparisons?[_activeProId];
     if (proData != null && proData.checkpoints.isNotEmpty) {
       return proData.checkpoints;
     }
@@ -184,13 +185,13 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
   @override
   Widget build(BuildContext context) {
-    final List<CheckpointRecord> checkpointsWithTimestamps =
+    final List<CheckpointDataV2> checkpointsWithTimestamps =
         _getCheckpointsWithTimestamps();
 
     return BlocProvider<CheckpointPlaybackCubit>(
       create: (_) => CheckpointPlaybackCubit(
         checkpoints: checkpointsWithTimestamps,
-        totalFrames: widget.poseAnalysisResponse?.totalFrames,
+        totalFrames: widget.poseAnalysisResponse?.videoMetadata.totalFrames,
       ),
       child: BlocBuilder<CheckpointPlaybackCubit, CheckpointPlaybackState>(
         buildWhen: (prev, curr) =>
@@ -204,8 +205,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
           final bool showSkeletonOnly = state.showSkeletonOnly;
           final CheckpointPlaybackCubit cubit =
               BlocProvider.of<CheckpointPlaybackCubit>(context);
-          final List<CheckpointRecord> activeCheckpoints = _activeCheckpoints;
-          final CheckpointRecord checkpoint =
+          final List<CheckpointDataV2> activeCheckpoints = _activeCheckpoints;
+          final CheckpointDataV2 checkpoint =
               activeCheckpoints[selectedIndex ?? lastSelectedIndex ?? 0];
 
           return Stack(
@@ -226,8 +227,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                         items: activeCheckpoints
                             .map(
                               (cp) => CheckpointSelectorItem(
-                                id: cp.checkpointId,
-                                label: cp.checkpointName,
+                                id: cp.metadata.checkpointId,
+                                label: cp.metadata.checkpointName,
                               ),
                             )
                             .toList(),
@@ -238,12 +239,15 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                     ),
                   CheckpointVideoDisplay(
                     videoUrl: widget.videoUrl!,
-                    skeletonVideoUrl: widget.analysis.skeletonVideoUrl,
-                    skeletonOnlyVideoUrl: widget.analysis.skeletonOnlyVideoUrl,
+                    skeletonVideoUrl:
+                        widget.analysis.videoMetadata.skeletonVideoUrl,
+                    skeletonOnlyVideoUrl:
+                        widget.analysis.videoMetadata.skeletonOnlyVideoUrl,
                     videoAspectRatio: widget.videoAspectRatio,
                     returnedVideoAspectRatio:
-                        widget.analysis.returnedVideoAspectRatio,
-                    videoOrientation: widget.analysis.videoOrientation,
+                        widget.analysis.videoMetadata.returnedVideoAspectRatio,
+                    videoOrientation:
+                        widget.analysis.videoMetadata.videoOrientation,
                     checkpoints: activeCheckpoints,
                     proReferenceWidget: _buildProReferenceContent(
                       checkpoint,
@@ -257,7 +261,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                     cubit,
                     activeCheckpoints,
                   ),
-                  if (checkpoint.userV2Measurements != null)
+                  if (checkpoint.userPose.v2Measurements != null)
                     V2MeasurementsCard(checkpoint: checkpoint),
                 ],
               ),
@@ -276,9 +280,9 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   Widget _buildControlsAndDetailsSection(
     int? selectedIndex,
     CheckpointPlaybackCubit cubit,
-    List<CheckpointRecord> checkpoints,
+    List<CheckpointDataV2> checkpoints,
   ) {
-    final CheckpointRecord checkpoint = checkpoints[selectedIndex ?? 0];
+    final CheckpointDataV2 checkpoint = checkpoints[selectedIndex ?? 0];
 
     return Container(
       padding: const EdgeInsets.only(bottom: 24),
@@ -308,8 +312,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                 items: checkpoints
                     .map(
                       (cp) => CheckpointSelectorItem(
-                        id: cp.checkpointId,
-                        label: cp.checkpointName,
+                        id: cp.metadata.checkpointId,
+                        label: cp.metadata.checkpointName,
                       ),
                     )
                     .toList(),
@@ -336,7 +340,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
   /// Pro reference content with badge and fullscreen tap.
   Widget _buildProReferenceContent(
-    CheckpointRecord checkpoint,
+    CheckpointDataV2 checkpoint,
     int? selectedIndex,
     int? lastSelectedIndex,
     bool showSkeletonOnly,
@@ -355,7 +359,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
     // Format the checkpoint name for the badge (remove " Position" suffix)
     final String badgeText = formatCheckpointChipLabel(
-      checkpoint.checkpointName,
+      checkpoint.metadata.checkpointName,
     );
 
     return GestureDetector(
@@ -399,29 +403,29 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   }
 
   Widget _buildProReferenceImageContent(
-    CheckpointRecord checkpoint,
+    CheckpointDataV2 checkpoint,
     int? selectedIndex,
     bool showSkeletonOnly,
   ) {
-    final CameraAngle cameraAngle =
-        widget.analysis.cameraAngle ?? CameraAngle.side;
+    final CameraAngle cameraAngle = widget.analysis.analysisResults.cameraAngle;
     final bool isSameCheckpoint =
         _cachedCheckpointIndex == (selectedIndex ?? 0) &&
         _cachedShowSkeletonOnly == showSkeletonOnly &&
         _cachedCameraAngle == cameraAngle;
 
     // Get user landmarks for alignment calculation
-    final List<PoseLandmark>? userLandmarks =
-        _getUserLandmarksForCheckpoint(checkpoint.checkpointId);
+    final List<PoseLandmark>? userLandmarks = _getUserLandmarksForCheckpoint(
+      checkpoint.metadata.checkpointId,
+    );
 
     return ProReferenceImageContent(
       checkpoint: checkpoint,
-      throwType: widget.analysis.throwType,
+      throwType: widget.analysis.analysisResults.throwType,
       cameraAngle: cameraAngle,
       showSkeletonOnly: showSkeletonOnly,
       proRefLoader: _proRefLoader,
       proPlayerId: _activeProId,
-      detectedHandedness: widget.analysis.detectedHandedness,
+      detectedHandedness: widget.analysis.analysisResults.detectedHandedness,
       userLandmarks: userLandmarks,
       cachedImage: _cachedProRefImage,
       cachedHorizontalOffset: _cachedHorizontalOffset,
@@ -439,71 +443,47 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   }
 
   /// Gets user landmarks for a specific checkpoint.
-  /// First tries to get from CheckpointRecord (stored data), then falls back
-  /// to PoseAnalysisResponse (fresh analysis that hasn't been saved yet).
+  /// First tries to get from CheckpointDataV2 (stored data), then falls back
+  /// to poseAnalysisResponse (fresh analysis that hasn't been saved yet).
   List<PoseLandmark>? _getUserLandmarksForCheckpoint(String checkpointId) {
-    // First, try to get landmarks from the stored CheckpointRecord
+    // First, try to get landmarks from the stored CheckpointDataV2
     try {
-      final CheckpointRecord checkpoint = _activeCheckpoints.firstWhere(
-        (cp) => cp.checkpointId == checkpointId,
+      final CheckpointDataV2 checkpoint = _activeCheckpoints.firstWhere(
+        (cp) => cp.metadata.checkpointId == checkpointId,
       );
-      if (checkpoint.userLandmarks != null &&
-          checkpoint.userLandmarks!.isNotEmpty) {
-        return checkpoint.userLandmarks;
+      if (checkpoint.userPose.landmarks.isNotEmpty) {
+        return checkpoint.userPose.landmarks;
       }
     } catch (e) {
       // Checkpoint not found in active checkpoints, continue to fallback
     }
 
-    // Fallback: try to get from PoseAnalysisResponse (for fresh analysis)
+    // Fallback: try to get from poseAnalysisResponse (for fresh analysis)
     if (widget.poseAnalysisResponse == null) return null;
 
     try {
-      final CheckpointPoseData checkpointData =
-          widget.poseAnalysisResponse!.checkpoints.firstWhere(
-        (cp) => cp.checkpointId == checkpointId,
-      );
-      return checkpointData.userLandmarks;
+      final CheckpointDataV2 checkpointData = widget
+          .poseAnalysisResponse!
+          .checkpoints
+          .firstWhere((cp) => cp.metadata.checkpointId == checkpointId);
+      return checkpointData.userPose.landmarks;
     } catch (e) {
       debugPrint(
-          'Failed to get user landmarks for checkpoint $checkpointId: $e');
+        'Failed to get user landmarks for checkpoint $checkpointId: $e',
+      );
       return null;
     }
   }
 
-  List<CheckpointRecord> _getCheckpointsWithTimestamps() {
-    final List<CheckpointRecord> checkpoints = _activeCheckpoints;
-
-    final bool recordHasTimestampData = checkpoints.any(
-      (cp) => cp.timestampSeconds != null,
-    );
-    final bool responseHasTimestampData =
-        widget.poseAnalysisResponse?.checkpoints.isNotEmpty ?? false;
-
-    if (recordHasTimestampData) {
-      return checkpoints;
-    } else if (responseHasTimestampData) {
-      return widget.poseAnalysisResponse!.checkpoints
-          .map(
-            (cp) => CheckpointRecord(
-              checkpointId: cp.checkpointId,
-              checkpointName: cp.checkpointName,
-              deviationSeverity: cp.deviationSeverity,
-              coachingTips: cp.coachingTips.isNotEmpty
-                  ? cp.coachingTips
-                  : FormReferencePositions.getCoachingTips(cp.checkpointId),
-              timestampSeconds: cp.timestampSeconds,
-            ),
-          )
-          .toList();
-    }
+  List<CheckpointDataV2> _getCheckpointsWithTimestamps() {
+    final List<CheckpointDataV2> checkpoints = _activeCheckpoints;
 
     return checkpoints;
   }
 
   void _showCheckpointDetailsPanel(
     BuildContext context,
-    CheckpointRecord checkpoint,
+    CheckpointDataV2 checkpoint,
   ) {
     EducationPanel.show(
       context,
@@ -517,7 +497,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
   void _showFullscreenComparison(
     BuildContext context,
-    CheckpointRecord checkpoint,
+    CheckpointDataV2 checkpoint,
     int? selectedIndex,
     bool showSkeletonOnly,
   ) {
@@ -530,14 +510,14 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       useSafeArea: false,
       builder: (dialogContext) => FullscreenComparisonDialog(
         checkpoints: _activeCheckpoints,
-        throwType: widget.analysis.throwType,
+        throwType: widget.analysis.analysisResults.throwType,
         proRefLoader: _proRefLoader,
         proPlayerId: _activeProId,
         initialIndex: selectedIndex ?? 0,
         showSkeletonOnly: showSkeletonOnly,
-        cameraAngle: widget.analysis.cameraAngle ?? CameraAngle.side,
-        videoOrientation: widget.analysis.videoOrientation,
-        detectedHandedness: widget.analysis.detectedHandedness,
+        cameraAngle: widget.analysis.analysisResults.cameraAngle,
+        videoOrientation: widget.analysis.videoMetadata.videoOrientation,
+        detectedHandedness: widget.analysis.analysisResults.detectedHandedness,
         poseAnalysisResponse: widget.poseAnalysisResponse,
         onToggleMode: (bool newMode) {
           cubit.setShowSkeletonOnly(newMode);

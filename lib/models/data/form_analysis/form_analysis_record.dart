@@ -34,6 +34,8 @@ class FormAnalysisRecord {
     this.detectedHandedness,
     this.proComparisons,
     this.defaultProId,
+    this.userVideoWidth,
+    this.userVideoHeight,
   });
 
   /// Unique identifier for this analysis
@@ -126,6 +128,14 @@ class FormAnalysisRecord {
   @JsonKey(name: 'default_pro_id')
   final String? defaultProId;
 
+  /// Width of user's video in pixels (after rotation correction)
+  @JsonKey(name: 'user_video_width')
+  final int? userVideoWidth;
+
+  /// Height of user's video in pixels (after rotation correction)
+  @JsonKey(name: 'user_video_height')
+  final int? userVideoHeight;
+
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);
 
@@ -158,6 +168,8 @@ class CheckpointRecord {
     this.v2MeasurementDeviations,
     this.userLandmarks,
     this.referenceLandmarks,
+    this.userBodyAnchor,
+    this.userTorsoHeightNormalized,
   });
 
   /// Checkpoint identifier: "heisman", "loaded", "magic", "pro"
@@ -252,6 +264,14 @@ class CheckpointRecord {
   /// Reference/pro pose landmarks for this checkpoint
   @JsonKey(name: 'reference_landmarks')
   final List<PoseLandmark>? referenceLandmarks;
+
+  /// User body anchor point (hip center) for alignment with pro overlays
+  @JsonKey(name: 'user_body_anchor')
+  final UserBodyAnchor? userBodyAnchor;
+
+  /// User torso height as a fraction of frame height (for scaling pro overlays)
+  @JsonKey(name: 'user_torso_height_normalized')
+  final double? userTorsoHeightNormalized;
 
   factory CheckpointRecord.fromJson(Map<String, dynamic> json) =>
       _$CheckpointRecordFromJson(json);

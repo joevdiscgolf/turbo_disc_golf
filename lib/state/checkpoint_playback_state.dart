@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 
 /// Playback mode for checkpoint auto-pause behavior.
 enum CheckpointPauseMode {
@@ -48,7 +48,7 @@ class CheckpointPlaybackState extends Equatable {
   // ─────────────────────────────────────────────
 
   factory CheckpointPlaybackState.initial({
-    List<CheckpointRecord> checkpoints = const [],
+    List<CheckpointDataV2> checkpoints = const [],
     double initialSpeed = 0.25,
     int? totalFrames,
   }) {
@@ -82,7 +82,7 @@ class CheckpointPlaybackState extends Equatable {
   final int? lastSelectedCheckpointIndex;
   final bool showSkeletonOnly;
   final VideoInitStatus videoInitStatus;
-  final List<CheckpointRecord> checkpoints;
+  final List<CheckpointDataV2> checkpoints;
   final bool showTapFeedback;
   final bool tapFeedbackIsPlay;
   final int? totalFrames;
@@ -125,7 +125,7 @@ class CheckpointPlaybackState extends Equatable {
     int? lastSelectedCheckpointIndex,
     bool? showSkeletonOnly,
     VideoInitStatus? videoInitStatus,
-    List<CheckpointRecord>? checkpoints,
+    List<CheckpointDataV2>? checkpoints,
     bool? showTapFeedback,
     bool? tapFeedbackIsPlay,
     int? totalFrames,

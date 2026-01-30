@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 
 /// Card displaying V2 side-view measurements comparing user vs pro angles.
 class V2MeasurementsCard extends StatelessWidget {
   const V2MeasurementsCard({super.key, required this.checkpoint});
 
-  final CheckpointRecord checkpoint;
+  final CheckpointDataV2 checkpoint;
 
   @override
   Widget build(BuildContext context) {
-    if (checkpoint.userV2Measurements == null) {
+    if (checkpoint.userPose.v2Measurements == null) {
       return const SizedBox.shrink();
     }
 
-    final V2SideMeasurements user = checkpoint.userV2Measurements!;
-    final V2SideMeasurements? reference = checkpoint.referenceV2Measurements;
-    final V2SideMeasurements? deviations = checkpoint.v2MeasurementDeviations;
+    final V2SideMeasurements user = checkpoint.userPose.v2Measurements!;
+    final V2SideMeasurements? reference = checkpoint.proReferencePose?.v2Measurements;
+    final V2SideMeasurements? deviations = checkpoint.deviationAnalysis.v2MeasurementDeviations;
 
     final List<_V2MeasurementRow> rows = [
       if (user.frontKneeAngle != null)
