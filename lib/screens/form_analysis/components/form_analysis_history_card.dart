@@ -118,8 +118,6 @@ class FormAnalysisHistoryCard extends StatelessWidget {
   Widget _buildThumbnail(BuildContext context) {
     final String? thumbnailUrl = analysis.videoMetadata.thumbnailUrl;
 
-    print('thumbnail url: $thumbnailUrl');
-
     if (thumbnailUrl != null && thumbnailUrl.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
