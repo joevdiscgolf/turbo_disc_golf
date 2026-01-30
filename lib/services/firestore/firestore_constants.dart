@@ -6,3 +6,7 @@ const String kFormAnalysesCollection = 'FormAnalyses';
 // App info
 const kAppInfoCollection = 'App_Info';
 const kMinimumVersionDoc = 'Minimum_Version';
+
+// Pro players config
+const String kAppConfigCollection = 'app_config';
+const String kProPlayersDoc = 'pro_players';

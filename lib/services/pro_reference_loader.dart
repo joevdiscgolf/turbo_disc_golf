@@ -1,10 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/alignment_metadata.dart';
+import 'package:turbo_disc_golf/services/form_analysis/pro_player_constants.dart';
 
 /// Service for loading professional player reference images using a three-tier strategy:
 /// 1. Bundled assets (fastest - for Paul McBeth)
@@ -13,8 +18,8 @@ import 'package:turbo_disc_golf/models/camera_angle.dart';
 class ProReferenceLoader {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  /// List of players whose references are bundled with the app
-  static const List<String> _bundledPlayers = ['paul_mcbeth'];
+  /// In-memory cache for alignment metadata to avoid repeated parsing
+  final Map<String, AlignmentMetadata> _metadataCache = {};
 
   /// Helper method to get the camera angle folder name
   ///
@@ -41,7 +46,7 @@ class ProReferenceLoader {
     final String angleFolderName = _getAngleFolderName(cameraAngle);
 
     // Tier 1: Check bundled assets (instant loading)
-    if (_bundledPlayers.contains(proPlayerId)) {
+    if (ProPlayerConstants.bundledPlayers.contains(proPlayerId)) {
       final String assetPath =
           'assets/pro_references/$proPlayerId/$throwType/$angleFolderName/${checkpoint}_$imageType.png';
 
@@ -69,9 +74,10 @@ class ProReferenceLoader {
       cameraAngle,
     );
 
-    if (await cachedFile.exists()) {
-      return FileImage(cachedFile);
-    }
+    // TODO: Re-enable cache check once cloud images are finalized
+    // if (await cachedFile.exists()) {
+    //   return FileImage(cachedFile);
+    // }
 
     // Tier 3: Download from central storage and cache (one-time download)
     try {
@@ -192,5 +198,67 @@ class ProReferenceLoader {
       }
     }
     debugPrint('Completed predownload for player: $proPlayerId');
+  }
+
+  /// Loads alignment metadata for a specific pro player reference video
+  ///
+  /// Loading strategy:
+  /// 1. In-memory cache (fastest - persists for session)
+  /// 2. Cloud storage download (fresh on each app restart)
+  ///
+  /// Returns null if metadata is not available for this player/throwType/angle combination
+  Future<AlignmentMetadata?> loadAlignmentMetadata({
+    required String proPlayerId,
+    required String throwType,
+    required CameraAngle cameraAngle,
+  }) async {
+    final String angleFolderName = _getAngleFolderName(cameraAngle);
+    final String cacheKey = '$proPlayerId/$throwType/$angleFolderName';
+
+    debugPrint(
+        '🎯 [AlignmentMetadata] Loading metadata for: $proPlayerId/$throwType/$angleFolderName');
+
+    // Check in-memory cache first (persists for session)
+    if (_metadataCache.containsKey(cacheKey)) {
+      debugPrint('✅ [AlignmentMetadata] Found in memory cache');
+      return _metadataCache[cacheKey];
+    }
+
+    // Download from cloud storage
+    debugPrint('☁️ [AlignmentMetadata] Downloading from cloud storage');
+    try {
+      final String cloudPath =
+          'pro_references/$proPlayerId/$throwType/$angleFolderName/alignment_metadata.json';
+
+      debugPrint('   Cloud path: $cloudPath');
+
+      final Reference ref = _storage.ref(cloudPath);
+      final Uint8List? data = await ref.getData();
+
+      if (data == null) {
+        debugPrint('❌ [AlignmentMetadata] No data returned from cloud storage');
+        return null;
+      }
+
+      final String jsonString = utf8.decode(data);
+      final Map<String, dynamic> json = jsonDecode(jsonString);
+      final AlignmentMetadata metadata = AlignmentMetadata.fromJson(json);
+
+      // Cache in memory for this session
+      _metadataCache[cacheKey] = metadata;
+      debugPrint('✅ [AlignmentMetadata] Downloaded and cached in memory');
+      debugPrint('   Checkpoints: ${metadata.checkpoints.keys.join(", ")}');
+      return metadata;
+    } catch (e) {
+      debugPrint(
+          '❌ [AlignmentMetadata] Failed to download from cloud storage: $e');
+      return null;
+    }
+  }
+
+  /// Clears the in-memory metadata cache
+  void clearMetadataCache() {
+    _metadataCache.clear();
+    debugPrint('Cleared alignment metadata cache');
   }
 }

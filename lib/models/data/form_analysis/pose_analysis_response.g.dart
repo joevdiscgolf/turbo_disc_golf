@@ -46,6 +46,13 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
   detectedHandedness: _handednessFromJson(
     json['detected_handedness'] as String?,
   ),
+  proComparisons: (json['pro_comparisons'] as Map?)?.map(
+    (k, e) => MapEntry(
+      k as String,
+      ProComparisonPoseData.fromJson(Map<String, dynamic>.from(e as Map)),
+    ),
+  ),
+  defaultProId: json['default_pro_id'] as String?,
 );
 
 Map<String, dynamic> _$PoseAnalysisResponseToJson(
@@ -72,6 +79,10 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
   'video_sync_metadata': instance.videoSyncMetadata?.toJson(),
   'pro_video_reference': instance.proVideoReference,
   'detected_handedness': _$HandednessEnumMap[instance.detectedHandedness],
+  'pro_comparisons': instance.proComparisons?.map(
+    (k, e) => MapEntry(k, e.toJson()),
+  ),
+  'default_pro_id': instance.defaultProId,
 };
 
 const _$CameraAngleEnumMap = {

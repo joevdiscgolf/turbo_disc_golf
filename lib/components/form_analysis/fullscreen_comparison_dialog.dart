@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/components/form_analysis/form_analysis_image.dar
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
@@ -20,8 +21,10 @@ class FullscreenComparisonDialog extends StatefulWidget {
     required this.onToggleMode,
     required this.onIndexChanged,
     required this.cameraAngle,
+    this.proPlayerId,
     this.videoOrientation,
     this.detectedHandedness,
+    this.poseAnalysisResponse,
   });
 
   final List<CheckpointRecord> checkpoints;
@@ -33,7 +36,14 @@ class FullscreenComparisonDialog extends StatefulWidget {
   final ValueChanged<bool> onToggleMode;
   final ValueChanged<int> onIndexChanged;
   final CameraAngle cameraAngle;
+
+  /// Optional pro player ID override for multi-pro comparison.
+  final String? proPlayerId;
+
   final VideoOrientation? videoOrientation;
+
+  /// Pose analysis response containing user landmarks for alignment
+  final PoseAnalysisResponse? poseAnalysisResponse;
 
   @override
   State<FullscreenComparisonDialog> createState() =>
@@ -284,6 +294,10 @@ class _FullscreenComparisonDialogState
   }
 
   Widget _buildFullscreenProReferencePanel(CheckpointRecord checkpoint) {
+    // Get user landmarks for alignment calculation
+    final List<PoseLandmark>? userLandmarks =
+        _getUserLandmarksForCheckpoint(checkpoint.checkpointId);
+
     return Column(
       children: [
         Container(
@@ -308,12 +322,47 @@ class _FullscreenComparisonDialogState
               cameraAngle: widget.cameraAngle,
               showSkeletonOnly: _showSkeletonOnly,
               proRefLoader: widget.proRefLoader,
+              proPlayerId: widget.proPlayerId,
               detectedHandedness: widget.detectedHandedness,
+              userLandmarks: userLandmarks,
             ),
           ),
         ),
       ],
     );
+  }
+
+  /// Gets user landmarks for a specific checkpoint.
+  /// First tries to get from CheckpointRecord (stored data), then falls back
+  /// to PoseAnalysisResponse (fresh analysis that hasn't been saved yet).
+  List<PoseLandmark>? _getUserLandmarksForCheckpoint(String checkpointId) {
+    // First, try to get landmarks from the stored CheckpointRecord
+    try {
+      final CheckpointRecord checkpoint = widget.checkpoints.firstWhere(
+        (cp) => cp.checkpointId == checkpointId,
+      );
+      if (checkpoint.userLandmarks != null &&
+          checkpoint.userLandmarks!.isNotEmpty) {
+        return checkpoint.userLandmarks;
+      }
+    } catch (e) {
+      // Checkpoint not found, continue to fallback
+    }
+
+    // Fallback: try to get from PoseAnalysisResponse (for fresh analysis)
+    if (widget.poseAnalysisResponse == null) return null;
+
+    try {
+      final CheckpointPoseData checkpointData =
+          widget.poseAnalysisResponse!.checkpoints.firstWhere(
+        (cp) => cp.checkpointId == checkpointId,
+      );
+      return checkpointData.userLandmarks;
+    } catch (e) {
+      debugPrint(
+          'Failed to get user landmarks for checkpoint $checkpointId: $e');
+      return null;
+    }
   }
 
   Widget _buildFullscreenPanel(String label, String? imageUrl) {

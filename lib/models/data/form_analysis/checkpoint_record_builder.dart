@@ -72,6 +72,10 @@ class CheckpointRecordBuilder {
       userV2Measurements: cp.userV2Measurements,
       referenceV2Measurements: cp.referenceV2Measurements,
       v2MeasurementDeviations: cp.v2MeasurementDeviations,
+
+      // === Pose Landmarks - Copy directly for alignment calculations ===
+      userLandmarks: cp.userLandmarks,
+      referenceLandmarks: cp.referenceLandmarks,
     );
   }
 

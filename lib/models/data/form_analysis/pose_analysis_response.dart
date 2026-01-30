@@ -2,6 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_record_builder.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/pro_player_models.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
@@ -35,6 +36,8 @@ class PoseAnalysisResponse {
     this.videoSyncMetadata,
     this.proVideoReference,
     this.detectedHandedness,
+    this.proComparisons,
+    this.defaultProId,
   });
 
   @JsonKey(name: 'session_id')
@@ -104,22 +107,57 @@ class PoseAnalysisResponse {
   @JsonKey(name: 'detected_handedness', fromJson: _handednessFromJson)
   final Handedness? detectedHandedness;
 
+  /// Multi-pro comparison data: map of pro_player_id to comparison data
+  /// Only populated when enableMultiProComparison feature flag is enabled
+  @JsonKey(name: 'pro_comparisons')
+  final Map<String, ProComparisonPoseData>? proComparisons;
+
+  /// Default pro player ID to show initially
+  @JsonKey(name: 'default_pro_id')
+  final String? defaultProId;
+
   /// Convert PoseAnalysisResponse to FormAnalysisRecord for storage/display.
   /// Optionally accepts topCoachingTips from external analysis results.
   FormAnalysisRecord toFormAnalysisRecord({List<String>? topCoachingTips}) {
+    // Helper function to convert base64 to data URL
+    String? toDataUrl(String? base64Data, String imageName) {
+      if (base64Data == null) return null;
+      return 'data:image/jpeg;base64,$base64Data';
+    }
+
     // Convert checkpoints using the unified builder
     final List<CheckpointRecord> checkpointRecords = checkpoints.map((cp) {
       return CheckpointRecordBuilder.build(
         checkpoint: cp,
-        imageUrlProvider: (String? base64Data, String imageName) {
-          if (base64Data == null) return null;
-          return 'data:image/jpeg;base64,$base64Data';
-        },
+        imageUrlProvider: toDataUrl,
       );
     }).toList();
 
     // Calculate worst deviation severity from checkpoints
     final String? worstSeverity = _calculateWorstSeverity(checkpointRecords);
+
+    // Convert pro comparisons if present
+    Map<String, ProComparisonData>? convertedProComparisons;
+    if (proComparisons != null) {
+      convertedProComparisons = proComparisons!.map((proId, poseData) {
+        final List<CheckpointRecord> proCheckpoints =
+            poseData.checkpoints.map((cp) {
+          return CheckpointRecordBuilder.build(
+            checkpoint: cp,
+            imageUrlProvider: toDataUrl,
+          );
+        }).toList();
+
+        return MapEntry(
+          proId,
+          ProComparisonData(
+            proPlayerId: poseData.proPlayerId,
+            checkpoints: proCheckpoints,
+            overallFormScore: poseData.overallFormScore,
+          ),
+        );
+      });
+    }
 
     return FormAnalysisRecord(
       id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
@@ -139,6 +177,8 @@ class PoseAnalysisResponse {
       skeletonVideoUrl: skeletonVideoUrl,
       skeletonOnlyVideoUrl: skeletonOnlyVideoUrl,
       detectedHandedness: detectedHandedness,
+      proComparisons: convertedProComparisons,
+      defaultProId: defaultProId,
     );
   }
 
