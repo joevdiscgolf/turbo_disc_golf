@@ -55,7 +55,9 @@ class ProReferenceLoader {
         try {
           return AssetImage(assetPath);
         } catch (e) {
-          debugPrint('⚠️ Rear-view assets not found, falling back to side view: $assetPath');
+          debugPrint(
+            '⚠️ Rear-view assets not found, falling back to side view: $assetPath',
+          );
           final String sideViewPath =
               'assets/pro_references/$proPlayerId/$throwType/side/${checkpoint}_$imageType.png';
           return AssetImage(sideViewPath);
@@ -75,9 +77,9 @@ class ProReferenceLoader {
     );
 
     // TODO: Re-enable cache check once cloud images are finalized
-    // if (await cachedFile.exists()) {
-    //   return FileImage(cachedFile);
-    // }
+    if (await cachedFile.exists()) {
+      return FileImage(cachedFile);
+    }
 
     // Tier 3: Download from central storage and cache (one-time download)
     try {
@@ -125,7 +127,8 @@ class ProReferenceLoader {
       await ref.writeToFile(targetFile);
 
       debugPrint(
-          'Successfully downloaded and cached pro reference: $cloudPath');
+        'Successfully downloaded and cached pro reference: $cloudPath',
+      );
     } catch (e) {
       debugPrint('Error downloading pro reference from $cloudPath: $e');
       rethrow;
@@ -152,8 +155,9 @@ class ProReferenceLoader {
   /// Clears the local cache for a specific player (useful for updates or debugging)
   Future<void> clearCacheForPlayer(String proPlayerId) async {
     final Directory appDir = await getApplicationDocumentsDirectory();
-    final Directory playerCacheDir =
-        Directory('${appDir.path}/pro_references_cache/$proPlayerId');
+    final Directory playerCacheDir = Directory(
+      '${appDir.path}/pro_references_cache/$proPlayerId',
+    );
 
     if (await playerCacheDir.exists()) {
       await playerCacheDir.delete(recursive: true);
@@ -164,8 +168,7 @@ class ProReferenceLoader {
   /// Clears all cached pro reference images
   Future<void> clearAllCache() async {
     final Directory appDir = await getApplicationDocumentsDirectory();
-    final Directory cacheDir =
-        Directory('${appDir.path}/pro_references_cache');
+    final Directory cacheDir = Directory('${appDir.path}/pro_references_cache');
 
     if (await cacheDir.exists()) {
       await cacheDir.delete(recursive: true);
@@ -192,7 +195,8 @@ class ProReferenceLoader {
             );
           } catch (e) {
             debugPrint(
-                'Failed to predownload $proPlayerId $throwType $checkpoint: $e');
+              'Failed to predownload $proPlayerId $throwType $checkpoint: $e',
+            );
           }
         }
       }
@@ -216,7 +220,8 @@ class ProReferenceLoader {
     final String cacheKey = '$proPlayerId/$throwType/$angleFolderName';
 
     debugPrint(
-        '🎯 [AlignmentMetadata] Loading metadata for: $proPlayerId/$throwType/$angleFolderName');
+      '🎯 [AlignmentMetadata] Loading metadata for: $proPlayerId/$throwType/$angleFolderName',
+    );
 
     // Check in-memory cache first (persists for session)
     if (_metadataCache.containsKey(cacheKey)) {
@@ -251,7 +256,8 @@ class ProReferenceLoader {
       return metadata;
     } catch (e) {
       debugPrint(
-          '❌ [AlignmentMetadata] Failed to download from cloud storage: $e');
+        '❌ [AlignmentMetadata] Failed to download from cloud storage: $e',
+      );
       return null;
     }
   }
