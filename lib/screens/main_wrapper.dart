@@ -13,6 +13,7 @@ import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -137,6 +138,7 @@ class _MainWrapperState extends State<MainWrapper> {
           hasBackButton: false,
           backgroundColor: SenseiColors.gray.shade50,
           leftWidget: _buildLeftWidget(context),
+          rightWidget: _buildRightWidget(context),
         ),
         body: IndexedStack(
           index: _selectedIndex,
@@ -319,6 +321,40 @@ class _MainWrapperState extends State<MainWrapper> {
       return null;
     }
     return null;
+  }
+
+  Widget? _buildRightWidget(BuildContext context) {
+    // Form Coach tab - show clear cache button in debug mode
+    if (_selectedIndex == 1 && kDebugMode) {
+      return _buildClearCacheButton(context);
+    }
+    return null;
+  }
+
+  Widget _buildClearCacheButton(BuildContext context) {
+    return Center(
+      child: IconButton(
+        icon: const Icon(Icons.delete_sweep, size: 24),
+        tooltip: 'Clear pro reference cache',
+        onPressed: () async {
+          _logger.track('Debug Clear Pro Reference Cache Tapped');
+          HapticFeedback.lightImpact();
+
+          final ProReferenceLoader loader = ProReferenceLoader();
+          await loader.clearAllCache();
+          loader.clearMetadataCache();
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Pro reference cache cleared'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
 
   Widget _buildAppTitleIcon() {

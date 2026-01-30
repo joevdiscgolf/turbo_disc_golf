@@ -23,6 +23,7 @@ import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/firestore/fb_pro_players_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
@@ -67,6 +68,10 @@ Future<void> main() async {
 
   await locator.get<AppPhaseController>().initialize();
   await locator.get<BaseVoiceRecordingService>().initialize();
+
+  // Pre-fetch pro players config for faster form analysis loading
+  // Disable retry at startup to avoid blocking; retry happens when screen opens
+  FBProPlayersLoader.getProPlayersConfig(withRetry: false);
 
   runApp(const MyApp());
 }

@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/pro_player_models.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_sync_metadata.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
@@ -31,6 +32,8 @@ class FormAnalysisRecord {
     this.skeletonOnlyVideoUrl,
     this.videoSyncMetadata,
     this.detectedHandedness,
+    this.proComparisons,
+    this.defaultProId,
   });
 
   /// Unique identifier for this analysis
@@ -114,6 +117,15 @@ class FormAnalysisRecord {
   @JsonKey(name: 'detected_handedness')
   final Handedness? detectedHandedness;
 
+  /// Multi-pro comparison data: map of pro_player_id to comparison data
+  /// Only populated when enableMultiProComparison feature flag is enabled
+  @JsonKey(name: 'pro_comparisons')
+  final Map<String, ProComparisonData>? proComparisons;
+
+  /// Default pro player ID to show initially
+  @JsonKey(name: 'default_pro_id')
+  final String? defaultProId;
+
   factory FormAnalysisRecord.fromJson(Map<String, dynamic> json) =>
       _$FormAnalysisRecordFromJson(json);
 
@@ -144,6 +156,8 @@ class CheckpointRecord {
     this.userV2Measurements,
     this.referenceV2Measurements,
     this.v2MeasurementDeviations,
+    this.userLandmarks,
+    this.referenceLandmarks,
   });
 
   /// Checkpoint identifier: "heisman", "loaded", "magic", "pro"
@@ -230,6 +244,14 @@ class CheckpointRecord {
   /// V2 side-view measurement deviations (user - reference)
   @JsonKey(name: 'v2_measurement_deviations')
   final V2SideMeasurements? v2MeasurementDeviations;
+
+  /// User's pose landmarks for this checkpoint (used for alignment)
+  @JsonKey(name: 'user_landmarks')
+  final List<PoseLandmark>? userLandmarks;
+
+  /// Reference/pro pose landmarks for this checkpoint
+  @JsonKey(name: 'reference_landmarks')
+  final List<PoseLandmark>? referenceLandmarks;
 
   factory CheckpointRecord.fromJson(Map<String, dynamic> json) =>
       _$CheckpointRecordFromJson(json);

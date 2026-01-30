@@ -165,6 +165,9 @@ enum FeatureFlag {
   /// Shows camera angle selection dialog after tapping import video
   showCameraAngleSelectionDialog('show_camera_angle_selection_dialog', true),
 
+  /// Enables multi-pro comparison feature - backend returns comparisons for all available pros
+  enableMultiProComparison('enable_multi_pro_comparison', true),
+
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs
   adminUids('admin_uids', '9abVDwf3ZVM8unEzqMcWk95in2F3'),

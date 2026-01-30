@@ -45,6 +45,11 @@ FormAnalysisRecord _$FormAnalysisRecordFromJson(Map<String, dynamic> json) =>
         _$HandednessEnumMap,
         json['detected_handedness'],
       ),
+      proComparisons: (json['pro_comparisons'] as Map<String, dynamic>?)?.map(
+        (k, e) =>
+            MapEntry(k, ProComparisonData.fromJson(e as Map<String, dynamic>)),
+      ),
+      defaultProId: json['default_pro_id'] as String?,
     );
 
 Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
@@ -68,6 +73,10 @@ Map<String, dynamic> _$FormAnalysisRecordToJson(FormAnalysisRecord instance) =>
       'skeleton_only_video_url': instance.skeletonOnlyVideoUrl,
       'video_sync_metadata': instance.videoSyncMetadata?.toJson(),
       'detected_handedness': _$HandednessEnumMap[instance.detectedHandedness],
+      'pro_comparisons': instance.proComparisons?.map(
+        (k, e) => MapEntry(k, e.toJson()),
+      ),
+      'default_pro_id': instance.defaultProId,
     };
 
 const _$CameraAngleEnumMap = {
@@ -136,6 +145,12 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
           : V2SideMeasurements.fromJson(
               json['v2_measurement_deviations'] as Map<String, dynamic>,
             ),
+      userLandmarks: (json['user_landmarks'] as List<dynamic>?)
+          ?.map((e) => PoseLandmark.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      referenceLandmarks: (json['reference_landmarks'] as List<dynamic>?)
+          ?.map((e) => PoseLandmark.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$CheckpointRecordToJson(
@@ -162,4 +177,8 @@ Map<String, dynamic> _$CheckpointRecordToJson(
   'user_v2_measurements': instance.userV2Measurements?.toJson(),
   'reference_v2_measurements': instance.referenceV2Measurements?.toJson(),
   'v2_measurement_deviations': instance.v2MeasurementDeviations?.toJson(),
+  'user_landmarks': instance.userLandmarks?.map((e) => e.toJson()).toList(),
+  'reference_landmarks': instance.referenceLandmarks
+      ?.map((e) => e.toJson())
+      .toList(),
 };

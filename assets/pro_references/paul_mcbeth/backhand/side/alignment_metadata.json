@@ -1,0 +1,55 @@
+{
+  "player": "paul_mcbeth",
+  "throw_type": "backhand",
+  "camera_angle": "side",
+  "checkpoints": {
+    "heisman": {
+      "output": {
+        "width": 1080,
+        "height": 2160
+      },
+      "body_anchor": {
+        "name": "hip_center",
+        "x": 0.50,
+        "y": 0.55
+      },
+      "torso_height_normalized": 0.25
+    },
+    "loaded": {
+      "output": {
+        "width": 1080,
+        "height": 2160
+      },
+      "body_anchor": {
+        "name": "hip_center",
+        "x": 0.48,
+        "y": 0.56
+      },
+      "torso_height_normalized": 0.24
+    },
+    "magic": {
+      "output": {
+        "width": 1080,
+        "height": 2160
+      },
+      "body_anchor": {
+        "name": "hip_center",
+        "x": 0.52,
+        "y": 0.54
+      },
+      "torso_height_normalized": 0.26
+    },
+    "pro": {
+      "output": {
+        "width": 1080,
+        "height": 2160
+      },
+      "body_anchor": {
+        "name": "hip_center",
+        "x": 0.51,
+        "y": 0.55
+      },
+      "torso_height_normalized": 0.25
+    }
+  }
+}
