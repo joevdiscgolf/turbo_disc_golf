@@ -203,7 +203,7 @@ class ProReferenceImageContent extends StatelessWidget {
 
     // Use backend-provided scale (already calculated based on torso height)
     final double rawScale = checkpoint.referenceScale ?? 1.0;
-    final double scale = rawScale.clamp(0.7, 1.5);
+    final double scale = rawScale.clamp(0.3, 2.0);
 
     // Get effective landmarks: explicit parameter first, then checkpoint's stored landmarks
     final List<PoseLandmark>? effectiveLandmarks =
@@ -345,19 +345,7 @@ class ProReferenceImageContent extends StatelessWidget {
     required double scale,
   }) {
     final bool isLeftHanded = detectedHandedness == Handedness.left;
-    Widget image = Image(image: imageProvider, fit: BoxFit.contain);
-
-    // Debug: Add red filled background that matches the image's actual bounds
-    assert(() {
-      image = FittedBox(
-        fit: BoxFit.contain,
-        child: Container(
-          color: Colors.red.withValues(alpha: 0.5),
-          child: Image(image: imageProvider),
-        ),
-      );
-      return true;
-    }());
+    final Widget image = Image(image: imageProvider, fit: BoxFit.contain);
 
     return Transform.translate(
       offset: Offset(horizontalOffset, verticalOffset),
