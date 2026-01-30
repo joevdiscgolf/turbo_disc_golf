@@ -6,8 +6,8 @@ import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
-class FormAnalysisCard extends StatelessWidget {
-  const FormAnalysisCard({
+class FormAnalysisHistoryCard extends StatelessWidget {
+  const FormAnalysisHistoryCard({
     super.key,
     required this.analysis,
     required this.onTap,
@@ -78,10 +78,12 @@ class FormAnalysisCard extends StatelessWidget {
               : const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
-        // Severity badge on the right (hide if 'good')
+        // Severity badge on the right (hide if 'good' or 'minor')
         if (analysis.analysisResults.worstDeviationSeverity != null &&
             analysis.analysisResults.worstDeviationSeverity!.toLowerCase() !=
-                'good')
+                'good' &&
+            analysis.analysisResults.worstDeviationSeverity!.toLowerCase() !=
+                'minor')
           _SeverityBadge(
             severity: analysis.analysisResults.worstDeviationSeverity!,
           ),
@@ -115,6 +117,8 @@ class FormAnalysisCard extends StatelessWidget {
 
   Widget _buildThumbnail(BuildContext context) {
     final String? thumbnailUrl = analysis.videoMetadata.thumbnailUrl;
+
+    print('thumbnail url: $thumbnailUrl');
 
     if (thumbnailUrl != null && thumbnailUrl.isNotEmpty) {
       return ClipRRect(

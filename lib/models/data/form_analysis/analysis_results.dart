@@ -4,7 +4,8 @@ import 'package:turbo_disc_golf/models/handedness.dart';
 
 part 'analysis_results.g.dart';
 
-Handedness? _handednessFromJson(String? value) => Handedness.fromApiString(value);
+Handedness? _handednessFromJson(String? value) =>
+    Handedness.fromApiString(value);
 
 /// Overall analysis results
 @JsonSerializable(explicitToJson: true)
@@ -15,7 +16,6 @@ class AnalysisResults {
     required this.cameraAngle,
     this.detectedHandedness,
     this.worstDeviationSeverity,
-    this.topCoachingTips,
   });
 
   /// Overall form score (0-100)
@@ -39,10 +39,6 @@ class AnalysisResults {
   @JsonKey(name: 'worst_deviation_severity')
   final String? worstDeviationSeverity;
 
-  /// Top coaching tips aggregated from all checkpoints
-  @JsonKey(name: 'top_coaching_tips')
-  final List<String>? topCoachingTips;
-
   /// Create a copy with updated fields
   AnalysisResults copyWith({
     int? overallFormScore,
@@ -50,15 +46,14 @@ class AnalysisResults {
     CameraAngle? cameraAngle,
     Handedness? detectedHandedness,
     String? worstDeviationSeverity,
-    List<String>? topCoachingTips,
   }) {
     return AnalysisResults(
       overallFormScore: overallFormScore ?? this.overallFormScore,
       throwType: throwType ?? this.throwType,
       cameraAngle: cameraAngle ?? this.cameraAngle,
       detectedHandedness: detectedHandedness ?? this.detectedHandedness,
-      worstDeviationSeverity: worstDeviationSeverity ?? this.worstDeviationSeverity,
-      topCoachingTips: topCoachingTips ?? this.topCoachingTips,
+      worstDeviationSeverity:
+          worstDeviationSeverity ?? this.worstDeviationSeverity,
     );
   }
 

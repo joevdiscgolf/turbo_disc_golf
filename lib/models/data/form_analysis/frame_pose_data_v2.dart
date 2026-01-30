@@ -1,9 +1,35 @@
-import 'dart:math';
-
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 
 part 'frame_pose_data_v2.g.dart';
+
+/// Compressed landmark data for frame poses (V2 format)
+/// Uses short JSON keys to minimize payload size
+@JsonSerializable(explicitToJson: true)
+class FramePoseLandmark {
+  const FramePoseLandmark({
+    required this.x,
+    required this.y,
+    required this.z,
+    required this.v,
+  });
+
+  /// X coordinate (0-1 normalized)
+  final double x;
+
+  /// Y coordinate (0-1 normalized)
+  final double y;
+
+  /// Z depth
+  final double z;
+
+  /// Visibility (0-1)
+  final double v;
+
+  factory FramePoseLandmark.fromJson(Map<String, dynamic> json) =>
+      _$FramePoseLandmarkFromJson(json);
+  Map<String, dynamic> toJson() => _$FramePoseLandmarkToJson(this);
+}
 
 /// Compressed frame pose data for video scrubber (V2 format)
 /// Uses short JSON keys and reduced precision to minimize size
@@ -12,7 +38,7 @@ class FramePoseDataV2 {
   const FramePoseDataV2({
     required this.frameNumber,
     required this.timestampSeconds,
-    required this.landmarksFlat,
+    required this.landmarkObjects,
     this.checkpointId,
   });
 
@@ -24,19 +50,18 @@ class FramePoseDataV2 {
   @JsonKey(name: 't')
   final double timestampSeconds;
 
-  /// Landmarks as flat array [[x,y,z,visibility], ...]
-  /// Reduced precision (2 decimal places) to minimize size
+  /// Landmarks as objects [{x,y,z,v}, ...]
   @JsonKey(name: 'l')
-  final List<List<double>> landmarksFlat;
+  final List<FramePoseLandmark> landmarkObjects;
 
   /// Checkpoint ID if this frame is a checkpoint
   @JsonKey(name: 'c')
   final String? checkpointId;
 
-  /// Convert flat landmarks to PoseLandmark objects
+  /// Convert landmark objects to PoseLandmark objects with names
   /// MediaPipe pose landmarks are always in the same order
   List<PoseLandmark> get landmarks {
-    final List<String> landmarkNames = [
+    const List<String> landmarkNames = [
       'nose',
       'left_eye_inner',
       'left_eye',
@@ -72,35 +97,29 @@ class FramePoseDataV2 {
       'right_foot_index',
     ];
 
-    return landmarksFlat.asMap().entries.map((entry) {
+    return landmarkObjects.asMap().entries.map((entry) {
       final int index = entry.key;
-      final List<double> coords = entry.value;
+      final FramePoseLandmark landmark = entry.value;
       return PoseLandmark(
         name: index < landmarkNames.length ? landmarkNames[index] : 'unknown_$index',
-        x: coords[0],
-        y: coords[1],
-        z: coords[2],
-        visibility: coords.length > 3 ? coords[3] : 1.0,
+        x: landmark.x,
+        y: landmark.y,
+        z: landmark.z,
+        visibility: landmark.v,
       );
     }).toList();
   }
 
-  /// Convert PoseLandmark objects to flat array format
-  static List<List<double>> landmarksToFlat(List<PoseLandmark> landmarks) {
+  /// Convert PoseLandmark objects to FramePoseLandmark format
+  static List<FramePoseLandmark> poseLandmarksToObjects(List<PoseLandmark> landmarks) {
     return landmarks.map((landmark) {
-      return [
-        _roundToPrecision(landmark.x, 2),
-        _roundToPrecision(landmark.y, 2),
-        _roundToPrecision(landmark.z, 2),
-        _roundToPrecision(landmark.visibility, 2),
-      ];
+      return FramePoseLandmark(
+        x: landmark.x,
+        y: landmark.y,
+        z: landmark.z,
+        v: landmark.visibility,
+      );
     }).toList();
-  }
-
-  /// Round to specified decimal places
-  static double _roundToPrecision(double value, int decimals) {
-    final double factor = pow(10, decimals).toDouble();
-    return (value * factor).round() / factor;
   }
 
   factory FramePoseDataV2.fromJson(Map<String, dynamic> json) =>

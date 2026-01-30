@@ -15,9 +15,6 @@ AnalysisResults _$AnalysisResultsFromJson(Map<String, dynamic> json) =>
         json['detected_handedness'] as String?,
       ),
       worstDeviationSeverity: json['worst_deviation_severity'] as String?,
-      topCoachingTips: (json['top_coaching_tips'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
     );
 
 Map<String, dynamic> _$AnalysisResultsToJson(AnalysisResults instance) =>
@@ -27,7 +24,6 @@ Map<String, dynamic> _$AnalysisResultsToJson(AnalysisResults instance) =>
       'camera_angle': _$CameraAngleEnumMap[instance.cameraAngle]!,
       'detected_handedness': _$HandednessEnumMap[instance.detectedHandedness],
       'worst_deviation_severity': instance.worstDeviationSeverity,
-      'top_coaching_tips': instance.topCoachingTips,
     };
 
 const _$CameraAngleEnumMap = {
