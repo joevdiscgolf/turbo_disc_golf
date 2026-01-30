@@ -1,9 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/form_analysis/form_analysis_shimmer_placeholder.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/alignment_metadata.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
@@ -39,7 +38,7 @@ class ProReferenceImageContent extends StatelessWidget {
     this.onImageLoaded,
   });
 
-  final CheckpointRecord checkpoint;
+  final CheckpointDataV2 checkpoint;
   final String throwType;
   final CameraAngle cameraAngle;
   final bool showSkeletonOnly;
@@ -68,13 +67,13 @@ class ProReferenceImageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Use override proPlayerId if provided, otherwise fall back to checkpoint's proPlayerId
-    final String? effectiveProPlayerId = proPlayerId ?? checkpoint.proPlayerId;
+    final String? effectiveProPlayerId = proPlayerId ?? checkpoint.proReferencePose?.proPlayerId;
 
     // New records with proPlayerId: Use hybrid asset loading
     if (effectiveProPlayerId != null) {
       debugPrint('[ProReferenceImageContent] Loading image:');
       debugPrint('  - proPlayerId: $effectiveProPlayerId');
-      debugPrint('  - Checkpoint: ${checkpoint.checkpointId}');
+      debugPrint('  - Checkpoint: ${checkpoint.metadata.checkpointId}');
       debugPrint('  - throwType: $throwType');
       debugPrint('  - cameraAngle: $cameraAngle');
       debugPrint('  - showSkeletonOnly: $showSkeletonOnly');
@@ -132,27 +131,9 @@ class ProReferenceImageContent extends StatelessWidget {
       );
     }
 
-    // Legacy records with referenceImageUrl: Use CachedNetworkImage
-    final String? refImageUrl = showSkeletonOnly
-        ? checkpoint.referenceSkeletonUrl
-        : checkpoint.referenceImageUrl;
-
-    if (refImageUrl != null && refImageUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        key: ValueKey(refImageUrl),
-        imageUrl: refImageUrl,
-        fit: BoxFit.contain,
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
-        placeholder: (context, url) =>
-            const FormAnalysisShimmerPlaceholder(),
-        errorWidget: (context, url, error) => const Center(
-          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
-        ),
-      );
-    }
-
-    // Fallback: No image available
+    // V2 Note: Legacy referenceImageUrl/referenceSkeletonUrl fields removed
+    // V2 analyses always use proPlayerId for pro reference images
+    // If we reach here, no pro reference is available
     return const Center(
       child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
     );
@@ -166,7 +147,7 @@ class ProReferenceImageContent extends StatelessWidget {
       proRefLoader.loadReferenceImage(
         proPlayerId: proPlayerId,
         throwType: throwType,
-        checkpoint: checkpoint.checkpointId,
+        checkpoint: checkpoint.metadata.checkpointId,
         isSkeleton: showSkeletonOnly,
         cameraAngle: cameraAngle,
       ),
@@ -202,24 +183,24 @@ class ProReferenceImageContent extends StatelessWidget {
     final double containerHeight = MediaQuery.of(context).size.height;
 
     // Use backend-provided scale (already calculated based on torso height)
-    final double rawScale = checkpoint.referenceScale ?? 1.0;
+    final double rawScale = checkpoint.proOverlayAlignment?.referenceScale ?? 1.0;
     final double scale = rawScale.clamp(0.3, 2.0);
 
     // Get effective landmarks: explicit parameter first, then checkpoint's stored landmarks
-    final List<PoseLandmark>? effectiveLandmarks =
-        userLandmarks ?? checkpoint.userLandmarks;
+    final List<PoseLandmark> effectiveLandmarks =
+        userLandmarks ?? checkpoint.userPose.landmarks;
 
     debugPrint(
-        '🎨 [ProReferenceImageContent] Calculating alignment for ${checkpoint.checkpointId}');
+        '🎨 [ProReferenceImageContent] Calculating alignment for ${checkpoint.metadata.checkpointId}');
     debugPrint('   Metadata available: ${metadata != null}');
-    debugPrint('   User landmarks available: ${effectiveLandmarks != null}');
+    debugPrint('   User landmarks available: ${effectiveLandmarks.isNotEmpty}');
     debugPrint('   Container size: ${containerWidth}x$containerHeight');
     debugPrint('   Reference scale: $scale');
 
     // Try to use alignment metadata if available
-    if (metadata != null && effectiveLandmarks != null) {
+    if (metadata != null) {
       final CheckpointAlignmentData? alignmentData =
-          metadata.checkpoints[checkpoint.checkpointId];
+          metadata.checkpoints[checkpoint.metadata.checkpointId];
 
       debugPrint(
           '   Alignment data for checkpoint: ${alignmentData != null}');
@@ -326,11 +307,11 @@ class ProReferenceImageContent extends StatelessWidget {
 
     // Fallback to backend-provided horizontal offset (current behavior)
     final double horizontalOffset = containerWidth *
-        (checkpoint.referenceHorizontalOffsetPercent ?? 0) /
+        (checkpoint.proOverlayAlignment?.referenceHorizontalOffsetPercent ?? 0) /
         100;
 
     debugPrint('⚠️ [ProReferenceImageContent] Using fallback alignment');
-    debugPrint('   Reason: ${metadata == null ? 'No metadata' : effectiveLandmarks == null ? 'No landmarks' : 'No alignment data for checkpoint'}');
+    debugPrint('   Reason: ${metadata == null ? 'No metadata' : 'No alignment data for checkpoint'}');
     debugPrint('   Horizontal offset: $horizontalOffset');
     debugPrint('   Vertical offset: 0');
 

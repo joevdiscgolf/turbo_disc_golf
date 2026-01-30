@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
@@ -11,13 +11,13 @@ class CheckpointDetailsButton extends StatelessWidget {
     required this.onTap,
   });
 
-  final CheckpointRecord checkpoint;
+  final CheckpointDataV2 checkpoint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final List<String> topTips =
-        FormReferencePositions.getCoachingTips(checkpoint.checkpointId)
+        FormReferencePositions.getCoachingTips(checkpoint.metadata.checkpointId)
             .take(3)
             .toList();
 
@@ -34,7 +34,7 @@ class CheckpointDetailsButton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    checkpoint.checkpointName,
+                    checkpoint.metadata.checkpointName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[800],

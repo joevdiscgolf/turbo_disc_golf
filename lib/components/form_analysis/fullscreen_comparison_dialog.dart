@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/form_analysis/form_analysis_image.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
@@ -27,7 +28,7 @@ class FullscreenComparisonDialog extends StatefulWidget {
     this.poseAnalysisResponse,
   });
 
-  final List<CheckpointRecord> checkpoints;
+  final List<CheckpointDataV2> checkpoints;
   final String throwType;
   final ProReferenceLoader proRefLoader;
   final int initialIndex;
@@ -43,7 +44,7 @@ class FullscreenComparisonDialog extends StatefulWidget {
   final VideoOrientation? videoOrientation;
 
   /// Pose analysis response containing user landmarks for alignment
-  final PoseAnalysisResponse? poseAnalysisResponse;
+  final FormAnalysisResponseV2? poseAnalysisResponse;
 
   @override
   State<FullscreenComparisonDialog> createState() =>
@@ -103,7 +104,7 @@ class _FullscreenComparisonDialogState
 
   @override
   Widget build(BuildContext context) {
-    final CheckpointRecord currentCheckpoint =
+    final CheckpointDataV2 currentCheckpoint =
         widget.checkpoints[_currentIndex];
 
     return Scaffold(
@@ -116,7 +117,7 @@ class _FullscreenComparisonDialogState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          currentCheckpoint.checkpointName,
+          currentCheckpoint.metadata.checkpointName,
           style: const TextStyle(color: Colors.white, fontSize: 16),
         ),
         centerTitle: true,
@@ -266,10 +267,10 @@ class _FullscreenComparisonDialogState
     );
   }
 
-  Widget _buildCheckpointPage(CheckpointRecord checkpoint) {
-    final String? userImageUrl = _showSkeletonOnly
-        ? checkpoint.userSkeletonUrl
-        : checkpoint.userImageUrl;
+  Widget _buildCheckpointPage(CheckpointDataV2 checkpoint) {
+    // Note: In V2, individual checkpoint images are not stored
+    // This dialog should ideally use video frames, but for now we'll show no user image
+    final String? userImageUrl = null; // No per-checkpoint images in V2
 
     final bool isPortrait =
         widget.videoOrientation == VideoOrientation.portrait;
@@ -293,10 +294,10 @@ class _FullscreenComparisonDialogState
     );
   }
 
-  Widget _buildFullscreenProReferencePanel(CheckpointRecord checkpoint) {
+  Widget _buildFullscreenProReferencePanel(CheckpointDataV2 checkpoint) {
     // Get user landmarks for alignment calculation
     final List<PoseLandmark>? userLandmarks =
-        _getUserLandmarksForCheckpoint(checkpoint.checkpointId);
+        _getUserLandmarksForCheckpoint(checkpoint.metadata.checkpointId);
 
     return Column(
       children: [
@@ -333,31 +334,30 @@ class _FullscreenComparisonDialogState
   }
 
   /// Gets user landmarks for a specific checkpoint.
-  /// First tries to get from CheckpointRecord (stored data), then falls back
-  /// to PoseAnalysisResponse (fresh analysis that hasn't been saved yet).
+  /// First tries to get from CheckpointDataV2 (stored data), then falls back
+  /// to FormAnalysisResponseV2 (fresh analysis that hasn't been saved yet).
   List<PoseLandmark>? _getUserLandmarksForCheckpoint(String checkpointId) {
-    // First, try to get landmarks from the stored CheckpointRecord
+    // First, try to get landmarks from the stored CheckpointDataV2
     try {
-      final CheckpointRecord checkpoint = widget.checkpoints.firstWhere(
-        (cp) => cp.checkpointId == checkpointId,
+      final CheckpointDataV2 checkpoint = widget.checkpoints.firstWhere(
+        (cp) => cp.metadata.checkpointId == checkpointId,
       );
-      if (checkpoint.userLandmarks != null &&
-          checkpoint.userLandmarks!.isNotEmpty) {
-        return checkpoint.userLandmarks;
+      if (checkpoint.userPose.landmarks.isNotEmpty) {
+        return checkpoint.userPose.landmarks;
       }
     } catch (e) {
       // Checkpoint not found, continue to fallback
     }
 
-    // Fallback: try to get from PoseAnalysisResponse (for fresh analysis)
+    // Fallback: try to get from FormAnalysisResponseV2 (for fresh analysis)
     if (widget.poseAnalysisResponse == null) return null;
 
     try {
-      final CheckpointPoseData checkpointData =
+      final CheckpointDataV2 checkpointData =
           widget.poseAnalysisResponse!.checkpoints.firstWhere(
-        (cp) => cp.checkpointId == checkpointId,
+        (cp) => cp.metadata.checkpointId == checkpointId,
       );
-      return checkpointData.userLandmarks;
+      return checkpointData.userPose.landmarks;
     } catch (e) {
       debugPrint(
           'Failed to get user landmarks for checkpoint $checkpointId: $e');

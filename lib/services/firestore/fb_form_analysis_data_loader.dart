@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_record_builder.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -226,6 +227,8 @@ abstract class FBFormAnalysisDataLoader {
         returnedVideoAspectRatio: poseAnalysis.returnedVideoAspectRatio,
         videoSyncMetadata: poseAnalysis.videoSyncMetadata,
         detectedHandedness: poseAnalysis.detectedHandedness,
+        userVideoWidth: poseAnalysis.userVideoWidth,
+        userVideoHeight: poseAnalysis.userVideoHeight,
       );
 
       // Save to Firestore using utility
@@ -262,7 +265,7 @@ abstract class FBFormAnalysisDataLoader {
 
   /// Load recent form analyses for a user with pagination support.
   /// Returns a tuple of (analyses, hasMore) where hasMore indicates if there are more documents.
-  static Future<(List<FormAnalysisRecord>, bool)> loadRecentAnalyses(
+  static Future<(List<FormAnalysisResponseV2>, bool)> loadRecentAnalyses(
     String uid, {
     int limit = 15,
     String? startAfterTimestamp,
@@ -295,19 +298,19 @@ abstract class FBFormAnalysisDataLoader {
         debugPrint(
           '[FBFormAnalysisDataLoader][loadRecentAnalyses] No documents found',
         );
-        return (<FormAnalysisRecord>[], false);
+        return (<FormAnalysisResponseV2>[], false);
       }
 
       // Parse documents
-      final List<FormAnalysisRecord> allRecords = snapshot.docs
-          .map((doc) => FormAnalysisRecord.fromJson(doc.data()))
+      final List<FormAnalysisResponseV2> allRecords = snapshot.docs
+          .map((doc) => FormAnalysisResponseV2.fromJson(doc.data()))
           .toList();
 
       // Check if there are more documents
       final bool hasMore = allRecords.length > limit;
 
       // Return only the requested limit
-      final List<FormAnalysisRecord> records = hasMore
+      final List<FormAnalysisResponseV2> records = hasMore
           ? allRecords.take(limit).toList()
           : allRecords;
 
@@ -324,7 +327,7 @@ abstract class FBFormAnalysisDataLoader {
       debugPrint(
         '[FBFormAnalysisDataLoader][loadRecentAnalyses] This is normal if Firebase emulator is not running or no data exists',
       );
-      return (<FormAnalysisRecord>[], false);
+      return (<FormAnalysisResponseV2>[], false);
     } catch (e, trace) {
       debugPrint(
         '[FBFormAnalysisDataLoader][loadRecentAnalyses] Exception: $e',
@@ -332,12 +335,12 @@ abstract class FBFormAnalysisDataLoader {
       debugPrint(
         '[FBFormAnalysisDataLoader][loadRecentAnalyses] Stack: $trace',
       );
-      return (<FormAnalysisRecord>[], false);
+      return (<FormAnalysisResponseV2>[], false);
     }
   }
 
   /// Load a specific form analysis by ID.
-  static Future<FormAnalysisRecord?> loadAnalysisById(
+  static Future<FormAnalysisResponseV2?> loadAnalysisById(
     String uid,
     String analysisId,
   ) async {
@@ -355,7 +358,7 @@ abstract class FBFormAnalysisDataLoader {
         return null;
       }
 
-      return FormAnalysisRecord.fromJson(snapshot.data()!);
+      return FormAnalysisResponseV2.fromJson(snapshot.data()!);
     } catch (e, trace) {
       debugPrint('[FBFormAnalysisDataLoader][loadAnalysisById] Exception: $e');
       debugPrint('[FBFormAnalysisDataLoader][loadAnalysisById] Stack: $trace');

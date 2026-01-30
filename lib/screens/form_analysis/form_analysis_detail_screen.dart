@@ -7,7 +7,7 @@ import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
@@ -18,7 +18,7 @@ class FormAnalysisDetailScreen extends StatefulWidget {
 
   const FormAnalysisDetailScreen({super.key, required this.analysis});
 
-  final FormAnalysisRecord analysis;
+  final FormAnalysisResponseV2 analysis;
 
   @override
   State<FormAnalysisDetailScreen> createState() =>
@@ -67,10 +67,10 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
               analysis: widget.analysis,
               onBack: () => Navigator.pop(context),
               topPadding: 8,
-              videoUrl: widget.analysis.videoUrl,
-              throwType: _parseThrowTechnique(widget.analysis.throwType),
-              cameraAngle: widget.analysis.cameraAngle,
-              videoAspectRatio: widget.analysis.videoAspectRatio,
+              videoUrl: widget.analysis.videoMetadata.videoUrl,
+              throwType: _parseThrowTechnique(widget.analysis.analysisResults.throwType),
+              cameraAngle: widget.analysis.analysisResults.cameraAngle,
+              videoAspectRatio: widget.analysis.videoMetadata.videoAspectRatio,
             ),
           ),
         ),
@@ -178,6 +178,6 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
     Navigator.pop(context);
 
     // Fire optimistic delete in background
-    cubit.deleteAnalysis(widget.analysis.id);
+    cubit.deleteAnalysis(widget.analysis.id!);
   }
 }

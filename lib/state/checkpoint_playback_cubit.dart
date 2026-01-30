@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
 
 /// Cubit managing all checkpoint video playback logic.
@@ -14,7 +14,7 @@ import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
 /// controller when this cubit emits position changes.
 class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
   CheckpointPlaybackCubit({
-    required List<CheckpointRecord> checkpoints,
+    required List<CheckpointDataV2> checkpoints,
     double initialSpeed = 0.25,
     int? totalFrames,
   }) : super(
@@ -35,6 +35,9 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
 
   /// Indices of checkpoints already auto-paused at during this playback segment.
   final Set<int> _autoPausedCheckpointIndices = {};
+
+  /// Tracks the last active checkpoint index during continuous playback.
+  int? _lastActiveCheckpointIndex;
 
   // Frame interval for playback simulation (~30fps)
   static const Duration _playbackFrameInterval = Duration(milliseconds: 33);
@@ -114,14 +117,29 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
       _autoPausedCheckpointIndices.clear();
     }
 
-    emit(
-      state.copyWith(
-        currentPosition: startPosition,
-        isPlaying: true,
-        // Clear selection when playing - selection only shows when paused at checkpoint
-        clearSelectedCheckpointIndex: true,
-      ),
-    );
+    // Find and set initial active checkpoint for the starting position
+    final int initialActiveIndex = _findActiveCheckpointIndex(startPosition);
+    _lastActiveCheckpointIndex = initialActiveIndex;
+
+    // If there's an active checkpoint at start position, show it selected
+    if (initialActiveIndex >= 0) {
+      emit(
+        state.copyWith(
+          currentPosition: startPosition,
+          isPlaying: true,
+          selectedCheckpointIndex: initialActiveIndex,
+          lastSelectedCheckpointIndex: initialActiveIndex,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          currentPosition: startPosition,
+          isPlaying: true,
+          clearSelectedCheckpointIndex: true,
+        ),
+      );
+    }
 
     _playbackSimulationTimer?.cancel();
     _playbackSimulationTimer = Timer.periodic(_playbackFrameInterval, (_) {
@@ -156,7 +174,21 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
         }
       }
 
-      // Simply advance position - selection was already cleared when playback started
+      // Check for active checkpoint change during playback
+      final int activeIndex = _findActiveCheckpointIndex(nextPosition);
+      if (activeIndex >= 0 && activeIndex != _lastActiveCheckpointIndex) {
+        _lastActiveCheckpointIndex = activeIndex;
+        emit(
+          state.copyWith(
+            currentPosition: nextPosition,
+            selectedCheckpointIndex: activeIndex,
+            lastSelectedCheckpointIndex: activeIndex,
+          ),
+        );
+        return;
+      }
+
+      // Simply advance position if no checkpoint change
       emit(state.copyWith(currentPosition: nextPosition));
     });
   }
@@ -164,6 +196,7 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
   void _pause({bool cancelAutoResume = false}) {
     _playbackSimulationTimer?.cancel();
     _playbackSimulationTimer = null;
+    _lastActiveCheckpointIndex = null;
 
     if (cancelAutoResume) {
       _autoResumeTimer?.cancel();
@@ -224,13 +257,12 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
     if (!state.isInitialized) return;
     if (index < 0 || index >= state.checkpoints.length) return;
 
-    final CheckpointRecord cp = state.checkpoints[index];
-    if (cp.timestampSeconds == null) return;
+    final CheckpointDataV2 cp = state.checkpoints[index];
 
     HapticFeedback.selectionClick();
 
     final Duration position = Duration(
-      milliseconds: (cp.timestampSeconds! * 1000).ceil(),
+      milliseconds: (cp.metadata.timestampSeconds * 1000).ceil(),
     );
 
     _autoPausedCheckpointIndices.add(index);
@@ -285,6 +317,21 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
   // Checkpoint detection (private)
   // ─────────────────────────────────────────────
 
+  /// Find the active checkpoint at position (the last checkpoint crossed).
+  /// Returns -1 if position is before all checkpoints.
+  int _findActiveCheckpointIndex(Duration position) {
+    final double positionSeconds = position.inMilliseconds / 1000.0;
+    int activeIndex = -1;
+
+    for (int i = 0; i < state.checkpoints.length; i++) {
+      final CheckpointDataV2 cp = state.checkpoints[i];
+      if (cp.metadata.timestampSeconds <= positionSeconds) {
+        activeIndex = i;
+      }
+    }
+    return activeIndex;
+  }
+
   /// Find checkpoint index at or very close to the given position.
   /// Returns -1 if no checkpoint found within threshold.
   int _findCheckpointAtPosition(Duration position) {
@@ -292,12 +339,12 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
     final double positionSeconds = position.inMilliseconds / 1000.0;
 
     for (int i = 0; i < state.checkpoints.length; i++) {
-      final CheckpointRecord cp = state.checkpoints[i];
-      if (cp.timestampSeconds != null) {
-        final double diff = (cp.timestampSeconds! - positionSeconds).abs();
-        if (diff <= thresholdSeconds) {
-          return i;
-        }
+      final CheckpointDataV2 cp = state.checkpoints[i];
+
+      final double diff = (cp.metadata.timestampSeconds - positionSeconds)
+          .abs();
+      if (diff <= thresholdSeconds) {
+        return i;
       }
     }
     return -1;
@@ -316,11 +363,11 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
 
     // If we don't have totalFrames, try to derive frame rate from checkpoint data
     if (totalFrames == null && _derivedFrameRate == null) {
-      for (final CheckpointRecord cp in state.checkpoints) {
-        if (cp.detectedFrameNumber != null &&
-            cp.timestampSeconds != null &&
-            cp.timestampSeconds! > 0) {
-          _derivedFrameRate = cp.detectedFrameNumber! / cp.timestampSeconds!;
+      for (final CheckpointDataV2 cp in state.checkpoints) {
+        if (cp.metadata.detectedFrameNumber != null &&
+            cp.metadata.timestampSeconds > 0) {
+          _derivedFrameRate =
+              cp.metadata.detectedFrameNumber! / cp.metadata.timestampSeconds;
           break;
         }
       }
@@ -340,9 +387,9 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
       final int currentFrame = (progress * totalFrames).round();
 
       for (int i = 0; i < state.checkpoints.length; i++) {
-        final CheckpointRecord cp = state.checkpoints[i];
-        if (cp.detectedFrameNumber != null) {
-          if (currentFrame == cp.detectedFrameNumber) {
+        final CheckpointDataV2 cp = state.checkpoints[i];
+        if (cp.metadata.detectedFrameNumber != null) {
+          if (currentFrame == cp.metadata.detectedFrameNumber) {
             return i;
           }
         }
@@ -354,12 +401,12 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
     final double positionSeconds = position.inMilliseconds / 1000.0;
 
     for (int i = 0; i < state.checkpoints.length; i++) {
-      final CheckpointRecord cp = state.checkpoints[i];
-      if (cp.timestampSeconds != null) {
-        final double diff = (cp.timestampSeconds! - positionSeconds).abs();
-        if (diff <= thresholdSeconds) {
-          return i;
-        }
+      final CheckpointDataV2 cp = state.checkpoints[i];
+
+      final double diff = (cp.metadata.timestampSeconds - positionSeconds)
+          .abs();
+      if (diff <= thresholdSeconds) {
+        return i;
       }
     }
     return -1;
@@ -367,19 +414,18 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
 
   void _autoPauseAtCheckpoint(int checkpointIndex) {
     HapticFeedback.mediumImpact();
-    final CheckpointRecord cp = state.checkpoints[checkpointIndex];
+    final CheckpointDataV2 cp = state.checkpoints[checkpointIndex];
 
     debugPrint(
-      '[CheckpointPlaybackCubit] Auto-pause at checkpoint: ${cp.checkpointName} (mode: ${state.pauseMode})',
+      '[CheckpointPlaybackCubit] Auto-pause at checkpoint: ${cp.metadata.checkpointName} (mode: ${state.pauseMode})',
     );
 
     // Seek to exact checkpoint position
     Duration exactPosition = state.currentPosition;
-    if (cp.timestampSeconds != null) {
-      exactPosition = Duration(
-        milliseconds: (cp.timestampSeconds! * 1000).ceil(),
-      );
-    }
+
+    exactPosition = Duration(
+      milliseconds: (cp.metadata.timestampSeconds * 1000).ceil(),
+    );
 
     _playbackSimulationTimer?.cancel();
     _playbackSimulationTimer = null;
@@ -399,7 +445,7 @@ class CheckpointPlaybackCubit extends Cubit<CheckpointPlaybackState> {
       _autoResumeTimer = Timer(const Duration(seconds: 2), () {
         if (!isClosed && !state.isPlaying) {
           debugPrint(
-            '[CheckpointPlaybackCubit] Auto-resuming after 2s pause at ${cp.checkpointName}',
+            '[CheckpointPlaybackCubit] Auto-resuming after 2s pause at ${cp.metadata.checkpointName}',
           );
           _play();
         }

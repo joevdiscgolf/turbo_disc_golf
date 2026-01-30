@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_story_preview_screen.dart';
@@ -233,27 +234,33 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   /// Extract share data with V2/V1 fallback logic
-  (String, String, String?) _getShareData() {
+  (String, String, String?, List<ShareHighlightStat>?) _getShareData() {
     final AIContent? aiSummary = _currentRound.aiSummary;
 
     if (aiSummary == null) {
-      return ('Round Story', '', null);
+      return ('Round Story', '', null, null);
     }
 
-    // Check V2 first (current branch)
+    // Check V3 first (newest version)
+    if (aiSummary.structuredContentV3 != null) {
+      final RoundStoryV3Content v3 = aiSummary.structuredContentV3!;
+      return (v3.roundTitle, v3.overview, v3.shareableHeadline, null);
+    }
+
+    // Check V2
     if (aiSummary.structuredContentV2 != null) {
       final RoundStoryV2Content v2 = aiSummary.structuredContentV2!;
-      return (v2.roundTitle, v2.overview, v2.shareableHeadline);
+      return (v2.roundTitle, v2.overview, v2.shareableHeadline, null);
     }
 
     // Fall back to V1
     if (aiSummary.structuredContent != null) {
       final StructuredStoryContent v1 = aiSummary.structuredContent!;
-      return (v1.roundTitle, v1.overview, v1.shareableHeadline);
+      return (v1.roundTitle, v1.overview, v1.shareableHeadline, v1.shareHighlightStats);
     }
 
     // No story data available
-    return ('Round Story', '', null);
+    return ('Round Story', '', null, null);
   }
 
   Widget _buildContentWithShareBar(BuildContext context) {
@@ -304,7 +311,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildShareCard() {
-    final (roundTitle, overview, shareableHeadline) = _getShareData();
+    final (roundTitle, overview, shareableHeadline, shareHighlightStats) = _getShareData();
 
     if (locator.get<FeatureFlagService>().useStoryPosterShareCard) {
       return StoryPosterShareCard(
@@ -313,7 +320,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         roundTitle: roundTitle,
         overview: overview,
         shareableHeadline: shareableHeadline,
-        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
+        shareHighlightStats: shareHighlightStats,
       );
     } else {
       return StoryHighlightsShareCard(
@@ -322,14 +329,14 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         roundTitle: roundTitle,
         overview: overview,
         shareableHeadline: shareableHeadline,
-        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
+        shareHighlightStats: shareHighlightStats,
       );
     }
   }
 
   Future<void> _shareStoryCard() async {
     _logger.track('Story Share Button Tapped');
-    final (roundTitle, _, _) = _getShareData();
+    final (roundTitle, _, _, _) = _getShareData();
     final ShareService shareService = locator.get<ShareService>();
 
     final String caption =
@@ -355,7 +362,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
   void _showShareCardPreview() {
     _logger.track('Story Preview Button Tapped');
-    final (roundTitle, overview, shareableHeadline) = _getShareData();
+    final (roundTitle, overview, shareableHeadline, shareHighlightStats) = _getShareData();
 
     pushCupertinoRoute(
       context,
@@ -365,7 +372,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         roundTitle: roundTitle,
         overview: overview,
         shareableHeadline: shareableHeadline,
-        shareHighlightStats: null, // V2 doesn't use shareHighlightStats yet
+        shareHighlightStats: shareHighlightStats,
       ),
       pushFromBottom: true,
     );

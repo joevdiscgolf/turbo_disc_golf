@@ -12,8 +12,8 @@ import 'package:turbo_disc_golf/components/form_analysis/v2_measurements_card.da
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/timeline_analysis_view.dart';
@@ -37,14 +37,14 @@ class HistoryAnalysisView extends StatefulWidget {
     this.poseAnalysisResponse,
   });
 
-  final FormAnalysisRecord analysis;
+  final FormAnalysisResponseV2 analysis;
   final VoidCallback onBack;
   final double topPadding;
   final String? videoUrl;
   final ThrowTechnique? throwType;
   final CameraAngle? cameraAngle;
   final double? videoAspectRatio;
-  final PoseAnalysisResponse? poseAnalysisResponse;
+  final FormAnalysisResponseV2? poseAnalysisResponse;
 
   @override
   State<HistoryAnalysisView> createState() => _HistoryAnalysisViewState();
@@ -57,7 +57,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
   /// Effective camera angle, prioritizing widget prop over analysis record
   CameraAngle get _effectiveCameraAngle =>
-      widget.cameraAngle ?? widget.analysis.cameraAngle ?? CameraAngle.side;
+      widget.cameraAngle ?? widget.analysis.analysisResults.cameraAngle;
 
   @override
   void initState() {
@@ -67,17 +67,23 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('[HistoryAnalysisView] 📷 CAMERA ANGLE DEBUG');
     debugPrint('[HistoryAnalysisView] Analysis ID: ${widget.analysis.id}');
-    debugPrint('[HistoryAnalysisView] widget.cameraAngle: ${widget.cameraAngle}');
-    debugPrint('[HistoryAnalysisView] widget.analysis.cameraAngle: ${widget.analysis.cameraAngle}');
-    debugPrint('[HistoryAnalysisView] _effectiveCameraAngle: $_effectiveCameraAngle');
+    debugPrint(
+      '[HistoryAnalysisView] widget.cameraAngle: ${widget.cameraAngle}',
+    );
+    debugPrint(
+      '[HistoryAnalysisView] widget.analysis.cameraAngle: ${widget.analysis.analysisResults.cameraAngle}',
+    );
+    debugPrint(
+      '[HistoryAnalysisView] _effectiveCameraAngle: $_effectiveCameraAngle',
+    );
     debugPrint('═══════════════════════════════════════════════════════');
 
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('[HistoryAnalysisView] 🎬 VIDEO SYNC METADATA DEBUG');
     debugPrint('[HistoryAnalysisView] Analysis ID: ${widget.analysis.id}');
-    debugPrint('[HistoryAnalysisView] From FormAnalysisRecord:');
-    if (widget.analysis.videoSyncMetadata != null) {
-      final metadata = widget.analysis.videoSyncMetadata!;
+    debugPrint('[HistoryAnalysisView] From FormAnalysisResponseV2:');
+    if (widget.analysis.proComparisonConfig?.videoSyncMetadata != null) {
+      final metadata = widget.analysis.proComparisonConfig!.videoSyncMetadata!;
       debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
       debugPrint(
         '[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x',
@@ -90,9 +96,11 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
         '[HistoryAnalysisView]   ❌ videoSyncMetadata is NULL (not saved to Firestore)',
       );
     }
-    debugPrint('[HistoryAnalysisView] From PoseAnalysisResponse:');
-    if (widget.poseAnalysisResponse?.videoSyncMetadata != null) {
-      final metadata = widget.poseAnalysisResponse!.videoSyncMetadata!;
+    debugPrint('[HistoryAnalysisView] From poseAnalysisResponse:');
+    if (widget.poseAnalysisResponse?.proComparisonConfig?.videoSyncMetadata !=
+        null) {
+      final metadata =
+          widget.poseAnalysisResponse!.proComparisonConfig!.videoSyncMetadata!;
       debugPrint('[HistoryAnalysisView]   ✅ videoSyncMetadata EXISTS');
       debugPrint(
         '[HistoryAnalysisView]   - Pro speed multiplier: ${metadata.proPlaybackSpeedMultiplier}x',
@@ -102,7 +110,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       );
     } else {
       debugPrint(
-        '[HistoryAnalysisView]   ${widget.poseAnalysisResponse == null ? "⏭️  PoseAnalysisResponse not provided" : "❌ videoSyncMetadata is NULL"}',
+        '[HistoryAnalysisView]   ${widget.poseAnalysisResponse == null ? "⏭️  poseAnalysisResponse not provided" : "❌ videoSyncMetadata is NULL"}',
       );
     }
     debugPrint('═══════════════════════════════════════════════════════');
@@ -141,8 +149,8 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
                 items: widget.analysis.checkpoints
                     .map(
                       (cp) => CheckpointSelectorItem(
-                        id: cp.checkpointId,
-                        label: cp.checkpointName,
+                        id: cp.metadata.checkpointId,
+                        label: cp.metadata.checkpointName,
                       ),
                     )
                     .toList(),
@@ -168,7 +176,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     if (widget.videoUrl == null ||
         widget.videoUrl!.isEmpty ||
         widget.throwType == null ||
-        (widget.cameraAngle == null && widget.analysis.cameraAngle == null)) {
+        widget.cameraAngle == null) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
@@ -185,8 +193,11 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             userVideoUrl: widget.videoUrl!,
             proVideoAssetPath: proVideoPath,
             videoSyncMetadata:
-                widget.poseAnalysisResponse?.videoSyncMetadata ??
-                widget.analysis.videoSyncMetadata,
+                widget
+                    .poseAnalysisResponse
+                    ?.proComparisonConfig
+                    ?.videoSyncMetadata ??
+                widget.analysis.proComparisonConfig?.videoSyncMetadata,
             videoAspectRatio: widget.videoAspectRatio,
           ),
         ),
@@ -224,11 +235,12 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       return const SizedBox.shrink();
     }
 
-    final CheckpointRecord checkpoint =
+    final CheckpointDataV2 checkpoint =
         widget.analysis.checkpoints[_selectedCheckpointIndex];
 
     final bool isPortrait =
-        widget.analysis.videoOrientation == VideoOrientation.portrait;
+        widget.analysis.videoMetadata.videoOrientation ==
+        VideoOrientation.portrait;
     final double horizontalPadding = isPortrait ? 8.0 : 16.0;
 
     return GestureDetector(
@@ -268,10 +280,9 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
             const SizedBox(height: 12),
             CheckpointDetailsButton(
               checkpoint: checkpoint,
-              onTap: () =>
-                  _showCheckpointDetailsPanel(context, checkpoint),
+              onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
             ),
-            if (checkpoint.userV2Measurements != null)
+            if (checkpoint.userPose.v2Measurements != null)
               V2MeasurementsCard(checkpoint: checkpoint),
             const SizedBox(height: 120),
           ],
@@ -282,7 +293,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
   void _showCheckpointDetailsPanel(
     BuildContext context,
-    CheckpointRecord checkpoint,
+    CheckpointDataV2 checkpoint,
   ) {
     EducationPanel.show(
       context,
@@ -290,18 +301,19 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
       modalName: 'Checkpoint Details',
       accentColor: const Color(0xFF137e66),
       buttonLabel: 'Done',
-      contentBuilder: (_) =>
-          CheckpointDetailsContent(checkpoint: checkpoint),
+      contentBuilder: (_) => CheckpointDetailsContent(checkpoint: checkpoint),
     );
   }
 
-  Widget _buildImageComparison(CheckpointRecord checkpoint) {
-    final String? userImageUrl = _showSkeletonOnly
-        ? checkpoint.userSkeletonUrl
-        : checkpoint.userImageUrl;
+  Widget _buildImageComparison(CheckpointDataV2 checkpoint) {
+    // Note: In V2, individual checkpoint images are not stored
+    // The UI now uses video-based display via TimelineAnalysisView
+    // This code path is only for fallback when video is not available
+    final String? userImageUrl = null; // No per-checkpoint images in V2
 
     final bool isPortrait =
-        widget.analysis.videoOrientation == VideoOrientation.portrait;
+        widget.analysis.videoMetadata.videoOrientation ==
+        VideoOrientation.portrait;
 
     if (isPortrait) {
       return Row(
@@ -345,7 +357,7 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
   }
 
   Widget _buildProReferenceImage({
-    required CheckpointRecord checkpoint,
+    required CheckpointDataV2 checkpoint,
     VoidCallback? onTap,
   }) {
     return Column(
@@ -372,11 +384,12 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               color: Colors.black,
               child: ProReferenceImageContent(
                 checkpoint: checkpoint,
-                throwType: widget.analysis.throwType,
+                throwType: widget.analysis.analysisResults.throwType,
                 cameraAngle: _effectiveCameraAngle,
                 showSkeletonOnly: _showSkeletonOnly,
                 proRefLoader: _proRefLoader,
-                detectedHandedness: widget.analysis.detectedHandedness,
+                detectedHandedness:
+                    widget.analysis.analysisResults.detectedHandedness,
               ),
             ),
           ),
@@ -385,20 +398,20 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
     );
   }
 
-  void _showFullscreenComparison(CheckpointRecord checkpoint) {
+  void _showFullscreenComparison(CheckpointDataV2 checkpoint) {
     showDialog(
       context: context,
       barrierColor: Colors.black,
       useSafeArea: false,
       builder: (dialogContext) => FullscreenComparisonDialog(
         checkpoints: widget.analysis.checkpoints,
-        throwType: widget.analysis.throwType,
+        throwType: widget.analysis.analysisResults.throwType,
         proRefLoader: _proRefLoader,
         initialIndex: _selectedCheckpointIndex,
         showSkeletonOnly: _showSkeletonOnly,
         cameraAngle: _effectiveCameraAngle,
-        videoOrientation: widget.analysis.videoOrientation,
-        detectedHandedness: widget.analysis.detectedHandedness,
+        videoOrientation: widget.analysis.videoMetadata.videoOrientation,
+        detectedHandedness: widget.analysis.analysisResults.detectedHandedness,
         onToggleMode: (bool newMode) {
           setState(() => _showSkeletonOnly = newMode);
         },

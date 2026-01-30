@@ -53,6 +53,8 @@ PoseAnalysisResponse _$PoseAnalysisResponseFromJson(
     ),
   ),
   defaultProId: json['default_pro_id'] as String?,
+  userVideoWidth: (json['user_video_width'] as num?)?.toInt(),
+  userVideoHeight: (json['user_video_height'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$PoseAnalysisResponseToJson(
@@ -83,6 +85,8 @@ Map<String, dynamic> _$PoseAnalysisResponseToJson(
     (k, e) => MapEntry(k, e.toJson()),
   ),
   'default_pro_id': instance.defaultProId,
+  'user_video_width': instance.userVideoWidth,
+  'user_video_height': instance.userVideoHeight,
 };
 
 const _$CameraAngleEnumMap = {
@@ -173,6 +177,13 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(Map json) => CheckpointPoseData(
           Map<String, dynamic>.from(json['v2_measurement_deviations'] as Map),
         ),
   detectedFrameNumber: (json['detected_frame_number'] as num?)?.toInt(),
+  userBodyAnchor: json['user_body_anchor'] == null
+      ? null
+      : UserBodyAnchor.fromJson(
+          Map<String, dynamic>.from(json['user_body_anchor'] as Map),
+        ),
+  userTorsoHeightNormalized: (json['user_torso_height_normalized'] as num?)
+      ?.toDouble(),
 );
 
 Map<String, dynamic> _$CheckpointPoseDataToJson(
@@ -212,6 +223,8 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'reference_v2_measurements': instance.referenceV2Measurements?.toJson(),
   'v2_measurement_deviations': instance.v2MeasurementDeviations?.toJson(),
   'detected_frame_number': instance.detectedFrameNumber,
+  'user_body_anchor': instance.userBodyAnchor?.toJson(),
+  'user_torso_height_normalized': instance.userTorsoHeightNormalized,
 };
 
 PoseLandmark _$PoseLandmarkFromJson(Map json) => PoseLandmark(
@@ -367,6 +380,15 @@ Map<String, dynamic> _$V2SideMeasurementsToJson(V2SideMeasurements instance) =>
       'hip_rotation_angle': instance.hipRotationAngle,
       'shoulder_rotation_angle': instance.shoulderRotationAngle,
     };
+
+UserBodyAnchor _$UserBodyAnchorFromJson(Map json) => UserBodyAnchor(
+  name: json['name'] as String,
+  x: (json['x'] as num).toDouble(),
+  y: (json['y'] as num).toDouble(),
+);
+
+Map<String, dynamic> _$UserBodyAnchorToJson(UserBodyAnchor instance) =>
+    <String, dynamic>{'name': instance.name, 'x': instance.x, 'y': instance.y};
 
 FramePoseData _$FramePoseDataFromJson(Map json) => FramePoseData(
   frameNumber: (json['frame_number'] as num).toInt(),

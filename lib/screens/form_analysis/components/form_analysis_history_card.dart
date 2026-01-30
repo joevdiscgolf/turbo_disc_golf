@@ -1,26 +1,25 @@
-import 'dart:convert';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-
 import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
-class FormAnalysisCard extends StatelessWidget {
-  const FormAnalysisCard({
+class FormAnalysisHistoryCard extends StatelessWidget {
+  const FormAnalysisHistoryCard({
     super.key,
     required this.analysis,
     required this.onTap,
   });
 
-  final FormAnalysisRecord analysis;
+  final FormAnalysisResponseV2 analysis;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final String throwTypeDisplay = analysis.throwType == 'backhand'
+    final String throwTypeDisplay =
+        analysis.analysisResults.throwType == 'backhand'
         ? 'Backhand'
         : 'Forehand';
     final String? formattedDateTime = _formatDateTime(analysis.createdAt);
@@ -79,10 +78,15 @@ class FormAnalysisCard extends StatelessWidget {
               : const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
-        // Severity badge on the right (hide if 'good')
-        if (analysis.worstDeviationSeverity != null &&
-            analysis.worstDeviationSeverity!.toLowerCase() != 'good')
-          _SeverityBadge(severity: analysis.worstDeviationSeverity!),
+        // Severity badge on the right (hide if 'good' or 'minor')
+        if (analysis.analysisResults.worstDeviationSeverity != null &&
+            analysis.analysisResults.worstDeviationSeverity!.toLowerCase() !=
+                'good' &&
+            analysis.analysisResults.worstDeviationSeverity!.toLowerCase() !=
+                'minor')
+          _SeverityBadge(
+            severity: analysis.analysisResults.worstDeviationSeverity!,
+          ),
       ],
     );
   }
@@ -91,10 +95,8 @@ class FormAnalysisCard extends StatelessWidget {
     return Row(
       children: [
         _ThrowTypeBadge(throwType: throwTypeDisplay),
-        if (analysis.cameraAngle != null) ...[
-          const SizedBox(width: 8),
-          _CameraAngleBadge(angle: analysis.cameraAngle!),
-        ],
+        const SizedBox(width: 8),
+        _CameraAngleBadge(angle: analysis.analysisResults.cameraAngle),
       ],
     );
   }
@@ -114,29 +116,23 @@ class FormAnalysisCard extends StatelessWidget {
   }
 
   Widget _buildThumbnail(BuildContext context) {
-    if (analysis.thumbnailBase64 == null) {
-      return _buildPlaceholderThumbnail();
+    final String? thumbnailUrl = analysis.videoMetadata.thumbnailUrl;
+
+    if (thumbnailUrl != null && thumbnailUrl.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: CachedNetworkImage(
+          imageUrl: thumbnailUrl,
+          width: 70,
+          height: 70,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => _buildPlaceholderThumbnail(),
+          errorWidget: (context, url, error) => _buildPlaceholderThumbnail(),
+        ),
+      );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!, width: 1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Image.memory(
-          base64Decode(analysis.thumbnailBase64!),
-          fit: BoxFit.cover,
-          gaplessPlayback: true,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildPlaceholderThumbnail();
-          },
-        ),
-      ),
-    );
+    return _buildPlaceholderThumbnail();
   }
 
   Widget _buildPlaceholderThumbnail() {

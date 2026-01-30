@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:turbo_disc_golf/components/story/score_journey_graph.dart';
@@ -35,9 +33,6 @@ class StoryPosterShareCard extends StatelessWidget {
   /// Fixed width for the inner card
   static const double cardWidth = 400;
 
-  /// Seed for random emoji positions (based on round data for consistency)
-  int get _randomSeed => round.versionId.hashCode;
-
   @override
   Widget build(BuildContext context) {
     // Story poster theme colors - elegant dark blue/purple gradient
@@ -58,14 +53,6 @@ class StoryPosterShareCard extends StatelessWidget {
     final Color subtleColor = Colors.white.withValues(alpha: 0.8);
     final Color containerBgAlpha = Colors.white.withValues(alpha: 0.15);
 
-    // Outer background tint
-    final List<Color> outerColors = [
-      baseColors[0].withValues(alpha: 0.10),
-      baseColors[1].withValues(alpha: 0.10),
-    ];
-
-    final double screenHeight = MediaQuery.of(context).size.height;
-
     // Determine if this is an under par round for graph color
     final int totalRelative = round.getRelativeToPar();
     final Color graphLineColor = totalRelative <= 0
@@ -73,134 +60,57 @@ class StoryPosterShareCard extends StatelessWidget {
         : const Color(0xFFFF6B6B); // Red for over par
 
     // White background ensures proper image capture
-    return Container(
-      width: double.infinity,
-      height: screenHeight,
-      color: Colors.white,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: outerColors,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Header outside the card
+        _buildHeaderText(),
+        const SizedBox(height: 16),
+        // Inner card
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: cardColors,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCourseAndDate(bodyColor),
+                const SizedBox(height: 12),
+                _buildTitleSection(headlineColor),
+                const SizedBox(height: 16),
+                _buildOverviewSection(bodyColor, containerBgAlpha),
+                const SizedBox(height: 12),
+                _buildStatsGrid(bodyColor, subtleColor, containerBgAlpha),
+                const SizedBox(height: 12),
+                _buildScoreJourneySection(
+                  containerBgAlpha,
+                  graphLineColor,
+                  subtleColor,
+                ),
+                const SizedBox(height: 16),
+                _buildFooter(bodyColor, subtleColor),
+              ],
+            ),
           ),
         ),
-        child: Stack(
-          children: [
-            // Random background emojis
-            ..._buildBackgroundEmojis(screenHeight),
-            // Main content
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 24,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header outside the card
-                    _buildHeaderText(),
-                    const SizedBox(height: 16),
-                    // Inner card
-                    Container(
-                      width: cardWidth,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: cardColors,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCourseAndDate(bodyColor),
-                            const SizedBox(height: 12),
-                            _buildTitleSection(headlineColor),
-                            const SizedBox(height: 16),
-                            _buildOverviewSection(bodyColor, containerBgAlpha),
-                            const SizedBox(height: 12),
-                            _buildStatsGrid(
-                              bodyColor,
-                              subtleColor,
-                              containerBgAlpha,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildScoreJourneySection(
-                              containerBgAlpha,
-                              graphLineColor,
-                              subtleColor,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildFooter(bodyColor, subtleColor),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
-  }
-
-  /// Builds random background emojis
-  List<Widget> _buildBackgroundEmojis(double screenHeight) {
-    final Random random = Random(_randomSeed);
-    const String bgEmoji = '\u{1F94F}'; // Flying disc emoji
-    final List<Widget> emojis = [];
-
-    const int cols = 6;
-    const int rows = 10;
-    const double screenWidth = 450.0;
-
-    final double cellWidth = screenWidth / cols;
-    final double cellHeight = screenHeight / rows;
-
-    for (int row = 0; row < rows; row++) {
-      for (int col = 0; col < cols; col++) {
-        final double offsetX = 0.1 + random.nextDouble() * 0.8;
-        final double offsetY = 0.1 + random.nextDouble() * 0.8;
-
-        final double left = col * cellWidth + offsetX * cellWidth;
-        final double top = row * cellHeight + offsetY * cellHeight;
-
-        final double rotation = (random.nextDouble() - 0.5) * 1.2;
-        final double opacity = 0.05 + random.nextDouble() * 0.06;
-        final double size = 14 + random.nextDouble() * 10;
-
-        emojis.add(
-          Positioned(
-            top: top,
-            left: left,
-            child: Transform.rotate(
-              angle: rotation,
-              child: Opacity(
-                opacity: opacity,
-                child: Text(bgEmoji, style: TextStyle(fontSize: size)),
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
-    return emojis;
   }
 
   Widget _buildHeaderText() {

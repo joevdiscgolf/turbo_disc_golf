@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
@@ -28,7 +28,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         return;
       }
 
-      final (List<FormAnalysisRecord> analyses, bool hasMore) =
+      final (List<FormAnalysisResponseV2> analyses, bool hasMore) =
           await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 15);
 
       emit(FormAnalysisHistoryLoaded(
@@ -70,7 +70,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
           ? currentState.analyses.last.createdAt
           : null;
 
-      final (List<FormAnalysisRecord> moreAnalyses, bool hasMore) =
+      final (List<FormAnalysisResponseV2> moreAnalyses, bool hasMore) =
           await FBFormAnalysisDataLoader.loadRecentAnalyses(
         uid,
         limit: 15,
@@ -78,7 +78,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
       );
 
       // Append new analyses to existing list
-      final List<FormAnalysisRecord> allAnalyses = [
+      final List<FormAnalysisResponseV2> allAnalyses = [
         ...currentState.analyses,
         ...moreAnalyses,
       ];
@@ -113,7 +113,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         return;
       }
 
-      final (List<FormAnalysisRecord> analyses, bool hasMore) =
+      final (List<FormAnalysisResponseV2> analyses, bool hasMore) =
           await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 15);
 
       emit(FormAnalysisHistoryLoaded(
@@ -130,7 +130,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
 
   /// Select a historical analysis for viewing.
   /// Updates the state to include the selected analysis.
-  void selectAnalysis(FormAnalysisRecord analysis) {
+  void selectAnalysis(FormAnalysisResponseV2 analysis) {
     if (state is FormAnalysisHistoryLoaded) {
       final FormAnalysisHistoryLoaded loadedState =
           state as FormAnalysisHistoryLoaded;
@@ -162,11 +162,11 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
 
   /// Add a new analysis to the history (called after saving a new analysis).
   /// Adds to the front of the list since it's the most recent.
-  void addAnalysis(FormAnalysisRecord analysis) {
+  void addAnalysis(FormAnalysisResponseV2 analysis) {
     if (state is FormAnalysisHistoryLoaded) {
       final FormAnalysisHistoryLoaded loadedState =
           state as FormAnalysisHistoryLoaded;
-      final List<FormAnalysisRecord> updatedAnalyses = [
+      final List<FormAnalysisResponseV2> updatedAnalyses = [
         analysis,
         ...loadedState.analyses,
       ];
@@ -189,7 +189,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
   /// in the background. Reverts and shows error toast on failure.
   Future<void> deleteAnalysis(String analysisId) async {
     // Save state for rollback
-    FormAnalysisRecord? removedAnalysis;
+    FormAnalysisResponseV2? removedAnalysis;
     int? removedIndex;
 
     // Optimistically remove from local state
@@ -201,7 +201,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
 
       if (removedIndex != -1) {
         removedAnalysis = loadedState.analyses[removedIndex];
-        final List<FormAnalysisRecord> updatedAnalyses =
+        final List<FormAnalysisResponseV2> updatedAnalyses =
             loadedState.analyses.where((a) => a.id != analysisId).toList();
 
         emit(FormAnalysisHistoryLoaded(
@@ -242,14 +242,14 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
   }
 
   /// Re-insert a removed analysis back into state and show error toast.
-  void _revertDelete(FormAnalysisRecord? analysis, int? index) {
+  void _revertDelete(FormAnalysisResponseV2? analysis, int? index) {
     if (analysis == null || index == null || index == -1) return;
 
     if (state is FormAnalysisHistoryLoaded) {
       final FormAnalysisHistoryLoaded loadedState =
           state as FormAnalysisHistoryLoaded;
-      final List<FormAnalysisRecord> updatedAnalyses =
-          List<FormAnalysisRecord>.from(loadedState.analyses);
+      final List<FormAnalysisResponseV2> updatedAnalyses =
+          List<FormAnalysisResponseV2>.from(loadedState.analyses);
 
       final int insertIndex = index.clamp(0, updatedAnalyses.length);
       updatedAnalyses.insert(insertIndex, analysis);

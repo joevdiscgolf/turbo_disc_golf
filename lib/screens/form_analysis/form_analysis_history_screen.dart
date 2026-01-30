@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
-import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_card.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_history_card.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_welcome_empty_state.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen.dart';
@@ -146,7 +146,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
               final analysis = state.analyses[index];
               return Column(
                 children: [
-                  FormAnalysisCard(
+                  FormAnalysisHistoryCard(
                     key: ValueKey(analysis.id),
                     analysis: analysis,
                     onTap: () {

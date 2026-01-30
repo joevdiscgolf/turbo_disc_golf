@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -97,13 +97,12 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                     ),
                     // Checkpoint tick marks
                     if (state.isInitialized)
-                      ..._getSortedCheckpointsForStacking(state.checkpoints)
-                          .map((entry) {
+                      ..._getSortedCheckpointsForStacking(
+                        state.checkpoints,
+                      ).map((entry) {
                         final int index = entry.key;
-                        final CheckpointRecord cp = entry.value;
-                        if (cp.timestampSeconds == null) {
-                          return const SizedBox.shrink();
-                        }
+                        final CheckpointDataV2 cp = entry.value;
+
                         return _buildCleanSportTickMark(
                           context,
                           index,
@@ -128,8 +127,7 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  _cleanAccentColor.withValues(alpha: 0.4),
+                              color: _cleanAccentColor.withValues(alpha: 0.4),
                               blurRadius: 6,
                               spreadRadius: 1,
                             ),
@@ -150,16 +148,16 @@ class CheckpointTimelineScrubber extends StatelessWidget {
   Widget _buildCleanSportTickMark(
     BuildContext context,
     int index,
-    CheckpointRecord cp, {
+    CheckpointDataV2 cp, {
     required double trackWidth,
     required int videoDurationMs,
     required bool useWhiteMarkers,
   }) {
     final double videoDurationSecs = videoDurationMs / 1000.0;
     final double position = videoDurationSecs > 0
-        ? cp.timestampSeconds! / videoDurationSecs
+        ? cp.metadata.timestampSeconds / videoDurationSecs
         : 0.0;
-    final String label = _getCheckpointLabel(cp.checkpointId);
+    final String label = _getCheckpointLabel(cp.metadata.checkpointId);
     final double markerX = trackWidth * position;
 
     const double tickTapWidth = 32;
@@ -243,14 +241,16 @@ class CheckpointTimelineScrubber extends StatelessWidget {
   }
 
   /// Returns checkpoints sorted by z-index (H lowest, P on top).
-  List<MapEntry<int, CheckpointRecord>> _getSortedCheckpointsForStacking(
-    List<CheckpointRecord> checkpoints,
+  List<MapEntry<int, CheckpointDataV2>> _getSortedCheckpointsForStacking(
+    List<CheckpointDataV2> checkpoints,
   ) {
-    final List<MapEntry<int, CheckpointRecord>> entries =
-        checkpoints.asMap().entries.toList();
+    final List<MapEntry<int, CheckpointDataV2>> entries = checkpoints
+        .asMap()
+        .entries
+        .toList();
     entries.sort((a, b) {
-      final int zIndexA = _getCheckpointZIndex(a.value.checkpointId);
-      final int zIndexB = _getCheckpointZIndex(b.value.checkpointId);
+      final int zIndexA = _getCheckpointZIndex(a.value.metadata.checkpointId);
+      final int zIndexB = _getCheckpointZIndex(b.value.metadata.checkpointId);
       return zIndexA.compareTo(zIndexB);
     });
     return entries;
