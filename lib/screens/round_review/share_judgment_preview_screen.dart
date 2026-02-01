@@ -131,30 +131,21 @@ class _ShareJudgmentPreviewScreenState
                   // Full-screen share card
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         ShareJudgmentVerdict(isGlaze: widget.isGlaze),
                         const SizedBox(height: 8),
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              print(
-                                'constraints max height: ${constraints.maxHeight}',
-                              );
-                              return Container(
-                                color: Colors.blue,
-                                height: constraints.maxHeight,
-                                child: FittedBox(
-                                  child: JudgmentShareCard(
-                                    isGlaze: widget.isGlaze,
-                                    headline: widget.headline,
-                                    tagline: widget.tagline,
-                                    round: widget.round,
-                                    analysis: widget.analysis,
-                                    highlightStats: widget.highlightStats,
-                                  ),
-                                ),
-                              );
-                            },
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.contain,
+                            child: JudgmentShareCard(
+                              isGlaze: widget.isGlaze,
+                              headline: widget.headline,
+                              tagline: widget.tagline,
+                              round: widget.round,
+                              analysis: widget.analysis,
+                              highlightStats: widget.highlightStats,
+                            ),
                           ),
                         ),
                       ],
