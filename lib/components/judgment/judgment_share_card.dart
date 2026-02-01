@@ -1,14 +1,12 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:turbo_disc_golf/components/compact_scorecard.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// A shareable card widget for roast/glaze judgments.
@@ -35,9 +33,6 @@ class JudgmentShareCard extends StatelessWidget {
 
   /// Fixed width for the inner card
   static const double cardWidth = 400;
-
-  /// Seed for random emoji positions (based on round data for consistency)
-  int get _randomSeed => round.versionId.hashCode;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +77,7 @@ class JudgmentShareCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCourseAndDate(bodyColor),

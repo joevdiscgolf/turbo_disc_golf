@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
-import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
 import 'package:turbo_disc_golf/components/judgment/share_judgment/share_judgment_emoji_bg.dart';
 import 'package:turbo_disc_golf/components/judgment/share_judgment/share_judgment_verdict.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -131,21 +129,39 @@ class _ShareJudgmentPreviewScreenState
               child: Column(
                 children: [
                   // Full-screen share card
-                  ShareJudgmentVerdict(isGlaze: widget.isGlaze),
-                  const SizedBox(height: 8),
                   Expanded(
-                    child: FittedBox(
-                      child: JudgmentShareCard(
-                        isGlaze: widget.isGlaze,
-                        headline: widget.headline,
-                        tagline: widget.tagline,
-                        round: widget.round,
-                        analysis: widget.analysis,
-                        highlightStats: widget.highlightStats,
-                      ),
+                    child: Column(
+                      children: [
+                        ShareJudgmentVerdict(isGlaze: widget.isGlaze),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              print(
+                                'constraints max height: ${constraints.maxHeight}',
+                              );
+                              return Container(
+                                color: Colors.blue,
+                                height: constraints.maxHeight,
+                                child: FittedBox(
+                                  child: JudgmentShareCard(
+                                    isGlaze: widget.isGlaze,
+                                    headline: widget.headline,
+                                    tagline: widget.tagline,
+                                    round: widget.round,
+                                    analysis: widget.analysis,
+                                    highlightStats: widget.highlightStats,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+
+                  const SizedBox(height: 8),
                   _buildBottomBar(),
                 ],
               ),
