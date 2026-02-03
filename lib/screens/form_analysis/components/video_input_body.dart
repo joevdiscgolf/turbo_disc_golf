@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -243,27 +244,26 @@ class _VideoInputBodyState extends State<VideoInputBody> {
           showDialog(
             context: context,
             barrierColor: Colors.black.withValues(alpha: 0.7),
-            builder: (BuildContext context) =>
-                CameraAngleSelectionDialog(
-                  onSelected: (CameraAngle angle) async {
-                    setState(() => _selectedCameraAngle = angle);
-                    logger.track(
-                      'Import Video Button Tapped',
-                      properties: {
-                        'camera_angle': angle.name,
-                        'handedness': _selectedHandedness.name,
-                        'version': 'v2',
-                      },
-                    );
-                    await _checkFirstTimeEducation();
-                    if (!mounted) return;
-                    cubit.importVideo(
-                      throwType: ThrowTechnique.backhand,
-                      cameraAngle: angle,
-                      handedness: _selectedHandedness,
-                    );
+            builder: (BuildContext context) => CameraAngleSelectionDialog(
+              onSelected: (CameraAngle angle) async {
+                setState(() => _selectedCameraAngle = angle);
+                logger.track(
+                  'Import Video Button Tapped',
+                  properties: {
+                    'camera_angle': angle.name,
+                    'handedness': _selectedHandedness.name,
+                    'version': 'v2',
                   },
-                ),
+                );
+                await _checkFirstTimeEducation();
+                if (!mounted) return;
+                cubit.importVideo(
+                  throwType: ThrowTechnique.backhand,
+                  cameraAngle: angle,
+                  handedness: _selectedHandedness,
+                );
+              },
+            ),
           );
         } else {
           logger.track(
@@ -518,7 +518,10 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                       Expanded(
                         child: Text(
                           '${locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds}s max',
-                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
                         ),
                       ),
                     ],
@@ -741,25 +744,11 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       },
       itemBuilder: (BuildContext context) => availableVideos
           .map(
-            (video) => PopupMenuItem<String>(
+            (video) => CompactPopupMenuItem<String>(
               value: video.path,
-              child: Row(
-                children: [
-                  if (video.path == _selectedTestVideoPath)
-                    const Icon(Icons.check, size: 18, color: Color(0xFF137e66))
-                  else
-                    const SizedBox(width: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    video.name,
-                    style: TextStyle(
-                      fontWeight: video.path == _selectedTestVideoPath
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
+              label: video.name,
+              showCheckmark: video.path == _selectedTestVideoPath,
+              iconColor: const Color(0xFF137e66),
             ),
           )
           .toList(),

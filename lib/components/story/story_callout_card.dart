@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/story/base_story_card.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Compact callout card component for Story V2
@@ -18,29 +19,21 @@ class StoryCalloutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: SenseiColors.gray[50],
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: SenseiColors.gray[200]!, width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            statWidget,
-            const SizedBox(height: 8),
-            Text(
-              reason,
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.5,
-                color: SenseiColors.gray[600],
-              ),
+    return BaseStoryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          statWidget,
+          const SizedBox(height: 8),
+          Text(
+            reason,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: SenseiColors.gray[600],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

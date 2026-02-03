@@ -17,10 +17,12 @@ class SkillsScoreStoryCard extends StatelessWidget {
     super.key,
     required this.round,
     required this.renderMode,
+    this.showIcon = true,
   });
 
   final DGRound round;
   final StatRenderMode renderMode;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +45,7 @@ class SkillsScoreStoryCard extends StatelessWidget {
         total: 100,
         roundId: round.id,
         subtitle: '$scoreValue/100 overall rating',
+        showIcon: showIcon,
       );
     } else {
       return BarStatRenderer(
@@ -53,6 +56,8 @@ class SkillsScoreStoryCard extends StatelessWidget {
         count: scoreValue,
         total: 100,
         subtitle: '$scoreValue/100 overall rating',
+        showIcon: showIcon,
+        showContainer: false,
       );
     }
   }

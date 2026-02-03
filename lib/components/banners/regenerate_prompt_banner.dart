@@ -32,75 +32,40 @@ class RegeneratePromptBanner extends StatelessWidget {
   bool get _canRegenerate =>
       regenerationsRemaining == null || regenerationsRemaining! > 0;
 
+  static const Color _backgroundColor = Color(0xFFFFF3E0); // Light amber
+  static const Color _textColor = Color(0xFFE65100); // Dark orange
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3B82F6),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: _backgroundColor,
+      child: Row(
         children: [
-          // "X left" indicator in top right
-          if (regenerationsRemaining != null)
-            Positioned(
-              top: -4,
-              right: 0,
+          const Icon(
+            Icons.refresh,
+            color: _textColor,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
               child: Text(
-                '$regenerationsRemaining left',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
+                'Story outdated',
+                maxLines: 1,
+                style: const TextStyle(
+                  color: _textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-          // Main content row
-          Row(
-            children: [
-              const Icon(
-                Icons.edit_note,
-                color: Colors.white,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              _buildRegenerateButton(),
-            ],
           ),
+          _buildRegenerateButton(),
         ],
       ),
     );
@@ -109,39 +74,38 @@ class RegeneratePromptBanner extends StatelessWidget {
   Widget _buildRegenerateButton() {
     final bool isDisabled = isLoading || !_canRegenerate;
 
-    return OutlinedButton(
+    return TextButton(
       onPressed: isDisabled
           ? null
           : () {
               HapticFeedback.lightImpact();
               onRegenerate();
             },
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: BorderSide(
-          color: Colors.white.withValues(alpha: isDisabled ? 0.4 : 1.0),
-          width: 1,
-        ),
+      style: TextButton.styleFrom(
+        foregroundColor: _textColor,
+        backgroundColor: _textColor.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(6),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        disabledForegroundColor: _textColor.withValues(alpha: 0.4),
       ),
       child: isLoading
           ? const SizedBox(
-              width: 16,
-              height: 16,
+              width: 14,
+              height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(_textColor),
               ),
             )
           : Text(
               _canRegenerate ? 'Regenerate' : 'Limit reached',
               style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
     );

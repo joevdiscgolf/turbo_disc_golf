@@ -16,10 +16,12 @@ class FairwayHitStoryCard extends StatelessWidget {
     super.key,
     required this.round,
     required this.renderMode,
+    this.showIcon = true,
   });
 
   final DGRound round;
   final StatRenderMode renderMode;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +41,7 @@ class FairwayHitStoryCard extends StatelessWidget {
         count: count,
         total: total,
         roundId: round.id,
+        showIcon: showIcon,
       );
     } else {
       return BarStatRenderer(
@@ -48,6 +51,8 @@ class FairwayHitStoryCard extends StatelessWidget {
         icon: Icons.gps_fixed,
         count: count,
         total: total,
+        showIcon: showIcon,
+        showContainer: false,
       );
     }
   }

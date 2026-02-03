@@ -218,29 +218,36 @@ class ProReferenceLoader {
     final String angleFolderName = _getAngleFolderName(cameraAngle);
     final String cacheKey = '$proPlayerId/$throwType/$angleFolderName';
 
-    debugPrint(
-      '🎯 [AlignmentMetadata] Loading metadata for: $proPlayerId/$throwType/$angleFolderName',
-    );
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════════════════════════');
+    debugPrint('🎯 [AlignmentMetadata] Loading for: $cacheKey');
+    debugPrint('   Camera angle: ${cameraAngle.name} → folder: $angleFolderName');
+    debugPrint('═══════════════════════════════════════════════════════════');
 
     // Check in-memory cache first (persists for session)
     if (_metadataCache.containsKey(cacheKey)) {
-      debugPrint('✅ [AlignmentMetadata] Found in memory cache');
-      return _metadataCache[cacheKey];
+      final AlignmentMetadata cached = _metadataCache[cacheKey]!;
+      debugPrint('✅ [AlignmentMetadata] CACHE HIT for $angleFolderName view');
+      debugPrint('   Cached camera_angle: ${cached.cameraAngle}');
+      debugPrint('   Cached checkpoints: ${cached.checkpoints.keys.join(", ")}');
+      return cached;
     }
 
-    // Download from cloud storage
-    debugPrint('☁️ [AlignmentMetadata] Downloading from cloud storage');
+    // Download from cloud storage (backend-driven, no bundled assets)
+    final String cloudPath =
+        'pro_references/$proPlayerId/$throwType/$angleFolderName/alignment_metadata.json';
+
+    debugPrint('☁️ [AlignmentMetadata] CACHE MISS - Fetching from Cloud Storage');
+    debugPrint('   Full cloud path: $cloudPath');
+
     try {
-      final String cloudPath =
-          'pro_references/$proPlayerId/$throwType/$angleFolderName/alignment_metadata.json';
-
-      debugPrint('   Cloud path: $cloudPath');
-
       final Reference ref = _storage.ref(cloudPath);
       final Uint8List? data = await ref.getData();
 
       if (data == null) {
-        debugPrint('❌ [AlignmentMetadata] No data returned from cloud storage');
+        debugPrint('❌ [AlignmentMetadata] FAILED for $angleFolderName view');
+        debugPrint('   Reason: No data returned from cloud storage');
+        debugPrint('   Expected path: $cloudPath');
         return null;
       }
 
@@ -250,13 +257,30 @@ class ProReferenceLoader {
 
       // Cache in memory for this session
       _metadataCache[cacheKey] = metadata;
-      debugPrint('✅ [AlignmentMetadata] Downloaded and cached in memory');
+
+      debugPrint('✅ [AlignmentMetadata] SUCCESS for $angleFolderName view');
+      debugPrint('   Downloaded from: $cloudPath');
+      debugPrint('   Metadata camera_angle: ${metadata.cameraAngle}');
       debugPrint('   Checkpoints: ${metadata.checkpoints.keys.join(", ")}');
+
+      // Log first checkpoint dimensions for debugging
+      if (metadata.checkpoints.isNotEmpty) {
+        final String firstKey = metadata.checkpoints.keys.first;
+        final CheckpointAlignmentData? firstCheckpoint =
+            metadata.checkpoints[firstKey];
+        if (firstCheckpoint?.output != null) {
+          debugPrint(
+            '   Sample dimensions ($firstKey): '
+            '${firstCheckpoint!.output!.width}x${firstCheckpoint.output!.height}',
+          );
+        }
+      }
+
       return metadata;
     } catch (e) {
-      debugPrint(
-        '❌ [AlignmentMetadata] Failed to download from cloud storage: $e',
-      );
+      debugPrint('❌ [AlignmentMetadata] FAILED for $angleFolderName view');
+      debugPrint('   Cloud path: $cloudPath');
+      debugPrint('   Error: $e');
       return null;
     }
   }

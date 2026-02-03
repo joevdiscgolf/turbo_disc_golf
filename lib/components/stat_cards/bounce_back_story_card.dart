@@ -18,10 +18,12 @@ class BounceBackStoryCard extends StatelessWidget {
     super.key,
     required this.round,
     required this.renderMode,
+    this.showIcon = true,
   });
 
   final DGRound round;
   final StatRenderMode renderMode;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,7 @@ class BounceBackStoryCard extends StatelessWidget {
         count: count,
         total: opportunities,
         roundId: round.id,
+        showIcon: showIcon,
       );
     } else {
       return BarStatRenderer(
@@ -55,6 +58,8 @@ class BounceBackStoryCard extends StatelessWidget {
         icon: Icons.restore,
         count: count,
         total: opportunities,
+        showIcon: showIcon,
+        showContainer: false,
       );
     }
   }

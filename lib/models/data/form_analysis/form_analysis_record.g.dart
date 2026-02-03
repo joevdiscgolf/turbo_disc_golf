@@ -114,9 +114,6 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
       referenceImageUrl: json['reference_image_url'] as String?,
       referenceSkeletonUrl: json['reference_skeleton_url'] as String?,
       proPlayerId: json['pro_player_id'] as String?,
-      referenceHorizontalOffsetPercent:
-          (json['reference_horizontal_offset_percent'] as num?)?.toDouble(),
-      referenceScale: (json['reference_scale'] as num?)?.toDouble(),
       detectedFrameNumber: (json['detected_frame_number'] as num?)?.toInt(),
       timestampSeconds: (json['timestamp_seconds'] as num?)?.toDouble(),
       userIndividualAngles: json['user_individual_angles'] == null
@@ -160,8 +157,8 @@ CheckpointRecord _$CheckpointRecordFromJson(Map<String, dynamic> json) =>
           : UserBodyAnchor.fromJson(
               json['user_body_anchor'] as Map<String, dynamic>,
             ),
-      userTorsoHeightNormalized: (json['user_torso_height_normalized'] as num?)
-          ?.toDouble(),
+      userBodyHeightScreenPortion:
+          (json['user_body_height_screen_portion'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$CheckpointRecordToJson(
@@ -177,9 +174,6 @@ Map<String, dynamic> _$CheckpointRecordToJson(
   'reference_image_url': instance.referenceImageUrl,
   'reference_skeleton_url': instance.referenceSkeletonUrl,
   'pro_player_id': instance.proPlayerId,
-  'reference_horizontal_offset_percent':
-      instance.referenceHorizontalOffsetPercent,
-  'reference_scale': instance.referenceScale,
   'detected_frame_number': instance.detectedFrameNumber,
   'timestamp_seconds': instance.timestampSeconds,
   'user_individual_angles': instance.userIndividualAngles?.toJson(),
@@ -193,5 +187,5 @@ Map<String, dynamic> _$CheckpointRecordToJson(
       ?.map((e) => e.toJson())
       .toList(),
   'user_body_anchor': instance.userBodyAnchor?.toJson(),
-  'user_torso_height_normalized': instance.userTorsoHeightNormalized,
+  'user_body_height_screen_portion': instance.userBodyHeightScreenPortion,
 };

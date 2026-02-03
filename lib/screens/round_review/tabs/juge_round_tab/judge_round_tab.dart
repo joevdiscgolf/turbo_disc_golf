@@ -3,7 +3,6 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:confetti/confetti.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +16,7 @@ import 'package:turbo_disc_golf/components/judgment/judgment_reveal_effect.dart'
 import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_slot_reel.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
+import 'package:turbo_disc_golf/components/judgment/judgment_result_content_v3.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -425,8 +425,8 @@ highlightStats:
 
       // Update RoundHistoryCubit so judgment persists when navigating away and back
       try {
-        final RoundHistoryCubit? historyCubit =
-            context.read<RoundHistoryCubit?>();
+        final RoundHistoryCubit? historyCubit = context
+            .read<RoundHistoryCubit?>();
         historyCubit?.updateRound(updatedRound);
       } catch (e) {
         debugPrint('RoundHistoryCubit not available: $e');
@@ -440,27 +440,33 @@ highlightStats:
   Widget build(BuildContext context) {
     super.build(context);
 
+    // Use white background for V3, gradient for older versions
+    final bool useWhiteBackground =
+        locator.get<FeatureFlagService>().useJudgmentResultV3;
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFEEE8F5),
-            Color(0xFFECECEE),
-            Color(0xFFE8F4E8),
-            Color(0xFFEAE8F0),
-          ],
-          stops: [0.0, 0.3, 0.7, 1.0],
-        ),
-      ),
+      decoration: useWhiteBackground
+          ? const BoxDecoration(color: Colors.white)
+          : const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFEEE8F5),
+                  Color(0xFFECECEE),
+                  Color(0xFFE8F4E8),
+                  Color(0xFFEAE8F0),
+                ],
+                stops: [0.0, 0.3, 0.7, 1.0],
+              ),
+            ),
       child: Stack(
         children: [
           // Main content with optional debug button
           Column(
             children: [
               // Debug regenerate button (only in debug mode)
-              if (kDebugMode) _buildDebugRegenerateButton(),
+              // if (kDebugMode) _buildDebugRegenerateButton(),
               // Main content
               Expanded(child: _buildMainContent(context)),
             ],
@@ -482,7 +488,8 @@ highlightStats:
 
   /// Debug-only button to regenerate judgment for testing.
   Widget _buildDebugRegenerateButton() {
-    final bool isGenerating = _currentState == JudgmentState.building ||
+    final bool isGenerating =
+        _currentState == JudgmentState.building ||
         _currentState == JudgmentState.preparing ||
         _currentState == JudgmentState.spinning;
 
@@ -822,6 +829,11 @@ highlightStats:
   }
 
   Widget _buildResultContent(BuildContext context) {
+    // Feature flag: use V3 clean layout
+    if (locator.get<FeatureFlagService>().useJudgmentResultV3) {
+      return _buildResultContentV3(context);
+    }
+
     // Feature flag: use new bottom action bar layout
     if (locator.get<FeatureFlagService>().useBottomShareActionBar) {
       return _buildResultContentV2(context);
@@ -911,7 +923,8 @@ highlightStats:
                 });
                 _startJudgmentFlow();
               },
-              isLoading: _currentState == JudgmentState.building ||
+              isLoading:
+                  _currentState == JudgmentState.building ||
                   _currentState == JudgmentState.preparing,
               subtitle: 'Roast may be outdated',
               regenerationsRemaining: isCurrentUserAdmin()
@@ -928,8 +941,6 @@ highlightStats:
               animate: false,
             ),
           ),
-
-          const SizedBox(height: 16),
 
           // Premium share button
           Padding(
@@ -1121,7 +1132,8 @@ highlightStats:
                           });
                           _startJudgmentFlow();
                         },
-                        isLoading: _currentState == JudgmentState.building ||
+                        isLoading:
+                            _currentState == JudgmentState.building ||
                             _currentState == JudgmentState.preparing,
                         subtitle: 'Roast may be outdated',
                         regenerationsRemaining: isCurrentUserAdmin()
@@ -1139,7 +1151,7 @@ highlightStats:
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     // Content card (no share button in V2 - moved to bottom bar)
                     Padding(
@@ -1223,6 +1235,118 @@ highlightStats:
         // Hidden share card for capture
         shareCard,
       ],
+    );
+  }
+
+  /// V3 layout with clean, professional full-width design.
+  Widget _buildResultContentV3(BuildContext context) {
+    // Extract clean content (remove metadata comment)
+    String cleanContent = _currentRound.aiJudgment!.content;
+    if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
+      final int endIndex = cleanContent.indexOf('-->');
+      if (endIndex != -1) {
+        cleanContent = cleanContent.substring(endIndex + 3).trim();
+      }
+    }
+
+    // Parse YAML content
+    String headline = _isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!';
+    String content = cleanContent;
+
+    try {
+      final dynamic yaml = loadYaml(cleanContent);
+      if (yaml is YamlMap) {
+        headline = _stripAIPrefix((yaml['headline'] as String?) ?? headline);
+        content = (yaml['content'] as String?) ?? cleanContent;
+      }
+    } catch (e) {
+      final List<String> lines = cleanContent.split('\n');
+      if (lines.isNotEmpty && lines[0].trim().isNotEmpty) {
+        headline = lines[0].trim();
+        content = lines.skip(1).join('\n').trim();
+      }
+    }
+
+    // Generate analysis for rendering
+    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
+      _currentRound,
+    );
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            // Scrollable content area
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 0, bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Show regenerate banner when content is outdated
+                    if (_currentRound.isAIJudgmentOutdated)
+                      RegeneratePromptBanner(
+                        onRegenerate: () {
+                          _logger.track('Judgment Regenerate Button Tapped');
+                          _previousRegenerateCount =
+                              (_currentRound.aiJudgment?.regenerateCount ?? 0) +
+                              1;
+                          setState(() {
+                            _currentRound = _currentRound.copyWith(
+                              aiJudgment: null,
+                            );
+                            _currentState = JudgmentState.idle;
+                          });
+                          _startJudgmentFlow();
+                        },
+                        isLoading:
+                            _currentState == JudgmentState.building ||
+                            _currentState == JudgmentState.preparing,
+                        subtitle: 'Roast may be outdated',
+                        regenerationsRemaining: isCurrentUserAdmin()
+                            ? null
+                            : _currentRound.aiJudgment?.regenerationsRemaining,
+                      ),
+
+                    // V3 content
+                    JudgmentResultContentV3(
+                      isGlaze: _isGlaze,
+                      headline: headline,
+                      content: content,
+                      round: _currentRound,
+                      analysis: analysis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Fixed bottom action bar
+            _buildShareActionBar(headline),
+          ],
+        ),
+        // Hidden share card for capture (if needed for sharing)
+        _buildHiddenShareCard(headline, analysis),
+      ],
+    );
+  }
+
+  Widget _buildHiddenShareCard(String headline, RoundAnalysis analysis) {
+    final String displayTagline = _getPreviewTagline();
+    final List<String> highlightStats = _getPreviewHighlightStats();
+
+    return Offstage(
+      offstage: true,
+      child: RepaintBoundary(
+        key: _shareCardKey,
+        child: JudgmentShareCard(
+          isGlaze: _isGlaze,
+          headline: headline,
+          tagline: displayTagline,
+          round: _currentRound,
+          analysis: analysis,
+          highlightStats: highlightStats,
+        ),
+      ),
     );
   }
 

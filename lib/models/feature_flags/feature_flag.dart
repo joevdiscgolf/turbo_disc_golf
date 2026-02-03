@@ -84,6 +84,7 @@ enum FeatureFlag {
   useBottomShareActionBar('use_bottom_share_action_bar', true),
   showJudgmentPreparingAnimation('show_judgment_preparing_animation', false),
   enableFireEmojiSpin('enable_fire_emoji_spin', false),
+  useJudgmentResultV3('use_judgment_result_v3', true),
 
   // ===== LLM Configuration =====
   /// Default LLM provider: 'gemini' or 'chatGPT'
