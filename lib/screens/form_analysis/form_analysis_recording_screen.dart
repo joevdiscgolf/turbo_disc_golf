@@ -11,7 +11,7 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_comple
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/cycling_analysis_text.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body/video_input_body.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
@@ -315,7 +315,10 @@ class _FormAnalysisRecordingScreenState
     }
 
     if (state is VideoFormAnalysisInitial) {
-      return VideoInputBody(topViewpadding: widget.topViewPadding);
+      return VideoInputBody(
+        topViewpadding: widget.topViewPadding,
+        loggingService: _logger,
+      );
     } else if (state is VideoFormAnalysisRecording ||
         state is VideoFormAnalysisValidating ||
         state is VideoFormAnalysisAnalyzing) {

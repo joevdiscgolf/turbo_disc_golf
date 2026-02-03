@@ -169,6 +169,12 @@ enum FeatureFlag {
   /// Enables multi-pro comparison feature - backend returns comparisons for all available pros
   enableMultiProComparison('enable_multi_pro_comparison', true),
 
+  /// Height multiplier for pro reference image when camera angle is rear
+  proReferenceHeightMultiplierRear('pro_reference_height_multiplier_rear', 1.5),
+
+  /// Height multiplier for pro reference image when camera angle is side
+  proReferenceHeightMultiplierSide('pro_reference_height_multiplier_side', 1.5),
+
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs
   adminUids('admin_uids', '9abVDwf3ZVM8unEzqMcWk95in2F3'),

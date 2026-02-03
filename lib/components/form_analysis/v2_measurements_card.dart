@@ -15,8 +15,10 @@ class V2MeasurementsCard extends StatelessWidget {
     }
 
     final V2SideMeasurements user = checkpoint.userPose.v2Measurements!;
-    final V2SideMeasurements? reference = checkpoint.proReferencePose?.v2Measurements;
-    final V2SideMeasurements? deviations = checkpoint.deviationAnalysis.v2MeasurementDeviations;
+    final V2SideMeasurements? reference =
+        checkpoint.proReferencePose?.v2Measurements;
+    final V2SideMeasurements? deviations =
+        checkpoint.deviationAnalysis.v2MeasurementDeviations;
 
     final List<_V2MeasurementRow> rows = [
       if (user.frontKneeAngle != null)
@@ -75,7 +77,6 @@ class V2MeasurementsCard extends StatelessWidget {
     final bool hasPro = reference != null;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -126,10 +127,7 @@ class V2MeasurementsCard extends StatelessWidget {
             flex: 2,
             child: Text(
               'You: ${row.userValue.toStringAsFixed(1)}°',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
             ),
           ),
           if (hasPro) ...[

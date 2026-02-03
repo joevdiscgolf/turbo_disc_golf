@@ -92,6 +92,10 @@ abstract class SenseiColors {
   static const Color white = Colors.white;
   static const Color senseiBlue = Color(0xff1F4DB8);
   static const Color forestGreen = Color(0xff137e66);
+
+  // Clean accent colors for buttons and controls
+  static const Color cleanAccentColor = Color(0xFF3B82F6);
+  static const Color cleanAccentColorDark = Color(0xFF2563EB);
 }
 
 /// Returns a semantic color based on percentage value.

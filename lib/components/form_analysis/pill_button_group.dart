@@ -36,16 +36,11 @@ class PillButtonGroup extends StatelessWidget {
   final bool isDark;
   final bool hideBorder;
 
-  // Dark Slate Overlay colors
-  static const Color _darkTrackActive = Color(0xFF06B6D4);
-
   // Clean Sport Minimal colors
-  static const Color _cleanAccentColor = Color(0xFF3B82F6);
   static const Color _cleanTextColor = Color(0xFF1E293B);
 
   @override
   Widget build(BuildContext context) {
-    final Color selectedBg = isDark ? _darkTrackActive : _cleanAccentColor;
     final Color selectedText = Colors.white;
     final Color unselectedBg = isDark
         ? Colors.white.withValues(alpha: 0.1)
@@ -74,7 +69,7 @@ class PillButtonGroup extends StatelessWidget {
             Expanded(
               child: _PillButton(
                 data: buttons[i],
-                selectedBg: selectedBg,
+                isDark: isDark,
                 selectedText: selectedText,
                 unselectedBg: unselectedBg,
                 unselectedText: unselectedText,
@@ -94,7 +89,7 @@ class PillButtonGroup extends StatelessWidget {
 class _PillButton extends StatelessWidget {
   const _PillButton({
     required this.data,
-    required this.selectedBg,
+    required this.isDark,
     required this.selectedText,
     required this.unselectedBg,
     required this.unselectedText,
@@ -104,7 +99,7 @@ class _PillButton extends StatelessWidget {
   });
 
   final PillButtonData data;
-  final Color selectedBg;
+  final bool isDark;
   final Color selectedText;
   final Color unselectedBg;
   final Color unselectedText;
@@ -134,7 +129,17 @@ class _PillButton extends StatelessWidget {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: data.isSelected ? selectedBg : unselectedBg,
+          gradient: data.isSelected
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    SenseiColors.cleanAccentColor,
+                    SenseiColors.cleanAccentColorDark,
+                  ],
+                )
+              : null,
+          color: data.isSelected ? null : unselectedBg,
           borderRadius: borderRadius,
         ),
         child: Text(

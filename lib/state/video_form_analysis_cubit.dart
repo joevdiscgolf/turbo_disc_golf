@@ -18,6 +18,7 @@ import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart
 import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 import 'package:uuid/uuid.dart';
 
@@ -333,6 +334,22 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     debugPrint(
       '[VideoFormAnalysisCubit] Analysis will be saved by backend (session: ${session.id})',
     );
+
+    // Add to history cubit for instant UI update (no need to refresh from Firestore)
+    if (poseResult != null) {
+      try {
+        final FormAnalysisHistoryCubit historyCubit =
+            locator.get<FormAnalysisHistoryCubit>();
+        historyCubit.addAnalysis(poseResult);
+        debugPrint(
+          '[VideoFormAnalysisCubit] ✅ Analysis added to history list',
+        );
+      } catch (e) {
+        debugPrint(
+          '[VideoFormAnalysisCubit] ⚠️ Could not add to history list: $e',
+        );
+      }
+    }
 
     emit(
       VideoFormAnalysisComplete(

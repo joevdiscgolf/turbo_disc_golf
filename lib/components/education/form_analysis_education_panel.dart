@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
 /// Educational content widget for the video form analysis feature.
 /// Displays instructions on how to capture or import a good video for analysis.
@@ -60,18 +62,15 @@ class FormAnalysisEducationPanel extends StatelessWidget {
           _buildHighPriorityBulletPoint(context, 'End ~1s after disc release'),
           const SizedBox(height: 8),
           // Regular tips
-          _buildBulletPoint(context, 'Keep videos under 3 seconds'),
           _buildBulletPoint(
             context,
-            'High contrast environment (bright, avoid shadows)',
+            'Keep videos under ${locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds} seconds',
           ),
+          _buildBulletPoint(context, 'High contrast thrower vs background'),
+          _buildBulletPoint(context, 'Closer is better'),
           _buildBulletPoint(
             context,
-            'Closer is better (fill more of frame with body)',
-          ),
-          _buildBulletPoint(
-            context,
-            'Landscape orientation preferred (portrait works too)',
+            'Landscape preferred (portrait works too)',
           ),
         ],
       ),

@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class FormAnalysisDetailScreen extends StatefulWidget {
   static const String routeName = '/form-analysis-detail';
@@ -53,7 +54,17 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
           statusBarBrightness: Brightness.light,
         ),
         child: Container(
-          color: Colors.grey[50],
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                SenseiColors.gray[50]!,
+                Colors.white,
+              ],
+              stops: const [0.0, 0.5],
+            ),
+          ),
           child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: GenericAppBar(

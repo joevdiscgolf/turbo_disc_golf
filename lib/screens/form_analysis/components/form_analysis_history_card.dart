@@ -126,17 +126,67 @@ class FormAnalysisHistoryCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholderThumbnail() {
-    return Container(
+    return const _ShimmerPlaceholder(
       width: 70,
       height: 70,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!, width: 1),
-      ),
-      child: Center(
-        child: Icon(Icons.sports, size: 30, color: Colors.grey[400]),
-      ),
+      borderRadius: 8,
+    );
+  }
+}
+
+/// Shimmer placeholder for loading thumbnails
+class _ShimmerPlaceholder extends StatefulWidget {
+  const _ShimmerPlaceholder({
+    required this.width,
+    required this.height,
+    required this.borderRadius,
+  });
+
+  final double width;
+  final double height;
+  final double borderRadius;
+
+  @override
+  State<_ShimmerPlaceholder> createState() => _ShimmerPlaceholderState();
+}
+
+class _ShimmerPlaceholderState extends State<_ShimmerPlaceholder>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            color: Color.lerp(
+              Colors.grey[300],
+              Colors.grey[100],
+              _controller.value,
+            ),
+          ),
+        );
+      },
     );
   }
 }
