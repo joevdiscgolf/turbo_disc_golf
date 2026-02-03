@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,9 +7,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
+import 'package:turbo_disc_golf/models/error/app_error_type.dart';
+import 'package:turbo_disc_golf/models/error/error_context.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
 
 /// Client for the Cloud Run pose analysis API
 class PoseAnalysisApiClient {
@@ -48,22 +53,23 @@ class PoseAnalysisApiClient {
     return false;
   }
 
-  /// Returns auth headers for production requests.
+  /// Returns auth headers for API requests.
+  /// Always includes auth headers if user is authenticated.
   /// Throws if production URL and user is not authenticated.
   Future<Map<String, String>> _getAuthHeaders() async {
     final bool isProduction = _baseUrl.contains('run.app');
 
-    if (!isProduction) {
-      return {}; // No auth needed for local development
-    }
-
-    final String? idToken = await FirebaseAuth.instance.currentUser
-        ?.getIdToken();
+    final String? idToken =
+        await FirebaseAuth.instance.currentUser?.getIdToken();
 
     if (idToken == null) {
-      throw PoseAnalysisException(
-        'Authentication required. Please sign in to use form analysis.',
-      );
+      if (isProduction) {
+        throw PoseAnalysisException(
+          'Authentication required. Please sign in to use form analysis.',
+        );
+      }
+      // Local development without auth - return empty headers
+      return {};
     }
 
     return {'Authorization': 'Bearer $idToken'};
@@ -125,14 +131,7 @@ class PoseAnalysisApiClient {
       // Send request with timeout
       final http.StreamedResponse streamedResponse = await request
           .send()
-          .timeout(
-            const Duration(minutes: 5), // Video analysis can take time
-            onTimeout: () {
-              throw PoseAnalysisException(
-                'Request timed out. Video analysis is taking too long.',
-              );
-            },
-          );
+          .timeout(const Duration(minutes: 5));
 
       // Read response
       final http.Response response = await http.Response.fromStream(
@@ -209,43 +208,157 @@ class PoseAnalysisApiClient {
 
         return FormAnalysisResponseV2.fromJson(json);
       } else {
-        // Try to parse error message from response
-        String errorMessage =
-            'Analysis failed with status ${response.statusCode}';
+        // Log technical details for debugging
         debugPrint('❌ POSE ANALYSIS ERROR:');
         debugPrint('   Status: ${response.statusCode}');
         debugPrint('   Raw body: ${response.body}');
+        String? serverMessage;
         try {
           final Map<String, dynamic> errorJson =
               jsonDecode(response.body) as Map<String, dynamic>;
           debugPrint('   Parsed error JSON: $errorJson');
-          errorMessage =
+          serverMessage =
               errorJson['detail'] as String? ??
               errorJson['error_message'] as String? ??
-              errorJson['message'] as String? ??
-              errorMessage;
+              errorJson['message'] as String?;
+          debugPrint('   Server message: $serverMessage');
         } catch (parseError) {
           debugPrint('   Failed to parse error body: $parseError');
         }
-        debugPrint('   Final error message: $errorMessage');
-        throw PoseAnalysisException(errorMessage);
+
+        // Log to Crashlytics
+        final ErrorLoggingService errorLogger =
+            locator.get<ErrorLoggingService>();
+        await errorLogger.logError(
+          exception: Exception(
+            'Form analysis API error: ${response.statusCode} - $serverMessage',
+          ),
+          type: AppErrorType.network,
+          reason: 'Form analysis API returned status ${response.statusCode}',
+          context: ErrorContext(
+            screenName: 'Form Analysis',
+            customData: {
+              'status_code': response.statusCode,
+              'server_message': serverMessage,
+              'session_id': sessionId,
+              'camera_angle': cameraAngle.toApiString(),
+              'handedness': handedness.toApiString(),
+            },
+          ),
+        );
+
+        // User-friendly error message
+        throw PoseAnalysisException(
+          'Something went wrong analyzing your video. Please try again.',
+        );
       }
-    } on SocketException catch (e) {
+    } on TimeoutException catch (e, stackTrace) {
+      debugPrint('❌ Request timed out after 5 minutes');
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'Form analysis request timed out',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'timeout_duration': '5 minutes',
+            'session_id': sessionId,
+            'camera_angle': cameraAngle.toApiString(),
+            'handedness': handedness.toApiString(),
+          },
+        ),
+      );
+
+      throw PoseAnalysisException(
+        'Analysis is taking longer than expected. Please try again with a shorter video.',
+      );
+    } on SocketException catch (e, stackTrace) {
       debugPrint('❌ SOCKET EXCEPTION: ${e.message}');
       debugPrint('   Address: ${e.address}');
       debugPrint('   Port: ${e.port}');
       debugPrint('   OS Error: ${e.osError}');
-      throw PoseAnalysisException(
-        'Network error: Could not connect to analysis server. ${e.message}',
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'Socket exception during form analysis',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'socket_message': e.message,
+            'address': e.address?.toString(),
+            'port': e.port,
+            'os_error': e.osError?.toString(),
+            'session_id': sessionId,
+          },
+        ),
       );
-    } on http.ClientException catch (e) {
+
+      throw PoseAnalysisException(
+        'Unable to reach the analysis service. Please check your connection and try again.',
+      );
+    } on http.ClientException catch (e, stackTrace) {
       debugPrint('❌ HTTP CLIENT EXCEPTION: ${e.message}');
       debugPrint('   URI: ${e.uri}');
-      throw PoseAnalysisException('HTTP error: ${e.message}');
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'HTTP client exception during form analysis',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'http_message': e.message,
+            'uri': e.uri?.toString(),
+            'session_id': sessionId,
+          },
+        ),
+      );
+
+      throw PoseAnalysisException(
+        'Unable to reach the analysis service. Please check your connection and try again.',
+      );
+    } on PoseAnalysisException {
+      // Re-throw PoseAnalysisException without additional logging (already logged above)
+      rethrow;
     } catch (e, stackTrace) {
       debugPrint('❌ UNEXPECTED ERROR: $e');
       debugPrint('   Stack trace: $stackTrace');
-      rethrow;
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'Unexpected error during form analysis',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'session_id': sessionId,
+            'camera_angle': cameraAngle.toApiString(),
+            'handedness': handedness.toApiString(),
+          },
+        ),
+      );
+
+      throw PoseAnalysisException(
+        'Something went wrong analyzing your video. Please try again.',
+      );
     }
   }
 
@@ -304,14 +417,7 @@ class PoseAnalysisApiClient {
             headers: {'Content-Type': 'application/json', ...authHeaders},
             body: jsonEncode(requestBody),
           )
-          .timeout(
-            const Duration(minutes: 5),
-            onTimeout: () {
-              throw PoseAnalysisException(
-                'Request timed out. Video analysis is taking too long.',
-              );
-            },
-          );
+          .timeout(const Duration(minutes: 5));
 
       // Debug: Log response details
       debugPrint('═══════════════════════════════════════════════════════');
@@ -328,42 +434,158 @@ class PoseAnalysisApiClient {
             jsonDecode(response.body) as Map<String, dynamic>;
         return FormAnalysisResponseV2.fromJson(json);
       } else {
-        String errorMessage =
-            'Analysis failed with status ${response.statusCode}';
+        // Log technical details for debugging
         debugPrint('❌ POSE ANALYSIS ERROR (Base64):');
         debugPrint('   Status: ${response.statusCode}');
         debugPrint('   Raw body: ${response.body}');
+        String? serverMessage;
         try {
           final Map<String, dynamic> errorJson =
               jsonDecode(response.body) as Map<String, dynamic>;
           debugPrint('   Parsed error JSON: $errorJson');
-          errorMessage =
+          serverMessage =
               errorJson['detail'] as String? ??
               errorJson['error_message'] as String? ??
-              errorJson['message'] as String? ??
-              errorMessage;
+              errorJson['message'] as String?;
+          debugPrint('   Server message: $serverMessage');
         } catch (parseError) {
           debugPrint('   Failed to parse error body: $parseError');
         }
-        debugPrint('   Final error message: $errorMessage');
-        throw PoseAnalysisException(errorMessage);
+
+        // Log to Crashlytics
+        final ErrorLoggingService errorLogger =
+            locator.get<ErrorLoggingService>();
+        await errorLogger.logError(
+          exception: Exception(
+            'Form analysis API error (Base64): ${response.statusCode} - $serverMessage',
+          ),
+          type: AppErrorType.network,
+          reason:
+              'Form analysis API (Base64) returned status ${response.statusCode}',
+          context: ErrorContext(
+            screenName: 'Form Analysis',
+            customData: {
+              'status_code': response.statusCode,
+              'server_message': serverMessage,
+              'session_id': sessionId,
+              'camera_angle': cameraAngle.toApiString(),
+              'handedness': handedness.toApiString(),
+            },
+          ),
+        );
+
+        // User-friendly error message
+        throw PoseAnalysisException(
+          'Something went wrong analyzing your video. Please try again.',
+        );
       }
-    } on SocketException catch (e) {
+    } on TimeoutException catch (e, stackTrace) {
+      debugPrint('❌ Request timed out after 5 minutes (Base64)');
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'Form analysis request timed out (Base64)',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'timeout_duration': '5 minutes',
+            'session_id': sessionId,
+            'camera_angle': cameraAngle.toApiString(),
+            'handedness': handedness.toApiString(),
+          },
+        ),
+      );
+
+      throw PoseAnalysisException(
+        'Analysis is taking longer than expected. Please try again with a shorter video.',
+      );
+    } on SocketException catch (e, stackTrace) {
       debugPrint('❌ SOCKET EXCEPTION (Base64): ${e.message}');
       debugPrint('   Address: ${e.address}');
       debugPrint('   Port: ${e.port}');
       debugPrint('   OS Error: ${e.osError}');
-      throw PoseAnalysisException(
-        'Network error: Could not connect to analysis server. ${e.message}',
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'Socket exception during form analysis (Base64)',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'socket_message': e.message,
+            'address': e.address?.toString(),
+            'port': e.port,
+            'os_error': e.osError?.toString(),
+            'session_id': sessionId,
+          },
+        ),
       );
-    } on http.ClientException catch (e) {
+
+      throw PoseAnalysisException(
+        'Unable to reach the analysis service. Please check your connection and try again.',
+      );
+    } on http.ClientException catch (e, stackTrace) {
       debugPrint('❌ HTTP CLIENT EXCEPTION (Base64): ${e.message}');
       debugPrint('   URI: ${e.uri}');
-      throw PoseAnalysisException('HTTP error: ${e.message}');
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'HTTP client exception during form analysis (Base64)',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'http_message': e.message,
+            'uri': e.uri?.toString(),
+            'session_id': sessionId,
+          },
+        ),
+      );
+
+      throw PoseAnalysisException(
+        'Unable to reach the analysis service. Please check your connection and try again.',
+      );
+    } on PoseAnalysisException {
+      // Re-throw PoseAnalysisException without additional logging (already logged above)
+      rethrow;
     } catch (e, stackTrace) {
       debugPrint('❌ UNEXPECTED ERROR (Base64): $e');
       debugPrint('   Stack trace: $stackTrace');
-      rethrow;
+
+      // Log to Crashlytics
+      final ErrorLoggingService errorLogger =
+          locator.get<ErrorLoggingService>();
+      await errorLogger.logError(
+        exception: e,
+        stackTrace: stackTrace,
+        type: AppErrorType.network,
+        reason: 'Unexpected error during form analysis (Base64)',
+        context: ErrorContext(
+          screenName: 'Form Analysis',
+          customData: {
+            'session_id': sessionId,
+            'camera_angle': cameraAngle.toApiString(),
+            'handedness': handedness.toApiString(),
+          },
+        ),
+      );
+
+      throw PoseAnalysisException(
+        'Something went wrong analyzing your video. Please try again.',
+      );
     }
   }
 

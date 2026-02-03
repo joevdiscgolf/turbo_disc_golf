@@ -127,10 +127,6 @@ flutter:
     - assets/test_videos/
     - assets/judge_tab/
     - assets/icon/
-    - assets/pro_references/paul_mcbeth/backhand/side/
-    - assets/pro_references/paul_mcbeth/backhand/rear/
-    - assets/pro_references/paul_mcbeth/forehand/
-    - assets/pro_references/paul_mcbeth/videos/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

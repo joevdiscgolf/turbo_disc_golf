@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/user_alignment_metadata.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
@@ -26,6 +27,7 @@ class FullscreenComparisonDialog extends StatefulWidget {
     this.videoOrientation,
     this.detectedHandedness,
     this.poseAnalysisResponse,
+    this.userAlignmentByCheckpointId,
   });
 
   final List<CheckpointDataV2> checkpoints;
@@ -45,6 +47,10 @@ class FullscreenComparisonDialog extends StatefulWidget {
 
   /// Pose analysis response containing user landmarks for alignment
   final FormAnalysisResponseV2? poseAnalysisResponse;
+
+  /// Pre-computed user alignment metadata by checkpoint ID.
+  /// Used for proper sizing when checkpoints are pro-specific.
+  final Map<String, UserAlignmentMetadata?>? userAlignmentByCheckpointId;
 
   @override
   State<FullscreenComparisonDialog> createState() =>
@@ -299,6 +305,10 @@ class _FullscreenComparisonDialogState
     final List<PoseLandmark>? userLandmarks =
         _getUserLandmarksForCheckpoint(checkpoint.metadata.checkpointId);
 
+    // Get user alignment metadata from pre-computed map
+    final UserAlignmentMetadata? userAlignment =
+        widget.userAlignmentByCheckpointId?[checkpoint.metadata.checkpointId];
+
     return Column(
       children: [
         Container(
@@ -326,6 +336,7 @@ class _FullscreenComparisonDialogState
               proPlayerId: widget.proPlayerId,
               detectedHandedness: widget.detectedHandedness,
               userLandmarks: userLandmarks,
+              userAlignment: userAlignment,
             ),
           ),
         ),

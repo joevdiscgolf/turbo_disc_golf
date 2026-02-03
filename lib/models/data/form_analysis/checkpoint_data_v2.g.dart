@@ -22,10 +22,10 @@ CheckpointDataV2 _$CheckpointDataV2FromJson(Map<String, dynamic> json) =>
       deviationAnalysis: DeviationAnalysis.fromJson(
         json['deviation_analysis'] as Map<String, dynamic>,
       ),
-      proOverlayAlignment: json['pro_overlay_alignment'] == null
+      userAlignmentMetadata: json['user_alignment_metadata'] == null
           ? null
-          : ProOverlayAlignment.fromJson(
-              json['pro_overlay_alignment'] as Map<String, dynamic>,
+          : UserAlignmentMetadata.fromJson(
+              json['user_alignment_metadata'] as Map<String, dynamic>,
             ),
       coachingTips: (json['coaching_tips'] as List<dynamic>)
           .map((e) => e as String)
@@ -38,6 +38,6 @@ Map<String, dynamic> _$CheckpointDataV2ToJson(CheckpointDataV2 instance) =>
       'user_pose': instance.userPose.toJson(),
       'pro_reference_pose': instance.proReferencePose?.toJson(),
       'deviation_analysis': instance.deviationAnalysis.toJson(),
-      'pro_overlay_alignment': instance.proOverlayAlignment?.toJson(),
+      'user_alignment_metadata': instance.userAlignmentMetadata?.toJson(),
       'coaching_tips': instance.coachingTips,
     };

@@ -9,7 +9,10 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 ///
 /// This is the ONLY widget that rebuilds at ~30fps (tracking position).
 /// All other widgets in the player tree rebuild only on user interaction.
-class CheckpointTimelineScrubber extends StatelessWidget {
+///
+/// PERFORMANCE: Uses StatefulWidget to cache sorted checkpoint list,
+/// avoiding O(n log n) sort operation every frame during playback.
+class CheckpointTimelineScrubber extends StatefulWidget {
   const CheckpointTimelineScrubber({
     super.key,
     this.useWhiteMarkers = false,
@@ -19,11 +22,45 @@ class CheckpointTimelineScrubber extends StatelessWidget {
   final bool useWhiteMarkers;
   final double height;
 
+  @override
+  State<CheckpointTimelineScrubber> createState() =>
+      _CheckpointTimelineScrubberState();
+}
+
+class _CheckpointTimelineScrubberState extends State<CheckpointTimelineScrubber> {
   // Clean Sport Minimal colors
   static const Color _cleanTrackInactive = Color(0xFFE2E8F0);
   static const Color _cleanAccentColor = Color(0xFF3B82F6);
   static const Color _cleanAccentColorDark = Color(0xFF2563EB);
   static const Color _cleanTextColor = Color(0xFF1E293B);
+
+  // Cached sorted checkpoints to avoid sorting every frame
+  List<MapEntry<int, CheckpointDataV2>>? _cachedSortedCheckpoints;
+  List<CheckpointDataV2>? _lastCheckpoints;
+
+  /// Returns checkpoints sorted by z-index (H lowest, P on top).
+  /// Caches result to avoid sorting on every frame during playback.
+  List<MapEntry<int, CheckpointDataV2>> _getSortedCheckpoints(
+    List<CheckpointDataV2> checkpoints,
+  ) {
+    // Only recompute if checkpoints list changed
+    if (_cachedSortedCheckpoints != null && identical(_lastCheckpoints, checkpoints)) {
+      return _cachedSortedCheckpoints!;
+    }
+
+    _lastCheckpoints = checkpoints;
+    final List<MapEntry<int, CheckpointDataV2>> entries = checkpoints
+        .asMap()
+        .entries
+        .toList();
+    entries.sort((a, b) {
+      final int zIndexA = _getCheckpointZIndex(a.value.metadata.checkpointId);
+      final int zIndexB = _getCheckpointZIndex(b.value.metadata.checkpointId);
+      return zIndexA.compareTo(zIndexB);
+    });
+    _cachedSortedCheckpoints = entries;
+    return entries;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +83,7 @@ class CheckpointTimelineScrubber extends StatelessWidget {
         BlocProvider.of<CheckpointPlaybackCubit>(context);
 
     return SizedBox(
-      height: height,
+      height: widget.height,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double trackWidth = constraints.maxWidth - (thumbRadius * 2);
@@ -68,7 +105,7 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                 cubit.seek(tapPosition.clamp(0.0, 1.0));
               },
               child: SizedBox(
-                height: height,
+                height: widget.height,
                 child: Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
@@ -95,11 +132,9 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Checkpoint tick marks
+                    // Checkpoint tick marks (using cached sorted list)
                     if (state.isInitialized)
-                      ..._getSortedCheckpointsForStacking(
-                        state.checkpoints,
-                      ).map((entry) {
+                      ..._getSortedCheckpoints(state.checkpoints).map((entry) {
                         final int index = entry.key;
                         final CheckpointDataV2 cp = entry.value;
 
@@ -109,7 +144,7 @@ class CheckpointTimelineScrubber extends StatelessWidget {
                           cp,
                           trackWidth: trackWidth,
                           videoDurationMs: state.videoDuration.inMilliseconds,
-                          useWhiteMarkers: useWhiteMarkers,
+                          useWhiteMarkers: widget.useWhiteMarkers,
                         );
                       }),
                     // Thumb with gradient
@@ -238,21 +273,5 @@ class CheckpointTimelineScrubber extends StatelessWidget {
       default:
         return 0;
     }
-  }
-
-  /// Returns checkpoints sorted by z-index (H lowest, P on top).
-  List<MapEntry<int, CheckpointDataV2>> _getSortedCheckpointsForStacking(
-    List<CheckpointDataV2> checkpoints,
-  ) {
-    final List<MapEntry<int, CheckpointDataV2>> entries = checkpoints
-        .asMap()
-        .entries
-        .toList();
-    entries.sort((a, b) {
-      final int zIndexA = _getCheckpointZIndex(a.value.metadata.checkpointId);
-      final int zIndexB = _getCheckpointZIndex(b.value.metadata.checkpointId);
-      return zIndexA.compareTo(zIndexB);
-    });
-    return entries;
   }
 }

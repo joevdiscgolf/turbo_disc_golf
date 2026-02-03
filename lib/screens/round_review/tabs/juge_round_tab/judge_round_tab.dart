@@ -12,28 +12,28 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_confetti_overlay.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_preparing_animation.dart';
+import 'package:turbo_disc_golf/components/judgment/judgment_result_content_v3.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_reveal_effect.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_slot_reel.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
-import 'package:turbo_disc_golf/components/judgment/judgment_result_content_v3.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
 import 'package:turbo_disc_golf/services/ai_generation_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/toast/toast_service.dart';
-import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/auth_helpers.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 import 'package:yaml/yaml.dart';
 
@@ -441,8 +441,9 @@ highlightStats:
     super.build(context);
 
     // Use white background for V3, gradient for older versions
-    final bool useWhiteBackground =
-        locator.get<FeatureFlagService>().useJudgmentResultV3;
+    final bool useWhiteBackground = locator
+        .get<FeatureFlagService>()
+        .useJudgmentResultV3;
 
     return Container(
       decoration: useWhiteBackground
@@ -482,40 +483,6 @@ highlightStats:
                   !_isGlaze && _currentState == JudgmentState.celebrating,
             ),
         ],
-      ),
-    );
-  }
-
-  /// Debug-only button to regenerate judgment for testing.
-  Widget _buildDebugRegenerateButton() {
-    final bool isGenerating =
-        _currentState == JudgmentState.building ||
-        _currentState == JudgmentState.preparing ||
-        _currentState == JudgmentState.spinning;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, right: 16),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: TextButton(
-          onPressed: isGenerating
-              ? null
-              : () {
-                  _logger.track('Debug Regenerate Judgment Tapped');
-                  setState(() {
-                    _currentRound = _currentRound.copyWith(aiJudgment: null);
-                    _currentState = JudgmentState.idle;
-                  });
-                  _startJudgmentFlow();
-                },
-          child: Text(
-            isGenerating ? 'Generating...' : 'Regenerate',
-            style: TextStyle(
-              fontSize: 14,
-              color: isGenerating ? Colors.grey : Colors.black,
-            ),
-          ),
-        ),
       ),
     );
   }

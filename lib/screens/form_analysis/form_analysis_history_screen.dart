@@ -78,13 +78,13 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   Future<void> _showRecordingScreen() async {
     _logger.track('New Form Analysis Button Tapped');
 
-    pushCupertinoRoute(
+    await pushCupertinoRoute(
       context,
       FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding),
       pushFromBottom: true,
     );
-    // Refresh list after returning from recording screen
-    _historyCubit.refreshHistory();
+    // Note: New analyses are automatically added to the history cubit
+    // by VideoFormAnalysisCubit when analysis completes - no refresh needed
   }
 
   @override

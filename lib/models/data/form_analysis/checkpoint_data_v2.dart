@@ -1,7 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_metadata.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/deviation_analysis.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/pro_overlay_alignment.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/user_alignment_metadata.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_reference_pose_data.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/user_pose_data.dart';
 
@@ -16,7 +16,7 @@ class CheckpointDataV2 {
     required this.userPose,
     this.proReferencePose,
     required this.deviationAnalysis,
-    this.proOverlayAlignment,
+    this.userAlignmentMetadata,
     required this.coachingTips,
   });
 
@@ -36,8 +36,8 @@ class CheckpointDataV2 {
   final DeviationAnalysis deviationAnalysis;
 
   /// Pro overlay alignment data (null if no pro comparison)
-  @JsonKey(name: 'pro_overlay_alignment')
-  final ProOverlayAlignment? proOverlayAlignment;
+  @JsonKey(name: 'user_alignment_metadata')
+  final UserAlignmentMetadata? userAlignmentMetadata;
 
   /// Coaching tips for this checkpoint
   @JsonKey(name: 'coaching_tips')

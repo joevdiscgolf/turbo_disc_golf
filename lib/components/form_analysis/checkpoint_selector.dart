@@ -44,7 +44,6 @@ class CheckpointSelector extends StatelessWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
       height: 44,
       decoration: BoxDecoration(
         color: Colors.white,

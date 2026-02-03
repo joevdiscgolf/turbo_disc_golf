@@ -189,14 +189,14 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                               child: Container(
                                 width: 40,
                                 height: 40,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
+                                decoration: BoxDecoration(
+                                  color: _showControls
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.7),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                  _showControls
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
+                                child: const Icon(
+                                  Icons.tune,
                                   color: Colors.black,
                                   size: 24,
                                 ),

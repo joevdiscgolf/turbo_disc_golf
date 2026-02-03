@@ -53,7 +53,7 @@ class FormAnalysisWelcomeEmptyState extends StatelessWidget {
                   PrimaryButton(
                     width: double.infinity,
                     height: 52,
-                    label: 'Analyze Your First Video',
+                    label: 'Analyze your first video',
                     gradientBackground: const [
                       Color(0xFF137e66),
                       Color(0xFF1a9f7f),
@@ -95,11 +95,8 @@ class FormAnalysisWelcomeEmptyState extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         const Text(
-          'Form Coach',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+          'Form coach',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_button.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_content.dart';
@@ -10,6 +11,7 @@ import 'package:turbo_disc_golf/components/form_analysis/floating_view_toggle.da
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_comparison_dialog.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_player_selector.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_empty_state.dart';
+import 'package:turbo_disc_golf/components/panels/generic_selector_panel.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/v2_measurements_card.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
@@ -20,10 +22,12 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_comparison_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_player_models.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/user_alignment_metadata.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_pro_players_loader.dart';
+import 'package:turbo_disc_golf/services/form_analysis/pro_player_constants.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
@@ -76,6 +80,10 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   bool? _cachedShowSkeletonOnly;
   CameraAngle? _cachedCameraAngle;
 
+  // Pre-loaded images cache for instant checkpoint switching
+  // Key format: "{checkpointId}_{skeleton|silhouette}"
+  final Map<String, ImageProvider> _preloadedImages = {};
+
   // Selected pro player ID for multi-pro comparison feature
   String? _selectedProId;
 
@@ -86,11 +94,166 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   bool _isLoadingConfig = false;
   bool _configLoadFailed = false;
 
+  // Pre-computed lookup maps for O(1) access during playback
+  // These are rebuilt when pro selection changes
+  Map<String, List<PoseLandmark>?> _userLandmarksMap = {};
+  Map<String, UserAlignmentMetadata?> _userAlignmentMap = {};
+
+  // Cached values to avoid repeated lookups during rebuilds
+  bool _cachedIsMultiProEnabled = false;
+  String _cachedActiveProDisplayName = '';
+  bool _cachedShowProReferenceEmptyState = false;
+  double _cachedHeightMultiplier = 1.5;
+  List<CheckpointDataV2> _cachedActiveCheckpoints = [];
+  List<CheckpointSelectorItem> _cachedCheckpointSelectorItems = [];
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Initialize cached values first (uses defaults before config loads)
+    _updateCachedDisplayValues();
+    _buildLookupMaps();
     _loadProPlayersConfig();
+    _preloadCheckpointImages();
+  }
+
+  /// Pre-computes lookup maps for user landmarks and alignment metadata.
+  /// This avoids O(n) firstWhere lookups during playback rebuilds.
+  void _buildLookupMaps() {
+    // Build user alignment map from main analysis checkpoints
+    _userAlignmentMap = {
+      for (final cp in widget.analysis.checkpoints)
+        cp.metadata.checkpointId: cp.userAlignmentMetadata,
+    };
+
+    // Build user landmarks map from active checkpoints
+    _userLandmarksMap = {
+      for (final cp in _activeCheckpoints)
+        cp.metadata.checkpointId: cp.userPose.landmarks.isNotEmpty
+            ? cp.userPose.landmarks
+            : null,
+    };
+
+    // Also include landmarks from poseAnalysisResponse if available
+    if (widget.poseAnalysisResponse != null) {
+      for (final cp in widget.poseAnalysisResponse!.checkpoints) {
+        // Only add if not already present or if current value is null
+        if (!_userLandmarksMap.containsKey(cp.metadata.checkpointId) ||
+            _userLandmarksMap[cp.metadata.checkpointId] == null) {
+          if (cp.userPose.landmarks.isNotEmpty) {
+            _userLandmarksMap[cp.metadata.checkpointId] = cp.userPose.landmarks;
+          }
+        }
+      }
+    }
+  }
+
+  /// Updates cached display values. Call after pro config loads or pro selection changes.
+  void _updateCachedDisplayValues() {
+    final FeatureFlagService featureFlagService = locator.get<FeatureFlagService>();
+    _cachedIsMultiProEnabled = _computeIsMultiProEnabled();
+    _cachedActiveProDisplayName = _computeActiveProDisplayName();
+    _cachedShowProReferenceEmptyState = featureFlagService.getBool(
+      FeatureFlag.showProReferenceEmptyState,
+    );
+    // Cache height multiplier based on camera angle
+    final CameraAngle cameraAngle = widget.analysis.analysisResults.cameraAngle;
+    _cachedHeightMultiplier = cameraAngle == CameraAngle.rear
+        ? featureFlagService.getDouble(FeatureFlag.proReferenceHeightMultiplierRear)
+        : featureFlagService.getDouble(FeatureFlag.proReferenceHeightMultiplierSide);
+    _updateCachedCheckpoints();
+  }
+
+  /// Updates cached checkpoints and selector items.
+  /// Call after pro selection changes.
+  void _updateCachedCheckpoints() {
+    _cachedActiveCheckpoints = _computeActiveCheckpoints();
+    _cachedCheckpointSelectorItems = _cachedActiveCheckpoints
+        .map(
+          (cp) => CheckpointSelectorItem(
+            id: cp.metadata.checkpointId,
+            label: cp.metadata.checkpointName,
+          ),
+        )
+        .toList();
+  }
+
+  /// Preloads all checkpoint images for instant switching.
+  /// Stores images in _preloadedImages map for synchronous access.
+  /// If [forProPlayerId] is provided, preloads for that specific pro player.
+  Future<void> _preloadCheckpointImages({String? forProPlayerId}) async {
+    final List<CheckpointDataV2> checkpoints = widget.analysis.checkpoints;
+    final String throwType = widget.analysis.analysisResults.throwType;
+    final CameraAngle cameraAngle = widget.analysis.analysisResults.cameraAngle;
+    final String? proPlayerId =
+        forProPlayerId ??
+        checkpoints.firstOrNull?.proReferencePose?.proPlayerId;
+
+    if (proPlayerId == null) return;
+
+    // Preload both silhouette and skeleton versions for each checkpoint
+    for (final checkpoint in checkpoints) {
+      for (final isSkeleton in [true, false]) {
+        try {
+          final ImageProvider image = await _proRefLoader.loadReferenceImage(
+            proPlayerId: proPlayerId,
+            throwType: throwType,
+            checkpoint: checkpoint.metadata.checkpointId,
+            isSkeleton: isSkeleton,
+            cameraAngle: cameraAngle,
+          );
+
+          if (!mounted) return;
+
+          // Store in our map for synchronous access (keyed by pro + checkpoint + type)
+          final String cacheKey = _getImageCacheKey(
+            proPlayerId,
+            checkpoint.metadata.checkpointId,
+            isSkeleton,
+          );
+          _preloadedImages[cacheKey] = image;
+
+          // Also precache into Flutter's image cache for rendering
+          // ignore: use_build_context_synchronously
+          precacheImage(image, context);
+        } catch (e) {
+          debugPrint(
+            'Failed to preload checkpoint ${checkpoint.metadata.checkpointId}: $e',
+          );
+        }
+      }
+    }
+
+    // Trigger rebuild so cached images are used
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Gets cache key for preloaded images map (includes pro player ID)
+  String _getImageCacheKey(
+    String proPlayerId,
+    String checkpointId,
+    bool isSkeleton,
+  ) {
+    final String type = isSkeleton ? 'skeleton' : 'silhouette';
+    return '${proPlayerId}_${checkpointId}_$type';
+  }
+
+  /// Gets a preloaded image if available
+  ImageProvider? _getPreloadedImage(
+    String checkpointId,
+    bool showSkeletonOnly,
+  ) {
+    final String? proId = _activeProId;
+    if (proId == null) return null;
+    final String cacheKey = _getImageCacheKey(
+      proId,
+      checkpointId,
+      showSkeletonOnly,
+    );
+    return _preloadedImages[cacheKey];
   }
 
   @override
@@ -127,14 +290,19 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       if (config != null) {
         _proPlayersConfig = config;
         _configLoadFailed = false;
+        // Update cached values now that config is loaded
+        _updateCachedDisplayValues();
       } else {
         _configLoadFailed = true;
       }
     });
   }
 
-  /// Whether multi-pro comparison feature is enabled and available
-  bool get _isMultiProEnabled {
+  /// Whether multi-pro comparison feature is enabled and available (cached value).
+  bool get _isMultiProEnabled => _cachedIsMultiProEnabled;
+
+  /// Computes whether multi-pro comparison is enabled. Called when config changes.
+  bool _computeIsMultiProEnabled() {
     final bool flagEnabled = locator.get<FeatureFlagService>().getBool(
       FeatureFlag.enableMultiProComparison,
     );
@@ -147,18 +315,23 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
     return _proPlayersConfig?.pros.values.toList() ?? [];
   }
 
-  /// Get the currently selected pro ID (defaults to defaultProId or first available)
+  /// Get the currently selected pro ID (defaults to paul_mcbeth)
   String? get _activeProId {
     if (!_isMultiProEnabled) return null;
     return _selectedProId ??
         widget.analysis.proComparisonConfig?.defaultProId ??
         _proPlayersConfig?.defaultProId ??
-        _availablePros.firstOrNull?.proPlayerId;
+        kDefaultProPlayerId;
   }
 
-  /// Get checkpoints for the currently selected pro player.
+  /// Get cached checkpoints for the currently selected pro player.
+  List<CheckpointDataV2> get _activeCheckpoints => _cachedActiveCheckpoints.isEmpty
+      ? widget.analysis.checkpoints
+      : _cachedActiveCheckpoints;
+
+  /// Computes checkpoints for the currently selected pro player.
   /// Returns the default checkpoints if no pro comparison data is available.
-  List<CheckpointDataV2> get _activeCheckpoints {
+  List<CheckpointDataV2> _computeActiveCheckpoints() {
     if (!_isMultiProEnabled || _activeProId == null) {
       return widget.analysis.checkpoints;
     }
@@ -172,6 +345,71 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
     return widget.analysis.checkpoints;
   }
 
+  /// Get the display name for the currently selected pro player (cached value).
+  String _getActiveProDisplayName() => _cachedActiveProDisplayName;
+
+  /// Computes the display name for the active pro. Called when pro selection changes.
+  String _computeActiveProDisplayName() {
+    final String? proId = _activeProId;
+    if (proId == null) return '';
+
+    // Try to find the pro in available pros first
+    final ProPlayerMetadata? pro = _availablePros
+        .where((p) => p.proPlayerId == proId)
+        .firstOrNull;
+
+    if (pro != null && pro.displayName.isNotEmpty) {
+      return pro.displayName;
+    }
+
+    // Fall back to constants
+    return ProPlayerConstants.getDisplayName(proId);
+  }
+
+  /// Shows the pro player selector panel.
+  void _showProSelectorPanel(BuildContext context) {
+    if (!_isMultiProEnabled) return;
+
+    HapticFeedback.selectionClick();
+
+    final ProPlayerMetadata? currentSelection = _availablePros
+        .where((pro) => pro.proPlayerId == _activeProId)
+        .firstOrNull;
+
+    showModalBottomSheet<ProPlayerMetadata>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.4,
+          minChildSize: 0.3,
+          maxChildSize: 0.6,
+          expand: false,
+          builder: (context, scrollController) {
+            return GenericSelectorPanel<ProPlayerMetadata>(
+              items: _availablePros,
+              selectedItem: currentSelection,
+              getDisplayName: (pro) => pro.displayName.isNotEmpty
+                  ? pro.displayName
+                  : ProPlayerConstants.getDisplayName(pro.proPlayerId),
+              getId: (pro) => pro.proPlayerId,
+              title: 'Select pro player',
+              enableSearch: false,
+            );
+          },
+        );
+      },
+    ).then((selected) {
+      if (selected != null) {
+        _onProSelected(selected.proPlayerId);
+      }
+    });
+  }
+
   void _onProSelected(String proId) {
     if (proId != _selectedProId) {
       setState(() {
@@ -179,7 +417,13 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
         // Clear cached pro reference since we're switching pros
         _cachedProRefImage = null;
         _cachedCheckpointIndex = null;
+        // Rebuild lookup maps for new pro's checkpoints
+        _buildLookupMaps();
+        // Update cached display values
+        _updateCachedDisplayValues();
       });
+      // Preload images for the newly selected pro (for instant switching later)
+      _preloadCheckpointImages(forProPlayerId: proId);
     }
   }
 
@@ -214,24 +458,17 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
               ListView(
                 padding: EdgeInsets.only(top: widget.topPadding, bottom: 120),
                 children: [
-                  if (_isMultiProEnabled && _proPlayersConfig != null)
-                    ProPlayerSelector(
-                      availablePros: _availablePros,
-                      selectedProId: _activeProId!,
-                      onProSelected: _onProSelected,
-                    ),
+                  // if (_isMultiProEnabled && _proPlayersConfig != null)
+                  //   ProPlayerSelector(
+                  //     availablePros: _availablePros,
+                  //     selectedProId: _activeProId!,
+                  //     onProSelected: _onProSelected,
+                  //   ),
                   if (_showCheckpointSelectorAboveVideo)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: CheckpointSelector(
-                        items: activeCheckpoints
-                            .map(
-                              (cp) => CheckpointSelectorItem(
-                                id: cp.metadata.checkpointId,
-                                label: cp.metadata.checkpointName,
-                              ),
-                            )
-                            .toList(),
+                        items: _cachedCheckpointSelectorItems,
                         selectedIndex: selectedIndex ?? -1,
                         onChanged: (index) => cubit.jumpToCheckpoint(index),
                         formatLabel: formatCheckpointChipLabel,
@@ -291,7 +528,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [SenseiColors.gray[100]!, Colors.white],
-          stops: [0.0, 0.3],
+          stops: [0.0, 0.6],
         ),
       ),
       child: Column(
@@ -307,16 +544,14 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
           ),
           if (!_showCheckpointSelectorAboveVideo) ...[
             Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 0),
+              padding: const EdgeInsets.only(
+                top: 12,
+                bottom: 0,
+                left: 16,
+                right: 16,
+              ),
               child: CheckpointSelector(
-                items: checkpoints
-                    .map(
-                      (cp) => CheckpointSelectorItem(
-                        id: cp.metadata.checkpointId,
-                        label: cp.metadata.checkpointName,
-                      ),
-                    )
-                    .toList(),
+                items: _cachedCheckpointSelectorItems,
                 selectedIndex: selectedIndex ?? -1,
                 onChanged: (index) => cubit.jumpToCheckpoint(index),
                 formatLabel: formatCheckpointChipLabel,
@@ -349,9 +584,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
     final bool showEmptyState =
         selectedIndex == null &&
         lastSelectedIndex == null &&
-        locator.get<FeatureFlagService>().getBool(
-          FeatureFlag.showProReferenceEmptyState,
-        );
+        _cachedShowProReferenceEmptyState;
 
     if (showEmptyState) {
       return const ProReferenceEmptyState();
@@ -378,6 +611,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
               showSkeletonOnly,
             ),
           ),
+          // Top-right checkpoint badge
           Positioned(
             top: 8,
             right: 8,
@@ -397,6 +631,45 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
               ),
             ),
           ),
+          // Bottom pro player selector badge (only when multi-pro is enabled)
+          if (_isMultiProEnabled)
+            Positioned(
+              bottom: 8,
+              left: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () => _showProSelectorPanel(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _getActiveProDisplayName(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 16,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -418,6 +691,20 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       checkpoint.metadata.checkpointId,
     );
 
+    // Always get userAlignmentMetadata from the main analysis checkpoints,
+    // not from the pro-specific checkpoints. This ensures proper sizing
+    // regardless of which pro is selected.
+    final UserAlignmentMetadata? userAlignment =
+        _getUserAlignmentMetadataForCheckpoint(
+          checkpoint.metadata.checkpointId,
+        );
+
+    // Get preloaded image for instant rendering (avoids FutureBuilder async delay)
+    final ImageProvider? preloadedImage = _getPreloadedImage(
+      checkpoint.metadata.checkpointId,
+      showSkeletonOnly,
+    );
+
     return ProReferenceImageContent(
       checkpoint: checkpoint,
       throwType: widget.analysis.analysisResults.throwType,
@@ -427,10 +714,13 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       proPlayerId: _activeProId,
       detectedHandedness: widget.analysis.analysisResults.detectedHandedness,
       userLandmarks: userLandmarks,
+      userAlignment: userAlignment,
+      heightMultiplier: _cachedHeightMultiplier,
       cachedImage: _cachedProRefImage,
       cachedHorizontalOffset: _cachedHorizontalOffset,
       cachedScale: _cachedScale,
       isCacheStale: !isSameCheckpoint,
+      preloadedImage: preloadedImage,
       onImageLoaded: (image, horizontalOffset, scale) {
         _cachedProRefImage = image;
         _cachedCheckpointIndex = selectedIndex ?? 0;
@@ -442,37 +732,18 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
     );
   }
 
-  /// Gets user landmarks for a specific checkpoint.
-  /// First tries to get from CheckpointDataV2 (stored data), then falls back
-  /// to poseAnalysisResponse (fresh analysis that hasn't been saved yet).
+  /// Gets user landmarks for a specific checkpoint using pre-computed map.
+  /// O(1) lookup for smooth playback performance.
   List<PoseLandmark>? _getUserLandmarksForCheckpoint(String checkpointId) {
-    // First, try to get landmarks from the stored CheckpointDataV2
-    try {
-      final CheckpointDataV2 checkpoint = _activeCheckpoints.firstWhere(
-        (cp) => cp.metadata.checkpointId == checkpointId,
-      );
-      if (checkpoint.userPose.landmarks.isNotEmpty) {
-        return checkpoint.userPose.landmarks;
-      }
-    } catch (e) {
-      // Checkpoint not found in active checkpoints, continue to fallback
-    }
+    return _userLandmarksMap[checkpointId];
+  }
 
-    // Fallback: try to get from poseAnalysisResponse (for fresh analysis)
-    if (widget.poseAnalysisResponse == null) return null;
-
-    try {
-      final CheckpointDataV2 checkpointData = widget
-          .poseAnalysisResponse!
-          .checkpoints
-          .firstWhere((cp) => cp.metadata.checkpointId == checkpointId);
-      return checkpointData.userPose.landmarks;
-    } catch (e) {
-      debugPrint(
-        'Failed to get user landmarks for checkpoint $checkpointId: $e',
-      );
-      return null;
-    }
+  /// Gets user alignment metadata for a specific checkpoint using pre-computed map.
+  /// O(1) lookup for smooth playback performance.
+  UserAlignmentMetadata? _getUserAlignmentMetadataForCheckpoint(
+    String checkpointId,
+  ) {
+    return _userAlignmentMap[checkpointId];
   }
 
   List<CheckpointDataV2> _getCheckpointsWithTimestamps() {
@@ -519,6 +790,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
         videoOrientation: widget.analysis.videoMetadata.videoOrientation,
         detectedHandedness: widget.analysis.analysisResults.detectedHandedness,
         poseAnalysisResponse: widget.poseAnalysisResponse,
+        // Reuse pre-computed user alignment map
+        userAlignmentByCheckpointId: _userAlignmentMap,
         onToggleMode: (bool newMode) {
           cubit.setShowSkeletonOnly(newMode);
         },

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/form_analysis/form_analysis_shimmer_placeholder.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/alignment_metadata.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/user_alignment_metadata.dart';
+import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 
 /// Renders the pro reference image for a checkpoint.
@@ -26,10 +31,13 @@ class ProReferenceImageContent extends StatelessWidget {
     this.proPlayerId,
     this.detectedHandedness,
     this.userLandmarks,
+    this.userAlignment,
+    this.heightMultiplier,
     this.cachedImage,
     this.cachedHorizontalOffset,
     this.cachedScale,
     this.isCacheStale = false,
+    this.preloadedImage,
     this.onImageLoaded,
   });
 
@@ -48,6 +56,17 @@ class ProReferenceImageContent extends StatelessWidget {
   /// Note: No longer used for alignment (kept for API compatibility).
   final List<PoseLandmark>? userLandmarks;
 
+  /// Optional user alignment metadata override.
+  /// When provided, uses this instead of checkpoint.userAlignmentMetadata.
+  /// This is used when the checkpoint comes from a pro-specific comparison
+  /// which may not have user alignment data.
+  final UserAlignmentMetadata? userAlignment;
+
+  /// Optional height multiplier for the pro reference image.
+  /// When provided, uses this instead of looking up from feature flags.
+  /// Pass this from parent to avoid service lookup during build.
+  final double? heightMultiplier;
+
   /// Cached image for jitter prevention (timeline view only).
   final ImageProvider? cachedImage;
   final double? cachedHorizontalOffset;
@@ -56,9 +75,17 @@ class ProReferenceImageContent extends StatelessWidget {
   /// Whether the cache is stale (different checkpoint/skeleton mode).
   final bool isCacheStale;
 
+  /// Pre-loaded image for instant rendering (bypasses FutureBuilder async delay).
+  /// When provided, renders synchronously without waiting for futures.
+  final ImageProvider? preloadedImage;
+
   /// Callback when a new image loads, for updating the cache.
-  final void Function(ImageProvider image, double horizontalOffset, double scale)?
-      onImageLoaded;
+  final void Function(
+    ImageProvider image,
+    double horizontalOffset,
+    double scale,
+  )?
+  onImageLoaded;
 
   @override
   Widget build(BuildContext context) {
@@ -112,18 +139,66 @@ class ProReferenceImageContent extends StatelessWidget {
     required double containerWidth,
     required double containerHeight,
   }) {
-    debugPrint('[ProReferenceImageContent] Loading image:');
-    debugPrint('  - proPlayerId: $proPlayerId');
-    debugPrint('  - Checkpoint: ${checkpoint.metadata.checkpointId}');
-    debugPrint('  - throwType: $throwType');
-    debugPrint('  - cameraAngle: $cameraAngle');
-    debugPrint('  - showSkeletonOnly: $showSkeletonOnly');
-    debugPrint('  - Container size: ${containerWidth}x$containerHeight');
+    debugPrint('');
+    debugPrint(
+      '╔═══════════════════════════════════════════════════════════════════',
+    );
+    debugPrint('║ 🖼️ [ProReferenceImageContent] LOADING IMAGE');
+    debugPrint(
+      '╠═══════════════════════════════════════════════════════════════════',
+    );
+    debugPrint('║ Pro Player ID: $proPlayerId');
+    debugPrint('║ Checkpoint: ${checkpoint.metadata.checkpointId}');
+    debugPrint('║ Throw Type: $throwType');
+    debugPrint('║ Camera Angle: $cameraAngle');
+    debugPrint('║ Show Skeleton Only: $showSkeletonOnly');
+    debugPrint('║ Has Preloaded Image: ${preloadedImage != null}');
+    debugPrint(
+      '║ Container Size: ${containerWidth.toStringAsFixed(0)}x${containerHeight.toStringAsFixed(0)}',
+    );
+    debugPrint(
+      '╚═══════════════════════════════════════════════════════════════════',
+    );
 
-    // Load both image and metadata concurrently
-    return FutureBuilder<ImageProvider>(
-      future: _loadImage(proPlayerId),
+    // Calculate bounds (can do this synchronously since it only uses user data)
+    final _ProImageBounds bounds = _calculateBounds(
+      containerWidth: containerWidth,
+      containerHeight: containerHeight,
+    );
+
+    // If we have a preloaded image, render it synchronously (instant switching)
+    if (preloadedImage != null) {
+      // Notify parent to update cache
+      onImageLoaded?.call(
+        preloadedImage!,
+        bounds.left,
+        bounds.height / containerHeight,
+      );
+
+      return _buildPositionedImage(
+        imageProvider: preloadedImage!,
+        bounds: bounds,
+      );
+    }
+
+    // Fallback to async loading if no preloaded image available
+    final Future<ImageProvider> imageFuture = _loadImage(proPlayerId);
+    final Future<AlignmentMetadata?> metadataFuture = proRefLoader
+        .loadAlignmentMetadata(
+          proPlayerId: proPlayerId,
+          throwType: throwType,
+          cameraAngle: cameraAngle,
+        );
+
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([imageFuture, metadataFuture]),
       builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          final AlignmentMetadata? metadata =
+              snapshot.data![1] as AlignmentMetadata?;
+          _logAlignmentMetadata(proPlayerId, metadata);
+        }
+
         if (snapshot.hasError) {
           debugPrint('Failed to load pro reference: ${snapshot.error}');
           return const Center(
@@ -131,15 +206,10 @@ class ProReferenceImageContent extends StatelessWidget {
           );
         }
 
-        // Calculate bounds (can do this before image loads since it only uses user data)
-        final _ProImageBounds bounds = _calculateBounds(
-          containerWidth: containerWidth,
-          containerHeight: containerHeight,
-        );
-
         if (!snapshot.hasData) {
-          // While loading: show cached image if available and cache is stale
-          if (cachedImage != null && isCacheStale) {
+          // While loading: show cached image only if cache is still valid (same checkpoint)
+          // If cache is stale (different checkpoint), show shimmer to avoid showing wrong image
+          if (cachedImage != null && !isCacheStale) {
             return _buildPositionedImage(
               imageProvider: cachedImage!,
               bounds: bounds,
@@ -148,7 +218,7 @@ class ProReferenceImageContent extends StatelessWidget {
           return const FormAnalysisShimmerPlaceholder();
         }
 
-        final ImageProvider imageProvider = snapshot.data!;
+        final ImageProvider imageProvider = snapshot.data![0] as ImageProvider;
 
         // Notify parent to cache (using box height ratio for compatibility)
         onImageLoaded?.call(
@@ -176,29 +246,158 @@ class ProReferenceImageContent extends StatelessWidget {
     );
   }
 
+  /// Logs alignment metadata for debugging size differences between pros
+  void _logAlignmentMetadata(String proPlayerId, AlignmentMetadata? metadata) {
+    final String checkpointId = checkpoint.metadata.checkpointId;
+
+    debugPrint('');
+    debugPrint(
+      '╔═══════════════════════════════════════════════════════════════════',
+    );
+    debugPrint('║ 📐 [ALIGNMENT METADATA] PRO: $proPlayerId');
+    debugPrint(
+      '╠═══════════════════════════════════════════════════════════════════',
+    );
+
+    if (metadata == null) {
+      debugPrint('║ ⚠️ NO METADATA FOUND!');
+      debugPrint('║ This could cause sizing issues - using defaults');
+      debugPrint(
+        '╚═══════════════════════════════════════════════════════════════════',
+      );
+      return;
+    }
+
+    debugPrint('║ Metadata player: ${metadata.player}');
+    debugPrint('║ Metadata throw_type: ${metadata.throwType}');
+    debugPrint('║ Metadata camera_angle: ${metadata.cameraAngle}');
+    debugPrint(
+      '║ Available checkpoints: ${metadata.checkpoints.keys.join(", ")}',
+    );
+    debugPrint(
+      '╠───────────────────────────────────────────────────────────────────',
+    );
+
+    final CheckpointAlignmentData? checkpointData =
+        metadata.checkpoints[checkpointId];
+    if (checkpointData == null) {
+      debugPrint('║ ⚠️ NO DATA FOR CHECKPOINT: $checkpointId');
+      debugPrint(
+        '╚═══════════════════════════════════════════════════════════════════',
+      );
+      return;
+    }
+
+    debugPrint('║ Checkpoint: $checkpointId');
+    debugPrint(
+      '║ Body Anchor: (${checkpointData.bodyAnchor.x.toStringAsFixed(3)}, ${checkpointData.bodyAnchor.y.toStringAsFixed(3)})',
+    );
+    if (checkpointData.output != null) {
+      debugPrint(
+        '║ Output Dimensions: ${checkpointData.output!.width}x${checkpointData.output!.height}',
+      );
+      debugPrint(
+        '║ Aspect Ratio: ${checkpointData.output!.aspectRatio.toStringAsFixed(3)}',
+      );
+    } else {
+      debugPrint('║ Output Dimensions: NOT SET');
+    }
+    if (checkpointData.torsoHeightNormalized != null) {
+      debugPrint(
+        '║ Torso Height Normalized: ${(checkpointData.torsoHeightNormalized! * 100).toStringAsFixed(1)}%',
+      );
+    } else {
+      debugPrint('║ Torso Height Normalized: NOT SET');
+    }
+    debugPrint(
+      '╚═══════════════════════════════════════════════════════════════════',
+    );
+
+    // Also log user alignment data for comparison
+    debugPrint('');
+    debugPrint(
+      '╔═══════════════════════════════════════════════════════════════════',
+    );
+    debugPrint('║ 👤 [USER ALIGNMENT]');
+    debugPrint(
+      '╠═══════════════════════════════════════════════════════════════════',
+    );
+
+    // Log what the checkpoint has (might be null for pro-specific checkpoints)
+    final UserAlignmentMetadata? checkpointAlignment =
+        checkpoint.userAlignmentMetadata;
+    debugPrint(
+      '║ From checkpoint: ${checkpointAlignment != null ? "✅ HAS DATA" : "❌ NULL"}',
+    );
+
+    // Log the override parameter (passed from main analysis checkpoints)
+    debugPrint(
+      '║ From override param: ${userAlignment != null ? "✅ HAS DATA" : "❌ NULL"}',
+    );
+
+    // Determine which one will be used
+    final UserAlignmentMetadata? effectiveAlignment =
+        userAlignment ?? checkpointAlignment;
+    if (effectiveAlignment == null) {
+      debugPrint('║ ⚠️ NO USER ALIGNMENT DATA - will use defaults!');
+    } else {
+      debugPrint(
+        '║ Using: ${userAlignment != null ? "OVERRIDE" : "CHECKPOINT"}',
+      );
+      debugPrint(
+        '║ User Body Height Portion: ${(effectiveAlignment.userBodyHeightScreenPortion * 100).toStringAsFixed(1)}%',
+      );
+      debugPrint(
+        '║ Body Center X: ${(effectiveAlignment.bodyCenterXScreenPortion * 100).toStringAsFixed(1)}%',
+      );
+      debugPrint(
+        '║ Body Center Y: ${(effectiveAlignment.bodyCenterYScreenPortion * 100).toStringAsFixed(1)}%',
+      );
+    }
+    debugPrint(
+      '╚═══════════════════════════════════════════════════════════════════',
+    );
+  }
+
   /// Calculates the bounds (position and size) for the pro reference image box.
   ///
   /// Simple approach:
-  /// 1. Box height = user's body height portion × container height
+  /// 1. Box height = user's body height portion × container height × height multiplier
   /// 2. Box is centered at user's body center position
   /// 3. Image renders inside with BoxFit.contain - Flutter handles scaling
   _ProImageBounds _calculateBounds({
     required double containerWidth,
     required double containerHeight,
   }) {
+    // Use the override userAlignment if provided, otherwise fall back to checkpoint's data.
+    // This is important when viewing pro comparisons where the checkpoint comes from
+    // a pro-specific comparison that doesn't have user alignment data.
+    final UserAlignmentMetadata? effectiveUserAlignment =
+        userAlignment ?? checkpoint.userAlignmentMetadata;
+
     // Get user's body height as portion of frame (0-1)
     final double userBodyPortion =
-        checkpoint.proOverlayAlignment?.userBodyHeightScreenPortion ?? 0.8;
+        effectiveUserAlignment?.userBodyHeightScreenPortion ?? 0.8;
 
     // Get user's body center position as portion of frame (0-1)
     final double userBodyCenterX =
-        checkpoint.proOverlayAlignment?.bodyCenterXScreenPortion ?? 0.5;
+        effectiveUserAlignment?.bodyCenterXScreenPortion ?? 0.5;
     final double userBodyCenterY =
-        checkpoint.proOverlayAlignment?.bodyCenterYScreenPortion ?? 0.5;
+        effectiveUserAlignment?.bodyCenterYScreenPortion ?? 0.5;
+
+    // Get height multiplier - use passed value if available, otherwise look up from feature flags
+    final double effectiveHeightMultiplier = heightMultiplier ??
+        (cameraAngle == CameraAngle.rear
+            ? locator.get<FeatureFlagService>().getDouble(
+                FeatureFlag.proReferenceHeightMultiplierRear,
+              )
+            : locator.get<FeatureFlagService>().getDouble(
+                FeatureFlag.proReferenceHeightMultiplierSide,
+              ));
 
     // Calculate box dimensions
-    // Height matches user's body height portion
-    final double boxHeight = userBodyPortion * containerHeight;
+    // Height matches user's body height portion, scaled by multiplier
+    final double boxHeight = userBodyPortion * containerHeight * effectiveHeightMultiplier;
     // Width is full container width (image will center itself with BoxFit.contain)
     final double boxWidth = containerWidth;
 
@@ -214,14 +413,29 @@ class ProReferenceImageContent extends StatelessWidget {
 
     debugPrint('');
     debugPrint('═══════════════════════════════════════════════════════════');
-    debugPrint('🎨 [Alignment] ${checkpoint.metadata.checkpointId} - PRO: $activeProId');
+    debugPrint(
+      '🎨 [Alignment] ${checkpoint.metadata.checkpointId} - PRO: $activeProId',
+    );
     debugPrint('   Camera angle: $cameraAngle');
     debugPrint('═══════════════════════════════════════════════════════════');
-    debugPrint('   Container: ${containerWidth.toStringAsFixed(0)}x${containerHeight.toStringAsFixed(0)}');
-    debugPrint('   User body portion: ${(userBodyPortion * 100).toStringAsFixed(1)}%');
-    debugPrint('   User body center: (${(userBodyCenterX * 100).toStringAsFixed(1)}%, ${(userBodyCenterY * 100).toStringAsFixed(1)}%)');
-    debugPrint('   Box size: ${boxWidth.toStringAsFixed(0)}x${boxHeight.toStringAsFixed(0)}');
-    debugPrint('   Box position: (${left.toStringAsFixed(0)}, ${top.toStringAsFixed(0)})');
+    debugPrint(
+      '   Container: ${containerWidth.toStringAsFixed(0)}x${containerHeight.toStringAsFixed(0)}',
+    );
+    debugPrint(
+      '   User body portion: ${(userBodyPortion * 100).toStringAsFixed(1)}%',
+    );
+    debugPrint(
+      '   Height multiplier: ${effectiveHeightMultiplier.toStringAsFixed(2)}x',
+    );
+    debugPrint(
+      '   User body center: (${(userBodyCenterX * 100).toStringAsFixed(1)}%, ${(userBodyCenterY * 100).toStringAsFixed(1)}%)',
+    );
+    debugPrint(
+      '   Box size: ${boxWidth.toStringAsFixed(0)}x${boxHeight.toStringAsFixed(0)}',
+    );
+    debugPrint(
+      '   Box position: (${left.toStringAsFixed(0)}, ${top.toStringAsFixed(0)})',
+    );
     debugPrint('═══════════════════════════════════════════════════════════');
 
     return _ProImageBounds(
@@ -242,10 +456,7 @@ class ProReferenceImageContent extends StatelessWidget {
 
     // Use fitHeight to ensure all pro images match the box height
     // (body fills 100% of image height, so this normalizes body sizes)
-    Widget image = Image(
-      image: imageProvider,
-      fit: BoxFit.fitHeight,
-    );
+    Widget image = Image(image: imageProvider, fit: BoxFit.fitHeight);
 
     if (isLeftHanded) {
       image = Transform.flip(flipX: true, child: image);
