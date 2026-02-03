@@ -1,3 +1,4 @@
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_record.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
@@ -19,10 +20,12 @@ class CheckpointRecordBuilder {
   ///   For toFormAnalysisRecord(): returns data URLs (data:image/jpeg;base64,...)
   ///   For saveAnalysis(): returns Cloud Storage URLs after uploading images.
   /// [proPlayerIdOverride] - Optional override for proPlayerId (e.g., default to 'paul_mcbeth').
+  /// [cameraAngle] - Camera angle for extracting correct measurements from V2MeasurementsByAngle.
   static CheckpointRecord build({
     required CheckpointPoseData checkpoint,
     required ImageUrlProvider imageUrlProvider,
     String? proPlayerIdOverride,
+    CameraAngle? cameraAngle,
   }) {
     final CheckpointPoseData cp = checkpoint;
 
@@ -66,10 +69,10 @@ class CheckpointRecordBuilder {
       referenceIndividualAngles: cp.referenceIndividualAngles,
       individualDeviations: cp.individualDeviations,
 
-      // === V2 Side Measurements - Copy directly ===
-      userV2Measurements: cp.userV2Measurements,
-      referenceV2Measurements: cp.referenceV2Measurements,
-      v2MeasurementDeviations: cp.v2MeasurementDeviations,
+      // === V2 Measurements - Extract from nested structure based on camera angle ===
+      userV2Measurements: _extractV2Measurements(cp.userV2Measurements, cameraAngle),
+      referenceV2Measurements: _extractV2Measurements(cp.referenceV2Measurements, cameraAngle),
+      v2MeasurementDeviations: _extractV2Measurements(cp.v2MeasurementDeviations, cameraAngle),
 
       // === Pose Landmarks - Copy directly for alignment calculations ===
       userLandmarks: cp.userLandmarks,
@@ -104,5 +107,36 @@ class CheckpointRecordBuilder {
     }
 
     return map.isNotEmpty ? map : null;
+  }
+
+  /// Extract V2 measurements from nested V2MeasurementsByAngle structure.
+  /// Returns the appropriate side or rear measurements based on camera angle.
+  /// For backward compatibility with Firestore storage format.
+  static V2SideMeasurements? _extractV2Measurements(
+    V2MeasurementsByAngle? measurements,
+    CameraAngle? cameraAngle,
+  ) {
+    if (measurements == null) return null;
+
+    // Extract based on camera angle (default to side if not specified)
+    if (cameraAngle == CameraAngle.rear) {
+      final V2RearMeasurements? rearMeasurements = measurements.rear;
+      if (rearMeasurements == null) return null;
+
+      // Convert V2RearMeasurements to V2SideMeasurements for storage
+      // (They have the same structure, just different types)
+      return V2SideMeasurements(
+        frontKneeAngle: rearMeasurements.frontKneeAngle,
+        backKneeAngle: rearMeasurements.backKneeAngle,
+        frontElbowAngle: rearMeasurements.frontElbowAngle,
+        frontFootDirectionAngle: rearMeasurements.frontFootDirectionAngle,
+        backFootDirectionAngle: rearMeasurements.backFootDirectionAngle,
+        hipRotationAngle: rearMeasurements.hipRotationAngle,
+        shoulderRotationAngle: rearMeasurements.shoulderRotationAngle,
+      );
+    } else {
+      // Default to side view
+      return measurements.side;
+    }
   }
 }

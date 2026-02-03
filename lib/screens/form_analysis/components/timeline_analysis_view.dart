@@ -513,8 +513,10 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                 cubit,
                 activeCheckpoints,
               ),
-              if (checkpoint.userPose.v2Measurements != null)
-                V2MeasurementsCard(checkpoint: checkpoint),
+              V2MeasurementsCard(
+                checkpoint: checkpoint,
+                cameraAngle: widget.analysis.analysisResults.cameraAngle,
+              ),
             ],
           );
         },

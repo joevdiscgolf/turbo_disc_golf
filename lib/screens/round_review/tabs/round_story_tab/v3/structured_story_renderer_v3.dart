@@ -223,8 +223,8 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
         // Random rotation
         final double rotation = (random.nextDouble() - 0.5) * 1.2;
 
-        // Visible opacity (0.15 to 0.25)
-        final double opacity = 0.15 + random.nextDouble() * 0.10;
+        // Visible opacity (0.05 to 0.15) - reduced by 10%
+        final double opacity = 0.05 + random.nextDouble() * 0.10;
 
         // Larger size (20 to 28)
         final double size = 20 + random.nextDouble() * 8;

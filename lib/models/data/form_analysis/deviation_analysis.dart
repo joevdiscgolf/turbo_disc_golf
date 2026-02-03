@@ -10,7 +10,7 @@ class DeviationAnalysis {
     required this.angleDeviations,
     required this.severity,
     this.individualDeviations,
-    this.v2MeasurementDeviations,
+    required this.v2MeasurementDeviations,
   });
 
   /// Angle deviations from reference
@@ -24,9 +24,9 @@ class DeviationAnalysis {
   @JsonKey(name: 'individual_deviations')
   final IndividualJointDeviations? individualDeviations;
 
-  /// V2 side-view measurement deviations (user - reference)
+  /// V2 measurement deviations by camera angle (user - reference)
   @JsonKey(name: 'v2_measurement_deviations')
-  final V2SideMeasurements? v2MeasurementDeviations;
+  final V2MeasurementsByAngle v2MeasurementDeviations;
 
   factory DeviationAnalysis.fromJson(Map<String, dynamic> json) =>
       _$DeviationAnalysisFromJson(json);

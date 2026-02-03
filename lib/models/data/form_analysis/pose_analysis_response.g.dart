@@ -160,17 +160,17 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(Map json) => CheckpointPoseData(
         ),
   userV2Measurements: json['user_v2_measurements'] == null
       ? null
-      : V2SideMeasurements.fromJson(
+      : V2MeasurementsByAngle.fromJson(
           Map<String, dynamic>.from(json['user_v2_measurements'] as Map),
         ),
   referenceV2Measurements: json['reference_v2_measurements'] == null
       ? null
-      : V2SideMeasurements.fromJson(
+      : V2MeasurementsByAngle.fromJson(
           Map<String, dynamic>.from(json['reference_v2_measurements'] as Map),
         ),
   v2MeasurementDeviations: json['v2_measurement_deviations'] == null
       ? null
-      : V2SideMeasurements.fromJson(
+      : V2MeasurementsByAngle.fromJson(
           Map<String, dynamic>.from(json['v2_measurement_deviations'] as Map),
         ),
   detectedFrameNumber: (json['detected_frame_number'] as num?)?.toInt(),
@@ -374,6 +374,52 @@ Map<String, dynamic> _$V2SideMeasurementsToJson(V2SideMeasurements instance) =>
       'hip_rotation_angle': instance.hipRotationAngle,
       'shoulder_rotation_angle': instance.shoulderRotationAngle,
     };
+
+V2RearMeasurements _$V2RearMeasurementsFromJson(Map json) => V2RearMeasurements(
+  frontKneeAngle: (json['front_knee_angle'] as num?)?.toDouble(),
+  backKneeAngle: (json['back_knee_angle'] as num?)?.toDouble(),
+  frontElbowAngle: (json['front_elbow_angle'] as num?)?.toDouble(),
+  frontFootDirectionAngle: (json['front_foot_direction_angle'] as num?)
+      ?.toDouble(),
+  backFootDirectionAngle: (json['back_foot_direction_angle'] as num?)
+      ?.toDouble(),
+  hipRotationAngle: (json['hip_rotation_angle'] as num?)?.toDouble(),
+  shoulderRotationAngle: (json['shoulder_rotation_angle'] as num?)?.toDouble(),
+);
+
+Map<String, dynamic> _$V2RearMeasurementsToJson(V2RearMeasurements instance) =>
+    <String, dynamic>{
+      'front_knee_angle': instance.frontKneeAngle,
+      'back_knee_angle': instance.backKneeAngle,
+      'front_elbow_angle': instance.frontElbowAngle,
+      'front_foot_direction_angle': instance.frontFootDirectionAngle,
+      'back_foot_direction_angle': instance.backFootDirectionAngle,
+      'hip_rotation_angle': instance.hipRotationAngle,
+      'shoulder_rotation_angle': instance.shoulderRotationAngle,
+    };
+
+V2MeasurementsByAngle _$V2MeasurementsByAngleFromJson(Map json) =>
+    V2MeasurementsByAngle(
+      side: json['side'] == null
+          ? null
+          : V2SideMeasurements.fromJson(
+              Map<String, dynamic>.from(json['side'] as Map),
+            ),
+      rear: json['rear'] == null
+          ? null
+          : V2RearMeasurements.fromJson(
+              Map<String, dynamic>.from(json['rear'] as Map),
+            ),
+      front: (json['front'] as Map?)?.map((k, e) => MapEntry(k as String, e)),
+    );
+
+Map<String, dynamic> _$V2MeasurementsByAngleToJson(
+  V2MeasurementsByAngle instance,
+) => <String, dynamic>{
+  'side': instance.side?.toJson(),
+  'rear': instance.rear?.toJson(),
+  'front': instance.front,
+};
 
 UserBodyAnchor _$UserBodyAnchorFromJson(Map json) => UserBodyAnchor(
   name: json['name'] as String,

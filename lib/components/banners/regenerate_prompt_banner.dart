@@ -32,24 +32,17 @@ class RegeneratePromptBanner extends StatelessWidget {
   bool get _canRegenerate =>
       regenerationsRemaining == null || regenerationsRemaining! > 0;
 
-  static const Color _backgroundColor = Color(0xFFFFF3E0); // Light amber
-  static const Color _textColor = Color(0xFFE65100); // Dark orange
+  static const Color _backgroundColor = Color(0xFFEDF2F7); // Soft blue-gray
+  static const Color _textColor = Color(0xFF4F46E5); // Indigo
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: _backgroundColor,
       child: Row(
         children: [
-          const Icon(
-            Icons.refresh,
-            color: _textColor,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
           Expanded(
             child: FittedBox(
               fit: BoxFit.scaleDown,
@@ -60,7 +53,7 @@ class RegeneratePromptBanner extends StatelessWidget {
                 style: const TextStyle(
                   color: _textColor,
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -101,12 +94,22 @@ class RegeneratePromptBanner extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(_textColor),
               ),
             )
-          : Text(
-              _canRegenerate ? 'Regenerate' : 'Limit reached',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _canRegenerate ? 'Regenerate' : 'Limit reached',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.refresh,
+                  size: 16,
+                ),
+              ],
             ),
     );
   }

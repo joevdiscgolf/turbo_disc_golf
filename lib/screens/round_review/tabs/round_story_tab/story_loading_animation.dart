@@ -247,11 +247,14 @@ class _OrbitingIconsWithCenterState extends State<_OrbitingIconsWithCenter>
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.auto_stories,
-                      size: 54,
-                      color: Color(0xFF9C7AE8),
+                  child: Center(
+                    child: Opacity(
+                      opacity: 0.5,
+                      child: const Icon(
+                        Icons.auto_stories,
+                        size: 54,
+                        color: Color(0xFF9C7AE8),
+                      ),
                     ),
                   ),
                 ),
