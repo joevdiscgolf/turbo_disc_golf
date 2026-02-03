@@ -156,8 +156,6 @@ class CheckpointRecord {
     this.referenceImageUrl,
     this.referenceSkeletonUrl,
     this.proPlayerId,
-    this.referenceHorizontalOffsetPercent,
-    this.referenceScale,
     this.detectedFrameNumber,
     this.timestampSeconds,
     this.userIndividualAngles,
@@ -169,7 +167,7 @@ class CheckpointRecord {
     this.userLandmarks,
     this.referenceLandmarks,
     this.userBodyAnchor,
-    this.userTorsoHeightNormalized,
+    this.userBodyHeightScreenPortion,
   });
 
   /// Checkpoint identifier: "heisman", "loaded", "magic", "pro"
@@ -215,16 +213,6 @@ class CheckpointRecord {
   @JsonKey(name: 'pro_player_id')
   final String? proPlayerId;
 
-  /// Horizontal offset percentage for aligning pro reference with user pose
-  /// Positive values shift right, negative values shift left
-  @JsonKey(name: 'reference_horizontal_offset_percent')
-  final double? referenceHorizontalOffsetPercent;
-
-  /// Scale factor for aligning pro reference with user pose
-  /// Values typically range from 0.7 to 1.3 (e.g., 1.2 = scale up 20%, 0.8 = scale down 20%)
-  @JsonKey(name: 'reference_scale')
-  final double? referenceScale;
-
   /// Frame number where this checkpoint was detected by the backend
   @JsonKey(name: 'detected_frame_number')
   final int? detectedFrameNumber;
@@ -269,9 +257,11 @@ class CheckpointRecord {
   @JsonKey(name: 'user_body_anchor')
   final UserBodyAnchor? userBodyAnchor;
 
-  /// User torso height as a fraction of frame height (for scaling pro overlays)
-  @JsonKey(name: 'user_torso_height_normalized')
-  final double? userTorsoHeightNormalized;
+  /// User's body height (excluding head) as a fraction of the video frame height.
+  /// Measured from neck to ankles at this specific checkpoint.
+  /// e.g., 0.75 means the user's body takes up 75% of the frame height.
+  @JsonKey(name: 'user_body_height_screen_portion')
+  final double? userBodyHeightScreenPortion;
 
   factory CheckpointRecord.fromJson(Map<String, dynamic> json) =>
       _$CheckpointRecordFromJson(json);

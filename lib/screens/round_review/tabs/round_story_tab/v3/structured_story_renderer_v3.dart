@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/stat_card_registry.dart';
@@ -24,6 +26,7 @@ class StructuredStoryRendererV3 extends StatefulWidget {
     this.tabController,
     this.onActiveSectionChanged,
     this.scrollController,
+    this.isScorecardExpanded,
   });
 
   final RoundStoryV3Content content;
@@ -31,6 +34,7 @@ class StructuredStoryRendererV3 extends StatefulWidget {
   final TabController? tabController;
   final ValueNotifier<int?>? onActiveSectionChanged;
   final ScrollController? scrollController;
+  final ValueNotifier<bool>? isScorecardExpanded;
 
   @override
   State<StructuredStoryRendererV3> createState() =>
@@ -146,9 +150,9 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildTitle(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _buildOverview(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           ..._buildStorySections(),
           if (widget.content.skillsAssessment != null)
             _buildSkillsAssessment(context),
@@ -163,17 +167,84 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
   }
 
   Widget _buildTitle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Text(
-        widget.content.roundTitle.capitalizeFirst(),
-        style: const TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF6366F1),
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
         ),
       ),
+      child: Stack(
+        children: [
+          // Emoji background pattern - fills entire container
+          Positioned.fill(child: _buildEmojiBackground()),
+          // Title with padding
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Center(
+              child: Text(
+                widget.content.roundTitle.capitalizeFirst(),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildEmojiBackground() {
+    final Random random = Random(42); // Fixed seed for consistency
+    const String bgEmoji = '\u{1F4D6}'; // Book emoji
+    final List<Widget> emojis = [];
+
+    // Sparse grid for header: 4 columns x 2 rows
+    const int cols = 4;
+    const int rows = 2;
+
+    for (int row = 0; row < rows; row++) {
+      for (int col = 0; col < cols; col++) {
+        // Random offset within each cell (0.2 to 0.8)
+        final double offsetX = 0.2 + random.nextDouble() * 0.6;
+        final double offsetY = 0.2 + random.nextDouble() * 0.6;
+
+        // Convert to alignment (-1 to 1)
+        final double alignX = ((col + offsetX) / cols) * 2 - 1;
+        final double alignY = ((row + offsetY) / rows) * 2 - 1;
+
+        // Random rotation
+        final double rotation = (random.nextDouble() - 0.5) * 1.2;
+
+        // Visible opacity (0.15 to 0.25)
+        final double opacity = 0.15 + random.nextDouble() * 0.10;
+
+        // Larger size (20 to 28)
+        final double size = 20 + random.nextDouble() * 8;
+
+        emojis.add(
+          Align(
+            alignment: Alignment(alignX, alignY),
+            child: Transform.rotate(
+              angle: rotation,
+              child: Opacity(
+                opacity: opacity,
+                child: Text(bgEmoji, style: TextStyle(fontSize: size)),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return Stack(children: emojis);
   }
 
   Widget _buildOverview() {
@@ -199,52 +270,57 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
       final int sectionIndex = i;
 
       widgets.add(
-        ValueListenableBuilder<int?>(
-          valueListenable: _sectionTracker.activeSectionIndex,
-          builder: (context, activeIndex, child) {
-            final bool isActive =
-                locator.get<FeatureFlagService>().highlightActiveStorySection &&
-                activeIndex == sectionIndex;
+        ValueListenableBuilder<bool>(
+          valueListenable: widget.isScorecardExpanded ?? ValueNotifier(true),
+          builder: (context, isScorecardExpanded, child) {
+            return ValueListenableBuilder<int?>(
+              valueListenable: _sectionTracker.activeSectionIndex,
+              builder: (context, activeIndex, child) {
+                final bool isActive = isScorecardExpanded &&
+                    locator.get<FeatureFlagService>().highlightActiveStorySection &&
+                    activeIndex == sectionIndex;
 
-            return AnimatedContainer(
-              key: _sectionKeys[i], // Attach GlobalKey for tracking
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? const Color(0xFF64B5F6).withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section text
-                  Text(
-                    section.text,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.7,
-                      color: Colors.black87,
-                    ),
+                return AnimatedContainer(
+                  key: _sectionKeys[i], // Attach GlobalKey for tracking
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFF64B5F6).withValues(alpha: 0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section text
+                      Text(
+                        section.text,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.7,
+                          color: Colors.black87,
+                        ),
+                      ),
 
-                  // Callout cards
-                  if (section.callouts.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    ...section.callouts.map(
-                      (callout) => _buildCallout(context, callout),
-                    ),
-                  ],
-                ],
-              ),
+                      // Callout cards
+                      if (section.callouts.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        ...section.callouts.map(
+                          (callout) => _buildCallout(context, callout),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
             );
           },
         ),
       );
 
-      widgets.add(const SizedBox(height: 16));
+      // Spacing handled by AnimatedContainer padding
     }
 
     return widgets;
@@ -259,7 +335,7 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.zero,
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
@@ -276,7 +352,12 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
 
   Widget? _buildStatWidget(String cardId) {
     try {
-      return StatCardRegistry.buildCard(cardId, widget.round, _analysis);
+      return StatCardRegistry.buildCard(
+        cardId,
+        widget.round,
+        _analysis,
+        showIcon: false,
+      );
     } catch (e) {
       debugPrint('Failed to build stat widget for cardId: $cardId - $e');
       return null;

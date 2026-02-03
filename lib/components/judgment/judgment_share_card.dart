@@ -1,14 +1,12 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:turbo_disc_golf/components/compact_scorecard.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// A shareable card widget for roast/glaze judgments.
@@ -36,9 +34,6 @@ class JudgmentShareCard extends StatelessWidget {
   /// Fixed width for the inner card
   static const double cardWidth = 400;
 
-  /// Seed for random emoji positions (based on round data for consistency)
-  int get _randomSeed => round.versionId.hashCode;
-
   @override
   Widget build(BuildContext context) {
     // Base gradient colors
@@ -62,182 +57,42 @@ class JudgmentShareCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.25)
         : Colors.white.withValues(alpha: 0.2);
 
-    // Outer background tint (layered over white for proper image capture)
-    final List<Color> outerColors = isGlaze
-        ? [
-            const Color(0xFF137e66).withValues(alpha: 0.15),
-            const Color(0xFF1a9f7f).withValues(alpha: 0.15),
-          ]
-        : [
-            const Color(0xFFFF7043).withValues(alpha: 0.18),
-            const Color(0xFFFF9800).withValues(alpha: 0.18),
-          ];
-
-    final String emoji = isGlaze ? '\u{1F369}' : '\u{1F525}';
-
-    final double screenHeight = MediaQuery.of(context).size.height;
-
     // White background ensures proper image capture (no transparency)
     return Container(
-      width: double.infinity,
-      height: screenHeight,
-      color: Colors.white,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: outerColors,
+      padding: const EdgeInsets.all(20),
+      width: cardWidth,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: cardColors,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
-        ),
-        child: Stack(
-          children: [
-            // Random background emojis
-            ..._buildBackgroundEmojis(screenHeight),
-            // Main content - centered vertically
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 24,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Verdict outside the card - centered with effects
-                    _buildVerdictText(emoji),
-                    const SizedBox(height: 16),
-                    // Inner card - centered
-                    Container(
-                      width: cardWidth,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: cardColors,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCourseAndDate(bodyColor),
-                            const SizedBox(height: 12),
-                            _buildHeader(headlineColor),
-                            const SizedBox(height: 16),
-                            _buildTagline(bodyColor, containerBgAlpha),
-                            const SizedBox(height: 8),
-                            _buildStatsGrid(
-                              bodyColor,
-                              subtleColor,
-                              containerBgAlpha,
-                            ),
-                            const SizedBox(height: 8),
-                            _buildScorecard(subtleColor, containerBgAlpha),
-                            const SizedBox(height: 16),
-                            _buildFooter(bodyColor, subtleColor),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
-    );
-  }
-
-  /// Builds random background emojis scattered around the card using a grid
-  /// to ensure even distribution while maintaining randomness
-  List<Widget> _buildBackgroundEmojis(double screenHeight) {
-    final Random random = Random(_randomSeed);
-    final String bgEmoji = isGlaze ? '\u{1F369}' : '\u{1F525}';
-    final List<Widget> emojis = [];
-
-    // Grid-based distribution: 6 columns x 10 rows = 60 cells
-    const int cols = 6;
-    const int rows = 10;
-    const double screenWidth = 450.0;
-
-    final double cellWidth = screenWidth / cols;
-    final double cellHeight = screenHeight / rows;
-
-    for (int row = 0; row < rows; row++) {
-      for (int col = 0; col < cols; col++) {
-        // Random offset within each cell (0.1 to 0.9 to avoid edges)
-        final double offsetX = 0.1 + random.nextDouble() * 0.8;
-        final double offsetY = 0.1 + random.nextDouble() * 0.8;
-
-        final double left = col * cellWidth + offsetX * cellWidth;
-        final double top = row * cellHeight + offsetY * cellHeight;
-
-        // Random rotation
-        final double rotation = (random.nextDouble() - 0.5) * 1.2;
-
-        // Random opacity (0.08 to 0.18)
-        final double opacity = 0.08 + random.nextDouble() * 0.1;
-
-        // Random size (14 to 24)
-        final double size = 14 + random.nextDouble() * 10;
-
-        emojis.add(
-          Positioned(
-            top: top,
-            left: left,
-            child: Transform.rotate(
-              angle: rotation,
-              child: Opacity(
-                opacity: opacity,
-                child: Text(bgEmoji, style: TextStyle(fontSize: size)),
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
-    return emojis;
-  }
-
-  Widget _buildVerdictText(String emoji) {
-    // Use PNG images if enabled, otherwise use text
-    final FeatureFlagService flags = locator.get<FeatureFlagService>();
-    if (flags.useVerdictImages) {
-      final String imagePath = isGlaze
-          ? 'assets/judge_tab/glazed_clear_crop_2.png'
-          : 'assets/judge_tab/roasted_clear_crop_3.png';
-      // PNG transparency is preserved automatically by Flutter
-      return Image.asset(imagePath, height: 100, fit: BoxFit.contain);
-    }
-
-    final String verdictText = isGlaze ? 'You got glazed' : 'You got roasted';
-    final TextStyle textStyle = TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w900,
-      color: SenseiColors.gray[700]!,
-    );
-
-    // No drip/fire effects on share card - they overlap with the card below
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 24)),
-        const SizedBox(width: 8),
-        Text(verdictText, style: textStyle),
-      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCourseAndDate(bodyColor),
+          const SizedBox(height: 12),
+          _buildHeader(headlineColor),
+          const SizedBox(height: 16),
+          _buildTagline(bodyColor, containerBgAlpha),
+          const SizedBox(height: 8),
+          _buildStatsGrid(bodyColor, subtleColor, containerBgAlpha),
+          const SizedBox(height: 8),
+          _buildScorecard(subtleColor, containerBgAlpha),
+          const SizedBox(height: 16),
+          _buildFooter(bodyColor, subtleColor),
+        ],
+      ),
     );
   }
 

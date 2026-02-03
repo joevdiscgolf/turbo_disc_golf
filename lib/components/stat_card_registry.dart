@@ -36,6 +36,7 @@ class StatCardRegistry {
     DGRound round,
     RoundAnalysis analysis, {
     Map<String, dynamic>? params,
+    bool showIcon = true,
   }) {
     // Make card ID case-insensitive
     final String id = cardId.toUpperCase();
@@ -82,37 +83,37 @@ class StatCardRegistry {
     switch (baseId) {
       // ===== DRIVING STORY CARDS (with dual rendering) =====
       case 'FAIRWAY_HIT':
-        return FairwayHitStoryCard(round: round, renderMode: renderMode);
+        return FairwayHitStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'C1_IN_REG':
-        return C1InRegStoryCard(round: round, renderMode: renderMode);
+        return C1InRegStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'OB_RATE':
-        return OBRateStoryCard(round: round, renderMode: renderMode);
+        return OBRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'PARKED':
-        return ParkedStoryCard(round: round, renderMode: renderMode);
+        return ParkedStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
 
       // ===== PUTTING STORY CARDS (with dual rendering) =====
       case 'C1_PUTTING':
-        return C1PuttingStoryCard(round: round, renderMode: renderMode);
+        return C1PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'C1X_PUTTING':
-        return C1XPuttingStoryCard(round: round, renderMode: renderMode);
+        return C1XPuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'C2_PUTTING':
-        return C2PuttingStoryCard(round: round, renderMode: renderMode);
+        return C2PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
 
       // ===== SCORING STORY CARDS (with dual rendering) =====
       case 'BIRDIE_RATE':
-        return BirdieRateStoryCard(round: round, renderMode: renderMode);
+        return BirdieRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'BOGEY_RATE':
-        return BogeyRateStoryCard(round: round, renderMode: renderMode);
+        return BogeyRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'PAR_RATE':
-        return ParRateStoryCard(round: round, renderMode: renderMode);
+        return ParRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
 
       // ===== MENTAL GAME STORY CARDS (with dual rendering) =====
       case 'BOUNCE_BACK':
-        return BounceBackStoryCard(round: round, renderMode: renderMode);
+        return BounceBackStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'HOT_STREAK':
-        return HotStreakStoryCard(round: round, renderMode: renderMode);
+        return HotStreakStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
       case 'FLOW_STATE':
-        return FlowStateStoryCard(round: round, renderMode: renderMode);
+        return FlowStateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
 
       // ===== PERFORMANCE STORY CARDS (with dual rendering) =====
       case 'MISTAKES':
@@ -123,7 +124,7 @@ class StatCardRegistry {
           showCard: false,
         );
       case 'SKILLS_SCORE':
-        return SkillsScoreStoryCard(round: round, renderMode: renderMode);
+        return SkillsScoreStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
 
       // ===== SPECIAL ANALYSIS CARDS =====
       case 'THROW_TYPE_COMPARISON':

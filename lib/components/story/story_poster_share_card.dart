@@ -10,6 +10,8 @@ import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// A tall poster-style shareable card for round stories with score journey graph.
 ///
+/// This is a pure card component - returns only the card itself without
+/// any layout wrappers or headers.
 /// This card shows a visual score progression graph, the story title,
 /// overview excerpt, and key stats. Designed for a more dramatic share.
 class StoryPosterShareCard extends StatelessWidget {
@@ -59,78 +61,47 @@ class StoryPosterShareCard extends StatelessWidget {
         ? const Color(0xFF4ADE80) // Green for under/even par
         : const Color(0xFFFF6B6B); // Red for over par
 
-    // White background ensures proper image capture
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Header outside the card
-        _buildHeaderText(),
-        const SizedBox(height: 16),
-        // Inner card
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: cardColors,
+    return Container(
+      width: cardWidth,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: cardColors,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCourseAndDate(bodyColor),
+            const SizedBox(height: 12),
+            _buildTitleSection(headlineColor),
+            const SizedBox(height: 16),
+            _buildOverviewSection(bodyColor, containerBgAlpha),
+            const SizedBox(height: 12),
+            _buildStatsGrid(bodyColor, subtleColor, containerBgAlpha),
+            const SizedBox(height: 12),
+            _buildScoreJourneySection(
+              containerBgAlpha,
+              graphLineColor,
+              subtleColor,
             ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCourseAndDate(bodyColor),
-                const SizedBox(height: 12),
-                _buildTitleSection(headlineColor),
-                const SizedBox(height: 16),
-                _buildOverviewSection(bodyColor, containerBgAlpha),
-                const SizedBox(height: 12),
-                _buildStatsGrid(bodyColor, subtleColor, containerBgAlpha),
-                const SizedBox(height: 12),
-                _buildScoreJourneySection(
-                  containerBgAlpha,
-                  graphLineColor,
-                  subtleColor,
-                ),
-                const SizedBox(height: 16),
-                _buildFooter(bodyColor, subtleColor),
-              ],
-            ),
-          ),
+            const SizedBox(height: 16),
+            _buildFooter(bodyColor, subtleColor),
+          ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildHeaderText() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          '\u{1F94F}', // Flying disc emoji
-          style: TextStyle(fontSize: 24),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'My Round Story',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            color: SenseiColors.gray[700]!,
-          ),
-        ),
-      ],
+      ),
     );
   }
 

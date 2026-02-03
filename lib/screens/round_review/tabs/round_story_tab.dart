@@ -61,6 +61,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   // Active section index for V3 mini scorecard
   final ValueNotifier<int?> _activeSectionIndex = ValueNotifier(null);
 
+  // Expanded state for V3 mini scorecard
+  final ValueNotifier<bool> _isScorecardExpanded = ValueNotifier(true);
+
   // Scroll controller for V3 story renderer
   ScrollController? _v3ScrollController;
 
@@ -98,6 +101,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   @override
   void dispose() {
     _activeSectionIndex.dispose();
+    _isScorecardExpanded.dispose();
     _v3ScrollController?.dispose();
     super.dispose();
   }
@@ -286,7 +290,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               Expanded(
                 child: SingleChildScrollView(
                   controller: isV3Story ? _v3ScrollController : null,
-                  padding: const EdgeInsets.only(top: 12, bottom: 48),
+                  padding: const EdgeInsets.only(top: 0, bottom: 48),
                   child: _buildStoryContent(context, _analysis),
                 ),
               ),
@@ -389,6 +393,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       story: story,
       showShareButton: showShareButton,
       onSharePressed: _showShareCardPreview,
+      isExpandedNotifier: _isScorecardExpanded,
     );
   }
 
@@ -434,7 +439,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
               height: 56,
               label: 'Share my story',
               icon: Icons.ios_share,
-              gradientBackground: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              gradientBackground: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
               onPressed: _shareStoryCard,
             ),
           ),
@@ -527,6 +532,7 @@ class _RoundStoryTabState extends State<RoundStoryTab>
             tabController: widget.tabController,
             onActiveSectionChanged: _activeSectionIndex,
             scrollController: _v3ScrollController,
+            isScorecardExpanded: _isScorecardExpanded,
           )
         // V2: Render if structuredContentV2 exists
         else if (story?.structuredContentV2 != null)

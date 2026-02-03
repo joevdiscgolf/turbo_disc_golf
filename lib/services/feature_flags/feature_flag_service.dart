@@ -215,6 +215,8 @@ class FeatureFlagService {
 
   bool get enableFireEmojiSpin => getBool(FeatureFlag.enableFireEmojiSpin);
 
+  bool get useJudgmentResultV3 => getBool(FeatureFlag.useJudgmentResultV3);
+
   // ===== LLM Configuration =====
 
   LLMProvider get defaultLLMProvider =>

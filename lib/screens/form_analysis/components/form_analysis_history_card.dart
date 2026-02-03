@@ -77,16 +77,6 @@ class FormAnalysisHistoryCard extends StatelessWidget {
                 )
               : const SizedBox.shrink(),
         ),
-        const SizedBox(width: 8),
-        // Severity badge on the right (hide if 'good' or 'minor')
-        if (analysis.analysisResults.worstDeviationSeverity != null &&
-            analysis.analysisResults.worstDeviationSeverity!.toLowerCase() !=
-                'good' &&
-            analysis.analysisResults.worstDeviationSeverity!.toLowerCase() !=
-                'minor')
-          _SeverityBadge(
-            severity: analysis.analysisResults.worstDeviationSeverity!,
-          ),
       ],
     );
   }
@@ -193,92 +183,6 @@ class _ThrowTypeBadge extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Severity badge with color coding
-class _SeverityBadge extends StatelessWidget {
-  const _SeverityBadge({required this.severity});
-
-  final String severity;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color1 = _getGradientColor1(severity);
-    final Color color2 = _getGradientColor2(severity);
-    final String displayText = _getDisplayText(severity);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color1, color2],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color1.withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        displayText,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Color _getGradientColor1(String severity) {
-    switch (severity) {
-      case 'good':
-        return const Color(0xFF2E7D32); // Green
-      case 'minor':
-        return const Color(0xFF1976D2); // Blue
-      case 'moderate':
-        return const Color(0xFFFF8F00); // Orange
-      case 'significant':
-        return const Color(0xFFC62828); // Red
-      default:
-        return const Color(0xFF757575); // Gray fallback
-    }
-  }
-
-  Color _getGradientColor2(String severity) {
-    switch (severity) {
-      case 'good':
-        return const Color(0xFF43A047);
-      case 'minor':
-        return const Color(0xFF2196F3);
-      case 'moderate':
-        return const Color(0xFFFFB300);
-      case 'significant':
-        return const Color(0xFFD32F2F);
-      default:
-        return const Color(0xFF9E9E9E);
-    }
-  }
-
-  String _getDisplayText(String severity) {
-    switch (severity) {
-      case 'good':
-        return 'Good Form';
-      case 'minor':
-        return 'Minor Issues';
-      case 'moderate':
-        return 'Moderate';
-      case 'significant':
-        return 'Needs Work';
-      default:
-        return severity;
-    }
   }
 }
 

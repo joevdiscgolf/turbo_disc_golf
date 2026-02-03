@@ -18,10 +18,12 @@ class HotStreakStoryCard extends StatelessWidget {
     super.key,
     required this.round,
     required this.renderMode,
+    this.showIcon = true,
   });
 
   final DGRound round;
   final StatRenderMode renderMode;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +51,7 @@ class HotStreakStoryCard extends StatelessWidget {
         count: count,
         total: opportunities,
         roundId: round.id,
+        showIcon: showIcon,
       );
     } else {
       return BarStatRenderer(
@@ -58,6 +61,8 @@ class HotStreakStoryCard extends StatelessWidget {
         icon: Icons.local_fire_department,
         count: count,
         total: opportunities,
+        showIcon: showIcon,
+        showContainer: false,
       );
     }
   }

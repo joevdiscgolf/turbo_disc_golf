@@ -17,10 +17,12 @@ class C2PuttingStoryCard extends StatelessWidget {
     super.key,
     required this.round,
     required this.renderMode,
+    this.showIcon = true,
   });
 
   final DGRound round;
   final StatRenderMode renderMode;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +43,7 @@ class C2PuttingStoryCard extends StatelessWidget {
         count: count,
         total: total,
         roundId: round.id,
+        showIcon: showIcon,
       );
     } else {
       return BarStatRenderer(
@@ -50,6 +53,8 @@ class C2PuttingStoryCard extends StatelessWidget {
         icon: Icons.adjust,
         count: count,
         total: total,
+        showIcon: showIcon,
+        showContainer: false,
       );
     }
   }

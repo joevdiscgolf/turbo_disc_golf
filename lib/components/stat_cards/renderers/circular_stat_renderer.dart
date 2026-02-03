@@ -19,6 +19,7 @@ class CircularStatRenderer extends StatelessWidget {
     required this.total,
     required this.roundId,
     this.subtitle,
+    this.showIcon = true,
   });
 
   final double percentage;
@@ -29,6 +30,7 @@ class CircularStatRenderer extends StatelessWidget {
   final int total;
   final String roundId;
   final String? subtitle;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -49,12 +51,14 @@ class CircularStatRenderer extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: color,
-        ),
-        const SizedBox(width: 8),
+        if (showIcon) ...[
+          Icon(
+            icon,
+            size: 20,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+        ],
         Expanded(
           child: Text(
             label,

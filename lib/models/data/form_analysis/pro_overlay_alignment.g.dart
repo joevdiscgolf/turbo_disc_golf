@@ -8,22 +8,18 @@ part of 'pro_overlay_alignment.dart';
 
 ProOverlayAlignment _$ProOverlayAlignmentFromJson(Map<String, dynamic> json) =>
     ProOverlayAlignment(
-      userBodyAnchor: UserBodyAnchor.fromJson(
-        json['user_body_anchor'] as Map<String, dynamic>,
-      ),
-      userTorsoHeightNormalized: (json['user_torso_height_normalized'] as num)
+      userBodyHeightScreenPortion:
+          (json['user_body_height_screen_portion'] as num).toDouble(),
+      bodyCenterXScreenPortion: (json['body_center_x_screen_portion'] as num)
           .toDouble(),
-      referenceHorizontalOffsetPercent:
-          (json['reference_horizontal_offset_percent'] as num).toDouble(),
-      referenceScale: (json['reference_scale'] as num).toDouble(),
+      bodyCenterYScreenPortion: (json['body_center_y_screen_portion'] as num)
+          .toDouble(),
     );
 
 Map<String, dynamic> _$ProOverlayAlignmentToJson(
   ProOverlayAlignment instance,
 ) => <String, dynamic>{
-  'user_body_anchor': instance.userBodyAnchor.toJson(),
-  'user_torso_height_normalized': instance.userTorsoHeightNormalized,
-  'reference_horizontal_offset_percent':
-      instance.referenceHorizontalOffsetPercent,
-  'reference_scale': instance.referenceScale,
+  'user_body_height_screen_portion': instance.userBodyHeightScreenPortion,
+  'body_center_x_screen_portion': instance.bodyCenterXScreenPortion,
+  'body_center_y_screen_portion': instance.bodyCenterYScreenPortion,
 };

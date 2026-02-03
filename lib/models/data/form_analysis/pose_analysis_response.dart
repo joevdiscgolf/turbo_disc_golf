@@ -248,8 +248,6 @@ class CheckpointPoseData {
     this.referenceSilhouetteBase64,
     this.referenceSilhouetteWithSkeletonBase64,
     this.comparisonWithSilhouetteBase64,
-    this.referenceHorizontalOffsetPercent,
-    this.referenceScale,
     this.proPlayerId,
     required this.coachingTips,
     this.userIndividualAngles,
@@ -260,7 +258,7 @@ class CheckpointPoseData {
     this.v2MeasurementDeviations,
     this.detectedFrameNumber,
     this.userBodyAnchor,
-    this.userTorsoHeightNormalized,
+    this.userBodyHeightScreenPortion,
   });
 
   @JsonKey(name: 'checkpoint_id')
@@ -321,13 +319,6 @@ class CheckpointPoseData {
   @JsonKey(name: 'comparison_with_silhouette_base64')
   final String? comparisonWithSilhouetteBase64;
 
-  @JsonKey(name: 'reference_horizontal_offset_percent')
-  final double? referenceHorizontalOffsetPercent;
-
-  /// Scale factor for reference image to match user form size
-  @JsonKey(name: 'reference_scale')
-  final double? referenceScale;
-
   /// Pro player ID for reference images (e.g., "paul_mcbeth")
   /// Used to load reference from bundled assets, cache, or cloud storage
   @JsonKey(name: 'pro_player_id')
@@ -368,9 +359,11 @@ class CheckpointPoseData {
   @JsonKey(name: 'user_body_anchor')
   final UserBodyAnchor? userBodyAnchor;
 
-  /// User torso height as a fraction of frame height (for scaling pro overlays)
-  @JsonKey(name: 'user_torso_height_normalized')
-  final double? userTorsoHeightNormalized;
+  /// User's body height (excluding head) as a fraction of the video frame height.
+  /// Measured from neck to ankles at this specific checkpoint.
+  /// e.g., 0.75 means the user's body takes up 75% of the frame height.
+  @JsonKey(name: 'user_body_height_screen_portion')
+  final double? userBodyHeightScreenPortion;
 
   /// Get checkpoint description based on checkpoint ID
   String get checkpointDescription {

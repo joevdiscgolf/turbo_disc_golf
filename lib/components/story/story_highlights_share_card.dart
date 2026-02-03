@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:turbo_disc_golf/components/compact_scorecard.dart';
@@ -12,7 +10,8 @@ import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// A compact, Instagram-style shareable card for round stories.
 ///
-/// This card shows the story title, an overview excerpt, and key stats.
+/// This is a pure card component - returns only the card itself without
+/// any layout wrappers, backgrounds, or headers.
 /// Designed to be captured as an image and shared on social media.
 class StoryHighlightsShareCard extends StatelessWidget {
   const StoryHighlightsShareCard({
@@ -32,11 +31,8 @@ class StoryHighlightsShareCard extends StatelessWidget {
   final String? shareableHeadline;
   final List<ShareHighlightStat>? shareHighlightStats;
 
-  /// Fixed width for the inner card
+  /// Fixed width for the card
   static const double cardWidth = 400;
-
-  /// Seed for random emoji positions (based on round data for consistency)
-  int get _randomSeed => round.versionId.hashCode;
 
   @override
   Widget build(BuildContext context) {
@@ -58,160 +54,47 @@ class StoryHighlightsShareCard extends StatelessWidget {
     final Color subtleColor = Colors.white.withValues(alpha: 0.8);
     final Color containerBgAlpha = Colors.white.withValues(alpha: 0.2);
 
-    // Outer background tint
-    final List<Color> outerColors = [
-      baseColors[0].withValues(alpha: 0.12),
-      baseColors[1].withValues(alpha: 0.12),
-    ];
-
-    final double screenHeight = MediaQuery.of(context).size.height;
-
-    // White background ensures proper image capture (no transparency)
     return Container(
-      width: double.infinity,
-      height: screenHeight,
-      color: Colors.white,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: outerColors,
-          ),
+      width: cardWidth,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: cardColors,
         ),
-        child: Stack(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Random background emojis
-            ..._buildBackgroundEmojis(screenHeight),
-            // Main content - centered vertically
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 24,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header outside the card
-                    _buildHeaderText(),
-                    const SizedBox(height: 16),
-                    // Inner card - centered
-                    Container(
-                      width: cardWidth,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: cardColors,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCourseAndDate(bodyColor),
-                            const SizedBox(height: 12),
-                            _buildTitleSection(headlineColor),
-                            const SizedBox(height: 16),
-                            _buildOverviewSection(bodyColor, containerBgAlpha),
-                            const SizedBox(height: 12),
-                            _buildStatsGrid(
-                              bodyColor,
-                              subtleColor,
-                              containerBgAlpha,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildScorecard(subtleColor, containerBgAlpha),
-                            const SizedBox(height: 16),
-                            _buildFooter(bodyColor, subtleColor),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            _buildCourseAndDate(bodyColor),
+            const SizedBox(height: 12),
+            _buildTitleSection(headlineColor),
+            const SizedBox(height: 16),
+            _buildOverviewSection(bodyColor, containerBgAlpha),
+            const SizedBox(height: 12),
+            _buildStatsGrid(
+              bodyColor,
+              subtleColor,
+              containerBgAlpha,
             ),
+            const SizedBox(height: 12),
+            _buildScorecard(subtleColor, containerBgAlpha),
+            const SizedBox(height: 16),
+            _buildFooter(bodyColor, subtleColor),
           ],
         ),
       ),
-    );
-  }
-
-  /// Builds random background emojis scattered around the card
-  List<Widget> _buildBackgroundEmojis(double screenHeight) {
-    final Random random = Random(_randomSeed);
-    const String bgEmoji = '\u{1F94F}'; // Flying disc emoji
-    final List<Widget> emojis = [];
-
-    // Grid-based distribution: 6 columns x 10 rows
-    const int cols = 6;
-    const int rows = 10;
-    const double screenWidth = 450.0;
-
-    final double cellWidth = screenWidth / cols;
-    final double cellHeight = screenHeight / rows;
-
-    for (int row = 0; row < rows; row++) {
-      for (int col = 0; col < cols; col++) {
-        final double offsetX = 0.1 + random.nextDouble() * 0.8;
-        final double offsetY = 0.1 + random.nextDouble() * 0.8;
-
-        final double left = col * cellWidth + offsetX * cellWidth;
-        final double top = row * cellHeight + offsetY * cellHeight;
-
-        final double rotation = (random.nextDouble() - 0.5) * 1.2;
-        final double opacity = 0.06 + random.nextDouble() * 0.08;
-        final double size = 14 + random.nextDouble() * 10;
-
-        emojis.add(
-          Positioned(
-            top: top,
-            left: left,
-            child: Transform.rotate(
-              angle: rotation,
-              child: Opacity(
-                opacity: opacity,
-                child: Text(bgEmoji, style: TextStyle(fontSize: size)),
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
-    return emojis;
-  }
-
-  Widget _buildHeaderText() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          '\u{1F94F}', // Flying disc emoji
-          style: TextStyle(fontSize: 24),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'My Round Story',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            color: SenseiColors.gray[700]!,
-          ),
-        ),
-      ],
     );
   }
 

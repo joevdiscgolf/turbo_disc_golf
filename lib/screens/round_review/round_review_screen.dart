@@ -3,20 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/juge_round_tab/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_stats_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
 import 'package:turbo_disc_golf/services/animation_state_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_state.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class RoundReviewScreen extends StatefulWidget {
   static const String routeName = '/round-review';
@@ -204,65 +205,16 @@ class _RoundReviewScreenState extends State<RoundReviewScreen>
                 rightWidget: PopupMenuButton(
                   icon: const Icon(Icons.more_horiz),
                   itemBuilder: (BuildContext context) => [
-                    PopupMenuItem(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
-                            size: 20,
-                          ),
-                          SizedBox(width: 12),
-                          Text('Delete', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
+                    CompactPopupMenuItem(
+                      value: 0,
+                      label: 'Delete',
+                      icon: Icons.delete_outline,
+                      color: Colors.red,
                       onTap: () => _handleDeleteRound(round),
                     ),
                   ],
                 ),
               ),
-              // AppBar(
-              //   backgroundColor: Colors.transparent,
-              //   title: Text(round.courseName),
-              //   actions: [
-              // IconButton(
-              //   icon: const Icon(Icons.auto_stories),
-              //   tooltip: 'View Fullscreen Story',
-              //   onPressed: () {
-              //     Navigator.of(context).push(
-              //       CupertinoPageRoute(
-              //         builder: (context) => RoundStoryView(round: round),
-              //         fullscreenDialog: true,
-              //       ),
-              //     );
-              //   },
-              // ),
-              //   ],
-              // bottom:
-              //  TabBar(
-              //   controller: _tabController,
-              //   splashFactory: NoSplash.splashFactory,
-              //   overlayColor: WidgetStateProperty.all(Colors.transparent),
-              //   labelColor: Colors.black,
-              //   unselectedLabelColor: Colors.black54,
-              //   indicatorColor: Colors.black,
-              //   indicatorWeight: 2,
-              //   labelStyle: const TextStyle(
-              //     fontSize: 14,
-              //     fontWeight: FontWeight.w600,
-              //   ),
-              //   unselectedLabelStyle: const TextStyle(
-              //     fontSize: 14,
-              //     fontWeight: FontWeight.normal,
-              //   ),
-              //   labelPadding: const EdgeInsets.symmetric(vertical: 8),
-              //   tabs: const [
-              //     Tab(text: 'Stats'),
-              //     Tab(text: 'Story'),
-              //   ],
-              // ),
-              // ),
               body: TabBarView(
                 controller: _tabController,
                 children: [

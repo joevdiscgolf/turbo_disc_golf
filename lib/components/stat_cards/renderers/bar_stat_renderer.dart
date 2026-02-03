@@ -20,6 +20,8 @@ class BarStatRenderer extends StatelessWidget {
     required this.total,
     this.subtitle,
     this.useColorForHeading = false,
+    this.showIcon = true,
+    this.showContainer = true,
   });
 
   final double percentage;
@@ -30,9 +32,31 @@ class BarStatRenderer extends StatelessWidget {
   final int total;
   final String? subtitle;
   final bool useColorForHeading;
+  final bool showIcon;
+
+  /// Whether to show the container decoration (background, border, padding).
+  /// Set to false when wrapping with BaseStoryCard.
+  final bool showContainer;
 
   @override
   Widget build(BuildContext context) {
+    final Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(context),
+        const SizedBox(height: 10),
+        _buildProgressBar(),
+        if (subtitle != null) ...[
+          const SizedBox(height: 6),
+          _buildSubtitle(context),
+        ],
+      ],
+    );
+
+    if (!showContainer) {
+      return content;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -40,18 +64,7 @@ class BarStatRenderer extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: SenseiColors.gray[100]!),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(context),
-          const SizedBox(height: 10),
-          _buildProgressBar(),
-          if (subtitle != null) ...[
-            const SizedBox(height: 6),
-            _buildSubtitle(context),
-          ],
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -61,8 +74,10 @@ class BarStatRenderer extends StatelessWidget {
         : SenseiColors.gray[500]!;
     return Row(
       children: [
-        Icon(icon, size: 20, color: headingColor),
-        const SizedBox(width: 8),
+        if (showIcon) ...[
+          Icon(icon, size: 20, color: headingColor),
+          const SizedBox(width: 8),
+        ],
         Expanded(
           child: Text(
             label,

@@ -45,8 +45,6 @@ class CheckpointRecordBuilder {
 
       // === Pro Reference Alignment ===
       proPlayerId: proPlayerIdOverride ?? cp.proPlayerId,
-      referenceHorizontalOffsetPercent: cp.referenceHorizontalOffsetPercent,
-      referenceScale: cp.referenceScale,
 
       // === Angle Deviations (legacy map format) ===
       angleDeviations: _buildAngleDeviationsMap(cp.deviationsRaw),
@@ -79,7 +77,7 @@ class CheckpointRecordBuilder {
 
       // === Body Anchor Alignment - For aligning pro overlays with user skeleton ===
       userBodyAnchor: cp.userBodyAnchor,
-      userTorsoHeightNormalized: cp.userTorsoHeightNormalized,
+      userBodyHeightScreenPortion: cp.userBodyHeightScreenPortion,
     );
   }
 

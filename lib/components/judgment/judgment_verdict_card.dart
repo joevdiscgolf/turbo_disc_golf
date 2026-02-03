@@ -71,29 +71,13 @@ class JudgmentVerdictCard extends StatelessWidget {
           const SizedBox(width: 16),
           // Text
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  headline,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: darkColor,
-                    fontSize: 22,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isGlaze
-                      ? 'Excessive compliments incoming...'
-                      : 'Brutal honesty incoming...',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: darkColor.withValues(alpha: 0.7),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            child: Text(
+              headline,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: darkColor,
+                fontSize: 22,
+              ),
             ),
           ),
         ],
@@ -135,9 +119,7 @@ class JudgmentVerdictAnnouncement extends StatelessWidget {
       fontWeight: FontWeight.w900,
       letterSpacing: 1,
       color: color,
-      shadows: [
-        Shadow(color: color.withValues(alpha: 0.5), blurRadius: 20),
-      ],
+      shadows: [Shadow(color: color.withValues(alpha: 0.5), blurRadius: 20)],
     );
 
     return Column(

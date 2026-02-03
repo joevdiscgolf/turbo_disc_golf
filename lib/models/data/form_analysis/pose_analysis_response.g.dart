@@ -139,9 +139,6 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(Map json) => CheckpointPoseData(
       json['reference_silhouette_with_skeleton_base64'] as String?,
   comparisonWithSilhouetteBase64:
       json['comparison_with_silhouette_base64'] as String?,
-  referenceHorizontalOffsetPercent:
-      (json['reference_horizontal_offset_percent'] as num?)?.toDouble(),
-  referenceScale: (json['reference_scale'] as num?)?.toDouble(),
   proPlayerId: json['pro_player_id'] as String?,
   coachingTips: (json['coaching_tips'] as List<dynamic>)
       .map((e) => e as String)
@@ -182,7 +179,7 @@ CheckpointPoseData _$CheckpointPoseDataFromJson(Map json) => CheckpointPoseData(
       : UserBodyAnchor.fromJson(
           Map<String, dynamic>.from(json['user_body_anchor'] as Map),
         ),
-  userTorsoHeightNormalized: (json['user_torso_height_normalized'] as num?)
+  userBodyHeightScreenPortion: (json['user_body_height_screen_portion'] as num?)
       ?.toDouble(),
 );
 
@@ -211,9 +208,6 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'reference_silhouette_with_skeleton_base64':
       instance.referenceSilhouetteWithSkeletonBase64,
   'comparison_with_silhouette_base64': instance.comparisonWithSilhouetteBase64,
-  'reference_horizontal_offset_percent':
-      instance.referenceHorizontalOffsetPercent,
-  'reference_scale': instance.referenceScale,
   'pro_player_id': instance.proPlayerId,
   'coaching_tips': instance.coachingTips,
   'user_individual_angles': instance.userIndividualAngles?.toJson(),
@@ -224,7 +218,7 @@ Map<String, dynamic> _$CheckpointPoseDataToJson(
   'v2_measurement_deviations': instance.v2MeasurementDeviations?.toJson(),
   'detected_frame_number': instance.detectedFrameNumber,
   'user_body_anchor': instance.userBodyAnchor?.toJson(),
-  'user_torso_height_normalized': instance.userTorsoHeightNormalized,
+  'user_body_height_screen_portion': instance.userBodyHeightScreenPortion,
 };
 
 PoseLandmark _$PoseLandmarkFromJson(Map json) => PoseLandmark(

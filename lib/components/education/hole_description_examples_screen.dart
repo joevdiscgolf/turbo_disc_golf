@@ -5,6 +5,7 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/hole_description_examples.dart';
 
 /// Screen showing side-by-side bad vs good hole description examples.
@@ -25,10 +26,13 @@ class HoleDescriptionExamplesScreen extends StatefulWidget {
     bool isFirstTimeShow = false,
   }) async {
     // Track modal opened
-    locator.get<LoggingService>().track('Modal Opened', properties: {
-      'modal_type': 'bottom_sheet',
-      'modal_name': 'Hole Description Examples',
-    });
+    locator.get<LoggingService>().track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'bottom_sheet',
+        'modal_name': 'Hole Description Examples',
+      },
+    );
 
     HapticFeedback.lightImpact();
     await showModalBottomSheet(
@@ -109,18 +113,12 @@ class _HoleDescriptionExamplesContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Key points section - moved to top
-                  _buildSectionHeader(
-                    context,
-                    'Key points',
-                    Colors.blue,
-                  ),
+                  _buildSectionHeader(context, 'Key points', Colors.blue),
                   const SizedBox(height: 8),
                   _buildKeyPointsCard(context),
                   const SizedBox(height: 12),
                   // Side-by-side comparison cards
-                  ...examplePairs.map(
-                    (pair) => _ComparisonCard(pair: pair),
-                  ),
+                  ...examplePairs.map((pair) => _ComparisonCard(pair: pair)),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -138,10 +136,10 @@ class _HoleDescriptionExamplesContent extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: color,
-              fontSize: 20,
-            ),
+          fontWeight: FontWeight.w700,
+          color: color,
+          fontSize: 20,
+        ),
       ),
     );
   }
@@ -158,13 +156,13 @@ class _HoleDescriptionExamplesContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.blue.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border:
-            Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: points.map((point) {
-          final bool isHeader = !point.startsWith('•') &&
+          final bool isHeader =
+              !point.startsWith('•') &&
               !point.startsWith('Disc') &&
               !point.startsWith('Shot') &&
               !point.startsWith('Landing') &&
@@ -228,7 +226,7 @@ class _HoleDescriptionExamplesContent extends StatelessWidget {
         label: 'Got it!',
         width: double.infinity,
         height: 56,
-        backgroundColor: Colors.blue,
+        backgroundColor: SenseiColors.forestGreen,
         labelColor: Colors.white,
         fontSize: 16,
         fontWeight: FontWeight.bold,
@@ -339,9 +337,7 @@ class _ComparisonCard extends StatelessWidget {
             const Color(0xFFFF7A7A).withValues(alpha: 0.04),
           ],
         ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(11),
-        ),
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(11)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -388,9 +384,7 @@ class _ComparisonCard extends StatelessWidget {
             const Color(0xFF4CAF50).withValues(alpha: 0.04),
           ],
         ),
-        borderRadius: const BorderRadius.only(
-          bottomRight: Radius.circular(11),
-        ),
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(11)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

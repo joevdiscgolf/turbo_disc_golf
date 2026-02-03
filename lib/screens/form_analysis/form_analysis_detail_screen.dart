@@ -2,14 +2,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 
 class FormAnalysisDetailScreen extends StatefulWidget {
@@ -114,15 +114,11 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
         }
       },
       itemBuilder: (BuildContext context) => [
-        const PopupMenuItem<String>(
+        CompactPopupMenuItem<String>(
           value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline, size: 20, color: Colors.red),
-              SizedBox(width: 12),
-              Text('Delete Analysis', style: TextStyle(color: Colors.red)),
-            ],
-          ),
+          label: 'Delete Analysis',
+          icon: Icons.delete_outline,
+          color: Colors.red,
         ),
       ],
     );
