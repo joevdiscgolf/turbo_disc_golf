@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_button.dart';
+// import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_button.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_playback_controls.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_timeline_scrubber.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_video_display.dart';
-import 'package:turbo_disc_golf/components/form_analysis/floating_view_toggle.dart';
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_comparison_dialog.dart';
+import 'package:turbo_disc_golf/components/form_analysis/video_skeleton_toggle.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_player_selector.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_empty_state.dart';
 import 'package:turbo_disc_golf/components/panels/generic_selector_panel.dart';
@@ -36,6 +36,10 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Testing constant: true = checkpoint selector above video, false = below controls
 const bool _showCheckpointSelectorAboveVideo = false;
+
+/// Height of the pro player selector when shown below the pro reference image.
+/// Calculated as: outer padding (10*2) + inner padding (8*2) + content (~16) = 52
+const double _proSelectorHeight = 52.0;
 
 /// View for timeline player layout with checkpoint selector above video.
 ///
@@ -151,7 +155,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
   /// Updates cached display values. Call after pro config loads or pro selection changes.
   void _updateCachedDisplayValues() {
-    final FeatureFlagService featureFlagService = locator.get<FeatureFlagService>();
+    final FeatureFlagService featureFlagService = locator
+        .get<FeatureFlagService>();
     _cachedIsMultiProEnabled = _computeIsMultiProEnabled();
     _cachedActiveProDisplayName = _computeActiveProDisplayName();
     _cachedShowProReferenceEmptyState = featureFlagService.getBool(
@@ -160,8 +165,12 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
     // Cache height multiplier based on camera angle
     final CameraAngle cameraAngle = widget.analysis.analysisResults.cameraAngle;
     _cachedHeightMultiplier = cameraAngle == CameraAngle.rear
-        ? featureFlagService.getDouble(FeatureFlag.proReferenceHeightMultiplierRear)
-        : featureFlagService.getDouble(FeatureFlag.proReferenceHeightMultiplierSide);
+        ? featureFlagService.getDouble(
+            FeatureFlag.proReferenceHeightMultiplierRear,
+          )
+        : featureFlagService.getDouble(
+            FeatureFlag.proReferenceHeightMultiplierSide,
+          );
     _updateCachedCheckpoints();
   }
 
@@ -325,7 +334,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   }
 
   /// Get cached checkpoints for the currently selected pro player.
-  List<CheckpointDataV2> get _activeCheckpoints => _cachedActiveCheckpoints.isEmpty
+  List<CheckpointDataV2> get _activeCheckpoints =>
+      _cachedActiveCheckpoints.isEmpty
       ? widget.analysis.checkpoints
       : _cachedActiveCheckpoints;
 
@@ -453,63 +463,116 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
           final CheckpointDataV2 checkpoint =
               activeCheckpoints[selectedIndex ?? lastSelectedIndex ?? 0];
 
-          return Stack(
+          return ListView(
+            padding: EdgeInsets.only(top: widget.topPadding, bottom: 120),
             children: [
-              ListView(
-                padding: EdgeInsets.only(top: widget.topPadding, bottom: 120),
-                children: [
-                  // if (_isMultiProEnabled && _proPlayersConfig != null)
-                  //   ProPlayerSelector(
-                  //     availablePros: _availablePros,
-                  //     selectedProId: _activeProId!,
-                  //     onProSelected: _onProSelected,
-                  //   ),
-                  if (_showCheckpointSelectorAboveVideo)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: CheckpointSelector(
-                        items: _cachedCheckpointSelectorItems,
-                        selectedIndex: selectedIndex ?? -1,
-                        onChanged: (index) => cubit.jumpToCheckpoint(index),
-                        formatLabel: formatCheckpointChipLabel,
-                      ),
-                    ),
-                  CheckpointVideoDisplay(
-                    videoUrl: widget.videoUrl!,
-                    skeletonVideoUrl:
-                        widget.analysis.videoMetadata.skeletonVideoUrl,
-                    skeletonOnlyVideoUrl:
-                        widget.analysis.videoMetadata.skeletonOnlyVideoUrl,
-                    videoAspectRatio: widget.videoAspectRatio,
-                    returnedVideoAspectRatio:
-                        widget.analysis.videoMetadata.returnedVideoAspectRatio,
-                    videoOrientation:
-                        widget.analysis.videoMetadata.videoOrientation,
-                    checkpoints: activeCheckpoints,
-                    proReferenceWidget: _buildProReferenceContent(
-                      checkpoint,
-                      selectedIndex,
-                      lastSelectedIndex,
-                      showSkeletonOnly,
-                    ),
+              // if (_isMultiProEnabled && _proPlayersConfig != null)
+              //   ProPlayerSelector(
+              //     availablePros: _availablePros,
+              //     selectedProId: _activeProId!,
+              //     onProSelected: _onProSelected,
+              //   ),
+              if (_showCheckpointSelectorAboveVideo)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: CheckpointSelector(
+                    items: _cachedCheckpointSelectorItems,
+                    selectedIndex: selectedIndex ?? -1,
+                    onChanged: (index) => cubit.jumpToCheckpoint(index),
+                    formatLabel: formatCheckpointChipLabel,
                   ),
-                  _buildControlsAndDetailsSection(
-                    selectedIndex,
-                    cubit,
-                    activeCheckpoints,
-                  ),
-                  if (checkpoint.userPose.v2Measurements != null)
-                    V2MeasurementsCard(checkpoint: checkpoint),
-                ],
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: VideoSkeletonToggle(
+                  showSkeletonOnly: showSkeletonOnly,
+                  onChanged: (value) => cubit.setShowSkeletonOnly(value),
+                ),
               ),
-              FloatingViewToggle(
-                showSkeletonOnly: showSkeletonOnly,
-                onChanged: (value) => cubit.setShowSkeletonOnly(value),
-                colors: FloatingViewToggleColors.blue,
+              CheckpointVideoDisplay(
+                videoUrl: widget.videoUrl!,
+                skeletonVideoUrl:
+                    widget.analysis.videoMetadata.skeletonVideoUrl,
+                skeletonOnlyVideoUrl:
+                    widget.analysis.videoMetadata.skeletonOnlyVideoUrl,
+                videoAspectRatio: widget.videoAspectRatio,
+                returnedVideoAspectRatio:
+                    widget.analysis.videoMetadata.returnedVideoAspectRatio,
+                videoOrientation:
+                    widget.analysis.videoMetadata.videoOrientation,
+                checkpoints: activeCheckpoints,
+                proReferenceWidget: _buildProReferenceContent(
+                  checkpoint,
+                  selectedIndex,
+                  lastSelectedIndex,
+                  showSkeletonOnly,
+                ),
               ),
+              _buildControlsAndDetailsSection(
+                selectedIndex,
+                cubit,
+                activeCheckpoints,
+              ),
+              if (checkpoint.userPose.v2Measurements != null)
+                V2MeasurementsCard(checkpoint: checkpoint),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildPositionHeader(
+    BuildContext context,
+    CheckpointDataV2 checkpoint,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8, left: 16, right: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Position',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: SenseiColors.gray[600],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _showCheckpointDetailsPanel(context, checkpoint);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: SenseiColors.gray[50],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: SenseiColors.gray[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Position details',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: SenseiColors.gray[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -543,13 +606,10 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
             child: const CheckpointPlaybackControls(),
           ),
           if (!_showCheckpointSelectorAboveVideo) ...[
+            const SizedBox(height: 8),
+            _buildPositionHeader(context, checkpoint),
             Padding(
-              padding: const EdgeInsets.only(
-                top: 12,
-                bottom: 0,
-                left: 16,
-                right: 16,
-              ),
+              padding: const EdgeInsets.only(bottom: 0, left: 16, right: 16),
               child: CheckpointSelector(
                 items: _cachedCheckpointSelectorItems,
                 selectedIndex: selectedIndex ?? -1,
@@ -558,22 +618,24 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
               ),
             ),
           ],
-          Divider(
-            color: SenseiColors.gray.shade100,
-            indent: 16,
-            endIndent: 16,
-            height: _showCheckpointSelectorAboveVideo ? 40 : 32,
-          ),
-          CheckpointDetailsButton(
-            checkpoint: checkpoint,
-            onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
-          ),
+
+          // Divider(
+          //   color: SenseiColors.gray.shade100,
+          //   indent: 16,
+          //   endIndent: 16,
+          //   height: _showCheckpointSelectorAboveVideo ? 40 : 32,
+          // ),
+          // CheckpointDetailsButton(
+          //   checkpoint: checkpoint,
+          //   onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
+          // ),
         ],
       ),
     );
   }
 
   /// Pro reference content with badge and fullscreen tap.
+  /// Uses Column layout to ensure pro selector never overlaps the pro reference image.
   Widget _buildProReferenceContent(
     CheckpointDataV2 checkpoint,
     int? selectedIndex,
@@ -595,83 +657,94 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       checkpoint.metadata.checkpointName,
     );
 
-    return GestureDetector(
-      onTap: () => _showFullscreenComparison(
-        context,
-        checkpoint,
-        selectedIndex ?? lastSelectedIndex,
-        showSkeletonOnly,
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: _buildProReferenceImageContent(
+    // Use Column layout: pro reference image on top, selector below (never overlapping)
+    return Column(
+      children: [
+        // Pro reference image with top-right badge (fills available space)
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showFullscreenComparison(
+              context,
               checkpoint,
               selectedIndex ?? lastSelectedIndex,
               showSkeletonOnly,
             ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: _buildProReferenceImageContent(
+                    checkpoint,
+                    selectedIndex ?? lastSelectedIndex,
+                    showSkeletonOnly,
+                  ),
+                ),
+                // Top-right checkpoint badge
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      badgeText,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          // Top-right checkpoint badge
-          Positioned(
-            top: 8,
-            right: 8,
+        ),
+        // Pro player selector below the image (only when multi-pro is enabled)
+        if (_isMultiProEnabled)
+          GestureDetector(
+            onTap: () => _showProSelectorPanel(context),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                badgeText,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: const BoxDecoration(color: Colors.black),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _getActiveProDisplayName(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: Colors.black54,
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          // Bottom pro player selector badge (only when multi-pro is enabled)
-          if (_isMultiProEnabled)
-            Positioned(
-              bottom: 8,
-              left: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () => _showProSelectorPanel(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _getActiveProDisplayName(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        size: 16,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -716,6 +789,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       userLandmarks: userLandmarks,
       userAlignment: userAlignment,
       heightMultiplier: _cachedHeightMultiplier,
+      // When multi-pro is enabled, selector takes space below - account for this in scaling
+      additionalVerticalSpace: _isMultiProEnabled ? _proSelectorHeight : 0,
       cachedImage: _cachedProRefImage,
       cachedHorizontalOffset: _cachedHorizontalOffset,
       cachedScale: _cachedScale,

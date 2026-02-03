@@ -8,16 +8,12 @@ part 'user_pose_data.g.dart';
 class UserPoseData {
   const UserPoseData({
     required this.landmarks,
-    required this.angles,
     this.individualAngles,
     this.v2Measurements,
   });
 
   /// User's pose landmarks
   final List<PoseLandmark> landmarks;
-
-  /// User's pose angles
-  final PoseAngles angles;
 
   /// Individual joint angles for user (left/right body parts)
   @JsonKey(name: 'individual_angles')

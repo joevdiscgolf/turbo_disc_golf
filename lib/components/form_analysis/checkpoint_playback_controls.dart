@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pill_button_group.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Playback controls: play/pause button, pause mode pills, speed pills.
@@ -12,9 +13,6 @@ class CheckpointPlaybackControls extends StatelessWidget {
   const CheckpointPlaybackControls({super.key, this.hideBorder = false});
 
   final bool hideBorder;
-
-  static const Color _cleanAccentColor = Color(0xFF3B82F6);
-  static const Color _cleanAccentColorDark = Color(0xFF2563EB);
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +47,10 @@ class CheckpointPlaybackControls extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [_cleanAccentColor, _cleanAccentColorDark],
+              colors: [
+                SenseiColors.cleanAccentColor,
+                SenseiColors.cleanAccentColorDark,
+              ],
             ),
             borderRadius: BorderRadius.circular(10),
             boxShadow: defaultCardBoxShadow(),

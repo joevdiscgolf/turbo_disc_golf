@@ -33,6 +33,7 @@ class ProReferenceImageContent extends StatelessWidget {
     this.userLandmarks,
     this.userAlignment,
     this.heightMultiplier,
+    this.additionalVerticalSpace = 0,
     this.cachedImage,
     this.cachedHorizontalOffset,
     this.cachedScale,
@@ -66,6 +67,12 @@ class ProReferenceImageContent extends StatelessWidget {
   /// When provided, uses this instead of looking up from feature flags.
   /// Pass this from parent to avoid service lookup during build.
   final double? heightMultiplier;
+
+  /// Additional vertical space to account for when calculating proportions.
+  /// Used when the container is smaller due to other UI elements (like a selector)
+  /// that should be considered part of the "full" reference area.
+  /// The calculation will use (containerHeight + additionalVerticalSpace) for proportions.
+  final double additionalVerticalSpace;
 
   /// Cached image for jitter prevention (timeline view only).
   final ImageProvider? cachedImage;
@@ -395,17 +402,39 @@ class ProReferenceImageContent extends StatelessWidget {
                 FeatureFlag.proReferenceHeightMultiplierSide,
               ));
 
-    // Calculate box dimensions
+    // Calculate the "full" height for proportional calculations.
+    // This accounts for any additional UI elements (like a selector) that are
+    // part of the logical reference area but rendered separately.
+    final double fullHeight = containerHeight + additionalVerticalSpace;
+
+    // Calculate box dimensions using full height for proportions
     // Height matches user's body height portion, scaled by multiplier
-    final double boxHeight = userBodyPortion * containerHeight * effectiveHeightMultiplier;
+    double boxHeight = userBodyPortion * fullHeight * effectiveHeightMultiplier;
     // Width is full container width (image will center itself with BoxFit.contain)
     final double boxWidth = containerWidth;
 
+    // CONSTRAINT: Box height must never exceed actual container height
+    if (boxHeight > containerHeight) {
+      boxHeight = containerHeight;
+    }
+
     // Position box so its center aligns with user's body center
+    // Use full height for Y positioning to maintain correct proportions
     final double centerX = userBodyCenterX * containerWidth;
-    final double centerY = userBodyCenterY * containerHeight;
+    final double centerY = userBodyCenterY * fullHeight;
     final double left = centerX - boxWidth / 2;
-    final double top = centerY - boxHeight / 2;
+    double top = centerY - boxHeight / 2;
+
+    // CONSTRAINT: Box must stay within container bounds vertically
+    // Clamp top so image doesn't go above container
+    if (top < 0) {
+      top = 0;
+    }
+    // Clamp top so image doesn't go below container
+    if (top + boxHeight > containerHeight) {
+      top = containerHeight - boxHeight;
+    }
+    // Note: Horizontal clamping intentionally omitted to preserve alignment
 
     // Use override proPlayerId if provided, otherwise fall back to checkpoint's proPlayerId
     final String? activeProId =
@@ -421,6 +450,11 @@ class ProReferenceImageContent extends StatelessWidget {
     debugPrint(
       '   Container: ${containerWidth.toStringAsFixed(0)}x${containerHeight.toStringAsFixed(0)}',
     );
+    if (additionalVerticalSpace > 0) {
+      debugPrint(
+        '   Full height (for proportions): ${fullHeight.toStringAsFixed(0)} (+${additionalVerticalSpace.toStringAsFixed(0)} for selector)',
+      );
+    }
     debugPrint(
       '   User body portion: ${(userBodyPortion * 100).toStringAsFixed(1)}%',
     );
