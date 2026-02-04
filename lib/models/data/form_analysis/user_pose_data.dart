@@ -9,7 +9,7 @@ class UserPoseData {
   const UserPoseData({
     required this.landmarks,
     this.individualAngles,
-    this.v2Measurements,
+    required this.v2Measurements,
   });
 
   /// User's pose landmarks
@@ -19,9 +19,9 @@ class UserPoseData {
   @JsonKey(name: 'individual_angles')
   final IndividualJointAngles? individualAngles;
 
-  /// V2 side-view measurements for user
+  /// V2 measurements by camera angle (side/rear/front)
   @JsonKey(name: 'v2_measurements')
-  final V2SideMeasurements? v2Measurements;
+  final V2MeasurementsByAngle v2Measurements;
 
   factory UserPoseData.fromJson(Map<String, dynamic> json) =>
       _$UserPoseDataFromJson(json);

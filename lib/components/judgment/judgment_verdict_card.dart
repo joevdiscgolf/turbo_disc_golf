@@ -61,11 +61,11 @@ class JudgmentVerdictCard extends StatelessWidget {
           isGlaze
               ? const Text(
                   '\u{1F369}', // Donut emoji
-                  style: TextStyle(fontSize: 48),
+                  style: TextStyle(fontSize: 54),
                 )
               : Icon(
                   Icons.local_fire_department,
-                  size: 48,
+                  size: 54,
                   color: primaryColor,
                 ),
           const SizedBox(width: 16),
@@ -141,9 +141,9 @@ class JudgmentVerdictAnnouncement extends StatelessWidget {
           child: isGlaze
               ? const Text(
                   '\u{1F369}', // Donut emoji
-                  style: TextStyle(fontSize: 80),
+                  style: TextStyle(fontSize: 88),
                 )
-              : Icon(Icons.local_fire_department, size: 80, color: color),
+              : Icon(Icons.local_fire_department, size: 88, color: color),
         ).animate().scale(
           duration: const Duration(milliseconds: 500),
           begin: const Offset(0.5, 0.5),

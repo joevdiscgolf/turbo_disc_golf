@@ -11,7 +11,7 @@ class ProReferencePoseData {
     required this.landmarks,
     required this.angles,
     this.individualAngles,
-    this.v2Measurements,
+    required this.v2Measurements,
   });
 
   /// Pro player ID for reference (e.g., "paul_mcbeth")
@@ -28,9 +28,9 @@ class ProReferencePoseData {
   @JsonKey(name: 'individual_angles')
   final IndividualJointAngles? individualAngles;
 
-  /// V2 side-view measurements for reference/pro
+  /// V2 measurements by camera angle (side/rear/front)
   @JsonKey(name: 'v2_measurements')
-  final V2SideMeasurements? v2Measurements;
+  final V2MeasurementsByAngle v2Measurements;
 
   factory ProReferencePoseData.fromJson(Map<String, dynamic> json) =>
       _$ProReferencePoseDataFromJson(json);

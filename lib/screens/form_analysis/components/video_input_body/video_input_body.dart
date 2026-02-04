@@ -10,7 +10,8 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_dialog.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_panel.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/handedness_selection_panel.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body/components/best_results_card.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -124,7 +125,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       'assets/test_videos/joe_example_throw_2.mov'; // Default to joe #2
 
   CameraAngle _selectedCameraAngle = CameraAngle.side; // Default to side view
-  Handedness _selectedHandedness = Handedness.right; // Default to right-handed
+  Handedness? _selectedHandedness; // null = auto-detect
 
   /// Checks if this is the first time user is importing a video for form analysis.
   /// Shows education panel if first time, then proceeds with import.
@@ -249,39 +250,34 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       onTap: () async {
         HapticFeedback.lightImpact();
 
-        // Show camera angle selection dialog if feature flag is enabled
+        // Show camera angle selection panel if feature flag is enabled
         if (flags.showCameraAngleSelectionDialog) {
           if (!mounted) return;
-          showDialog(
-            context: context,
-            barrierColor: Colors.black.withValues(alpha: 0.7),
-            builder: (BuildContext context) => CameraAngleSelectionDialog(
-              onSelected: (CameraAngle angle) async {
-                setState(() => _selectedCameraAngle = angle);
-                logger.track(
-                  'Import Video Button Tapped',
-                  properties: {
-                    'camera_angle': angle.name,
-                    'handedness': _selectedHandedness.name,
-                    'version': 'v2',
-                  },
-                );
-                await _checkFirstTimeEducation();
-                if (!mounted) return;
-                cubit.importVideo(
-                  throwType: ThrowTechnique.backhand,
-                  cameraAngle: angle,
-                  handedness: _selectedHandedness,
-                );
-              },
-            ),
+          final CameraAngle? selectedAngle =
+              await CameraAngleSelectionPanel.show(context);
+          if (selectedAngle == null || !mounted) return;
+          setState(() => _selectedCameraAngle = selectedAngle);
+          logger.track(
+            'Import Video Button Tapped',
+            properties: {
+              'camera_angle': selectedAngle.name,
+              'handedness': _selectedHandedness?.name ?? 'auto',
+              'version': 'v2',
+            },
+          );
+          await _checkFirstTimeEducation();
+          if (!mounted) return;
+          cubit.importVideo(
+            throwType: ThrowTechnique.backhand,
+            cameraAngle: selectedAngle,
+            handedness: _selectedHandedness,
           );
         } else {
           logger.track(
             'Import Video Button Tapped',
             properties: {
               'camera_angle': _selectedCameraAngle.name,
-              'handedness': _selectedHandedness.name,
+              'handedness': _selectedHandedness?.name ?? 'auto',
               'version': 'v2',
             },
           );
@@ -412,6 +408,8 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   }
 
   Widget _buildV2HandednessSection(BuildContext context) {
+    final String displayLabel = _selectedHandedness?.badgeLabel ?? 'Auto';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,16 +421,42 @@ class _VideoInputBodyState extends State<VideoInputBody> {
           ),
         ),
         const SizedBox(height: 8),
-        _V2CompactToggle(
-          options: const ['Left', 'Right'],
-          selectedIndex: _selectedHandedness == Handedness.left ? 0 : 1,
-          onChanged: (int index) {
-            setState(() {
-              _selectedHandedness = index == 0
-                  ? Handedness.left
-                  : Handedness.right;
-            });
+        GestureDetector(
+          onTap: () async {
+            HapticFeedback.lightImpact();
+            final HandednessSelectionResult? result =
+                await HandednessSelectionPanel.show(context);
+            // Only update if a selection was made (not dismissed)
+            if (result != null && mounted) {
+              setState(() => _selectedHandedness = result.handedness);
+            }
           },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  displayLabel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.white.withValues(alpha: 0.6),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

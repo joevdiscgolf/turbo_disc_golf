@@ -143,6 +143,7 @@ abstract class FBFormAnalysisDataLoader {
             return uploadedUrls[imageName];
           },
           proPlayerIdOverride: checkpoint.proPlayerId ?? 'paul_mcbeth',
+          cameraAngle: cameraAngle,
         );
 
         checkpointRecords.add(record);

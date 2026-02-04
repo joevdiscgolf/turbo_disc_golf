@@ -282,8 +282,10 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               checkpoint: checkpoint,
               onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
             ),
-            if (checkpoint.userPose.v2Measurements != null)
-              V2MeasurementsCard(checkpoint: checkpoint),
+            V2MeasurementsCard(
+              checkpoint: checkpoint,
+              cameraAngle: _effectiveCameraAngle,
+            ),
             const SizedBox(height: 120),
           ],
         ),

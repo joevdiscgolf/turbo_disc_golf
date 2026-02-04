@@ -1,80 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/pose_analysis_response.dart';
 
-/// Card displaying V2 side-view measurements comparing user vs pro angles.
+/// Card displaying V2 measurements comparing user vs pro angles.
+/// Supports both side-view and rear-view camera angles.
 class V2MeasurementsCard extends StatelessWidget {
-  const V2MeasurementsCard({super.key, required this.checkpoint});
+  const V2MeasurementsCard({
+    super.key,
+    required this.checkpoint,
+    required this.cameraAngle,
+  });
 
   final CheckpointDataV2 checkpoint;
+  final CameraAngle cameraAngle;
 
   @override
   Widget build(BuildContext context) {
-    if (checkpoint.userPose.v2Measurements == null) {
+    // Get measurements based on camera angle
+    final dynamic userMeasurements = cameraAngle == CameraAngle.side
+        ? checkpoint.userPose.v2Measurements.side
+        : checkpoint.userPose.v2Measurements.rear;
+
+    if (userMeasurements == null) {
       return const SizedBox.shrink();
     }
 
-    final V2SideMeasurements user = checkpoint.userPose.v2Measurements!;
-    final V2SideMeasurements? reference =
-        checkpoint.proReferencePose?.v2Measurements;
-    final V2SideMeasurements? deviations =
-        checkpoint.deviationAnalysis.v2MeasurementDeviations;
+    final dynamic referenceMeasurements = cameraAngle == CameraAngle.side
+        ? checkpoint.proReferencePose?.v2Measurements.side
+        : checkpoint.proReferencePose?.v2Measurements.rear;
+
+    final dynamic deviationMeasurements = cameraAngle == CameraAngle.side
+        ? checkpoint.deviationAnalysis.v2MeasurementDeviations.side
+        : checkpoint.deviationAnalysis.v2MeasurementDeviations.rear;
 
     final List<_V2MeasurementRow> rows = [
-      if (user.frontKneeAngle != null)
+      if (userMeasurements.frontKneeAngle != null)
         _V2MeasurementRow(
           label: 'Front knee',
-          userValue: user.frontKneeAngle!,
-          proValue: reference?.frontKneeAngle,
-          deviation: deviations?.frontKneeAngle,
+          userValue: userMeasurements.frontKneeAngle!,
+          proValue: referenceMeasurements?.frontKneeAngle,
+          deviation: deviationMeasurements?.frontKneeAngle,
         ),
-      if (user.backKneeAngle != null)
+      if (userMeasurements.backKneeAngle != null)
         _V2MeasurementRow(
           label: 'Back knee',
-          userValue: user.backKneeAngle!,
-          proValue: reference?.backKneeAngle,
-          deviation: deviations?.backKneeAngle,
+          userValue: userMeasurements.backKneeAngle!,
+          proValue: referenceMeasurements?.backKneeAngle,
+          deviation: deviationMeasurements?.backKneeAngle,
         ),
-      if (user.frontElbowAngle != null)
+      if (userMeasurements.frontElbowAngle != null)
         _V2MeasurementRow(
           label: 'Elbow',
-          userValue: user.frontElbowAngle!,
-          proValue: reference?.frontElbowAngle,
-          deviation: deviations?.frontElbowAngle,
+          userValue: userMeasurements.frontElbowAngle!,
+          proValue: referenceMeasurements?.frontElbowAngle,
+          deviation: deviationMeasurements?.frontElbowAngle,
         ),
-      if (user.frontFootDirectionAngle != null)
+      // Only show foot direction angles for side view (null for rear view)
+      if (cameraAngle == CameraAngle.side &&
+          userMeasurements.frontFootDirectionAngle != null)
         _V2MeasurementRow(
           label: 'Front foot direction',
-          userValue: user.frontFootDirectionAngle!,
-          proValue: reference?.frontFootDirectionAngle,
-          deviation: deviations?.frontFootDirectionAngle,
+          userValue: userMeasurements.frontFootDirectionAngle!,
+          proValue: referenceMeasurements?.frontFootDirectionAngle,
+          deviation: deviationMeasurements?.frontFootDirectionAngle,
         ),
-      if (user.backFootDirectionAngle != null)
+      if (cameraAngle == CameraAngle.side &&
+          userMeasurements.backFootDirectionAngle != null)
         _V2MeasurementRow(
           label: 'Back foot direction',
-          userValue: user.backFootDirectionAngle!,
-          proValue: reference?.backFootDirectionAngle,
-          deviation: deviations?.backFootDirectionAngle,
+          userValue: userMeasurements.backFootDirectionAngle!,
+          proValue: referenceMeasurements?.backFootDirectionAngle,
+          deviation: deviationMeasurements?.backFootDirectionAngle,
         ),
-      if (user.hipRotationAngle != null)
+      if (userMeasurements.hipRotationAngle != null)
         _V2MeasurementRow(
           label: 'Hip rotation',
-          userValue: user.hipRotationAngle!,
-          proValue: reference?.hipRotationAngle,
-          deviation: deviations?.hipRotationAngle,
+          userValue: userMeasurements.hipRotationAngle!,
+          proValue: referenceMeasurements?.hipRotationAngle,
+          deviation: deviationMeasurements?.hipRotationAngle,
         ),
-      if (user.shoulderRotationAngle != null)
+      if (userMeasurements.shoulderRotationAngle != null)
         _V2MeasurementRow(
           label: 'Shoulder rotation',
-          userValue: user.shoulderRotationAngle!,
-          proValue: reference?.shoulderRotationAngle,
-          deviation: deviations?.shoulderRotationAngle,
+          userValue: userMeasurements.shoulderRotationAngle!,
+          proValue: referenceMeasurements?.shoulderRotationAngle,
+          deviation: deviationMeasurements?.shoulderRotationAngle,
         ),
     ];
 
     if (rows.isEmpty) return const SizedBox.shrink();
 
-    final bool hasPro = reference != null;
+    final bool hasPro = referenceMeasurements != null;
 
     return Container(
       padding: const EdgeInsets.all(16),

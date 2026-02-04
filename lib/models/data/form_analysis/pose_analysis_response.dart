@@ -140,6 +140,7 @@ class PoseAnalysisResponse {
       return CheckpointRecordBuilder.build(
         checkpoint: cp,
         imageUrlProvider: toDataUrl,
+        cameraAngle: cameraAngle,
       );
     }).toList();
 
@@ -155,6 +156,7 @@ class PoseAnalysisResponse {
           return CheckpointRecordBuilder.build(
             checkpoint: cp,
             imageUrlProvider: toDataUrl,
+            cameraAngle: cameraAngle,
           );
         }).toList();
 
@@ -339,17 +341,17 @@ class CheckpointPoseData {
   @JsonKey(name: 'individual_deviations')
   final IndividualJointDeviations? individualDeviations;
 
-  /// V2 side-view measurements for user
+  /// V2 measurements by camera angle for user
   @JsonKey(name: 'user_v2_measurements')
-  final V2SideMeasurements? userV2Measurements;
+  final V2MeasurementsByAngle? userV2Measurements;
 
-  /// V2 side-view measurements for reference/pro
+  /// V2 measurements by camera angle for reference/pro
   @JsonKey(name: 'reference_v2_measurements')
-  final V2SideMeasurements? referenceV2Measurements;
+  final V2MeasurementsByAngle? referenceV2Measurements;
 
-  /// V2 side-view measurement deviations (user - reference)
+  /// V2 measurement deviations by camera angle (user - reference)
   @JsonKey(name: 'v2_measurement_deviations')
-  final V2SideMeasurements? v2MeasurementDeviations;
+  final V2MeasurementsByAngle? v2MeasurementDeviations;
 
   /// Frame number detected by the backend for this checkpoint
   @JsonKey(name: 'detected_frame_number')
@@ -697,6 +699,68 @@ class V2SideMeasurements {
   factory V2SideMeasurements.fromJson(Map<String, dynamic> json) =>
       _$V2SideMeasurementsFromJson(json);
   Map<String, dynamic> toJson() => _$V2SideMeasurementsToJson(this);
+}
+
+/// V2 rear-view measurements for form analysis
+@JsonSerializable(anyMap: true, explicitToJson: true)
+class V2RearMeasurements {
+  const V2RearMeasurements({
+    this.frontKneeAngle,
+    this.backKneeAngle,
+    this.frontElbowAngle,
+    this.frontFootDirectionAngle,
+    this.backFootDirectionAngle,
+    this.hipRotationAngle,
+    this.shoulderRotationAngle,
+  });
+
+  @JsonKey(name: 'front_knee_angle')
+  final double? frontKneeAngle;
+
+  @JsonKey(name: 'back_knee_angle')
+  final double? backKneeAngle;
+
+  @JsonKey(name: 'front_elbow_angle')
+  final double? frontElbowAngle;
+
+  @JsonKey(name: 'front_foot_direction_angle')
+  final double? frontFootDirectionAngle;
+
+  @JsonKey(name: 'back_foot_direction_angle')
+  final double? backFootDirectionAngle;
+
+  @JsonKey(name: 'hip_rotation_angle')
+  final double? hipRotationAngle;
+
+  @JsonKey(name: 'shoulder_rotation_angle')
+  final double? shoulderRotationAngle;
+
+  factory V2RearMeasurements.fromJson(Map<String, dynamic> json) =>
+      _$V2RearMeasurementsFromJson(json);
+  Map<String, dynamic> toJson() => _$V2RearMeasurementsToJson(this);
+}
+
+/// Container for V2 measurements by camera angle
+@JsonSerializable(anyMap: true, explicitToJson: true)
+class V2MeasurementsByAngle {
+  const V2MeasurementsByAngle({
+    this.side,
+    this.rear,
+    this.front,
+  });
+
+  /// Side-view measurements
+  final V2SideMeasurements? side;
+
+  /// Rear-view measurements
+  final V2RearMeasurements? rear;
+
+  /// Front-view measurements (reserved for future use)
+  final Map<String, dynamic>? front;
+
+  factory V2MeasurementsByAngle.fromJson(Map<String, dynamic> json) =>
+      _$V2MeasurementsByAngleFromJson(json);
+  Map<String, dynamic> toJson() => _$V2MeasurementsByAngleToJson(this);
 }
 
 /// Single angle deviation for UI display

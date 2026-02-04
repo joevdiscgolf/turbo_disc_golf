@@ -34,7 +34,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   Future<void> recordVideo({
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
-    required Handedness handedness,
+    Handedness? handedness,
   }) async {
     emit(
       const VideoFormAnalysisRecording(progressMessage: 'Opening camera...'),
@@ -96,7 +96,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   Future<void> importVideo({
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
-    required Handedness handedness,
+    Handedness? handedness,
   }) async {
     try {
       debugPrint(
@@ -154,7 +154,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   Future<void> testWithAssetVideo({
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
-    required Handedness handedness,
+    Handedness? handedness,
     required String assetPath,
   }) async {
     emit(
@@ -196,7 +196,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required VideoSource videoSource,
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
-    required Handedness handedness,
+    Handedness? handedness,
   }) async {
     debugPrint(
       '[VideoFormAnalysisCubit] Starting video processing: $videoPath',
@@ -409,7 +409,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required String videoPath,
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
-    required Handedness handedness,
+    Handedness? handedness,
     required String sessionId,
     required String userId,
   }) async {

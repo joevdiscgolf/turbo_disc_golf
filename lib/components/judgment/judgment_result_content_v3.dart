@@ -106,8 +106,8 @@ class JudgmentResultContentV3 extends StatelessWidget {
         // Random rotation
         final double rotation = (random.nextDouble() - 0.5) * 1.2;
 
-        // Low opacity (0.08 to 0.15)
-        final double opacity = 0.08 + random.nextDouble() * 0.07;
+        // Low opacity (0.18 to 0.25) - increased by 10%
+        final double opacity = 0.18 + random.nextDouble() * 0.07;
 
         // Random size (16 to 22)
         final double size = 16 + random.nextDouble() * 6;

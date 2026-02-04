@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
+import 'package:turbo_disc_golf/components/shimmer_box.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
@@ -263,7 +264,20 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
   Widget _buildSearchResults() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      // Show shimmer skeletons while loading
+      const int shimmerCount = 3;
+      return ListView.separated(
+        itemCount: shimmerCount,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          thickness: 1,
+          color: SenseiColors.gray.shade50,
+          indent: 16,
+          endIndent: 16,
+        ),
+        physics: const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index) => const _CourseSearchShimmer(),
+      );
     }
 
     if (_error != null) {
@@ -1013,6 +1027,56 @@ class _EmptyStateWidget extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Shimmer skeleton placeholder for course search results during loading
+class _CourseSearchShimmer extends StatelessWidget {
+  const _CourseSearchShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ShimmerBox(
+                  width: 200,
+                  height: 16,
+                  borderRadius: 4,
+                  color: Color(0xFFF5F5F5),
+                ),
+                const SizedBox(height: 8),
+                const ShimmerBox(
+                  width: 120,
+                  height: 13,
+                  borderRadius: 4,
+                  color: Color(0xFFF5F5F5),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          const ShimmerBox(
+            width: 60,
+            height: 12,
+            borderRadius: 4,
+            color: Color(0xFFF5F5F5),
+          ),
+          const SizedBox(width: 8),
+          const ShimmerBox(
+            width: 20,
+            height: 20,
+            borderRadius: 4,
+            color: Color(0xFFF5F5F5),
+          ),
+        ],
       ),
     );
   }

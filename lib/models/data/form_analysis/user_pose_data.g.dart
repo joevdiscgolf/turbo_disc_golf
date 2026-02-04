@@ -15,16 +15,14 @@ UserPoseData _$UserPoseDataFromJson(Map<String, dynamic> json) => UserPoseData(
       : IndividualJointAngles.fromJson(
           json['individual_angles'] as Map<String, dynamic>,
         ),
-  v2Measurements: json['v2_measurements'] == null
-      ? null
-      : V2SideMeasurements.fromJson(
-          json['v2_measurements'] as Map<String, dynamic>,
-        ),
+  v2Measurements: V2MeasurementsByAngle.fromJson(
+    json['v2_measurements'] as Map<String, dynamic>,
+  ),
 );
 
 Map<String, dynamic> _$UserPoseDataToJson(UserPoseData instance) =>
     <String, dynamic>{
       'landmarks': instance.landmarks.map((e) => e.toJson()).toList(),
       'individual_angles': instance.individualAngles?.toJson(),
-      'v2_measurements': instance.v2Measurements?.toJson(),
+      'v2_measurements': instance.v2Measurements.toJson(),
     };
