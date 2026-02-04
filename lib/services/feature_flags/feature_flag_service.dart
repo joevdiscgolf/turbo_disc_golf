@@ -331,6 +331,9 @@ class FeatureFlagService {
   bool get showCameraAngleSelectionDialog =>
       getBool(FeatureFlag.showCameraAngleSelectionDialog);
 
+  bool get useFormAnalysisRecordingScreenV2 =>
+      getBool(FeatureFlag.useFormAnalysisRecordingScreenV2);
+
   // ===== Admin/Force Upgrade =====
 
   List<String> get adminUids {

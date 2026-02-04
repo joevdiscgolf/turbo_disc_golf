@@ -60,7 +60,7 @@ class _FormAnalysisRecordingScreenState
   void initState() {
     super.initState();
 
-    // Set light status bar (light icons/text for dark background)
+    // Set dark status bar (dark icons/text for light background)
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
 
     // Setup scoped logger
@@ -136,33 +136,43 @@ class _FormAnalysisRecordingScreenState
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
-      child: BlocProvider<VideoFormAnalysisCubit>(
-        create: (context) => VideoFormAnalysisCubit(),
-        child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
-          builder: (context, state) {
-            // Determine colors based on state and transition
-            final bool isCompleted =
-                state is VideoFormAnalysisComplete && !_showingTransition;
-            final Color foregroundColor = isCompleted
-                ? SenseiColors.darkGray
-                : Colors.white;
+    return BlocProvider<VideoFormAnalysisCubit>(
+      create: (context) => VideoFormAnalysisCubit(),
+      child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
+        builder: (context, state) {
+          // Determine colors based on state and transition
+          final bool isCompleted =
+              state is VideoFormAnalysisComplete && !_showingTransition;
 
-            final bool isLoadingOrAnalyzing =
-                state is VideoFormAnalysisRecording ||
-                state is VideoFormAnalysisValidating ||
-                state is VideoFormAnalysisAnalyzing ||
-                (_debugAutoFinalization &&
-                    !_showingTransition &&
-                    _debugLoadingStarted);
+          final bool isLoadingOrAnalyzing =
+              state is VideoFormAnalysisRecording ||
+              state is VideoFormAnalysisValidating ||
+              state is VideoFormAnalysisAnalyzing ||
+              (_debugAutoFinalization &&
+                  !_showingTransition &&
+                  _debugLoadingStarted);
 
-            // App bar background should match the light background when completed
-            final Color appBarBackgroundColor = isCompleted
-                ? const Color(0xFFEEE8F5)
-                : Colors.transparent;
+          // Determine if we're in dark mode (processing state)
+          final bool isDarkMode = isLoadingOrAnalyzing || _showingTransition;
 
-            return Scaffold(
+          // Use appropriate foreground color based on background
+          final Color foregroundColor = isDarkMode
+              ? SenseiColors.white
+              : SenseiColors.darkGray;
+
+          // Status bar style: dark content for light bg, light content for dark bg
+          final SystemUiOverlayStyle statusBarStyle = isDarkMode
+              ? const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark)
+              : const SystemUiOverlayStyle(
+                  statusBarBrightness: Brightness.light,
+                );
+
+          // Transparent app bar - background shows through
+          const Color appBarBackgroundColor = Colors.transparent;
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: statusBarStyle,
+            child: Scaffold(
               backgroundColor: Colors.transparent,
               extendBodyBehindAppBar: true,
               appBar: GenericAppBar(
@@ -188,29 +198,12 @@ class _FormAnalysisRecordingScreenState
               body: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background layer
-                  if (!isCompleted || _showingTransition)
-                    // Before and during transition: dark background
-                    const Positioned.fill(child: FormAnalysisBackground())
-                  else
-                    // After transition: light background
-                    Positioned.fill(
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFEEE8F5),
-                              Color(0xFFECECEE),
-                              Color(0xFFE8F4E8),
-                              Color(0xFFEAE8F0),
-                            ],
-                            stops: [0.0, 0.3, 0.7, 1.0],
-                          ),
-                        ),
-                      ),
+                  // Background layer - transitions to dark when processing
+                  Positioned.fill(
+                    child: FormAnalysisBackground(
+                      isProcessing: isLoadingOrAnalyzing || _showingTransition,
                     ),
+                  ),
 
                   // Main content - positioned to fill
                   Positioned.fill(
@@ -301,9 +294,9 @@ class _FormAnalysisRecordingScreenState
                     ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -355,12 +348,12 @@ class _FormAnalysisRecordingScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
             const SizedBox(height: 24),
             Text(
               'Analysis Failed',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
+                color: SenseiColors.darkGray,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -368,12 +361,16 @@ class _FormAnalysisRecordingScreenState
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.white.withValues(alpha: 0.8),
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: SenseiColors.gray[600]),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF137e66),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
                 _logger.track('Try Again Button Tapped');
                 BlocProvider.of<VideoFormAnalysisCubit>(context).reset();

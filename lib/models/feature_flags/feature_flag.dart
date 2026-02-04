@@ -133,7 +133,7 @@ enum FeatureFlag {
   poseAnalysisBaseUrl('pose_analysis_base_url', 'http://192.168.0.131:8080'),
 
   /// Debug-only: Shows test button in form analysis
-  showFormAnalysisTestButton('show_form_analysis_test_button', true),
+  showFormAnalysisTestButton('show_form_analysis_test_button', false),
   testFormAnalysisVideoPath(
     'test_form_analysis_video_path',
     'assets/test_videos/joe_example_throw_2.mov',
@@ -174,6 +174,12 @@ enum FeatureFlag {
 
   /// Height multiplier for pro reference image when camera angle is side
   proReferenceHeightMultiplierSide('pro_reference_height_multiplier_side', 1.5),
+
+  /// Uses the v2 "Stage" design for form analysis recording screen with liquid glass UI
+  useFormAnalysisRecordingScreenV2(
+    'use_form_analysis_recording_screen_v2',
+    true,
+  ),
 
   // ===== Admin/Force Upgrade =====
   /// Comma-separated list of admin UIDs

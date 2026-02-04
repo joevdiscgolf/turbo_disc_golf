@@ -96,6 +96,16 @@ abstract class SenseiColors {
   // Clean accent colors for buttons and controls
   static const Color cleanAccentColor = Color(0xFF3B82F6);
   static const Color cleanAccentColorDark = Color(0xFF2563EB);
+
+  // Cyan colors for atomic loader
+  static const Color cyan = Color(0xFF4DD0E1);
+  static const Color cyanLight = Color(0xFF80DEEA);
+  static const Color cyanDark = Color(0xFF26C6DA);
+
+  // Dark background colors (from landing screen)
+  static const Color darkBg1 = Color(0xFF1a1a2e); // Deep purple/blue
+  static const Color darkBg2 = Color(0xFF16213e); // Midnight blue
+  static const Color darkBg3 = Color(0xFF0f0f23); // Very dark blue
 }
 
 /// Returns a semantic color based on percentage value.

@@ -13,6 +13,14 @@ class HandednessSelectionPanel extends StatelessWidget {
 
   final Function(Handedness? handedness) onSelected;
 
+  // Brand colors
+  static const Color _tealPrimary = Color(0xFF137e66);
+  static const Color _tealLight = Color(0xFF1A9E80);
+  static const Color _purplePrimary = Color(0xFF7B5B9A);
+  static const Color _purpleLight = Color(0xFF9C7AB8);
+  static const Color _bluePrimary = Color(0xFF4A7FC1);
+  static const Color _blueLight = Color(0xFF6B9AD8);
+
   /// Shows the panel as a modal bottom sheet.
   /// Returns a [HandednessSelectionResult] if a selection was made,
   /// or null if dismissed without selection.
@@ -31,81 +39,72 @@ class HandednessSelectionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A2E),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(PanelConstants.panelBorderRadius),
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: autoBottomPadding(context),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildHandednessCard(
-                          context: context,
-                          handedness: Handedness.left,
-                          label: 'Lefty',
-                          color1: const Color(0xFF7B1FA2),
-                          color2: const Color(0xFF9C27B0),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildHandednessCard(
-                          context: context,
-                          handedness: Handedness.right,
-                          label: 'Righty',
-                          color1: const Color(0xFF1976D2),
-                          color2: const Color(0xFF2196F3),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildAutoCard(context),
-                ],
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: autoBottomPadding(context),
             ),
-          ],
-        ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildHandednessCard(
+                        context: context,
+                        handedness: Handedness.left,
+                        label: 'Lefty',
+                        color1: _purplePrimary,
+                        color2: _purpleLight,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildHandednessCard(
+                        context: context,
+                        handedness: Handedness.right,
+                        label: 'Righty',
+                        color1: _bluePrimary,
+                        color2: _blueLight,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildAutoCard(context),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 8,
-        top: 8,
-        bottom: 16,
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 8, top: 8, bottom: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'Throwing hand',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: Colors.grey[600]),
             onPressed: () {
               HapticFeedback.lightImpact();
               Navigator.of(context).pop();
@@ -184,12 +183,12 @@ class HandednessSelectionPanel extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF00897B), Color(0xFF26A69A)],
+            colors: [_tealPrimary, _tealLight],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF00897B).withValues(alpha: 0.3),
+              color: _tealPrimary.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),

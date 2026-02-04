@@ -11,6 +11,7 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_h
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_welcome_empty_state.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen_v2.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -78,9 +79,14 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   Future<void> _showRecordingScreen() async {
     _logger.track('New Form Analysis Button Tapped');
 
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    final Widget screen = flags.useFormAnalysisRecordingScreenV2
+        ? FormAnalysisRecordingScreenV2(topViewPadding: widget.topViewPadding)
+        : FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding);
+
     await pushCupertinoRoute(
       context,
-      FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding),
+      screen,
       pushFromBottom: true,
     );
     // Note: New analyses are automatically added to the history cubit
