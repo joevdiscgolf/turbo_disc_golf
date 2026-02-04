@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:turbo_disc_golf/components/asset_image_icon.dart';
 import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
@@ -12,11 +13,11 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_panel.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/handedness_selection_panel.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body/components/best_results_card.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 const String _hasSeenFormAnalysisEducationKey = 'hasSeenFormAnalysisEducation';
 
@@ -311,8 +312,8 @@ class _VideoInputBodyState extends State<VideoInputBody> {
         ),
         child: Column(
           children: [
-            _buildV2SettingsRow(context),
-            const SizedBox(height: 20),
+            _buildV2HandednessSection(context),
+            const SizedBox(height: 12),
             _buildV2UploadArea(context),
           ],
         ),
@@ -323,15 +324,12 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   Widget _buildV2UploadArea(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF137e66),
-            Color(0xFF1A9E80),
-          ],
+          colors: [Color(0xFF137e66), Color(0xFF1A9E80)],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -345,14 +343,10 @@ class _VideoInputBodyState extends State<VideoInputBody> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.download_rounded,
-            size: 24,
-            color: Colors.white,
-          ),
+          const Icon(Icons.download_rounded, size: 24, color: Colors.white),
           const SizedBox(width: 12),
           Text(
-            'Import video from gallery',
+            'Select video',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -363,52 +357,23 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     );
   }
 
-  Widget _buildV2SettingsRow(BuildContext context) {
-    final FeatureFlagService flags = locator.get<FeatureFlagService>();
-
-    // Hide camera angle selector if dialog is enabled
-    if (flags.showCameraAngleSelectionDialog) {
-      return _buildV2HandednessSection(context);
-    }
-
-    return Row(
-      children: [
-        Expanded(child: _buildV2CameraAngleSection(context)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildV2HandednessSection(context)),
-      ],
-    );
-  }
-
-  Widget _buildV2CameraAngleSection(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'Camera',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: SenseiColors.gray[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        _V2CompactToggle(
-          options: const ['Side', 'Rear'],
-          selectedIndex: _selectedCameraAngle == CameraAngle.side ? 0 : 1,
-          onChanged: (int index) {
-            setState(() {
-              _selectedCameraAngle = index == 0
-                  ? CameraAngle.side
-                  : CameraAngle.rear;
-              _updateSelectedVideoForCameraAngle();
-            });
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _buildV2HandednessSection(BuildContext context) {
     final String displayLabel = _selectedHandedness?.badgeLabel ?? 'Auto';
+
+    // Colors matching the handedness selection panel
+    const Color tealPrimary = Color(0xFF137e66);
+    const Color tealLight = Color(0xFF1A9E80);
+    const Color purplePrimary = Color(0xFF7B5B9A);
+    const Color purpleLight = Color(0xFF9C7AB8);
+    const Color bluePrimary = Color(0xFF4A7FC1);
+    const Color blueLight = Color(0xFF6B9AD8);
+
+    // Get colors based on selection
+    final (Color color1, Color color2) = switch (_selectedHandedness) {
+      null => (tealPrimary, tealLight), // Auto
+      Handedness.left => (purplePrimary, purpleLight), // Lefty
+      Handedness.right => (bluePrimary, blueLight), // Righty
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,23 +400,58 @@ class _VideoInputBodyState extends State<VideoInputBody> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: SenseiColors.gray[200],
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [color1, color2],
+              ),
               borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: color1.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  displayLabel,
-                  style: TextStyle(
-                    color: SenseiColors.gray[700],
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: _selectedHandedness == null
+                          ? const Icon(
+                              Icons.auto_awesome,
+                              color: Colors.white,
+                              size: 18,
+                            )
+                          : Transform.flip(
+                              flipX: _selectedHandedness == Handedness.left,
+                              child: const AssetImageIcon(
+                                'assets/form_icons/side_view_backhand_clear.png',
+                                size: 20,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      displayLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
                 Icon(
                   Icons.keyboard_arrow_down,
-                  color: SenseiColors.gray[500],
+                  color: Colors.white.withValues(alpha: 0.8),
                   size: 20,
                 ),
               ],
@@ -516,22 +516,6 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   // ==========================================================================
   // Shared Helper Methods
   // ==========================================================================
-
-  /// Update selected video when camera angle changes to ensure it matches
-  void _updateSelectedVideoForCameraAngle() {
-    final List<({String path, String name, CameraAngle angle})>
-    availableVideos = _getFilteredTestVideos();
-
-    // Check if current selection is still valid for the new angle
-    final bool isCurrentVideoValid = availableVideos.any(
-      (v) => v.path == _selectedTestVideoPath,
-    );
-
-    // If current video doesn't match new angle, select the first available video
-    if (!isCurrentVideoValid && availableVideos.isNotEmpty) {
-      _selectedTestVideoPath = availableVideos.first.path;
-    }
-  }
 
   /// Get test videos filtered by the selected camera angle
   List<({String path, String name, CameraAngle angle})>
@@ -600,74 +584,3 @@ class _VideoInputBodyState extends State<VideoInputBody> {
     );
   }
 }
-
-/// Compact toggle that scales to fit available width
-class _V2CompactToggle extends StatelessWidget {
-  const _V2CompactToggle({
-    required this.options,
-    required this.selectedIndex,
-    required this.onChanged,
-  });
-
-  final List<String> options;
-  final int selectedIndex;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: SenseiColors.gray[200],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        children: List.generate(options.length, (index) {
-          final bool isSelected = index == selectedIndex;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onChanged(index);
-              },
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF137e66)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF137e66).withValues(alpha: 0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  options[index],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : SenseiColors.gray[600],
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Brain nucleus + 2 orbitals (left/right) with orbiting particles.
 ///
@@ -78,7 +79,7 @@ class _AtomicNucleusLoaderState extends State<AtomicNucleusLoader>
                 // Keep the code, but do NOT render for now:
                 // _MorphingBackground(size: widget.size),
 
-                // Orbital A: tilted left - teal brand color
+                // Orbital A: tilted left - cyan
                 _AtomicOrbit(
                   size: widget.size,
                   radius: widget.size * 0.395,
@@ -90,12 +91,12 @@ class _AtomicNucleusLoaderState extends State<AtomicNucleusLoader>
                   yScale: 0.45,
                   yOffset: -3,
                   direction: 1,
-                  particleColor: const Color(0xFF26C9A8), // Bright teal
-                  ringColor: const Color(0xFF4DE8C7), // Light teal
+                  particleColor: SenseiColors.cyan,
+                  ringColor: SenseiColors.cyanLight,
                   orbitSeed: 101,
                 ),
 
-                // Orbital B: tilted right - purple accent
+                // Orbital B: tilted right - cyan variant
                 _AtomicOrbit(
                   size: widget.size,
                   radius: (widget.size * 0.395) * 1.02,
@@ -107,8 +108,8 @@ class _AtomicNucleusLoaderState extends State<AtomicNucleusLoader>
                   yScale: 0.45,
                   yOffset: 3,
                   direction: -1,
-                  particleColor: const Color(0xFFB088D0), // Soft purple
-                  ringColor: const Color(0xFFCBA8E8), // Light purple
+                  particleColor: SenseiColors.cyan,
+                  ringColor: SenseiColors.cyanLight,
                   orbitSeed: 202,
                 ),
 
@@ -138,12 +139,12 @@ class _AtomicNucleusLoaderState extends State<AtomicNucleusLoader>
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF137e66).withValues(alpha: 0.4),
+              color: SenseiColors.cyan.withValues(alpha: 0.4),
               blurRadius: 35,
               spreadRadius: 8,
             ),
             BoxShadow(
-              color: const Color(0xFF9C7AB8).withValues(alpha: 0.25),
+              color: SenseiColors.cyanDark.withValues(alpha: 0.25),
               blurRadius: 50,
               spreadRadius: 12,
             ),

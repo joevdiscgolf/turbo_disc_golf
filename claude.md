@@ -144,17 +144,21 @@ Card(
 
 **CRITICAL: Always use sentence case for user-facing text**
 
-- **Headings/Titles on Cards/Screens**: Capitalize only the first letter of the first word
+- **Headings, Titles, and Button Labels**: Capitalize only the first letter of the first word
+  - ✅ `'Select video'`
   - ✅ `'Uncover key moments'`
   - ✅ `'Spot your patterns'`
-  - ✅ `'Learn what works'`
   - ✅ `'General tips'`
+  - ✅ `'Save changes'`
+  - ❌ `'Select Video'`
   - ❌ `'Uncover Key Moments'`
   - ❌ `'General Tips'`
+  - ❌ `'Save Changes'`
 
 - **Exceptions**: Proper nouns and acronyms should still be capitalized
   - ✅ `'Connect to Udisc'`
   - ✅ `'View GPS data'`
+  - ✅ `'Sign in with Apple'`
 
 ### Variables
 

@@ -39,81 +39,72 @@ class HandednessSelectionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A2E),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(PanelConstants.panelBorderRadius),
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: autoBottomPadding(context),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildHandednessCard(
-                          context: context,
-                          handedness: Handedness.left,
-                          label: 'Lefty',
-                          color1: _purplePrimary,
-                          color2: _purpleLight,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildHandednessCard(
-                          context: context,
-                          handedness: Handedness.right,
-                          label: 'Righty',
-                          color1: _bluePrimary,
-                          color2: _blueLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildAutoCard(context),
-                ],
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: autoBottomPadding(context),
             ),
-          ],
-        ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildHandednessCard(
+                        context: context,
+                        handedness: Handedness.left,
+                        label: 'Lefty',
+                        color1: _purplePrimary,
+                        color2: _purpleLight,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildHandednessCard(
+                        context: context,
+                        handedness: Handedness.right,
+                        label: 'Righty',
+                        color1: _bluePrimary,
+                        color2: _blueLight,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildAutoCard(context),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 8,
-        top: 8,
-        bottom: 16,
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 8, top: 8, bottom: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'Throwing hand',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: Colors.grey[600]),
             onPressed: () {
               HapticFeedback.lightImpact();
               Navigator.of(context).pop();

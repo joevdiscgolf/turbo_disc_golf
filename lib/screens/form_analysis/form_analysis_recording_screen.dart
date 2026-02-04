@@ -136,30 +136,41 @@ class _FormAnalysisRecordingScreenState
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-      child: BlocProvider<VideoFormAnalysisCubit>(
-        create: (context) => VideoFormAnalysisCubit(),
-        child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
-          builder: (context, state) {
-            // Determine colors based on state and transition
-            final bool isCompleted =
-                state is VideoFormAnalysisComplete && !_showingTransition;
-            // Use dark foreground colors throughout since background is light
-            final Color foregroundColor = SenseiColors.darkGray;
+    return BlocProvider<VideoFormAnalysisCubit>(
+      create: (context) => VideoFormAnalysisCubit(),
+      child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
+        builder: (context, state) {
+          // Determine colors based on state and transition
+          final bool isCompleted =
+              state is VideoFormAnalysisComplete && !_showingTransition;
 
-            final bool isLoadingOrAnalyzing =
-                state is VideoFormAnalysisRecording ||
-                state is VideoFormAnalysisValidating ||
-                state is VideoFormAnalysisAnalyzing ||
-                (_debugAutoFinalization &&
-                    !_showingTransition &&
-                    _debugLoadingStarted);
+          final bool isLoadingOrAnalyzing =
+              state is VideoFormAnalysisRecording ||
+              state is VideoFormAnalysisValidating ||
+              state is VideoFormAnalysisAnalyzing ||
+              (_debugAutoFinalization &&
+                  !_showingTransition &&
+                  _debugLoadingStarted);
 
-            // Transparent app bar - background shows through
-            const Color appBarBackgroundColor = Colors.transparent;
+          // Determine if we're in dark mode (processing state)
+          final bool isDarkMode = isLoadingOrAnalyzing || _showingTransition;
 
-            return Scaffold(
+          // Use appropriate foreground color based on background
+          final Color foregroundColor =
+              isDarkMode ? SenseiColors.white : SenseiColors.darkGray;
+
+          // Status bar style: dark content for light bg, light content for dark bg
+          final SystemUiOverlayStyle statusBarStyle = isDarkMode
+              ? const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark)
+              : const SystemUiOverlayStyle(
+                  statusBarBrightness: Brightness.light);
+
+          // Transparent app bar - background shows through
+          const Color appBarBackgroundColor = Colors.transparent;
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: statusBarStyle,
+            child: Scaffold(
               backgroundColor: Colors.transparent,
               extendBodyBehindAppBar: true,
               appBar: GenericAppBar(
@@ -185,101 +196,105 @@ class _FormAnalysisRecordingScreenState
               body: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background layer - consistent light theme throughout
-                  const Positioned.fill(child: FormAnalysisBackground()),
-
-                  // Main content - positioned to fill
+                  // Background layer - transitions to dark when processing
                   Positioned.fill(
-                    child:
-                        BlocConsumer<
-                          VideoFormAnalysisCubit,
-                          VideoFormAnalysisState
-                        >(
-                          listener: (context, state) {
-                            // Trigger transition when analysis completes
-                            if (state is VideoFormAnalysisComplete &&
-                                !_showingTransition) {
-                              setState(() {
-                                _showingTransition = true;
-                                _pendingResults = state;
-                              });
-
-                              // Show warning snackbar if pose analysis failed
-                              if (state.poseAnalysisWarning != null) {
-                                _showPoseAnalysisWarning(
-                                  context,
-                                  state.poseAnalysisWarning!,
-                                );
-                              }
-                            }
-                          },
-                          builder: (context, state) {
-                            // Show transition if triggered
-                            if (_showingTransition && _pendingResults != null) {
-                              return AnalysisCompletionTransition(
-                                speedMultiplierNotifier: _loaderSpeedNotifier,
-                                brainOpacityNotifier: _brainOpacityNotifier,
-                                onComplete: () {
-                                  // Set dark status bar for light background
-                                  SystemChrome.setSystemUIOverlayStyle(
-                                    SystemUiOverlayStyle.dark,
-                                  );
-                                  setState(() {
-                                    _showingTransition = false;
-                                    // Reset debug flag so loader hides after transition
-                                    if (_debugAutoFinalization) {
-                                      _debugLoadingStarted = false;
-                                    }
-                                    // Reset brain opacity for next time
-                                    _brainOpacityNotifier.value = 1.0;
-                                  });
-                                },
-                                child: AnalysisResultsView(
-                                  result: _pendingResults!.result,
-                                  poseAnalysis: _pendingResults!.poseAnalysis,
-                                  topViewPadding: widget.topViewPadding,
-                                ),
-                              );
-                            }
-
-                            return _buildContent(context, state);
-                          },
-                        ),
+                    child: FormAnalysisBackground(
+                      isProcessing: isLoadingOrAnalyzing || _showingTransition,
+                    ),
                   ),
 
-                  // Persistent loader layer - only during loading or transition
-                  if (isLoadingOrAnalyzing || _showingTransition)
+                  // Main content - positioned to fill
+                  if (false)
                     Positioned.fill(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ValueListenableBuilder<double>(
-                              valueListenable: _brainOpacityNotifier,
-                              builder: (context, opacity, child) {
-                                return Opacity(opacity: opacity, child: child);
-                              },
-                              child: AtomicNucleusLoader(
-                                key: const ValueKey(
-                                  'persistent-analysis-loader',
-                                ),
-                                speedMultiplierNotifier: _loaderSpeedNotifier,
-                              ),
+                      child:
+                          BlocConsumer<
+                            VideoFormAnalysisCubit,
+                            VideoFormAnalysisState
+                          >(
+                            listener: (context, state) {
+                              // Trigger transition when analysis completes
+                              if (state is VideoFormAnalysisComplete &&
+                                  !_showingTransition) {
+                                setState(() {
+                                  _showingTransition = true;
+                                  _pendingResults = state;
+                                });
+
+                                // Show warning snackbar if pose analysis failed
+                                if (state.poseAnalysisWarning != null) {
+                                  _showPoseAnalysisWarning(
+                                    context,
+                                    state.poseAnalysisWarning!,
+                                  );
+                                }
+                              }
+                            },
+                            builder: (context, state) {
+                              // Show transition if triggered
+                              if (_showingTransition &&
+                                  _pendingResults != null) {
+                                return AnalysisCompletionTransition(
+                                  speedMultiplierNotifier: _loaderSpeedNotifier,
+                                  brainOpacityNotifier: _brainOpacityNotifier,
+                                  onComplete: () {
+                                    // Set dark status bar for light background
+                                    SystemChrome.setSystemUIOverlayStyle(
+                                      SystemUiOverlayStyle.dark,
+                                    );
+                                    setState(() {
+                                      _showingTransition = false;
+                                      // Reset debug flag so loader hides after transition
+                                      if (_debugAutoFinalization) {
+                                        _debugLoadingStarted = false;
+                                      }
+                                      // Reset brain opacity for next time
+                                      _brainOpacityNotifier.value = 1.0;
+                                    });
+                                  },
+                                  child: AnalysisResultsView(
+                                    result: _pendingResults!.result,
+                                    poseAnalysis: _pendingResults!.poseAnalysis,
+                                    topViewPadding: widget.topViewPadding,
+                                  ),
+                                );
+                              }
+
+                              return _buildContent(context, state);
+                            },
+                          ),
+                    ),
+
+                  // Persistent loader layer - only during loading or transition
+                  // if (isLoadingOrAnalyzing || _showingTransition)
+                  Positioned.fill(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ValueListenableBuilder<double>(
+                            valueListenable: _brainOpacityNotifier,
+                            builder: (context, opacity, child) {
+                              return Opacity(opacity: opacity, child: child);
+                            },
+                            child: AtomicNucleusLoader(
+                              key: const ValueKey('persistent-analysis-loader'),
+                              speedMultiplierNotifier: _loaderSpeedNotifier,
                             ),
-                            const SizedBox(height: 32),
-                            CyclingAnalysisText(
-                              brainOpacityNotifier: _brainOpacityNotifier,
-                              shouldShow: !_showingTransition,
-                            ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 32),
+                          CyclingAnalysisText(
+                            brainOpacityNotifier: _brainOpacityNotifier,
+                            shouldShow: !_showingTransition,
+                          ),
+                        ],
                       ),
                     ),
+                  ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -331,11 +346,7 @@ class _FormAnalysisRecordingScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red.shade400,
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
             const SizedBox(height: 24),
             Text(
               'Analysis Failed',
@@ -348,9 +359,9 @@ class _FormAnalysisRecordingScreenState
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: SenseiColors.gray[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: SenseiColors.gray[600]),
             ),
             const SizedBox(height: 32),
             ElevatedButton(

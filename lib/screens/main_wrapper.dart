@@ -13,7 +13,6 @@ import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
 import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -122,22 +121,20 @@ class _MainWrapperState extends State<MainWrapper> {
   /// Build MainWrapper with Form Analysis tab alongside Round History.
   /// Shows 2 tabs: Rounds and Form Coach.
   Widget _buildWithFormAnalysisTabs(BuildContext context) {
-    final String appBarTitle = _selectedIndex == 0
-        ? 'ScoreSensei'
-        : 'Form Coach';
-
     return BlocProvider<FormAnalysisHistoryCubit>.value(
       value: locator.get<FormAnalysisHistoryCubit>(),
       child: Scaffold(
         backgroundColor: SenseiColors.gray.shade50,
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: appBarTitle,
-          titleIcon: _selectedIndex == 0 ? _buildAppTitleIcon() : null,
-          titleStyle: _selectedIndex == 0 ? _buildAppTitleStyle() : null,
+          title: 'ScoreSensei',
+          titleIcon: _buildAppTitleIcon(),
+          titleStyle: _buildAppTitleStyle(),
           hasBackButton: false,
           backgroundColor: SenseiColors.gray.shade50,
-          leftWidget: _buildLeftWidget(context),
+          leftWidget: _buildSettingsButton(context, _selectedIndex == 0
+              ? RoundHistoryScreen.screenName
+              : FormAnalysisHistoryScreen.screenName),
           rightWidget: _buildRightWidget(context),
         ),
         body: IndexedStack(
@@ -310,51 +307,12 @@ class _MainWrapperState extends State<MainWrapper> {
     );
   }
 
-  Widget? _buildLeftWidget(BuildContext context) {
-    if (_selectedIndex == 0) {
-      return _buildSettingsButton(context, RoundHistoryScreen.screenName);
-    } else if (_selectedIndex == 1) {
-      // Form Coach tab - only show delete button in debug mode, no settings button
-      if (kDebugMode) {
-        return _buildDeleteButton(context);
-      }
-      return null;
-    }
-    return null;
-  }
-
   Widget? _buildRightWidget(BuildContext context) {
-    // Form Coach tab - show clear cache button in debug mode
+    // Form Coach tab - show delete button in debug mode
     if (_selectedIndex == 1 && kDebugMode) {
-      return _buildClearCacheButton(context);
+      return _buildDeleteButton(context);
     }
     return null;
-  }
-
-  Widget _buildClearCacheButton(BuildContext context) {
-    return Center(
-      child: IconButton(
-        icon: const Icon(Icons.delete_sweep, size: 24),
-        tooltip: 'Clear pro reference cache',
-        onPressed: () async {
-          _logger.track('Debug Clear Pro Reference Cache Tapped');
-          HapticFeedback.lightImpact();
-
-          final ProReferenceLoader loader = ProReferenceLoader();
-          await loader.clearAllCache();
-          loader.clearMetadataCache();
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Pro reference cache cleared'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-        },
-      ),
-    );
   }
 
   Widget _buildAppTitleIcon() {

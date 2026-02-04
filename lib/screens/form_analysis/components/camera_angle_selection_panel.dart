@@ -33,75 +33,66 @@ class CameraAngleSelectionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A2E),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(PanelConstants.panelBorderRadius),
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: autoBottomPadding(context),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildAngleCard(
-                      context: context,
-                      angle: CameraAngle.side,
-                      label: 'Side',
-                      color1: _tealPrimary,
-                      color2: _tealLight,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildAngleCard(
-                      context: context,
-                      angle: CameraAngle.rear,
-                      label: 'Rear',
-                      color1: _purplePrimary,
-                      color2: _purpleLight,
-                    ),
-                  ),
-                ],
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: autoBottomPadding(context),
             ),
-          ],
-        ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildAngleCard(
+                    context: context,
+                    angle: CameraAngle.side,
+                    label: 'Side',
+                    color1: _tealPrimary,
+                    color2: _tealLight,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildAngleCard(
+                    context: context,
+                    angle: CameraAngle.rear,
+                    label: 'Rear',
+                    color1: _purplePrimary,
+                    color2: _purpleLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 8,
-        top: 8,
-        bottom: 16,
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 8, top: 8, bottom: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'Camera angle',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: Colors.grey[600]),
             onPressed: () {
               HapticFeedback.lightImpact();
               Navigator.of(context).pop();

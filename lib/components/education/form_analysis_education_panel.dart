@@ -13,9 +13,13 @@ class FormAnalysisEducationPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
-        _buildSectionHeader(context, 'General tips'),
+        _buildSectionHeader(context, 'Requirements'),
         const SizedBox(height: 12),
-        _buildGeneralTipsCard(context),
+        _buildRequirementsCard(context),
+        const SizedBox(height: 20),
+        _buildSectionHeader(context, 'Helpful tips'),
+        const SizedBox(height: 12),
+        _buildHelpfulTipsCard(context),
         const SizedBox(height: 20),
         _buildSectionHeader(context, 'Camera angles'),
         const SizedBox(height: 12),
@@ -35,7 +39,7 @@ class FormAnalysisEducationPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildGeneralTipsCard(BuildContext context) {
+  Widget _buildRequirementsCard(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -49,70 +53,61 @@ class FormAnalysisEducationPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // High priority tips with emphasis
-          _buildHighPriorityBulletPoint(context, 'Select throwing hand'),
-          _buildHighPriorityBulletPoint(
-            context,
-            'Full body in frame at all times!',
-          ),
-          _buildHighPriorityBulletPoint(
-            context,
-            'Start recording before your x-step',
-          ),
-          _buildHighPriorityBulletPoint(context, 'End ~1s after disc release'),
-          const SizedBox(height: 8),
-          // Regular tips
           _buildBulletPoint(
             context,
-            'Keep videos under ${locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds} seconds',
+            'Full body in frame at all times',
+            color: const Color(0xFF137e66),
           ),
-          _buildBulletPoint(context, 'High contrast thrower vs background'),
-          _buildBulletPoint(context, 'Closer is better'),
           _buildBulletPoint(
             context,
-            'Landscape preferred (portrait works too)',
+            'Start before x-step',
+            color: const Color(0xFF137e66),
+          ),
+          _buildBulletPoint(
+            context,
+            'End after disc release',
+            color: const Color(0xFF137e66),
+          ),
+          _buildBulletPoint(
+            context,
+            '${locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds} seconds max',
+            color: const Color(0xFF137e66),
+            isLast: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHighPriorityBulletPoint(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+  Widget _buildHelpfulTipsCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF137e66).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF137e66).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: const Color(0xFF137e66),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Text(
-                '!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  height: 1.0,
-                ),
-              ),
-            ),
+          _buildBulletPoint(
+            context,
+            'High contrast thrower vs background',
+            color: const Color(0xFF137e66),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF137e66),
-                height: 1.4,
-              ),
-            ),
+          _buildBulletPoint(
+            context,
+            'Landscape preferred (portrait works too)',
+            color: const Color(0xFF137e66),
+          ),
+          _buildBulletPoint(
+            context,
+            'Throwing hand is auto-detected, but you can manually select it',
+            color: const Color(0xFF137e66),
+            isLast: true,
           ),
         ],
       ),
@@ -195,20 +190,18 @@ class FormAnalysisEducationPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildBulletPoint(BuildContext context, String text) {
+  Widget _buildBulletPoint(
+    BuildContext context,
+    String text, {
+    required Color color,
+    bool isLast = false,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '•',
-            style: TextStyle(
-              fontSize: 18,
-              height: 1.35,
-              color: const Color(0xFF137e66),
-            ),
-          ),
+          Text('•', style: TextStyle(fontSize: 18, height: 1.35, color: color)),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
