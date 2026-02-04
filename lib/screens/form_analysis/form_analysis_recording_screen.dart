@@ -156,14 +156,16 @@ class _FormAnalysisRecordingScreenState
           final bool isDarkMode = isLoadingOrAnalyzing || _showingTransition;
 
           // Use appropriate foreground color based on background
-          final Color foregroundColor =
-              isDarkMode ? SenseiColors.white : SenseiColors.darkGray;
+          final Color foregroundColor = isDarkMode
+              ? SenseiColors.white
+              : SenseiColors.darkGray;
 
           // Status bar style: dark content for light bg, light content for dark bg
           final SystemUiOverlayStyle statusBarStyle = isDarkMode
               ? const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark)
               : const SystemUiOverlayStyle(
-                  statusBarBrightness: Brightness.light);
+                  statusBarBrightness: Brightness.light,
+                );
 
           // Transparent app bar - background shows through
           const Color appBarBackgroundColor = Colors.transparent;
@@ -204,92 +206,92 @@ class _FormAnalysisRecordingScreenState
                   ),
 
                   // Main content - positioned to fill
-                  if (false)
-                    Positioned.fill(
-                      child:
-                          BlocConsumer<
-                            VideoFormAnalysisCubit,
-                            VideoFormAnalysisState
-                          >(
-                            listener: (context, state) {
-                              // Trigger transition when analysis completes
-                              if (state is VideoFormAnalysisComplete &&
-                                  !_showingTransition) {
-                                setState(() {
-                                  _showingTransition = true;
-                                  _pendingResults = state;
-                                });
+                  Positioned.fill(
+                    child:
+                        BlocConsumer<
+                          VideoFormAnalysisCubit,
+                          VideoFormAnalysisState
+                        >(
+                          listener: (context, state) {
+                            // Trigger transition when analysis completes
+                            if (state is VideoFormAnalysisComplete &&
+                                !_showingTransition) {
+                              setState(() {
+                                _showingTransition = true;
+                                _pendingResults = state;
+                              });
 
-                                // Show warning snackbar if pose analysis failed
-                                if (state.poseAnalysisWarning != null) {
-                                  _showPoseAnalysisWarning(
-                                    context,
-                                    state.poseAnalysisWarning!,
-                                  );
-                                }
-                              }
-                            },
-                            builder: (context, state) {
-                              // Show transition if triggered
-                              if (_showingTransition &&
-                                  _pendingResults != null) {
-                                return AnalysisCompletionTransition(
-                                  speedMultiplierNotifier: _loaderSpeedNotifier,
-                                  brainOpacityNotifier: _brainOpacityNotifier,
-                                  onComplete: () {
-                                    // Set dark status bar for light background
-                                    SystemChrome.setSystemUIOverlayStyle(
-                                      SystemUiOverlayStyle.dark,
-                                    );
-                                    setState(() {
-                                      _showingTransition = false;
-                                      // Reset debug flag so loader hides after transition
-                                      if (_debugAutoFinalization) {
-                                        _debugLoadingStarted = false;
-                                      }
-                                      // Reset brain opacity for next time
-                                      _brainOpacityNotifier.value = 1.0;
-                                    });
-                                  },
-                                  child: AnalysisResultsView(
-                                    result: _pendingResults!.result,
-                                    poseAnalysis: _pendingResults!.poseAnalysis,
-                                    topViewPadding: widget.topViewPadding,
-                                  ),
+                              // Show warning snackbar if pose analysis failed
+                              if (state.poseAnalysisWarning != null) {
+                                _showPoseAnalysisWarning(
+                                  context,
+                                  state.poseAnalysisWarning!,
                                 );
                               }
+                            }
+                          },
+                          builder: (context, state) {
+                            // Show transition if triggered
+                            if (_showingTransition && _pendingResults != null) {
+                              return AnalysisCompletionTransition(
+                                speedMultiplierNotifier: _loaderSpeedNotifier,
+                                brainOpacityNotifier: _brainOpacityNotifier,
+                                onComplete: () {
+                                  // Set dark status bar for light background
+                                  SystemChrome.setSystemUIOverlayStyle(
+                                    SystemUiOverlayStyle.dark,
+                                  );
+                                  setState(() {
+                                    _showingTransition = false;
+                                    // Reset debug flag so loader hides after transition
+                                    if (_debugAutoFinalization) {
+                                      _debugLoadingStarted = false;
+                                    }
+                                    // Reset brain opacity for next time
+                                    _brainOpacityNotifier.value = 1.0;
+                                  });
+                                },
+                                child: AnalysisResultsView(
+                                  result: _pendingResults!.result,
+                                  poseAnalysis: _pendingResults!.poseAnalysis,
+                                  topViewPadding: widget.topViewPadding,
+                                ),
+                              );
+                            }
 
-                              return _buildContent(context, state);
-                            },
-                          ),
-                    ),
+                            return _buildContent(context, state);
+                          },
+                        ),
+                  ),
 
                   // Persistent loader layer - only during loading or transition
-                  // if (isLoadingOrAnalyzing || _showingTransition)
-                  Positioned.fill(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ValueListenableBuilder<double>(
-                            valueListenable: _brainOpacityNotifier,
-                            builder: (context, opacity, child) {
-                              return Opacity(opacity: opacity, child: child);
-                            },
-                            child: AtomicNucleusLoader(
-                              key: const ValueKey('persistent-analysis-loader'),
-                              speedMultiplierNotifier: _loaderSpeedNotifier,
+                  if (isLoadingOrAnalyzing || _showingTransition)
+                    Positioned.fill(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ValueListenableBuilder<double>(
+                              valueListenable: _brainOpacityNotifier,
+                              builder: (context, opacity, child) {
+                                return Opacity(opacity: opacity, child: child);
+                              },
+                              child: AtomicNucleusLoader(
+                                key: const ValueKey(
+                                  'persistent-analysis-loader',
+                                ),
+                                speedMultiplierNotifier: _loaderSpeedNotifier,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 32),
-                          CyclingAnalysisText(
-                            brainOpacityNotifier: _brainOpacityNotifier,
-                            shouldShow: !_showingTransition,
-                          ),
-                        ],
+                            const SizedBox(height: 32),
+                            CyclingAnalysisText(
+                              brainOpacityNotifier: _brainOpacityNotifier,
+                              shouldShow: !_showingTransition,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

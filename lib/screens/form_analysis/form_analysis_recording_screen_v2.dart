@@ -165,6 +165,13 @@ class _FormAnalysisRecordingScreenV2State
               appBar: GenericAppBar(
                 topViewPadding: MediaQuery.of(context).viewPadding.top,
                 title: 'Form analysis',
+                titleStyle: GoogleFonts.exo2(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: -0.5,
+                  color: SenseiColors.gray[700],
+                ),
                 hasBackButton: false,
                 backgroundColor: Colors.transparent,
                 foregroundColor: foregroundColor,
