@@ -1,42 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/asset_image_icon.dart';
+import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
-/// Dialog for selecting camera angle (side or rear view).
-/// Tapping a button immediately selects it and calls onSelected.
-class CameraAngleSelectionDialog extends StatelessWidget {
-  const CameraAngleSelectionDialog({super.key, required this.onSelected});
+/// Panel for selecting camera angle (side or rear view).
+/// Displayed as a bottom sheet with card options.
+class CameraAngleSelectionPanel extends StatelessWidget {
+  const CameraAngleSelectionPanel({super.key, required this.onSelected});
 
   final Function(CameraAngle angle) onSelected;
 
+  /// Shows the panel as a modal bottom sheet.
+  static Future<CameraAngle?> show(BuildContext context) {
+    return showModalBottomSheet<CameraAngle>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => CameraAngleSelectionPanel(
+        onSelected: (angle) => Navigator.pop(context, angle),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
-          borderRadius: BorderRadius.circular(20),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(PanelConstants.panelBorderRadius),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Camera angle',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: autoBottomPadding(context),
               ),
-              const SizedBox(height: 24),
-              Row(
+              child: Row(
                 children: [
                   Expanded(
                     child: _buildAngleCard(
@@ -59,9 +69,39 @@ class CameraAngleSelectionDialog extends StatelessWidget {
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 8,
+        top: 8,
+        bottom: 16,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Camera angle',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -77,7 +117,6 @@ class CameraAngleSelectionDialog extends StatelessWidget {
       onTap: () {
         HapticFeedback.lightImpact();
         onSelected(angle);
-        Navigator.pop(context);
       },
       child: Container(
         padding: const EdgeInsets.all(16),

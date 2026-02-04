@@ -33,6 +33,16 @@ enum Handedness {
     }
   }
 
+  /// Returns a casual badge label for UI overlays.
+  String get badgeLabel {
+    switch (this) {
+      case Handedness.left:
+        return 'Lefty';
+      case Handedness.right:
+        return 'Righty';
+    }
+  }
+
   /// Returns the API/JSON string value.
   /// Backend expects "right-handed" or "left-handed"
   String toApiString() {

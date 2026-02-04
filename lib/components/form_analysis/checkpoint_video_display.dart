@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_video_dialog.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
@@ -28,6 +29,7 @@ class CheckpointVideoDisplay extends StatefulWidget {
     this.proReferenceWidget,
     this.videoOrientation,
     this.checkpoints,
+    this.detectedHandedness,
   });
 
   /// Network URL for user's form video.
@@ -54,6 +56,9 @@ class CheckpointVideoDisplay extends StatefulWidget {
 
   /// Checkpoints for the fullscreen video dialog selector.
   final List<CheckpointDataV2>? checkpoints;
+
+  /// Detected handedness of the user for badge display.
+  final Handedness? detectedHandedness;
 
   @override
   State<CheckpointVideoDisplay> createState() =>
@@ -347,6 +352,30 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
                     duration: 200.ms,
                     curve: Curves.easeOut,
                   ),
+            // Handedness badge at top right
+            if (widget.detectedHandedness != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    widget.detectedHandedness!.badgeLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
             // Fullscreen button at bottom right
             Positioned(
               bottom: 8,

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:turbo_disc_golf/locator.dart';
@@ -29,12 +30,26 @@ class PoseAnalysisApiClient {
   final http.Client _httpClient;
 
   /// Returns the appropriate base URL based on the runtime environment.
-  /// Uses production URL on physical devices unless in debug mode.
-  /// Simulators/emulators always use local URL.
+  /// - Physical device + release mode → production URL
+  /// - Physical device + debug mode → LOCAL_API_URL from .env (required)
+  /// - Simulator/emulator → localhost
   static Future<String> getDefaultBaseUrl() async {
     if (Platform.isIOS || Platform.isAndroid) {
       final bool isPhysical = await _isPhysicalDevice();
-      if (isPhysical && !kDebugMode) {
+      if (isPhysical) {
+        if (!kDebugMode) {
+          return _productionUrl;
+        }
+        // Physical device in debug mode - use LOCAL_API_URL from .env
+        final String? localApiUrl = dotenv.env['LOCAL_API_URL'];
+        if (localApiUrl != null && localApiUrl.isNotEmpty) {
+          debugPrint('📱 Physical device debug mode - using LOCAL_API_URL: $localApiUrl');
+          return localApiUrl;
+        }
+        // No LOCAL_API_URL configured - warn and fall back to production
+        debugPrint('⚠️ Physical device in debug mode but LOCAL_API_URL not set in .env');
+        debugPrint('   Add LOCAL_API_URL=http://YOUR_MAC_IP:8080 to .env to use local backend');
+        debugPrint('   Falling back to production URL');
         return _productionUrl;
       }
     }
@@ -59,8 +74,8 @@ class PoseAnalysisApiClient {
   Future<Map<String, String>> _getAuthHeaders() async {
     final bool isProduction = _baseUrl.contains('run.app');
 
-    final String? idToken =
-        await FirebaseAuth.instance.currentUser?.getIdToken();
+    final String? idToken = await FirebaseAuth.instance.currentUser
+        ?.getIdToken();
 
     if (idToken == null) {
       if (isProduction) {
@@ -80,7 +95,7 @@ class PoseAnalysisApiClient {
   /// [videoFile] - The video file to analyze
   /// [throwType] - Type of throw (currently only 'backhand' supported)
   /// [cameraAngle] - Camera angle enum value
-  /// [handedness] - Whether the player throws right or left-handed
+  /// [handedness] - Whether the player throws right or left-handed (null for auto-detect)
   /// [sessionId] - Unique session identifier
   /// [userId] - User identifier
   /// [proPlayerId] - Optional pro player ID for reference comparison (e.g., 'paul_mcbeth')
@@ -88,7 +103,7 @@ class PoseAnalysisApiClient {
     required File videoFile,
     required String throwType,
     required CameraAngle cameraAngle,
-    required Handedness handedness,
+    Handedness? handedness,
     required String sessionId,
     required String userId,
     String? proPlayerId,
@@ -106,7 +121,9 @@ class PoseAnalysisApiClient {
     // Add form fields
     request.fields['throw_type'] = throwType;
     request.fields['camera_angle'] = cameraAngle.toApiString();
-    request.fields['handedness'] = handedness.toApiString();
+    if (handedness != null) {
+      request.fields['handedness'] = handedness.toApiString();
+    }
     request.fields['session_id'] = sessionId;
     request.fields['user_id'] = userId;
     if (proPlayerId != null) {
@@ -227,8 +244,8 @@ class PoseAnalysisApiClient {
         }
 
         // Log to Crashlytics
-        final ErrorLoggingService errorLogger =
-            locator.get<ErrorLoggingService>();
+        final ErrorLoggingService errorLogger = locator
+            .get<ErrorLoggingService>();
         await errorLogger.logError(
           exception: Exception(
             'Form analysis API error: ${response.statusCode} - $serverMessage',
@@ -242,7 +259,7 @@ class PoseAnalysisApiClient {
               'server_message': serverMessage,
               'session_id': sessionId,
               'camera_angle': cameraAngle.toApiString(),
-              'handedness': handedness.toApiString(),
+              'handedness': handedness?.toApiString() ?? 'auto',
             },
           ),
         );
@@ -256,8 +273,8 @@ class PoseAnalysisApiClient {
       debugPrint('❌ Request timed out after 5 minutes');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -269,7 +286,7 @@ class PoseAnalysisApiClient {
             'timeout_duration': '5 minutes',
             'session_id': sessionId,
             'camera_angle': cameraAngle.toApiString(),
-            'handedness': handedness.toApiString(),
+            'handedness': handedness?.toApiString() ?? 'auto',
           },
         ),
       );
@@ -284,8 +301,8 @@ class PoseAnalysisApiClient {
       debugPrint('   OS Error: ${e.osError}');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -311,8 +328,8 @@ class PoseAnalysisApiClient {
       debugPrint('   URI: ${e.uri}');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -339,8 +356,8 @@ class PoseAnalysisApiClient {
       debugPrint('   Stack trace: $stackTrace');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -351,7 +368,7 @@ class PoseAnalysisApiClient {
           customData: {
             'session_id': sessionId,
             'camera_angle': cameraAngle.toApiString(),
-            'handedness': handedness.toApiString(),
+            'handedness': handedness?.toApiString() ?? 'auto',
           },
         ),
       );
@@ -367,7 +384,7 @@ class PoseAnalysisApiClient {
     required File videoFile,
     required String throwType,
     required CameraAngle cameraAngle,
-    required Handedness handedness,
+    Handedness? handedness,
     required String sessionId,
     required String userId,
     String? proPlayerId,
@@ -387,7 +404,7 @@ class PoseAnalysisApiClient {
       'video_format': videoFormat,
       'throw_type': throwType,
       'camera_angle': cameraAngle.toApiString(),
-      'handedness': handedness.toApiString(),
+      if (handedness != null) 'handedness': handedness.toApiString(),
       'session_id': sessionId,
       'user_id': userId,
       if (proPlayerId != null) 'pro_player_id': proPlayerId,
@@ -404,7 +421,7 @@ class PoseAnalysisApiClient {
     debugPrint('   video_base64 length: ${videoBase64.length} chars');
     debugPrint('   throw_type: $throwType');
     debugPrint('   camera_angle: ${cameraAngle.toApiString()}');
-    debugPrint('   handedness: ${handedness.toApiString()}');
+    debugPrint('   handedness: ${handedness?.toApiString() ?? 'auto'}');
     debugPrint('   session_id: $sessionId');
     debugPrint('   user_id: $userId');
     debugPrint('   pro_player_id: $proPlayerId');
@@ -453,8 +470,8 @@ class PoseAnalysisApiClient {
         }
 
         // Log to Crashlytics
-        final ErrorLoggingService errorLogger =
-            locator.get<ErrorLoggingService>();
+        final ErrorLoggingService errorLogger = locator
+            .get<ErrorLoggingService>();
         await errorLogger.logError(
           exception: Exception(
             'Form analysis API error (Base64): ${response.statusCode} - $serverMessage',
@@ -469,7 +486,7 @@ class PoseAnalysisApiClient {
               'server_message': serverMessage,
               'session_id': sessionId,
               'camera_angle': cameraAngle.toApiString(),
-              'handedness': handedness.toApiString(),
+              'handedness': handedness?.toApiString() ?? 'auto',
             },
           ),
         );
@@ -483,8 +500,8 @@ class PoseAnalysisApiClient {
       debugPrint('❌ Request timed out after 5 minutes (Base64)');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -496,7 +513,7 @@ class PoseAnalysisApiClient {
             'timeout_duration': '5 minutes',
             'session_id': sessionId,
             'camera_angle': cameraAngle.toApiString(),
-            'handedness': handedness.toApiString(),
+            'handedness': handedness?.toApiString() ?? 'auto',
           },
         ),
       );
@@ -511,8 +528,8 @@ class PoseAnalysisApiClient {
       debugPrint('   OS Error: ${e.osError}');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -538,8 +555,8 @@ class PoseAnalysisApiClient {
       debugPrint('   URI: ${e.uri}');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -566,8 +583,8 @@ class PoseAnalysisApiClient {
       debugPrint('   Stack trace: $stackTrace');
 
       // Log to Crashlytics
-      final ErrorLoggingService errorLogger =
-          locator.get<ErrorLoggingService>();
+      final ErrorLoggingService errorLogger = locator
+          .get<ErrorLoggingService>();
       await errorLogger.logError(
         exception: e,
         stackTrace: stackTrace,
@@ -578,7 +595,7 @@ class PoseAnalysisApiClient {
           customData: {
             'session_id': sessionId,
             'camera_angle': cameraAngle.toApiString(),
-            'handedness': handedness.toApiString(),
+            'handedness': handedness?.toApiString() ?? 'auto',
           },
         ),
       );

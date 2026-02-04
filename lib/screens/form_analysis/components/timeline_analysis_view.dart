@@ -501,6 +501,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                 videoOrientation:
                     widget.analysis.videoMetadata.videoOrientation,
                 checkpoints: activeCheckpoints,
+                detectedHandedness:
+                    widget.analysis.analysisResults.detectedHandedness,
                 proReferenceWidget: _buildProReferenceContent(
                   checkpoint,
                   selectedIndex,
