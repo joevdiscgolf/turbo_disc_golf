@@ -12,6 +12,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_panel.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/handedness_selection_panel.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body/components/best_results_card.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -198,9 +199,9 @@ class _VideoInputBodyState extends State<VideoInputBody> {
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF4ECDC4).withValues(alpha: 0.3),
-                    blurRadius: 30,
-                    spreadRadius: 5,
+                    color: const Color(0xFF137e66).withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 2,
                   ),
                 ],
               ),
@@ -221,7 +222,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
                 fontWeight: FontWeight.w800,
                 fontStyle: FontStyle.italic,
                 letterSpacing: -0.5,
-                color: Colors.white,
+                color: SenseiColors.darkGray,
               ),
               textAlign: TextAlign.center,
             ),
@@ -231,7 +232,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
         Text(
           'Compare your form against the best',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: SenseiColors.gray[600],
             fontSize: 14,
           ),
           textAlign: TextAlign.center,
@@ -294,20 +295,23 @@ class _VideoInputBodyState extends State<VideoInputBody> {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
+          color: Colors.white.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: Colors.white.withValues(alpha: 0.8),
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF137e66).withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
             _buildV2SettingsRow(context),
-            // Divider(
-            //   color: SenseiColors.white.withValues(alpha: 0.1),
-            //   height: 40,
-            // ),
             const SizedBox(height: 20),
             _buildV2UploadArea(context),
           ],
@@ -317,48 +321,44 @@ class _VideoInputBodyState extends State<VideoInputBody> {
   }
 
   Widget _buildV2UploadArea(BuildContext context) {
-    return CustomPaint(
-      painter: _DashedBorderPainter(
-        color: Colors.white.withValues(alpha: 0.3),
-        strokeWidth: 1.5,
-        dashWidth: 8,
-        dashSpace: 6,
-        borderRadius: 16,
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF137e66).withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.videocam_outlined,
-                size: 48,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tap to import video',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Select from your gallery',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.6),
-              ),
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF137e66),
+            Color(0xFF1A9E80),
           ],
         ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF137e66).withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.download_rounded,
+            size: 24,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Import video from gallery',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -386,7 +386,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
         Text(
           'Camera',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: SenseiColors.gray[600],
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -416,7 +416,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
         Text(
           'Throwing hand',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: SenseiColors.gray[600],
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -435,7 +435,7 @@ class _VideoInputBodyState extends State<VideoInputBody> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: SenseiColors.gray[200],
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -443,15 +443,15 @@ class _VideoInputBodyState extends State<VideoInputBody> {
               children: [
                 Text(
                   displayLabel,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: SenseiColors.gray[700],
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
                 ),
                 Icon(
                   Icons.keyboard_arrow_down,
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: SenseiColors.gray[500],
                   size: 20,
                 ),
               ],
@@ -617,7 +617,7 @@ class _V2CompactToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        color: SenseiColors.gray[200],
         borderRadius: BorderRadius.circular(10),
       ),
       padding: const EdgeInsets.all(3),
@@ -639,6 +639,15 @@ class _V2CompactToggle extends StatelessWidget {
                       ? const Color(0xFF137e66)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(7),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF137e66).withValues(alpha: 0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Text(
                   options[index],
@@ -646,7 +655,7 @@ class _V2CompactToggle extends StatelessWidget {
                   style: TextStyle(
                     color: isSelected
                         ? Colors.white
-                        : Colors.white.withValues(alpha: 0.6),
+                        : SenseiColors.gray[600],
                     fontWeight: isSelected
                         ? FontWeight.w600
                         : FontWeight.normal,
@@ -662,63 +671,3 @@ class _V2CompactToggle extends StatelessWidget {
   }
 }
 
-/// CustomPainter for dashed border effect
-class _DashedBorderPainter extends CustomPainter {
-  _DashedBorderPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.dashWidth,
-    required this.dashSpace,
-    required this.borderRadius,
-  });
-
-  final Color color;
-  final double strokeWidth;
-  final double dashWidth;
-  final double dashSpace;
-  final double borderRadius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final RRect rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(borderRadius),
-    );
-
-    final Path path = Path()..addRRect(rrect);
-    final Path dashedPath = _createDashedPath(path);
-    canvas.drawPath(dashedPath, paint);
-  }
-
-  Path _createDashedPath(Path source) {
-    final Path dashedPath = Path();
-    for (final metric in source.computeMetrics()) {
-      double distance = 0;
-      while (distance < metric.length) {
-        final double segmentLength = (distance + dashWidth < metric.length)
-            ? dashWidth
-            : metric.length - distance;
-        dashedPath.addPath(
-          metric.extractPath(distance, distance + segmentLength),
-          Offset.zero,
-        );
-        distance += dashWidth + dashSpace;
-      }
-    }
-    return dashedPath;
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.strokeWidth != strokeWidth ||
-        oldDelegate.dashWidth != dashWidth ||
-        oldDelegate.dashSpace != dashSpace ||
-        oldDelegate.borderRadius != borderRadius;
-  }
-}

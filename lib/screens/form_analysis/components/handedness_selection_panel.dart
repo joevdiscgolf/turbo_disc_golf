@@ -13,6 +13,14 @@ class HandednessSelectionPanel extends StatelessWidget {
 
   final Function(Handedness? handedness) onSelected;
 
+  // Brand colors
+  static const Color _tealPrimary = Color(0xFF137e66);
+  static const Color _tealLight = Color(0xFF1A9E80);
+  static const Color _purplePrimary = Color(0xFF7B5B9A);
+  static const Color _purpleLight = Color(0xFF9C7AB8);
+  static const Color _bluePrimary = Color(0xFF4A7FC1);
+  static const Color _blueLight = Color(0xFF6B9AD8);
+
   /// Shows the panel as a modal bottom sheet.
   /// Returns a [HandednessSelectionResult] if a selection was made,
   /// or null if dismissed without selection.
@@ -59,8 +67,8 @@ class HandednessSelectionPanel extends StatelessWidget {
                           context: context,
                           handedness: Handedness.left,
                           label: 'Lefty',
-                          color1: const Color(0xFF7B1FA2),
-                          color2: const Color(0xFF9C27B0),
+                          color1: _purplePrimary,
+                          color2: _purpleLight,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -69,8 +77,8 @@ class HandednessSelectionPanel extends StatelessWidget {
                           context: context,
                           handedness: Handedness.right,
                           label: 'Righty',
-                          color1: const Color(0xFF1976D2),
-                          color2: const Color(0xFF2196F3),
+                          color1: _bluePrimary,
+                          color2: _blueLight,
                         ),
                       ),
                     ],
@@ -184,12 +192,12 @@ class HandednessSelectionPanel extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF00897B), Color(0xFF26A69A)],
+            colors: [_tealPrimary, _tealLight],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF00897B).withValues(alpha: 0.3),
+              color: _tealPrimary.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),

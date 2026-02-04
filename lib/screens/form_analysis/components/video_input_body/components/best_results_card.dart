@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class FormAnalysisBestResultsCard extends StatelessWidget {
   const FormAnalysisBestResultsCard({
@@ -39,12 +40,19 @@ class FormAnalysisBestResultsCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: Colors.white,
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF137e66).withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +64,7 @@ class FormAnalysisBestResultsCard extends StatelessWidget {
                     'For best results',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: SenseiColors.darkGray,
                     ),
                   ),
                 ),
@@ -64,13 +72,13 @@ class FormAnalysisBestResultsCard extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: SenseiColors.gray[200],
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Icon(
                     Icons.help_outline,
                     size: 16,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: SenseiColors.gray[500],
                   ),
                 ),
               ],
@@ -91,10 +99,13 @@ class FormAnalysisBestResultsCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Full body in view',
-                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: SenseiColors.gray[600],
+                          ),
                         ),
                       ),
                     ],
@@ -114,10 +125,13 @@ class FormAnalysisBestResultsCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'MUST start before x-step',
-                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: SenseiColors.gray[600],
+                          ),
                         ),
                       ),
                     ],
@@ -144,9 +158,9 @@ class FormAnalysisBestResultsCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           '${locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds}s max',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Colors.white70,
+                            color: SenseiColors.gray[600],
                           ),
                         ),
                       ),
@@ -167,10 +181,13 @@ class FormAnalysisBestResultsCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Avoid others in background',
-                          style: TextStyle(fontSize: 13, color: Colors.white70),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: SenseiColors.gray[600],
+                          ),
                         ),
                       ),
                     ],
