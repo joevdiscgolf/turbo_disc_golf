@@ -90,12 +90,15 @@ class BackendAIGenerationService implements AIGenerationService {
         return null;
       }
 
-      // If backend returned pre-parsed aiContent, use it directly
+      // If backend returned pre-parsed aiContent, use it with correct roundVersionId
       if (response.data.aiContent != null) {
         debugPrint(
           '[BackendAIGenerationService] Using pre-parsed aiContent from backend',
         );
-        return response.data.aiContent;
+        // Ensure roundVersionId matches the current round (backend may not have it)
+        return response.data.aiContent!.copyWith(
+          roundVersionId: round.versionId,
+        );
       }
 
       // Fall back to local parsing of rawResponse

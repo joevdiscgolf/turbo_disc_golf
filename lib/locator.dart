@@ -41,7 +41,6 @@ import 'package:turbo_disc_golf/services/round_analysis/shot_analysis_service.da
 import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/shared_preferences_service.dart';
@@ -225,7 +224,6 @@ Future<void> setUpLocator() async {
     );
   }
 
-  locator.registerSingleton<RoundStorageService>(RoundStorageService());
   locator.registerSingleton<ShareService>(ShareService());
   locator.registerSingleton<WebScraperService>(WebScraperService());
   // Search provider - swap implementation via feature flags

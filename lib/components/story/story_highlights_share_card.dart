@@ -82,16 +82,10 @@ class StoryHighlightsShareCard extends StatelessWidget {
             _buildTitleSection(headlineColor),
             const SizedBox(height: 16),
             _buildOverviewSection(bodyColor, containerBgAlpha),
-            const SizedBox(height: 12),
-            _buildStatsGrid(
-              bodyColor,
-              subtleColor,
-              containerBgAlpha,
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            _buildStatsGrid(bodyColor, subtleColor, containerBgAlpha),
+            const SizedBox(height: 8),
             _buildScorecard(subtleColor, containerBgAlpha),
-            const SizedBox(height: 16),
-            _buildFooter(bodyColor, subtleColor),
           ],
         ),
       ),
@@ -139,19 +133,13 @@ class StoryHighlightsShareCard extends StatelessWidget {
   }
 
   Widget _buildTitleSection(Color headlineColor) {
-    return SizedBox(
-      height: 32,
-      child: FittedBox(
-        child: Text(
-          roundTitle.capitalizeFirst(),
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: headlineColor,
-            letterSpacing: -0.3,
-          ),
-          maxLines: 1,
-        ),
+    return Text(
+      roundTitle.capitalizeFirst(),
+      style: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w800,
+        color: headlineColor,
+        letterSpacing: -0.3,
       ),
     );
   }
@@ -170,7 +158,7 @@ class StoryHighlightsShareCard extends StatelessWidget {
       child: Text(
         displayText,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 18,
           fontWeight: FontWeight.w500,
           color: textColor,
           height: 1.4,
@@ -243,48 +231,6 @@ class StoryHighlightsShareCard extends StatelessWidget {
         parScoreColor: Colors.white,
         useWhiteCircleText: true,
       ),
-    );
-  }
-
-  Widget _buildFooter(Color textColor, Color subtleColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Flexible(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 40),
-            height: 1,
-            color: subtleColor.withValues(alpha: 0.4),
-          ),
-        ),
-        const SizedBox(width: 8),
-        ColorFiltered(
-          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-          child: Image.asset(
-            'assets/icon/app_icon_clear_bg.png',
-            height: 16,
-            width: 16,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          'ScoreSensei disc golf',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: subtleColor.withValues(alpha: 0.85),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 40),
-            height: 1,
-            color: subtleColor.withValues(alpha: 0.4),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/share/offscreen_capture_target.dart';
+import 'package:turbo_disc_golf/components/share/share_branding_footer.dart';
+import 'package:turbo_disc_golf/components/share/shareable_composite.dart';
 import 'package:turbo_disc_golf/components/share/share_screen_emoji_background.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -141,16 +144,28 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
         appBar: GenericAppBar(
           topViewPadding: topPadding,
           title: '',
+          hasBackButton: false,
           backgroundColor: Colors.transparent,
+          rightWidget: IconButton(
+            icon: const Icon(Icons.close, color: Colors.black87),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _logger.track('Close Share Preview Button Tapped');
+              Navigator.pop(context);
+            },
+          ),
         ),
         body: Stack(
+          clipBehavior: Clip.none,
           children: [
+            // Visible emoji background for preview
             ShareScreenEmojiBackground(
               emojis: widget.backgroundEmojis,
               randomSeed: widget.randomSeed,
               backgroundColor:
                   widget.emojiBackgroundColor ?? Colors.transparent,
             ),
+            // Visible content for preview
             Padding(
               padding: EdgeInsets.only(
                 left: 16,
@@ -167,22 +182,22 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
                         children: [
                           if (widget.headerWidget != null) ...[
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: widget.headerWidget!,
                             ),
                             const SizedBox(height: 8),
                           ],
                           Flexible(
-                            child: RepaintBoundary(
-                              key: _shareCardKey,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.center,
-                                child: widget.cardWidget,
-                              ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.center,
+                              child: widget.cardWidget,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          const ShareBrandingFooter(),
                         ],
                       ),
                     ),
@@ -190,6 +205,23 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
                   const SizedBox(height: 8),
                   _buildShareButton(),
                 ],
+              ),
+            ),
+            // Off-screen capture target for generating share image
+            OffscreenCaptureTarget(
+              captureKey: _shareCardKey,
+              child: ShareableComposite(
+                backgroundColor: widget.backgroundColor,
+                backgroundWidget: widget.backgroundEmojis.isNotEmpty
+                    ? ShareableEmojiBackground(
+                        emojis: widget.backgroundEmojis,
+                        randomSeed: widget.randomSeed,
+                      )
+                    : null,
+                headerWidget: widget.headerWidget,
+                contentWidget: widget.cardWidget,
+                footerWidget: const ShareBrandingFooter(),
+                footerSpacing: 8,
               ),
             ),
           ],

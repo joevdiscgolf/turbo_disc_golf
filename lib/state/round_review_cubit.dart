@@ -5,7 +5,6 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -345,21 +344,11 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
     await _saveRound(activeState.round);
   }
 
-  /// Save the round to both local storage and Firestore
+  /// Save the round to Firestore
   Future<void> _saveRound(DGRound round) async {
     // Regenerate analysis to reflect any changes to hole data
     final analysis = RoundAnalysisGenerator.generateAnalysis(round);
     final DGRound roundWithUpdatedAnalysis = round.copyWith(analysis: analysis);
-
-    // Save to shared preferences
-    final bool savedLocally = await locator
-        .get<RoundStorageService>()
-        .saveRound(roundWithUpdatedAnalysis);
-    if (savedLocally) {
-      debugPrint('Successfully saved round to shared preferences');
-    } else {
-      debugPrint('Failed to save round to shared preferences');
-    }
 
     // Save to Firestore
     final bool firestoreSuccess = await locator

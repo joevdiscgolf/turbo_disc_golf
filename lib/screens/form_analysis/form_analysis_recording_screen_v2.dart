@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -112,6 +111,11 @@ class _FormAnalysisRecordingScreenV2State
       'screen_name': FormAnalysisRecordingScreenV2.screenName,
     });
     _logger.logScreenImpression('FormAnalysisRecordingScreenV2');
+
+    // Auto-show tips education panel on first visit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstTimeEducation();
+    });
   }
 
   @override
@@ -159,25 +163,27 @@ class _FormAnalysisRecordingScreenV2State
                 state is VideoFormAnalysisValidating ||
                 state is VideoFormAnalysisAnalyzing;
 
+            final bool hideAppBar = isLoadingOrAnalyzing || _showingTransition;
+
             return Scaffold(
               backgroundColor: Colors.transparent,
               extendBodyBehindAppBar: true,
-              appBar: GenericAppBar(
-                topViewPadding: MediaQuery.of(context).viewPadding.top,
-                title: 'Form analysis',
-                titleStyle: GoogleFonts.exo2(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: -0.5,
-                  color: SenseiColors.gray[700],
-                ),
-                hasBackButton: false,
-                backgroundColor: Colors.transparent,
-                foregroundColor: foregroundColor,
-                rightWidget: (isLoadingOrAnalyzing || _showingTransition)
-                    ? null
-                    : IconButton(
+              appBar: hideAppBar
+                  ? null
+                  : GenericAppBar(
+                      topViewPadding: MediaQuery.of(context).viewPadding.top,
+                      title: 'Form analysis',
+                      titleStyle: GoogleFonts.exo2(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        fontStyle: FontStyle.italic,
+                        letterSpacing: -0.5,
+                        color: SenseiColors.gray[700],
+                      ),
+                      hasBackButton: false,
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: foregroundColor,
+                      rightWidget: IconButton(
                         icon: Icon(Icons.close, color: foregroundColor),
                         onPressed: () {
                           SystemChrome.setSystemUIOverlayStyle(
@@ -188,7 +194,7 @@ class _FormAnalysisRecordingScreenV2State
                           Navigator.pop(context);
                         },
                       ),
-              ),
+                    ),
               body: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -299,34 +305,23 @@ class _FormAnalysisRecordingScreenV2State
   }
 
   Widget _buildStageLayout(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: widget.topViewPadding + 60,
-                bottom: 24,
-              ),
-              child: Column(
-                children: [
-                  _buildTipsCard(context),
-                  const SizedBox(height: 16),
-                  _buildActionCard(context),
-                  if (kDebugMode &&
-                      locator
-                          .get<FeatureFlagService>()
-                          .showFormAnalysisTestButton)
-                    _buildDebugSection(context),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: widget.topViewPadding + 60,
+        bottom: autoBottomPadding(context),
+      ),
+      child: Column(
+        children: [
+          _buildTipsCard(context),
+          const SizedBox(height: 16),
+          Expanded(child: _buildActionCard(context)),
+          // if (kDebugMode &&
+          //     locator.get<FeatureFlagService>().showFormAnalysisTestButton)
+          _buildDebugSection(context),
+        ],
+      ),
     );
   }
 
@@ -483,7 +478,7 @@ class _FormAnalysisRecordingScreenV2State
           children: [
             _buildHandednessSelector(context),
             const SizedBox(height: 12),
-            _buildSelectVideoButton(context, cubit, flags),
+            Expanded(child: _buildSelectVideoButton(context, cubit, flags)),
           ],
         ),
       ),
@@ -617,7 +612,6 @@ class _FormAnalysisRecordingScreenV2State
               'version': 'v2_stage',
             },
           );
-          await _checkFirstTimeEducation();
           if (!mounted) return;
           cubit.importVideo(
             throwType: ThrowTechnique.backhand,
@@ -633,8 +627,6 @@ class _FormAnalysisRecordingScreenV2State
               'version': 'v2_stage',
             },
           );
-          await _checkFirstTimeEducation();
-          if (!mounted) return;
           cubit.importVideo(
             throwType: ThrowTechnique.backhand,
             cameraAngle: _selectedCameraAngle,
@@ -665,11 +657,12 @@ class _FormAnalysisRecordingScreenV2State
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.download_rounded, size: 24, color: Colors.white),
-            const SizedBox(width: 12),
+            const Icon(Icons.download_rounded, size: 40, color: Colors.white),
+            const SizedBox(height: 8),
             Text(
               'Select video',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(

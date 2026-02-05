@@ -137,12 +137,16 @@ class _ToastOverlayState extends State<ToastOverlay>
                       const SizedBox(width: 12),
                     ],
                     Flexible(
-                      child: Text(
-                        widget.message,
-                        style: TextStyle(
-                          color: widget.type.textColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.message,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: widget.type.textColor,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ),

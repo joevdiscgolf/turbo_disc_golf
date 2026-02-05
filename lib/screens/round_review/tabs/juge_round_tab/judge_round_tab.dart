@@ -15,6 +15,10 @@ import 'package:turbo_disc_golf/components/judgment/judgment_preparing_animation
 import 'package:turbo_disc_golf/components/judgment/judgment_result_content_v3.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_reveal_effect.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
+import 'package:turbo_disc_golf/components/judgment/share_judgment/share_judgment_verdict.dart';
+import 'package:turbo_disc_golf/components/share/offscreen_capture_target.dart';
+import 'package:turbo_disc_golf/components/share/share_branding_footer.dart';
+import 'package:turbo_disc_golf/components/share/shareable_composite.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_slot_reel.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -26,7 +30,7 @@ import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
@@ -411,10 +415,11 @@ highlightStats:
       regenerateCount: _previousRegenerateCount,
     );
 
-    final RoundStorageService storageService = locator
-        .get<RoundStorageService>();
     final DGRound updatedRound = _currentRound.copyWith(aiJudgment: aiJudgment);
-    await storageService.saveRound(updatedRound);
+
+    // Save to Firestore (persists across app restarts)
+    final RoundsService roundsService = locator.get<RoundsService>();
+    await roundsService.updateRound(updatedRound);
 
     if (mounted) {
       // Update RoundReviewCubit for tab switching within this screen
@@ -858,16 +863,29 @@ highlightStats:
         ? tagline
         : _getDefaultTagline(_isGlaze);
 
-    // Build the share card widget
+    // Build the share card widget (visible preview in V1)
+    final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
     final Widget shareCard = RepaintBoundary(
       key: _shareCardKey,
-      child: JudgmentShareCard(
-        isGlaze: _isGlaze,
-        headline: headline,
-        tagline: displayTagline,
-        round: _currentRound,
-        analysis: analysis,
-        highlightStats: highlightStats,
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.height,
+        child: ShareableComposite(
+          backgroundWidget: ShareableEmojiBackground(
+            emojis: [emoji],
+            randomSeed: _currentRound.versionId.hashCode,
+          ),
+          headerWidget: ShareJudgmentVerdict(isGlaze: _isGlaze),
+          contentWidget: JudgmentShareCard(
+            isGlaze: _isGlaze,
+            headline: headline,
+            tagline: displayTagline,
+            round: _currentRound,
+            analysis: analysis,
+            highlightStats: highlightStats,
+          ),
+          footerWidget: const ShareBrandingFooter(),
+        ),
       ),
     );
 
@@ -1055,12 +1073,17 @@ highlightStats:
         ? tagline
         : _getDefaultTagline(_isGlaze);
 
-    // Hidden share card for capture (using Offstage)
-    final Widget shareCard = Offstage(
-      offstage: true,
-      child: RepaintBoundary(
-        key: _shareCardKey,
-        child: JudgmentShareCard(
+    // Hidden share card for capture
+    final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
+    final Widget shareCard = OffscreenCaptureTarget(
+      captureKey: _shareCardKey,
+      child: ShareableComposite(
+        backgroundWidget: ShareableEmojiBackground(
+          emojis: [emoji],
+          randomSeed: _currentRound.versionId.hashCode,
+        ),
+        headerWidget: ShareJudgmentVerdict(isGlaze: _isGlaze),
+        contentWidget: JudgmentShareCard(
           isGlaze: _isGlaze,
           headline: headline,
           tagline: displayTagline,
@@ -1068,6 +1091,7 @@ highlightStats:
           analysis: analysis,
           highlightStats: highlightStats,
         ),
+        footerWidget: const ShareBrandingFooter(),
       ),
     );
 
@@ -1300,12 +1324,17 @@ highlightStats:
   Widget _buildHiddenShareCard(String headline, RoundAnalysis analysis) {
     final String displayTagline = _getPreviewTagline();
     final List<String> highlightStats = _getPreviewHighlightStats();
+    final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
 
-    return Offstage(
-      offstage: true,
-      child: RepaintBoundary(
-        key: _shareCardKey,
-        child: JudgmentShareCard(
+    return OffscreenCaptureTarget(
+      captureKey: _shareCardKey,
+      child: ShareableComposite(
+        backgroundWidget: ShareableEmojiBackground(
+          emojis: [emoji],
+          randomSeed: _currentRound.versionId.hashCode,
+        ),
+        headerWidget: ShareJudgmentVerdict(isGlaze: _isGlaze),
+        contentWidget: JudgmentShareCard(
           isGlaze: _isGlaze,
           headline: headline,
           tagline: displayTagline,
@@ -1313,6 +1342,7 @@ highlightStats:
           analysis: analysis,
           highlightStats: highlightStats,
         ),
+        footerWidget: const ShareBrandingFooter(),
       ),
     );
   }

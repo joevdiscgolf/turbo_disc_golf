@@ -97,8 +97,6 @@ class StoryPosterShareCard extends StatelessWidget {
               graphLineColor,
               subtleColor,
             ),
-            const SizedBox(height: 16),
-            _buildFooter(bodyColor, subtleColor),
           ],
         ),
       ),
@@ -266,48 +264,6 @@ class StoryPosterShareCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFooter(Color textColor, Color subtleColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Flexible(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 50),
-            height: 1,
-            color: subtleColor.withValues(alpha: 0.3),
-          ),
-        ),
-        const SizedBox(width: 12),
-        ColorFiltered(
-          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-          child: Image.asset(
-            'assets/icon/app_icon_clear_bg.png',
-            height: 16,
-            width: 16,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          'ScoreSensei disc golf',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: subtleColor.withValues(alpha: 0.8),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Flexible(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 50),
-            height: 1,
-            color: subtleColor.withValues(alpha: 0.3),
-          ),
-        ),
-      ],
     );
   }
 }

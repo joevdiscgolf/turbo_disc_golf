@@ -148,7 +148,6 @@ class _RoundProcessingLoadingScreenState
         selectedCourse: selectedCourse,
         selectedLayoutId: selectedLayoutId,
         numHoles: numHoles,
-        useSharedPreferences: widget.useSharedPreferences,
       );
 
       // After parsing completes, check if we have a valid round

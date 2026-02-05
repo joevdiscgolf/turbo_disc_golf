@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:turbo_disc_golf/components/form_analysis/pill_button_group.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
-/// Shared component for layout configuration (name, hole count, image parser).
+/// Shared component for layout configuration (name, hole count).
 /// Used by both CreateCourseSheet and CreateLayoutSheet.
-class LayoutInfoSection extends StatelessWidget {
+class LayoutInfoSection extends StatefulWidget {
   const LayoutInfoSection({
     super.key,
     required this.headerTitle,
     required this.layoutName,
     required this.numberOfHoles,
-    required this.isParsingImage,
-    this.parseError,
     required this.onLayoutNameChanged,
     required this.onHoleCountChanged,
-    required this.onParseImage,
+    this.hasNameConflict = false,
   });
 
   /// The header title (e.g., "Default Layout" or "Layout")
@@ -29,35 +27,67 @@ class LayoutInfoSection extends StatelessWidget {
   /// Current number of holes
   final int numberOfHoles;
 
-  /// Whether image parsing is in progress
-  final bool isParsingImage;
-
-  /// Error message from image parsing
-  final String? parseError;
-
   /// Callback when layout name changes
   final ValueChanged<String> onLayoutNameChanged;
 
   /// Callback when hole count changes
   final ValueChanged<int> onHoleCountChanged;
 
-  /// Callback to trigger image parsing
-  final VoidCallback onParseImage;
+  /// Whether the layout name conflicts with an existing layout
+  final bool hasNameConflict;
 
   @override
+  State<LayoutInfoSection> createState() => _LayoutInfoSectionState();
+}
+
+class _LayoutInfoSectionState extends State<LayoutInfoSection> {
+  @override
   Widget build(BuildContext context) {
+    final Color errorColor = Theme.of(context).colorScheme.error;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(headerTitle, Icons.grid_view, Colors.teal),
+        _buildSectionHeader(widget.headerTitle),
         const SizedBox(height: 12),
         TextField(
-          onChanged: onLayoutNameChanged,
-          decoration: const InputDecoration(labelText: 'Layout name'),
-          controller: TextEditingController(text: layoutName)
+          onChanged: widget.onLayoutNameChanged,
+          decoration: InputDecoration(
+            labelText: 'Layout name',
+            enabledBorder: widget.hasNameConflict
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: errorColor, width: 1.5),
+                  )
+                : null,
+            focusedBorder: widget.hasNameConflict
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: errorColor, width: 2),
+                  )
+                : null,
+            labelStyle: widget.hasNameConflict
+                ? TextStyle(color: errorColor)
+                : null,
+          ),
+          controller: TextEditingController(text: widget.layoutName)
             ..selection = TextSelection.fromPosition(
-              TextPosition(offset: layoutName.length),
+              TextPosition(offset: widget.layoutName.length),
             ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: widget.hasNameConflict
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 12),
+                  child: Text(
+                    'Layout name must be unique',
+                    style: TextStyle(color: errorColor, fontSize: 12),
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
         const SizedBox(height: 16),
         const Text(
@@ -66,116 +96,54 @@ class LayoutInfoSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _buildHoleCountSelector(context),
-        const SizedBox(height: 16),
-        _buildImageParserButton(context),
-        if (parseError != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              parseError!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 12,
-              ),
-            ),
-          ),
       ],
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, Color color) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-      ],
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
     );
   }
 
   Widget _buildHoleCountSelector(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Stack(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<int>(
-              showSelectedIcon: false,
-              style: ButtonStyle(
-                side: WidgetStateProperty.all(
-                  BorderSide(color: SenseiColors.gray.shade300),
-                ),
-                shape: WidgetStateProperty.all(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              segments: [
-                ButtonSegment<int>(
-                  value: 9,
-                  label: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: const Text('9', maxLines: 1),
-                  ),
-                ),
-                ButtonSegment<int>(
-                  value: 18,
-                  label: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: const Text('18', maxLines: 1),
-                  ),
-                ),
-                ButtonSegment<int>(
-                  value: 0,
-                  label: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      numberOfHoles != 9 && numberOfHoles != 18
-                          ? 'Custom ($numberOfHoles)'
-                          : 'Custom',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
-              selected: {
-                numberOfHoles == 9 || numberOfHoles == 18 ? numberOfHoles : 0,
-              },
-              onSelectionChanged: (Set<int> selection) {
-                HapticFeedback.lightImpact();
-                final int value = selection.first;
-                if (value == 0) {
-                  _showCustomHoleCountDialog(context);
-                } else {
-                  onHoleCountChanged(value);
-                }
-              },
-            ),
-          ),
-          // Transparent overlay on custom segment to allow re-tapping
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                _showCustomHoleCountDialog(context);
-              },
-              child: Container(
-                width: MediaQuery.of(context).size.width / 3 - 16,
-                color: Colors.transparent,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final bool is9Selected = widget.numberOfHoles == 9;
+    final bool is18Selected = widget.numberOfHoles == 18;
+    final bool isCustomSelected = !is9Selected && !is18Selected;
+    final String customLabel = isCustomSelected
+        ? 'Custom (${widget.numberOfHoles})'
+        : 'Custom';
+
+    return PillButtonGroup(
+      isDark: false,
+      height: 44,
+      buttons: [
+        PillButtonData(
+          label: '9',
+          isSelected: is9Selected,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onHoleCountChanged(9);
+          },
+        ),
+        PillButtonData(
+          label: '18',
+          isSelected: is18Selected,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onHoleCountChanged(18);
+          },
+        ),
+        PillButtonData(
+          label: customLabel,
+          isSelected: isCustomSelected,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            _showCustomHoleCountDialog(context);
+          },
+        ),
+      ],
     );
   }
 
@@ -219,61 +187,7 @@ class LayoutInfoSection extends StatelessWidget {
     );
 
     if (customCount != null) {
-      onHoleCountChanged(customCount);
+      widget.onHoleCountChanged(customCount);
     }
-  }
-
-  Widget _buildImageParserButton(BuildContext context) {
-    return GestureDetector(
-      onTap: isParsingImage ? null : onParseImage,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: SenseiColors.gray.shade50,
-          border: Border.all(color: SenseiColors.gray.shade200),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              isParsingImage ? Icons.hourglass_empty : Icons.camera_alt,
-              color: SenseiColors.gray.shade600,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isParsingImage
-                        ? 'Parsing Image...'
-                        : 'Upload scorecard image',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: SenseiColors.gray.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Auto-fill par & distance from photo',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: SenseiColors.gray.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isParsingImage)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }

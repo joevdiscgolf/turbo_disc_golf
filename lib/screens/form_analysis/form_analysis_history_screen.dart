@@ -5,16 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_history_card.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_welcome_empty_state.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen_v2.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class FormAnalysisHistoryScreen extends StatefulWidget {
@@ -84,11 +83,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
         ? FormAnalysisRecordingScreenV2(topViewPadding: widget.topViewPadding)
         : FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding);
 
-    await pushCupertinoRoute(
-      context,
-      screen,
-      pushFromBottom: true,
-    );
+    await pushCupertinoRoute(context, screen, pushFromBottom: true);
     // Note: New analyses are automatically added to the history cubit
     // by VideoFormAnalysisCubit when analysis completes - no refresh needed
   }

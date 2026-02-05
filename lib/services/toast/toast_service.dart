@@ -73,6 +73,7 @@ class ToastService {
     show(
       message: message,
       type: ToastType.error,
+      duration: const Duration(seconds: 4),
       icon: showIcon ? Icons.warning : null,
       iconSize: iconSize,
       iconColor: Colors.red[300],

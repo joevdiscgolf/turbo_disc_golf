@@ -1151,21 +1151,25 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
                       ),
               ),
             ),
-            // Right: question mark icon
-            SizedBox(
-              width: 32,
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  _showImportEducation();
-                },
-                behavior: HitTestBehavior.translucent,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16),
+            // Right: lightbulb tips icon
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showImportEducation();
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: SenseiColors.gray.shade50,
+                    shape: BoxShape.circle,
+                  ),
                   child: Icon(
-                    Icons.help_outline,
-                    size: 16,
-                    color: Colors.grey.shade400,
+                    Icons.lightbulb_outline,
+                    size: 18,
+                    color: Colors.amber.shade600,
                   ),
                 ),
               ),
@@ -2021,40 +2025,6 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     );
 
     await _recordRoundCubit.clearAllHoles();
-
-    // // Show confirmation dialog
-    // final bool? confirmed = await showDialog<bool>(
-    //   context: context,
-    //   builder: (context) {
-    //     return AlertDialog(
-    //       title: const Text('Clear All Data?'),
-    //       content: const Text(
-    //         'This will discard all hole descriptions and reset the recording. This cannot be undone.',
-    //       ),
-    //       actions: [
-    //         TextButton(
-    //           onPressed: () => Navigator.of(context).pop(false),
-    //           child: const Text('Cancel'),
-    //         ),
-    //         TextButton(
-    //           onPressed: () => Navigator.of(context).pop(true),
-    //           child: Text(
-    //             'Clear All',
-    //             style: TextStyle(
-    //               color: Colors.red.shade600,
-    //               fontWeight: FontWeight.bold,
-    //             ),
-    //           ),
-    //         ),
-    //       ],
-    //     );
-    //   },
-    // );
-
-    // // If user confirmed, reset the recording
-    // if (confirmed == true) {
-    // await _recordRoundCubit.resetRecording();
-    // }
   }
 
   Widget _clearAllButton() {

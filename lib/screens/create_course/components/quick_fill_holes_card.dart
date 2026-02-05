@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
@@ -43,7 +44,7 @@ class _QuickFillHolesCardState extends State<QuickFillHolesCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -51,6 +52,7 @@ class _QuickFillHolesCardState extends State<QuickFillHolesCard> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: SenseiColors.gray.shade100, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -63,12 +65,8 @@ class _QuickFillHolesCardState extends State<QuickFillHolesCard> {
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             title: const Text(
-              'Quick Fill',
+              'Quick fill',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            subtitle: const Text(
-              'Set default values for all holes',
-              style: TextStyle(fontSize: 12),
             ),
             initiallyExpanded: false,
             backgroundColor: Colors.transparent,
@@ -82,6 +80,14 @@ class _QuickFillHolesCardState extends State<QuickFillHolesCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Set default values for all holes',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     _buildParAndFeetRow(),
                     const SizedBox(height: 16),
                     _buildTightnessSelector(),

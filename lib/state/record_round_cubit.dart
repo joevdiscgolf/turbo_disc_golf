@@ -4,6 +4,7 @@ import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/courses/courses_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 
@@ -138,6 +139,15 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     if (state is! RecordRoundActive) return;
     final RecordRoundActive activeState = state as RecordRoundActive;
 
+    // Check for voice service errors and show toast
+    final String error = _voiceService.lastError;
+    if (error.isNotEmpty && activeState.isStartingListening) {
+      // Stop loading state and show error
+      emit(activeState.copyWith(isStartingListening: false));
+      _showVoicePermissionError(error);
+      return;
+    }
+
     // Calculate new state values
     final bool newIsListening = _voiceService.isListening;
     final bool newIsStartingListening =
@@ -167,6 +177,27 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     }
   }
 
+  void _showVoicePermissionError(String error) {
+    final ToastService toastService = locator.get<ToastService>();
+
+    final String lowerError = error.toLowerCase();
+
+    // Check for permission-specific errors
+    if (lowerError.contains('permission') ||
+        lowerError.contains('not authorized') ||
+        lowerError.contains('denied')) {
+      toastService.showError(
+        'Microphone access required. Please enable it in Settings.',
+      );
+    } else if (lowerError.contains('not available')) {
+      toastService.showError(
+        'Speech recognition is not available on this device.',
+      );
+    } else {
+      toastService.showError('Voice input failed: $error');
+    }
+  }
+
   // Voice control methods
   Future<void> toggleListening() async {
     if (state is! RecordRoundActive) return;
@@ -186,6 +217,17 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
 
       // Start listening - voice service listener will clear isStartingListening when ready
       await _safeStartListening();
+
+      // Check if listening actually started, show error if not
+      // Small delay to allow state to settle
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (!_voiceService.isListening && _voiceService.lastError.isNotEmpty) {
+        if (state is RecordRoundActive) {
+          emit((state as RecordRoundActive).copyWith(isStartingListening: false));
+        }
+        _showVoicePermissionError(_voiceService.lastError);
+      }
     }
   }
 

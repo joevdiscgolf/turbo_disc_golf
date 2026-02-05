@@ -24,7 +24,7 @@ import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
@@ -148,12 +148,13 @@ class _RoundStoryTabState extends State<RoundStoryTab>
           : story;
 
       // Update round with new story
-      final RoundStorageService storageService = locator
-          .get<RoundStorageService>();
       final DGRound updatedRound = _currentRound.copyWith(
         aiSummary: storyWithCount,
       );
-      await storageService.saveRound(updatedRound);
+
+      // Save to Firestore (persists across app restarts)
+      final RoundsService roundsService = locator.get<RoundsService>();
+      await roundsService.updateRound(updatedRound);
 
       if (mounted) {
         // Update cubits so the round data persists across navigation
@@ -180,6 +181,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       }
     } catch (e) {
       if (mounted) {
+        locator.get<ToastService>().showError(
+          'Failed to generate story, please try again',
+        );
         setState(() {
           _isGenerating = false;
           _errorMessage = 'Failed to generate story: $e';
@@ -260,7 +264,12 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     // Fall back to V1
     if (aiSummary.structuredContent != null) {
       final StructuredStoryContent v1 = aiSummary.structuredContent!;
-      return (v1.roundTitle, v1.overview, v1.shareableHeadline, v1.shareHighlightStats);
+      return (
+        v1.roundTitle,
+        v1.overview,
+        v1.shareableHeadline,
+        v1.shareHighlightStats,
+      );
     }
 
     // No story data available
@@ -315,7 +324,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   }
 
   Widget _buildShareCard() {
-    final (roundTitle, overview, shareableHeadline, shareHighlightStats) = _getShareData();
+    final (roundTitle, overview, shareableHeadline, shareHighlightStats) =
+        _getShareData();
 
     if (locator.get<FeatureFlagService>().useStoryPosterShareCard) {
       return StoryPosterShareCard(
@@ -366,7 +376,8 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
   void _showShareCardPreview() {
     _logger.track('Story Preview Button Tapped');
-    final (roundTitle, overview, shareableHeadline, shareHighlightStats) = _getShareData();
+    final (roundTitle, overview, shareableHeadline, shareHighlightStats) =
+        _getShareData();
 
     pushCupertinoRoute(
       context,
@@ -484,23 +495,21 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
   Widget _buildStoryContent(BuildContext context, RoundAnalysis analysis) {
     // Check if content is outdated
-    if (_currentRound.isAISummaryOutdated) {
-      return Column(
-        children: [
-          RegeneratePromptBanner(
-            onRegenerate: () => _generateStory(isRegeneration: true),
-            isLoading: _isGenerating,
-            subtitle: 'Story may be outdated',
-            regenerationsRemaining: isCurrentUserAdmin()
-                ? null
-                : _currentRound.aiSummary?.regenerationsRemaining,
-          ),
-          _buildContentCard(context, analysis),
-        ],
-      );
-    }
 
-    return _buildContentCard(context, analysis);
+    return Column(
+      children: [
+        // if (_currentRound.isAISummaryOutdated)
+        RegeneratePromptBanner(
+          onRegenerate: () => _generateStory(isRegeneration: true),
+          isLoading: _isGenerating,
+          subtitle: 'Story may be outdated',
+          regenerationsRemaining: isCurrentUserAdmin()
+              ? null
+              : _currentRound.aiSummary?.regenerationsRemaining,
+        ),
+        _buildContentCard(context, analysis),
+      ],
+    );
   }
 
   Widget _buildContentCard(BuildContext context, RoundAnalysis analysis) {

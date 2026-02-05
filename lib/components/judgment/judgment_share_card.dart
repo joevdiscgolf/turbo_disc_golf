@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:turbo_disc_golf/components/compact_scorecard.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
@@ -89,8 +86,6 @@ class JudgmentShareCard extends StatelessWidget {
           _buildStatsGrid(bodyColor, subtleColor, containerBgAlpha),
           const SizedBox(height: 8),
           _buildScorecard(subtleColor, containerBgAlpha),
-          const SizedBox(height: 16),
-          _buildFooter(bodyColor, subtleColor),
         ],
       ),
     );
@@ -273,76 +268,6 @@ class JudgmentShareCard extends StatelessWidget {
         parScoreColor: Colors.white,
         useWhiteCircleText: true,
       ),
-    );
-  }
-
-  Widget _buildFooter(Color textColor, Color subtleColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (locator.get<FeatureFlagService>().showQrCodeOnShareCard) ...[
-          // QR code on left side
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: QrImageView(
-              data: locator.get<FeatureFlagService>().shareCardQrUrl,
-              version: QrVersions.auto,
-              size: 40,
-              backgroundColor: Colors.white,
-              eyeStyle: const QrEyeStyle(
-                eyeShape: QrEyeShape.square,
-                color: Colors.black,
-              ),
-              dataModuleStyle: const QrDataModuleStyle(
-                dataModuleShape: QrDataModuleShape.square,
-                color: Colors.black,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-        ] else ...[
-          // Flexible line that scales down if needed
-          Flexible(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 40),
-              height: 1,
-              color: subtleColor.withValues(alpha: 0.4),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-        ColorFiltered(
-          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-          child: Image.asset(
-            'assets/icon/app_icon_clear_bg.png',
-            height: 16,
-            width: 16,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          'ScoreSensei disc golf',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: subtleColor.withValues(alpha: 0.85),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Flexible line that scales down if needed
-        Flexible(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 40),
-            height: 1,
-            color: subtleColor.withValues(alpha: 0.4),
-          ),
-        ),
-      ],
     );
   }
 
