@@ -130,6 +130,16 @@ class AppPhaseController extends ChangeNotifier {
         '[AppPhaseCubit][init] Minimum version: ${appVersionInfo?.minimumVersion}, Current version: $version, User: ${currentTurboUser?.displayName}',
       );
 
+      // If we couldn't load version info, show connection required screen
+      // This prevents bypassing force upgrade by going offline
+      if (appVersionInfo == null) {
+        debugPrint(
+          '[AppPhaseCubit][init] ⚠️ Could not load version info - showing connection required',
+        );
+        setPhase(AppPhase.connectionRequired);
+        return;
+      }
+
       // Only trigger force upgrade if BOTH versions are valid (not null, not empty, not "unknown")
       final String? minimumVersion = appVersionInfo?.minimumVersion;
       final bool canCheckVersion =

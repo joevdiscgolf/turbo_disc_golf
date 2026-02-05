@@ -965,11 +965,17 @@ strategyTips:
       _normalizeScoreTypes(parsedData);
 
       // Validate V3 required fields
-      if (!parsedData.containsKey('roundTitle') ||
-          !parsedData.containsKey('overview') ||
-          !parsedData.containsKey('sections') ||
-          !parsedData.containsKey('whatCouldHaveBeen')) {
-        throw Exception('Missing required V3 fields');
+      final List<String> requiredV3Fields = [
+        'roundTitle',
+        'overview',
+        'sections',
+        'whatCouldHaveBeen',
+      ];
+      final List<String> missingFields = requiredV3Fields
+          .where((field) => !parsedData.containsKey(field))
+          .toList();
+      if (missingFields.isNotEmpty) {
+        throw Exception('Missing required V3 fields: ${missingFields.join(', ')}');
       }
 
       // Validate and fix whatCouldHaveBeen structure

@@ -7,6 +7,8 @@ import 'package:turbo_disc_golf/screens/auth/components/landing_background.dart'
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_app_info_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
+import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/platform_helpers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -77,17 +79,15 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
         body: Stack(
           children: [
             const LandingBackground(),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2),
-                    _buildContent(context),
-                    const Spacer(flex: 3),
-                  ],
-                ),
+            Container(
+              // height: MediaQuery.of(context).size.height,
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: MediaQuery.of(context).padding.top + 16,
+                bottom: autoBottomPadding(context),
               ),
+              child: _buildContent(context),
             ),
           ],
         ),
@@ -98,16 +98,20 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
   Widget _buildContent(BuildContext context) {
     return Column(
       children: [
-        _buildAppIcon(),
-        const SizedBox(height: 40),
-        _buildTitle(context),
-        const SizedBox(height: 16),
-        _buildMessage(context),
-        if (_currentVersion != null && _requiredVersion != null) ...[
-          const SizedBox(height: 24),
-          _buildVersionInfo(context),
-        ],
-        const SizedBox(height: 48),
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildAppIcon(),
+                const SizedBox(height: 40),
+                _buildTitle(context),
+              ],
+            ),
+          ),
+        ),
+        _buildVersionInfo(context),
+        const SizedBox(height: 12),
         _buildUpgradeButton(context),
       ],
     );
@@ -116,6 +120,7 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
   Widget _buildAppIcon() {
     return Container(
       decoration: BoxDecoration(
+        shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF4ECDC4).withValues(alpha: 0.3),
@@ -126,8 +131,8 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
       ),
       child: Image.asset(
         'assets/icon/app_icon_clear_bg.png',
-        height: 100,
-        width: 100,
+        height: 164,
+        width: 164,
       ),
     );
   }
@@ -137,28 +142,9 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
       'Update Required',
       style: TextStyle(
         color: Colors.white,
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: FontWeight.bold,
         letterSpacing: -0.5,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
-
-  Widget _buildMessage(BuildContext context) {
-    final AppPhaseController controller = locator.get<AppPhaseController>();
-    final AppVersionInfo? versionInfo = controller.appVersionInfo;
-
-    final String message =
-        versionInfo?.upgradeMessage ??
-        'A new version of ScoreSensei is available. Please update to continue.';
-
-    return Text(
-      message,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.8),
-        fontSize: 16,
-        height: 1.5,
       ),
       textAlign: TextAlign.center,
     );
@@ -168,7 +154,7 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     return Text(
       'Current: $_currentVersion → Required: $_requiredVersion',
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.5),
+        color: Colors.white.withValues(alpha: 0.6),
         fontSize: 14,
       ),
       textAlign: TextAlign.center,
@@ -211,6 +197,8 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
         final Uri uri = Uri.parse(storeUrl);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          locator.get<ToastService>().showError('Please try again.');
         }
       } catch (e) {
         debugPrint('[ForceUpgradeScreen] Error launching URL: $e');
