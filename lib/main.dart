@@ -38,6 +38,8 @@ import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/state/user_data_cubit.dart';
 import 'package:turbo_disc_golf/utils/theme/theme_data.dart';
+import 'package:wiredash/wiredash.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -189,11 +191,15 @@ class _MyAppState extends State<MyApp> {
                 ],
                 child: ChangeNotifierProvider<RoundParser>.value(
                   value: locator.get<RoundParser>(),
-                  child: MaterialApp.router(
-                    routerConfig: _router,
-                    debugShowCheckedModeBanner: false,
-                    title: 'Turbo Disc Golf',
-                    theme: kThemeData,
+                  child: Wiredash(
+                    projectId: dotenv.env['WIREDASH_PROJECT_ID'] ?? '',
+                    secret: dotenv.env['WIREDASH_SECRET'] ?? '',
+                    child: MaterialApp.router(
+                      routerConfig: _router,
+                      debugShowCheckedModeBanner: false,
+                      title: 'Turbo Disc Golf',
+                      theme: kThemeData,
+                    ),
                   ),
                 ),
               ),

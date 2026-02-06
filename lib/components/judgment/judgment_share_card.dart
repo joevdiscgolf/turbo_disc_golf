@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/components/share/generic_share_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 /// A shareable card widget for roast/glaze judgments.
 ///
@@ -63,7 +64,7 @@ class JudgmentShareCard extends StatelessWidget {
     final List<ShareCardStat> stats = [
       ShareCardStat(
         label: 'Score',
-        value: _formatScore(analysis.totalScoreRelativeToPar),
+        value: getRelativeScoreString(analysis.totalScoreRelativeToPar),
       ),
     ];
 
@@ -99,13 +100,6 @@ class JudgmentShareCard extends StatelessWidget {
     }
 
     return stats;
-  }
-
-  String _formatScore(int score) {
-    if (score >= 0) {
-      return '+$score';
-    }
-    return '$score';
   }
 
   ShareCardStat? _getStatItem(String statKey) {

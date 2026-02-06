@@ -175,6 +175,9 @@ enum FeatureFlag {
   /// Height multiplier for pro reference image when camera angle is side
   proReferenceHeightMultiplierSide('pro_reference_height_multiplier_side', 1.5),
 
+  /// Shows the V2 measurements card in form analysis views
+  showFormAnalysisMeasurementsCard('show_form_analysis_measurements_card', true),
+
   /// Uses the v2 "Stage" design for form analysis recording screen with liquid glass UI
   useFormAnalysisRecordingScreenV2(
     'use_form_analysis_recording_screen_v2',

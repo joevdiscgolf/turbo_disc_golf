@@ -1,6 +1,7 @@
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 /// A single stat to display on a share card
 class ShareStat {
@@ -25,7 +26,7 @@ class ShareStatMapper {
       case 'score':
         return ShareStat(
           label: 'Score',
-          value: _formatScore(round.getRelativeToPar()),
+          value: getRelativeScoreString(round.getRelativeToPar()),
         );
       case 'c1PuttPct':
         return ShareStat(
@@ -88,7 +89,7 @@ class ShareStatMapper {
     final List<ShareStat> stats = [
       ShareStat(
         label: 'Score',
-        value: _formatScore(round.getRelativeToPar()),
+        value: getRelativeScoreString(round.getRelativeToPar()),
       ),
     ];
 
@@ -182,12 +183,5 @@ class ShareStatMapper {
     }
 
     return candidates;
-  }
-
-  /// Format score relative to par
-  static String _formatScore(int relativeToPar) {
-    if (relativeToPar == 0) return 'E';
-    if (relativeToPar > 0) return '+$relativeToPar';
-    return '$relativeToPar';
   }
 }

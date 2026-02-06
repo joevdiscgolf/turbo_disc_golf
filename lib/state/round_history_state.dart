@@ -12,10 +12,21 @@ class RoundHistoryLoading extends RoundHistoryState {
 }
 
 class RoundHistoryLoaded extends RoundHistoryState {
-  const RoundHistoryLoaded({required this.rounds, this.isRefreshing = false});
+  const RoundHistoryLoaded({
+    required this.rounds,
+    this.isRefreshing = false,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+  });
 
   final List<DGRound> rounds;
   final bool isRefreshing;
+
+  /// Whether there are more rounds to load.
+  final bool hasMore;
+
+  /// Whether currently loading more rounds (pagination).
+  final bool isLoadingMore;
 
   /// Pre-sorted rounds by playedRoundAt descending (newest first)
   List<DGRound> get sortedRounds {

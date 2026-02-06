@@ -2,17 +2,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/round_review_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
-class RoundHistoryRow extends StatelessWidget {
-  const RoundHistoryRow({
+class RoundHistoryCard extends StatelessWidget {
+  const RoundHistoryCard({
     super.key,
     required this.round,
     required this.logger,
@@ -34,11 +33,7 @@ class RoundHistoryRow extends StatelessWidget {
       (sum, hole) => sum + hole.par,
     );
     final int relativeToPar = totalScore - totalPar;
-    final String relativeToParText = relativeToPar == 0
-        ? 'E'
-        : relativeToPar > 0
-        ? '+$relativeToPar'
-        : '$relativeToPar';
+    final String relativeToParText = getRelativeScoreString(relativeToPar);
 
     // Get statistics from analysis
     final int birdies = round.analysis?.scoringStats.birdies ?? 0;
@@ -66,7 +61,7 @@ class RoundHistoryRow extends StatelessWidget {
         );
 
         HapticFeedback.lightImpact();
-        locator.get<RoundParser>().setRound(round);
+        // Round is passed directly to RoundReviewScreen - no need to set on RoundParser
 
         Navigator.push(
           context,
@@ -82,95 +77,96 @@ class RoundHistoryRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: defaultCardBoxShadow(),
         ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Course name and score badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Course name and layout
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          round.courseName,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Course name and score badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Course name and layout
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        round.courseName,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                        if (layoutName.isNotEmpty &&
-                            layoutName.toLowerCase() != 'default layout') ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            layoutName,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey[600]),
-                          ),
-                        ],
+                      ),
+                      if (layoutName.isNotEmpty &&
+                          layoutName.toLowerCase() != 'default layout') ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          layoutName,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Score badge
-                  _ScoreBadge(
-                    scoreText: relativeToParText,
-                    relativeToPar: relativeToPar,
-                    totalStrokes: totalScore,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Compact stats row
-              IntrinsicHeight(
-                child: Row(
-                  children: addDividers(
-                    [
-                      _CompactStatItem(
-                        icon: '🕊️',
-                        value: '$birdies',
-                        label: birdies == 1 ? 'Birdie' : 'Birdies',
-                      ),
-                      _CompactStatItem(
-                        icon: '🎯',
-                        value: '${c1InRegPct.toStringAsFixed(0)}%',
-                        label: 'C1 in Reg',
-                      ),
-                      _CompactStatItem(
-                        icon: '🥏',
-                        value: '${c1xPuttingPct.toStringAsFixed(0)}%',
-                        label: 'C1X Putt',
-                      ),
-                      _CompactStatItem(
-                        icon: '⚠️',
-                        value: '$totalMistakes',
-                        label: totalMistakes == 1 ? 'Mistake' : 'Mistakes',
-                      ),
                     ],
-                    axis: Axis.vertical,
-                    dividerColor: SenseiColors.gray[50],
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              // Score distribution bar
-              ScoreDistributionBar(round: round, height: 32),
-              // Bottom row: Date/time
-              if (formattedDateTime != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  formattedDateTime,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontSize: 11,
-                  ),
+                const SizedBox(width: 12),
+                // Score badge
+                _ScoreBadge(
+                  scoreText: relativeToParText,
+                  relativeToPar: relativeToPar,
+                  totalStrokes: totalScore,
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            // Compact stats row
+            IntrinsicHeight(
+              child: Row(
+                children: addDividers(
+                  [
+                    _CompactStatItem(
+                      icon: '🕊️',
+                      value: '$birdies',
+                      label: birdies == 1 ? 'Birdie' : 'Birdies',
+                    ),
+                    _CompactStatItem(
+                      icon: '🎯',
+                      value: '${c1InRegPct.toStringAsFixed(0)}%',
+                      label: 'C1 in Reg',
+                    ),
+                    _CompactStatItem(
+                      icon: '🥏',
+                      value: '${c1xPuttingPct.toStringAsFixed(0)}%',
+                      label: 'C1X Putt',
+                    ),
+                    _CompactStatItem(
+                      icon: '⚠️',
+                      value: '$totalMistakes',
+                      label: totalMistakes == 1 ? 'Mistake' : 'Mistakes',
+                    ),
+                  ],
+                  axis: Axis.vertical,
+                  dividerColor: SenseiColors.gray[50],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Score distribution bar
+            ScoreDistributionBar(round: round, height: 32),
+            // Bottom row: Date/time
+            if (formattedDateTime != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                formattedDateTime,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontSize: 11,
+                ),
+              ),
             ],
-          ),
+          ],
         ),
-      );
+      ),
+    );
   }
 
   String? _formatDateTime(String? isoString) {

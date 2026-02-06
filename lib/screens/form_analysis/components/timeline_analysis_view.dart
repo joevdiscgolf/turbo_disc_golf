@@ -514,6 +514,9 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                 cubit,
                 activeCheckpoints,
               ),
+              if (locator.get<FeatureFlagService>().getBool(
+                  FeatureFlag.showFormAnalysisMeasurementsCard,
+                ))
               V2MeasurementsCard(
                 checkpoint: checkpoint,
                 cameraAngle: widget.analysis.analysisResults.cameraAngle,

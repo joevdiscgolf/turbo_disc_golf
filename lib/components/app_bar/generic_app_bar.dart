@@ -11,6 +11,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleStyle,
     this.titleIcon,
     this.rightWidget,
+    this.rightWidgetWidth,
     this.leftWidget,
     this.bottomWidget,
     this.bottomWidgetHeight,
@@ -25,6 +26,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextStyle? titleStyle;
   final double topViewPadding;
   final Widget? rightWidget;
+  final double? rightWidgetWidth;
   final Widget? leftWidget;
   final Widget? bottomWidget;
   final double? bottomWidgetHeight;
@@ -101,7 +103,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(
                   height: 40,
-                  width: sideWidgetWidth,
+                  width: rightWidgetWidth ?? sideWidgetWidth,
                   child: rightWidget,
                 ),
               ],

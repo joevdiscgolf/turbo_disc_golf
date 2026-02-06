@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/banners/regenerate_prompt_banner.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/error_states/generation_error_state.dart';
 import 'package:turbo_disc_golf/components/mini_scorecard_with_share.dart';
 import 'package:turbo_disc_golf/components/story/story_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -241,19 +243,17 @@ class _RoundStoryTabState extends State<RoundStoryTab>
         child: _buildContentWithShareBar(context),
       );
     } else if (_errorMessage != null) {
-      // Error occurred - show error in scrollable container
-      return _buildScrollableContent(context);
+      // Error occurred - show elegant full-screen error state
+      return GenerationErrorState(
+        title: 'Story generation failed',
+        accentColor: const Color(0xFF3B82F6),
+        icon: Icons.auto_stories_outlined,
+        onRetry: _generateStory,
+      );
     } else {
       // No story yet - show full-screen empty state
       return StoryEmptyState(onGenerateStory: _generateStory);
     }
-  }
-
-  Widget _buildScrollableContent(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(0, 12, 0, 96),
-      child: _buildErrorState(context),
-    );
   }
 
   /// Extract share data with V2/V1 fallback logic
@@ -494,54 +494,20 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to generate story',
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage ?? 'Unknown error',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _generateStory,
-              child: const Text('Try Again'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildStoryContent(BuildContext context, RoundAnalysis analysis) {
     // Check if content is outdated
 
     return Column(
       children: [
-        // if (_currentRound.isAISummaryOutdated)
-        RegeneratePromptBanner(
-          buttonSuffix: 'story',
-          onRegenerate: () => _generateStory(isRegeneration: true),
-          isLoading: _isGenerating,
-          regenerationsRemaining: isCurrentUserAdmin()
-              ? null
-              : _currentRound.aiSummary?.regenerationsRemaining,
-        ),
+        if (_currentRound.isAIJudgmentOutdated || kDebugMode)
+          RegeneratePromptBanner(
+            buttonSuffix: 'story',
+            onRegenerate: () => _generateStory(isRegeneration: true),
+            isLoading: _isGenerating,
+            regenerationsRemaining: isCurrentUserAdmin()
+                ? null
+                : _currentRound.aiSummary?.regenerationsRemaining,
+          ),
         _buildContentCard(context, analysis),
       ],
     );

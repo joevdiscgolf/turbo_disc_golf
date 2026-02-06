@@ -12,12 +12,13 @@ class RecordRoundInactive extends RecordRoundState {
 }
 
 class RecordRoundActive extends RecordRoundState {
+  static const int defaultNumHoles = 18;
+
   const RecordRoundActive({
     required this.selectedCourse,
     required this.selectedDateTime,
     required this.holeDescriptions,
-    required this.numHoles,
-    this.selectedLayoutId,
+    this.selectedLayout,
     this.isListening = false,
     this.pausingBetweenHoles = false,
     this.isStartingListening = false,
@@ -27,10 +28,9 @@ class RecordRoundActive extends RecordRoundState {
   });
 
   final Course? selectedCourse;
-  final String? selectedLayoutId;
+  final CourseLayout? selectedLayout;
   final DateTime selectedDateTime;
   final Map<int, String> holeDescriptions;
-  final int numHoles;
   final bool isListening;
   final bool isStartingListening;
   final bool pausingBetweenHoles;
@@ -38,12 +38,14 @@ class RecordRoundActive extends RecordRoundState {
   final Map<int, int>? importedScores; // holeIndex (0-based) -> score
   final Map<int, HoleMetadata>? importedHoleMetadata; // holeIndex (0-based) -> full metadata
 
+  /// Number of holes, derived from selected layout or default
+  int get numHoles => selectedLayout?.holes.length ?? defaultNumHoles;
+
   RecordRoundActive copyWith({
     Course? selectedCourse,
-    String? selectedLayoutId,
+    CourseLayout? selectedLayout,
     DateTime? selectedDateTime,
     Map<int, String>? holeDescriptions,
-    int? numHoles,
     bool? isListening,
     bool? isStartingListening,
     bool? pausingBetweenHoles,
@@ -54,10 +56,9 @@ class RecordRoundActive extends RecordRoundState {
   }) {
     return RecordRoundActive(
       selectedCourse: selectedCourse ?? this.selectedCourse,
-      selectedLayoutId: selectedLayoutId ?? this.selectedLayoutId,
+      selectedLayout: selectedLayout ?? this.selectedLayout,
       selectedDateTime: selectedDateTime ?? this.selectedDateTime,
       holeDescriptions: holeDescriptions ?? this.holeDescriptions,
-      numHoles: numHoles ?? this.numHoles,
       isListening: isListening ?? this.isListening,
       isStartingListening: isStartingListening ?? this.isStartingListening,
       pausingBetweenHoles: pausingBetweenHoles ?? this.pausingBetweenHoles,

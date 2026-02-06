@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:confetti/confetti.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/banners/regenerate_prompt_banner.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/error_states/generation_error_state.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_confetti_overlay.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_preparing_animation.dart';
@@ -801,30 +803,30 @@ highlightStats:
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Show regenerate banner when content is outdated
-                    // if (_currentRound.isAIJudgmentOutdated)
-                    RegeneratePromptBanner(
-                      buttonSuffix: 'judgment',
-                      onRegenerate: () {
-                        _logger.track('Judgment Regenerate Button Tapped');
-                        _previousRegenerateCount =
-                            (_currentRound.aiJudgment?.regenerateCount ?? 0) +
-                            1;
-                        setState(() {
-                          _currentRound = _currentRound.copyWith(
-                            aiJudgment: null,
-                          );
-                          _currentState = JudgmentState.idle;
-                        });
-                        _startJudgmentFlow();
-                      },
-                      isLoading:
-                          _currentState == JudgmentState.building ||
-                          _currentState == JudgmentState.preparing,
+                    if (_currentRound.isAIJudgmentOutdated || kDebugMode)
+                      RegeneratePromptBanner(
+                        buttonSuffix: 'judgment',
+                        onRegenerate: () {
+                          _logger.track('Judgment Regenerate Button Tapped');
+                          _previousRegenerateCount =
+                              (_currentRound.aiJudgment?.regenerateCount ?? 0) +
+                              1;
+                          setState(() {
+                            _currentRound = _currentRound.copyWith(
+                              aiJudgment: null,
+                            );
+                            _currentState = JudgmentState.idle;
+                          });
+                          _startJudgmentFlow();
+                        },
+                        isLoading:
+                            _currentState == JudgmentState.building ||
+                            _currentState == JudgmentState.preparing,
 
-                      regenerationsRemaining: isCurrentUserAdmin()
-                          ? null
-                          : _currentRound.aiJudgment?.regenerationsRemaining,
-                    ),
+                        regenerationsRemaining: isCurrentUserAdmin()
+                            ? null
+                            : _currentRound.aiJudgment?.regenerationsRemaining,
+                      ),
 
                     // V3 content
                     JudgmentResultContentV3(
@@ -875,45 +877,18 @@ highlightStats:
   }
 
   Widget _buildErrorState(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Failed to generate judgment',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _errorMessage ?? 'Unknown error',
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  _logger.track('Judgment Try Again Button Tapped');
-                  setState(() {
-                    _currentState = JudgmentState.idle;
-                  });
-                  _startJudgmentFlow();
-                },
-                child: const Text('Try Again'),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return GenerationErrorState(
+      title: 'Judgment generation failed',
+      errorMessage: _errorMessage,
+      accentColor: const Color(0xFFFF6B6B),
+      icon: Icons.local_fire_department_outlined,
+      onRetry: () {
+        _logger.track('Judgment Try Again Button Tapped');
+        setState(() {
+          _currentState = JudgmentState.idle;
+        });
+        _startJudgmentFlow();
+      },
     );
   }
 }

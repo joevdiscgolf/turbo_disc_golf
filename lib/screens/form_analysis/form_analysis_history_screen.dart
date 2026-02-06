@@ -1,9 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_history_card.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_welcome_empty_state.dart';
@@ -113,6 +115,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
               );
             },
           ),
+          if (kDebugMode) _buildDeleteButton(),
           _buildAddButton(),
         ],
       ),
@@ -121,9 +124,20 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
 
   Widget _buildContent(FormAnalysisHistoryState state) {
     if (state is FormAnalysisHistoryLoading) {
-      // Initial loading - show full-screen spinner
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+      // Initial loading - show shimmer skeletons
+      const int shimmerCount = 4;
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            return Column(
+              children: [
+                const FormAnalysisHistoryCardShimmer(),
+                if (index < shimmerCount - 1) const SizedBox(height: 8),
+              ],
+            );
+          }, childCount: shimmerCount),
+        ),
       );
     } else if (state is FormAnalysisHistoryError) {
       // Error state
@@ -179,7 +193,7 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
             else if (state.isLoadingMore) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: CupertinoActivityIndicator()),
               );
             }
             return const SizedBox.shrink();
@@ -187,9 +201,20 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
         ),
       );
     } else {
-      // Initial state - trigger load
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+      // Initial state - show shimmer skeletons
+      const int shimmerCount = 4;
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            return Column(
+              children: [
+                const FormAnalysisHistoryCardShimmer(),
+                if (index < shimmerCount - 1) const SizedBox(height: 8),
+              ],
+            );
+          }, childCount: shimmerCount),
+        ),
       );
     }
   }
@@ -317,6 +342,130 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton() {
+    return BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
+      builder: (context, state) {
+        // Hide delete button when showing empty state
+        final bool isEmptyState =
+            state is FormAnalysisHistoryLoaded && state.analyses.isEmpty;
+        if (isEmptyState) {
+          return const SizedBox.shrink();
+        }
+
+        final double bottomViewPadding = MediaQuery.of(
+          context,
+        ).viewPadding.bottom;
+
+        final double bottomMargin =
+            locator.get<FeatureFlagService>().useFormAnalysisTab
+            ? 20
+            : (bottomViewPadding + 20);
+
+        return Positioned(
+          left: 20,
+          bottom: bottomMargin,
+          child: _buildDeleteButtonContent(),
+        );
+      },
+    );
+  }
+
+  Widget _buildDeleteButtonContent() {
+    return ClipOval(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+        child: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFFDC2626).withValues(alpha: 0.9),
+                const Color(0xFFEF4444).withValues(alpha: 0.95),
+              ],
+            ),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.4),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 16,
+                spreadRadius: 0,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: const Color(0xFFDC2626).withValues(alpha: 0.4),
+                blurRadius: 20,
+                spreadRadius: -2,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _showDeleteConfirmation();
+              },
+              customBorder: const CircleBorder(),
+              splashColor: Colors.white.withValues(alpha: 0.3),
+              highlightColor: Colors.white.withValues(alpha: 0.1),
+              child: const Center(
+                child: Icon(
+                  Icons.delete_forever,
+                  color: Colors.white,
+                  size: 24,
+                  shadows: [
+                    Shadow(
+                      color: Color(0xFF000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation() {
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'action_sheet',
+        'modal_name': 'Delete All Analyses Confirmation',
+      },
+    );
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (dialogContext) => CustomCupertinoActionSheet(
+        title: 'Delete all analysis data?',
+        message:
+            'This will permanently delete all form analysis records and Cloud Storage images. This cannot be undone. (DEBUG MODE ONLY)',
+        destructiveActionLabel: 'Delete all',
+        onDestructiveActionPressed: () {
+          _logger.track('Delete All Analyses Confirmed');
+          Navigator.pop(dialogContext);
+          _historyCubit.deleteAllAnalyses();
+        },
+        onCancelPressed: () {
+          _logger.track('Delete All Analyses Cancelled');
+          Navigator.pop(dialogContext);
+        },
       ),
     );
   }

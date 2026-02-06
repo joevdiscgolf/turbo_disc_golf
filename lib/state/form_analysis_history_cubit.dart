@@ -29,7 +29,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
       }
 
       final (List<FormAnalysisResponseV2> analyses, bool hasMore) =
-          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 15);
+          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 10);
 
       emit(FormAnalysisHistoryLoaded(
         analyses: analyses,
@@ -73,7 +73,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
       final (List<FormAnalysisResponseV2> moreAnalyses, bool hasMore) =
           await FBFormAnalysisDataLoader.loadRecentAnalyses(
         uid,
-        limit: 15,
+        limit: 10,
         startAfterTimestamp: lastTimestamp,
       );
 
@@ -104,8 +104,10 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
   }
 
   /// Refresh the analysis history from Firestore without showing loading state.
-  /// Used for pull-to-refresh functionality.
+  /// Merges new analyses with existing paginated results, preserving scroll position.
   Future<void> refreshHistory() async {
+    final FormAnalysisHistoryState currentState = state;
+
     try {
       final String? uid = locator.get<AuthService>().currentUid;
       if (uid == null) {
@@ -113,15 +115,43 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         return;
       }
 
-      final (List<FormAnalysisResponseV2> analyses, bool hasMore) =
-          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 15);
+      final (List<FormAnalysisResponseV2> newAnalyses, bool hasMore) =
+          await FBFormAnalysisDataLoader.loadRecentAnalyses(uid, limit: 10);
 
-      emit(FormAnalysisHistoryLoaded(
-        analyses: analyses,
-        hasMore: hasMore,
-      ));
-      debugPrint(
-          '[FormAnalysisHistoryCubit] Refreshed ${analyses.length} analyses, hasMore: $hasMore');
+      // If we had existing data, merge new analyses with existing ones
+      if (currentState is FormAnalysisHistoryLoaded) {
+        final Set<String> newAnalysisIds =
+            newAnalyses.map((a) => a.id).whereType<String>().toSet();
+
+        // Keep existing analyses that aren't in the new batch (they're further down)
+        final List<FormAnalysisResponseV2> existingOnlyAnalyses = currentState
+            .analyses
+            .where((a) => a.id != null && !newAnalysisIds.contains(a.id))
+            .toList();
+
+        // Combine: new analyses first, then existing analyses not in new batch
+        final List<FormAnalysisResponseV2> mergedAnalyses = [
+          ...newAnalyses,
+          ...existingOnlyAnalyses,
+        ];
+
+        emit(FormAnalysisHistoryLoaded(
+          analyses: mergedAnalyses,
+          selectedAnalysis: currentState.selectedAnalysis,
+          hasMore: hasMore || existingOnlyAnalyses.isNotEmpty,
+        ));
+        debugPrint(
+          '[FormAnalysisHistoryCubit] Refreshed: ${newAnalyses.length} new, ${existingOnlyAnalyses.length} preserved, total: ${mergedAnalyses.length}',
+        );
+      } else {
+        emit(FormAnalysisHistoryLoaded(
+          analyses: newAnalyses,
+          hasMore: hasMore,
+        ));
+        debugPrint(
+          '[FormAnalysisHistoryCubit] Refreshed ${newAnalyses.length} analyses, hasMore: $hasMore',
+        );
+      }
     } catch (e) {
       debugPrint('[FormAnalysisHistoryCubit] Error refreshing history: $e');
       emit(FormAnalysisHistoryError(message: e.toString()));

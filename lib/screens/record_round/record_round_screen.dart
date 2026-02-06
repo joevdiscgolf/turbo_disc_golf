@@ -207,8 +207,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
   /// Calculates the total par for the selected course layout
   int _calculateTotalPar(RecordRoundActive state) {
     final CourseLayout? layout =
-        state.selectedCourse?.getLayoutById(state.selectedLayoutId ?? '') ??
-        state.selectedCourse?.defaultLayout;
+        state.selectedLayout ?? state.selectedCourse?.defaultLayout;
 
     if (layout == null) return 0;
 
@@ -949,13 +948,8 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     String subtitle;
     if (state.selectedCourse != null) {
       subtitle = state.selectedCourse!.name;
-      if (state.selectedLayoutId != null) {
-        final CourseLayout? layout = state.selectedCourse!.getLayoutById(
-          state.selectedLayoutId!,
-        );
-        if (layout != null) {
-          subtitle += ' • ${layout.name}';
-        }
+      if (state.selectedLayout != null) {
+        subtitle += ' • ${state.selectedLayout!.name}';
       }
     } else {
       subtitle = 'Select a course';
@@ -1231,8 +1225,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
 
     // Get course layout for par and distance
     final CourseLayout? layout =
-        state.selectedCourse?.getLayoutById(state.selectedLayoutId ?? '') ??
-        state.selectedCourse?.defaultLayout;
+        state.selectedLayout ?? state.selectedCourse?.defaultLayout;
 
     // Get par and distance from course layout (authoritative source)
     int? par;
@@ -2406,14 +2399,14 @@ class _MiniHolesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     // Get the layout for par values
     final CourseLayout? layout =
-        state.selectedCourse?.getLayoutById(state.selectedLayoutId ?? '') ??
-        state.selectedCourse?.defaultLayout;
+        state.selectedLayout ?? state.selectedCourse?.defaultLayout;
 
     // Use state.numHoles for variable hole count support
     final int numHoles = state.numHoles;
 
-    // Calculate number of rows needed
-    final int numRows = (numHoles / _holesPerRow).ceil();
+    // Calculate number of rows needed using integer ceiling division
+    // Formula: ceil(a/b) = (a + b - 1) ~/ b
+    final int numRows = (numHoles + _holesPerRow - 1) ~/ _holesPerRow;
 
     return Column(
       children: List.generate(numRows, (rowIndex) {

@@ -5,7 +5,8 @@ import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart' show SenseiColors, flattenedOverWhite;
+import 'package:turbo_disc_golf/utils/color_helpers.dart'
+    show flattenedOverWhite;
 import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// V3 design for judgment result content - clean, professional, full-width layout
@@ -41,8 +42,6 @@ class JudgmentResultContentV3 extends StatelessWidget {
           const SizedBox(height: 16),
           _buildContent(context, cleanAIContent),
           const SizedBox(height: 24),
-          _buildInfoSection(context),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -57,8 +56,14 @@ class JudgmentResultContentV3 extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isGlaze
-              ? [const Color(0xFF137e66), flattenedOverWhite(const Color(0xFF1a9f7f), 0.7)]
-              : [const Color(0xFFFF6B6B), flattenedOverWhite(const Color(0xFFFF8A8A), 0.7)],
+              ? [
+                  const Color(0xFF137e66),
+                  flattenedOverWhite(const Color(0xFF1a9f7f), 0.7),
+                ]
+              : [
+                  const Color(0xFFFF6B6B),
+                  flattenedOverWhite(const Color(0xFFFF8A8A), 0.7),
+                ],
         ),
       ),
       child: Stack(
@@ -144,35 +149,6 @@ class JudgmentResultContentV3 extends StatelessWidget {
           aiContent: cleanAIContent,
           round: round,
           analysis: analysis,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: SenseiColors.gray[100],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, size: 20, color: SenseiColors.gray[600]),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Judgment is permanent for this round. Each round gets one 50/50 roll!',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: SenseiColors.gray[700],
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

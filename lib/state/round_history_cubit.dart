@@ -6,6 +6,9 @@ import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 
+/// Number of rounds to load per page.
+const int _kPageSize = 10;
+
 /// Cubit for managing round history state
 /// Handles loading, refreshing, adding, and updating rounds in the history list
 class RoundHistoryCubit extends Cubit<RoundHistoryState>
@@ -18,12 +21,13 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState>
     try {
       emit(const RoundHistoryLoading());
 
-      final List<DGRound>? rounds = await locator
+      final result = await locator
           .get<RoundsService>()
-          .loadRoundsForUser();
+          .loadRoundsPaginated(limit: _kPageSize);
 
-      if (rounds != null) {
-        emit(RoundHistoryLoaded(rounds: rounds));
+      if (result != null) {
+        final (List<DGRound> rounds, bool hasMore) = result;
+        emit(RoundHistoryLoaded(rounds: rounds, hasMore: hasMore));
       } else {
         emit(RoundHistoryError(error: 'Something went wrong'));
       }
@@ -33,26 +37,114 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState>
     }
   }
 
+  /// Load more rounds (pagination).
+  /// Loads the next page of rounds after the current list.
+  Future<void> loadMore() async {
+    final RoundHistoryState currentState = state;
+    if (currentState is! RoundHistoryLoaded) return;
+    if (!currentState.hasMore || currentState.isLoadingMore) return;
+
+    try {
+      // Set loading more state
+      emit(RoundHistoryLoaded(
+        rounds: currentState.rounds,
+        hasMore: currentState.hasMore,
+        isLoadingMore: true,
+      ));
+
+      // Get the timestamp of the last loaded round for pagination
+      final String? lastTimestamp = currentState.sortedRounds.isNotEmpty
+          ? currentState.sortedRounds.last.playedRoundAt
+          : null;
+
+      final result = await locator.get<RoundsService>().loadRoundsPaginated(
+        limit: _kPageSize,
+        startAfterTimestamp: lastTimestamp,
+      );
+
+      if (result != null) {
+        final (List<DGRound> moreRounds, bool hasMore) = result;
+
+        // Append new rounds to existing list
+        final List<DGRound> allRounds = [
+          ...currentState.rounds,
+          ...moreRounds,
+        ];
+
+        emit(RoundHistoryLoaded(
+          rounds: allRounds,
+          hasMore: hasMore,
+          isLoadingMore: false,
+        ));
+        debugPrint(
+          'RoundHistoryCubit: Loaded ${moreRounds.length} more rounds, total: ${allRounds.length}, hasMore: $hasMore',
+        );
+      } else {
+        // Restore previous state without loading flag
+        emit(RoundHistoryLoaded(
+          rounds: currentState.rounds,
+          hasMore: currentState.hasMore,
+          isLoadingMore: false,
+        ));
+      }
+    } catch (e) {
+      debugPrint('Error loading more rounds: $e');
+      // Restore previous state without loading flag
+      emit(RoundHistoryLoaded(
+        rounds: currentState.rounds,
+        hasMore: currentState.hasMore,
+        isLoadingMore: false,
+      ));
+    }
+  }
+
   /// Refresh rounds from Firestore (pull-to-refresh)
-  /// Keeps showing existing data during refresh
+  /// Merges new rounds with existing paginated results, preserving scroll position.
   Future<void> refreshRounds() async {
+    final RoundHistoryState currentState = state;
+
     try {
       // If we have loaded data, show refreshing state with current data
-      if (state is RoundHistoryLoaded) {
-        final List<DGRound> currentRounds =
-            (state as RoundHistoryLoaded).rounds;
-        emit(RoundHistoryLoaded(rounds: currentRounds, isRefreshing: true));
+      if (currentState is RoundHistoryLoaded) {
+        emit(RoundHistoryLoaded(
+          rounds: currentState.rounds,
+          isRefreshing: true,
+          hasMore: currentState.hasMore,
+        ));
       } else {
         // If no data yet, just show loading
         emit(const RoundHistoryLoading());
       }
 
-      final List<DGRound>? rounds = await locator
+      final result = await locator
           .get<RoundsService>()
-          .loadRoundsForUser();
+          .loadRoundsPaginated(limit: _kPageSize);
 
-      if (rounds != null) {
-        emit(RoundHistoryLoaded(rounds: rounds));
+      if (result != null) {
+        final (List<DGRound> newRounds, bool hasMore) = result;
+
+        // If we had existing data, merge new rounds with existing ones
+        if (currentState is RoundHistoryLoaded) {
+          final Set<String> newRoundIds = newRounds.map((r) => r.id).toSet();
+
+          // Keep existing rounds that aren't in the new batch (they're further down)
+          final List<DGRound> existingOnlyRounds = currentState.rounds
+              .where((r) => !newRoundIds.contains(r.id))
+              .toList();
+
+          // Combine: new rounds first, then existing rounds not in new batch
+          final List<DGRound> mergedRounds = [
+            ...newRounds,
+            ...existingOnlyRounds,
+          ];
+
+          emit(RoundHistoryLoaded(
+            rounds: mergedRounds,
+            hasMore: hasMore || existingOnlyRounds.isNotEmpty,
+          ));
+        } else {
+          emit(RoundHistoryLoaded(rounds: newRounds, hasMore: hasMore));
+        }
       }
     } catch (e) {
       debugPrint('Error refreshing rounds: $e');

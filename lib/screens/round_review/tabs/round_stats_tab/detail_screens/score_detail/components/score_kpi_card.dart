@@ -6,7 +6,9 @@ import 'package:turbo_disc_golf/components/compact_scorecard.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/score_detail_screen.dart';
+import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/shared/helpers/score_color_helper.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
@@ -58,52 +60,44 @@ class ScoreKPICard extends StatelessWidget {
             ),
           ],
         ),
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
-                if (showMetadata) ...[
-                  _buildMetadata(),
-                  Divider(
-                    height: 8,
-                    thickness: 1,
-                    color: SenseiColors.gray.shade100,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                _kpiRow(context),
-                const SizedBox(height: 12),
-                if (!isDetailScreen) ...[
-                  CompactScorecard(holes: round.holes),
-                  const SizedBox(height: 16),
-                ],
-                locator
-                        .get<FeatureFlagService>()
-                        .useHeroAnimationsForRoundReview
-                    ? Hero(
-                        tag: 'score_distribution_bar',
-                        child: Material(
-                          color: Colors.transparent,
-                          child: ScoreDistributionBar(
-                            round: round,
-                            height: isDetailScreen ? 32 : 24,
-                          ),
-                        ),
-                      )
-                    : ScoreDistributionBar(
-                        round: round,
-                        height: isDetailScreen ? 32 : 24,
-                      ),
-              ],
-            ),
-            if (!isDetailScreen) ...[
-              // Arrow icon in top-right corner
-              Positioned(
-                top: 0,
-                right: 0,
+            if (showMetadata) ...[
+              _buildMetadataWithArrow(),
+              Divider(
+                height: 8,
+                thickness: 1,
+                color: SenseiColors.gray.shade100,
+              ),
+              const SizedBox(height: 12),
+            ] else if (!isDetailScreen) ...[
+              // Arrow icon in top-right corner when no metadata
+              Align(
+                alignment: Alignment.topRight,
                 child: Icon(Icons.chevron_right, color: Colors.black, size: 20),
               ),
             ],
+            _kpiRow(context),
+            const SizedBox(height: 12),
+            if (!isDetailScreen) ...[
+              CompactScorecard(holes: round.holes),
+              const SizedBox(height: 16),
+            ],
+            locator.get<FeatureFlagService>().useHeroAnimationsForRoundReview
+                ? Hero(
+                    tag: 'score_distribution_bar',
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ScoreDistributionBar(
+                        round: round,
+                        height: isDetailScreen ? 32 : 24,
+                      ),
+                    ),
+                  )
+                : ScoreDistributionBar(
+                    round: round,
+                    height: isDetailScreen ? 32 : 24,
+                  ),
           ],
         ),
       ),
@@ -161,8 +155,8 @@ class ScoreKPICard extends StatelessWidget {
     return _buildScoreKPIStat(
       context,
       'Score',
-      relativeScore >= 0 ? '+$relativeScore' : '$relativeScore',
-      _getScoreColor(relativeScore),
+      getRelativeScoreString(relativeScore),
+      getScoreColor(relativeScore),
     );
   }
 
@@ -210,66 +204,69 @@ class ScoreKPICard extends StatelessWidget {
     );
   }
 
-  Color _getScoreColor(int score) {
-    if (score < 0) {
-      return const Color(0xFF137e66);
-    } else if (score > 0) {
-      return const Color(0xFFFF7A7A);
-    } else {
-      return const Color(0xFFF5F5F5);
-    }
+  Widget _buildMetadataWithArrow() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: _buildMetadataContent()),
+          if (!isDetailScreen) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, color: Colors.black, size: 20),
+          ],
+        ],
+      ),
+    );
   }
 
-  Widget _buildMetadata() {
+  Widget _buildMetadataContent() {
     final layout = round.playedLayout;
     final playedDate = DateTime.parse(round.playedRoundAt);
     final formattedDate = DateFormat('MMM d, yyyy').format(playedDate);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Text(
-            round.courseName,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: SenseiColors.darkGray,
-            ),
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          round.courseName,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: SenseiColors.darkGray,
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              '•',
-              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-            ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text(
+            '•',
+            style: TextStyle(fontSize: 12, color: Colors.grey[400]),
           ),
-          Text(
-            layout.name,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.normal,
-              color: Colors.grey[600],
-            ),
+        ),
+        Text(
+          layout.name,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.normal,
+            color: Colors.grey[600],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              '•',
-              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-            ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text(
+            '•',
+            style: TextStyle(fontSize: 12, color: Colors.grey[400]),
           ),
-          Text(
-            formattedDate,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.normal,
-              color: Colors.grey[600],
-            ),
+        ),
+        Text(
+          formattedDate,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.normal,
+            color: Colors.grey[600],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

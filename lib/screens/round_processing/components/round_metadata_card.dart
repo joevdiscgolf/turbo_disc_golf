@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 /// Card displaying round metadata with KPI stats.
 /// Design matches ScoreKPICard with isDetailScreen: false (without scorecard).
@@ -84,7 +85,7 @@ class RoundMetadataCard extends StatelessWidget {
                 child: _buildScoreKPIStat(
                   context,
                   'Score',
-                  relativeScore > 0 ? '+$relativeScore' : '$relativeScore',
+                  getRelativeScoreString(relativeScore),
                   _getScoreColor(relativeScore),
                 ),
               ),
@@ -153,11 +154,11 @@ class RoundMetadataCard extends StatelessWidget {
 
   Color _getScoreColor(int score) {
     if (score < 0) {
-      return const Color(0xFF137e66);
+      return HoleScoreColors.birdieColor;
     } else if (score > 0) {
-      return const Color(0xFFFF7A7A);
+      return HoleScoreColors.bogeyColor;
     } else {
-      return const Color(0xFFF5F5F5);
+      return HoleScoreColors.parColor;
     }
   }
 }

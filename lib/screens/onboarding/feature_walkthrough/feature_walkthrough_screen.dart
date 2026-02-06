@@ -108,6 +108,10 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
     _logger.track('Walkthrough Completed Button Tapped');
 
     HapticFeedback.mediumImpact();
+    // Reset status bar to dark text/icons before navigating away
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+    );
     // User is already marked as onboarded in setupNewUser, just go to home
     locator.get<AppPhaseController>().setPhase(AppPhase.home);
   }

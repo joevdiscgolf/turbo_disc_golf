@@ -17,6 +17,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/video_orientation.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/timeline_analysis_view.dart';
+import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/utils/checkpoint_helpers.dart';
@@ -282,10 +283,13 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
               checkpoint: checkpoint,
               onTap: () => _showCheckpointDetailsPanel(context, checkpoint),
             ),
-            V2MeasurementsCard(
-              checkpoint: checkpoint,
-              cameraAngle: _effectiveCameraAngle,
-            ),
+            if (locator.get<FeatureFlagService>().getBool(
+                  FeatureFlag.showFormAnalysisMeasurementsCard,
+                ))
+              V2MeasurementsCard(
+                checkpoint: checkpoint,
+                cameraAngle: _effectiveCameraAngle,
+              ),
             const SizedBox(height: 120),
           ],
         ),
