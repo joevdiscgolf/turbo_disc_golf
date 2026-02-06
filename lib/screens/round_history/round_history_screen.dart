@@ -10,7 +10,7 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/continue_recording_banner.dart';
-import 'package:turbo_disc_golf/screens/round_history/components/round_history_row.dart';
+import 'package:turbo_disc_golf/screens/round_history/components/round_history_card.dart';
 import 'package:turbo_disc_golf/screens/round_history/components/welcome_empty_state.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -43,6 +43,7 @@ class RoundHistoryScreen extends StatefulWidget {
 class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
   late RoundHistoryCubit _roundHistoryCubit;
   late final LoggingServiceBase _logger;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -62,6 +63,23 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
     _roundHistoryCubit.loadRounds();
     // Sync course cache from Firestore (fire and forget)
     _syncCourseCache();
+    // Add scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Check if scrolled near bottom (within 200 pixels)
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _roundHistoryCubit.loadMore();
+    }
   }
 
   /// Syncs the recent courses cache from Firestore.
@@ -97,6 +115,7 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
           BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
             builder: (context, state) {
               return CustomScrollView(
+                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   CupertinoSliverRefreshControl(
@@ -148,14 +167,26 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 148),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
-            final DGRound round = sortedRounds[index];
-            return Column(
-              children: [
-                RoundHistoryRow(round: round, logger: _logger, index: index),
-                if (index < sortedRounds.length - 1) const SizedBox(height: 8),
-              ],
-            );
-          }, childCount: sortedRounds.length),
+            // Show list items
+            if (index < sortedRounds.length) {
+              final DGRound round = sortedRounds[index];
+              return Column(
+                children: [
+                  RoundHistoryCard(round: round, logger: _logger, index: index),
+                  if (index < sortedRounds.length - 1)
+                    const SizedBox(height: 8),
+                ],
+              );
+            }
+            // Show loading indicator at bottom when loading more
+            else if (state.isLoadingMore) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CupertinoActivityIndicator()),
+              );
+            }
+            return const SizedBox.shrink();
+          }, childCount: sortedRounds.length + (state.isLoadingMore ? 1 : 0)),
         ),
       );
     } else {

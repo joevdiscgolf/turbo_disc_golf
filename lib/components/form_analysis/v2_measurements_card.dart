@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/components/form_analysis/knee_comparison_card.dart';
+import 'package:turbo_disc_golf/components/form_analysis/angle_comparison_card.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 
@@ -41,7 +41,7 @@ class V2MeasurementsCard extends StatelessWidget {
     }
 
     return AngleComparisonCard(
-      backKneeUser: userMeasurements.backKneeAngle,
+      backKneeUser: userMeasurements.backKneeAngle!,
       backKneePro: referenceMeasurements?.backKneeAngle,
       backKneeDeviation: deviationMeasurements?.backKneeAngle,
     );

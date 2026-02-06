@@ -2,8 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:turbo_disc_golf/components/shimmer_box.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 class FormAnalysisHistoryCard extends StatelessWidget {
@@ -126,67 +128,76 @@ class FormAnalysisHistoryCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholderThumbnail() {
-    return const _ShimmerPlaceholder(
+    return ShimmerBox(
       width: 70,
       height: 70,
       borderRadius: 8,
+      color: SenseiColors.gray.shade100,
     );
   }
 }
 
-/// Shimmer placeholder for loading thumbnails
-class _ShimmerPlaceholder extends StatefulWidget {
-  const _ShimmerPlaceholder({
-    required this.width,
-    required this.height,
-    required this.borderRadius,
-  });
-
-  final double width;
-  final double height;
-  final double borderRadius;
-
-  @override
-  State<_ShimmerPlaceholder> createState() => _ShimmerPlaceholderState();
-}
-
-class _ShimmerPlaceholderState extends State<_ShimmerPlaceholder>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+/// Shimmer skeleton placeholder for form analysis history cards during loading
+class FormAnalysisHistoryCardShimmer extends StatelessWidget {
+  const FormAnalysisHistoryCardShimmer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            color: Color.lerp(
-              Colors.grey[300],
-              Colors.grey[100],
-              _controller.value,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: defaultCardBoxShadow(),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date placeholder
+                  ShimmerBox(
+                    width: 120,
+                    height: 24,
+                    borderRadius: 4,
+                    color: SenseiColors.gray.shade100,
+                  ),
+                  const Spacer(),
+                  // Badges placeholder
+                  Row(
+                    children: [
+                      ShimmerBox(
+                        width: 80,
+                        height: 28,
+                        borderRadius: 12,
+                        color: SenseiColors.gray.shade100,
+                      ),
+                      const SizedBox(width: 8),
+                      ShimmerBox(
+                        width: 60,
+                        height: 28,
+                        borderRadius: 12,
+                        color: SenseiColors.gray.shade100,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(width: 12),
+            // Thumbnail placeholder
+            ShimmerBox(
+              width: 70,
+              height: 70,
+              borderRadius: 8,
+              color: SenseiColors.gray.shade100,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

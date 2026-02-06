@@ -731,7 +731,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
         final RecordRoundState cubitState = recordRoundCubit.state;
         if (cubitState is RecordRoundActive &&
             cubitState.selectedCourse?.id == hit.id &&
-            cubitState.selectedLayoutId == layoutSummary.id) {
+            cubitState.selectedLayout?.id == layoutSummary.id) {
           // Clear the selected course/layout since it was deleted
           recordRoundCubit.setSelectedCourse(
             updatedCourse,

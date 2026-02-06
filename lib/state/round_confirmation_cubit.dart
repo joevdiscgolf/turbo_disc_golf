@@ -296,10 +296,10 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
     // Use helper to update throw and cascade distances
     final List<DiscThrow> updatedThrows =
         ThrowDistanceHelper.updateThrowWithCascade(
-      throws: hole.throws!,
-      throwIndex: throwIndex,
-      updatedThrow: updatedThrow,
-    );
+          throws: hole.throws!,
+          throwIndex: throwIndex,
+          updatedThrow: updatedThrow,
+        );
 
     final updatedHole = PotentialDGHole(
       number: hole.number,
@@ -389,6 +389,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
   /// Finalize the potential round after confirmation
   /// Converts PotentialDGRound to DGRound, validates, enhances, and saves
   /// Returns the finalized DGRound or null if validation fails
+  /// Note: Does NOT clear confirmation state - caller manages that via animation phases
   Future<DGRound?> finalizeRound() async {
     if (state is! ConfirmingRoundActive) {
       debugPrint('Cannot finalize: no active round confirmation');
@@ -453,23 +454,59 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
 
     if (firestoreSuccess) {
       debugPrint('Successfully saved round to Firestore');
-      // Then add to local history state
+      // Add to local history state
       roundHistoryCubit.addRound(parsedRound);
       // Clear recording state now that round is saved
       recordRoundCubit.emitInactive();
-      // Clear confirmation state on successful save
-      clearRoundConfirmation();
     } else {
       debugPrint('Failed to save round to Firestore');
       // Still add to local state so user can see it
       roundHistoryCubit.addRound(parsedRound);
-      // Also clear state even on failure since we tried to save
+      // Also clear recording state even on failure since we tried to save
       recordRoundCubit.emitInactive();
-      // Clear confirmation state even on failure
-      clearRoundConfirmation();
     }
 
     return parsedRound;
+  }
+
+  /// Start the reveal animation after user confirms.
+  /// This finalizes the round and begins phase transitions.
+  /// Returns the finalized round or null if finalization fails.
+  Future<DGRound?> startRevealAnimation() async {
+    if (state is! ConfirmingRoundActive) return null;
+    final ConfirmingRoundActive activeState = state as ConfirmingRoundActive;
+
+    // If we already have a finalized round, just start the animation
+    if (activeState.parsedRound != null) {
+      emit(activeState.copyWith(animationPhase: AnimationPhase.transitioning));
+      return activeState.parsedRound;
+    }
+
+    // Finalize the round first
+    final DGRound? finalizedRound = await finalizeRound();
+    if (finalizedRound == null) return null;
+
+    // Store finalized round in state and start animations
+    emit(
+      activeState.copyWith(
+        parsedRound: finalizedRound,
+        animationPhase: AnimationPhase.transitioning,
+      ),
+    );
+
+    return finalizedRound;
+  }
+
+  /// Set the animation phase during the reveal animation sequence
+  void setAnimationPhase(AnimationPhase phase) {
+    if (state is! ConfirmingRoundActive) return;
+    emit((state as ConfirmingRoundActive).copyWith(animationPhase: phase));
+  }
+
+  /// Get the finalized round from state (for display after finalization)
+  DGRound? get finalizedRound {
+    if (state is! ConfirmingRoundActive) return null;
+    return (state as ConfirmingRoundActive).parsedRound;
   }
 
   /// Validate and enhance a round

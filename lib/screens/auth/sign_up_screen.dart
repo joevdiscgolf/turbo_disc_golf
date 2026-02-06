@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -91,8 +92,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
       child: Scaffold(
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: 'Sign up',
+          title: 'ScoreSensei',
+          titleIcon: ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: Image.asset(
+              'assets/icon/app_icon_clear_bg.png',
+              width: 32,
+              height: 32,
+            ),
+          ),
+          titleStyle: GoogleFonts.exo2(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+            letterSpacing: -0.5,
+            color: SenseiColors.gray.shade600,
+          ),
+          hasBackButton: false,
         ),
+        resizeToAvoidBottomInset: false,
         backgroundColor: SenseiColors.white,
         body: Padding(
           padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
@@ -105,64 +123,102 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget _mainBody(BuildContext context) {
     return GestureDetector(
       onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AuthInputField(
-            controller: _emailController,
-            hintText: 'Email',
-            prefixIcon: FlutterRemix.mail_line,
-            keyboardType: TextInputType.emailAddress,
-            onChanged: (String? value) => setState(() {
-              _email = value;
-              _errorText = null;
-            }),
-          ),
-          const SizedBox(height: 8),
-          AuthInputField(
-            controller: _passwordController,
-            hintText: 'Password',
-            prefixIcon: FlutterRemix.lock_line,
-            obscureText: true,
-            externalObscured: _isPasswordObscured,
-            onToggleVisibility: _togglePasswordVisibility,
-            onChanged: (String? value) => setState(() {
-              _password = value;
-              _errorText = null;
-            }),
-          ),
-          const SizedBox(height: 8),
-          AuthInputField(
-            controller: _confirmPasswordController,
-            hintText: 'Confirm Password',
-            prefixIcon: FlutterRemix.lock_line,
-            obscureText: true,
-            externalObscured: _isPasswordObscured,
-            showVisibilityToggle: false,
-            onChanged: (String? value) => setState(() {
-              _confirmPassword = value;
-              _errorText = null;
-            }),
-          ),
-          const SizedBox(height: 24),
-          _signUpButton(context),
-          const SizedBox(height: 12),
-          GoogleSignInButton(onPressed: _handleGoogleSignIn),
-          const SizedBox(height: 12),
-          AppleSignInButton(onPressed: _handleAppleSignIn),
-          const SizedBox(height: 16),
-          if (_errorText != null)
-            Center(
-              child: AutoSizeText(
-                _errorText!,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(color: Colors.red),
-                maxLines: 2,
-                textAlign: TextAlign.center,
-              ),
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewPadding.bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthInputField(
+              controller: _emailController,
+              hintText: 'Email',
+              prefixIcon: FlutterRemix.mail_line,
+              keyboardType: TextInputType.emailAddress,
+              onChanged: (String? value) => setState(() {
+                _email = value;
+                _errorText = null;
+              }),
             ),
-        ],
+            const SizedBox(height: 8),
+            AuthInputField(
+              controller: _passwordController,
+              hintText: 'Password',
+              prefixIcon: FlutterRemix.lock_line,
+              obscureText: true,
+              externalObscured: _isPasswordObscured,
+              onToggleVisibility: _togglePasswordVisibility,
+              onChanged: (String? value) => setState(() {
+                _password = value;
+                _errorText = null;
+              }),
+            ),
+            const SizedBox(height: 8),
+            AuthInputField(
+              controller: _confirmPasswordController,
+              hintText: 'Confirm password',
+              prefixIcon: FlutterRemix.lock_line,
+              obscureText: true,
+              externalObscured: _isPasswordObscured,
+              showVisibilityToggle: false,
+              onChanged: (String? value) => setState(() {
+                _confirmPassword = value;
+                _errorText = null;
+              }),
+            ),
+            const SizedBox(height: 24),
+            _signUpButton(context),
+            const SizedBox(height: 12),
+            GoogleSignInButton(onPressed: _handleGoogleSignIn),
+            const SizedBox(height: 12),
+            AppleSignInButton(onPressed: _handleAppleSignIn),
+            const SizedBox(height: 16),
+            if (_errorText != null)
+              Center(
+                child: AutoSizeText(
+                  _errorText!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.red),
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            const Spacer(),
+            Text(
+              'Already have an account?',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: SenseiColors.gray[400]),
+            ),
+            const SizedBox(height: 12),
+            _signInButton(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _signInButton(BuildContext context) {
+    return Center(
+      child: GestureDetector(
+        onTap: () {
+          _logger.track('Sign In Link Tapped');
+          Navigator.pop(context);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          color: Colors.transparent,
+          child: Text(
+            'Sign in',
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              color: SenseiColors.blue,
+              decoration: TextDecoration.underline,
+              decorationColor: SenseiColors.blue,
+            ),
+          ),
+        ),
       ),
     );
   }

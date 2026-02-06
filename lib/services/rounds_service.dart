@@ -31,6 +31,34 @@ class RoundsService {
     }
   }
 
+  /// Load rounds with pagination support.
+  /// Returns a tuple of (rounds, hasMore).
+  Future<(List<DGRound>, bool)?> loadRoundsPaginated({
+    required int limit,
+    String? startAfterTimestamp,
+  }) async {
+    try {
+      final AuthUser? authuser = locator.get<AuthService>().currentUser;
+      if (authuser == null) return null;
+
+      final (List<DGRound> rounds, bool hasMore) =
+          await _roundsRepository.loadRoundsPaginated(
+        authuser.uid,
+        limit: limit,
+        startAfterTimestamp: startAfterTimestamp,
+      );
+
+      debugPrint(
+        'RoundsService: Loaded ${rounds.length} rounds (paginated), hasMore: $hasMore',
+      );
+
+      return (rounds, hasMore);
+    } catch (e) {
+      debugPrint('RoundsService: Error loading paginated rounds - $e');
+      return null;
+    }
+  }
+
   /// Get the last X rounds
   List<DGRound> getLastXRounds(List<DGRound> allRounds, int count) {
     if (count <= 0) return [];

@@ -46,21 +46,10 @@ class ContinueRecordingBanner extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                flattenedOverWhite(SenseiColors.blueSecondary, 0.25),
-                flattenedOverWhite(SenseiColors.blueSecondary, 0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border(
-              top: BorderSide(color: SenseiColors.gray.shade200, width: 1),
-              right: BorderSide(color: SenseiColors.gray.shade200, width: 1),
-              bottom: BorderSide(color: SenseiColors.gray.shade200, width: 1),
-            ),
+            color: flattenedOverWhite(SenseiColors.blueSecondary, 0.05),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -149,21 +138,10 @@ class ContinueRecordingBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            flattenedOverWhite(SenseiColors.blue, 0.15),
-            flattenedOverWhite(SenseiColors.blue, 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border(
-          top: BorderSide(color: SenseiColors.gray.shade200, width: 1),
-          right: BorderSide(color: SenseiColors.gray.shade200, width: 1),
-          bottom: BorderSide(color: SenseiColors.gray.shade200, width: 1),
-        ),
+        color: flattenedOverWhite(SenseiColors.blue, 0.05),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),

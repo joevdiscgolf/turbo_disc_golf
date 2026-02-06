@@ -4,17 +4,18 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/auth/components/auth_input_field.dart';
-import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/screens/auth/components/google_sign_in_button.dart';
 import 'package:turbo_disc_golf/screens/auth/sign_up_screen.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:flutter/services.dart';
 
 class LoginScreen extends StatefulWidget {
   static const String routeName = '/login';
@@ -75,10 +76,20 @@ class _LoginScreenState extends State<LoginScreen> {
         appBar: GenericAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
           title: 'ScoreSensei',
-          titleIcon: Image.asset(
-            'assets/icon/app_icon_clear_bg.png',
-            height: 32,
-            width: 32,
+          titleIcon: ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: Image.asset(
+              'assets/icon/app_icon_clear_bg.png',
+              width: 32,
+              height: 32,
+            ),
+          ),
+          titleStyle: GoogleFonts.exo2(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            fontStyle: FontStyle.italic,
+            letterSpacing: -0.5,
+            color: SenseiColors.gray.shade600,
           ),
           hasBackButton: false,
         ),

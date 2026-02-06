@@ -2,36 +2,24 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
-/// A card that visually compares knee angles between user and pro.
-/// Shows visual angle diagrams with degree values and actionable tips.
+/// A card that visually compares back knee angles between user and pro.
+/// Shows visual angle diagrams with degree values.
 class AngleComparisonCard extends StatelessWidget {
   const AngleComparisonCard({
     super.key,
-    this.frontKneeUser,
-    this.frontKneePro,
-    this.frontKneeDeviation,
-    this.backKneeUser,
+    required this.backKneeUser,
     this.backKneePro,
     this.backKneeDeviation,
   });
 
-  final double? frontKneeUser;
-  final double? frontKneePro;
-  final double? frontKneeDeviation;
-  final double? backKneeUser;
+  final double backKneeUser;
   final double? backKneePro;
   final double? backKneeDeviation;
 
   @override
   Widget build(BuildContext context) {
-    final bool hasFrontKnee = frontKneeUser != null;
-    final bool hasBackKnee = backKneeUser != null;
-
-    if (!hasFrontKnee && !hasBackKnee) {
-      return const SizedBox.shrink();
-    }
-
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 8),
       decoration: BoxDecoration(
@@ -49,21 +37,12 @@ class AngleComparisonCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          if (hasFrontKnee)
-            _KneeAngleComparison(
-              label: 'Front knee',
-              userAngle: frontKneeUser!,
-              proAngle: frontKneePro,
-              deviation: frontKneeDeviation,
-            ),
-          if (hasFrontKnee && hasBackKnee) const SizedBox(height: 16),
-          if (hasBackKnee)
-            _KneeAngleComparison(
-              label: 'Back knee',
-              userAngle: backKneeUser!,
-              proAngle: backKneePro,
-              deviation: backKneeDeviation,
-            ),
+          _KneeAngleComparison(
+            label: 'Back knee',
+            userAngle: backKneeUser,
+            proAngle: backKneePro,
+            deviation: backKneeDeviation,
+          ),
         ],
       ),
     );
@@ -90,8 +69,9 @@ class _KneeAngleComparison extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: SenseiColors.gray.shade50,
-        borderRadius: BorderRadius.circular(10),
+        color: SenseiColors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: defaultCardBoxShadow(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

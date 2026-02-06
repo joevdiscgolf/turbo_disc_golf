@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
+import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/explosion_effect.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/persistent_square.dart';
@@ -13,12 +14,14 @@ import 'package:turbo_disc_golf/screens/round_processing/components/round_confir
 import 'package:turbo_disc_golf/screens/round_review/tabs/juge_round_tab/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_stats_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
+import 'package:turbo_disc_golf/state/round_confirmation_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Full-screen loading experience shown while processing a round.
@@ -70,6 +73,9 @@ class _RoundProcessingLoadingScreenState
   late TabController _tabController;
   late final LoggingServiceBase _logger;
 
+  // Store the finalized round locally so we can clear cubit state
+  DGRound? _finalizedRound;
+
   // GlobalKey to ensure ExplosionEffect persists across state changes
   final GlobalKey _explosionEffectKey = GlobalKey();
 
@@ -97,13 +103,14 @@ class _RoundProcessingLoadingScreenState
   }
 
   Future<void> _processRound() async {
-    // Check if we already have a potential round from the finalize banner
-    // If so, skip parsing and go straight to confirming
+    // Check if we already have a confirmation in progress from the finalize banner
+    final RoundConfirmationCubit confirmationCubit =
+        BlocProvider.of<RoundConfirmationCubit>(context);
+
     if (widget.fromFinalizeBanner &&
-        _roundParser.potentialRound != null &&
-        _roundParser.parsedRound == null) {
+        confirmationCubit.state is ConfirmingRoundActive) {
       debugPrint(
-        'RoundProcessingLoadingScreen: Potential round already loaded from finalize banner, skipping parsing',
+        'RoundProcessingLoadingScreen: Confirmation already active from finalize banner, skipping parsing',
       );
       if (mounted) {
         setState(() {
@@ -130,7 +137,7 @@ class _RoundProcessingLoadingScreenState
     // Extract values from the active state
     final String transcript = state.fullTranscript;
     final Course? selectedCourse = state.selectedCourse;
-    final String? selectedLayoutId = state.selectedLayoutId;
+    final String? selectedLayoutId = state.selectedLayout?.id;
     final int numHoles = state.numHoles;
 
     // If using shared preferences (cached round), we still need a transcript
@@ -161,14 +168,20 @@ class _RoundProcessingLoadingScreenState
 
       // Check for potential round (after initial parsing)
       if (_roundParser.potentialRound != null) {
-        // Transition to confirmation screen
+        // Initialize the cubit with the potential round BEFORE transitioning
+        final RoundConfirmationCubit confirmationCubit =
+            BlocProvider.of<RoundConfirmationCubit>(context);
+        confirmationCubit.startRoundConfirmation(
+          context,
+          _roundParser.potentialRound!,
+        );
+
+        // Now transition to confirmation screen
         setState(() {
           _processingState = _ProcessingState.confirming;
         });
-      } else if (_roundParser.parsedRound != null) {
-        // For cached rounds, we skip confirmation and go straight to reveal
-        _revealContent();
       } else {
+        // No round parsed
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -181,44 +194,35 @@ class _RoundProcessingLoadingScreenState
   }
 
   void _revealContent() async {
-    // If we have a potential round, finalize it first
-    if (_roundParser.potentialRound != null &&
-        _roundParser.parsedRound == null) {
-      debugPrint('Finalizing potential round...');
+    final RoundConfirmationCubit cubit =
+        BlocProvider.of<RoundConfirmationCubit>(context);
 
-      // Get the updated round from the cubit and finalize it
-      final RoundConfirmationCubit cubit =
-          BlocProvider.of<RoundConfirmationCubit>(context);
-      final finalizedRound = await cubit.finalizeRound();
+    // Finalize the round using the cubit (stores result in cubit state)
+    debugPrint('Finalizing potential round via cubit...');
+    final finalizedRound = await cubit.startRevealAnimation();
 
-      if (finalizedRound == null) {
-        debugPrint(
-          'RoundProcessingLoadingScreen: ERROR - Failed to finalize round',
-        );
-        if (mounted) {
-          locator.get<ToastService>().showError(
-            'Round is missing required fields. Please complete all holes.',
-          );
-          // Go back to confirmation screen
-          setState(() {
-            _processingState = _ProcessingState.confirming;
-          });
-        }
-        return;
-      }
-
-      // Set the finalized round on the parser for navigation and display
-      _roundParser.setRound(finalizedRound);
-    }
-
-    if (_roundParser.parsedRound == null) {
+    if (finalizedRound == null) {
       debugPrint(
-        'RoundProcessingLoadingScreen: ERROR - parsedRound is null, cannot reveal',
+        'RoundProcessingLoadingScreen: ERROR - Failed to finalize round',
       );
+      if (mounted) {
+        locator.get<ToastService>().showError(
+          'Round is missing required fields. Please complete all holes.',
+        );
+        // Go back to confirmation screen
+        cubit.setAnimationPhase(AnimationPhase.idle);
+        setState(() {
+          _processingState = _ProcessingState.confirming;
+        });
+      }
       return;
     }
 
+    // Store the finalized round locally so we can display it after clearing cubit state
+    _finalizedRound = finalizedRound;
+
     // First, transition: fade out text and move icon to center
+    // (cubit.startRevealAnimation already set phase to transitioning)
     setState(() {
       _processingState = _ProcessingState.transitioning;
     });
@@ -227,6 +231,7 @@ class _RoundProcessingLoadingScreenState
     await Future.delayed(const Duration(milliseconds: 800));
 
     // Then trigger explosion effect
+    cubit.setAnimationPhase(AnimationPhase.exploding);
     setState(() {
       _processingState = _ProcessingState.exploding;
     });
@@ -237,6 +242,7 @@ class _RoundProcessingLoadingScreenState
 
     // Trigger zoom transition into the center disc (hyperspace starts immediately)
     if (mounted) {
+      cubit.setAnimationPhase(AnimationPhase.zooming);
       setState(() {
         _processingState = _ProcessingState.zooming;
       });
@@ -247,9 +253,15 @@ class _RoundProcessingLoadingScreenState
 
     // Then transition to revealing state
     if (mounted) {
+      cubit.setAnimationPhase(AnimationPhase.revealing);
       setState(() {
         _processingState = _ProcessingState.revealing;
       });
+
+      // Clear the cubit state now that we have the round stored locally
+      // This prevents the "Finalize round" banner from showing in history
+      cubit.clearRoundConfirmation();
+      _roundParser.clearPotentialRound();
     }
   }
 
@@ -383,35 +395,40 @@ class _RoundProcessingLoadingScreenState
   }
 
   Widget _buildReviewContent() {
-    // Background will be handled by the revealing transition
-    // to keep hyperspace particles visible
+    // Use the locally stored finalized round (cubit state was cleared)
+    if (_finalizedRound == null) {
+      debugPrint('_buildReviewContent: ERROR - no finalized round stored');
+      return const Center(child: Text('Error: No round data'));
+    }
+
     return Container(
       key: const ValueKey('review'),
-      color: Colors.transparent, // Transparent initially
+      color: SenseiColors.gray[50],
       child: Column(
         children: [
           GenericAppBar(
             topViewPadding: MediaQuery.of(context).viewPadding.top,
-            title: _roundParser.parsedRound?.courseName ?? 'Round review',
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.black87,
+            title: locator.get<FeatureFlagService>().showRoundMetadataInfoBar
+                ? 'Round overview'
+                : _finalizedRound!.courseName,
+            backgroundColor: SenseiColors.gray[50],
             bottomWidget: _buildTabBar(),
-            bottomWidgetHeight: 48,
+            bottomWidgetHeight: 40,
           ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
                 RoundStatsBody(
-                  round: _roundParser.parsedRound!,
+                  round: _finalizedRound!,
                   isReviewV2Screen: true,
                   tabController: _tabController,
                 ),
                 RoundStoryTab(
-                  round: _roundParser.parsedRound!,
+                  round: _finalizedRound!,
                   tabController: _tabController,
                 ),
-                JudgeRoundTab(round: _roundParser.parsedRound!),
+                JudgeRoundTab(round: _finalizedRound!),
               ],
             ),
           ),
@@ -456,9 +473,24 @@ class _RoundProcessingLoadingScreenState
   }
 
   Widget _buildConfirmationContent() {
+    // Get potential round from cubit state (single source of truth)
+    final RoundConfirmationCubit cubit =
+        BlocProvider.of<RoundConfirmationCubit>(context);
+    final state = cubit.state;
+
+    if (state is! ConfirmingRoundActive) {
+      debugPrint('_buildConfirmationContent: No active confirmation state');
+      return const SizedBox.shrink();
+    }
+
     return RoundConfirmationWidget(
-      potentialRound: _roundParser.potentialRound!,
-      onBack: () => Navigator.of(context).pop(),
+      potentialRound: state.potentialRound,
+      onBack: () {
+        // Clear the confirmation state and potential round when going back
+        cubit.clearRoundConfirmation();
+        _roundParser.clearPotentialRound();
+        Navigator.of(context).pop();
+      },
       onConfirm: _revealContent,
       topViewPadding: MediaQuery.of(context).viewPadding.top,
     );

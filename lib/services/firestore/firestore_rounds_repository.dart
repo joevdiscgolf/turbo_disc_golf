@@ -86,4 +86,41 @@ class FirestoreRoundsRepository implements RoundsRepository {
       return [];
     }
   }
+
+  @override
+  Future<(List<DGRound>, bool)> loadRoundsPaginated(
+    String uid, {
+    required int limit,
+    String? startAfterTimestamp,
+  }) async {
+    try {
+      Query<Map<String, dynamic>> query = _firestore
+          .collection('$kRoundsCollection/$uid/$kRoundsCollection')
+          .orderBy('playedRoundAt', descending: true)
+          .limit(limit + 1);
+
+      if (startAfterTimestamp != null) {
+        query = query.startAfter([startAfterTimestamp]);
+      }
+
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await query.get();
+      final List<DGRound> rounds =
+          snapshot.docs.map((doc) => DGRound.fromJson(doc.data())).toList();
+
+      // Check if there are more results
+      final bool hasMore = rounds.length > limit;
+      if (hasMore) {
+        rounds.removeLast();
+      }
+
+      debugPrint(
+        'FirestoreRoundsRepository: Loaded ${rounds.length} rounds, hasMore: $hasMore',
+      );
+      return (rounds, hasMore);
+    } catch (e, trace) {
+      debugPrint('Error getting paginated rounds: $e');
+      debugPrint(trace.toString());
+      return (<DGRound>[], false);
+    }
+  }
 }

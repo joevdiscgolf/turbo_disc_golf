@@ -1,13 +1,14 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/cupertino.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
+// import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_history_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
@@ -17,6 +18,7 @@ import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
+import 'package:wiredash/wiredash.dart';
 
 class MainWrapper extends StatefulWidget {
   static const String screenName = 'Main Wrapper';
@@ -99,17 +101,15 @@ class _MainWrapperState extends State<MainWrapper> {
   Widget _buildRoundHistoryOnly(BuildContext context) {
     return Scaffold(
       backgroundColor: SenseiColors.gray.shade50,
-      appBar: GenericAppBar(
+      appBar: _MainWrapperAppBar(
         topViewPadding: MediaQuery.of(context).viewPadding.top,
-        title: 'ScoreSensei',
         titleIcon: _buildAppTitleIcon(),
         titleStyle: _buildAppTitleStyle(),
-        hasBackButton: false,
-        backgroundColor: SenseiColors.gray.shade50,
         leftWidget: _buildSettingsButton(
           context,
           RoundHistoryScreen.screenName,
         ),
+        rightWidget: _buildFeedbackButton(context),
       ),
       body: RoundHistoryScreen(
         topViewPadding: MediaQuery.of(context).viewPadding.top,
@@ -125,13 +125,10 @@ class _MainWrapperState extends State<MainWrapper> {
       value: locator.get<FormAnalysisHistoryCubit>(),
       child: Scaffold(
         backgroundColor: SenseiColors.gray.shade50,
-        appBar: GenericAppBar(
+        appBar: _MainWrapperAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: 'ScoreSensei',
           titleIcon: _buildAppTitleIcon(),
           titleStyle: _buildAppTitleStyle(),
-          hasBackButton: false,
-          backgroundColor: SenseiColors.gray.shade50,
           leftWidget: _buildSettingsButton(
             context,
             _selectedIndex == 0
@@ -261,6 +258,8 @@ class _MainWrapperState extends State<MainWrapper> {
         leftWidget: _selectedIndex == 0
             ? _buildSettingsButton(context, RoundHistoryScreen.screenName)
             : null,
+        rightWidget: _buildFeedbackButton(context),
+        rightWidgetWidth: 90,
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -309,27 +308,71 @@ class _MainWrapperState extends State<MainWrapper> {
   }
 
   Widget? _buildRightWidget(BuildContext context) {
-    // Form Coach tab - show delete button in debug mode
-    if (_selectedIndex == 1 && kDebugMode) {
-      return _buildDeleteButton(context);
-    }
-    return null;
+    // Form Coach tab - show delete button in debug mode alongside feedback
+    // if (_selectedIndex == 1 && kDebugMode) {
+    //   return Row(
+    //     mainAxisSize: MainAxisSize.min,
+    //     children: [
+    //       _buildFeedbackButton(context),
+    //       const SizedBox(width: 8),
+    //       _buildDeleteButton(context),
+    //     ],
+    //   );
+    // }
+    return _buildFeedbackButton(context);
+  }
+
+  Widget _buildFeedbackButton(BuildContext context) {
+    return Center(
+      child: GestureDetector(
+        onTap: () {
+          _logger.track('Send Feedback Button Tapped');
+          HapticFeedback.lightImpact();
+          final String? uid = locator.get<AuthService>().currentUid;
+          Wiredash.of(context).show(
+            options: WiredashFeedbackOptions(
+              collectMetaData: (metaData) => metaData..userId = uid,
+            ),
+          );
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: SenseiColors.gray[300]!, width: 1.5),
+          ),
+          child: Center(
+            child: Text(
+              'Feedback',
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: SenseiColors.gray[400],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildAppTitleIcon() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(5),
       child: Image.asset(
         'assets/icon/app_icon_clear_bg.png',
-        width: 40,
-        height: 40,
+        width: 32,
+        height: 32,
       ),
     );
   }
 
   TextStyle _buildAppTitleStyle() {
     return GoogleFonts.exo2(
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: FontWeight.w800,
       fontStyle: FontStyle.italic,
       letterSpacing: -0.5,
@@ -369,46 +412,113 @@ class _MainWrapperState extends State<MainWrapper> {
     );
   }
 
-  Widget _buildDeleteButton(BuildContext context) {
-    return Center(
-      child: IconButton(
-        icon: const Icon(Icons.delete_forever, size: 24),
-        onPressed: () {
-          _logger.track('Delete All Analyses Button Tapped');
-          HapticFeedback.lightImpact();
-          _showDeleteConfirmation(context);
-        },
-      ),
-    );
-  }
+  // Widget _buildDeleteButton(BuildContext context) {
+  //   return Center(
+  //     child: IconButton(
+  //       icon: const Icon(Icons.delete_forever, size: 24),
+  //       onPressed: () {
+  //         _logger.track('Delete All Analyses Button Tapped');
+  //         HapticFeedback.lightImpact();
+  //         _showDeleteConfirmation(context);
+  //       },
+  //     ),
+  //   );
+  // }
 
-  void _showDeleteConfirmation(BuildContext context) {
-    _logger.track(
-      'Modal Opened',
-      properties: {
-        'modal_type': 'action_sheet',
-        'modal_name': 'Delete All Analyses Confirmation',
-      },
-    );
+  // void _showDeleteConfirmation(BuildContext context) {
+  //   _logger.track(
+  //     'Modal Opened',
+  //     properties: {
+  //       'modal_type': 'action_sheet',
+  //       'modal_name': 'Delete All Analyses Confirmation',
+  //     },
+  //   );
 
-    showCupertinoModalPopup(
-      context: context,
-      builder: (dialogContext) => CustomCupertinoActionSheet(
-        title: 'Delete all analysis data?',
-        message:
-            'This will permanently delete all form analysis records and Cloud Storage images. This cannot be undone. (DEBUG MODE ONLY)',
-        destructiveActionLabel: 'Delete all',
-        onDestructiveActionPressed: () {
-          _logger.track('Delete All Analyses Confirmed');
-          Navigator.pop(dialogContext);
-          final FormAnalysisHistoryCubit historyCubit = locator
-              .get<FormAnalysisHistoryCubit>();
-          historyCubit.deleteAllAnalyses();
-        },
-        onCancelPressed: () {
-          _logger.track('Delete All Analyses Cancelled');
-          Navigator.pop(dialogContext);
-        },
+  //   showCupertinoModalPopup(
+  //     context: context,
+  //     builder: (dialogContext) => CustomCupertinoActionSheet(
+  //       title: 'Delete all analysis data?',
+  //       message:
+  //           'This will permanently delete all form analysis records and Cloud Storage images. This cannot be undone. (DEBUG MODE ONLY)',
+  //       destructiveActionLabel: 'Delete all',
+  //       onDestructiveActionPressed: () {
+  //         _logger.track('Delete All Analyses Confirmed');
+  //         Navigator.pop(dialogContext);
+  //         final FormAnalysisHistoryCubit historyCubit = locator
+  //             .get<FormAnalysisHistoryCubit>();
+  //         historyCubit.deleteAllAnalyses();
+  //       },
+  //       onCancelPressed: () {
+  //         _logger.track('Delete All Analyses Cancelled');
+  //         Navigator.pop(dialogContext);
+  //       },
+  //     ),
+  //   );
+  // }
+}
+
+class _MainWrapperAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
+  const _MainWrapperAppBar({
+    required this.topViewPadding,
+    required this.titleIcon,
+    required this.titleStyle,
+    this.leftWidget,
+    this.rightWidget,
+  });
+
+  final double topViewPadding;
+  final Widget titleIcon;
+  final TextStyle titleStyle;
+  final Widget? leftWidget;
+  final Widget? rightWidget;
+
+  static const double _appBarHeight = 48;
+
+  @override
+  Size get preferredSize => Size.fromHeight(_appBarHeight + topViewPadding);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(top: topViewPadding),
+      height: preferredSize.height,
+      color: SenseiColors.gray.shade50,
+      child: Stack(
+        children: [
+          // Centered title (always in the middle of the screen)
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                titleIcon,
+                const SizedBox(width: 8),
+                Text('ScoreSensei', style: titleStyle),
+              ],
+            ),
+          ),
+          // Left and right widgets with padding
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Left widget (aligned left)
+                if (leftWidget != null)
+                  leftWidget!
+                else
+                  const SizedBox.shrink(),
+                // Spacer pushes right widget to the right
+                const Spacer(),
+                // Right widget (aligned right)
+                if (rightWidget != null)
+                  rightWidget!
+                else
+                  const SizedBox.shrink(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

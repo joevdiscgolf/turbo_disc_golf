@@ -5,10 +5,11 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 
-/// A compact scorecard widget that displays hole-by-hole scores in two rows.
+/// A compact scorecard widget that displays hole-by-hole scores in rows.
 ///
 /// Shows hole numbers with scores, where non-par scores are displayed
 /// in colored circles (green for under par, red for over par).
+/// Each row displays a maximum of 9 holes.
 class CompactScorecard extends StatelessWidget {
   const CompactScorecard({
     super.key,
@@ -18,6 +19,8 @@ class CompactScorecard extends StatelessWidget {
     this.useWhiteCircleText = true,
     this.circleSize = 24.0,
   });
+
+  static const int _maxHolesPerRow = 9;
 
   final List<DGHole> holes;
 
@@ -36,16 +39,21 @@ class CompactScorecard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Split into two rows (first 9, second 9)
-    final int halfLength = (holes.length / 2).ceil();
-    final List<DGHole> firstNine = holes.take(halfLength).toList();
-    final List<DGHole> secondNine = holes.skip(halfLength).toList();
+    // Split holes into rows of maximum 9 holes each
+    final List<List<DGHole>> rows = [];
+    for (int i = 0; i < holes.length; i += _maxHolesPerRow) {
+      final int end = (i + _maxHolesPerRow < holes.length)
+          ? i + _maxHolesPerRow
+          : holes.length;
+      rows.add(holes.sublist(i, end));
+    }
 
     return Column(
       children: [
-        _buildScoreRow(firstNine),
-        const SizedBox(height: 12),
-        _buildScoreRow(secondNine),
+        for (int i = 0; i < rows.length; i++) ...[
+          _buildScoreRow(rows[i], rows[0].length),
+          if (i < rows.length - 1) const SizedBox(height: 12),
+        ],
       ],
     );
   }
@@ -69,83 +77,92 @@ class CompactScorecard extends StatelessWidget {
     }
   }
 
-  Widget _buildScoreRow(List<DGHole> rowHoles) {
+  Widget _buildScoreRow(List<DGHole> rowHoles, int totalColumns) {
     // Scale font sizes based on circle size
     final double scoreFontSize = circleSize * 0.5;
     final double holeNumberFontSize = circleSize * 0.42;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: rowHoles.map((hole) {
-        final int score = hole.holeScore;
-        final int scoreToPar = hole.relativeHoleScore;
-        final Color color = _getScoreColor(scoreToPar);
-        final bool isPar = scoreToPar == 0;
+    // Build hole widgets
+    final List<Widget> children = rowHoles.map((hole) {
+      final int score = hole.holeScore;
+      final int scoreToPar = hole.relativeHoleScore;
+      final Color color = _getScoreColor(scoreToPar);
+      final bool isPar = scoreToPar == 0;
 
-        return Expanded(
-          child: Column(
-            children: [
+      return Expanded(
+        child: Column(
+          children: [
+            Text(
+              '${hole.number}',
+              style: TextStyle(
+                fontSize: holeNumberFontSize,
+                color: holeNumberColor ?? SenseiColors.darkGray,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (locator
+                    .get<FeatureFlagService>()
+                    .showHoleDistancesInScorecard &&
+                hole.feet > 0) ...[
+              const SizedBox(height: 2),
               Text(
-                '${hole.number}',
+                '${hole.feet}',
                 style: TextStyle(
-                  fontSize: holeNumberFontSize,
-                  color: holeNumberColor ?? SenseiColors.darkGray,
-                  fontWeight: FontWeight.w600,
+                  fontSize: holeNumberFontSize - 2,
+                  color: holeNumberColor ?? SenseiColors.gray[400]!,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              if (locator
-                      .get<FeatureFlagService>()
-                      .showHoleDistancesInScorecard &&
-                  hole.feet > 0) ...[
-                const SizedBox(height: 2),
-                Text(
-                  '${hole.feet}',
-                  style: TextStyle(
-                    fontSize: holeNumberFontSize - 2,
-                    color: holeNumberColor ?? SenseiColors.gray[400]!,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 4),
-              isPar
-                  ? SizedBox(
-                      height: circleSize,
-                      child: Center(
-                        child: Text(
-                          '$score',
-                          style: TextStyle(
-                            fontSize: scoreFontSize,
-                            fontWeight: FontWeight.w600,
-                            color: parScoreColor ?? Colors.black87,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(
-                      width: circleSize,
-                      height: circleSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$score',
-                          style: TextStyle(
-                            fontSize: scoreFontSize,
-                            fontWeight: FontWeight.w600,
-                            color: useWhiteCircleText
-                                ? Colors.white
-                                : Colors.black87,
-                          ),
+            ],
+            const SizedBox(height: 4),
+            isPar
+                ? SizedBox(
+                    height: circleSize,
+                    child: Center(
+                      child: Text(
+                        '$score',
+                        style: TextStyle(
+                          fontSize: scoreFontSize,
+                          fontWeight: FontWeight.w600,
+                          color: parScoreColor ?? Colors.black87,
                         ),
                       ),
                     ),
-            ],
-          ),
-        );
-      }).toList(),
+                  )
+                : Container(
+                    width: circleSize,
+                    height: circleSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$score',
+                        style: TextStyle(
+                          fontSize: scoreFontSize,
+                          fontWeight: FontWeight.w600,
+                          color: useWhiteCircleText
+                              ? Colors.white
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+          ],
+        ),
+      );
+    }).toList();
+
+    // Add empty spacers for alignment if this row has fewer holes
+    final int emptySlots = totalColumns - rowHoles.length;
+    for (int i = 0; i < emptySlots; i++) {
+      children.add(const Expanded(child: SizedBox()));
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: children,
     );
   }
 }

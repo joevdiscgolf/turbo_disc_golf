@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/components/conditioning_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/components/flow_state_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/components/insights_card.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/components/psych_metrics_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/components/psych_overview_card.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/psych_detail/components/transition_matrix_card.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
-import 'package:flutter/services.dart';
 
 class PsychDetailScreen extends StatelessWidget {
   static const String screenName = 'Psych Detail';
@@ -87,8 +85,8 @@ class PsychDetailScreen extends StatelessWidget {
                 totalHoles: round.holes.length,
               ),
             TransitionMatrixCard(stats: psychStats),
-            PsychMetricsCard(stats: psychStats),
-            ConditioningCard(stats: psychStats, round: round),
+            // PsychMetricsCard(stats: psychStats),
+            // ConditioningCard(stats: psychStats, round: round),
             InsightsCard(stats: psychStats),
           ],
           runSpacing: 12,

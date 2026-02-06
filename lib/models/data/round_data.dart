@@ -3,6 +3,7 @@ import 'package:turbo_disc_golf/models/data/hole_data.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
+import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 part 'round_data.g.dart';
 
@@ -83,12 +84,12 @@ class DGRound {
     return getTotalScore() - getTotalPar();
   }
 
+  /// Getter alias for relative score (total score - total par)
+  int get relativeScore => getRelativeToPar();
+
   /// Get the score relative to par as a formatted string (e.g., "+3", "-2", "E")
   String getScoreRelativeToParString() {
-    final int scoreRelativeToPar = getRelativeToPar();
-    if (scoreRelativeToPar == 0) return 'E';
-    if (scoreRelativeToPar > 0) return '+$scoreRelativeToPar';
-    return '$scoreRelativeToPar';
+    return getRelativeScoreString(getRelativeToPar());
   }
 
   /// Get the layout that was played in this round

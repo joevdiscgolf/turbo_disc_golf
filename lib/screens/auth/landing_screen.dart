@@ -131,22 +131,21 @@ class _LandingScreenState extends State<LandingScreen>
         body: Stack(
           children: [
             const LandingBackground(),
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  bottom: autoBottomPadding(context),
-                ),
-                child: Column(
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 16),
-                    Expanded(child: _buildCards()),
-                    const SizedBox(height: 16),
-                    _buildButtons(),
-                  ],
-                ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: MediaQuery.of(context).viewPadding.top + 12,
+                bottom: autoBottomPadding(context),
+              ),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 16),
+                  Expanded(child: _buildCards()),
+                  const SizedBox(height: 16),
+                  _buildButtons(),
+                ],
               ),
             ),
           ],

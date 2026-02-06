@@ -12,8 +12,6 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     implements ClearOnLogoutProtocol {
   RecordRoundCubit() : super(const RecordRoundInactive());
 
-  static const defaultNumHoles = 18;
-
   List<Course> courses = List.from(kTestCourses);
 
   // Voice service fields
@@ -61,8 +59,9 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
       RecordRoundActive(
         selectedCourse: null,
         selectedDateTime: DateTime.now(),
-        holeDescriptions: getEmptyHoleDescriptions(),
-        numHoles: defaultNumHoles,
+        holeDescriptions: _getEmptyHoleDescriptions(
+          RecordRoundActive.defaultNumHoles,
+        ),
       ),
     );
   }
@@ -76,9 +75,28 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
 
   void setSelectedCourse(Course selectedCourse, {String? layoutId}) {
     if (state is! RecordRoundActive) return;
-    emit((state as RecordRoundActive).copyWith(
+    final RecordRoundActive activeState = state as RecordRoundActive;
+
+    // Get the layout (by ID or default)
+    final CourseLayout layout = layoutId != null
+        ? selectedCourse.getLayoutById(layoutId) ?? selectedCourse.defaultLayout
+        : selectedCourse.defaultLayout;
+    final int numHoles = layout.holes.length;
+
+    // Update hole descriptions map if number of holes changed
+    Map<int, String> updatedDescriptions = activeState.holeDescriptions;
+    if (numHoles != activeState.numHoles) {
+      updatedDescriptions = {};
+      for (int i = 0; i < numHoles; i++) {
+        // Preserve existing descriptions where possible
+        updatedDescriptions[i] = activeState.holeDescriptions[i] ?? '';
+      }
+    }
+
+    emit(activeState.copyWith(
       selectedCourse: selectedCourse,
-      selectedLayoutId: layoutId,
+      selectedLayout: layout,
+      holeDescriptions: updatedDescriptions,
     ));
   }
 
@@ -110,12 +128,7 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
     setHoleDescription(combinedText, index: index);
   }
 
-  Map<int, String> getEmptyHoleDescriptions() {
-    int numHoles = defaultNumHoles.toInt();
-    if (state is RecordRoundActive) {
-      numHoles = (state as RecordRoundActive).numHoles;
-    }
-
+  Map<int, String> _getEmptyHoleDescriptions(int numHoles) {
     return Map.fromEntries(
       List<MapEntry<int, String>>.generate(
         numHoles,
@@ -301,8 +314,9 @@ class RecordRoundCubit extends Cubit<RecordRoundState>
       RecordRoundActive(
         selectedCourse: null,
         selectedDateTime: DateTime.now(),
-        holeDescriptions: getEmptyHoleDescriptions(),
-        numHoles: defaultNumHoles,
+        holeDescriptions: _getEmptyHoleDescriptions(
+          RecordRoundActive.defaultNumHoles,
+        ),
       ),
     );
   }

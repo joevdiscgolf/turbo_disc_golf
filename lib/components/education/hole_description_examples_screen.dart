@@ -112,6 +112,20 @@ class _HoleDescriptionExamplesContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Motivational tagline
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      'The more you put in, the more you get out.',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                   // Key points section - moved to top
                   _buildSectionHeader(context, 'Key points', Colors.blue),
                   const SizedBox(height: 8),

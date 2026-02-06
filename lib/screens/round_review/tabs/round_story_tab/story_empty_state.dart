@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
@@ -124,7 +126,7 @@ class _StoryEmptyStateState extends State<StoryEmptyState>
               fontWeight: FontWeight.w800,
               fontStyle: FontStyle.italic,
               letterSpacing: -0.5,
-              color: SenseiColors.white,
+              color: SenseiColors.gray[700],
             ),
           ),
         ],
@@ -281,52 +283,65 @@ class _StoryInfoCardState extends State<_StoryInfoCard> {
           fit: BoxFit.scaleDown,
           child: SizedBox(
             width: maxCardWidth,
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(widget.icon, style: const TextStyle(fontSize: 20)),
-                      const SizedBox(width: 10),
-                      Text(
-                        widget.title,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 1.5,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    widget.description,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 14,
-                      height: 1.4,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFF4ECDC4).withValues(alpha: 0.04),
+                          blurRadius: 40,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(widget.icon, style: const TextStyle(fontSize: 20)),
+                            const SizedBox(width: 10),
+                            Text(
+                              widget.title,
+                              style: TextStyle(
+                                color: SenseiColors.darkGray,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          widget.description,
+                          style: TextStyle(
+                            color: SenseiColors.gray[600],
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),

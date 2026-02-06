@@ -8,4 +8,12 @@ abstract class RoundsRepository {
   Future<bool> deleteRound(String uid, String roundId);
 
   Future<List<DGRound>?> loadRoundsForUser(String uid);
+
+  /// Load rounds with pagination support.
+  /// Returns a tuple of (rounds, hasMore).
+  Future<(List<DGRound>, bool)> loadRoundsPaginated(
+    String uid, {
+    required int limit,
+    String? startAfterTimestamp,
+  });
 }
