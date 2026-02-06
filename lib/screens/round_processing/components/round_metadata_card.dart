@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
+import 'package:turbo_disc_golf/utils/score_colors.dart';
 import 'package:turbo_disc_golf/utils/score_helpers.dart';
 
 /// Card displaying round metadata with KPI stats.
@@ -50,24 +50,42 @@ class RoundMetadataCard extends StatelessWidget {
                       TextSpan(
                         text: potentialRound.courseName ?? 'Unknown Course',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontSize: (Theme.of(context).textTheme.titleLarge?.fontSize ?? 22) - 2,
+                          fontSize:
+                              (Theme.of(
+                                    context,
+                                  ).textTheme.titleLarge?.fontSize ??
+                                  22) -
+                              2,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (potentialRound.layoutId != null && potentialRound.course != null) ...[
+                      if (potentialRound.layoutId != null &&
+                          potentialRound.course != null) ...[
                         TextSpan(
                           text: ' • ',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontSize: (Theme.of(context).textTheme.titleLarge?.fontSize ?? 22) - 2,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontSize:
+                                    (Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge?.fontSize ??
+                                        22) -
+                                    2,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         TextSpan(
                           text: _getLayoutName(potentialRound),
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontSize: (Theme.of(context).textTheme.titleLarge?.fontSize ?? 22) - 2,
-                            color: HoleScoreColors.parColor,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontSize:
+                                    (Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge?.fontSize ??
+                                        22) -
+                                    2,
+                                color: ScoreColors.parColor,
+                              ),
                         ),
                       ],
                     ],
@@ -86,7 +104,7 @@ class RoundMetadataCard extends StatelessWidget {
                   context,
                   'Score',
                   getRelativeScoreString(relativeScore),
-                  _getScoreColor(relativeScore),
+                  ScoreColors.getRoundScoreColor(relativeScore),
                 ),
               ),
               const SizedBox(width: 12),
@@ -150,15 +168,5 @@ class RoundMetadataCard extends StatelessWidget {
 
     final layout = round.course!.getLayoutById(round.layoutId!);
     return layout?.name ?? 'Unknown Layout';
-  }
-
-  Color _getScoreColor(int score) {
-    if (score < 0) {
-      return HoleScoreColors.birdieColor;
-    } else if (score > 0) {
-      return HoleScoreColors.bogeyColor;
-    } else {
-      return HoleScoreColors.parColor;
-    }
   }
 }

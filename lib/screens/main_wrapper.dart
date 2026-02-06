@@ -88,6 +88,14 @@ class _MainWrapperState extends State<MainWrapper> {
   Widget build(BuildContext context) {
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
 
+    // Wrap with AnnotatedRegion to ensure dark status bar icons on light background
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+      child: _buildContent(context, flags),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, FeatureFlagService flags) {
     // Form Analysis tab mode takes precedence
     if (flags.useFormAnalysisTab) {
       return _buildWithFormAnalysisTabs(context);

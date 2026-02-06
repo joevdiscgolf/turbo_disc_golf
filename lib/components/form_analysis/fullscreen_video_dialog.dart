@@ -152,7 +152,7 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                     widget.checkpoints!.isNotEmpty)
                   Positioned(
                     top: MediaQuery.of(context).viewPadding.top,
-                    left: 0,
+                    left: 8,
                     right: 8,
                     child: SafeArea(
                       top: false,

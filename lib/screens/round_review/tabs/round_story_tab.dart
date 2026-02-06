@@ -499,7 +499,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
 
     return Column(
       children: [
-        if (_currentRound.isAIJudgmentOutdated || kDebugMode)
+        if (_currentRound.isAIJudgmentOutdated ||
+            kDebugMode ||
+            isCurrentUserAdmin())
           RegeneratePromptBanner(
             buttonSuffix: 'story',
             onRegenerate: () => _generateStory(isRegeneration: true),

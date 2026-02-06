@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class JudgePreviewCard extends StatelessWidget {
   const JudgePreviewCard({super.key});
@@ -21,7 +22,7 @@ class JudgePreviewCard extends StatelessWidget {
             Text(
               'Judge Mode',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: SenseiColors.gray[700],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -45,7 +46,7 @@ class JudgePreviewCard extends StatelessWidget {
               Text(
                 '"That putting performance was chef\'s kiss! 🤌"',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: SenseiColors.gray[700],
                   fontSize: 12.5,
                   fontStyle: FontStyle.italic,
                   height: 1.3,
@@ -88,7 +89,7 @@ class JudgePreviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: filled
             ? accentColor
-            : Colors.white.withValues(alpha: 0.2),
+            : SenseiColors.gray[300],
         shape: BoxShape.circle,
         boxShadow: filled
             ? [

@@ -32,8 +32,8 @@ class BackendAIGenerationService implements AIGenerationService {
   BackendAIGenerationService({
     required BackendLLMService backendService,
     required StoryGeneratorService storyGeneratorService,
-  })  : _backendService = backendService,
-        _storyGeneratorService = storyGeneratorService;
+  }) : _backendService = backendService,
+       _storyGeneratorService = storyGeneratorService;
 
   @override
   Future<AIContent?> generateRoundStory({
@@ -75,11 +75,13 @@ class BackendAIGenerationService implements AIGenerationService {
         analysis: analysis,
       );
 
-      final GenerateRoundStoryResponse? response =
-          await _backendService.generateRoundStory(request: request);
+      final GenerateRoundStoryResponse? response = await _backendService
+          .generateRoundStory(request: request);
 
       if (response == null) {
-        debugPrint('[BackendAIGenerationService] Backend returned null');
+        debugPrint(
+          '[BackendAIGenerationService][generateRoundStoryV3] Backend returned null',
+        );
         return null;
       }
 
@@ -136,11 +138,13 @@ class BackendAIGenerationService implements AIGenerationService {
         courseName: course?.name,
       );
 
-      final ParseRoundDataResponse? response =
-          await _backendService.parseRoundData(request: request);
+      final ParseRoundDataResponse? response = await _backendService
+          .parseRoundData(request: request);
 
       if (response == null) {
-        debugPrint('[BackendAIGenerationService] Backend returned null');
+        debugPrint(
+          '[BackendAIGenerationService][parseRoundDescription] Backend returned null',
+        );
         return null;
       }
 
@@ -206,11 +210,13 @@ class BackendAIGenerationService implements AIGenerationService {
         shouldGlaze: shouldGlaze,
       );
 
-      final GenerateRoundJudgmentResponse? response =
-          await _backendService.generateRoundJudgment(request: request);
+      final GenerateRoundJudgmentResponse? response = await _backendService
+          .generateRoundJudgment(request: request);
 
       if (response == null) {
-        debugPrint('[BackendAIGenerationService] Backend returned null');
+        debugPrint(
+          '[BackendAIGenerationService][generateRoundJudgment] Backend returned null',
+        );
         return null;
       }
 
@@ -235,9 +241,7 @@ class BackendAIGenerationService implements AIGenerationService {
       }
 
       // Use the raw response
-      debugPrint(
-        '[BackendAIGenerationService] Using rawResponse from backend',
-      );
+      debugPrint('[BackendAIGenerationService] Using rawResponse from backend');
       return _cleanYamlResponse(response.data.rawResponse);
     } catch (e, stackTrace) {
       debugPrint('[BackendAIGenerationService] Error generating judgment: $e');
@@ -281,8 +285,9 @@ class BackendAIGenerationService implements AIGenerationService {
 
     yaml = yaml.replaceAllMapped(notesPattern, (match) {
       final String fullMatch = match.group(0)!;
-      final Iterable<RegExpMatch> allQuotes =
-          RegExp(r'"([^"]+)"').allMatches(fullMatch);
+      final Iterable<RegExpMatch> allQuotes = RegExp(
+        r'"([^"]+)"',
+      ).allMatches(fullMatch);
       final List<String> values = allQuotes.map((m) => m.group(1)!).toList();
       final String combinedValue = values.join(', ');
       return 'notes: "$combinedValue"';
@@ -324,8 +329,9 @@ class BackendAIGenerationService implements AIGenerationService {
         .map((h) => h.number!)
         .fold(0, (max, n) => n > max ? n : max);
 
-    final int maxHoleNumber =
-        maxParsedHoleNumber > numHoles ? maxParsedHoleNumber : numHoles;
+    final int maxHoleNumber = maxParsedHoleNumber > numHoles
+        ? maxParsedHoleNumber
+        : numHoles;
 
     final Set<int> existingHoles = round.holes!
         .where((h) => h.number != null)

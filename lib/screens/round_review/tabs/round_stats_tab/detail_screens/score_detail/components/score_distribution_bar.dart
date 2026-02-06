@@ -4,7 +4,7 @@ import 'package:turbo_disc_golf/components/percentage_distribution_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/services/round_analysis/score_analysis_service.dart';
-import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
+import 'package:turbo_disc_golf/utils/score_colors.dart';
 
 class ScoreDistributionBar extends StatelessWidget {
   const ScoreDistributionBar({
@@ -51,19 +51,16 @@ class ScoreDistributionBar extends StatelessWidget {
     final List<DistributionSegment> segments = [
       DistributionSegment(
         value: birdiePercentage,
-        color: HoleScoreColors.birdieColor,
+        color: ScoreColors.birdieColor,
       ),
-      DistributionSegment(
-        value: parPercentage,
-        color: HoleScoreColors.parColor,
-      ),
+      DistributionSegment(value: parPercentage, color: ScoreColors.parColor),
       DistributionSegment(
         value: bogeyPercentage,
-        color: HoleScoreColors.bogeyColor,
+        color: ScoreColors.bogeyColor,
       ),
       DistributionSegment(
         value: doubleBogeyPlusPercentage,
-        color: HoleScoreColors.doubleBogeyPlusColor,
+        color: ScoreColors.doubleBogeyPlusColor,
       ),
     ];
 

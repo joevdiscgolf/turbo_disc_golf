@@ -9,8 +9,8 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 /// - Par (0): Grey
 /// - Bogey (1): Light Red
 /// - Double Bogey+ (> 1): Dark Red
-class HoleScoreColors {
-  HoleScoreColors._();
+class ScoreColors {
+  ScoreColors._();
 
   // Static color constants - SINGLE SOURCE OF TRUTH
   static const Color condorColor = Color(0xFF9C27B0); // Purple
@@ -83,6 +83,21 @@ class HoleScoreColors {
       return bogeyColor;
     } else {
       return doubleBogeyPlusColor;
+    }
+  }
+
+  /// Helper function to get score color based on relative score
+  /// - Green for birdie/eagle (< 0)
+  /// - Gray for par (== 0)
+  /// - Orange for bogey (== 1)
+  /// - Red for double+ (> 1)
+  static Color getRoundScoreColor(int relativeScore) {
+    if (relativeScore < 0) {
+      return birdieColor;
+    } else if (relativeScore == 0) {
+      return parColor;
+    } else {
+      return bogeyColor;
     }
   }
 }

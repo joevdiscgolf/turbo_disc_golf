@@ -33,7 +33,7 @@ import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/constants/description_constants.dart';
-import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
+import 'package:turbo_disc_golf/utils/score_colors.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/constants/testing_constants.dart'
     show testScorecardData;
@@ -246,13 +246,13 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
     final Color scoreColor;
     final String scoreText;
     if (projectedRelative < 0) {
-      scoreColor = HoleScoreColors.birdieColor;
+      scoreColor = ScoreColors.birdieColor;
       scoreText = '$projectedRelative';
     } else if (projectedRelative == 0) {
       scoreColor = Colors.grey[600]!;
       scoreText = 'E';
     } else {
-      scoreColor = HoleScoreColors.bogeyColor;
+      scoreColor = ScoreColors.bogeyColor;
       scoreText = '+$projectedRelative';
     }
 
@@ -1573,6 +1573,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
         topViewPadding: widget.topViewPadding,
         bottomViewPadding: widget.bottomViewPadding,
       ),
+      enableDrag: false,
     );
   }
 

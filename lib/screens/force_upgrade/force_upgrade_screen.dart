@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/screens/auth/components/landing_background.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_app_info_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/platform_helpers.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,7 +31,7 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     super.initState();
 
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+      const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
     );
 
     _loadVersionInfo();
@@ -39,9 +40,6 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
 
   @override
   void dispose() {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-    );
     super.dispose();
   }
 
@@ -74,13 +72,12 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
       child: Scaffold(
         body: Stack(
           children: [
-            const LandingBackground(),
+            const AnimatedParticleBackground(),
             Container(
-              // height: MediaQuery.of(context).size.height,
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
@@ -138,10 +135,10 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
   }
 
   Widget _buildTitle(BuildContext context) {
-    return const Text(
-      'Update Required',
+    return Text(
+      'Update required',
       style: TextStyle(
-        color: Colors.white,
+        color: SenseiColors.gray[700],
         fontSize: 32,
         fontWeight: FontWeight.bold,
         letterSpacing: -0.5,
@@ -154,7 +151,7 @@ class _ForceUpgradeScreenState extends State<ForceUpgradeScreen> {
     return Text(
       'Current: $_currentVersion → Required: $_requiredVersion',
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: SenseiColors.gray[500],
         fontSize: 14,
       ),
       textAlign: TextAlign.center,

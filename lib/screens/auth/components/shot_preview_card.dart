@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class ShotPreviewCard extends StatelessWidget {
   const ShotPreviewCard({super.key});
@@ -21,7 +22,7 @@ class ShotPreviewCard extends StatelessWidget {
             Text(
               'Shot Analysis',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: SenseiColors.gray[700],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -48,7 +49,7 @@ class ShotPreviewCard extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: SenseiColors.gray[600],
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -56,7 +57,7 @@ class ShotPreviewCard extends StatelessWidget {
             Text(
               '${(percentage * 100).toInt()}%',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: SenseiColors.gray[700],
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -73,7 +74,7 @@ class ShotPreviewCard extends StatelessWidget {
     return Container(
       height: 7,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: SenseiColors.gray[200],
         borderRadius: BorderRadius.circular(4),
       ),
       child: FractionallySizedBox(

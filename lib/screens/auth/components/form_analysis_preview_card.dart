@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class FormAnalysisPreviewCard extends StatelessWidget {
   const FormAnalysisPreviewCard({super.key});
@@ -30,7 +31,7 @@ class FormAnalysisPreviewCard extends StatelessWidget {
             Text(
               'Form Analysis',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: SenseiColors.gray[700],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -41,7 +42,7 @@ class FormAnalysisPreviewCard extends StatelessWidget {
         Text(
           'Compare your form to the pros',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
+            color: SenseiColors.gray[600],
             fontSize: 13,
             height: 1.3,
           ),
@@ -75,12 +76,12 @@ class FormAnalysisPreviewCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isPro
               ? accentColor.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.05),
+              : SenseiColors.gray[100],
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isPro
                 ? accentColor.withValues(alpha: 0.4)
-                : Colors.white.withValues(alpha: 0.15),
+                : SenseiColors.gray[300]!,
             width: 1,
           ),
         ),
@@ -90,7 +91,7 @@ class FormAnalysisPreviewCard extends StatelessWidget {
               isPro ? Icons.star : Icons.person,
               color: isPro
                   ? accentColor
-                  : Colors.white.withValues(alpha: 0.6),
+                  : SenseiColors.gray[500],
               size: 18,
             ),
             const SizedBox(height: 5),
@@ -98,7 +99,7 @@ class FormAnalysisPreviewCard extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: SenseiColors.gray[700],
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),

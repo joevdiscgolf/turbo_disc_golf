@@ -278,8 +278,8 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   bool userHasOnboarded() {
-    return false;
-    // return getCurrentUser()?.displayName?.contains('has_onboarded') == true;
+    // return false;
+    return getCurrentUser()?.displayName?.contains('has_onboarded') == true;
   }
 
   @override
@@ -343,6 +343,7 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  @override
   Future<bool> sendPasswordReset(String email) {
     return auth
         .sendPasswordResetEmail(email: email)

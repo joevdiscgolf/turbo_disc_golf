@@ -10,7 +10,7 @@ import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_completion_transition.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/cycling_analysis_text.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
+import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/video_input_body/video_input_body.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
@@ -200,7 +200,7 @@ class _FormAnalysisRecordingScreenState
                 children: [
                   // Background layer - transitions to dark when processing
                   Positioned.fill(
-                    child: FormAnalysisBackground(
+                    child: AnimatedParticleBackground(
                       isProcessing: isLoadingOrAnalyzing || _showingTransition,
                     ),
                   ),

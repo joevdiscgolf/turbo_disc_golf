@@ -803,7 +803,9 @@ highlightStats:
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Show regenerate banner when content is outdated
-                    if (_currentRound.isAIJudgmentOutdated || kDebugMode)
+                    if (_currentRound.isAIJudgmentOutdated ||
+                        kDebugMode ||
+                        isCurrentUserAdmin())
                       RegeneratePromptBanner(
                         buttonSuffix: 'judgment',
                         onRegenerate: () {

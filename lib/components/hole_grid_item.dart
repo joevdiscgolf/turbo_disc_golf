@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_remix/flutter_remix.dart';
-import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
+import 'package:turbo_disc_golf/utils/score_colors.dart';
 
 /// A reusable visual component for displaying a hole in a grid layout.
 ///
@@ -175,12 +175,10 @@ class HoleGridItem extends StatelessWidget {
     final int displayRelativeScore = relativeScore ?? 0;
 
     // Get colors from utility class
-    final List<Color> gradientColors = HoleScoreColors.getGradientColors(
+    final List<Color> gradientColors = ScoreColors.getGradientColors(
       displayRelativeScore,
     );
-    final Color scoreColor = HoleScoreColors.getScoreColor(
-      displayRelativeScore,
-    );
+    final Color scoreColor = ScoreColors.getScoreColor(displayRelativeScore);
 
     // For par (0), use white background; otherwise use gradient
 

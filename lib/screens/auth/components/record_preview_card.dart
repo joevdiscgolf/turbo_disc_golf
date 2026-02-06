@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class RecordPreviewCard extends StatelessWidget {
   const RecordPreviewCard({super.key});
@@ -30,7 +31,7 @@ class RecordPreviewCard extends StatelessWidget {
             Text(
               'Voice Recording',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: SenseiColors.gray[700],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -41,7 +42,7 @@ class RecordPreviewCard extends StatelessWidget {
         Text(
           'Just talk, we\'ll track it',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
+            color: SenseiColors.gray[600],
             fontSize: 13,
             height: 1.3,
           ),
