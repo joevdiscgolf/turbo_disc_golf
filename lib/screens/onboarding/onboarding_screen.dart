@@ -74,73 +74,78 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: GenericAppBar(
-          topViewPadding: MediaQuery.of(context).viewPadding.top,
-          title: 'Complete your profile',
-          hasBackButton: true,
-          onBackPressed: () async {
-            await _authService.logout();
-          },
+    return PopScope(
+      canPop: false,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarBrightness: Brightness.light,
         ),
-        backgroundColor: SenseiColors.white,
-        body: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          child: Padding(
-            padding: EdgeInsets.only(
-              top: 24,
-              left: 16,
-              right: 16,
-              bottom: autoBottomPadding(context),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Form fields
-                _buildUsernameLabel(),
-                const SizedBox(height: 6),
-                _buildUsernameField(),
-                const SizedBox(height: 16),
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: GenericAppBar(
+            topViewPadding: MediaQuery.of(context).viewPadding.top,
+            title: 'Complete your profile',
+            hasBackButton: true,
+            onBackPressed: () async {
+              await _authService.logout();
+            },
+          ),
+          backgroundColor: SenseiColors.white,
+          body: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 16,
+                right: 16,
+                bottom: autoBottomPadding(context),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Form fields
+                  _buildUsernameLabel(),
+                  const SizedBox(height: 6),
+                  _buildUsernameField(),
+                  const SizedBox(height: 16),
 
-                _buildSectionLabel('PDGA Rating (optional)'),
-                const SizedBox(height: 6),
-                _buildPdgaRatingField(),
-                const SizedBox(height: 16),
+                  _buildSectionLabel('PDGA Rating (optional)'),
+                  const SizedBox(height: 6),
+                  _buildPdgaRatingField(),
+                  const SizedBox(height: 16),
 
-                _buildSectionLabel('Division (optional)'),
-                const SizedBox(height: 6),
-                _buildDivisionSelector(),
+                  _buildSectionLabel('Division (optional)'),
+                  const SizedBox(height: 6),
+                  _buildDivisionSelector(),
 
-                // Error text if any
-                if (_errorText != null) ...[
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Text(
-                      _errorText!,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.red),
-                      textAlign: TextAlign.center,
+                  // Error text if any
+                  if (_errorText != null) ...[
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Text(
+                        _errorText!,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ),
+                  ],
+
+                  const Spacer(),
+
+                  // Bottom buttons
+                  if (kDebugMode) ...[
+                    _buildDebugSkipButton(),
+                    const SizedBox(height: 4),
+                    _buildSkipButton(),
+                    const SizedBox(height: 12),
+                  ],
+
+                  _buildSubmitButton(),
                 ],
-
-                const Spacer(),
-
-                // Bottom buttons
-                if (kDebugMode) ...[
-                  _buildDebugSkipButton(),
-                  const SizedBox(height: 4),
-                  _buildSkipButton(),
-                  const SizedBox(height: 12),
-                ],
-
-                _buildSubmitButton(),
-              ],
+              ),
             ),
           ),
         ),

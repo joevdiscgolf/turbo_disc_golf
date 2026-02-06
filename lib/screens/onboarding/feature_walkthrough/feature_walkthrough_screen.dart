@@ -118,42 +118,45 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
-      child: Scaffold(
-        body: Stack(
-          children: [
-            // Animated gradient background
-            WalkthroughBackground(currentPage: _currentPage),
+    return PopScope(
+      canPop: false,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+        child: Scaffold(
+          body: Stack(
+            children: [
+              // Animated gradient background
+              WalkthroughBackground(currentPage: _currentPage),
 
-            // Main content
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      onPageChanged: _onPageChanged,
-                      physics: const ClampingScrollPhysics(),
-                      clipBehavior: Clip.hardEdge,
-                      children: [
-                        SceneRecording(isActive: _currentPage == 0),
-                        SceneProcessing(isActive: _currentPage == 1),
-                        SceneInsights(isActive: _currentPage == 2),
-                        SceneComplete(isActive: _currentPage == 3),
-                        SceneFormAnalysis(
-                          isActive: _currentPage == 4,
-                          onComplete: _onComplete,
-                        ),
-                      ],
+              // Main content
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: _onPageChanged,
+                        physics: const ClampingScrollPhysics(),
+                        clipBehavior: Clip.hardEdge,
+                        children: [
+                          SceneRecording(isActive: _currentPage == 0),
+                          SceneProcessing(isActive: _currentPage == 1),
+                          SceneInsights(isActive: _currentPage == 2),
+                          SceneComplete(isActive: _currentPage == 3),
+                          SceneFormAnalysis(
+                            isActive: _currentPage == 4,
+                            onComplete: _onComplete,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  _buildFooter(),
-                ],
+                    _buildFooter(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

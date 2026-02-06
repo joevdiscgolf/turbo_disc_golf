@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class C1xPreviewCard extends StatelessWidget {
   const C1xPreviewCard({super.key});
@@ -28,13 +29,13 @@ class C1xPreviewCard extends StatelessWidget {
         painter: _CircularProgressPainter(
           progress: percentage,
           progressColor: accentColor,
-          backgroundColor: Colors.white.withValues(alpha: 0.1),
+          backgroundColor: SenseiColors.gray[200]!,
         ),
         child: Center(
           child: Text(
             '${(percentage * 100).toInt()}%',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: SenseiColors.gray[700],
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -49,10 +50,10 @@ class C1xPreviewCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'C1X Putting',
           style: TextStyle(
-            color: Colors.white,
+            color: SenseiColors.gray[700],
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -60,7 +61,7 @@ class C1xPreviewCard extends StatelessWidget {
         Text(
           '(11-33 ft)',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: SenseiColors.gray[500],
             fontSize: 11,
           ),
         ),
@@ -86,7 +87,7 @@ class C1xPreviewCard extends StatelessWidget {
     return Container(
       height: 6,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: SenseiColors.gray[200],
         borderRadius: BorderRadius.circular(3),
       ),
       child: FractionallySizedBox(

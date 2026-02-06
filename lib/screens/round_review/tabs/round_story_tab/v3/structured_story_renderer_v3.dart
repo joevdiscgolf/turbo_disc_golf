@@ -152,7 +152,6 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
           _buildTitle(),
           const SizedBox(height: 16),
           _buildOverview(),
-          const SizedBox(height: 12),
           ..._buildStorySections(),
           if (widget.content.skillsAssessment != null)
             _buildSkillsAssessment(context),
@@ -307,9 +306,16 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
                       // Callout cards
                       if (section.callouts.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        ...section.callouts.map(
-                          (callout) => _buildCallout(context, callout),
-                        ),
+                        ...section.callouts.asMap().entries.map((entry) {
+                          final int index = entry.key;
+                          final StoryCallout callout = entry.value;
+                          final bool isLast =
+                              index == section.callouts.length - 1;
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                            child: _buildCallout(context, callout),
+                          );
+                        }),
                       ],
                     ],
                   ),

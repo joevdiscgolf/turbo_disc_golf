@@ -59,6 +59,10 @@ class AuthService {
     return _authRepository.deleteCurrentUser();
   }
 
+  Future<bool> sendPasswordResetEmail(String email) {
+    return _authRepository.sendPasswordReset(email);
+  }
+
   /// Identifies user in logging service and registers super properties.
   /// Called after successful login to set up analytics context.
   Future<void> _setupLoggingForUser(String uid) async {

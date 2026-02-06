@@ -12,13 +12,12 @@ import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/screens/auth/components/c1x_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/form_analysis_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/judge_preview_card.dart';
-import 'package:turbo_disc_golf/screens/auth/components/landing_background.dart';
+import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
 import 'package:turbo_disc_golf/screens/auth/components/landing_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/record_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/shot_preview_card.dart';
 import 'package:turbo_disc_golf/screens/auth/components/story_preview_card.dart';
-import 'package:turbo_disc_golf/screens/auth/login_screen.dart';
-import 'package:turbo_disc_golf/screens/auth/sign_up_screen.dart';
+import 'package:turbo_disc_golf/screens/auth/auth_screen.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
@@ -58,7 +57,7 @@ class _LandingScreenState extends State<LandingScreen>
     // Track screen impression
     _logger.logScreenImpression('LandingScreen');
 
-    // Set status bar to light content for dark background
+    // Set status bar for light background
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
     );
@@ -126,11 +125,11 @@ class _LandingScreenState extends State<LandingScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
       child: Scaffold(
         body: Stack(
           children: [
-            const LandingBackground(),
+            const AnimatedParticleBackground(),
             Padding(
               padding: EdgeInsets.only(
                 left: 16,
@@ -181,19 +180,19 @@ class _LandingScreenState extends State<LandingScreen>
                 ),
                 child: Image.asset(
                   'assets/icon/app_icon_clear_bg.png',
-                  height: 80,
-                  width: 80,
+                  height: 64,
+                  width: 64,
                 ),
               ),
               const SizedBox(width: 4),
               Text(
                 'ScoreSensei',
                 style: GoogleFonts.exo2(
-                  fontSize: 24,
+                  fontSize: 32,
                   fontWeight: FontWeight.w800,
                   fontStyle: FontStyle.italic,
                   letterSpacing: -0.5,
-                  color: SenseiColors.white,
+                  color: SenseiColors.gray[700],
                 ),
               ),
             ],
@@ -206,10 +205,7 @@ class _LandingScreenState extends State<LandingScreen>
             },
             child: Text(
               'See the story behind every throw',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 16,
-              ),
+              style: TextStyle(color: SenseiColors.gray[600], fontSize: 16),
             ),
           ),
         ],
@@ -313,7 +309,7 @@ class _LandingScreenState extends State<LandingScreen>
           controller: _pageController,
           count: pages.length,
           effect: WormEffect(
-            dotColor: Colors.white.withValues(alpha: 0.3),
+            dotColor: SenseiColors.gray[300]!,
             activeDotColor: const Color(0xFF4ECDC4),
             dotHeight: 8,
             dotWidth: 8,
@@ -330,48 +326,15 @@ class _LandingScreenState extends State<LandingScreen>
       builder: (context, child) {
         return Opacity(opacity: _buttonsOpacity.value, child: child);
       },
-      child: Column(
-        children: [
-          PrimaryButton(
-            width: double.infinity,
-            height: 56,
-            label: 'Get Started',
-            labelColor: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-            gradientBackground: const [Color(0xFF4ECDC4), Color(0xFF44CF9C)],
-            onPressed: _navigateToSignUp,
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: _navigateToLogin,
-            child: Container(
-              color: Colors.transparent,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Have an account? ',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 15,
-                    ),
-                  ),
-                  const Text(
-                    'Sign In',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+      child: PrimaryButton(
+        width: double.infinity,
+        height: 56,
+        label: 'Get Started',
+        labelColor: Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 17,
+        gradientBackground: const [Color(0xFF4ECDC4), Color(0xFF44CF9C)],
+        onPressed: _navigateToSignUp,
       ),
     );
   }
@@ -381,16 +344,9 @@ class _LandingScreenState extends State<LandingScreen>
     _logger.track('Get Started Button Tapped');
     Navigator.push(
       context,
-      CupertinoPageRoute(builder: (context) => const SignUpScreen()),
-    );
-  }
-
-  void _navigateToLogin() {
-    HapticFeedback.lightImpact();
-    _logger.track('Sign In Link Tapped');
-    Navigator.push(
-      context,
-      CupertinoPageRoute(builder: (context) => const LoginScreen()),
+      CupertinoPageRoute(
+        builder: (context) => const AuthScreen(initialMode: AuthMode.signUp),
+      ),
     );
   }
 

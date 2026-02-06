@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/svg_icon.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/icons.dart';
@@ -14,7 +15,12 @@ class GoogleSignInButton extends StatelessWidget {
       height: 56,
       width: double.infinity,
       child: OutlinedButton(
-        onPressed: onPressed,
+        onPressed: onPressed == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onPressed!();
+              },
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: SenseiColors.gray[300]!, width: 1),
           shape: RoundedRectangleBorder(

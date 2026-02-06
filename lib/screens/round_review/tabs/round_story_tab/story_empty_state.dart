@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
+import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
@@ -68,7 +68,7 @@ class _StoryEmptyStateState extends State<StoryEmptyState>
     return Stack(
       fit: StackFit.expand,
       children: [
-        const FormAnalysisBackground(),
+        const AnimatedParticleBackground(),
         Padding(
           padding: EdgeInsets.only(
             top: 8,

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/liquid_glass_card.dart';
 
 enum SlideDirection { left, right }
 
@@ -91,24 +92,15 @@ class _LandingPreviewCardState extends State<LandingPreviewCard>
           ),
         );
       },
-      child: Container(
+      child: LiquidGlassCard(
+        opacity: 0.5,
+        blurSigma: 16,
+        borderRadius: 20,
+        borderOpacity: 0.25,
+        borderColor: widget.accentColor,
+        accentColor: widget.accentColor,
         margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: widget.accentColor.withValues(alpha: 0.25),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: widget.accentColor.withValues(alpha: 0.15),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
         child: Center(
           child: widget.child,
         ),

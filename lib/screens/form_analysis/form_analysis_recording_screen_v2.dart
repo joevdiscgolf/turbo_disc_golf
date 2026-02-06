@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,8 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/asset_image_icon.dart';
+import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
 import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
+import 'package:turbo_disc_golf/components/liquid_glass_card.dart';
 import 'package:turbo_disc_golf/components/loaders/atomic_nuclear_loader.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -19,7 +19,6 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_comple
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_panel.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/cycling_analysis_text.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_background.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/handedness_selection_panel.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -104,7 +103,6 @@ class _FormAnalysisRecordingScreenV2State
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
 
     final LoggingService loggingService = locator.get<LoggingService>();
     _logger = loggingService.withBaseProperties({
@@ -120,7 +118,6 @@ class _FormAnalysisRecordingScreenV2State
 
   @override
   void dispose() {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     _loaderSpeedNotifier.dispose();
     _brainOpacityNotifier.dispose();
     super.dispose();
@@ -186,9 +183,6 @@ class _FormAnalysisRecordingScreenV2State
                       rightWidget: IconButton(
                         icon: Icon(Icons.close, color: foregroundColor),
                         onPressed: () {
-                          SystemChrome.setSystemUIOverlayStyle(
-                            SystemUiOverlayStyle.dark,
-                          );
                           HapticFeedback.lightImpact();
                           _logger.track('Close Recording Screen Button Tapped');
                           Navigator.pop(context);
@@ -199,7 +193,7 @@ class _FormAnalysisRecordingScreenV2State
                 fit: StackFit.expand,
                 children: [
                   Positioned.fill(
-                    child: FormAnalysisBackground(
+                    child: AnimatedParticleBackground(
                       isProcessing: isLoadingOrAnalyzing || _showingTransition,
                     ),
                   ),
@@ -230,9 +224,6 @@ class _FormAnalysisRecordingScreenV2State
                                 speedMultiplierNotifier: _loaderSpeedNotifier,
                                 brainOpacityNotifier: _brainOpacityNotifier,
                                 onComplete: () {
-                                  SystemChrome.setSystemUIOverlayStyle(
-                                    SystemUiOverlayStyle.dark,
-                                  );
                                   setState(() {
                                     _showingTransition = false;
                                     _brainOpacityNotifier.value = 1.0;
@@ -332,22 +323,21 @@ class _FormAnalysisRecordingScreenV2State
         _logger.track('Tips Card Tapped');
         _showFormAnalysisEducation();
       },
-      child: _GlassCard(
-        opacity: 0.88,
+      child: LiquidGlassCard(
+        opacity: 0.7,
         blurSigma: 32,
-        borderOpacity: 0.6,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTipsHeader(context),
-              const SizedBox(height: 16),
-              _buildTipsList(context),
-              const SizedBox(height: 20),
-              _buildTapForMoreHint(context),
-            ],
-          ),
+        borderOpacity: 0.5,
+        accentColor: const Color(0xFF137e66),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTipsHeader(context),
+            const SizedBox(height: 16),
+            _buildTipsList(context),
+            const SizedBox(height: 20),
+            _buildTapForMoreHint(context),
+          ],
         ),
       ),
     );
@@ -468,19 +458,18 @@ class _FormAnalysisRecordingScreenV2State
         BlocProvider.of<VideoFormAnalysisCubit>(context);
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
 
-    return _GlassCard(
-      opacity: 0.92,
+    return LiquidGlassCard(
+      opacity: 0.70,
       blurSigma: 36,
-      borderOpacity: 0.7,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildHandednessSelector(context),
-            const SizedBox(height: 12),
-            Expanded(child: _buildSelectVideoButton(context, cubit, flags)),
-          ],
-        ),
+      borderOpacity: 0.5,
+      accentColor: const Color(0xFF137e66),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _buildHandednessSelector(context),
+          const SizedBox(height: 12),
+          Expanded(child: _buildSelectVideoButton(context, cubit, flags)),
+        ],
       ),
     );
   }
@@ -836,54 +825,6 @@ class _FormAnalysisRecordingScreenV2State
               child: const Text('Try again'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Liquid glass card component with frosted glass effect.
-class _GlassCard extends StatelessWidget {
-  const _GlassCard({
-    required this.child,
-    this.opacity = 0.65,
-    this.blurSigma = 24,
-    this.borderOpacity = 0.3,
-  });
-
-  final Widget child;
-  final double opacity;
-  final double blurSigma;
-  final double borderOpacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: opacity),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: borderOpacity),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: const Color(0xFF137e66).withValues(alpha: 0.04),
-                blurRadius: 40,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: child,
         ),
       ),
     );

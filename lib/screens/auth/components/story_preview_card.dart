@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class StoryPreviewCard extends StatelessWidget {
   const StoryPreviewCard({super.key});
@@ -21,7 +22,7 @@ class StoryPreviewCard extends StatelessWidget {
             Text(
               'Your Story',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: SenseiColors.gray[700],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -42,7 +43,7 @@ class StoryPreviewCard extends StatelessWidget {
           child: Text(
             '"Your Destroyer is a birdie machine — 67% of your birdies come off backhand hyzers with this disc."',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: SenseiColors.gray[700],
               fontSize: 12.5,
               fontStyle: FontStyle.italic,
               height: 1.35,

@@ -6,8 +6,8 @@ import 'package:turbo_disc_golf/components/compact_scorecard.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/components/score_distribution_bar.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/score_detail/score_detail_screen.dart';
-import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/shared/helpers/score_color_helper.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/score_colors.dart';
 import 'package:turbo_disc_golf/utils/score_helpers.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -156,7 +156,7 @@ class ScoreKPICard extends StatelessWidget {
       context,
       'Score',
       getRelativeScoreString(relativeScore),
-      getScoreColor(relativeScore),
+      ScoreColors.getRoundScoreColor(relativeScore),
     );
   }
 

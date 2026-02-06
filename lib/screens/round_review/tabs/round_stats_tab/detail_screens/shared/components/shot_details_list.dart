@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/detail_screens/drives_detail/models/shot_detail.dart';
 import 'package:turbo_disc_golf/utils/constants/naming_constants.dart';
-import 'package:turbo_disc_golf/utils/hole_score_colors.dart';
+import 'package:turbo_disc_golf/utils/score_colors.dart';
 
 /// Widget showing the list of shots for a specific shot shape or throw type
 class ShotDetailsList extends StatelessWidget {
@@ -36,7 +36,7 @@ class ShotDetailsList extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: HoleScoreColors.getScoreColor(detail.relativeScore),
+                  color: ScoreColors.getScoreColor(detail.relativeScore),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -141,7 +141,8 @@ class ShotDetailsList extends StatelessWidget {
     }
 
     // Infer from previous throw's landing info
-    if (detail.throwIndex > 0 && detail.throwIndex <= detail.hole.throws.length) {
+    if (detail.throwIndex > 0 &&
+        detail.throwIndex <= detail.hole.throws.length) {
       final prevThrow = detail.hole.throws[detail.throwIndex - 1];
 
       // Previous throw's distance after takes precedence (more precise)

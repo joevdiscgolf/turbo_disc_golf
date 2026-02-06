@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Base card component for story cards with consistent styling
@@ -29,6 +30,7 @@ class BaseStoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: SenseiColors.gray.shade100),
         boxShadow: defaultCardBoxShadow(),
       ),
       child: Padding(

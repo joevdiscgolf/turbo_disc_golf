@@ -11,6 +11,7 @@ abstract class AuthRepository {
   Future<bool>? signInWithApple();
   Future<void> signOut();
   Future<bool> deleteCurrentUser();
+  Future<bool> sendPasswordReset(String email);
 
   String get exceptionMessage;
 }
