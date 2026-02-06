@@ -9,7 +9,8 @@ import 'package:turbo_disc_golf/models/video_orientation.dart';
 
 part 'pose_analysis_response.g.dart';
 
-Handedness? _handednessFromJson(String? value) => Handedness.fromApiString(value);
+Handedness? _handednessFromJson(String? value) =>
+    Handedness.fromApiString(value);
 
 /// Response from the Cloud Run pose analysis API
 @JsonSerializable(anyMap: true, explicitToJson: true)
@@ -151,8 +152,9 @@ class PoseAnalysisResponse {
     Map<String, ProComparisonData>? convertedProComparisons;
     if (proComparisons != null) {
       convertedProComparisons = proComparisons!.map((proId, poseData) {
-        final List<CheckpointRecord> proCheckpoints =
-            poseData.checkpoints.map((cp) {
+        final List<CheckpointRecord> proCheckpoints = poseData.checkpoints.map((
+          cp,
+        ) {
           return CheckpointRecordBuilder.build(
             checkpoint: cp,
             imageUrlProvider: toDataUrl,
@@ -366,22 +368,6 @@ class CheckpointPoseData {
   /// e.g., 0.75 means the user's body takes up 75% of the frame height.
   @JsonKey(name: 'user_body_height_screen_portion')
   final double? userBodyHeightScreenPortion;
-
-  /// Get checkpoint description based on checkpoint ID
-  String get checkpointDescription {
-    switch (checkpointId) {
-      case 'heisman':
-        return 'Player has just stepped onto their back leg on the ball of their foot. Front leg has started to drift in front of their back leg. They are on their back leg but have not started to coil yet, and their elbow is still roughly at 90 degrees and neutral.';
-      case 'loaded':
-        return 'The player\'s front (plant) foot is about to touch the ground, and they are fully coiled, and their back leg is bowed out.';
-      case 'magic':
-        return 'Disc is just starting to move forward, both knees are bent inward, in an athletic position.';
-      case 'pro':
-        return 'The pull-through is well in progress, and the elbow is at a 90-degree angle, and the back leg is bent at almost a 90-degree angle, and the front leg is pretty straight.';
-      default:
-        return checkpointName;
-    }
-  }
 
   /// Convert raw deviations object to a list for UI display
   List<AngleDeviation> get deviations {
@@ -743,11 +729,7 @@ class V2RearMeasurements {
 /// Container for V2 measurements by camera angle
 @JsonSerializable(anyMap: true, explicitToJson: true)
 class V2MeasurementsByAngle {
-  const V2MeasurementsByAngle({
-    this.side,
-    this.rear,
-    this.front,
-  });
+  const V2MeasurementsByAngle({this.side, this.rear, this.front});
 
   /// Side-view measurements
   final V2SideMeasurements? side;
@@ -783,11 +765,7 @@ class AngleDeviation {
 /// User body anchor point for alignment with pro reference overlays
 @JsonSerializable(anyMap: true, explicitToJson: true)
 class UserBodyAnchor {
-  const UserBodyAnchor({
-    required this.name,
-    required this.x,
-    required this.y,
-  });
+  const UserBodyAnchor({required this.name, required this.x, required this.y});
 
   /// Anchor point name (always "hip_center")
   final String name;

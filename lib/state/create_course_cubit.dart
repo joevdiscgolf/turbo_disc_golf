@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'create_course_state.dart';
@@ -13,6 +16,8 @@ import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/services/geocoding/geocoding_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
+
+const String _createCourseDraftKey = 'create_course_draft';
 
 class CreateCourseCubit extends Cubit<CreateCourseState> {
   CreateCourseCubit() : super(CreateCourseState.initial()) {
@@ -369,6 +374,86 @@ class CreateCourseCubit extends Cubit<CreateCourseState> {
   // ─────────────────────────────────────────────
   bool get canSave {
     return state.courseName.trim().isNotEmpty && state.holes.isNotEmpty;
+  }
+
+  // ─────────────────────────────────────────────
+  // Draft persistence
+  // ─────────────────────────────────────────────
+
+  /// Checks if a draft exists without loading it
+  static Future<bool> hasDraft() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey(_createCourseDraftKey);
+  }
+
+  /// Saves the current state as a draft
+  Future<void> saveDraft() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final Map<String, dynamic> draftData = {
+        'courseName': state.courseName,
+        'layoutId': state.layoutId,
+        'layoutName': state.layoutName,
+        'numberOfHoles': state.numberOfHoles,
+        'holes': state.holes.map((h) => h.toJson()).toList(),
+        'city': state.city,
+        'state': state.state,
+        'country': state.country,
+        'countryCode': state.countryCode,
+        'latitude': state.latitude,
+        'longitude': state.longitude,
+      };
+      await prefs.setString(_createCourseDraftKey, jsonEncode(draftData));
+      debugPrint('Draft saved successfully');
+    } catch (e) {
+      debugPrint('Error saving draft: $e');
+    }
+  }
+
+  /// Loads a saved draft and restores state
+  Future<bool> loadDraft() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? draftJson = prefs.getString(_createCourseDraftKey);
+      if (draftJson == null) return false;
+
+      final Map<String, dynamic> draftData = jsonDecode(draftJson);
+
+      final List<CourseHole> holes = (draftData['holes'] as List)
+          .map((h) => CourseHole.fromJson(h as Map<String, dynamic>))
+          .toList();
+
+      emit(state.copyWith(
+        courseName: draftData['courseName'] as String? ?? '',
+        layoutId: draftData['layoutId'] as String? ?? state.layoutId,
+        layoutName: draftData['layoutName'] as String? ?? '',
+        numberOfHoles: draftData['numberOfHoles'] as int? ?? 18,
+        holes: holes,
+        city: draftData['city'] as String?,
+        state: draftData['state'] as String?,
+        country: draftData['country'] as String?,
+        countryCode: draftData['countryCode'] as String?,
+        latitude: draftData['latitude'] as double?,
+        longitude: draftData['longitude'] as double?,
+      ));
+
+      debugPrint('Draft loaded successfully');
+      return true;
+    } catch (e) {
+      debugPrint('Error loading draft: $e');
+      return false;
+    }
+  }
+
+  /// Clears any saved draft
+  static Future<void> clearDraft() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_createCourseDraftKey);
+      debugPrint('Draft cleared');
+    } catch (e) {
+      debugPrint('Error clearing draft: $e');
+    }
   }
 
   Future<bool> saveCourse({

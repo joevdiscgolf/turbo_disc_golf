@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/share/share_preview_screen.dart';
-import 'package:turbo_disc_golf/components/story/story_highlights_share_card.dart';
-import 'package:turbo_disc_golf/components/story/story_poster_share_card.dart';
-import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/components/story/story_share_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 /// Full-screen preview of the story share card.
@@ -39,30 +36,16 @@ class ShareStoryPreviewScreen extends StatelessWidget {
     final String caption =
         '\u{1F4D6} $roundTitle\n\n${round.courseName}\nShared from Turbo Disc Golf';
 
-    // Select card based on feature flag
-    final Widget cardWidget =
-        locator.get<FeatureFlagService>().useStoryPosterShareCard
-            ? StoryPosterShareCard(
-                round: round,
-                analysis: analysis,
-                roundTitle: roundTitle,
-                overview: overview,
-                shareableHeadline: shareableHeadline,
-                shareHighlightStats: shareHighlightStats,
-              )
-            : StoryHighlightsShareCard(
-                round: round,
-                analysis: analysis,
-                roundTitle: roundTitle,
-                overview: overview,
-                shareableHeadline: shareableHeadline,
-                shareHighlightStats: shareHighlightStats,
-              );
-
     return SharePreviewScreen(
       screenName: ShareStoryPreviewScreen.screenName,
-      cardWidget: cardWidget,
-      headerWidget: _buildHeaderText(),
+      cardWidget: StoryShareCard(
+        round: round,
+        analysis: analysis,
+        roundTitle: roundTitle,
+        overview: overview,
+        shareableHeadline: shareableHeadline,
+        shareHighlightStats: shareHighlightStats,
+      ),
       shareButtonLabel: 'Share my story',
       shareButtonGradient: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
       shareCaption: caption,
@@ -70,27 +53,6 @@ class ShareStoryPreviewScreen extends StatelessWidget {
       backgroundEmojis: const ['\u{1F94F}'], // Flying disc
       randomSeed: round.versionId.hashCode,
       emojiBackgroundColor: SenseiColors.gray.shade100,
-    );
-  }
-
-  Widget _buildHeaderText() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          '\u{1F94F}', // Flying disc emoji
-          style: TextStyle(fontSize: 24),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'My Round Story',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            color: SenseiColors.gray[700]!,
-          ),
-        ),
-      ],
     );
   }
 }

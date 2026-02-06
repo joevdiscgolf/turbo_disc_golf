@@ -93,20 +93,32 @@ class _MiniScorecardWithShareState extends State<MiniScorecardWithShare>
           valueListenable: widget.highlightedHoleRangeNotifier,
           builder: (context, activeSectionIndex, child) {
             // Only show highlighting when expanded
-            final HoleRange? activeRange = isExpanded &&
+            final HoleRange? activeRange =
+                isExpanded &&
                     activeSectionIndex != null &&
                     widget.story.structuredContentV3 != null
-                ? widget.story.structuredContentV3!.sections[activeSectionIndex].holeRange
+                ? widget
+                      .story
+                      .structuredContentV3!
+                      .sections[activeSectionIndex]
+                      .holeRange
                 : null;
 
-            // Adjust top padding based on collapsed/expanded state for better arrow centering
-            final double topPadding = isExpanded ? 4.0 : 8.0;
+            // Minimal top padding - the toggle arrow has its own padding
+            const double topPadding = 0.0;
 
             return Container(
-              padding: EdgeInsets.fromLTRB(12, topPadding, 12, autoBottomPadding(context)),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                topPadding,
+                12,
+                autoBottomPadding(context),
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: SenseiColors.gray.shade100)),
+                border: Border(
+                  top: BorderSide(color: SenseiColors.gray.shade100),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.08),
@@ -125,17 +137,22 @@ class _MiniScorecardWithShareState extends State<MiniScorecardWithShare>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(height: 8),
-                        InteractiveMiniScorecard(
-                          holes: widget.holes,
-                          highlightedHoleRange: activeRange,
+                        GestureDetector(
+                          onTap: _toggleExpanded,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            color: Colors.transparent,
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: InteractiveMiniScorecard(
+                              holes: widget.holes,
+                              highlightedHoleRange: activeRange,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  if (widget.showShareButton) ...[
-                    const SizedBox(height: 12),
-                    _buildShareButton(),
-                  ],
+                  if (widget.showShareButton) ...[_buildShareButton()],
                 ],
               ),
             );
@@ -150,14 +167,17 @@ class _MiniScorecardWithShareState extends State<MiniScorecardWithShare>
       onTap: _toggleExpanded,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: AnimatedRotation(
-          turns: isExpanded ? 0.0 : 0.5,
-          duration: const Duration(milliseconds: 300),
-          child: Icon(
-            Icons.keyboard_arrow_down,
-            size: 24,
-            color: SenseiColors.gray[600],
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Center(
+          child: AnimatedRotation(
+            turns: isExpanded ? 0.0 : 0.5,
+            duration: const Duration(milliseconds: 300),
+            child: Icon(
+              Icons.keyboard_arrow_down,
+              size: 24,
+              color: SenseiColors.gray[600],
+            ),
           ),
         ),
       ),

@@ -131,4 +131,45 @@ abstract class FBCourseDataLoader {
       return null;
     }
   }
+
+  /// Deletes a layout from a course.
+  /// Returns the updated course on success, null on failure.
+  static Future<Course?> deleteLayoutFromCourse(
+    String courseId,
+    String layoutId,
+  ) async {
+    try {
+      // Fetch the current course
+      final Course? course = await getCourseById(courseId);
+      if (course == null) {
+        debugPrint(
+          '[FBCourseDataLoader][deleteLayoutFromCourse] Course not found',
+        );
+        return null;
+      }
+
+      // Remove the layout from the list
+      final List<CourseLayout> updatedLayouts =
+          course.layouts.where((l) => l.id != layoutId).toList();
+
+      // Create updated course with modified layouts
+      final Course updatedCourse = course.copyWith(layouts: updatedLayouts);
+
+      // Save the updated course
+      final bool success = await saveCourse(updatedCourse);
+      if (!success) {
+        debugPrint(
+          '[FBCourseDataLoader][deleteLayoutFromCourse] Failed to save',
+        );
+        return null;
+      }
+
+      return updatedCourse;
+    } catch (e, trace) {
+      debugPrint('[FBCourseDataLoader][deleteLayoutFromCourse] Error');
+      debugPrint(e.toString());
+      debugPrint(trace.toString());
+      return null;
+    }
+  }
 }

@@ -11,7 +11,6 @@ import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/ai_parsing_service.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
 
 class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
   PotentialDGRound? _potentialRound;
@@ -42,27 +41,12 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
     _isReadyToNavigate = false;
   }
 
-  /// Signals that processing is complete and ready to navigate
-  /// This gives the UI time to show the loading animation before transitioning
-  void _setReadyToNavigate() {
-    _isReadyToNavigate = true;
-    notifyListeners();
-
-    // Add a small delay before allowing navigation to let the loading animation play
-    Future.delayed(const Duration(milliseconds: 800), () {
-      _shouldNavigateToReview = true;
-      notifyListeners();
-    });
-  }
-
   Future<bool> parseVoiceTranscript(
     String transcript, {
     Course? selectedCourse,
     required String? selectedLayoutId,
     int numHoles = 18,
-    bool useSharedPreferences = false,
-    List<HoleMetadata>?
-    preParsedHoles, // NEW: Pre-parsed hole metadata from image
+    List<HoleMetadata>? preParsedHoles,
   }) async {
     final BagService bagService = locator.get<BagService>();
 
@@ -85,40 +69,6 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
     );
 
     try {
-      // If using shared preferences, try to load cached round first
-      if (useSharedPreferences) {
-        _isProcessing = true;
-        _lastError = '';
-        notifyListeners();
-
-        debugPrint('Attempting to load round from shared preferences...');
-        final cachedRound = await locator
-            .get<RoundStorageService>()
-            .loadRound();
-
-        if (cachedRound != null) {
-          debugPrint(
-            'Successfully loaded cached round from shared preferences',
-          );
-
-          // Add a 3-second delay to show the loading animation
-          await Future.delayed(const Duration(seconds: 3));
-
-          // For cached rounds, we already have a complete DGRound
-          // So we skip the potential round stage
-          _parsedRound = cachedRound;
-          _isProcessing = false;
-          _setReadyToNavigate(); // Signal that we're ready to navigate with a delay
-          return true;
-        } else {
-          debugPrint('No cached round found in shared preferences');
-          _lastError = 'No cached round found. Parse a round first.';
-          _isProcessing = false;
-          notifyListeners();
-          return false;
-        }
-      }
-
       // Only print these logs when we're actually parsing with Gemini
       debugPrint('=== SUBMITTING TRANSCRIPT FOR PARSING ===');
       debugPrint('Transcript length: ${transcript.length} characters');
@@ -680,10 +630,6 @@ class RoundParser extends ChangeNotifier implements ClearOnLogoutProtocol {
 
         // Re-validate and enhance the entire round
         _parsedRound = _validateAndEnhanceRound(uid, _parsedRound!);
-
-        // Save updated round to shared preferences
-        debugPrint('Saving updated round to shared preferences...');
-        await locator.get<RoundStorageService>().saveRound(_parsedRound!);
       } else {
         // Update potential round
         final updatedHoles = List<PotentialDGHole>.from(

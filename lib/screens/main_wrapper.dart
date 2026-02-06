@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,13 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_history_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
-import 'package:turbo_disc_golf/screens/test_ai_summary_screen.dart';
-import 'package:turbo_disc_golf/screens/test_image_parsing_screen.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -132,9 +132,12 @@ class _MainWrapperState extends State<MainWrapper> {
           titleStyle: _buildAppTitleStyle(),
           hasBackButton: false,
           backgroundColor: SenseiColors.gray.shade50,
-          leftWidget: _buildSettingsButton(context, _selectedIndex == 0
-              ? RoundHistoryScreen.screenName
-              : FormAnalysisHistoryScreen.screenName),
+          leftWidget: _buildSettingsButton(
+            context,
+            _selectedIndex == 0
+                ? RoundHistoryScreen.screenName
+                : FormAnalysisHistoryScreen.screenName,
+          ),
           rightWidget: _buildRightWidget(context),
         ),
         body: IndexedStack(
@@ -268,8 +271,6 @@ class _MainWrapperState extends State<MainWrapper> {
           ),
           // const RecordRoundScreen(),
           const StatsScreen(),
-          const TestAiSummaryScreen(),
-          const TestImageParsingScreen(),
           const SettingsScreen(),
         ],
       ),
@@ -332,7 +333,7 @@ class _MainWrapperState extends State<MainWrapper> {
       fontWeight: FontWeight.w800,
       fontStyle: FontStyle.italic,
       letterSpacing: -0.5,
-      color: SenseiColors.senseiBlue,
+      color: SenseiColors.gray.shade600,
     );
   }
 
@@ -385,43 +386,29 @@ class _MainWrapperState extends State<MainWrapper> {
     _logger.track(
       'Modal Opened',
       properties: {
-        'modal_type': 'dialog',
+        'modal_type': 'action_sheet',
         'modal_name': 'Delete All Analyses Confirmation',
       },
     );
 
-    showDialog(
+    showCupertinoModalPopup(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete All Analysis Data?'),
-        content: const Text(
-          'This will permanently delete:\n\n'
-          '• All form analysis records\n'
-          '• All Cloud Storage images\n'
-          '• Cannot be undone\n\n'
-          'DEBUG MODE ONLY',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _logger.track('Delete All Analyses Cancelled');
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              _logger.track('Delete All Analyses Confirmed');
-              Navigator.pop(dialogContext);
-              final FormAnalysisHistoryCubit historyCubit = locator
-                  .get<FormAnalysisHistoryCubit>();
-              historyCubit.deleteAllAnalyses();
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('DELETE ALL'),
-          ),
-        ],
+      builder: (dialogContext) => CustomCupertinoActionSheet(
+        title: 'Delete all analysis data?',
+        message:
+            'This will permanently delete all form analysis records and Cloud Storage images. This cannot be undone. (DEBUG MODE ONLY)',
+        destructiveActionLabel: 'Delete all',
+        onDestructiveActionPressed: () {
+          _logger.track('Delete All Analyses Confirmed');
+          Navigator.pop(dialogContext);
+          final FormAnalysisHistoryCubit historyCubit = locator
+              .get<FormAnalysisHistoryCubit>();
+          historyCubit.deleteAllAnalyses();
+        },
+        onCancelPressed: () {
+          _logger.track('Delete All Analyses Cancelled');
+          Navigator.pop(dialogContext);
+        },
       ),
     );
   }

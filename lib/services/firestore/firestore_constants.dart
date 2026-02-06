@@ -4,8 +4,8 @@ const String kCoursesCollection = 'Courses';
 const String kFormAnalysesCollection = 'form_analyses';
 
 // App info
-const kAppInfoCollection = 'App_Info';
-const kMinimumVersionDoc = 'Minimum_Version';
+
+const kVersionInfoDoc = 'version_info';
 
 // Pro players config
 const String kAppConfigCollection = 'app_config';

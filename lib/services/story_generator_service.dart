@@ -8,10 +8,15 @@ import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
+import 'package:turbo_disc_golf/models/error/app_error_type.dart';
+import 'package:turbo_disc_golf/models/error/error_context.dart';
+import 'package:turbo_disc_golf/models/error/error_severity.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/protocols/llm_service.dart';
+import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
 import 'package:turbo_disc_golf/services/llm/chatgpt_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/chat_gpt_helpers.dart';
@@ -25,6 +30,64 @@ class StoryGeneratorService {
   final LLMService _llmService;
 
   StoryGeneratorService(this._llmService);
+
+  /// Log story parsing errors to Crashlytics
+  void _logParsingError({
+    required dynamic exception,
+    required StackTrace stackTrace,
+    required String version,
+    required String operation,
+    String? rawResponse,
+    Map<String, dynamic>? additionalData,
+  }) {
+    try {
+      locator.get<ErrorLoggingService>().logError(
+        exception: exception,
+        stackTrace: stackTrace,
+        type: AppErrorType.storyGeneration,
+        severity: ErrorSeverity.error,
+        context: ErrorContext(
+          customData: {
+            'service': 'StoryGeneratorService',
+            'story_version': version,
+            'operation': operation,
+            'response_length': rawResponse?.length ?? 0,
+            'response_preview': rawResponse?.substring(
+              0,
+              rawResponse.length > 500 ? 500 : rawResponse.length,
+            ),
+            ...?additionalData,
+          },
+        ),
+        reason: 'Story $version parsing failed: $operation',
+      );
+    } catch (e) {
+      debugPrint('Failed to log error to Crashlytics: $e');
+    }
+  }
+
+  /// Track story parsing result to Mixpanel for frequency analysis
+  void _trackStoryParsingResult({
+    required String version,
+    required bool success,
+    String? failureReason,
+    int? responseLength,
+    int? retryCount,
+  }) {
+    try {
+      locator.get<LoggingService>().track(
+        success ? 'Story Parsing Succeeded' : 'Story Parsing Failed',
+        properties: {
+          'story_version': version,
+          'response_length': responseLength ?? 0,
+          'retry_count': retryCount ?? 0,
+          if (!success && failureReason != null) 'failure_reason': failureReason,
+        },
+      );
+    } catch (e) {
+      debugPrint('Failed to track story parsing result: $e');
+    }
+  }
 
   /// Generate a narrative story for a round with embedded stat visualizations
   Future<AIContent?> generateRoundStory(DGRound round) async {
@@ -151,18 +214,58 @@ class StoryGeneratorService {
         final AIContent aiContent = parseResponse(response);
 
         if (validateContent(aiContent)) {
+          // Track successful parsing
+          _trackStoryParsingResult(
+            version: version,
+            success: true,
+            responseLength: response.length,
+            retryCount: retryCount,
+          );
           return aiContent;
         }
 
         debugPrint(
           'Failed to parse $version story, retry $retryCount/$maxRetries',
         );
+
+        // Track failed validation (content parsed but didn't validate)
+        _trackStoryParsingResult(
+          version: version,
+          success: false,
+          failureReason: 'validation_failed',
+          responseLength: response.length,
+          retryCount: retryCount,
+        );
+
         retryCount++;
       } catch (e, trace) {
         debugPrint(
           'Error generating $version story (attempt ${retryCount + 1}/$maxRetries): $e',
         );
         debugPrint(trace.toString());
+
+        // Log to Crashlytics
+        _logParsingError(
+          exception: e,
+          stackTrace: trace,
+          version: version,
+          operation: 'generateStoryWithRetries',
+          additionalData: {
+            'retry_count': retryCount,
+            'max_retries': maxRetries,
+          },
+        );
+
+        // Track to Mixpanel
+        _trackStoryParsingResult(
+          version: version,
+          success: false,
+          failureReason: e.toString().length > 100
+              ? e.toString().substring(0, 100)
+              : e.toString(),
+          retryCount: retryCount,
+        );
+
         retryCount++;
 
         if (retryCount >= maxRetries) {
@@ -174,6 +277,15 @@ class StoryGeneratorService {
     }
 
     debugPrint('Failed to generate $version story after $maxRetries attempts');
+
+    // Track final failure after all retries exhausted
+    _trackStoryParsingResult(
+      version: version,
+      success: false,
+      failureReason: 'max_retries_exhausted',
+      retryCount: maxRetries,
+    );
+
     return null;
   }
 
@@ -539,6 +651,15 @@ strategyTips:
       debugPrint('─────────────────────────────────────────────\n');
       debugPrint('Stack trace: $stackTrace');
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+      // Log to Crashlytics
+      _logParsingError(
+        exception: e,
+        stackTrace: stackTrace,
+        version: 'V1',
+        operation: 'parseStoryResponse_yaml',
+        rawResponse: response,
+      );
     }
 
     // Fallback: Parse as old format with {{PLACEHOLDERS}}
@@ -866,6 +987,15 @@ strategyTips:
       debugPrint('Stack trace: $stackTrace');
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
+      // Log to Crashlytics
+      _logParsingError(
+        exception: e,
+        stackTrace: stackTrace,
+        version: 'V2',
+        operation: 'parseStoryV2Response_yaml',
+        rawResponse: response,
+      );
+
       // Return error state
       throw Exception('Failed to parse V2 story: $e');
     }
@@ -965,11 +1095,17 @@ strategyTips:
       _normalizeScoreTypes(parsedData);
 
       // Validate V3 required fields
-      if (!parsedData.containsKey('roundTitle') ||
-          !parsedData.containsKey('overview') ||
-          !parsedData.containsKey('sections') ||
-          !parsedData.containsKey('whatCouldHaveBeen')) {
-        throw Exception('Missing required V3 fields');
+      final List<String> requiredV3Fields = [
+        'roundTitle',
+        'overview',
+        'sections',
+        'whatCouldHaveBeen',
+      ];
+      final List<String> missingFields = requiredV3Fields
+          .where((field) => !parsedData.containsKey(field))
+          .toList();
+      if (missingFields.isNotEmpty) {
+        throw Exception('Missing required V3 fields: ${missingFields.join(', ')}');
       }
 
       // Validate and fix whatCouldHaveBeen structure
@@ -1077,6 +1213,15 @@ strategyTips:
       debugPrint('Error: $e');
       debugPrint('Stack trace: $stackTrace');
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+      // Log to Crashlytics
+      _logParsingError(
+        exception: e,
+        stackTrace: stackTrace,
+        version: 'V3',
+        operation: 'parseStoryV3Response_yaml',
+        rawResponse: response,
+      );
 
       // Return error state
       throw Exception('Failed to parse V3 story: $e');

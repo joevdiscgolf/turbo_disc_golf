@@ -380,11 +380,20 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: WhatCouldHaveBeenCard(
-        currentScore: data.currentScore,
-        potentialScore: data.potentialScore,
-        scenarios: scenarios,
-        encouragement: data.encouragement,
+      child: Column(
+        children: [
+          // Divider
+          Container(
+            height: 1,
+            color: SenseiColors.gray[200],
+            margin: const EdgeInsets.symmetric(vertical: 24),
+          ),
+          WhatCouldHaveBeenCard(
+            currentScore: data.currentScore,
+            potentialScore: data.potentialScore,
+            scenarios: scenarios,
+          ),
+        ],
       ),
     );
   }
@@ -535,7 +544,6 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
                     assessment.keyInsight,
                     style: const TextStyle(
                       fontSize: 14,
-                      fontStyle: FontStyle.italic,
                       color: Colors.black87,
                     ),
                   ),
@@ -576,9 +584,13 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
     SkillHighlight skill, {
     required bool isStrength,
   }) {
-    final color = isStrength
-        ? const Color(0xFF4CAF50)
-        : const Color(0xFFFF9800);
+    final Color color =
+        isStrength ? const Color(0xFF4CAF50) : const Color(0xFFFF9800);
+
+    // Strip "skill: " prefix if present (from legacy data)
+    final String skillName = skill.skill.startsWith('skill: ')
+        ? skill.skill.substring(7)
+        : skill.skill;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -596,31 +608,22 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        skill.skill,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        skill.statHighlight,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  skillName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  skill.statHighlight,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(

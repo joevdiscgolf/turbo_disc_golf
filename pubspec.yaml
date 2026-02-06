@@ -98,6 +98,7 @@ dev_dependencies:
   build_runner: ^2.1.2
   json_serializable: ^6.0.0
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -127,6 +128,7 @@ flutter:
     - assets/test_videos/
     - assets/judge_tab/
     - assets/icon/
+    - assets/splash/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -158,3 +160,14 @@ flutter:
 flutter_launcher_icons:
   ios: true
   image_path: "assets/icon/app_icon.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/splash/score_sensei_splash_light.png
+
+  android_12:
+    color: "#ffffff"
+    image: assets/splash/score_sensei_splash_light.png
+
+  ios: true
+  android: true

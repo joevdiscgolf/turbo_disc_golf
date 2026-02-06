@@ -28,6 +28,11 @@ class ShareScreenEmojiBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Return empty container if no emojis to display
+    if (emojis.isEmpty) {
+      return Container(color: backgroundColor);
+    }
+
     return Container(
       color: backgroundColor,
       height: double.infinity,
@@ -42,8 +47,7 @@ class ShareScreenEmojiBackground extends StatelessWidget {
 
   /// Builds a 6×10 grid of randomly positioned emojis.
   List<Widget> _buildBackgroundEmojis(BoxConstraints constraints) {
-    final Random random =
-        randomSeed != null ? Random(randomSeed!) : Random();
+    final Random random = randomSeed != null ? Random(randomSeed!) : Random();
     final List<Widget> emojiWidgets = [];
 
     // Grid-based distribution: 6 columns × 10 rows = 60 cells
@@ -66,7 +70,7 @@ class ShareScreenEmojiBackground extends StatelessWidget {
         final double rotation = (random.nextDouble() - 0.5) * 1.2;
 
         // Random opacity (0.08 to 0.18)
-        final double opacity = 0.08 + random.nextDouble() * 0.1;
+        final double opacity = 0.02 + random.nextDouble() * 0.1;
 
         // Random size (14 to 24px)
         final double size = 14 + random.nextDouble() * 10;

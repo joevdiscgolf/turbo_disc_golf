@@ -1,24 +1,29 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
 import 'package:turbo_disc_golf/components/shimmer_box.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/course/course_search_data.dart';
 import 'package:turbo_disc_golf/screens/create_course/create_course_screen.dart';
-import 'package:turbo_disc_golf/screens/create_course/create_layout_sheet.dart';
+import 'package:turbo_disc_golf/screens/create_course/create_layout_screen.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/firestore/course_data_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
+import 'package:turbo_disc_golf/state/record_round_state.dart';
 import 'package:turbo_disc_golf/utils/auth_helpers.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 class SelectCoursePanel extends StatefulWidget {
@@ -238,7 +243,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
     return Column(
       children: [
         PanelHeader(
-          title: 'Select Course',
+          title: 'Select course',
           onClose: () {
             _logger.track('Close Panel Button Tapped');
             HapticFeedback.lightImpact();
@@ -251,7 +256,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
             controller: _controller,
             onChanged: _onSearchChanged,
             decoration: const InputDecoration(
-              hintText: 'Search courses…',
+              hintText: 'Search courses',
               prefixIcon: Icon(Icons.search),
             ),
           ),
@@ -326,6 +331,8 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
               _openEditLayoutSheet(hit, layoutSummary),
           isAdmin: _isAdmin,
           onDelete: () => _showDeleteConfirmationDialog(hit),
+          onDeleteLayout: (layoutSummary) =>
+              _showDeleteLayoutConfirmationDialog(hit, layoutSummary),
         );
       },
     );
@@ -388,7 +395,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
     pushCupertinoRoute(
       context,
-      CreateLayoutSheet(
+      CreateLayoutScreen(
         course: course,
         onLayoutSaved: (layout) {
           _handleLayoutSaved(course, layout, isNew: true);
@@ -438,7 +445,7 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
 
     pushCupertinoRoute(
       context,
-      CreateLayoutSheet(
+      CreateLayoutScreen(
         course: course,
         existingLayout: layout,
         onLayoutSaved: (updatedLayout) {
@@ -599,24 +606,14 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       properties: {'course_name': hit.name},
     );
 
-    final bool? confirmed = await showDialog<bool>(
+    final bool? confirmed = await showCupertinoModalPopup<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Course?'),
-        content: Text(
-          "Are you sure you want to delete '${hit.name}'? This cannot be undone.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
+      builder: (context) => CustomCupertinoActionSheet(
+        title: 'Delete course?',
+        message: "Are you sure you want to delete '${hit.name}'? This cannot be undone.",
+        destructiveActionLabel: 'Delete',
+        onDestructiveActionPressed: () => Navigator.of(context).pop(true),
+        onCancelPressed: () => Navigator.of(context).pop(false),
       ),
     );
 
@@ -659,6 +656,105 @@ class _SelectCoursePanelState extends State<SelectCoursePanel> {
       }
     }
   }
+
+  Future<void> _showDeleteLayoutConfirmationDialog(
+    CourseSearchHit hit,
+    CourseLayoutSummary layoutSummary,
+  ) async {
+    _logger.track(
+      'Layout Delete Button Tapped',
+      properties: {'course_name': hit.name, 'layout_name': layoutSummary.name},
+    );
+
+    final bool? confirmed = await showCupertinoModalPopup<bool>(
+      context: context,
+      builder: (context) => CustomCupertinoActionSheet(
+        title: 'Delete layout?',
+        message:
+            "Are you sure you want to delete '${layoutSummary.name}'? This cannot be undone.",
+        destructiveActionLabel: 'Delete',
+        onDestructiveActionPressed: () => Navigator.of(context).pop(true),
+        onCancelPressed: () => Navigator.of(context).pop(false),
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteLayout(hit, layoutSummary);
+    }
+  }
+
+  Future<void> _deleteLayout(
+    CourseSearchHit hit,
+    CourseLayoutSummary layoutSummary,
+  ) async {
+    _logger.track(
+      'Layout Delete Confirmed',
+      properties: {
+        'course_id': hit.id,
+        'course_name': hit.name,
+        'layout_id': layoutSummary.id,
+        'layout_name': layoutSummary.name,
+      },
+    );
+
+    try {
+      final Course? updatedCourse =
+          await FBCourseDataLoader.deleteLayoutFromCourse(
+            hit.id,
+            layoutSummary.id,
+          );
+
+      if (updatedCourse == null) {
+        if (mounted) {
+          locator.get<ToastService>().showError('Failed to delete layout');
+        }
+        return;
+      }
+
+      _logger.track(
+        'Layout Deleted Successfully',
+        properties: {'course_id': hit.id, 'layout_id': layoutSummary.id},
+      );
+
+      // Update local list with the updated course
+      if (mounted) {
+        setState(() {
+          final int index = _searchResults.indexWhere((r) => r.id == hit.id);
+          if (index != -1) {
+            _searchResults[index] = updatedCourse.toCourseSearchHit();
+          }
+        });
+
+        // Update RecordRoundCubit if the deleted layout was selected
+        final RecordRoundCubit recordRoundCubit =
+            BlocProvider.of<RecordRoundCubit>(context);
+        final RecordRoundState cubitState = recordRoundCubit.state;
+        if (cubitState is RecordRoundActive &&
+            cubitState.selectedCourse?.id == hit.id &&
+            cubitState.selectedLayoutId == layoutSummary.id) {
+          // Clear the selected course/layout since it was deleted
+          recordRoundCubit.setSelectedCourse(
+            updatedCourse,
+            layoutId: updatedCourse.layouts.isNotEmpty
+                ? updatedCourse.defaultLayout.id
+                : null,
+          );
+        }
+
+        locator.get<ToastService>().showSuccess('Deleted layout');
+      }
+
+      // Update search service cache
+      await _searchService.markCourseAsUsed(updatedCourse.toCourseSearchHit());
+    } catch (e, stackTrace) {
+      debugPrint('[SelectCoursePanel] Failed to delete layout: $e');
+      debugPrint('[SelectCoursePanel] Stack trace: $stackTrace');
+
+      if (mounted) {
+        locator.get<ToastService>().showError('Failed to delete layout');
+      }
+    }
+  }
 }
 
 class _CourseSearchResultItem extends StatefulWidget {
@@ -669,6 +765,7 @@ class _CourseSearchResultItem extends StatefulWidget {
     required this.onEditLayout,
     required this.isAdmin,
     required this.onDelete,
+    this.onDeleteLayout,
   });
 
   final CourseSearchHit hit;
@@ -677,6 +774,7 @@ class _CourseSearchResultItem extends StatefulWidget {
   final void Function(CourseLayoutSummary layout) onEditLayout;
   final bool isAdmin;
   final VoidCallback onDelete;
+  final void Function(CourseLayoutSummary layout)? onDeleteLayout;
 
   @override
   State<_CourseSearchResultItem> createState() =>
@@ -688,13 +786,6 @@ class _CourseSearchResultItemState extends State<_CourseSearchResultItem> {
 
   void _toggleExpanded() {
     HapticFeedback.lightImpact();
-
-    // If there's only one layout, auto-select it instead of expanding
-    if (widget.hit.layouts.length == 1) {
-      widget.onLayoutSelected(widget.hit.layouts[0]);
-      return;
-    }
-
     setState(() {
       _isExpanded = !_isExpanded;
     });
@@ -805,6 +896,9 @@ class _CourseSearchResultItemState extends State<_CourseSearchResultItem> {
               layout: layout,
               onTap: () => widget.onLayoutSelected(layout),
               onEdit: () => widget.onEditLayout(layout),
+              onDelete: kDebugMode && widget.onDeleteLayout != null
+                  ? () => widget.onDeleteLayout!(layout)
+                  : null,
             );
           }),
           _NewLayoutButton(onTap: widget.onCreateLayout),
@@ -819,11 +913,13 @@ class _LayoutSummaryItem extends StatelessWidget {
     required this.layout,
     required this.onTap,
     required this.onEdit,
+    this.onDelete,
   });
 
   final CourseLayoutSummary layout;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -839,22 +935,9 @@ class _LayoutSummaryItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  flattenedOverWhite(SenseiColors.blue, 0.1),
-                  flattenedOverWhite(SenseiColors.blue, 0.05),
-                ],
-                begin: Alignment.bottomRight,
-                end: Alignment.topLeft,
-              ),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: defaultCardBoxShadow(),
               border: Border.all(color: SenseiColors.gray.shade100, width: 1),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -896,6 +979,23 @@ class _LayoutSummaryItem extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onDelete != null) ...[
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      onDelete!();
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: Colors.red.shade400,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 4),
                 Icon(
                   Icons.chevron_right,

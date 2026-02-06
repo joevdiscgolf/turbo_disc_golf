@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/banners/regenerate_prompt_banner.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_building_animation.dart';
@@ -17,6 +15,10 @@ import 'package:turbo_disc_golf/components/judgment/judgment_reveal_effect.dart'
 import 'package:turbo_disc_golf/components/judgment/judgment_share_card.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_slot_reel.dart';
 import 'package:turbo_disc_golf/components/judgment/judgment_verdict_card.dart';
+import 'package:turbo_disc_golf/components/judgment/share_judgment/share_judgment_verdict.dart';
+import 'package:turbo_disc_golf/components/share/offscreen_capture_target.dart';
+import 'package:turbo_disc_golf/components/share/share_branding_footer.dart';
+import 'package:turbo_disc_golf/components/share/shareable_composite.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -26,7 +28,7 @@ import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
-import 'package:turbo_disc_golf/services/round_storage_service.dart';
+import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/services/share_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
@@ -86,9 +88,6 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
 
   // Key for capturing share card as image
   final GlobalKey _shareCardKey = GlobalKey();
-
-  // For blur transition into content
-  bool _showBlurTransition = false;
 
   late final LoggingServiceBase _logger;
 
@@ -286,7 +285,6 @@ class _JudgeRoundTabState extends State<JudgeRoundTab>
 
     // Phase 5: Complete - transition with blur effect
     setState(() {
-      _showBlurTransition = true;
       _currentState = JudgmentState.complete;
     });
 
@@ -411,10 +409,11 @@ highlightStats:
       regenerateCount: _previousRegenerateCount,
     );
 
-    final RoundStorageService storageService = locator
-        .get<RoundStorageService>();
     final DGRound updatedRound = _currentRound.copyWith(aiJudgment: aiJudgment);
-    await storageService.saveRound(updatedRound);
+
+    // Save to Firestore (persists across app restarts)
+    final RoundsService roundsService = locator.get<RoundsService>();
+    await roundsService.updateRound(updatedRound);
 
     if (mounted) {
       // Update RoundReviewCubit for tab switching within this screen
@@ -502,7 +501,7 @@ highlightStats:
       case JudgmentState.celebrating:
         return _buildCelebratingState(context);
       case JudgmentState.complete:
-        return _buildResultState(context);
+        return _buildResultContent(context);
       case JudgmentState.error:
         return _buildErrorState(context);
     }
@@ -756,457 +755,8 @@ highlightStats:
     return <String>[];
   }
 
-  Widget _buildResultState(BuildContext context) {
-    // If judgment isn't ready yet, show loading with the verdict card
-    if (_currentRound.aiJudgment == null) {
-      return _buildLoadingResultState(context);
-    }
-
-    // Wrap in blur transition if coming from celebrating state
-    if (_showBlurTransition) {
-      return TweenAnimationBuilder<double>(
-        duration: const Duration(milliseconds: 600),
-        tween: Tween<double>(begin: 15.0, end: 0.0),
-        onEnd: () {
-          // Reset the flag after animation completes
-          if (mounted) {
-            setState(() {
-              _showBlurTransition = false;
-            });
-          }
-        },
-        builder: (context, blur, child) {
-          return ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: blur,
-              sigmaY: blur,
-              tileMode: TileMode.decal,
-            ),
-            child: Opacity(
-              opacity: (1.0 - (blur / 15.0)).clamp(0.3, 1.0),
-              child: child,
-            ),
-          );
-        },
-        child: _buildResultContent(context),
-      );
-    }
-
-    return _buildResultContent(context);
-  }
-
-  Widget _buildResultContent(BuildContext context) {
-    // Feature flag: use V3 clean layout
-    if (locator.get<FeatureFlagService>().useJudgmentResultV3) {
-      return _buildResultContentV3(context);
-    }
-
-    // Feature flag: use new bottom action bar layout
-    if (locator.get<FeatureFlagService>().useBottomShareActionBar) {
-      return _buildResultContentV2(context);
-    }
-
-    // Extract clean content (remove metadata comment)
-    String cleanContent = _currentRound.aiJudgment!.content;
-    if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
-      final int endIndex = cleanContent.indexOf('-->');
-      if (endIndex != -1) {
-        cleanContent = cleanContent.substring(endIndex + 3).trim();
-      }
-    }
-
-    // Parse YAML content
-    String headline = _isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!';
-    String tagline = '';
-    String content = cleanContent;
-    List<String> highlightStats = <String>[];
-
-    try {
-      final dynamic yaml = loadYaml(cleanContent);
-      if (yaml is YamlMap) {
-        // Strip AI-generated prefixes like "Headline: " from values
-        headline = _stripAIPrefix((yaml['headline'] as String?) ?? headline);
-        tagline = _stripAIPrefix((yaml['tagline'] as String?) ?? '');
-        content = (yaml['content'] as String?) ?? cleanContent;
-        final YamlList? stats = yaml['highlightStats'] as YamlList?;
-        if (stats != null) {
-          highlightStats = stats.map((e) => e.toString()).toList();
-        }
-      }
-    } catch (e) {
-      // Fall back to legacy format (first line is headline)
-      final List<String> lines = cleanContent.split('\n');
-      if (lines.isNotEmpty && lines[0].trim().isNotEmpty) {
-        headline = lines[0].trim();
-        content = lines.skip(1).join('\n').trim();
-      }
-    }
-
-    // Create AIContent with clean content for rendering
-    final AIContent cleanAIContent = AIContent(
-      content: content,
-      roundVersionId: _currentRound.versionId,
-    );
-
-    // Generate analysis for rendering
-    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
-      _currentRound,
-    );
-
-    // Ensure tagline is different from headline (AI sometimes duplicates them)
-    final String displayTagline = (tagline.isNotEmpty && tagline != headline)
-        ? tagline
-        : _getDefaultTagline(_isGlaze);
-
-    // Build the share card widget
-    final Widget shareCard = RepaintBoundary(
-      key: _shareCardKey,
-      child: JudgmentShareCard(
-        isGlaze: _isGlaze,
-        headline: headline,
-        tagline: displayTagline,
-        round: _currentRound,
-        analysis: analysis,
-        highlightStats: highlightStats,
-      ),
-    );
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 12, bottom: 96),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Show regenerate banner when content is outdated
-          if (_currentRound.isAIJudgmentOutdated)
-            RegeneratePromptBanner(
-              onRegenerate: () {
-                _logger.track('Judgment Regenerate Button Tapped');
-                // Save the current regenerate count + 1 for the new judgment
-                _previousRegenerateCount =
-                    (_currentRound.aiJudgment?.regenerateCount ?? 0) + 1;
-                setState(() {
-                  _currentRound = _currentRound.copyWith(aiJudgment: null);
-                  _currentState = JudgmentState.idle;
-                });
-                _startJudgmentFlow();
-              },
-              isLoading:
-                  _currentState == JudgmentState.building ||
-                  _currentState == JudgmentState.preparing,
-              subtitle: 'Roast may be outdated',
-              regenerationsRemaining: isCurrentUserAdmin()
-                  ? null
-                  : _currentRound.aiJudgment?.regenerationsRemaining,
-            ),
-
-          // Verdict card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: JudgmentVerdictCard(
-              isGlaze: _isGlaze,
-              headline: headline,
-              animate: false,
-            ),
-          ),
-
-          // Premium share button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildShareButton(headline),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Content card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(20),
-              child: DefaultTextStyle(
-                style: const TextStyle(
-                  color: Color(0xFF1A1A1A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  height: 1.5,
-                ),
-                child: AIContentRenderer(
-                  aiContent: cleanAIContent,
-                  round: _currentRound,
-                  analysis: analysis,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Info card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Card(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 20,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Judgment is permanent for this round. '
-                        'Each round gets one 50/50 roll!',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Share card preview
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Share Card Preview:',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(color: Colors.grey[600]),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Full-width share card
-          shareCard,
-        ],
-      ),
-    );
-  }
-
-  /// V2 layout with bottom action bar for share functionality.
-  Widget _buildResultContentV2(BuildContext context) {
-    // Extract clean content (remove metadata comment)
-    String cleanContent = _currentRound.aiJudgment!.content;
-    if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
-      final int endIndex = cleanContent.indexOf('-->');
-      if (endIndex != -1) {
-        cleanContent = cleanContent.substring(endIndex + 3).trim();
-      }
-    }
-
-    // Parse YAML content
-    String headline = _isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!';
-    String tagline = '';
-    String content = cleanContent;
-    List<String> highlightStats = <String>[];
-
-    try {
-      final dynamic yaml = loadYaml(cleanContent);
-      if (yaml is YamlMap) {
-        headline = _stripAIPrefix((yaml['headline'] as String?) ?? headline);
-        tagline = _stripAIPrefix((yaml['tagline'] as String?) ?? '');
-        content = (yaml['content'] as String?) ?? cleanContent;
-        final YamlList? stats = yaml['highlightStats'] as YamlList?;
-        if (stats != null) {
-          highlightStats = stats.map((e) => e.toString()).toList();
-        }
-      }
-    } catch (e) {
-      final List<String> lines = cleanContent.split('\n');
-      if (lines.isNotEmpty && lines[0].trim().isNotEmpty) {
-        headline = lines[0].trim();
-        content = lines.skip(1).join('\n').trim();
-      }
-    }
-
-    // Create AIContent with clean content for rendering
-    final AIContent cleanAIContent = AIContent(
-      content: content,
-      roundVersionId: _currentRound.versionId,
-    );
-
-    // Generate analysis for rendering
-    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
-      _currentRound,
-    );
-
-    // Ensure tagline is different from headline
-    final String displayTagline = (tagline.isNotEmpty && tagline != headline)
-        ? tagline
-        : _getDefaultTagline(_isGlaze);
-
-    // Hidden share card for capture (using Offstage)
-    final Widget shareCard = Offstage(
-      offstage: true,
-      child: RepaintBoundary(
-        key: _shareCardKey,
-        child: JudgmentShareCard(
-          isGlaze: _isGlaze,
-          headline: headline,
-          tagline: displayTagline,
-          round: _currentRound,
-          analysis: analysis,
-          highlightStats: highlightStats,
-        ),
-      ),
-    );
-
-    return Stack(
-      children: [
-        Column(
-          children: [
-            // Scrollable content area
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 12, bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Show regenerate banner when content is outdated
-                    if (_currentRound.isAIJudgmentOutdated)
-                      RegeneratePromptBanner(
-                        onRegenerate: () {
-                          _logger.track('Judgment Regenerate Button Tapped');
-                          // Save the current regenerate count + 1 for the new judgment
-                          _previousRegenerateCount =
-                              (_currentRound.aiJudgment?.regenerateCount ?? 0) +
-                              1;
-                          setState(() {
-                            _currentRound = _currentRound.copyWith(
-                              aiJudgment: null,
-                            );
-                            _currentState = JudgmentState.idle;
-                          });
-                          _startJudgmentFlow();
-                        },
-                        isLoading:
-                            _currentState == JudgmentState.building ||
-                            _currentState == JudgmentState.preparing,
-                        subtitle: 'Roast may be outdated',
-                        regenerationsRemaining: isCurrentUserAdmin()
-                            ? null
-                            : _currentRound.aiJudgment?.regenerationsRemaining,
-                      ),
-
-                    // Verdict card
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: JudgmentVerdictCard(
-                        isGlaze: _isGlaze,
-                        headline: headline,
-                        animate: false,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Content card (no share button in V2 - moved to bottom bar)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: DefaultTextStyle(
-                          style: const TextStyle(
-                            color: Color(0xFF1A1A1A),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            height: 1.5,
-                          ),
-                          child: AIContentRenderer(
-                            aiContent: cleanAIContent,
-                            round: _currentRound,
-                            analysis: analysis,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Info card
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Card(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 20,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Judgment is permanent for this round. '
-                                  'Each round gets one 50/50 roll!',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // No share card preview in V2 - available via bottom sheet
-                  ],
-                ),
-              ),
-            ),
-            // Fixed bottom action bar
-            _buildShareActionBar(headline),
-          ],
-        ),
-        // Hidden share card for capture
-        shareCard,
-      ],
-    );
-  }
-
   /// V3 layout with clean, professional full-width design.
-  Widget _buildResultContentV3(BuildContext context) {
+  Widget _buildResultContent(BuildContext context) {
     // Extract clean content (remove metadata comment)
     String cleanContent = _currentRound.aiJudgment!.content;
     if (cleanContent.startsWith('<!-- JUDGMENT_TYPE:')) {
@@ -1251,29 +801,30 @@ highlightStats:
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Show regenerate banner when content is outdated
-                    if (_currentRound.isAIJudgmentOutdated)
-                      RegeneratePromptBanner(
-                        onRegenerate: () {
-                          _logger.track('Judgment Regenerate Button Tapped');
-                          _previousRegenerateCount =
-                              (_currentRound.aiJudgment?.regenerateCount ?? 0) +
-                              1;
-                          setState(() {
-                            _currentRound = _currentRound.copyWith(
-                              aiJudgment: null,
-                            );
-                            _currentState = JudgmentState.idle;
-                          });
-                          _startJudgmentFlow();
-                        },
-                        isLoading:
-                            _currentState == JudgmentState.building ||
-                            _currentState == JudgmentState.preparing,
-                        subtitle: 'Roast may be outdated',
-                        regenerationsRemaining: isCurrentUserAdmin()
-                            ? null
-                            : _currentRound.aiJudgment?.regenerationsRemaining,
-                      ),
+                    // if (_currentRound.isAIJudgmentOutdated)
+                    RegeneratePromptBanner(
+                      buttonSuffix: 'judgment',
+                      onRegenerate: () {
+                        _logger.track('Judgment Regenerate Button Tapped');
+                        _previousRegenerateCount =
+                            (_currentRound.aiJudgment?.regenerateCount ?? 0) +
+                            1;
+                        setState(() {
+                          _currentRound = _currentRound.copyWith(
+                            aiJudgment: null,
+                          );
+                          _currentState = JudgmentState.idle;
+                        });
+                        _startJudgmentFlow();
+                      },
+                      isLoading:
+                          _currentState == JudgmentState.building ||
+                          _currentState == JudgmentState.preparing,
+
+                      regenerationsRemaining: isCurrentUserAdmin()
+                          ? null
+                          : _currentRound.aiJudgment?.regenerationsRemaining,
+                    ),
 
                     // V3 content
                     JudgmentResultContentV3(
@@ -1300,12 +851,17 @@ highlightStats:
   Widget _buildHiddenShareCard(String headline, RoundAnalysis analysis) {
     final String displayTagline = _getPreviewTagline();
     final List<String> highlightStats = _getPreviewHighlightStats();
+    final String emoji = _isGlaze ? '\u{1F369}' : '\u{1F525}';
 
-    return Offstage(
-      offstage: true,
-      child: RepaintBoundary(
-        key: _shareCardKey,
-        child: JudgmentShareCard(
+    return OffscreenCaptureTarget(
+      captureKey: _shareCardKey,
+      child: ShareableComposite(
+        backgroundWidget: ShareableEmojiBackground(
+          emojis: [emoji],
+          randomSeed: _currentRound.versionId.hashCode,
+        ),
+        headerWidget: ShareJudgmentVerdict(isGlaze: _isGlaze),
+        contentWidget: JudgmentShareCard(
           isGlaze: _isGlaze,
           headline: headline,
           tagline: displayTagline,
@@ -1313,41 +869,7 @@ highlightStats:
           analysis: analysis,
           highlightStats: highlightStats,
         ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingResultState(BuildContext context) {
-    final String headline = _isGlaze ? 'YOU GOT GLAZED!' : 'YOU GOT ROASTED!';
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Verdict card
-          JudgmentVerdictCard(
-            isGlaze: _isGlaze,
-            headline: headline,
-            animate: false,
-          ),
-          const SizedBox(height: 24),
-          // Loading indicator for content
-          Center(
-            child: Column(
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text(
-                  'Generating your judgment...',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF666666),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        footerWidget: const ShareBrandingFooter(),
       ),
     );
   }

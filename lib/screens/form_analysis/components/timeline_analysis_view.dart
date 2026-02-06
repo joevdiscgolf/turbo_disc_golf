@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_button.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_playback_controls.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
@@ -532,51 +531,40 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   ) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 8, left: 16, right: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Position',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: SenseiColors.gray[600],
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _showCheckpointDetailsPanel(context, checkpoint);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: SenseiColors.gray.shade100.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
             ),
-          ),
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              _showCheckpointDetailsPanel(context, checkpoint);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: SenseiColors.gray[50],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 14,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Position details',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: SenseiColors.gray[600],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Position details',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: SenseiColors.gray[600],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.help_outline_rounded,
+                  size: 14,
+                  color: SenseiColors.gray[600],
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -589,7 +577,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
     final CheckpointDataV2 checkpoint = checkpoints[selectedIndex ?? 0];
 
     return Container(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -840,7 +828,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       title: 'Key positions',
       modalName: 'Checkpoint Details',
       accentColor: const Color(0xFF137e66),
-      buttonLabel: 'Done',
+      buttonLabel: 'Got it!',
       contentBuilder: (_) => CheckpointDetailsContent(checkpoint: checkpoint),
     );
   }

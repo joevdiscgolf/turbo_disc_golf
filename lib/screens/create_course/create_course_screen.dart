@@ -1,9 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
+import 'package:turbo_disc_golf/components/footers/form_footer.dart';
 import 'package:turbo_disc_golf/components/map/location_picker_sheet.dart';
 import 'package:turbo_disc_golf/components/map/mini_map_preview.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
@@ -20,6 +22,8 @@ import 'package:turbo_disc_golf/state/create_course_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/country_constants.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 
 /// Bottom sheet / modal for creating a course + default layout
 class CreateCourseScreen extends StatefulWidget {
@@ -67,6 +71,52 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
     // Track screen impression
     _logger.logScreenImpression('CreateCourseSheet');
+
+    // Check for saved draft after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForSavedDraft();
+    });
+  }
+
+  Future<void> _checkForSavedDraft() async {
+    final bool hasDraft = await CreateCourseCubit.hasDraft();
+    if (!hasDraft || !mounted) return;
+
+    _logger.track('Draft Found On Screen Open');
+
+    final String? result = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (dialogContext) => CustomCupertinoActionSheet(
+        title: 'Resume draft?',
+        message: 'You have a saved draft. Would you like to continue where you left off?',
+        destructiveActionLabel: 'Start fresh',
+        onDestructiveActionPressed: () {
+          CreateCourseCubit.clearDraft();
+          Navigator.pop(dialogContext, 'start_fresh');
+        },
+        additionalActions: [
+          ActionSheetAction(
+            label: 'Resume draft',
+            onPressed: () => Navigator.pop(dialogContext, 'resume'),
+          ),
+        ],
+        onCancelPressed: () => Navigator.pop(dialogContext, 'cancel'),
+      ),
+    );
+
+    if (result == 'resume' && mounted) {
+      _logger.track('Draft Resumed');
+      final bool loaded = await _createCourseCubit.loadDraft();
+      if (loaded && mounted) {
+        // Update text controllers with loaded values
+        final CreateCourseState state = _createCourseCubit.state;
+        _cityController.text = state.city ?? '';
+        _stateController.text = state.state ?? '';
+        locator.get<ToastService>().showInfo('Draft restored');
+      }
+    } else if (result == 'start_fresh') {
+      _logger.track('Draft Discarded On Resume');
+    }
   }
 
   @override
@@ -86,27 +136,38 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
 
     if (!hasUnsavedChanges) return true;
 
-    final bool? shouldDiscard = await showDialog<bool>(
+    final String? result = await showCupertinoModalPopup<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Discard changes?'),
-        content: const Text(
-          'You have unsaved changes. Are you sure you want to leave?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Discard'),
+      builder: (context) => CustomCupertinoActionSheet(
+        title: 'Unsaved changes',
+        message: 'You have unsaved changes. What would you like to do?',
+        destructiveActionLabel: 'Discard',
+        onDestructiveActionPressed: () {
+          CreateCourseCubit.clearDraft();
+          Navigator.pop(context, 'discard');
+        },
+        additionalActions: [
+          ActionSheetAction(
+            label: 'Save draft',
+            onPressed: () async {
+              await _createCourseCubit.saveDraft();
+              if (context.mounted) {
+                Navigator.pop(context, 'save_draft');
+              }
+            },
           ),
         ],
+        onCancelPressed: () => Navigator.pop(context, 'cancel'),
       ),
     );
-    return shouldDiscard ?? false;
+
+    if (result == 'discard' || result == 'save_draft') {
+      if (result == 'save_draft' && mounted) {
+        locator.get<ToastService>().showSuccess('Draft saved');
+      }
+      return true;
+    }
+    return false;
   }
 
   @override
@@ -175,65 +236,75 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildCourseSection(context, state),
-                                  Divider(
-                                    height: 32,
-                                    color: SenseiColors.gray.shade100,
-                                    thickness: 1,
-                                  ),
-                                  LayoutInfoSection(
-                                    headerTitle: 'Default Layout',
-                                    layoutName: state.layoutName,
-                                    numberOfHoles: state.numberOfHoles,
-                                    isParsingImage: state.isParsingImage,
-                                    parseError: state.parseError,
-                                    onLayoutNameChanged:
-                                        _createCourseCubit.updateLayoutName,
-                                    onHoleCountChanged: (int newCount) =>
-                                        _handleHoleCountChange(state, newCount),
-                                    onParseImage: () async {
-                                      _logger.track(
-                                        'Parse Layout Image Button Tapped',
-                                      );
-                                      HapticFeedback.lightImpact();
-                                      FocusScope.of(context).unfocus();
-                                      await Future.delayed(
-                                        const Duration(milliseconds: 300),
-                                      );
-                                      if (context.mounted) {
-                                        _createCourseCubit.pickAndParseImage(
-                                          context,
-                                        );
-                                      }
-                                    },
-                                  ),
-                                  Divider(
-                                    height: 32,
-                                    color: SenseiColors.gray.shade100,
-                                    thickness: 1,
-                                  ),
-                                  HolesSection(
-                                    holes: state.holes,
-                                    onSnapshotBeforeApply:
-                                        _createCourseCubit.snapshotHolesForUndo,
-                                    onUndoQuickFill:
-                                        _createCourseCubit.undoQuickFill,
-                                    onApplyDefaults: _createCourseCubit
-                                        .applyDefaultsToAllHoles,
-                                    onHoleParChanged:
-                                        _createCourseCubit.updateHolePar,
-                                    onHoleFeetChanged:
-                                        _createCourseCubit.updateHoleFeet,
-                                    onHoleTypeChanged:
-                                        _createCourseCubit.updateHoleType,
-                                    onHoleShapeChanged:
-                                        _createCourseCubit.updateHoleShape,
-                                  ),
-                                ],
+                              child: _buildCourseSection(context, state),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
                               ),
+                              child: Divider(
+                                height: 32,
+                                color: SenseiColors.gray.shade100,
+                                thickness: 1,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: LayoutInfoSection(
+                                headerTitle: 'Default Layout',
+                                layoutName: state.layoutName,
+                                numberOfHoles: state.numberOfHoles,
+                                onLayoutNameChanged:
+                                    _createCourseCubit.updateLayoutName,
+                                onHoleCountChanged: (int newCount) =>
+                                    _handleHoleCountChange(state, newCount),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Divider(
+                                height: 32,
+                                color: SenseiColors.gray.shade100,
+                                thickness: 1,
+                              ),
+                            ),
+                            HolesSection(
+                              holes: state.holes,
+                              isParsingImage: state.isParsingImage,
+                              parseError: state.parseError,
+                              onParseImage: () async {
+                                _logger.track(
+                                  'Parse Layout Image Button Tapped',
+                                );
+                                HapticFeedback.lightImpact();
+                                FocusScope.of(context).unfocus();
+                                await Future.delayed(
+                                  const Duration(milliseconds: 300),
+                                );
+                                if (context.mounted) {
+                                  _createCourseCubit.pickAndParseImage(
+                                    context,
+                                  );
+                                }
+                              },
+                              onSnapshotBeforeApply:
+                                  _createCourseCubit.snapshotHolesForUndo,
+                              onUndoQuickFill:
+                                  _createCourseCubit.undoQuickFill,
+                              onApplyDefaults: _createCourseCubit
+                                  .applyDefaultsToAllHoles,
+                              onHoleParChanged:
+                                  _createCourseCubit.updateHolePar,
+                              onHoleFeetChanged:
+                                  _createCourseCubit.updateHoleFeet,
+                              onHoleTypeChanged:
+                                  _createCourseCubit.updateHoleType,
+                              onHoleShapeChanged:
+                                  _createCourseCubit.updateHoleShape,
                             ),
                           ],
                         ),
@@ -271,23 +342,15 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     int newCount,
   ) async {
     if (newCount < state.numberOfHoles) {
-      final bool? confirmed = await showDialog<bool>(
+      final bool? confirmed = await showCupertinoModalPopup<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Reduce hole count?'),
-          content: Text(
-            'Changing to $newCount holes will remove data for holes ${newCount + 1}-${state.numberOfHoles}.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Continue'),
-            ),
-          ],
+        builder: (context) => CustomCupertinoActionSheet(
+          title: 'Reduce hole count?',
+          message:
+              'Changing to $newCount holes will remove data for holes ${newCount + 1}-${state.numberOfHoles}.',
+          destructiveActionLabel: 'Continue',
+          onDestructiveActionPressed: () => Navigator.pop(context, true),
+          onCancelPressed: () => Navigator.pop(context, false),
         ),
       );
       if (confirmed != true) return;
@@ -420,8 +483,9 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: SenseiColors.gray.shade200),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: SenseiColors.gray.shade100, width: 1),
+          boxShadow: defaultCardBoxShadow(),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -501,9 +565,10 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: SenseiColors.gray.shade50,
-          border: Border.all(color: SenseiColors.gray.shade200),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: SenseiColors.gray.shade100, width: 1),
+          boxShadow: defaultCardBoxShadow(),
         ),
         child: Row(
           children: [
@@ -557,18 +622,18 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     );
 
     HapticFeedback.lightImpact();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => LocationPickerSheet(
-          topViewPadding: widget.topViewPadding,
-          initialLatitude: state.latitude,
-          initialLongitude: state.longitude,
-          onLocationSelected: (double lat, double lng) {
-            _logger.track('Location Selected On Map');
-            _createCourseCubit.updateLocation(lat, lng);
-          },
-        ),
+    pushCupertinoRoute(
+      context,
+      LocationPickerSheet(
+        topViewPadding: widget.topViewPadding,
+        initialLatitude: state.latitude,
+        initialLongitude: state.longitude,
+        onLocationSelected: (double lat, double lng) {
+          _logger.track('Location Selected On Map');
+          _createCourseCubit.updateLocation(lat, lng);
+        },
       ),
+      pushFromBottom: true,
     );
   }
 
@@ -576,85 +641,60 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   Widget _buildFooter(BuildContext context, CreateCourseState state) {
     final bool canSave = state.courseName.trim().isNotEmpty && !state.isSaving;
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        12 + MediaQuery.of(context).viewPadding.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: PrimaryButton(
-        width: double.infinity,
-        height: 56,
-        label: 'Create',
-        loading: state.isSaving,
-        gradientBackground: canSave
-            ? const [Color(0xFF137e66), Color(0xFF1a9f7f)]
-            : null,
-        backgroundColor: canSave
-            ? Colors.transparent
-            : SenseiColors.gray.shade200,
-        labelColor: canSave ? Colors.white : SenseiColors.gray.shade400,
-        fontSize: 18,
-        disabled: !canSave,
-        onPressed: () async {
-          _logger.track(
-            'Create Course Button Tapped',
-            properties: {
-              'has_course_name': state.courseName.trim().isNotEmpty,
-              'has_location': state.hasLocation,
-              'hole_count': state.numberOfHoles,
-            },
-          );
+    return FormFooter(
+      label: 'Create',
+      canSave: canSave,
+      loading: state.isSaving,
+      onPressed: () async {
+        _logger.track(
+          'Create Course Button Tapped',
+          properties: {
+            'has_course_name': state.courseName.trim().isNotEmpty,
+            'has_location': state.hasLocation,
+            'hole_count': state.numberOfHoles,
+          },
+        );
 
-          await _createCourseCubit.saveCourse(
-            onSuccess: (Course course) {
-              _logger.track(
-                'Course Created Successfully',
-                properties: {
-                  'course_name': course.name,
-                  'layout_count': course.layouts.length,
-                  'hole_count': course.defaultLayout.holes.length,
-                },
+        await _createCourseCubit.saveCourse(
+          onSuccess: (Course course) {
+            _logger.track(
+              'Course Created Successfully',
+              properties: {
+                'course_name': course.name,
+                'layout_count': course.layouts.length,
+                'hole_count': course.defaultLayout.holes.length,
+              },
+            );
+
+            // Clear any saved draft on successful save
+            CreateCourseCubit.clearDraft();
+
+            // Call parent callback
+            widget.onCourseCreated(course);
+
+            if (context.mounted) {
+              // Show success message
+              locator.get<ToastService>().showSuccess(
+                'Course "${course.name}" created!',
               );
 
-              // Call parent callback
-              widget.onCourseCreated(course);
+              // Close the sheet
+              Navigator.of(context).pop();
+            }
+          },
+          onError: (String errorMessage) {
+            _logger.track(
+              'Course Creation Failed',
+              properties: {'error': errorMessage},
+            );
 
-              if (context.mounted) {
-                // Show success message
-                locator.get<ToastService>().showSuccess(
-                  'Course "${course.name}" created!',
-                );
-
-                // Close the sheet
-                Navigator.of(context).pop();
-              }
-            },
-            onError: (String errorMessage) {
-              _logger.track(
-                'Course Creation Failed',
-                properties: {'error': errorMessage},
-              );
-
-              if (context.mounted) {
-                // Show error message
-                locator.get<ToastService>().showError(errorMessage);
-              }
-            },
-          );
-        },
-      ),
+            if (context.mounted) {
+              // Show error message
+              locator.get<ToastService>().showError(errorMessage);
+            }
+          },
+        );
+      },
     );
   }
 

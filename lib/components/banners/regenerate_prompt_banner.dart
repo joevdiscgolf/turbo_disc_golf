@@ -5,29 +5,21 @@ import 'package:flutter/services.dart';
 ///
 /// Shows when round data has been edited and the AI content may be outdated.
 class RegeneratePromptBanner extends StatelessWidget {
-  /// Callback when the regenerate button is tapped.
-  final VoidCallback onRegenerate;
-
-  /// Whether regeneration is currently in progress.
-  final bool isLoading;
-
-  /// Main title text. Defaults to "Round edited".
-  final String title;
-
-  /// Subtitle text. Defaults to "Story may be outdated".
-  final String subtitle;
-
-  /// Number of regenerations remaining (0-2). Null to hide the indicator.
-  final int? regenerationsRemaining;
-
   const RegeneratePromptBanner({
     super.key,
     required this.onRegenerate,
     this.isLoading = false,
-    this.title = 'Round edited',
-    this.subtitle = 'Story may be outdated',
+    required this.buttonSuffix,
     this.regenerationsRemaining,
   });
+
+  final VoidCallback onRegenerate;
+
+  final bool isLoading;
+
+  final String buttonSuffix;
+
+  final int? regenerationsRemaining;
 
   bool get _canRegenerate =>
       regenerationsRemaining == null || regenerationsRemaining! > 0;
@@ -48,7 +40,7 @@ class RegeneratePromptBanner extends StatelessWidget {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
-                'Story outdated',
+                'Round updated',
                 maxLines: 1,
                 style: const TextStyle(
                   color: _textColor,
@@ -77,9 +69,7 @@ class RegeneratePromptBanner extends StatelessWidget {
       style: TextButton.styleFrom(
         foregroundColor: _textColor,
         backgroundColor: _textColor.withValues(alpha: 0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -98,17 +88,14 @@ class RegeneratePromptBanner extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _canRegenerate ? 'Regenerate' : 'Limit reached',
+                  _canRegenerate ? 'Regenerate $buttonSuffix' : 'Limit reached',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
-                  Icons.refresh,
-                  size: 16,
-                ),
+                const Icon(Icons.refresh, size: 16),
               ],
             ),
     );

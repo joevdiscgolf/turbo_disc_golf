@@ -338,12 +338,10 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     // Add to history cubit for instant UI update (no need to refresh from Firestore)
     if (poseResult != null) {
       try {
-        final FormAnalysisHistoryCubit historyCubit =
-            locator.get<FormAnalysisHistoryCubit>();
+        final FormAnalysisHistoryCubit historyCubit = locator
+            .get<FormAnalysisHistoryCubit>();
         historyCubit.addAnalysis(poseResult);
-        debugPrint(
-          '[VideoFormAnalysisCubit] ✅ Analysis added to history list',
-        );
+        debugPrint('[VideoFormAnalysisCubit] ✅ Analysis added to history list');
       } catch (e) {
         debugPrint(
           '[VideoFormAnalysisCubit] ⚠️ Could not add to history list: $e',
@@ -486,8 +484,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
           errorLower.contains('cannot process')) {
         userMessage = 'Please select a video file, not a photo';
       } else {
-        userMessage =
-            'Analysis failed. Please try again with a different video.';
+        userMessage = 'Analysis failed, please try a different video.';
       }
 
       return (null, userMessage);

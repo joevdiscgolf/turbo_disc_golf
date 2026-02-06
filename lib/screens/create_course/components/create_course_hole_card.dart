@@ -27,7 +27,7 @@ class CreateCourseHoleCard extends StatelessWidget {
     return Container(
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
             // Hole number
@@ -83,7 +83,7 @@ class CreateCourseHoleCard extends StatelessWidget {
 }
 
 /// Compact number input field for par and distance
-class _CompactNumberField extends StatelessWidget {
+class _CompactNumberField extends StatefulWidget {
   const _CompactNumberField({
     required this.value,
     required this.onChanged,
@@ -93,10 +93,41 @@ class _CompactNumberField extends StatelessWidget {
   final void Function(int) onChanged;
 
   @override
+  State<_CompactNumberField> createState() => _CompactNumberFieldState();
+}
+
+class _CompactNumberFieldState extends State<_CompactNumberField> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toString());
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(_CompactNumberField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update text if value changed and field doesn't have focus
+    if (widget.value != oldWidget.value && !_focusNode.hasFocus) {
+      _controller.text = widget.value.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return TextFormField(
-      key: ValueKey('field-$value'),
-      initialValue: value.toString(),
+      controller: _controller,
+      focusNode: _focusNode,
       keyboardType: TextInputType.number,
       textAlign: TextAlign.center,
       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
@@ -116,7 +147,7 @@ class _CompactNumberField extends StatelessWidget {
       ),
       onChanged: (v) {
         final int? parsed = int.tryParse(v);
-        if (parsed != null) onChanged(parsed);
+        if (parsed != null) widget.onChanged(parsed);
       },
     );
   }
@@ -137,8 +168,8 @@ class _TightnessSelector extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _CompactIconButton(
-            icon: Icons.circle_outlined,
+          child: _CompactTreeButton(
+            treeCount: 1,
             isSelected: selected == HoleType.open,
             onTap: () {
               HapticFeedback.lightImpact();
@@ -149,8 +180,8 @@ class _TightnessSelector extends StatelessWidget {
         ),
         const SizedBox(width: 2),
         Expanded(
-          child: _CompactIconButton(
-            icon: Icons.contrast,
+          child: _CompactTreeButton(
+            treeCount: 2,
             isSelected: selected == HoleType.slightlyWooded,
             onTap: () {
               HapticFeedback.lightImpact();
@@ -161,8 +192,8 @@ class _TightnessSelector extends StatelessWidget {
         ),
         const SizedBox(width: 2),
         Expanded(
-          child: _CompactIconButton(
-            icon: Icons.circle,
+          child: _CompactTreeButton(
+            treeCount: 3,
             isSelected: selected == HoleType.wooded,
             onTap: () {
               HapticFeedback.lightImpact();
@@ -280,6 +311,119 @@ class _CompactIconButton extends StatelessWidget {
   }
 }
 
+/// Compact tree button showing 1, 2, or 3 trees for tightness selection
+class _CompactTreeButton extends StatelessWidget {
+  const _CompactTreeButton({
+    required this.treeCount,
+    required this.isSelected,
+    required this.onTap,
+    required this.semanticLabel,
+  });
+
+  final int treeCount;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final String semanticLabel;
+
+  static const Color _selectedColor = Color(0xFF137e66);
+
+  @override
+  Widget build(BuildContext context) {
+    final Color treeColor =
+        isSelected ? _selectedColor : Colors.grey.shade400;
+
+    return Semantics(
+      label: semanticLabel,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? _selectedColor.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? _selectedColor : Colors.grey.shade300,
+                width: isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Center(
+              child: _buildTrees(treeColor),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrees(Color color) {
+    const double treeSize = 15.0;
+    const double smallTreeSize = 12.0;
+
+    switch (treeCount) {
+      case 1:
+        // Single centered tree
+        return Icon(Icons.park, size: treeSize, color: color);
+      case 2:
+        // Two trees overlapping slightly
+        return SizedBox(
+          width: smallTreeSize * 1.4,
+          height: smallTreeSize,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                child: Icon(Icons.park, size: smallTreeSize, color: color),
+              ),
+              Positioned(
+                right: 0,
+                child: Icon(Icons.park, size: smallTreeSize, color: color),
+              ),
+            ],
+          ),
+        );
+      case 3:
+        // Three trees: 2 in back row overlapping, 1 in front (lower)
+        return SizedBox(
+          width: smallTreeSize * 1.6,
+          height: smallTreeSize * 1.3,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Back left tree
+              Positioned(
+                left: 0,
+                top: 0,
+                child: Icon(Icons.park, size: smallTreeSize - 1, color: color),
+              ),
+              // Back right tree
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Icon(Icons.park, size: smallTreeSize - 1, color: color),
+              ),
+              // Front center tree (lower and slightly larger)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Center(
+                  child: Icon(Icons.park, size: smallTreeSize, color: color),
+                ),
+              ),
+            ],
+          ),
+        );
+      default:
+        return Icon(Icons.park, size: treeSize, color: color);
+    }
+  }
+}
+
 /// Header row for the holes list showing column labels
 class CreateCourseHoleHeader extends StatelessWidget {
   const CreateCourseHoleHeader({super.key});
@@ -300,7 +444,7 @@ class CreateCourseHoleHeader extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Row(
           children: [
             SizedBox(width: 20, child: Text('#', style: headerStyle)),

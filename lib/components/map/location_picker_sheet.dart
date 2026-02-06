@@ -107,13 +107,10 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
         ),
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            const SizedBox(width: 48), // Balance the close button
             const Expanded(
               child: Text(
-                'Select Course Location',
+                'Select course Location',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -122,7 +119,13 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(width: 48), // Balance the close button
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.of(context).pop();
+              },
+            ),
           ],
         ),
       ),
