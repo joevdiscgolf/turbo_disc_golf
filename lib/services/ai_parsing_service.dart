@@ -9,9 +9,14 @@ import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/potential_round_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/endpoints/ai_endpoints.dart';
+import 'package:turbo_disc_golf/models/error/app_error_type.dart';
+import 'package:turbo_disc_golf/models/error/error_context.dart';
+import 'package:turbo_disc_golf/models/error/error_severity.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
+import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
 import 'package:turbo_disc_golf/services/llm/backend_llm_service.dart';
 import 'package:turbo_disc_golf/services/llm/gemini_service.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/ai_response_parser.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/llm_helpers/gemini_helpers.dart';
@@ -26,6 +31,62 @@ class AiParsingService {
 
   String? _lastRawResponse; // Store the last raw response
   String? get lastRawResponse => _lastRawResponse;
+
+  /// Log round parsing errors to Crashlytics
+  void _logParsingError({
+    required dynamic exception,
+    required StackTrace stackTrace,
+    required String operation,
+    String? rawResponse,
+    Map<String, dynamic>? additionalData,
+  }) {
+    try {
+      locator.get<ErrorLoggingService>().logError(
+        exception: exception,
+        stackTrace: stackTrace,
+        type: AppErrorType.aiParsing,
+        severity: ErrorSeverity.error,
+        context: ErrorContext(
+          customData: {
+            'service': 'AiParsingService',
+            'operation': operation,
+            'response_length': rawResponse?.length ?? 0,
+            'response_preview': rawResponse?.substring(
+              0,
+              rawResponse.length > 500 ? 500 : rawResponse.length,
+            ),
+            ...?additionalData,
+          },
+        ),
+        reason: 'Round parsing failed: $operation',
+      );
+    } catch (e) {
+      debugPrint('Failed to log error to Crashlytics: $e');
+    }
+  }
+
+  /// Track round parsing result to Mixpanel for frequency analysis
+  void _trackRoundParsingResult({
+    required String operation,
+    required bool success,
+    String? failureReason,
+    int? responseLength,
+    int? holesCount,
+  }) {
+    try {
+      locator.get<LoggingService>().track(
+        success ? 'Round Parsing Succeeded' : 'Round Parsing Failed',
+        properties: {
+          'operation': operation,
+          'response_length': responseLength ?? 0,
+          if (holesCount != null) 'holes_count': holesCount,
+          if (!success && failureReason != null) 'failure_reason': failureReason,
+        },
+      );
+    } catch (e) {
+      debugPrint('Failed to track round parsing result: $e');
+    }
+  }
 
   /// Sanitizes YAML to fix common AI-generated formatting issues
   String _sanitizeYaml(String yaml) {
@@ -175,6 +236,22 @@ class AiParsingService {
     } catch (e, trace) {
       debugPrint('Error parsing round: $e');
       debugPrint(trace.toString());
+
+      // Log to Crashlytics (unless it's an API key error which is user config issue)
+      if (!e.toString().contains('API key')) {
+        _logParsingError(
+          exception: e,
+          stackTrace: trace,
+          operation: 'parseRoundDescription',
+          rawResponse: _lastRawResponse,
+          additionalData: {
+            'course_name': course?.name,
+            'num_holes': numHoles,
+            'use_backend': locator.get<FeatureFlagService>().generateAiContentFromBackend,
+          },
+        );
+      }
+
       if (e.toString().contains('API key')) {
         throw Exception('API Key Error: $e');
       }
@@ -220,6 +297,21 @@ class AiParsingService {
     } catch (e, trace) {
       debugPrint('Error parsing round (local): $e');
       debugPrint(trace.toString());
+
+      // Log to Crashlytics (unless it's an API key error)
+      if (!e.toString().contains('API key')) {
+        _logParsingError(
+          exception: e,
+          stackTrace: trace,
+          operation: 'parseRoundDescriptionLocal',
+          rawResponse: _lastRawResponse,
+          additionalData: {
+            'course_name': course?.name,
+            'num_holes': numHoles,
+          },
+        );
+      }
+
       if (e.toString().contains('API key')) {
         throw Exception('API Key Error: $e');
       }
@@ -290,7 +382,35 @@ class AiParsingService {
 
     // Parse the YAML response
     debugPrint('Parsing YAML response...');
-    final yamlDoc = loadYaml(responseText);
+
+    dynamic yamlDoc;
+    try {
+      yamlDoc = loadYaml(responseText);
+    } catch (yamlError, yamlStackTrace) {
+      debugPrint('❌ YAML parsing failed: $yamlError');
+
+      // Log to Crashlytics
+      _logParsingError(
+        exception: yamlError,
+        stackTrace: yamlStackTrace,
+        operation: 'parseRoundResponseText_yaml',
+        rawResponse: responseText,
+        additionalData: {
+          'course_name': course?.name,
+          'num_holes': numHoles,
+        },
+      );
+
+      // Track to Mixpanel
+      _trackRoundParsingResult(
+        operation: 'parseRoundDescription',
+        success: false,
+        failureReason: 'yaml_parse_error',
+        responseLength: responseText.length,
+      );
+
+      rethrow;
+    }
 
     // Convert YamlMap to regular Map<String, dynamic>
     final Map<String, dynamic> jsonMap = json.decode(json.encode(yamlDoc));
@@ -303,11 +423,51 @@ class AiParsingService {
     jsonMap['uid'] = uid;
 
     debugPrint('YAML parsed successfully, converting to PotentialDGRound...');
-    final PotentialDGRound potentialRound = PotentialDGRound.fromJson(
-      jsonMap,
+
+    PotentialDGRound potentialRound;
+    try {
+      potentialRound = PotentialDGRound.fromJson(jsonMap);
+    } catch (modelError, modelStackTrace) {
+      debugPrint('❌ Model conversion failed: $modelError');
+
+      // Log to Crashlytics
+      _logParsingError(
+        exception: modelError,
+        stackTrace: modelStackTrace,
+        operation: 'parseRoundResponseText_model',
+        rawResponse: responseText,
+        additionalData: {
+          'course_name': course?.name,
+          'num_holes': numHoles,
+        },
+      );
+
+      // Track to Mixpanel
+      _trackRoundParsingResult(
+        operation: 'parseRoundDescription',
+        success: false,
+        failureReason: 'model_conversion_error',
+        responseLength: responseText.length,
+      );
+
+      rethrow;
+    }
+
+    final PotentialDGRound filledRound = _fillMissingHoles(
+      uid,
+      potentialRound,
+      numHoles,
     );
 
-    return _fillMissingHoles(uid, potentialRound, numHoles);
+    // Track successful parsing
+    _trackRoundParsingResult(
+      operation: 'parseRoundDescription',
+      success: true,
+      responseLength: responseText.length,
+      holesCount: filledRound.holes?.length,
+    );
+
+    return filledRound;
   }
 
   /// Fills in missing holes in the sequence from 1 to numHoles.
@@ -538,6 +698,27 @@ class AiParsingService {
     } catch (e, trace) {
       debugPrint('Error parsing single hole with Gemini: $e');
       debugPrint(trace.toString());
+
+      // Log to Crashlytics
+      _logParsingError(
+        exception: e,
+        stackTrace: trace,
+        operation: 'parseSingleHole',
+        additionalData: {
+          'hole_number': holeNumber,
+          'course_name': courseName,
+        },
+      );
+
+      // Track to Mixpanel
+      _trackRoundParsingResult(
+        operation: 'parseSingleHole',
+        success: false,
+        failureReason: e.toString().length > 100
+            ? e.toString().substring(0, 100)
+            : e.toString(),
+      );
+
       return null;
     }
   }
@@ -602,10 +783,38 @@ class AiParsingService {
       }
 
       debugPrint('Successfully extracted ${holes.length} holes from scorecard');
+
+      // Track successful scorecard parsing
+      _trackRoundParsingResult(
+        operation: 'parseScorecard',
+        success: true,
+        holesCount: holes.length,
+      );
+
       return holes;
     } catch (e, trace) {
       debugPrint('Error parsing scorecard: $e');
       debugPrint(trace.toString());
+
+      // Log to Crashlytics
+      _logParsingError(
+        exception: e,
+        stackTrace: trace,
+        operation: 'parseScorecard',
+        additionalData: {
+          'image_path': imagePath,
+        },
+      );
+
+      // Track to Mixpanel
+      _trackRoundParsingResult(
+        operation: 'parseScorecard',
+        success: false,
+        failureReason: e.toString().length > 100
+            ? e.toString().substring(0, 100)
+            : e.toString(),
+      );
+
       return [];
     }
   }

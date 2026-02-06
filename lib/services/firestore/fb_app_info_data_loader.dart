@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:turbo_disc_golf/services/firestore/firestore_constants.dart';
 import 'package:turbo_disc_golf/utils/firebase/firebase_utils.dart';
 

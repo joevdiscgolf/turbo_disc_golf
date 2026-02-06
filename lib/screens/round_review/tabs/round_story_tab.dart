@@ -5,8 +5,7 @@ import 'package:turbo_disc_golf/components/ai_content_renderer.dart';
 import 'package:turbo_disc_golf/components/banners/regenerate_prompt_banner.dart';
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/components/mini_scorecard_with_share.dart';
-import 'package:turbo_disc_golf/components/story/story_highlights_share_card.dart';
-import 'package:turbo_disc_golf/components/story/story_poster_share_card.dart';
+import 'package:turbo_disc_golf/components/story/story_share_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
@@ -67,6 +66,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   // Scroll controller for V3 story renderer
   ScrollController? _v3ScrollController;
 
+  // Scroll progress for V3 story (0.0 to 1.0)
+  final ValueNotifier<double> _scrollProgress = ValueNotifier(0.0);
+
   late final LoggingServiceBase _logger;
 
   @override
@@ -102,8 +104,21 @@ class _RoundStoryTabState extends State<RoundStoryTab>
   void dispose() {
     _activeSectionIndex.dispose();
     _isScorecardExpanded.dispose();
+    _scrollProgress.dispose();
+    _v3ScrollController?.removeListener(_updateScrollProgress);
     _v3ScrollController?.dispose();
     super.dispose();
+  }
+
+  void _updateScrollProgress() {
+    if (_v3ScrollController == null || !_v3ScrollController!.hasClients) return;
+    final double maxExtent = _v3ScrollController!.position.maxScrollExtent;
+    if (maxExtent <= 0) {
+      _scrollProgress.value = 0.0;
+      return;
+    }
+    final double currentOffset = _v3ScrollController!.offset;
+    _scrollProgress.value = (currentOffset / maxExtent).clamp(0.0, 1.0);
   }
 
   Future<void> _generateStory({bool isRegeneration = false}) async {
@@ -283,10 +298,13 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     // Create scroll controller for V3 stories if needed
     if (isV3Story && _v3ScrollController == null) {
       _v3ScrollController = ScrollController();
+      _v3ScrollController!.addListener(_updateScrollProgress);
     } else if (!isV3Story && _v3ScrollController != null) {
       // Dispose scroll controller if we switch away from V3
+      _v3ScrollController?.removeListener(_updateScrollProgress);
       _v3ScrollController?.dispose();
       _v3ScrollController = null;
+      _scrollProgress.value = 0.0;
     }
 
     return Container(
@@ -303,8 +321,11 @@ class _RoundStoryTabState extends State<RoundStoryTab>
                   child: _buildStoryContent(context, _analysis),
                 ),
               ),
-              // Fixed mini scorecard (only for V3 stories)
-              if (isV3Story) _buildMiniScorecardWithShare(story!),
+              // Scroll progress bar and mini scorecard (only for V3 stories)
+              if (isV3Story) ...[
+                _buildScrollProgressBar(),
+                _buildMiniScorecardWithShare(story!),
+              ],
               // Fixed bottom action bar (hidden when testing V3)
               if (!locator.get<FeatureFlagService>().storyV3Enabled)
                 _buildShareActionBar(),
@@ -327,25 +348,14 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     final (roundTitle, overview, shareableHeadline, shareHighlightStats) =
         _getShareData();
 
-    if (locator.get<FeatureFlagService>().useStoryPosterShareCard) {
-      return StoryPosterShareCard(
-        round: _currentRound,
-        analysis: _analysis,
-        roundTitle: roundTitle,
-        overview: overview,
-        shareableHeadline: shareableHeadline,
-        shareHighlightStats: shareHighlightStats,
-      );
-    } else {
-      return StoryHighlightsShareCard(
-        round: _currentRound,
-        analysis: _analysis,
-        roundTitle: roundTitle,
-        overview: overview,
-        shareableHeadline: shareableHeadline,
-        shareHighlightStats: shareHighlightStats,
-      );
-    }
+    return StoryShareCard(
+      round: _currentRound,
+      analysis: _analysis,
+      roundTitle: roundTitle,
+      overview: overview,
+      shareableHeadline: shareableHeadline,
+      shareHighlightStats: shareHighlightStats,
+    );
   }
 
   Future<void> _shareStoryCard() async {
@@ -459,6 +469,31 @@ class _RoundStoryTabState extends State<RoundStoryTab>
     );
   }
 
+  Widget _buildScrollProgressBar() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _scrollProgress,
+      builder: (context, progress, child) {
+        return Container(
+          height: 3,
+          color: SenseiColors.gray[200],
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 50),
+              width: MediaQuery.of(context).size.width * progress,
+              height: 3,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildErrorState(BuildContext context) {
     return Card(
       child: Padding(
@@ -500,9 +535,9 @@ class _RoundStoryTabState extends State<RoundStoryTab>
       children: [
         // if (_currentRound.isAISummaryOutdated)
         RegeneratePromptBanner(
+          buttonSuffix: 'story',
           onRegenerate: () => _generateStory(isRegeneration: true),
           isLoading: _isGenerating,
-          subtitle: 'Story may be outdated',
           regenerationsRemaining: isCurrentUserAdmin()
               ? null
               : _currentRound.aiSummary?.regenerationsRemaining,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/share/share_preview_screen.dart';
-import 'package:turbo_disc_golf/components/story/story_highlights_share_card.dart';
+import 'package:turbo_disc_golf/components/story/story_share_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/data/structured_story_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
@@ -38,7 +38,7 @@ class ShareStoryPreviewScreen extends StatelessWidget {
 
     return SharePreviewScreen(
       screenName: ShareStoryPreviewScreen.screenName,
-      cardWidget: StoryHighlightsShareCard(
+      cardWidget: StoryShareCard(
         round: round,
         analysis: analysis,
         roundTitle: roundTitle,

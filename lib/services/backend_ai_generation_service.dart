@@ -214,6 +214,11 @@ class BackendAIGenerationService implements AIGenerationService {
         return null;
       }
 
+      // Debug log the raw response
+      debugPrint(
+        '[BackendAIGenerationService] Raw judgment response: ${response.data.rawResponse}',
+      );
+
       if (!response.success) {
         debugPrint(
           '[BackendAIGenerationService] Backend error: ${response.data.error}',

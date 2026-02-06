@@ -15,13 +15,11 @@ class WhatCouldHaveBeenCard extends StatelessWidget {
     required this.currentScore,
     required this.potentialScore,
     required this.scenarios,
-    this.encouragement,
   });
 
   final String currentScore;
   final String potentialScore;
   final List<WhatCouldHaveBeenScenario> scenarios;
-  final String? encouragement;
 
   @override
   Widget build(BuildContext context) {
@@ -52,38 +50,6 @@ class WhatCouldHaveBeenCard extends StatelessWidget {
 
         // Improvement scenarios
         ...scenarios.map((scenario) => _buildScenarioRow(scenario)),
-
-        // Encouragement message
-        if (encouragement != null) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.emoji_events,
-                  color: Color(0xFF6366F1),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    encouragement!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }

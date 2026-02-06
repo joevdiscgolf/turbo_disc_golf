@@ -43,22 +43,6 @@ class CheckpointDataV2 {
   @JsonKey(name: 'coaching_tips')
   final List<String> coachingTips;
 
-  /// Get checkpoint description based on checkpoint ID
-  String get checkpointDescription {
-    switch (metadata.checkpointId) {
-      case 'heisman':
-        return 'Player has just stepped onto their back leg on the ball of their foot. Front leg has started to drift in front of their back leg. They are on their back leg but have not started to coil yet, and their elbow is still roughly at 90 degrees and neutral.';
-      case 'loaded':
-        return 'The player\'s front (plant) foot is about to touch the ground, and they are fully coiled, and their back leg is bowed out.';
-      case 'magic':
-        return 'Disc is just starting to move forward, both knees are bent inward, in an athletic position.';
-      case 'pro':
-        return 'The pull-through is well in progress, and the elbow is at a 90-degree angle, and the back leg is bent at almost a 90-degree angle, and the front leg is pretty straight.';
-      default:
-        return metadata.checkpointName;
-    }
-  }
-
   factory CheckpointDataV2.fromJson(Map<String, dynamic> json) =>
       _$CheckpointDataV2FromJson(json);
   Map<String, dynamic> toJson() => _$CheckpointDataV2ToJson(this);

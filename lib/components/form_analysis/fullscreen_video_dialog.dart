@@ -181,6 +181,7 @@ class _FullscreenVideoDialogState extends State<FullscreenVideoDialog> {
                                     )
                                   : const SizedBox.shrink(),
                             ),
+                            const SizedBox(width: 8),
                             GestureDetector(
                               onTap: () {
                                 HapticFeedback.lightImpact();

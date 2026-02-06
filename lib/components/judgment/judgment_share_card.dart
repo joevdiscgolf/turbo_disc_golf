@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:turbo_disc_golf/components/compact_scorecard.dart';
+import 'package:turbo_disc_golf/components/share/generic_share_card.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/string_helpers.dart';
 
 /// A shareable card widget for roast/glaze judgments.
 ///
@@ -28,9 +26,6 @@ class JudgmentShareCard extends StatelessWidget {
   final RoundAnalysis analysis;
   final List<String> highlightStats;
 
-  /// Fixed width for the inner card
-  static const double cardWidth = 400;
-
   @override
   Widget build(BuildContext context) {
     // Base gradient colors
@@ -41,140 +36,32 @@ class JudgmentShareCard extends StatelessWidget {
     // Lighter card colors using flattenedOverWhite for better scorecard contrast
     // Use lower opacity for roast to make it darker
     final double cardOpacity = isGlaze ? 0.85 : 0.95;
-    final List<Color> cardColors = [
+    final List<Color> gradientColors = [
       flattenedOverWhite(baseColors[0], cardOpacity),
       flattenedOverWhite(baseColors[1], cardOpacity),
     ];
 
-    // Text colors - white works well on both green and red
-    const Color headlineColor = Colors.white;
-    const Color bodyColor = Colors.white;
-    final Color subtleColor = Colors.white.withValues(alpha: 0.8);
     final Color containerBgAlpha = isGlaze
         ? Colors.white.withValues(alpha: 0.25)
         : Colors.white.withValues(alpha: 0.2);
 
-    // White background ensures proper image capture (no transparency)
-    return Container(
-      padding: const EdgeInsets.all(20),
-      width: cardWidth,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: cardColors,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCourseAndDate(bodyColor),
-          const SizedBox(height: 12),
-          _buildHeader(headlineColor),
-          const SizedBox(height: 16),
-          _buildTagline(bodyColor, containerBgAlpha),
-          const SizedBox(height: 8),
-          _buildStatsGrid(bodyColor, subtleColor, containerBgAlpha),
-          const SizedBox(height: 8),
-          _buildScorecard(subtleColor, containerBgAlpha),
-        ],
-      ),
+    // Build stats list
+    final List<ShareCardStat> stats = _buildStats();
+
+    return GenericShareCard(
+      round: round,
+      gradientColors: gradientColors,
+      headline: headline,
+      overview: tagline,
+      stats: stats,
+      containerBgAlpha: containerBgAlpha,
     );
   }
 
-  Widget _buildCourseAndDate(Color textColor) {
-    String dateStr;
-    try {
-      final DateTime date = round.playedRoundAt.isNotEmpty
-          ? DateTime.parse(round.playedRoundAt)
-          : DateTime.parse(round.createdAt);
-      dateStr = DateFormat('MMM d, yyyy').format(date);
-    } catch (e) {
-      dateStr = round.playedRoundAt.isNotEmpty
-          ? round.playedRoundAt
-          : round.createdAt;
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            round.courseName,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          dateStr,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: textColor.withValues(alpha: 0.85),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(Color textColor) {
-    // Headline only - verdict is now outside the card
-    return SizedBox(
-      height: 32,
-      child: FittedBox(
-        child: Text(
-          headline.capitalizeFirst(),
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: textColor,
-            letterSpacing: -0.3,
-          ),
-          maxLines: 1,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTagline(Color textColor, Color bgColor) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        tagline,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-          height: 1.3,
-        ),
-        textAlign: TextAlign.left,
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid(Color textColor, Color subtleColor, Color bgColor) {
+  List<ShareCardStat> _buildStats() {
     // Just 3 stats: Score + 2 AI-chosen relevant stats
-    final List<_StatItem> stats = [
-      _StatItem(
+    final List<ShareCardStat> stats = [
+      ShareCardStat(
         label: 'Score',
         value: _formatScore(analysis.totalScoreRelativeToPar),
       ),
@@ -183,7 +70,7 @@ class JudgmentShareCard extends StatelessWidget {
     // Add up to 2 AI-chosen stats
     final Set<String> usedLabels = {'Score'};
     for (final String statKey in highlightStats.take(2)) {
-      final _StatItem? item = _getStatItem(statKey);
+      final ShareCardStat? item = _getStatItem(statKey);
       if (item != null && !usedLabels.contains(item.label)) {
         stats.add(item);
         usedLabels.add(item.label);
@@ -191,19 +78,19 @@ class JudgmentShareCard extends StatelessWidget {
     }
 
     // Fallback pool if AI didn't provide enough stats
-    final List<_StatItem> fallbackPool = [
-      _StatItem(
+    final List<ShareCardStat> fallbackPool = [
+      ShareCardStat(
         label: 'C1 Reg',
         value: '${analysis.coreStats.c1InRegPct.toStringAsFixed(0)}%',
       ),
-      _StatItem(
+      ShareCardStat(
         label: 'Fairway',
         value: '${analysis.coreStats.fairwayHitPct.toStringAsFixed(0)}%',
       ),
     ];
 
     // Fill to 3 stats if needed
-    for (final _StatItem fallback in fallbackPool) {
+    for (final ShareCardStat fallback in fallbackPool) {
       if (stats.length >= 3) break;
       if (!usedLabels.contains(fallback.label)) {
         stats.add(fallback);
@@ -211,64 +98,7 @@ class JudgmentShareCard extends StatelessWidget {
       }
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border(
-          top: BorderSide(color: subtleColor.withValues(alpha: 0.3), width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          _buildStatCell(stats[0], textColor, subtleColor),
-          _buildStatCell(stats[1], textColor, subtleColor),
-          _buildStatCell(stats[2], textColor, subtleColor),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCell(_StatItem stat, Color textColor, Color subtleColor) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            stat.value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          Text(
-            stat.label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: subtleColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScorecard(Color textColor, Color bgColor) {
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: CompactScorecard(
-        holes: round.holes,
-        holeNumberColor: Colors.white, // Fully opaque white for visibility
-        parScoreColor: Colors.white,
-        useWhiteCircleText: true,
-      ),
-    );
+    return stats;
   }
 
   String _formatScore(int score) {
@@ -278,36 +108,36 @@ class JudgmentShareCard extends StatelessWidget {
     return '$score';
   }
 
-  _StatItem? _getStatItem(String statKey) {
-    // Labels must match the pool in _buildStatsGrid for duplicate detection
+  ShareCardStat? _getStatItem(String statKey) {
+    // Labels must match the pool in _buildStats for duplicate detection
     switch (statKey) {
       case 'fairwayPct':
-        return _StatItem(
+        return ShareCardStat(
           label: 'Fairway',
           value: '${analysis.coreStats.fairwayHitPct.toStringAsFixed(0)}%',
         );
       case 'c1xPuttPct':
-        return _StatItem(
+        return ShareCardStat(
           label: 'C1X',
           value: '${analysis.puttingStats.c1xPercentage.toStringAsFixed(0)}%',
         );
       case 'obPct':
-        return _StatItem(
+        return ShareCardStat(
           label: 'OB Rate',
           value: '${analysis.coreStats.obPct.toStringAsFixed(0)}%',
         );
       case 'parkedPct':
-        return _StatItem(
+        return ShareCardStat(
           label: 'Parked',
           value: '${analysis.coreStats.parkedPct.toStringAsFixed(0)}%',
         );
       case 'scramblePct':
-        return _StatItem(
+        return ShareCardStat(
           label: 'Scramble',
           value: '${analysis.scrambleStats.scrambleRate.toStringAsFixed(0)}%',
         );
       case 'bounceBackPct':
-        return _StatItem(
+        return ShareCardStat(
           label: 'Bounce',
           value: '${analysis.bounceBackPercentage.toStringAsFixed(0)}%',
         );
@@ -315,11 +145,4 @@ class JudgmentShareCard extends StatelessWidget {
         return null;
     }
   }
-}
-
-class _StatItem {
-  const _StatItem({required this.label, required this.value});
-
-  final String label;
-  final String value;
 }

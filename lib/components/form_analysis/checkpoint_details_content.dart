@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_checkpoint.dart';
 import 'package:turbo_disc_golf/services/form_analysis/form_reference_positions.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Content widget for checkpoint details education panel.
 ///
@@ -30,9 +32,10 @@ class CheckpointDetailsContent extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[200]!),
+        boxShadow: defaultCardBoxShadow(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,18 +45,18 @@ class CheckpointDetailsContent extends StatelessWidget {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[800],
+              color: SenseiColors.darkGray,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            position.description,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-              height: 1.4,
-            ),
-          ),
+          // const SizedBox(height: 8),
+          // Text(
+          //   position.description,
+          //   style: TextStyle(
+          //     fontSize: 14,
+          //     color: Colors.grey[700],
+          //     height: 1.4,
+          //   ),
+          // ),
           if (position.keyPoints.isNotEmpty) ...[
             const SizedBox(height: 12),
             ...position.keyPoints.map(
@@ -72,12 +75,26 @@ class CheckpointDetailsContent extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        '${keyPoint.name}: ${keyPoint.idealState}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                          height: 1.4,
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '${keyPoint.name}: ',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.black,
+                                height: 1.4,
+                              ),
+                            ),
+                            TextSpan(
+                              text: keyPoint.idealState,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: SenseiColors.gray[500],
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

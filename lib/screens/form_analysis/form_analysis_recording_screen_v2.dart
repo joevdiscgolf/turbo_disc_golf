@@ -661,7 +661,7 @@ class _FormAnalysisRecordingScreenV2State
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.download_rounded, size: 40, color: Colors.white),
+            const Icon(Icons.videocam_rounded, size: 40, color: Colors.white),
             const SizedBox(height: 8),
             Text(
               'Select video',
