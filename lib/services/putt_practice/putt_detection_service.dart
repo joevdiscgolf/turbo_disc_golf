@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import 'package:turbo_disc_golf/services/putt_practice/detection_isolate.dart';
+
 /// YOLOv8 COCO model configuration constants
 class YOLOv8Config {
   /// Frisbee class index in COCO dataset (class 29)
@@ -55,12 +57,18 @@ class PuttDetectionService {
   bool _isInitialized = false;
   bool _isYOLOv8 = false;
 
+  /// Isolate manager for background ML inference
+  final DetectionIsolateManager _isolateManager = DetectionIsolateManager();
+
+  /// Whether to use isolate-based detection (better performance)
+  bool _useIsolate = false;
+
   /// Model input dimensions
   static const int inputWidth = 320;
   static const int inputHeight = 320;
 
-  /// Detection confidence threshold
-  static const double confidenceThreshold = 0.5;
+  /// Detection confidence threshold - increased to reduce false positives
+  static const double confidenceThreshold = 0.40;
 
   /// Class labels for the custom model
   static const List<String> defaultLabels = [
@@ -77,16 +85,42 @@ class PuttDetectionService {
   bool get isUsingYOLOv8 => _isYOLOv8;
 
   /// Initialize the TFLite model
-  Future<void> initialize({String? modelPath}) async {
+  Future<void> initialize({String? modelPath, bool useIsolate = true}) async {
     if (_isInitialized) return;
 
     try {
-      // Try to load YOLOv8 COCO model first
+      // Try isolate-based detection first (better performance)
+      if (useIsolate && modelPath == null) {
+        debugPrint('[PuttDetectionService] Attempting isolate-based initialization...');
+        final bool isolateSuccess = await _isolateManager.initialize();
+        if (isolateSuccess) {
+          _useIsolate = true;
+          _isYOLOv8 = true;
+          _isInitialized = true;
+          debugPrint('[PuttDetectionService] Initialized with ISOLATE (non-blocking ML)');
+          return;
+        }
+        debugPrint('[PuttDetectionService] Isolate init failed, falling back to main thread');
+      }
+
+      // Fall back to main-thread detection
       if (modelPath == null) {
         try {
           _interpreter = await Interpreter.fromAsset('assets/ml/yolov8n_coco.tflite');
           _isYOLOv8 = true;
           debugPrint('[PuttDetectionService] Loaded model: assets/ml/yolov8n_coco.tflite');
+
+          // Log input/output tensor info
+          final List<dynamic> inputTensors = _interpreter!.getInputTensors();
+          final List<dynamic> outputTensors = _interpreter!.getOutputTensors();
+          debugPrint('[PuttDetectionService] Input tensors: ${inputTensors.length}');
+          for (int i = 0; i < inputTensors.length; i++) {
+            debugPrint('  Input $i: shape=${inputTensors[i].shape}, type=${inputTensors[i].type}');
+          }
+          debugPrint('[PuttDetectionService] Output tensors: ${outputTensors.length}');
+          for (int i = 0; i < outputTensors.length; i++) {
+            debugPrint('  Output $i: shape=${outputTensors[i].shape}, type=${outputTensors[i].type}');
+          }
         } catch (e) {
           debugPrint('[PuttDetectionService] YOLOv8 model not found, trying custom model');
           // Fall back to custom model
@@ -111,26 +145,56 @@ class PuttDetectionService {
       }
 
       _isInitialized = true;
-      debugPrint('[PuttDetectionService] Initialized (YOLOv8: $_isYOLOv8)');
+      debugPrint('[PuttDetectionService] Initialized (YOLOv8: $_isYOLOv8, useIsolate: $_useIsolate)');
     } catch (e) {
       debugPrint('[PuttDetectionService] Failed to initialize: $e');
       rethrow;
     }
   }
 
+  // Frame counter for debug logging
+  int _frameCount = 0;
+
   /// Run object detection on an image
   /// Returns list of detected objects with bounding boxes
   Future<List<DetectionResult>> detect(Uint8List imageBytes, int width, int height) async {
-    if (!_isInitialized) {
-      throw StateError('PuttDetectionService not initialized');
-    }
+    _frameCount++;
 
-    // If no interpreter (model not loaded), return empty list
-    if (_interpreter == null) {
-      return _placeholderDetection();
+    // Return empty list if not initialized (graceful degradation)
+    if (!_isInitialized) {
+      if (_frameCount % 30 == 0) {
+        debugPrint('[PuttDetectionService] Frame $_frameCount: Not initialized');
+      }
+      return [];
     }
 
     try {
+      // Use isolate-based detection if available (non-blocking)
+      if (_useIsolate) {
+        if (_frameCount % 30 == 0) {
+          debugPrint('[PuttDetectionService] Frame $_frameCount: Using ISOLATE detection');
+        }
+
+        final List<IsolateDetectionResult> isolateResults =
+            await _isolateManager.detect(imageBytes, width, height);
+
+        // Convert to DetectionResult format
+        return isolateResults.map((IsolateDetectionResult r) => DetectionResult(
+          label: r.label,
+          boundingBox: r.boundingBox,
+          confidence: r.confidence,
+        )).toList();
+      }
+
+      // Fall back to main-thread detection
+      if (_frameCount % 30 == 0) {
+        debugPrint('[PuttDetectionService] Frame $_frameCount: Using MAIN THREAD detection (no isolate)');
+      }
+
+      if (_interpreter == null) {
+        return [];
+      }
+
       // Preprocess image
       final Float32List input = _preprocessImage(imageBytes, width, height);
 
@@ -145,12 +209,26 @@ class PuttDetectionService {
     }
   }
 
+  // Pre-allocated buffers for performance
+  List<List<List<List<double>>>>? _inputBuffer;
+  List<List<List<double>>>? _outputBuffer;
+
   /// Run inference with YOLOv8 COCO model
-  List<DetectionResult> _runYOLOv8Inference(Float32List input) {
-    // YOLOv8 output shape: [1, 84, 2100]
-    // 84 = 4 (bbox: x_center, y_center, width, height) + 80 (class scores)
-    // 2100 = number of predictions for 320x320 input
-    final List<List<List<double>>> output = List.generate(
+  List<DetectionResult> _runYOLOv8Inference(Float32List flatInput) {
+    // Pre-allocate input buffer once (reuse across frames)
+    _inputBuffer ??= List.generate(
+      1,
+      (_) => List.generate(
+        inputHeight,
+        (_) => List.generate(
+          inputWidth,
+          (_) => List.filled(3, 0.0),
+        ),
+      ),
+    );
+
+    // Pre-allocate output buffer once
+    _outputBuffer ??= List.generate(
       1,
       (_) => List.generate(
         YOLOv8Config.outputChannels,
@@ -158,11 +236,34 @@ class PuttDetectionService {
       ),
     );
 
+    // Copy flat input into pre-allocated 4D buffer
+    for (int y = 0; y < inputHeight; y++) {
+      for (int x = 0; x < inputWidth; x++) {
+        final int baseIdx = (y * inputWidth + x) * 3;
+        _inputBuffer![0][y][x][0] = flatInput[baseIdx];
+        _inputBuffer![0][y][x][1] = flatInput[baseIdx + 1];
+        _inputBuffer![0][y][x][2] = flatInput[baseIdx + 2];
+      }
+    }
+
     // Run inference
-    _interpreter!.run(input.buffer.asFloat32List(), output);
+    _interpreter!.run(_inputBuffer!, _outputBuffer!);
 
     // Parse YOLOv8 output and apply NMS
-    return _parseYOLOv8Detections(output[0]);
+    final List<DetectionResult> results = _parseYOLOv8Detections(_outputBuffer![0]);
+
+    // Debug logging every 30 frames
+    if (_frameCount % 30 == 0) {
+      debugPrint('[PuttDetectionService] Frame $_frameCount: ${results.length} detections');
+      for (final DetectionResult r in results) {
+        final Rect b = r.boundingBox;
+        debugPrint('  - ${r.label}: conf=${r.confidence.toStringAsFixed(3)} '
+            'LTRB=(${b.left.toStringAsFixed(3)}, ${b.top.toStringAsFixed(3)}, '
+            '${b.right.toStringAsFixed(3)}, ${b.bottom.toStringAsFixed(3)})');
+      }
+    }
+
+    return results;
   }
 
   /// Run inference with custom model
@@ -185,6 +286,11 @@ class PuttDetectionService {
   List<DetectionResult> _parseYOLOv8Detections(List<List<double>> output) {
     final List<DetectionResult> candidates = [];
 
+    // Track max frisbee score for debugging
+    double maxFrisbeeScore = 0.0;
+    double maxAnyScore = 0.0;
+    int maxAnyClass = 0;
+
     // Iterate over predictions (columns)
     for (int predIdx = 0; predIdx < YOLOv8Config.numPredictions; predIdx++) {
       // Find class with maximum score
@@ -199,14 +305,31 @@ class PuttDetectionService {
         }
       }
 
+      // Track frisbee class score specifically
+      final double frisbeeScore = output[4 + YOLOv8Config.frisbeeClassIndex][predIdx];
+      if (frisbeeScore > maxFrisbeeScore) {
+        maxFrisbeeScore = frisbeeScore;
+      }
+
+      // Track overall max
+      if (maxClassScore > maxAnyScore) {
+        maxAnyScore = maxClassScore;
+        maxAnyClass = bestClassIdx;
+      }
+
       // In YOLOv8, class score IS the confidence (no separate objectness)
       if (maxClassScore < confidenceThreshold) continue;
 
-      // Extract bounding box (in pixels, need to normalize to 0-1)
-      final double xCenter = output[0][predIdx] / inputWidth;
-      final double yCenter = output[1][predIdx] / inputHeight;
-      final double bboxWidth = output[2][predIdx] / inputWidth;
-      final double bboxHeight = output[3][predIdx] / inputHeight;
+      // Extract bounding box values (already normalized 0-1 from TFLite export)
+      final double xCenter = output[0][predIdx];
+      final double yCenter = output[1][predIdx];
+      final double bboxWidth = output[2][predIdx];
+      final double bboxHeight = output[3][predIdx];
+
+      // Debug first high-confidence detection
+      if (candidates.isEmpty && _frameCount % 30 == 0) {
+        debugPrint('[PuttDetectionService] Bbox: center=($xCenter, $yCenter), size=($bboxWidth x $bboxHeight)');
+      }
 
       // Convert to Rect
       final Rect boundingBox = Rect.fromCenter(
@@ -228,6 +351,15 @@ class PuttDetectionService {
         boundingBox: boundingBox,
         confidence: maxClassScore,
       ));
+    }
+
+    // Debug logging every 30 frames - show max scores even if no detections
+    if (_frameCount % 30 == 0) {
+      final String maxClassName = YOLOv8Config.relevantClasses[maxAnyClass] ?? 'class_$maxAnyClass';
+      debugPrint('[PuttDetectionService] Frame $_frameCount scores: '
+          'maxFrisbee=${maxFrisbeeScore.toStringAsFixed(4)}, '
+          'maxAny=${maxAnyScore.toStringAsFixed(4)} ($maxClassName), '
+          'candidates=${candidates.length}');
     }
 
     // Apply Non-Maximum Suppression
@@ -423,18 +555,15 @@ class PuttDetectionService {
     return input;
   }
 
-  /// Placeholder detection for development without a trained model
-  List<DetectionResult> _placeholderDetection() {
-    // Return empty list - no detections without a model
-    // In real usage, the calibration flow will handle this gracefully
-    return [];
-  }
-
   /// Clean up resources
-  void dispose() {
+  Future<void> dispose() async {
+    if (_useIsolate) {
+      await _isolateManager.dispose();
+    }
     _interpreter?.close();
     _interpreter = null;
     _isInitialized = false;
     _isYOLOv8 = false;
+    _useIsolate = false;
   }
 }

@@ -53,10 +53,7 @@ class _DiscPosition {
     if (dt.inMilliseconds == 0) return Offset.zero;
 
     final double seconds = dt.inMilliseconds / 1000.0;
-    return Offset(
-      (other.x - x) / seconds,
-      (other.y - y) / seconds,
-    );
+    return Offset((other.x - x) / seconds, (other.y - y) / seconds);
   }
 }
 
@@ -106,17 +103,11 @@ class PuttTrackerService {
   /// Slightly larger than calibrated bounds to catch near-misses
   static const double basketZoneExpansion = 0.05;
 
-  /// Threshold for detecting upward exit (miss high)
-  static const double upwardExitThreshold = -0.15; // negative Y = up
-
   /// Threshold for detecting lateral exit velocity
   static const double lateralExitThreshold = 0.4;
 
   /// When disc last entered basket zone
   DateTime? _basketEntryTime;
-
-  /// Last position when disc was in basket zone (for exit detection)
-  _DiscPosition? _lastBasketPosition;
 
   /// Frames since disc was last visible
   int _framesSinceVisible = 0;
@@ -144,10 +135,33 @@ class PuttTrackerService {
   /// Frame counter for current tracking session
   int _frameCount = 0;
 
+  /// Rate limiting for frame processing
+  DateTime? _lastProcessedTime;
+  static const int _targetFps = 15; // Higher FPS now that ML runs on isolate
+  static final Duration _minFrameInterval = Duration(
+    milliseconds: (1000 / _targetFps).round(),
+  );
+
+  /// FPS tracking for diagnostics
+  int _fpsFrameCount = 0;
+  DateTime? _fpsStartTime;
+  double _lastReportedFps = 0;
+  final List<int> _frameTimes = []; // Track individual frame processing times
+
+  /// Whether the service has been disposed
+  bool _isDisposed = false;
+
+  /// Last detected disc bounding box (for persistence)
+  Rect? _lastDiscBox;
+  DateTime? _lastDiscDetectionTime;
+
+  /// How long to keep showing the last detection box (milliseconds)
+  static const int _detectionPersistenceMs = 500;
+
   PuttTrackerService() {
     _frameProcessor = FrameProcessorService(
       detectionService: _detectionService,
-      targetFps: 15,
+      targetFps: _targetFps,
     );
   }
 
@@ -172,23 +186,84 @@ class PuttTrackerService {
 
   /// Process a camera frame
   Future<void> processFrame(CameraImage image) async {
-    if (_calibration == null) {
-      debugPrint('[PuttTrackerService] Cannot process frame - no calibration');
+    // Skip if disposed
+    if (_isDisposed) {
       return;
     }
 
+    if (_calibration == null) {
+      return;
+    }
+
+    // Rate limiting - skip frames to maintain target fps
+    final DateTime now = DateTime.now();
+    if (_lastProcessedTime != null &&
+        now.difference(_lastProcessedTime!) < _minFrameInterval) {
+      return;
+    }
+    _lastProcessedTime = now;
+
+    final Stopwatch stopwatch = Stopwatch()..start();
+
     try {
       _frameCount++;
+      _fpsFrameCount++;
+
+      // Initialize FPS tracking
+      _fpsStartTime ??= now;
 
       // Convert image to bytes based on platform
+      final Stopwatch extractWatch = Stopwatch()..start();
       final Uint8List? imageBytes = _extractImageBytes(image);
+      extractWatch.stop();
+
       if (imageBytes == null) {
         return;
       }
 
+      final int extractMs = extractWatch.elapsedMilliseconds;
+
       if (useMLDiscDetection) {
         // Use ML-based detection
+        final Stopwatch mlWatch = Stopwatch()..start();
         await _processWithMLDetection(imageBytes, image.width, image.height);
+        mlWatch.stop();
+
+        stopwatch.stop();
+        _frameTimes.add(stopwatch.elapsedMilliseconds);
+
+        // Keep only last 30 frame times
+        while (_frameTimes.length > 30) {
+          _frameTimes.removeAt(0);
+        }
+
+        // Log FPS every second
+        final int elapsedMs = now.difference(_fpsStartTime!).inMilliseconds;
+        if (elapsedMs >= 1000) {
+          _lastReportedFps = _fpsFrameCount * 1000.0 / elapsedMs;
+          final double avgFrameTime = _frameTimes.isEmpty
+              ? 0
+              : _frameTimes.reduce((a, b) => a + b) / _frameTimes.length;
+
+          debugPrint('[PuttTrackerService] ===== FPS REPORT =====');
+          debugPrint(
+            '[PuttTrackerService] Actual FPS: ${_lastReportedFps.toStringAsFixed(1)}',
+          );
+          debugPrint('[PuttTrackerService] Target FPS: $_targetFps');
+          debugPrint(
+            '[PuttTrackerService] Avg frame time: ${avgFrameTime.toStringAsFixed(1)}ms',
+          );
+          debugPrint(
+            '[PuttTrackerService] Last frame: extract=${extractMs}ms, ML=${mlWatch.elapsedMilliseconds}ms, total=${stopwatch.elapsedMilliseconds}ms',
+          );
+          debugPrint(
+            '[PuttTrackerService] Frames processed: $_fpsFrameCount in ${elapsedMs}ms',
+          );
+          debugPrint('[PuttTrackerService] =====================');
+
+          _fpsFrameCount = 0;
+          _fpsStartTime = now;
+        }
       } else {
         // Use motion-based detection
         _processWithMotionDetection(imageBytes, image.width, image.height);
@@ -204,22 +279,47 @@ class PuttTrackerService {
     int width,
     int height,
   ) async {
+    // Log every 30 frames to confirm processing
+    if (_frameCount % 30 == 0) {
+      debugPrint(
+        '[PuttTrackerService] Processing frame $_frameCount (ML mode, ${width}x$height)',
+      );
+    }
+
     final List<DetectionResult> detections = await _detectionService.detect(
       imageBytes,
       width,
       height,
     );
 
-    // Emit detection boxes for debug overlay
-    if (!_motionDebugController.isClosed) {
-      final List<Rect> detectionBoxes = detections
-          .map((DetectionResult d) => d.boundingBox)
-          .toList();
-      _motionDebugController.add(detectionBoxes);
+    // Find the single highest-confidence disc detection
+    final DetectionResult? discDetection = _findBestDiscDetection(detections);
+
+    // Update bounding box with persistence
+    final DateTime now = DateTime.now();
+    if (discDetection != null) {
+      // New detection - update the stored box
+      _lastDiscBox = discDetection.boundingBox;
+      _lastDiscDetectionTime = now;
     }
 
-    // Find disc detection
-    final DetectionResult? discDetection = _findDiscDetection(detections);
+    // Emit detection box for debug overlay (with persistence)
+    if (!_motionDebugController.isClosed) {
+      Rect? boxToShow;
+
+      if (_lastDiscBox != null && _lastDiscDetectionTime != null) {
+        final int msSinceDetection = now.difference(_lastDiscDetectionTime!).inMilliseconds;
+        if (msSinceDetection < _detectionPersistenceMs) {
+          boxToShow = _lastDiscBox;
+        } else {
+          // Detection expired - clear it
+          _lastDiscBox = null;
+          _lastDiscDetectionTime = null;
+        }
+      }
+
+      _motionDebugController.add(boxToShow != null ? [boxToShow] : []);
+    }
 
     // Update state machine
     _updateState(discDetection: discDetection);
@@ -325,15 +425,21 @@ class PuttTrackerService {
   }
 
   /// Find disc detection from results
-  DetectionResult? _findDiscDetection(List<DetectionResult> detections) {
+  /// Find the single highest-confidence disc detection
+  DetectionResult? _findBestDiscDetection(List<DetectionResult> detections) {
+    DetectionResult? bestDisc;
+
     for (final DetectionResult detection in detections) {
       if (detection.label == 'flying_disc' ||
           detection.label == 'disc' ||
           detection.label == 'motion') {
-        return detection;
+        if (bestDisc == null || detection.confidence > bestDisc.confidence) {
+          bestDisc = detection;
+        }
       }
     }
-    return null;
+
+    return bestDisc;
   }
 
   /// Update the state machine based on detections
@@ -394,7 +500,8 @@ class PuttTrackerService {
       _state = PuttTrackingState.discInFlight;
       _framesSinceVisible = 0;
       debugPrint(
-          '[PuttTrackerService] State: IDLE -> DISC_IN_FLIGHT (valid attempt)');
+        '[PuttTrackerService] State: IDLE -> DISC_IN_FLIGHT (valid attempt)',
+      );
     }
   }
 
@@ -417,9 +524,9 @@ class PuttTrackerService {
       if (_isInBasketZone(center)) {
         _state = PuttTrackingState.basketInteraction;
         _basketEntryTime = now;
-        _lastBasketPosition = position;
         debugPrint(
-            '[PuttTrackerService] State: DISC_IN_FLIGHT -> BASKET_INTERACTION');
+          '[PuttTrackerService] State: DISC_IN_FLIGHT -> BASKET_INTERACTION',
+        );
       }
     } else {
       // Disc not visible
@@ -428,7 +535,8 @@ class PuttTrackerService {
       // If disc disappears before reaching basket, attempt is abandoned
       if (_framesSinceVisible > 10) {
         debugPrint(
-            '[PuttTrackerService] Attempt abandoned (disc lost before basket)');
+          '[PuttTrackerService] Attempt abandoned (disc lost before basket)',
+        );
         _resetToIdle();
       }
     }
@@ -436,7 +544,9 @@ class PuttTrackerService {
 
   /// Handle BASKET_INTERACTION state - watching for exit or disappearance
   void _handleBasketInteractionState(
-      DetectionResult? discDetection, DateTime now) {
+    DetectionResult? discDetection,
+    DateTime now,
+  ) {
     if (discDetection != null) {
       final Offset center = discDetection.boundingBox.center;
       final _DiscPosition position = _DiscPosition(
@@ -453,28 +563,15 @@ class PuttTrackerService {
       // Check for visible EXIT from basket zone
       if (!_isInBasketZone(center)) {
         // Disc exited basket zone - this is a MISS
+        // Could be lateral deflection off chains or spit-out back toward thrower
         final (double relX, double relY) = _calculateExitDirection(position);
         _recordPutt(made: false, relativeX: relX, relativeY: relY);
         _enterCooldown(now);
         debugPrint(
-            '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - visible exit)');
+          '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - visible exit)',
+        );
         return;
       }
-
-      // Check for upward exit (miss high) - disc still in zone but moving up fast
-      if (_lastBasketPosition != null) {
-        final Offset velocity = _lastBasketPosition!.velocityTo(position);
-        if (velocity.dy < upwardExitThreshold) {
-          // Strong upward motion - likely bounced off chains (miss high)
-          _recordPutt(made: false, relativeX: 0, relativeY: 0.5);
-          _enterCooldown(now);
-          debugPrint(
-              '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - upward motion)');
-          return;
-        }
-      }
-
-      _lastBasketPosition = position;
     } else {
       // Disc not visible while in basket zone
       _framesSinceVisible++;
@@ -488,7 +585,8 @@ class PuttTrackerService {
           _recordPutt(made: true, relativeX: 0, relativeY: 0);
           _enterCooldown(now);
           debugPrint(
-              '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - disappeared)');
+            '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - disappeared)',
+          );
           return;
         }
       }
@@ -499,7 +597,8 @@ class PuttTrackerService {
         _recordPutt(made: true, relativeX: 0, relativeY: 0);
         _enterCooldown(now);
         debugPrint(
-            '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - extended disappearance)');
+          '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - extended disappearance)',
+        );
       }
     }
   }
@@ -548,13 +647,19 @@ class PuttTrackerService {
 
     // Velocity should be in direction of basket
     final bool movingTowardX =
-        (dx > 0 && velocity.dx > 0) || (dx < 0 && velocity.dx < 0) || dx.abs() < 0.1;
+        (dx > 0 && velocity.dx > 0) ||
+        (dx < 0 && velocity.dx < 0) ||
+        dx.abs() < 0.1;
     final bool movingTowardY =
-        (dy > 0 && velocity.dy > 0) || (dy < 0 && velocity.dy < 0) || dy.abs() < 0.1;
+        (dy > 0 && velocity.dy > 0) ||
+        (dy < 0 && velocity.dy < 0) ||
+        dy.abs() < 0.1;
 
     // Check minimum velocity
-    final double speed = (velocity.dx * velocity.dx + velocity.dy * velocity.dy);
-    final bool hasMinVelocity = speed > minVelocityThreshold * minVelocityThreshold;
+    final double speed =
+        (velocity.dx * velocity.dx + velocity.dy * velocity.dy);
+    final bool hasMinVelocity =
+        speed > minVelocityThreshold * minVelocityThreshold;
 
     return (movingTowardX || movingTowardY) && hasMinVelocity;
   }
@@ -582,7 +687,7 @@ class PuttTrackerService {
     final double avgConfidence = _discPositions.isEmpty
         ? 0.5
         : _discPositions.map((p) => p.confidence).reduce((a, b) => a + b) /
-            _discPositions.length;
+              _discPositions.length;
 
     final DetectedPuttAttempt attempt = DetectedPuttAttempt(
       id: const Uuid().v4(),
@@ -608,10 +713,11 @@ class PuttTrackerService {
   /// Enter cooldown state
   void _enterCooldown(DateTime now) {
     _state = PuttTrackingState.cooldown;
-    _cooldownEndTime = now.add(const Duration(milliseconds: cooldownDurationMs));
+    _cooldownEndTime = now.add(
+      const Duration(milliseconds: cooldownDurationMs),
+    );
     _discPositions.clear();
     _basketEntryTime = null;
-    _lastBasketPosition = null;
     _framesSinceVisible = 0;
   }
 
@@ -620,7 +726,6 @@ class PuttTrackerService {
     _state = PuttTrackingState.idle;
     _discPositions.clear();
     _basketEntryTime = null;
-    _lastBasketPosition = null;
     _framesSinceVisible = 0;
   }
 
@@ -648,7 +753,6 @@ class PuttTrackerService {
     _state = PuttTrackingState.idle;
     _discPositions.clear();
     _basketEntryTime = null;
-    _lastBasketPosition = null;
     _cooldownEndTime = null;
     _framesSinceVisible = 0;
     _frameCount = 0;
@@ -656,11 +760,14 @@ class PuttTrackerService {
   }
 
   /// Dispose resources
-  void dispose() {
+  Future<void> dispose() async {
+    debugPrint('[PuttTrackerService] Disposing...');
+    _isDisposed = true;
     _frameProcessor.dispose();
-    _detectionService.dispose();
+    await _detectionService.dispose();
     _motionDetectionService.dispose();
     _puttController.close();
     _motionDebugController.close();
+    debugPrint('[PuttTrackerService] Disposed');
   }
 }

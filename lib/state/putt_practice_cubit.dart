@@ -78,7 +78,7 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
       }
 
       // Auto-start calibration immediately after camera initializes
-      _autoStartCalibration();
+      unawaited(_autoStartCalibration());
     } on TimeoutException catch (e) {
       debugPrint('[PuttPracticeCubit] Camera initialization timed out: $e');
       emit(const PuttPracticeError(message: 'Camera took too long to initialize. Please try again.'));
@@ -89,7 +89,7 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
   }
 
   /// Auto-start calibration after camera initializes
-  void _autoStartCalibration() {
+  Future<void> _autoStartCalibration() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       debugPrint('[PuttPracticeCubit] Cannot start calibration - camera not initialized');
       return;
@@ -106,6 +106,7 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
 
     // Initialize tracker service for calibration
     _trackerService = PuttTrackerService();
+    await _trackerService!.initialize();
 
     // Start listening for basket detection (only for ML mode)
     if (useMLBasketDetection) {
@@ -137,6 +138,7 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
 
     // Initialize tracker service for calibration
     _trackerService = PuttTrackerService();
+    await _trackerService!.initialize();
 
     // Start listening for basket detection (only for ML mode)
     if (useMLBasketDetection) {
@@ -552,7 +554,7 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
     await _cameraController?.dispose();
     _cameraController = null;
 
-    _trackerService?.dispose();
+    await _trackerService?.dispose();
     _trackerService = null;
   }
 
