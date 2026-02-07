@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/screens/putt_practice/putt_practice_screen.dart';
@@ -87,6 +88,14 @@ class PuttPracticeHistoryScreenState extends State<PuttPracticeHistoryScreen> {
   Future<void> _showPracticeScreen() async {
     _logger.track('New Putt Practice Button Tapped');
 
+    // Check camera permission before navigating
+    final bool hasPermission = await _checkCameraPermission();
+    if (!hasPermission) {
+      return;
+    }
+
+    if (!mounted) return;
+
     await pushCupertinoRoute(
       context,
       const PuttPracticeScreen(),
@@ -94,6 +103,61 @@ class PuttPracticeHistoryScreenState extends State<PuttPracticeHistoryScreen> {
     );
     // Refresh history after returning from practice session
     _historyCubit.refreshHistory();
+  }
+
+  Future<bool> _checkCameraPermission() async {
+    PermissionStatus status = await Permission.camera.status;
+
+    if (status.isGranted) {
+      return true;
+    }
+
+    if (status.isDenied) {
+      // Request permission
+      status = await Permission.camera.request();
+      if (status.isGranted) {
+        return true;
+      }
+    }
+
+    if (status.isPermanentlyDenied || status.isDenied) {
+      // Show dialog to open settings
+      if (!mounted) return false;
+      await _showPermissionDeniedDialog();
+      return false;
+    }
+
+    return false;
+  }
+
+  Future<void> _showPermissionDeniedDialog() async {
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text('Camera access required'),
+          content: const Text(
+            'To track your putting practice, please enable camera access in Settings.',
+          ),
+          actions: <CupertinoDialogAction>[
+            CupertinoDialogAction(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('Open settings'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                openAppSettings();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

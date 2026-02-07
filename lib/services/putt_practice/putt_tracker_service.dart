@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:camera/camera.dart';
@@ -114,27 +115,91 @@ class PuttTrackerService {
       return;
     }
 
-    _frameCount++;
+    try {
+      _frameCount++;
 
-    // Convert image to bytes
-    final Plane yPlane = image.planes[0];
-    final List<DetectionResult> detections = await _detectionService.detect(
-      yPlane.bytes,
-      image.width,
-      image.height,
-    );
+      // Convert image to bytes based on platform
+      final Uint8List? imageBytes = _extractImageBytes(image);
+      if (imageBytes == null) {
+        return;
+      }
 
-    // Find disc detection
-    final DetectionResult? discDetection = _findDiscDetection(detections);
+      final List<DetectionResult> detections = await _detectionService.detect(
+        imageBytes,
+        image.width,
+        image.height,
+      );
 
-    // Find disc in chains detection (indicates made putt)
-    final DetectionResult? discInChains = _findDiscInChainsDetection(detections);
+      // Find disc detection
+      final DetectionResult? discDetection = _findDiscDetection(detections);
 
-    // Update state machine
-    _updateState(
-      discDetection: discDetection,
-      discInChains: discInChains,
-    );
+      // Find disc in chains detection (indicates made putt)
+      final DetectionResult? discInChains = _findDiscInChainsDetection(detections);
+
+      // Update state machine
+      _updateState(
+        discDetection: discDetection,
+        discInChains: discInChains,
+      );
+    } catch (e) {
+      debugPrint('[PuttTrackerService] Error processing frame: $e');
+    }
+  }
+
+  /// Extract image bytes based on platform format
+  Uint8List? _extractImageBytes(CameraImage image) {
+    try {
+      if (image.planes.isEmpty) {
+        return null;
+      }
+
+      if (Platform.isIOS) {
+        // iOS uses BGRA8888 format - convert to grayscale
+        return _convertBgraToGrayscale(image);
+      } else {
+        // Android uses YUV420 format - use Y plane directly
+        return image.planes[0].bytes;
+      }
+    } catch (e) {
+      debugPrint('[PuttTrackerService] Error extracting image bytes: $e');
+      return null;
+    }
+  }
+
+  /// Convert BGRA8888 image to grayscale bytes
+  Uint8List? _convertBgraToGrayscale(CameraImage image) {
+    try {
+      final Plane plane = image.planes[0];
+      final int width = image.width;
+      final int height = image.height;
+
+      if (width <= 0 || height <= 0) {
+        return null;
+      }
+
+      final Uint8List grayscale = Uint8List(width * height);
+      final Uint8List bgraBytes = plane.bytes;
+      final int bytesPerRow = plane.bytesPerRow;
+
+      int grayscaleIndex = 0;
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          final int pixelIndex = y * bytesPerRow + x * 4;
+          if (pixelIndex + 2 < bgraBytes.length) {
+            final int b = bgraBytes[pixelIndex];
+            final int g = bgraBytes[pixelIndex + 1];
+            final int r = bgraBytes[pixelIndex + 2];
+            grayscale[grayscaleIndex] =
+                ((0.299 * r) + (0.587 * g) + (0.114 * b)).round().clamp(0, 255);
+          }
+          grayscaleIndex++;
+        }
+      }
+      return grayscale;
+    } catch (e) {
+      debugPrint('[PuttTrackerService] Error converting BGRA to grayscale: $e');
+      return null;
+    }
   }
 
   /// Find disc detection from results

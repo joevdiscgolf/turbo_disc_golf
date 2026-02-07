@@ -29,11 +29,15 @@ class CameraPreviewOverlay extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Camera preview
-        Center(
-          child: AspectRatio(
-            aspectRatio: cameraController.value.aspectRatio,
-            child: CameraPreview(cameraController),
+        // Camera preview - fills entire screen
+        SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: cameraController.value.previewSize?.height ?? 1,
+              height: cameraController.value.previewSize?.width ?? 1,
+              child: CameraPreview(cameraController),
+            ),
           ),
         ),
 

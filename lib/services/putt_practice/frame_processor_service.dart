@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -63,7 +64,10 @@ class FrameProcessorService {
 
     try {
       // Convert camera image to bytes
-      final Uint8List imageBytes = _convertCameraImage(image);
+      final Uint8List? imageBytes = _convertCameraImage(image);
+      if (imageBytes == null) {
+        return false;
+      }
 
       // Run detection
       final List<DetectionResult> detections = await _detectionService.detect(
@@ -84,12 +88,66 @@ class FrameProcessorService {
     }
   }
 
-  /// Convert CameraImage to Uint8List
-  Uint8List _convertCameraImage(CameraImage image) {
-    // For YUV420 format, we primarily use the Y plane (luminance)
-    // This gives us grayscale data which is sufficient for object detection
-    final Plane yPlane = image.planes[0];
-    return yPlane.bytes;
+  /// Convert CameraImage to Uint8List (grayscale)
+  /// Handles both YUV420 (Android) and BGRA8888 (iOS) formats
+  Uint8List? _convertCameraImage(CameraImage image) {
+    try {
+      if (image.planes.isEmpty) {
+        debugPrint('[FrameProcessorService] No image planes available');
+        return null;
+      }
+
+      if (Platform.isIOS) {
+        // iOS uses BGRA8888 format - extract grayscale from BGRA data
+        return _convertBgraToGrayscale(image);
+      } else {
+        // Android uses YUV420 format - use Y plane directly (luminance)
+        final Plane yPlane = image.planes[0];
+        return yPlane.bytes;
+      }
+    } catch (e) {
+      debugPrint('[FrameProcessorService] Error converting camera image: $e');
+      return null;
+    }
+  }
+
+  /// Convert BGRA8888 image to grayscale bytes
+  Uint8List? _convertBgraToGrayscale(CameraImage image) {
+    try {
+      final Plane plane = image.planes[0];
+      final int width = image.width;
+      final int height = image.height;
+
+      if (width <= 0 || height <= 0) {
+        debugPrint('[FrameProcessorService] Invalid image dimensions: ${width}x$height');
+        return null;
+      }
+
+      final Uint8List grayscale = Uint8List(width * height);
+      final Uint8List bgraBytes = plane.bytes;
+      final int bytesPerRow = plane.bytesPerRow;
+
+      int grayscaleIndex = 0;
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          // BGRA format: each pixel is 4 bytes (B, G, R, A)
+          final int pixelIndex = y * bytesPerRow + x * 4;
+          if (pixelIndex + 2 < bgraBytes.length) {
+            final int b = bgraBytes[pixelIndex];
+            final int g = bgraBytes[pixelIndex + 1];
+            final int r = bgraBytes[pixelIndex + 2];
+            // Standard grayscale conversion: 0.299*R + 0.587*G + 0.114*B
+            grayscale[grayscaleIndex] =
+                ((0.299 * r) + (0.587 * g) + (0.114 * b)).round().clamp(0, 255);
+          }
+          grayscaleIndex++;
+        }
+      }
+      return grayscale;
+    } catch (e) {
+      debugPrint('[FrameProcessorService] Error converting BGRA to grayscale: $e');
+      return null;
+    }
   }
 
   /// Convert CameraImage to RGB bytes (for color-dependent detection)

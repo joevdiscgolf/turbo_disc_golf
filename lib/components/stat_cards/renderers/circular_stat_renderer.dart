@@ -40,10 +40,7 @@ class CircularStatRenderer extends StatelessWidget {
         _buildHeader(context),
         const SizedBox(height: 12),
         _buildHorizontalProgressBar(context),
-        if (subtitle != null) ...[
-          const SizedBox(height: 8),
-          _buildSubtitle(context),
-        ],
+        // Subtitle (scope label) is now shown as badge in header
       ],
     );
   }
@@ -60,12 +57,44 @@ class CircularStatRenderer extends StatelessWidget {
           const SizedBox(width: 8),
         ],
         Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                  ),
+                  // Show scope badge if subtitle (scope label) is present
+                  if (subtitle != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        subtitle!,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6366F1),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
         ),
         Text(
@@ -121,14 +150,4 @@ class CircularStatRenderer extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context) {
-    return Text(
-      subtitle!,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 11,
-          ),
-      textAlign: TextAlign.left,
-    );
-  }
 }

@@ -333,6 +333,22 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
   }
 
   Widget _buildCallout(BuildContext context, StoryCallout callout) {
+    // Debug print scoped stats if present
+    if (callout.scopedStats != null) {
+      final stats = callout.scopedStats!;
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('📊 SCOPED STATS FOUND for cardId: ${callout.cardId}');
+      debugPrint('   Label: ${stats.label ?? 'null'}');
+      debugPrint('   Percentage: ${stats.percentage ?? 'null'}');
+      debugPrint('   Made/Attempts: ${stats.made ?? 'null'}/${stats.attempts ?? 'null'}');
+      if (stats.holeRange != null) {
+        debugPrint('   Hole Range: ${stats.holeRange!.startHole}-${stats.holeRange!.endHole}');
+      }
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } else {
+      debugPrint('📊 Callout cardId: ${callout.cardId} (no scopedStats - using whole round)');
+    }
+
     final Widget? statWidget = _buildStatWidget(callout.cardId, callout.scopedStats);
 
     if (statWidget == null) {

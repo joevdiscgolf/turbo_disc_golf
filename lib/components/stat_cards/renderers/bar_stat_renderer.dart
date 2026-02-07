@@ -46,10 +46,7 @@ class BarStatRenderer extends StatelessWidget {
         _buildHeader(context),
         const SizedBox(height: 10),
         _buildProgressBar(),
-        if (subtitle != null) ...[
-          const SizedBox(height: 6),
-          _buildSubtitle(context),
-        ],
+        // Subtitle (scope label) is now shown as badge in header
       ],
     );
 
@@ -79,12 +76,39 @@ class BarStatRenderer extends StatelessWidget {
           const SizedBox(width: 8),
         ],
         Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: headingColor,
-            ),
+          child: Row(
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: headingColor,
+                ),
+              ),
+              // Show scope badge if subtitle (scope label) is present
+              if (subtitle != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6366F1),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         Text(
@@ -120,13 +144,4 @@ class BarStatRenderer extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context) {
-    return Text(
-      subtitle!,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: SenseiColors.gray[400],
-        fontSize: 11,
-      ),
-    );
-  }
 }

@@ -49,6 +49,8 @@
 		<string>This app needs microphone access to record your disc golf round descriptions</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
 		<string>This app needs speech recognition to transcribe your round descriptions</string>
+		<key>NSCameraUsageDescription</key>
+		<string>This app uses the camera to track your putting practice sessions</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>

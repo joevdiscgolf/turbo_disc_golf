@@ -422,10 +422,14 @@ class _PuttPracticeScreenState extends State<PuttPracticeScreen> {
       return _buildLoadingState('Initializing camera...');
     }
 
-    return Center(
-      child: AspectRatio(
-        aspectRatio: controller.value.aspectRatio,
-        child: CameraPreview(controller),
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: controller.value.previewSize?.height ?? 1,
+          height: controller.value.previewSize?.width ?? 1,
+          child: CameraPreview(controller),
+        ),
       ),
     );
   }

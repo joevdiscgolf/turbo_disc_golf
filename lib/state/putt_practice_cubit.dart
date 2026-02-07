@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -31,8 +32,11 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
     emit(const PuttPracticeCameraInitializing(message: 'Initializing camera...'));
 
     try {
-      // Get available cameras
-      _cameras = await availableCameras();
+      // Get available cameras with timeout
+      _cameras = await availableCameras().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('Camera list timeout'),
+      );
       if (_cameras == null || _cameras!.isEmpty) {
         emit(const PuttPracticeError(message: 'No cameras available'));
         return;
@@ -45,16 +49,31 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
       );
 
       // Initialize camera controller with medium resolution for performance
+      // Use platform-specific image format: bgra8888 for iOS, yuv420 for Android
       _cameraController = CameraController(
         backCamera,
         ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.yuv420,
+        imageFormatGroup: Platform.isIOS
+            ? ImageFormatGroup.bgra8888
+            : ImageFormatGroup.yuv420,
       );
 
-      await _cameraController!.initialize();
+      // Initialize with timeout to prevent hanging
+      await _cameraController!.initialize().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Camera initialization timeout'),
+      );
+
+      if (!_cameraController!.value.isInitialized) {
+        emit(const PuttPracticeError(message: 'Camera failed to initialize'));
+        return;
+      }
 
       emit(PuttPracticeCameraReady(cameraController: _cameraController!));
+    } on TimeoutException catch (e) {
+      debugPrint('[PuttPracticeCubit] Camera initialization timed out: $e');
+      emit(const PuttPracticeError(message: 'Camera took too long to initialize. Please try again.'));
     } catch (e) {
       debugPrint('[PuttPracticeCubit] Camera initialization failed: $e');
       emit(PuttPracticeError(message: 'Failed to initialize camera: $e'));
@@ -282,12 +301,22 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
   /// Start processing camera frames
   void _startFrameProcessing() {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      debugPrint('[PuttPracticeCubit] Cannot start frame processing - camera not initialized');
       return;
     }
 
-    _cameraController!.startImageStream((CameraImage image) {
-      _trackerService?.processFrame(image);
-    });
+    try {
+      _cameraController!.startImageStream((CameraImage image) {
+        try {
+          _trackerService?.processFrame(image);
+        } catch (e) {
+          debugPrint('[PuttPracticeCubit] Error in frame processing callback: $e');
+        }
+      });
+    } catch (e) {
+      debugPrint('[PuttPracticeCubit] Error starting image stream: $e');
+      emit(PuttPracticeError(message: 'Failed to start camera stream: $e'));
+    }
   }
 
   /// Stop processing camera frames
