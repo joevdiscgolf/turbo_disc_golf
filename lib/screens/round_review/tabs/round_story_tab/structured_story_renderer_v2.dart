@@ -105,9 +105,16 @@ class StructuredStoryRendererV2 extends StatelessWidget {
 
       // Add callout cards (0-2 per paragraph) - with 16px horizontal padding
       for (final callout in paragraph.callouts) {
-        final Widget? statWidget = _buildStatWidget(callout.cardId, analysis);
+        // Skip invalid callouts
+        if (!callout.isValid) {
+          debugPrint('⚠️  Invalid callout (null/empty cardId) - skipping');
+          continue;
+        }
+
+        final String cardId = callout.cardId!;
+        final Widget? statWidget = _buildStatWidget(cardId, analysis);
         if (statWidget == null) {
-          debugPrint('⚠️  Unknown cardId: ${callout.cardId}');
+          debugPrint('⚠️  Unknown cardId: $cardId');
           continue;
         }
 
@@ -119,14 +126,11 @@ class StructuredStoryRendererV2 extends StatelessWidget {
                 HapticFeedback.lightImpact();
                 StoryNavigationHelper.navigateToDetailScreen(
                   context,
-                  callout.cardId,
+                  cardId,
                   round,
                 );
               },
-              child: StoryCalloutCard(
-                statWidget: statWidget,
-                reason: callout.reason,
-              ),
+              child: StoryCalloutCard(statWidget: statWidget),
             ),
           ),
         );

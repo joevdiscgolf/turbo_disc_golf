@@ -334,15 +334,13 @@ You can embed small, lightweight stat card widgets within your response to visua
 Available Stat Cards (organized by category):
 
 PUTTING CARDS (prioritize C1X - it's the most impactful putting stat!):
-- [STAT_CARD:C1X_PUTTING] - C1x (12-33ft outer ring) makes/attempts - KEY STAT! Most important putts.
-- [STAT_CARD:C1_PUTTING] - Overall C1 makes/attempts (includes easy 1-11ft bullseye putts)
+- [STAT_CARD:C1X_PUTTING] - C1x (11-33ft) makes/attempts - KEY STAT! Most important putts.
 - [STAT_CARD:C2_PUTTING] - C2 makes/attempts with percentage (e.g., "3/5 (60%)")
-- [STAT_CARD:PUTTING_COMPARISON] - C1 vs C2 percentages side-by-side
+- [STAT_CARD:PUTTING_COMPARISON] - C1X vs C2 percentages side-by-side
 
-IMPORTANT: When discussing putting performance, focus on C1X stats (12-33ft) rather than overall C1, because:
-- Bulls-eye putts (1-11ft) are almost always made (~100%)
-- C1x putts (12-33ft) are the ones that actually matter and separate good from great putting
-- Overall C1 percentage can be misleading if most attempts are short bullseye putts
+IMPORTANT: When discussing putting performance, focus on C1X stats (11-33ft) because:
+- Bulls-eye putts (0-11ft) are almost always made (~100%)
+- C1X putts (11-33ft) are the ones that actually matter and separate good from great putting
 
 DRIVING/APPROACH CARDS (prioritize C1_IN_REG - it means birdie opportunities!):
 - [STAT_CARD:C1_IN_REG] - C1 in regulation % (parked inside 33ft for birdie chances - KEY STAT!)
@@ -379,9 +377,9 @@ HOW TO USE STAT CARDS:
 
 EXAMPLES:
 ## Strengths
-You nailed 8 out of 10 C1 putts for 80%.
+You nailed 8 out of 10 C1X putts for 80%.
 
-[STAT_CARD:C1_PUTTING]
+[STAT_CARD:C1X_PUTTING]
 
 That consistency from circle edge saved you several strokes throughout the round.
 

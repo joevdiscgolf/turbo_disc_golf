@@ -34,6 +34,7 @@ import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_servi
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
+import 'package:turbo_disc_golf/state/putt_practice_history_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -132,6 +133,7 @@ class _MyAppState extends State<MyApp> {
       _userDataCubit,
       _createCourseCubit,
       locator.get<FormAnalysisHistoryCubit>(),
+      locator.get<PuttPracticeHistoryCubit>(),
 
       // Services from locator
       locator.get<RoundParser>(),

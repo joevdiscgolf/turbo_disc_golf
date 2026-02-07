@@ -49,6 +49,8 @@
 		<string>This app needs microphone access to record your disc golf round descriptions</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
 		<string>This app needs speech recognition to transcribe your round descriptions</string>
+		<key>NSCameraUsageDescription</key>
+		<string>This app uses the camera to track your putting practice sessions</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
@@ -56,7 +58,7 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>com.googleusercontent.apps.866559849247-2fao9ruh7l76tp4qljpvo1q2gfaojvjr</string>
+					<string>com.googleusercontent.apps.866559849247-5anjuj6gp0vh8logtj6snraolj4ikph9</string>
 				</array>
 			</dict>
 		</array>

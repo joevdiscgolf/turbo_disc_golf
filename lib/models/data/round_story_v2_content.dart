@@ -1,21 +1,57 @@
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v3_content.dart';
 
 part 'round_story_v2_content.g.dart';
+
+/// Scoped statistics for a specific hole range
+/// Used when a callout references stats for a subset of holes rather than the whole round
+@JsonSerializable(explicitToJson: true, anyMap: true)
+class ScopedStats {
+  /// The hole range these stats apply to (optional, for reference)
+  final HoleRange? holeRange;
+
+  /// The percentage value for this scope (e.g., 100.0 for 100%)
+  final double? percentage;
+
+  /// Number of successful attempts (e.g., putts made)
+  final int? made;
+
+  /// Total attempts
+  final int? attempts;
+
+  /// Human-readable label for the scope (e.g., "Front 9", "Holes 7-12")
+  final String? label;
+
+  const ScopedStats({
+    this.holeRange,
+    this.percentage,
+    this.made,
+    this.attempts,
+    this.label,
+  });
+
+  factory ScopedStats.fromJson(Map<String, dynamic> json) =>
+      _$ScopedStatsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ScopedStatsToJson(this);
+}
 
 /// V2 Story Callout Card (evidence/stat under paragraph)
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class StoryCallout {
   /// Stat card ID (e.g., 'C1X_PUTTING', 'FAIRWAY_HIT')
-  final String cardId;
+  /// Nullable to handle legacy data that may have null cardIds
+  final String? cardId;
 
-  /// 1-2 sentences explaining impact/cause-effect
-  final String reason;
+  /// Optional scoped stats for hole-range-specific display
+  /// When provided, the stat card will show these values instead of whole-round stats
+  final ScopedStats? scopedStats;
 
-  const StoryCallout({
-    required this.cardId,
-    required this.reason,
-  });
+  const StoryCallout({this.cardId, this.scopedStats});
+
+  /// Whether this callout has a valid cardId
+  bool get isValid => cardId != null && cardId!.isNotEmpty;
 
   factory StoryCallout.fromJson(Map<String, dynamic> json) =>
       _$StoryCalloutFromJson(json);
@@ -32,10 +68,7 @@ class StoryParagraph {
   /// 0-2 callouts per paragraph
   final List<StoryCallout> callouts;
 
-  const StoryParagraph({
-    required this.text,
-    this.callouts = const [],
-  });
+  const StoryParagraph({required this.text, this.callouts = const []});
 
   factory StoryParagraph.fromJson(Map<String, dynamic> json) =>
       _$StoryParagraphFromJson(json);
@@ -153,15 +186,22 @@ class RoundStoryV2Content {
       final StoryParagraph paragraph = content.story[i];
       final List<StoryCallout> validCallouts = [];
 
-      // Deduplicate callouts - keep first occurrence only
+      // Deduplicate callouts - keep first occurrence only, skip invalid ones
       for (final StoryCallout callout in paragraph.callouts) {
+        // Skip callouts with null or empty cardId
+        if (!callout.isValid) {
+          debugPrint(
+            '⚠️  Invalid callout (null/empty cardId) in paragraph $i - skipping',
+          );
+          continue;
+        }
         if (seenCardIds.contains(callout.cardId)) {
           debugPrint(
             '⚠️  Duplicate cardId "${callout.cardId}" in paragraph $i - removing duplicate',
           );
           continue; // Skip duplicate
         }
-        seenCardIds.add(callout.cardId);
+        seenCardIds.add(callout.cardId!);
         validCallouts.add(callout);
       }
 
@@ -179,10 +219,7 @@ class RoundStoryV2Content {
         totalCallouts += 2;
       } else {
         cleanedParagraphs.add(
-          StoryParagraph(
-            text: paragraph.text,
-            callouts: validCallouts,
-          ),
+          StoryParagraph(text: paragraph.text, callouts: validCallouts),
         );
         totalCallouts += validCallouts.length;
       }

@@ -33,10 +33,10 @@ class FormAnalysisHistoryScreen extends StatefulWidget {
 
   @override
   State<FormAnalysisHistoryScreen> createState() =>
-      _FormAnalysisHistoryScreenState();
+      FormAnalysisHistoryScreenState();
 }
 
-class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
+class FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   late FormAnalysisHistoryCubit _historyCubit;
   late final LoggingServiceBase _logger;
   final ScrollController _scrollController = ScrollController();
@@ -74,6 +74,17 @@ class _FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       _historyCubit.loadMore();
+    }
+  }
+
+  /// Scroll to the top of the list with animation.
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 

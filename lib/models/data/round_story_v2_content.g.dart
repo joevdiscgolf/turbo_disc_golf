@@ -6,13 +6,39 @@ part of 'round_story_v2_content.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+ScopedStats _$ScopedStatsFromJson(Map json) => ScopedStats(
+  holeRange: json['holeRange'] == null
+      ? null
+      : HoleRange.fromJson(Map<String, dynamic>.from(json['holeRange'] as Map)),
+  percentage: (json['percentage'] as num?)?.toDouble(),
+  made: (json['made'] as num?)?.toInt(),
+  attempts: (json['attempts'] as num?)?.toInt(),
+  label: json['label'] as String?,
+);
+
+Map<String, dynamic> _$ScopedStatsToJson(ScopedStats instance) =>
+    <String, dynamic>{
+      'holeRange': instance.holeRange?.toJson(),
+      'percentage': instance.percentage,
+      'made': instance.made,
+      'attempts': instance.attempts,
+      'label': instance.label,
+    };
+
 StoryCallout _$StoryCalloutFromJson(Map json) => StoryCallout(
-  cardId: json['cardId'] as String,
-  reason: json['reason'] as String,
+  cardId: json['cardId'] as String?,
+  scopedStats: json['scopedStats'] == null
+      ? null
+      : ScopedStats.fromJson(
+          Map<String, dynamic>.from(json['scopedStats'] as Map),
+        ),
 );
 
 Map<String, dynamic> _$StoryCalloutToJson(StoryCallout instance) =>
-    <String, dynamic>{'cardId': instance.cardId, 'reason': instance.reason};
+    <String, dynamic>{
+      'cardId': instance.cardId,
+      'scopedStats': instance.scopedStats?.toJson(),
+    };
 
 StoryParagraph _$StoryParagraphFromJson(Map json) => StoryParagraph(
   text: json['text'] as String,

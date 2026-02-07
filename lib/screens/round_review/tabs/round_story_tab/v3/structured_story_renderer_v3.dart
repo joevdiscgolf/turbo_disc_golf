@@ -275,15 +275,21 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
             return ValueListenableBuilder<int?>(
               valueListenable: _sectionTracker.activeSectionIndex,
               builder: (context, activeIndex, child) {
-                final bool isActive = isScorecardExpanded &&
-                    locator.get<FeatureFlagService>().highlightActiveStorySection &&
+                final bool isActive =
+                    isScorecardExpanded &&
+                    locator
+                        .get<FeatureFlagService>()
+                        .highlightActiveStorySection &&
                     activeIndex == sectionIndex;
 
                 return AnimatedContainer(
                   key: _sectionKeys[i], // Attach GlobalKey for tracking
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFF64B5F6).withValues(alpha: 0.1)
@@ -333,10 +339,40 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
   }
 
   Widget _buildCallout(BuildContext context, StoryCallout callout) {
-    final Widget? statWidget = _buildStatWidget(callout.cardId);
+    // Skip invalid callouts
+    if (!callout.isValid) {
+      debugPrint('⚠️ Invalid callout (null/empty cardId) - skipping');
+      return const SizedBox.shrink();
+    }
+
+    final String cardId = callout.cardId!;
+
+    // Debug print scoped stats if present
+    if (callout.scopedStats != null) {
+      final stats = callout.scopedStats!;
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('📊 SCOPED STATS FOUND for cardId: $cardId');
+      debugPrint('   Label: ${stats.label ?? 'null'}');
+      debugPrint('   Percentage: ${stats.percentage ?? 'null'}');
+      debugPrint(
+        '   Made/Attempts: ${stats.made ?? 'null'}/${stats.attempts ?? 'null'}',
+      );
+      if (stats.holeRange != null) {
+        debugPrint(
+          '   Hole Range: ${stats.holeRange!.startHole}-${stats.holeRange!.endHole}',
+        );
+      }
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } else {
+      debugPrint(
+        '📊 Callout cardId: $cardId (no scopedStats - using whole round)',
+      );
+    }
+
+    final Widget? statWidget = _buildStatWidget(cardId, callout.scopedStats);
 
     if (statWidget == null) {
-      debugPrint('⚠️ Unknown cardId: ${callout.cardId}');
+      debugPrint('⚠️ Unknown cardId: $cardId');
       return const SizedBox.shrink();
     }
 
@@ -347,22 +383,23 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
           HapticFeedback.lightImpact();
           StoryNavigationHelper.navigateToDetailScreen(
             context,
-            callout.cardId,
+            cardId,
             widget.round,
           );
         },
-        child: StoryCalloutCard(statWidget: statWidget, reason: callout.reason),
+        child: StoryCalloutCard(statWidget: statWidget),
       ),
     );
   }
 
-  Widget? _buildStatWidget(String cardId) {
+  Widget? _buildStatWidget(String cardId, ScopedStats? scopedStats) {
     try {
       return StatCardRegistry.buildCard(
         cardId,
         widget.round,
         _analysis,
         showIcon: false,
+        scopedStats: scopedStats,
       );
     } catch (e) {
       debugPrint('Failed to build stat widget for cardId: $cardId - $e');
@@ -548,10 +585,7 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
                 Expanded(
                   child: Text(
                     assessment.keyInsight,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                 ),
               ],
@@ -590,8 +624,9 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
     SkillHighlight skill, {
     required bool isStrength,
   }) {
-    final Color color =
-        isStrength ? const Color(0xFF4CAF50) : const Color(0xFFFF9800);
+    final Color color = isStrength
+        ? const Color(0xFF4CAF50)
+        : const Color(0xFFFF9800);
 
     // Strip "skill: " prefix if present (from legacy data)
     final String skillName = skill.skill.startsWith('skill: ')

@@ -37,10 +37,10 @@ class RoundHistoryScreen extends StatefulWidget {
   final double bottomViewPadding;
 
   @override
-  State<RoundHistoryScreen> createState() => _RoundHistoryScreenState();
+  State<RoundHistoryScreen> createState() => RoundHistoryScreenState();
 }
 
-class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
+class RoundHistoryScreenState extends State<RoundHistoryScreen> {
   late RoundHistoryCubit _roundHistoryCubit;
   late final LoggingServiceBase _logger;
   final ScrollController _scrollController = ScrollController();
@@ -79,6 +79,17 @@ class _RoundHistoryScreenState extends State<RoundHistoryScreen> {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       _roundHistoryCubit.loadMore();
+    }
+  }
+
+  /// Scroll to the top of the list with animation.
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 

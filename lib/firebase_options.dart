@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '866559849247',
     projectId: 'turbo-disc-golf-v2',
     storageBucket: 'turbo-disc-golf-v2.firebasestorage.app',
-    iosBundleId: 'com.example.turboDiscGolf',
+    iosBundleId: 'com.joevanderveenllc.scoresensei',
   );
 }

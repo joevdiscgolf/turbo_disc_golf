@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>866559849247-2fao9ruh7l76tp4qljpvo1q2gfaojvjr.apps.googleusercontent.com</string>
+	<string>866559849247-5anjuj6gp0vh8logtj6snraolj4ikph9.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.866559849247-2fao9ruh7l76tp4qljpvo1q2gfaojvjr</string>
+	<string>com.googleusercontent.apps.866559849247-5anjuj6gp0vh8logtj6snraolj4ikph9</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCRnqZxcFHpUylanlyst3c6vd2u3E9UYcw</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.turboDiscGolf</string>
+	<string>com.joevanderveenllc.scoresensei</string>
 	<key>PROJECT_ID</key>
 	<string>turbo-disc-golf-v2</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:866559849247:ios:9ba0688e626c87e6a9362a</string>
+	<string>1:866559849247:ios:662d04f6d3451dd2a9362a</string>
 </dict>
 </plist>

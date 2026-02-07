@@ -105,7 +105,7 @@ shareableHeadline: [1-2 sentences for social sharing, start with "You"]
 practiceAdvice: [2 specific drills]
 strategyTips: [2 tips referencing specific holes/discs]
 
-# CARD IDs: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED, C1_PUTTING, C1X_PUTTING, C2_PUTTING, MISTAKES, THROW_TYPE_COMPARISON, HOLE_TYPE:Par 3|4|5
+# CARD IDs: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED, C1X_PUTTING, C2_PUTTING, MISTAKES, THROW_TYPE_COMPARISON, HOLE_TYPE:Par 3|4|5
 
 # RULES:
 - Each cardId used only ONCE across all sections

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/stat_cards/renderers/bar_stat_renderer.dart';
 import 'package:turbo_disc_golf/components/stat_cards/renderers/circular_stat_renderer.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/models/statistics_models.dart';
 import 'package:turbo_disc_golf/services/round_analysis_generator.dart';
@@ -12,25 +13,44 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 /// Displays Circle 2 (33-66 ft) putting success rate in either
 /// circular indicator or horizontal bar format.
 /// Used by AI story to highlight long-range putting performance.
+///
+/// When [scopedStats] is provided, displays those values instead of
+/// whole-round stats, useful for showing stats for a specific hole range.
 class C2PuttingStoryCard extends StatelessWidget {
   const C2PuttingStoryCard({
     super.key,
     required this.round,
     required this.renderMode,
     this.showIcon = true,
+    this.scopedStats,
   });
 
   final DGRound round;
   final StatRenderMode renderMode;
   final bool showIcon;
+  final ScopedStats? scopedStats;
 
   @override
   Widget build(BuildContext context) {
-    final analysis = RoundAnalysisGenerator.generateAnalysis(round);
-    final PuttStats stats = analysis.puttingStats;
-    final double percentage = stats.c2Percentage;
-    final int count = stats.c2Makes;
-    final int total = stats.c2Attempts;
+    // Use scoped stats if provided, otherwise compute from full round
+    final double percentage;
+    final int count;
+    final int total;
+    final String? scopeLabel;
+
+    if (scopedStats != null && scopedStats!.percentage != null) {
+      percentage = scopedStats!.percentage!;
+      count = scopedStats!.made ?? 0;
+      total = scopedStats!.attempts ?? 0;
+      scopeLabel = scopedStats!.holeRange?.displayString;
+    } else {
+      final analysis = RoundAnalysisGenerator.generateAnalysis(round);
+      final PuttStats stats = analysis.puttingStats;
+      percentage = stats.c2Percentage;
+      count = stats.c2Makes;
+      total = stats.c2Attempts;
+      scopeLabel = null;
+    }
 
     final Color color = getSemanticColor(percentage);
 
@@ -44,6 +64,7 @@ class C2PuttingStoryCard extends StatelessWidget {
         total: total,
         roundId: round.id,
         showIcon: showIcon,
+        subtitle: scopeLabel,
       );
     } else {
       return BarStatRenderer(
@@ -55,6 +76,7 @@ class C2PuttingStoryCard extends StatelessWidget {
         total: total,
         showIcon: showIcon,
         showContainer: false,
+        subtitle: scopeLabel,
       );
     }
   }
