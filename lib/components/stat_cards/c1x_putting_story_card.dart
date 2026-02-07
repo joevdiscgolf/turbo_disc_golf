@@ -42,7 +42,7 @@ class C1XPuttingStoryCard extends StatelessWidget {
       percentage = scopedStats!.percentage!;
       count = scopedStats!.made ?? 0;
       total = scopedStats!.attempts ?? 0;
-      scopeLabel = scopedStats!.label;
+      scopeLabel = scopedStats!.holeRange?.displayString;
     } else {
       final analysis = RoundAnalysisGenerator.generateAnalysis(round);
       final PuttStats stats = analysis.puttingStats;

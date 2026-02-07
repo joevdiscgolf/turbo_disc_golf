@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -16,6 +17,7 @@ import 'package:turbo_disc_golf/services/firestore/fb_putt_practice_data_loader.
 import 'package:turbo_disc_golf/services/putt_practice/putt_tracker_service.dart';
 import 'package:turbo_disc_golf/state/putt_practice_history_cubit.dart';
 import 'package:turbo_disc_golf/state/putt_practice_state.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 
 /// Cubit for managing putt practice session workflow
 class PuttPracticeCubit extends Cubit<PuttPracticeState>
@@ -25,7 +27,12 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   StreamSubscription<DetectedPuttAttempt>? _puttSubscription;
+  StreamSubscription<List<Rect>>? _motionDebugSubscription;
   PuttTrackerService? _trackerService;
+  int _stableFrameCount = 0;
+
+  /// Number of consecutive frames with high-confidence basket detection required for auto-confirm
+  static const int _requiredStableFrames = 15;
 
   /// Initialize the camera for putt tracking
   Future<void> initializeCamera() async {
@@ -70,7 +77,8 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
         return;
       }
 
-      emit(PuttPracticeCameraReady(cameraController: _cameraController!));
+      // Auto-start calibration immediately after camera initializes
+      _autoStartCalibration();
     } on TimeoutException catch (e) {
       debugPrint('[PuttPracticeCubit] Camera initialization timed out: $e');
       emit(const PuttPracticeError(message: 'Camera took too long to initialize. Please try again.'));
@@ -80,7 +88,32 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
     }
   }
 
-  /// Start basket calibration
+  /// Auto-start calibration after camera initializes
+  void _autoStartCalibration() {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      debugPrint('[PuttPracticeCubit] Cannot start calibration - camera not initialized');
+      return;
+    }
+
+    _stableFrameCount = 0;
+
+    emit(PuttPracticeCalibrating(
+      cameraController: _cameraController!,
+      message: useMLBasketDetection
+          ? 'Point camera at basket...'
+          : 'Draw a box around the basket',
+    ));
+
+    // Initialize tracker service for calibration
+    _trackerService = PuttTrackerService();
+
+    // Start listening for basket detection (only for ML mode)
+    if (useMLBasketDetection) {
+      _startFrameProcessing();
+    }
+  }
+
+  /// Start basket calibration (kept for compatibility, but now auto-starts)
   Future<void> startCalibration() async {
     final PuttPracticeState currentState = state;
     if (currentState is! PuttPracticeCameraReady &&
@@ -93,17 +126,86 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
         ? currentState.cameraController
         : (currentState as PuttPracticeCalibrating).cameraController;
 
+    _stableFrameCount = 0;
+
     emit(PuttPracticeCalibrating(
       cameraController: controller,
-      message: 'Point camera at basket...',
+      message: useMLBasketDetection
+          ? 'Point camera at basket...'
+          : 'Draw a box around the basket',
     ));
 
     // Initialize tracker service for calibration
     _trackerService = PuttTrackerService();
 
-    // Start listening for basket detection
-    // The frame processor will emit basket detections
+    // Start listening for basket detection (only for ML mode)
+    if (useMLBasketDetection) {
+      _startFrameProcessing();
+    }
+  }
+
+  /// Confirm manual calibration from user-drawn bounding box
+  Future<void> confirmManualCalibration(
+    double left,
+    double top,
+    double right,
+    double bottom,
+  ) async {
+    final PuttPracticeState currentState = state;
+    if (currentState is! PuttPracticeCalibrating) return;
+
+    final AuthService authService = locator.get<AuthService>();
+    final String? uid = authService.currentUid;
+    if (uid == null) {
+      emit(const PuttPracticeError(message: 'User not authenticated'));
+      return;
+    }
+
+    debugPrint(
+      '[PuttPracticeCubit] Manual calibration confirmed: '
+      'left=$left, top=$top, right=$right, bottom=$bottom',
+    );
+
+    // Create basket calibration from manual drawing
+    // Use a standard frame width estimate for manual calibration
+    const double estimatedFrameWidth = 480.0;
+    final BasketCalibration basket = BasketCalibration.fromDetection(
+      left: left,
+      top: top,
+      right: right,
+      bottom: bottom,
+      frameWidth: estimatedFrameWidth,
+      confidence: 1.0, // Manual = full confidence
+    ).confirm();
+
+    // Create new session
+    final PuttPracticeSession session = PuttPracticeSession(
+      id: const Uuid().v4(),
+      uid: uid,
+      createdAt: DateTime.now(),
+      status: PuttPracticeSessionStatus.active,
+      calibration: basket,
+      attempts: [],
+    );
+
+    // Set up tracker service with confirmed calibration
+    _trackerService?.setCalibration(basket);
+
+    // Start listening for putt detections
+    _puttSubscription = _trackerService?.puttStream.listen(_onPuttDetected);
+
+    // Subscribe to motion debug stream for overlay
+    _motionDebugSubscription = _trackerService?.motionDebugStream.listen(
+      _onMotionBoxesUpdated,
+    );
+
+    // Start frame processing for motion/putt tracking
     _startFrameProcessing();
+
+    emit(PuttPracticeActive(
+      cameraController: currentState.cameraController,
+      session: session,
+    ));
   }
 
   /// Update calibration with detected basket
@@ -112,12 +214,103 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
     if (currentState is! PuttPracticeCalibrating) return;
 
     if (basket != null && basket.confidence > 0.7) {
+      _stableFrameCount++;
+
+      // Determine message based on progress
+      final String message;
+      if (_stableFrameCount < 5) {
+        message = 'Basket detected...';
+      } else {
+        message = 'Locking on... $_stableFrameCount/$_requiredStableFrames';
+      }
+
       emit(PuttPracticeCalibrating(
         cameraController: currentState.cameraController,
         detectedBasket: basket,
-        message: 'Basket detected! Tap to confirm.',
+        message: message,
+        stableFrameCount: _stableFrameCount,
+      ));
+
+      // Auto-confirm when we have enough stable frames
+      if (_stableFrameCount >= _requiredStableFrames) {
+        _autoConfirmCalibration(basket);
+      }
+    } else {
+      // Basket lost or confidence dropped - reset counter
+      if (_stableFrameCount > 0) {
+        _stableFrameCount = 0;
+        emit(PuttPracticeCalibrating(
+          cameraController: currentState.cameraController,
+          detectedBasket: null,
+          message: 'Point camera at basket...',
+          stableFrameCount: 0,
+        ));
+      }
+    }
+  }
+
+  /// Handle motion boxes update for debug overlay
+  void _onMotionBoxesUpdated(List<Rect> motionBoxes) {
+    final PuttPracticeState currentState = state;
+
+    if (currentState is PuttPracticeActive) {
+      emit(PuttPracticeActive(
+        cameraController: currentState.cameraController,
+        session: currentState.session,
+        lastDetectedAttempt: currentState.lastDetectedAttempt,
+        isProcessingFrame: currentState.isProcessingFrame,
+        motionBoxes: motionBoxes,
+      ));
+    } else if (currentState is PuttPracticeCalibrating) {
+      emit(PuttPracticeCalibrating(
+        cameraController: currentState.cameraController,
+        detectedBasket: currentState.detectedBasket,
+        message: currentState.message,
+        stableFrameCount: currentState.stableFrameCount,
+        motionBoxes: motionBoxes,
       ));
     }
+  }
+
+  /// Auto-confirm calibration and start session
+  Future<void> _autoConfirmCalibration(BasketCalibration basket) async {
+    final PuttPracticeState currentState = state;
+    if (currentState is! PuttPracticeCalibrating) return;
+
+    final AuthService authService = locator.get<AuthService>();
+    final String? uid = authService.currentUid;
+    if (uid == null) {
+      emit(const PuttPracticeError(message: 'User not authenticated'));
+      return;
+    }
+
+    debugPrint('[PuttPracticeCubit] Auto-confirming calibration after $_stableFrameCount stable frames');
+
+    // Create new session
+    final PuttPracticeSession session = PuttPracticeSession(
+      id: const Uuid().v4(),
+      uid: uid,
+      createdAt: DateTime.now(),
+      status: PuttPracticeSessionStatus.active,
+      calibration: basket.confirm(),
+      attempts: [],
+    );
+
+    // Set up tracker service with confirmed calibration
+    _trackerService?.setCalibration(basket.confirm());
+
+    // Start listening for putt detections
+    _puttSubscription = _trackerService?.puttStream.listen(_onPuttDetected);
+
+    // Subscribe to motion debug stream for overlay
+    _motionDebugSubscription = _trackerService?.motionDebugStream.listen(
+      _onMotionBoxesUpdated,
+    );
+
+    emit(PuttPracticeActive(
+      cameraController: currentState.cameraController,
+      session: session,
+    ));
   }
 
   /// Confirm the calibration and start the session
@@ -157,6 +350,11 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
     // Start listening for putt detections
     _puttSubscription = _trackerService?.puttStream.listen(_onPuttDetected);
 
+    // Subscribe to motion debug stream for overlay
+    _motionDebugSubscription = _trackerService?.motionDebugStream.listen(
+      _onMotionBoxesUpdated,
+    );
+
     emit(PuttPracticeActive(
       cameraController: currentState.cameraController,
       session: session,
@@ -174,6 +372,7 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
       cameraController: currentState.cameraController,
       session: updatedSession,
       lastDetectedAttempt: attempt,
+      motionBoxes: currentState.motionBoxes,
     ));
 
     debugPrint(
@@ -245,6 +444,8 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
     _stopFrameProcessing();
     await _puttSubscription?.cancel();
     _puttSubscription = null;
+    await _motionDebugSubscription?.cancel();
+    _motionDebugSubscription = null;
 
     final PuttPracticeSession completedSession = session.end();
 
@@ -345,6 +546,8 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
     _stopFrameProcessing();
     await _puttSubscription?.cancel();
     _puttSubscription = null;
+    await _motionDebugSubscription?.cancel();
+    _motionDebugSubscription = null;
 
     await _cameraController?.dispose();
     _cameraController = null;

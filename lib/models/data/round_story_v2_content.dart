@@ -41,13 +41,17 @@ class ScopedStats {
 @JsonSerializable(explicitToJson: true, anyMap: true)
 class StoryCallout {
   /// Stat card ID (e.g., 'C1X_PUTTING', 'FAIRWAY_HIT')
-  final String cardId;
+  /// Nullable to handle legacy data that may have null cardIds
+  final String? cardId;
 
   /// Optional scoped stats for hole-range-specific display
   /// When provided, the stat card will show these values instead of whole-round stats
   final ScopedStats? scopedStats;
 
-  const StoryCallout({required this.cardId, this.scopedStats});
+  const StoryCallout({this.cardId, this.scopedStats});
+
+  /// Whether this callout has a valid cardId
+  bool get isValid => cardId != null && cardId!.isNotEmpty;
 
   factory StoryCallout.fromJson(Map<String, dynamic> json) =>
       _$StoryCalloutFromJson(json);
@@ -182,15 +186,22 @@ class RoundStoryV2Content {
       final StoryParagraph paragraph = content.story[i];
       final List<StoryCallout> validCallouts = [];
 
-      // Deduplicate callouts - keep first occurrence only
+      // Deduplicate callouts - keep first occurrence only, skip invalid ones
       for (final StoryCallout callout in paragraph.callouts) {
+        // Skip callouts with null or empty cardId
+        if (!callout.isValid) {
+          debugPrint(
+            '⚠️  Invalid callout (null/empty cardId) in paragraph $i - skipping',
+          );
+          continue;
+        }
         if (seenCardIds.contains(callout.cardId)) {
           debugPrint(
             '⚠️  Duplicate cardId "${callout.cardId}" in paragraph $i - removing duplicate',
           );
           continue; // Skip duplicate
         }
-        seenCardIds.add(callout.cardId);
+        seenCardIds.add(callout.cardId!);
         validCallouts.add(callout);
       }
 

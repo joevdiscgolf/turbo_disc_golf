@@ -41,7 +41,7 @@ class FairwayHitStoryCard extends StatelessWidget {
       percentage = scopedStats!.percentage!;
       count = scopedStats!.made ?? 0;
       total = scopedStats!.attempts ?? 0;
-      scopeLabel = scopedStats!.label;
+      scopeLabel = scopedStats!.holeRange?.displayString;
     } else {
       final CoreStats stats = RoundStatisticsService(round).getCoreStats();
       percentage = stats.fairwayHitPct;

@@ -26,7 +26,7 @@ Map<String, dynamic> _$ScopedStatsToJson(ScopedStats instance) =>
     };
 
 StoryCallout _$StoryCalloutFromJson(Map json) => StoryCallout(
-  cardId: json['cardId'] as String,
+  cardId: json['cardId'] as String?,
   scopedStats: json['scopedStats'] == null
       ? null
       : ScopedStats.fromJson(

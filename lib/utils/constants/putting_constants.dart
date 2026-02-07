@@ -18,3 +18,29 @@ const List<String> c1xBuckets = ['11-22 ft', '22-33 ft'];
 /// This represents putts inside Circle 2, the outer regulation circle.
 const double c2MinDistance = 33.0;
 const double c2MaxDistance = 66.0;
+
+// =============================================================================
+// Detection Method Switches (for testing)
+// =============================================================================
+
+/// If false, use manual box drawing instead of ML basket detection
+const bool useMLBasketDetection = false;
+
+/// If false, use motion-based tracking instead of ML disc detection
+const bool useMLDiscDetection = false;
+
+/// Show boxes around detected motion for debugging
+const bool showMotionDebugOverlay = true;
+
+// =============================================================================
+// Motion Detection Parameters
+// =============================================================================
+
+/// Pixel difference threshold to count as motion (0-255)
+const int motionThreshold = 25;
+
+/// Minimum pixels to be considered a moving object
+const int minMotionArea = 100;
+
+/// Maximum number of motion boxes to track
+const int maxMotionBoxes = 5;

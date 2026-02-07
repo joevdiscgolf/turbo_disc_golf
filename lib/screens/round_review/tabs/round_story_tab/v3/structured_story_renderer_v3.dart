@@ -339,11 +339,19 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
   }
 
   Widget _buildCallout(BuildContext context, StoryCallout callout) {
+    // Skip invalid callouts
+    if (!callout.isValid) {
+      debugPrint('⚠️ Invalid callout (null/empty cardId) - skipping');
+      return const SizedBox.shrink();
+    }
+
+    final String cardId = callout.cardId!;
+
     // Debug print scoped stats if present
     if (callout.scopedStats != null) {
       final stats = callout.scopedStats!;
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      debugPrint('📊 SCOPED STATS FOUND for cardId: ${callout.cardId}');
+      debugPrint('📊 SCOPED STATS FOUND for cardId: $cardId');
       debugPrint('   Label: ${stats.label ?? 'null'}');
       debugPrint('   Percentage: ${stats.percentage ?? 'null'}');
       debugPrint(
@@ -357,17 +365,14 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } else {
       debugPrint(
-        '📊 Callout cardId: ${callout.cardId} (no scopedStats - using whole round)',
+        '📊 Callout cardId: $cardId (no scopedStats - using whole round)',
       );
     }
 
-    final Widget? statWidget = _buildStatWidget(
-      callout.cardId,
-      callout.scopedStats,
-    );
+    final Widget? statWidget = _buildStatWidget(cardId, callout.scopedStats);
 
     if (statWidget == null) {
-      debugPrint('⚠️ Unknown cardId: ${callout.cardId}');
+      debugPrint('⚠️ Unknown cardId: $cardId');
       return const SizedBox.shrink();
     }
 
@@ -378,7 +383,7 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
           HapticFeedback.lightImpact();
           StoryNavigationHelper.navigateToDetailScreen(
             context,
-            callout.cardId,
+            cardId,
             widget.round,
           );
         },

@@ -40,7 +40,7 @@ class OBRateStoryCard extends StatelessWidget {
       percentage = scopedStats!.percentage!;
       count = scopedStats!.made ?? 0;
       total = scopedStats!.attempts ?? 0;
-      scopeLabel = scopedStats!.label;
+      scopeLabel = scopedStats!.holeRange?.displayString;
     } else {
       // Calculate OB rate based on throws, not holes
       int totalThrows = 0;

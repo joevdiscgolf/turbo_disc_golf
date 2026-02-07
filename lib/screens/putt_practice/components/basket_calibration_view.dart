@@ -1,27 +1,48 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
 import 'package:turbo_disc_golf/models/data/putt_practice/basket_calibration.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 
 /// View for calibrating the basket position
-class BasketCalibrationView extends StatelessWidget {
+/// Supports both ML-based auto-detection and manual box drawing
+class BasketCalibrationView extends StatefulWidget {
   final CameraController cameraController;
   final BasketCalibration? detectedBasket;
   final String message;
-  final VoidCallback onConfirm;
+  final int stableFrameCount;
+  final void Function(double left, double top, double right, double bottom)?
+      onManualCalibration;
+
+  /// Number of frames required for auto-confirmation
+  static const int _requiredStableFrames = 15;
 
   const BasketCalibrationView({
     super.key,
     required this.cameraController,
     this.detectedBasket,
     required this.message,
-    required this.onConfirm,
+    this.stableFrameCount = 0,
+    this.onManualCalibration,
   });
 
   @override
+  State<BasketCalibrationView> createState() => _BasketCalibrationViewState();
+}
+
+class _BasketCalibrationViewState extends State<BasketCalibrationView> {
+  /// Start point of manual drawing (in normalized 0-1 coordinates)
+  Offset? _startPoint;
+
+  /// End point of manual drawing (in normalized 0-1 coordinates)
+  Offset? _endPoint;
+
+  /// Whether the user is currently drawing
+  bool _isDrawing = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (!cameraController.value.isInitialized) {
+    if (!widget.cameraController.value.isInitialized) {
       return const Center(
         child: CircularProgressIndicator(color: Colors.white),
       );
@@ -35,51 +56,119 @@ class BasketCalibrationView extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.cover,
             child: SizedBox(
-              width: cameraController.value.previewSize?.height ?? 1,
-              height: cameraController.value.previewSize?.width ?? 1,
-              child: CameraPreview(cameraController),
+              width: widget.cameraController.value.previewSize?.height ?? 1,
+              height: widget.cameraController.value.previewSize?.width ?? 1,
+              child: CameraPreview(widget.cameraController),
             ),
           ),
         ),
 
-        // Basket detection overlay
-        if (detectedBasket != null) _buildDetectionOverlay(),
+        // Manual drawing gesture layer (when not using ML detection)
+        if (!useMLBasketDetection) _buildManualDrawingLayer(),
 
-        // Guide overlay when no basket detected
-        if (detectedBasket == null) _buildGuideOverlay(),
+        // ML Basket detection overlay (bounding box)
+        if (useMLBasketDetection && widget.detectedBasket != null)
+          _buildDetectionOverlay(),
+
+        // Manual drawing overlay
+        if (!useMLBasketDetection && _hasValidDrawing) _buildManualBoxOverlay(),
 
         // Instructions
         _buildInstructions(),
 
-        // Confirm button
-        if (detectedBasket != null && detectedBasket!.confidence > 0.7)
+        // Progress indicator when locking on (ML mode)
+        if (useMLBasketDetection && widget.stableFrameCount > 0)
+          _buildProgressIndicator(),
+
+        // Confirm button (manual mode)
+        if (!useMLBasketDetection && _hasValidDrawing && !_isDrawing)
           _buildConfirmButton(),
       ],
     );
   }
 
-  Widget _buildDetectionOverlay() {
+  bool get _hasValidDrawing =>
+      _startPoint != null &&
+      _endPoint != null &&
+      (_endPoint!.dx - _startPoint!.dx).abs() > 0.05 &&
+      (_endPoint!.dy - _startPoint!.dy).abs() > 0.05;
+
+  Widget _buildManualDrawingLayer() {
+    return Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return GestureDetector(
+            onPanStart: (details) {
+              final Offset normalizedPoint = _normalizePoint(
+                details.localPosition,
+                constraints.maxWidth,
+                constraints.maxHeight,
+              );
+              setState(() {
+                _startPoint = normalizedPoint;
+                _endPoint = normalizedPoint;
+                _isDrawing = true;
+              });
+            },
+            onPanUpdate: (details) {
+              if (_isDrawing) {
+                final Offset normalizedPoint = _normalizePoint(
+                  details.localPosition,
+                  constraints.maxWidth,
+                  constraints.maxHeight,
+                );
+                setState(() {
+                  _endPoint = normalizedPoint;
+                });
+              }
+            },
+            onPanEnd: (details) {
+              setState(() {
+                _isDrawing = false;
+              });
+            },
+            child: Container(color: Colors.transparent),
+          );
+        },
+      ),
+    );
+  }
+
+  Offset _normalizePoint(Offset point, double width, double height) {
+    return Offset(
+      (point.dx / width).clamp(0.0, 1.0),
+      (point.dy / height).clamp(0.0, 1.0),
+    );
+  }
+
+  Widget _buildManualBoxOverlay() {
     return Positioned.fill(
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double width = constraints.maxWidth;
           final double height = constraints.maxHeight;
 
-          final double left = detectedBasket!.left * width;
-          final double top = detectedBasket!.top * height;
-          final double right = detectedBasket!.right * width;
-          final double bottom = detectedBasket!.bottom * height;
+          final double left = (_startPoint!.dx < _endPoint!.dx
+                  ? _startPoint!.dx
+                  : _endPoint!.dx) *
+              width;
+          final double top = (_startPoint!.dy < _endPoint!.dy
+                  ? _startPoint!.dy
+                  : _endPoint!.dy) *
+              height;
+          final double right = (_startPoint!.dx > _endPoint!.dx
+                  ? _startPoint!.dx
+                  : _endPoint!.dx) *
+              width;
+          final double bottom = (_startPoint!.dy > _endPoint!.dy
+                  ? _startPoint!.dy
+                  : _endPoint!.dy) *
+              height;
 
-          final Color borderColor = detectedBasket!.confidence > 0.7
-              ? Colors.green
-              : Colors.yellow;
+          final Color borderColor = _isDrawing ? Colors.yellow : Colors.green;
 
           return Stack(
             children: [
-              // Semi-transparent overlay outside basket
-              _buildDarkOverlay(left, top, right, bottom, width, height),
-
-              // Basket bounding box
               Positioned(
                 left: left,
                 top: top,
@@ -92,36 +181,39 @@ class BasketCalibrationView extends StatelessWidget {
                       width: 3,
                     ),
                     borderRadius: BorderRadius.circular(8),
+                    color: borderColor.withValues(alpha: 0.1),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: borderColor,
-                        size: 32,
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                  child: _isDrawing
+                      ? null
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: borderColor,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: borderColor.withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Basket',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        decoration: BoxDecoration(
-                          color: borderColor.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${(detectedBasket!.confidence * 100).toInt()}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],
@@ -131,117 +223,148 @@ class BasketCalibrationView extends StatelessWidget {
     );
   }
 
-  Widget _buildDarkOverlay(
-    double left,
-    double top,
-    double right,
-    double bottom,
-    double width,
-    double height,
-  ) {
-    return CustomPaint(
-      size: Size(width, height),
-      painter: _DarkOverlayPainter(
-        basketRect: Rect.fromLTRB(left, top, right, bottom),
+  Widget _buildConfirmButton() {
+    return Positioned(
+      bottom: 80,
+      left: 32,
+      right: 32,
+      child: ElevatedButton.icon(
+        onPressed: _confirmManualCalibration,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: const Icon(Icons.check),
+        label: const Text(
+          'Confirm basket position',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
 
-  Widget _buildGuideOverlay() {
+  void _confirmManualCalibration() {
+    if (!_hasValidDrawing || widget.onManualCalibration == null) return;
+
+    final double left = _startPoint!.dx < _endPoint!.dx
+        ? _startPoint!.dx
+        : _endPoint!.dx;
+    final double top = _startPoint!.dy < _endPoint!.dy
+        ? _startPoint!.dy
+        : _endPoint!.dy;
+    final double right = _startPoint!.dx > _endPoint!.dx
+        ? _startPoint!.dx
+        : _endPoint!.dx;
+    final double bottom = _startPoint!.dy > _endPoint!.dy
+        ? _startPoint!.dy
+        : _endPoint!.dy;
+
+    widget.onManualCalibration!(left, top, right, bottom);
+  }
+
+  Widget _buildProgressIndicator() {
+    final double progress =
+        widget.stableFrameCount / BasketCalibrationView._requiredStableFrames;
+    return Positioned(
+      bottom: 80,
+      left: 32,
+      right: 32,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                progress >= 1.0 ? Colors.green : Colors.white,
+              ),
+              minHeight: 8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetectionOverlay() {
     return Positioned.fill(
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double width = constraints.maxWidth;
           final double height = constraints.maxHeight;
 
-          // Guide box in center of screen
-          final double guideSize = width * 0.4;
-          final double left = (width - guideSize) / 2;
-          final double top = (height - guideSize) / 2;
+          final double left = widget.detectedBasket!.left * width;
+          final double top = widget.detectedBasket!.top * height;
+          final double right = widget.detectedBasket!.right * width;
+          final double bottom = widget.detectedBasket!.bottom * height;
 
-          return Stack(
-            children: [
-              // Dark overlay
-              Container(
-                color: Colors.black.withValues(alpha: 0.5),
-              ),
+          final Color borderColor = widget.detectedBasket!.confidence > 0.7
+              ? Colors.green
+              : Colors.yellow;
 
-              // Cutout for guide
-              Positioned(
-                left: left,
-                top: top,
-                width: guideSize,
-                height: guideSize,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.sports_golf,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        size: 48,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Position basket here',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
+          // Basket bounding box only - no dark overlay
+          return Positioned(
+            left: left,
+            top: top,
+            width: right - left,
+            height: bottom - top,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: borderColor,
+                  width: 3,
                 ),
+                borderRadius: BorderRadius.circular(8),
               ),
-
-              // Corner guides
-              _buildCornerGuide(left - 2, top - 2, true, true),
-              _buildCornerGuide(left + guideSize - 18, top - 2, false, true),
-              _buildCornerGuide(left - 2, top + guideSize - 18, true, false),
-              _buildCornerGuide(
-                  left + guideSize - 18, top + guideSize - 18, false, false),
-            ],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: borderColor,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: borderColor.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${(widget.detectedBasket!.confidence * 100).toInt()}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildCornerGuide(double left, double top, bool isLeft, bool isTop) {
-    return Positioned(
-      left: left,
-      top: top,
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          border: Border(
-            left: isLeft
-                ? const BorderSide(color: Colors.white, width: 3)
-                : BorderSide.none,
-            right: !isLeft
-                ? const BorderSide(color: Colors.white, width: 3)
-                : BorderSide.none,
-            top: isTop
-                ? const BorderSide(color: Colors.white, width: 3)
-                : BorderSide.none,
-            bottom: !isTop
-                ? const BorderSide(color: Colors.white, width: 3)
-                : BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildInstructions() {
+    final String message = useMLBasketDetection
+        ? widget.message
+        : (_hasValidDrawing && !_isDrawing
+            ? 'Tap confirm to set basket position'
+            : 'Draw a box around the basket');
+
     return Positioned(
       bottom: 150,
       left: 16,
@@ -262,44 +385,5 @@ class BasketCalibrationView extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildConfirmButton() {
-    return Positioned(
-      bottom: 80,
-      left: 32,
-      right: 32,
-      child: PrimaryButton(
-        label: 'Confirm basket position',
-        width: double.infinity,
-        onPressed: onConfirm,
-      ),
-    );
-  }
-}
-
-/// Custom painter for dark overlay with basket cutout
-class _DarkOverlayPainter extends CustomPainter {
-  final Rect basketRect;
-
-  _DarkOverlayPainter({required this.basketRect});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Path path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(basketRect, const Radius.circular(8)))
-      ..fillType = PathFillType.evenOdd;
-
-    final Paint paint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.5)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_DarkOverlayPainter oldDelegate) {
-    return oldDelegate.basketRect != basketRect;
   }
 }

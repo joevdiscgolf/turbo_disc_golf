@@ -165,7 +165,7 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
               backgroundColor:
                   widget.emojiBackgroundColor ?? Colors.transparent,
             ),
-            // Visible content for preview
+            // Visible content for preview - shows what the shared image will look like
             Padding(
               padding: EdgeInsets.only(
                 left: 16,
@@ -177,29 +177,7 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
                 children: [
                   Expanded(
                     child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (widget.headerWidget != null) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: widget.headerWidget!,
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.center,
-                              child: widget.cardWidget,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const ShareBrandingFooter(),
-                        ],
-                      ),
+                      child: _buildPreviewCard(context),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -222,6 +200,62 @@ class _SharePreviewScreenState extends State<SharePreviewScreen> {
                 contentWidget: widget.cardWidget,
                 footerWidget: const ShareBrandingFooter(),
                 footerSpacing: 8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds a preview that matches the full-screen aspect ratio of the shared image.
+  /// This shows users exactly what the captured image will look like.
+  Widget _buildPreviewCard(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
+    final double aspectRatio = screenSize.width / screenSize.height;
+
+    return AspectRatio(
+      aspectRatio: aspectRatio,
+      child: Container(
+        decoration: BoxDecoration(
+          color: widget.backgroundColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Background emojis (same as captured image)
+            if (widget.backgroundEmojis.isNotEmpty)
+              ShareableEmojiBackground(
+                emojis: widget.backgroundEmojis,
+                randomSeed: widget.randomSeed,
+              ),
+            // Centered content
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.headerWidget != null) ...[
+                      widget.headerWidget!,
+                      const SizedBox(height: 12),
+                    ],
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: widget.cardWidget,
+                    ),
+                    const SizedBox(height: 8),
+                    const ShareBrandingFooter(),
+                  ],
+                ),
               ),
             ),
           ],

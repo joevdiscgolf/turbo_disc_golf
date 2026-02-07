@@ -8,8 +8,10 @@ import 'package:uuid/uuid.dart';
 
 import 'package:turbo_disc_golf/models/data/putt_practice/basket_calibration.dart';
 import 'package:turbo_disc_golf/models/data/putt_practice/detected_putt_attempt.dart';
+import 'package:turbo_disc_golf/services/putt_practice/motion_detection_service.dart';
 import 'package:turbo_disc_golf/services/putt_practice/putt_detection_service.dart';
 import 'package:turbo_disc_golf/services/putt_practice/frame_processor_service.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 
 /// States for the hybrid putt tracking state machine
 ///
@@ -71,6 +73,8 @@ class _DiscPosition {
 /// what we often CAN'T see (bucket entry).
 class PuttTrackerService {
   final PuttDetectionService _detectionService = PuttDetectionService();
+  final MotionDetectionService _motionDetectionService =
+      MotionDetectionService();
   late final FrameProcessorService _frameProcessor;
 
   /// Current tracking state
@@ -124,8 +128,15 @@ class PuttTrackerService {
   final StreamController<DetectedPuttAttempt> _puttController =
       StreamController<DetectedPuttAttempt>.broadcast();
 
+  /// Stream controller for motion debug boxes
+  final StreamController<List<Rect>> _motionDebugController =
+      StreamController<List<Rect>>.broadcast();
+
   /// Stream of detected putt attempts
   Stream<DetectedPuttAttempt> get puttStream => _puttController.stream;
+
+  /// Stream of motion boxes for debug overlay
+  Stream<List<Rect>> get motionDebugStream => _motionDebugController.stream;
 
   /// Current tracking state
   PuttTrackingState get state => _state;
@@ -142,8 +153,12 @@ class PuttTrackerService {
 
   /// Initialize the tracker
   Future<void> initialize() async {
-    await _detectionService.initialize();
-    debugPrint('[PuttTrackerService] Initialized with hybrid detection');
+    if (useMLDiscDetection) {
+      await _detectionService.initialize();
+      debugPrint('[PuttTrackerService] Initialized with ML detection');
+    } else {
+      debugPrint('[PuttTrackerService] Initialized with motion detection');
+    }
   }
 
   /// Set the basket calibration
@@ -171,20 +186,78 @@ class PuttTrackerService {
         return;
       }
 
-      final List<DetectionResult> detections = await _detectionService.detect(
-        imageBytes,
-        image.width,
-        image.height,
-      );
-
-      // Find disc detection
-      final DetectionResult? discDetection = _findDiscDetection(detections);
-
-      // Update state machine
-      _updateState(discDetection: discDetection);
+      if (useMLDiscDetection) {
+        // Use ML-based detection
+        await _processWithMLDetection(imageBytes, image.width, image.height);
+      } else {
+        // Use motion-based detection
+        _processWithMotionDetection(imageBytes, image.width, image.height);
+      }
     } catch (e) {
       debugPrint('[PuttTrackerService] Error processing frame: $e');
     }
+  }
+
+  /// Process frame using ML-based disc detection
+  Future<void> _processWithMLDetection(
+    Uint8List imageBytes,
+    int width,
+    int height,
+  ) async {
+    final List<DetectionResult> detections = await _detectionService.detect(
+      imageBytes,
+      width,
+      height,
+    );
+
+    // Find disc detection
+    final DetectionResult? discDetection = _findDiscDetection(detections);
+
+    // Update state machine
+    _updateState(discDetection: discDetection);
+  }
+
+  /// Process frame using motion-based detection
+  void _processWithMotionDetection(
+    Uint8List imageBytes,
+    int width,
+    int height,
+  ) {
+    // Get motion boxes
+    final List<Rect> motionBoxes = _motionDetectionService.detectMotion(
+      imageBytes,
+      width,
+      height,
+    );
+
+    // Emit motion boxes for debug overlay
+    if (!_motionDebugController.isClosed) {
+      _motionDebugController.add(motionBoxes);
+    }
+
+    // Find the primary moving object (largest or fastest)
+    final Rect? primaryMotion = _findPrimaryMotion(motionBoxes);
+
+    // Convert motion box to detection result format for state machine
+    DetectionResult? detection;
+    if (primaryMotion != null) {
+      detection = DetectionResult(
+        label: 'motion',
+        confidence: 0.8, // Default confidence for motion detection
+        boundingBox: primaryMotion,
+      );
+    }
+
+    // Update state machine
+    _updateState(discDetection: detection);
+  }
+
+  /// Find the primary motion (largest box, assumed to be the disc)
+  Rect? _findPrimaryMotion(List<Rect> motionBoxes) {
+    if (motionBoxes.isEmpty) return null;
+
+    // Return the largest motion box (already sorted by area in the service)
+    return motionBoxes.first;
   }
 
   /// Extract image bytes based on platform format
@@ -246,7 +319,9 @@ class PuttTrackerService {
   /// Find disc detection from results
   DetectionResult? _findDiscDetection(List<DetectionResult> detections) {
     for (final DetectionResult detection in detections) {
-      if (detection.label == 'flying_disc' || detection.label == 'disc') {
+      if (detection.label == 'flying_disc' ||
+          detection.label == 'disc' ||
+          detection.label == 'motion') {
         return detection;
       }
     }
@@ -310,7 +385,8 @@ class PuttTrackerService {
     if (_isValidPuttAttempt()) {
       _state = PuttTrackingState.discInFlight;
       _framesSinceVisible = 0;
-      debugPrint('[PuttTrackerService] State: IDLE -> DISC_IN_FLIGHT (valid attempt)');
+      debugPrint(
+          '[PuttTrackerService] State: IDLE -> DISC_IN_FLIGHT (valid attempt)');
     }
   }
 
@@ -334,7 +410,8 @@ class PuttTrackerService {
         _state = PuttTrackingState.basketInteraction;
         _basketEntryTime = now;
         _lastBasketPosition = position;
-        debugPrint('[PuttTrackerService] State: DISC_IN_FLIGHT -> BASKET_INTERACTION');
+        debugPrint(
+            '[PuttTrackerService] State: DISC_IN_FLIGHT -> BASKET_INTERACTION');
       }
     } else {
       // Disc not visible
@@ -342,14 +419,16 @@ class PuttTrackerService {
 
       // If disc disappears before reaching basket, attempt is abandoned
       if (_framesSinceVisible > 10) {
-        debugPrint('[PuttTrackerService] Attempt abandoned (disc lost before basket)');
+        debugPrint(
+            '[PuttTrackerService] Attempt abandoned (disc lost before basket)');
         _resetToIdle();
       }
     }
   }
 
   /// Handle BASKET_INTERACTION state - watching for exit or disappearance
-  void _handleBasketInteractionState(DetectionResult? discDetection, DateTime now) {
+  void _handleBasketInteractionState(
+      DetectionResult? discDetection, DateTime now) {
     if (discDetection != null) {
       final Offset center = discDetection.boundingBox.center;
       final _DiscPosition position = _DiscPosition(
@@ -369,7 +448,8 @@ class PuttTrackerService {
         final (double relX, double relY) = _calculateExitDirection(position);
         _recordPutt(made: false, relativeX: relX, relativeY: relY);
         _enterCooldown(now);
-        debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - visible exit)');
+        debugPrint(
+            '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - visible exit)');
         return;
       }
 
@@ -380,7 +460,8 @@ class PuttTrackerService {
           // Strong upward motion - likely bounced off chains (miss high)
           _recordPutt(made: false, relativeX: 0, relativeY: 0.5);
           _enterCooldown(now);
-          debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - upward motion)');
+          debugPrint(
+              '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - upward motion)');
           return;
         }
       }
@@ -393,11 +474,13 @@ class PuttTrackerService {
       // Check for disappearance-based MAKE
       if (_basketEntryTime != null) {
         final int msInBasket = now.difference(_basketEntryTime!).inMilliseconds;
-        if (msInBasket >= makeDisappearanceThresholdMs && _framesSinceVisible >= 3) {
+        if (msInBasket >= makeDisappearanceThresholdMs &&
+            _framesSinceVisible >= 3) {
           // Disc disappeared in basket zone without visible exit = MAKE
           _recordPutt(made: true, relativeX: 0, relativeY: 0);
           _enterCooldown(now);
-          debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - disappeared)');
+          debugPrint(
+              '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - disappeared)');
           return;
         }
       }
@@ -407,7 +490,8 @@ class PuttTrackerService {
         // Assume make if disc was last seen in basket zone and vanished
         _recordPutt(made: true, relativeX: 0, relativeY: 0);
         _enterCooldown(now);
-        debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - extended disappearance)');
+        debugPrint(
+            '[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - extended disappearance)');
       }
     }
   }
@@ -442,7 +526,8 @@ class PuttTrackerService {
     if (_calibration == null) return false;
 
     // Calculate average velocity over recent positions
-    final _DiscPosition first = _discPositions[_discPositions.length - minFramesForAttempt];
+    final _DiscPosition first =
+        _discPositions[_discPositions.length - minFramesForAttempt];
     final _DiscPosition last = _discPositions.last;
     final Offset velocity = first.velocityTo(last);
 
@@ -454,8 +539,10 @@ class PuttTrackerService {
     final double dy = basketCenterY - last.y;
 
     // Velocity should be in direction of basket
-    final bool movingTowardX = (dx > 0 && velocity.dx > 0) || (dx < 0 && velocity.dx < 0) || dx.abs() < 0.1;
-    final bool movingTowardY = (dy > 0 && velocity.dy > 0) || (dy < 0 && velocity.dy < 0) || dy.abs() < 0.1;
+    final bool movingTowardX =
+        (dx > 0 && velocity.dx > 0) || (dx < 0 && velocity.dx < 0) || dx.abs() < 0.1;
+    final bool movingTowardY =
+        (dy > 0 && velocity.dy > 0) || (dy < 0 && velocity.dy < 0) || dy.abs() < 0.1;
 
     // Check minimum velocity
     final double speed = (velocity.dx * velocity.dx + velocity.dy * velocity.dy);
@@ -557,12 +644,15 @@ class PuttTrackerService {
     _cooldownEndTime = null;
     _framesSinceVisible = 0;
     _frameCount = 0;
+    _motionDetectionService.reset();
   }
 
   /// Dispose resources
   void dispose() {
     _frameProcessor.dispose();
     _detectionService.dispose();
+    _motionDetectionService.dispose();
     _puttController.close();
+    _motionDebugController.close();
   }
 }

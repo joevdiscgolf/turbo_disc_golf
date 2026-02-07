@@ -91,15 +91,17 @@ class _PuttPracticeScreenState extends State<PuttPracticeScreen> {
           cameraController: state.cameraController,
           detectedBasket: state.detectedBasket,
           message: state.message,
-          onConfirm: () {
-            _logger.track('Basket Calibration Confirmed');
-            _cubit.confirmCalibration();
+          stableFrameCount: state.stableFrameCount,
+          onManualCalibration: (left, top, right, bottom) {
+            _logger.track('Manual Basket Calibration Confirmed');
+            _cubit.confirmManualCalibration(left, top, right, bottom);
           },
         ),
       PuttPracticeActive() => CameraPreviewOverlay(
           cameraController: state.cameraController,
           session: state.session,
           lastAttempt: state.lastDetectedAttempt,
+          motionBoxes: state.motionBoxes,
         ),
       PuttPracticePaused() => _buildPausedState(state),
       PuttPracticeCompleted() => _buildCompletedState(state),
@@ -191,14 +193,6 @@ class _PuttPracticeScreenState extends State<PuttPracticeScreen> {
 
   Widget _buildControlsForState(PuttPracticeState state) {
     return switch (state) {
-      PuttPracticeCameraReady() => PrimaryButton(
-          label: 'Start calibration',
-          width: double.infinity,
-          onPressed: () {
-            _logger.track('Start Calibration Button Tapped');
-            _cubit.startCalibration();
-          },
-        ),
       PuttPracticeActive() => _buildActiveControls(state),
       PuttPracticePaused() => _buildPausedControls(state),
       PuttPracticeCompleted() => _buildCompletedControls(state),

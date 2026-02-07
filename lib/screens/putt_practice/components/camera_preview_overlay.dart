@@ -3,19 +3,23 @@ import 'package:flutter/material.dart';
 
 import 'package:turbo_disc_golf/models/data/putt_practice/detected_putt_attempt.dart';
 import 'package:turbo_disc_golf/models/data/putt_practice/putt_practice_session.dart';
+import 'package:turbo_disc_golf/screens/putt_practice/components/motion_debug_overlay.dart';
 import 'package:turbo_disc_golf/screens/putt_practice/components/putt_result_animation.dart';
+import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 
 /// Camera preview with detection overlays during active session
 class CameraPreviewOverlay extends StatelessWidget {
   final CameraController cameraController;
   final PuttPracticeSession session;
   final DetectedPuttAttempt? lastAttempt;
+  final List<Rect> motionBoxes;
 
   const CameraPreviewOverlay({
     super.key,
     required this.cameraController,
     required this.session,
     this.lastAttempt,
+    this.motionBoxes = const [],
   });
 
   @override
@@ -44,6 +48,10 @@ class CameraPreviewOverlay extends StatelessWidget {
         // Basket detection overlay
         if (session.calibration != null)
           _buildBasketOverlay(session.calibration!),
+
+        // Motion debug overlay (when enabled)
+        if (showMotionDebugOverlay && motionBoxes.isNotEmpty)
+          MotionDebugOverlay(motionBoxes: motionBoxes),
 
         // Putt result animation
         if (lastAttempt != null)

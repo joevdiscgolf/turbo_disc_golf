@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:camera/camera.dart';
 import 'package:equatable/equatable.dart';
 
@@ -47,15 +49,20 @@ class PuttPracticeCalibrating extends PuttPracticeState {
   final CameraController cameraController;
   final BasketCalibration? detectedBasket;
   final String message;
+  final int stableFrameCount;
+  final List<Rect> motionBoxes;
 
   const PuttPracticeCalibrating({
     required this.cameraController,
     this.detectedBasket,
     this.message = 'Point camera at basket...',
+    this.stableFrameCount = 0,
+    this.motionBoxes = const [],
   });
 
   @override
-  List<Object?> get props => [cameraController, detectedBasket, message];
+  List<Object?> get props =>
+      [cameraController, detectedBasket, message, stableFrameCount, motionBoxes];
 }
 
 /// State when session is active and tracking putts
@@ -64,12 +71,14 @@ class PuttPracticeActive extends PuttPracticeState {
   final PuttPracticeSession session;
   final DetectedPuttAttempt? lastDetectedAttempt;
   final bool isProcessingFrame;
+  final List<Rect> motionBoxes;
 
   const PuttPracticeActive({
     required this.cameraController,
     required this.session,
     this.lastDetectedAttempt,
     this.isProcessingFrame = false,
+    this.motionBoxes = const [],
   });
 
   @override
@@ -78,6 +87,7 @@ class PuttPracticeActive extends PuttPracticeState {
         session,
         lastDetectedAttempt,
         isProcessingFrame,
+        motionBoxes,
       ];
 }
 
