@@ -25,7 +25,6 @@ import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/ai_content_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
-import 'package:turbo_disc_golf/screens/round_review/share_judgment_preview_screen.dart';
 import 'package:turbo_disc_golf/services/ai_generation_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -37,8 +36,6 @@ import 'package:turbo_disc_golf/services/toast/toast_type.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
 import 'package:turbo_disc_golf/state/round_review_cubit.dart';
 import 'package:turbo_disc_golf/utils/auth_helpers.dart';
-import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
 import 'package:yaml/yaml.dart';
 
 /// State machine for the judgment animation flow.
@@ -653,52 +650,7 @@ highlightStats:
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Preview button
-          Expanded(
-            child: PrimaryButton(
-              width: double.infinity,
-              height: 56,
-              label: 'Preview',
-              // icon: Icons.visibility_outlined,
-              backgroundColor: Colors.white,
-              labelColor: Colors.grey[800]!,
-              iconColor: Colors.grey[800]!,
-              borderColor: SenseiColors.gray[100],
-              onPressed: () => _showShareCardPreview(headline),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Share button (primary gradient)
-          Expanded(flex: 2, child: _buildShareButton(headline)),
-        ],
-      ),
-    );
-  }
-
-  void _showShareCardPreview(String headline) {
-    _logger.track(
-      'Judgment Preview Button Tapped',
-      properties: {'judgment_type': _isGlaze ? 'glaze' : 'roast'},
-    );
-    final String displayTagline = _getPreviewTagline();
-    final RoundAnalysis analysis = RoundAnalysisGenerator.generateAnalysis(
-      _currentRound,
-    );
-    final List<String> highlightStats = _getPreviewHighlightStats();
-
-    pushCupertinoRoute(
-      context,
-      ShareJudgmentPreviewScreen(
-        isGlaze: _isGlaze,
-        headline: headline,
-        tagline: displayTagline,
-        round: _currentRound,
-        analysis: analysis,
-        highlightStats: highlightStats,
-      ),
-      pushFromBottom: true,
+      child: _buildShareButton(headline),
     );
   }
 

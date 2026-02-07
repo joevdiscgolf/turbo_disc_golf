@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/components/walkthrough_glass_card.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class SceneFormAnalysis extends StatefulWidget {
   const SceneFormAnalysis({
@@ -406,8 +408,8 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
                     offset: Offset(0, 4 * (1 - labelOpacities[index].value)),
                     child: Text(
                       _positions[index].label,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: SenseiColors.gray[700],
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
@@ -442,7 +444,7 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
         child: Icon(
           Icons.arrow_forward_ios,
           size: 16,
-          color: Colors.white.withValues(alpha: 0.5),
+          color: SenseiColors.gray[400],
         ),
       ),
     );
@@ -463,16 +465,10 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
           scale: _insightScale.value,
           child: Opacity(
             opacity: _insightOpacity.value,
-            child: Container(
+            child: WalkthroughGlassCard(
+              accentColor: const Color(0xFF3498DB),
+              borderRadius: 16,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3498DB).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF3498DB).withValues(alpha: 0.4),
-                  width: 1,
-                ),
-              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,7 +484,7 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
                             TextSpan(
                               text: '"$displayText',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
+                                color: SenseiColors.gray[600],
                                 fontSize: 14,
                                 fontStyle: FontStyle.italic,
                                 height: 1.4,
@@ -498,7 +494,7 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
                               TextSpan(
                                 text: '"',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.9),
+                                  color: SenseiColors.gray[600],
                                   fontSize: 14,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -508,7 +504,7 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
                               TextSpan(
                                 text: '|',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(
+                                  color: SenseiColors.gray[600]!.withValues(
                                     alpha: showCursor ? 1.0 : 0.0,
                                   ),
                                   fontSize: 14,
@@ -536,11 +532,11 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
           opacity: _frame1Opacity.value,
           child: Column(
             children: [
-              const Text(
+              Text(
                 'Compare to pros, perfect every throw',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: SenseiColors.gray[700],
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
@@ -551,7 +547,7 @@ class _SceneFormAnalysisState extends State<SceneFormAnalysis>
                 'Powerful form analysis',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: SenseiColors.gray[600],
                   fontSize: 16,
                   height: 1.5,
                 ),

@@ -316,17 +316,6 @@ class _MainWrapperState extends State<MainWrapper> {
   }
 
   Widget? _buildRightWidget(BuildContext context) {
-    // Form Coach tab - show delete button in debug mode alongside feedback
-    // if (_selectedIndex == 1 && kDebugMode) {
-    //   return Row(
-    //     mainAxisSize: MainAxisSize.min,
-    //     children: [
-    //       _buildFeedbackButton(context),
-    //       const SizedBox(width: 8),
-    //       _buildDeleteButton(context),
-    //     ],
-    //   );
-    // }
     return _buildFeedbackButton(context);
   }
 

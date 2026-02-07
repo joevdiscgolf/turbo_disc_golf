@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
 class SceneProcessing extends StatefulWidget {
   const SceneProcessing({super.key, required this.isActive});
 
@@ -193,7 +195,7 @@ class _SceneProcessingState extends State<SceneProcessing>
                       ],
                     ),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: const Color(0xFF4ECDC4).withValues(alpha: 0.5),
                       width: 2,
                     ),
                   ),
@@ -276,7 +278,7 @@ class _SceneProcessingState extends State<SceneProcessing>
                 height: 6,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(
+                  color: const Color(0xFF4ECDC4).withValues(
                     alpha:
                         0.5 +
                         0.5 *
@@ -286,7 +288,7 @@ class _SceneProcessingState extends State<SceneProcessing>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: const Color(0xFF4ECDC4).withValues(alpha: 0.5),
                       blurRadius: 6,
                     ),
                   ],
@@ -319,10 +321,10 @@ class _SceneProcessingState extends State<SceneProcessing>
           opacity: _orbGlow.value,
           child: Column(
             children: [
-              const Text(
+              Text(
                 'We understand.',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: SenseiColors.gray[700],
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
@@ -333,7 +335,7 @@ class _SceneProcessingState extends State<SceneProcessing>
                 'Every throw, disc, and score\nextracted automatically.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: SenseiColors.gray[600],
                   fontSize: 16,
                   height: 1.5,
                 ),
@@ -446,7 +448,7 @@ class _ExtractionRowState extends State<_ExtractionRow>
                   child: Text(
                     '"${widget.item.word}"',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: SenseiColors.gray[700],
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -466,7 +468,7 @@ class _ExtractionRowState extends State<_ExtractionRow>
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.white.withValues(alpha: 0.3),
+                                  SenseiColors.gray[300]!,
                                   widget.item.color,
                                 ],
                               ),

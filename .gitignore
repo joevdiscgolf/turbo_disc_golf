@@ -48,3 +48,7 @@ app.*.map.json
 .env
 .env.*
 .aider*
+
+# Upload scripts with credentials
+scripts/uploadios.sh
+uploadios.sh

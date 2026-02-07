@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
 import 'package:turbo_disc_golf/components/buttons/primary_button.dart';
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/components/walkthrough_glass_card.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
 class SceneComplete extends StatefulWidget {
   const SceneComplete({
@@ -264,10 +267,10 @@ class _SceneCompleteState extends State<SceneComplete>
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: opacity * 0.6),
+              color: const Color(0xFF4ECDC4).withValues(alpha: opacity * 0.6),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.white.withValues(alpha: opacity * 0.4),
+                  color: const Color(0xFF4ECDC4).withValues(alpha: opacity * 0.4),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),
@@ -289,36 +292,23 @@ class _SceneCompleteState extends State<SceneComplete>
           offset: Offset(_statsSlide.value, 0),
           child: Transform.rotate(
             angle: _statsRotation.value,
-            child: Container(
+            child: WalkthroughGlassCard(
+              accentColor: const Color(0xFF3498DB),
               width: 160,
+              borderRadius: 16,
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF3498DB).withValues(alpha: 0.4),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF3498DB).withValues(alpha: 0.2),
-                    blurRadius: 16,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Text('📊', style: TextStyle(fontSize: 16)),
-                      SizedBox(width: 6),
+                      const Text('📊', style: TextStyle(fontSize: 16)),
+                      const SizedBox(width: 6),
                       Text(
                         'YOUR STATS',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: SenseiColors.gray[700],
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -348,7 +338,7 @@ class _SceneCompleteState extends State<SceneComplete>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: SenseiColors.gray[600],
             fontSize: 10,
           ),
         ),
@@ -359,7 +349,7 @@ class _SceneCompleteState extends State<SceneComplete>
               child: Container(
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: SenseiColors.gray[200],
                   borderRadius: BorderRadius.circular(2),
                 ),
                 child: FractionallySizedBox(
@@ -379,8 +369,8 @@ class _SceneCompleteState extends State<SceneComplete>
             const SizedBox(width: 8),
             Text(
               percentage,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: SenseiColors.gray[700],
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
@@ -399,36 +389,23 @@ class _SceneCompleteState extends State<SceneComplete>
           offset: Offset(_storySlide.value, 0),
           child: Transform.rotate(
             angle: _storyRotation.value,
-            child: Container(
+            child: WalkthroughGlassCard(
+              accentColor: const Color(0xFF9B59B6),
               width: 165,
+              borderRadius: 16,
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF9B59B6).withValues(alpha: 0.4),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF9B59B6).withValues(alpha: 0.2),
-                    blurRadius: 16,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Text('📖', style: TextStyle(fontSize: 16)),
-                      SizedBox(width: 6),
+                      const Text('📖', style: TextStyle(fontSize: 16)),
+                      const SizedBox(width: 6),
                       Text(
                         'YOUR STORY',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: SenseiColors.gray[700],
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -444,7 +421,7 @@ class _SceneCompleteState extends State<SceneComplete>
                       Text(
                         'What You Did Well',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: SenseiColors.gray[700],
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -455,7 +432,7 @@ class _SceneCompleteState extends State<SceneComplete>
                   Text(
                     'Your C1 putting was on fire today at 85%...',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: SenseiColors.gray[500],
                       fontSize: 10,
                       fontStyle: FontStyle.italic,
                       height: 1.3,
@@ -469,7 +446,7 @@ class _SceneCompleteState extends State<SceneComplete>
                       Text(
                         'Practice Focus',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: SenseiColors.gray[700],
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -480,7 +457,7 @@ class _SceneCompleteState extends State<SceneComplete>
                   Text(
                     'Work on forehand approaches from 150ft...',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: SenseiColors.gray[500],
                       fontSize: 10,
                       fontStyle: FontStyle.italic,
                       height: 1.3,
@@ -501,50 +478,37 @@ class _SceneCompleteState extends State<SceneComplete>
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(_glazeSlide.value, 0),
-          child: Container(
+          child: WalkthroughGlassCard(
+            accentColor: const Color(0xFFF39C12),
             width: 165,
+            borderRadius: 16,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFF39C12).withValues(alpha: 0.4),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFF39C12).withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Text('✨', style: TextStyle(fontSize: 16)),
-                    SizedBox(width: 6),
+                    const Text('✨', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 6),
                     Text(
                       'GLAZE',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: SenseiColors.gray[700],
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    Spacer(),
-                    Text('🍯', style: TextStyle(fontSize: 14)),
+                    const Spacer(),
+                    const Text('🍯', style: TextStyle(fontSize: 14)),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
                   '"That 50-footer on hole 7? Pure butter."',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: SenseiColors.gray[600],
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                     height: 1.3,
@@ -564,50 +528,37 @@ class _SceneCompleteState extends State<SceneComplete>
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(_roastSlide.value, 0),
-          child: Container(
+          child: WalkthroughGlassCard(
+            accentColor: const Color(0xFFE74C3C),
             width: 165,
+            borderRadius: 16,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFE74C3C).withValues(alpha: 0.4),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFE74C3C).withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Text('🔥', style: TextStyle(fontSize: 16)),
-                    SizedBox(width: 6),
+                    const Text('🔥', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 6),
                     Text(
                       'ROAST',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: SenseiColors.gray[700],
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    Spacer(),
-                    Text('🍖', style: TextStyle(fontSize: 14)),
+                    const Spacer(),
+                    const Text('🍖', style: TextStyle(fontSize: 14)),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
                   '"3 OBs? Were you aiming for the parking lot?"',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: SenseiColors.gray[600],
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                     height: 1.3,
@@ -629,10 +580,10 @@ class _SceneCompleteState extends State<SceneComplete>
           opacity: _statsCardController.value,
           child: Column(
             children: [
-              const Text(
+              Text(
                 'All this. Every round.',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: SenseiColors.gray[700],
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
@@ -643,7 +594,7 @@ class _SceneCompleteState extends State<SceneComplete>
                 'Record once. Get everything.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: SenseiColors.gray[600],
                   fontSize: 16,
                 ),
               ),

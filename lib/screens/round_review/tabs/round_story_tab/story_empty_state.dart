@@ -305,7 +305,9 @@ class _StoryInfoCardState extends State<_StoryInfoCard> {
                           offset: const Offset(0, 8),
                         ),
                         BoxShadow(
-                          color: const Color(0xFF4ECDC4).withValues(alpha: 0.04),
+                          color: const Color(
+                            0xFF4ECDC4,
+                          ).withValues(alpha: 0.04),
                           blurRadius: 40,
                           offset: const Offset(0, 4),
                         ),
@@ -317,7 +319,10 @@ class _StoryInfoCardState extends State<_StoryInfoCard> {
                       children: [
                         Row(
                           children: [
-                            Text(widget.icon, style: const TextStyle(fontSize: 20)),
+                            Text(
+                              widget.icon,
+                              style: const TextStyle(fontSize: 20),
+                            ),
                             const SizedBox(width: 10),
                             Text(
                               widget.title,

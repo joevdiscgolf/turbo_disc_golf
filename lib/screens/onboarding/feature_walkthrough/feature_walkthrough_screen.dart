@@ -10,8 +10,9 @@ import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/sc
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_insights.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_processing.dart';
 import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/scenes/scene_recording.dart';
-import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/walkthrough_background.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
+import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 
 class FeatureWalkthroughScreen extends StatefulWidget {
@@ -108,10 +109,6 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
     _logger.track('Walkthrough Completed Button Tapped');
 
     HapticFeedback.mediumImpact();
-    // Reset status bar to dark text/icons before navigating away
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-    );
     // User is already marked as onboarded in setupNewUser, just go to home
     locator.get<AppPhaseController>().setPhase(AppPhase.home);
   }
@@ -121,12 +118,12 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
     return PopScope(
       canPop: false,
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+        value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
         child: Scaffold(
           body: Stack(
             children: [
-              // Animated gradient background
-              WalkthroughBackground(currentPage: _currentPage),
+              // Animated particle background
+              const AnimatedParticleBackground(),
 
               // Main content
               SafeArea(
@@ -175,7 +172,7 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
     return Container(
       height: 4,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
+        color: SenseiColors.gray[300],
         borderRadius: BorderRadius.circular(2),
       ),
       child: Align(
@@ -227,12 +224,14 @@ class _FeatureWalkthroughScreenState extends State<FeatureWalkthroughScreen> {
       width: isActive ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
+        color: isActive
+            ? const Color(0xFF4ECDC4)
+            : SenseiColors.gray[300],
         borderRadius: BorderRadius.circular(4),
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: const Color(0xFF4ECDC4).withValues(alpha: 0.5),
                   blurRadius: 8,
                   spreadRadius: 1,
                 ),

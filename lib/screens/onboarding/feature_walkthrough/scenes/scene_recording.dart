@@ -3,6 +3,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/components/walkthrough_glass_card.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
 class SceneRecording extends StatefulWidget {
   const SceneRecording({super.key, required this.isActive});
 
@@ -18,13 +21,11 @@ class _SceneRecordingState extends State<SceneRecording>
   late AnimationController _micPulseController;
   late AnimationController _waveController;
   late AnimationController _textController;
-  late AnimationController _glowController;
 
   late Animation<double> _cardOpacity;
   late Animation<double> _cardScale;
   late Animation<double> _micScale;
   late Animation<double> _textProgress;
-  late Animation<double> _glowOpacity;
 
   static const String _typingText =
       '"Hole 1, par 3. Threw my Wraith backhand, parked it for birdie..."';
@@ -83,15 +84,6 @@ class _SceneRecordingState extends State<SceneRecording>
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _textController, curve: Curves.linear));
-
-    // Glow animation at the end
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _glowOpacity = Tween<double>(begin: 0.0, end: 0.5).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
-    );
   }
 
   @override
@@ -124,11 +116,6 @@ class _SceneRecordingState extends State<SceneRecording>
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) _textController.forward();
     });
-
-    // 4.5s - Glow effect
-    Future.delayed(const Duration(milliseconds: 4500), () {
-      if (mounted) _glowController.forward();
-    });
   }
 
   @override
@@ -137,7 +124,6 @@ class _SceneRecordingState extends State<SceneRecording>
     _micPulseController.dispose();
     _waveController.dispose();
     _textController.dispose();
-    _glowController.dispose();
     super.dispose();
   }
 
@@ -159,31 +145,16 @@ class _SceneRecordingState extends State<SceneRecording>
 
   Widget _buildAnimatedCard() {
     return AnimatedBuilder(
-      animation: Listenable.merge([_cardController, _glowController]),
+      animation: _cardController,
       builder: (context, child) {
         return Opacity(
           opacity: _cardOpacity.value,
           child: Transform.scale(
             scale: _cardScale.value,
-            child: Container(
+            child: WalkthroughGlassCard(
+              accentColor: const Color(0xFF4ECDC4),
+              borderRadius: 24,
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(
-                      0xFF4ECDC4,
-                    ).withValues(alpha: _glowOpacity.value),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -255,7 +226,7 @@ class _SceneRecordingState extends State<SceneRecording>
                 width: 4,
                 height: height,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: const Color(0xFF4ECDC4).withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(2),
                 ),
               );
@@ -284,8 +255,8 @@ class _SceneRecordingState extends State<SceneRecording>
               children: [
                 TextSpan(
                   text: displayText,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: SenseiColors.gray[600],
                     fontSize: 16,
                     fontStyle: FontStyle.italic,
                     height: 1.5,
@@ -295,7 +266,7 @@ class _SceneRecordingState extends State<SceneRecording>
                   TextSpan(
                     text: '|',
                     style: TextStyle(
-                      color: Colors.white.withValues(
+                      color: SenseiColors.gray[600]!.withValues(
                         alpha: showCursor ? 1.0 : 0.0,
                       ),
                       fontSize: 16,
@@ -319,10 +290,10 @@ class _SceneRecordingState extends State<SceneRecording>
           opacity: _cardOpacity.value,
           child: Column(
             children: [
-              const Text(
+              Text(
                 'Just talk.',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: SenseiColors.gray[700],
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
@@ -333,7 +304,7 @@ class _SceneRecordingState extends State<SceneRecording>
                 'Describe your round naturally.\nWe\'ll handle the rest.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: SenseiColors.gray[600],
                   fontSize: 16,
                   height: 1.5,
                 ),

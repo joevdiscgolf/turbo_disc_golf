@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'package:turbo_disc_golf/screens/onboarding/feature_walkthrough/components/walkthrough_glass_card.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
 class SceneInsights extends StatefulWidget {
   const SceneInsights({super.key, required this.isActive});
 
@@ -207,24 +210,9 @@ class _SceneInsightsState extends State<SceneInsights>
               duration: const Duration(milliseconds: 400),
               curve: Curves.easeOutCubic,
               alignment: Alignment.topCenter,
-              child: Container(
-                width: double.infinity,
+              child: WalkthroughGlassCard(
+                accentColor: const Color(0xFF3498DB),
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF3498DB).withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF3498DB).withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -235,10 +223,10 @@ class _SceneInsightsState extends State<SceneInsights>
                         AnimatedOpacity(
                           duration: const Duration(milliseconds: 300),
                           opacity: _showStatsContent ? 1.0 : 0.0,
-                          child: const Text(
+                          child: Text(
                             'YOUR STATS',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: SenseiColors.gray[700],
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1,
@@ -291,7 +279,7 @@ class _SceneInsightsState extends State<SceneInsights>
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: SenseiColors.gray[600],
                 fontSize: 14,
               ),
             ),
@@ -302,7 +290,7 @@ class _SceneInsightsState extends State<SceneInsights>
                   child: Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: SenseiColors.gray[200],
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Align(
@@ -333,8 +321,8 @@ class _SceneInsightsState extends State<SceneInsights>
                 const SizedBox(width: 12),
                 Text(
                   '$displayPercentage%',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: SenseiColors.gray[700],
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -359,24 +347,9 @@ class _SceneInsightsState extends State<SceneInsights>
               duration: const Duration(milliseconds: 400),
               curve: Curves.easeOutCubic,
               alignment: Alignment.topCenter,
-              child: Container(
-                width: double.infinity,
+              child: WalkthroughGlassCard(
+                accentColor: const Color(0xFF9B59B6),
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF9B59B6).withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF9B59B6).withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -387,10 +360,10 @@ class _SceneInsightsState extends State<SceneInsights>
                         AnimatedOpacity(
                           duration: const Duration(milliseconds: 300),
                           opacity: _showStoryContent ? 1.0 : 0.0,
-                          child: const Text(
+                          child: Text(
                             'YOUR STORY',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: SenseiColors.gray[700],
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1,
@@ -421,10 +394,10 @@ class _SceneInsightsState extends State<SceneInsights>
           opacity: _statsOpacity.value,
           child: Column(
             children: [
-              const Text(
+              Text(
                 'Instant insights.',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: SenseiColors.gray[700],
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
@@ -435,7 +408,7 @@ class _SceneInsightsState extends State<SceneInsights>
                 'Stats and AI analysis appear\nlike magic.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: SenseiColors.gray[600],
                   fontSize: 16,
                   height: 1.5,
                 ),
@@ -487,7 +460,7 @@ class _AnimatedStoryTextState extends State<_AnimatedStoryText>
         return Text(
           displayText,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
+            color: SenseiColors.gray[600],
             fontSize: 14,
             fontStyle: FontStyle.italic,
             height: 1.4,
