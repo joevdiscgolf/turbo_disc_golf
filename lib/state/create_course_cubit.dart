@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import 'create_course_state.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/hole_metadata.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -19,8 +20,15 @@ import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 
 const String _createCourseDraftKey = 'create_course_draft';
 
-class CreateCourseCubit extends Cubit<CreateCourseState> {
+class CreateCourseCubit extends Cubit<CreateCourseState>
+    implements ClearOnLogoutProtocol {
   CreateCourseCubit() : super(CreateCourseState.initial()) {
+    _initializeDefaultLayout();
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    emit(CreateCourseState.initial());
     _initializeDefaultLayout();
   }
 

@@ -24,6 +24,7 @@ import 'package:turbo_disc_golf/services/animation_state_service.dart';
 import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
+import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_pro_players_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/logout_manager.dart';
@@ -32,6 +33,7 @@ import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/record_round_cubit.dart';
 import 'package:turbo_disc_golf/state/round_confirmation_cubit.dart';
 import 'package:turbo_disc_golf/state/round_history_cubit.dart';
@@ -128,6 +130,8 @@ class _MyAppState extends State<MyApp> {
       _roundReviewCubit,
       _recordRoundCubit,
       _userDataCubit,
+      _createCourseCubit,
+      locator.get<FormAnalysisHistoryCubit>(),
 
       // Services from locator
       locator.get<RoundParser>(),
@@ -136,6 +140,7 @@ class _MyAppState extends State<MyApp> {
       locator.get<CourseSearchService>(),
       locator.get<VideoFormAnalysisService>(),
       locator.get<LoggingService>(),
+      locator.get<ErrorLoggingService>(),
       AnimationStateService.instance,
     ];
 
