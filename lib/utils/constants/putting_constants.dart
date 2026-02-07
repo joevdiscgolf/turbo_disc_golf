@@ -27,7 +27,8 @@ const double c2MaxDistance = 66.0;
 const bool useMLBasketDetection = false;
 
 /// If false, use motion-based tracking instead of ML disc detection
-const bool useMLDiscDetection = false;
+/// YOLOv8 COCO model detects frisbees (class 29) for disc detection
+const bool useMLDiscDetection = true;
 
 /// Show boxes around detected motion for debugging
 const bool showMotionDebugOverlay = true;

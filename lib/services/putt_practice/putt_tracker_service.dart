@@ -210,6 +210,14 @@ class PuttTrackerService {
       height,
     );
 
+    // Emit detection boxes for debug overlay
+    if (!_motionDebugController.isClosed) {
+      final List<Rect> detectionBoxes = detections
+          .map((DetectionResult d) => d.boundingBox)
+          .toList();
+      _motionDebugController.add(detectionBoxes);
+    }
+
     // Find disc detection
     final DetectionResult? discDetection = _findDiscDetection(detections);
 

@@ -132,6 +132,7 @@ flutter:
     - assets/judge_tab/
     - assets/icon/
     - assets/splash/
+    - assets/ml/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

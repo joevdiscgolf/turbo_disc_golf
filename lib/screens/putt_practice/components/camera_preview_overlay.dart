@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:turbo_disc_golf/models/data/putt_practice/detected_putt_attempt.dart';
 import 'package:turbo_disc_golf/models/data/putt_practice/putt_practice_session.dart';
-import 'package:turbo_disc_golf/screens/putt_practice/components/motion_debug_overlay.dart';
+import 'package:turbo_disc_golf/screens/putt_practice/components/detection_debug_overlay.dart';
 import 'package:turbo_disc_golf/screens/putt_practice/components/putt_result_animation.dart';
 import 'package:turbo_disc_golf/utils/constants/putting_constants.dart';
 
@@ -49,9 +49,9 @@ class CameraPreviewOverlay extends StatelessWidget {
         if (session.calibration != null)
           _buildBasketOverlay(session.calibration!),
 
-        // Motion debug overlay (when enabled)
+        // Detection debug overlay (for motion or ML detection)
         if (showMotionDebugOverlay && motionBoxes.isNotEmpty)
-          MotionDebugOverlay(motionBoxes: motionBoxes),
+          DetectionDebugOverlay(detectionBoxes: motionBoxes),
 
         // Putt result animation
         if (lastAttempt != null)
