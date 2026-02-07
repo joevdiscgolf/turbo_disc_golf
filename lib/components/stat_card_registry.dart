@@ -4,7 +4,6 @@ import 'package:turbo_disc_golf/components/stat_cards/birdie_rate_story_card.dar
 import 'package:turbo_disc_golf/components/stat_cards/bogey_rate_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/bounce_back_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/c1_in_reg_story_card.dart';
-import 'package:turbo_disc_golf/components/stat_cards/c1_putting_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/c1x_putting_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/c2_putting_story_card.dart';
 import 'package:turbo_disc_golf/components/stat_cards/fairway_hit_story_card.dart';
@@ -61,7 +60,9 @@ class StatCardRegistry {
     if (baseId.contains(':')) {
       final List<String> parts = baseId.split(':');
       final String paramType = parts[0];
-      final String paramValue = parts.length > 1 ? parts.sublist(1).join(':') : '';
+      final String paramValue = parts.length > 1
+          ? parts.sublist(1).join(':')
+          : '';
 
       switch (paramType) {
         case 'HOLE_TYPE':
@@ -87,37 +88,92 @@ class StatCardRegistry {
     switch (baseId) {
       // ===== DRIVING STORY CARDS (with dual rendering) =====
       case 'FAIRWAY_HIT':
-        return FairwayHitStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return FairwayHitStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
       case 'C1_IN_REG':
-        return C1InRegStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return C1InRegStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
       case 'OB_RATE':
-        return OBRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return OBRateStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
       case 'PARKED':
-        return ParkedStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return ParkedStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
 
       // ===== PUTTING STORY CARDS (with dual rendering) =====
-      case 'C1_PUTTING':
-        return C1PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'C1X_PUTTING':
-        return C1XPuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return C1XPuttingStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
       case 'C2_PUTTING':
-        return C2PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return C2PuttingStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
 
       // ===== SCORING STORY CARDS (with dual rendering) =====
       case 'BIRDIE_RATE':
-        return BirdieRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return BirdieRateStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
       case 'BOGEY_RATE':
-        return BogeyRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return BogeyRateStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
       case 'PAR_RATE':
-        return ParRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
+        return ParRateStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+          scopedStats: scopedStats,
+        );
 
       // ===== MENTAL GAME STORY CARDS (with dual rendering) =====
       case 'BOUNCE_BACK':
-        return BounceBackStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return BounceBackStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+        );
       case 'HOT_STREAK':
-        return HotStreakStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return HotStreakStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+        );
       case 'FLOW_STATE':
-        return FlowStateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return FlowStateStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+        );
 
       // ===== PERFORMANCE STORY CARDS (with dual rendering) =====
       case 'MISTAKES':
@@ -128,7 +184,11 @@ class StatCardRegistry {
           showCard: false,
         );
       case 'SKILLS_SCORE':
-        return SkillsScoreStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return SkillsScoreStoryCard(
+          round: round,
+          renderMode: renderMode,
+          showIcon: showIcon,
+        );
 
       // ===== SPECIAL ANALYSIS CARDS =====
       case 'THROW_TYPE_COMPARISON':
@@ -153,8 +213,6 @@ class StatCardRegistry {
       // ===== PUTTING CARDS =====
       case 'C1X_PUTTING':
         return _buildC1xPuttingCard(analysis);
-      case 'C1_PUTTING':
-        return _buildC1PuttingCard(analysis);
       case 'C2_PUTTING':
         return _buildC2PuttingCard(analysis);
       case 'PUTTING_COMPARISON':
@@ -208,7 +266,7 @@ class StatCardRegistry {
 
   // ===== COMPOSITE STORY CARDS =====
 
-  /// Comprehensive putting stats card with C1, C1X, and C2
+  /// Comprehensive putting stats card with C1X and C2
   static Widget _buildPuttingStatsCard(RoundAnalysis analysis) {
     final stats = analysis.puttingStats;
     return Column(
@@ -225,12 +283,6 @@ class StatCardRegistry {
           spacing: 8,
           runSpacing: 8,
           children: [
-            CompactStatCards.buildFractionCard(
-              label: 'C1 Putts',
-              numerator: stats.c1Makes,
-              denominator: stats.c1Attempts,
-              color: const Color(0xFF137e66),
-            ),
             CompactStatCards.buildFractionCard(
               label: 'C1X Putts',
               numerator: stats.c1xMakes,
@@ -353,10 +405,9 @@ class StatCardRegistry {
   /// Mistakes breakdown chart
   static Widget _buildMistakesChartCard(RoundAnalysis analysis) {
     final mistakesByCategory = analysis.mistakesByCategory;
-    final List<MapEntry<String, int>> sortedMistakes = mistakesByCategory.entries
-        .where((entry) => entry.value > 0)
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final List<MapEntry<String, int>> sortedMistakes =
+        mistakesByCategory.entries.where((entry) => entry.value > 0).toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
 
     if (sortedMistakes.isEmpty) {
       return CompactStatCards.buildHighlightCard(
@@ -434,16 +485,6 @@ class StatCardRegistry {
     );
   }
 
-  static Widget _buildC1PuttingCard(RoundAnalysis analysis) {
-    final stats = analysis.puttingStats;
-    return CompactStatCards.buildFractionCard(
-      label: 'C1 Putts Made',
-      numerator: stats.c1Makes,
-      denominator: stats.c1Attempts,
-      color: const Color(0xFF137e66),
-    );
-  }
-
   static Widget _buildC2PuttingCard(RoundAnalysis analysis) {
     final stats = analysis.puttingStats;
     return CompactStatCards.buildFractionCard(
@@ -457,8 +498,8 @@ class StatCardRegistry {
   static Widget _buildPuttingComparisonCard(RoundAnalysis analysis) {
     final stats = analysis.puttingStats;
     return CompactStatCards.buildComparisonCard(
-      leftLabel: 'C1',
-      leftValue: '${stats.c1Percentage.toStringAsFixed(0)}%',
+      leftLabel: 'C1X',
+      leftValue: '${stats.c1xPercentage.toStringAsFixed(0)}%',
       leftColor: const Color(0xFF137e66),
       rightLabel: 'C2',
       rightValue: '${stats.c2Percentage.toStringAsFixed(0)}%',
@@ -479,7 +520,7 @@ class StatCardRegistry {
 
   static Widget _buildC1InRegCard(RoundAnalysis analysis) {
     return CompactStatCards.buildPercentageCard(
-      label: 'C1 in Regulation',
+      label: 'C1 in Reg',
       percentage: analysis.coreStats.c1InRegPct,
       color: const Color(0xFF137e66),
       subtitle: 'Chance for birdie in C1',
@@ -702,8 +743,6 @@ class StatCardRegistry {
       'PARKED_BAR',
 
       // Putting story cards (dual rendering with _CIRCLE / _BAR suffix)
-      'C1_PUTTING_CIRCLE',
-      'C1_PUTTING_BAR',
       'C1X_PUTTING_CIRCLE',
       'C1X_PUTTING_BAR',
       'C2_PUTTING_CIRCLE',
@@ -761,8 +800,6 @@ class StatCardRegistry {
       // Putting
       case 'C1X_PUTTING':
         return 'C1x putting (12-33ft outer ring): makes/attempts with percentage - THE KEY PUTTING STAT';
-      case 'C1_PUTTING':
-        return 'C1 putting: makes/attempts with percentage';
       case 'C2_PUTTING':
         return 'C2 putting: makes/attempts with percentage';
       case 'PUTTING_COMPARISON':
@@ -820,9 +857,6 @@ class StatCardRegistry {
         return 'Parked percentage - Elite accuracy metric for tap-in range shots';
 
       // Putting story cards
-      case 'C1_PUTTING_CIRCLE':
-      case 'C1_PUTTING_BAR':
-        return 'C1 Putting percentage (0-33 ft) - Overall putting performance inside Circle 1';
       case 'C1X_PUTTING_CIRCLE':
       case 'C1X_PUTTING_BAR':
         return 'C1X Putting percentage (11-33 ft) - Key putting metric excluding gimme putts';

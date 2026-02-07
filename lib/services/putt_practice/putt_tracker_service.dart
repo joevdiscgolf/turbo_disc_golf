@@ -11,22 +11,27 @@ import 'package:turbo_disc_golf/models/data/putt_practice/detected_putt_attempt.
 import 'package:turbo_disc_golf/services/putt_practice/putt_detection_service.dart';
 import 'package:turbo_disc_golf/services/putt_practice/frame_processor_service.dart';
 
-/// States for the putt tracking state machine
+/// States for the hybrid putt tracking state machine
+///
+/// This uses exit-based detection for misses and disappearance-based
+/// detection for makes, which works better with typical camera angles
+/// where the basket bucket is often occluded.
 enum PuttTrackingState {
-  /// Waiting for a disc to appear
+  /// Waiting for a valid putt attempt to begin
   idle,
 
-  /// Disc detected and moving toward basket
+  /// Disc detected and validated as a real putt attempt
+  /// (originated outside basket, moving toward basket)
   discInFlight,
 
-  /// Putt was made (disc entered basket zone)
-  made,
+  /// Disc has entered the basket zone - watching for exit or disappearance
+  basketInteraction,
 
-  /// Putt was missed (disc exited frame or landed outside basket)
-  missed,
+  /// Post-resolution cooldown to prevent double-counting
+  cooldown,
 }
 
-/// Tracked position of the disc
+/// Tracked position of the disc with velocity data
 class _DiscPosition {
   final double x;
   final double y;
@@ -39,9 +44,31 @@ class _DiscPosition {
     required this.timestamp,
     required this.confidence,
   });
+
+  /// Calculate velocity from this position to another (pixels per second)
+  Offset velocityTo(_DiscPosition other) {
+    final Duration dt = other.timestamp.difference(timestamp);
+    if (dt.inMilliseconds == 0) return Offset.zero;
+
+    final double seconds = dt.inMilliseconds / 1000.0;
+    return Offset(
+      (other.x - x) / seconds,
+      (other.y - y) / seconds,
+    );
+  }
 }
 
-/// Service for tracking putt attempts using a state machine
+/// Service for tracking putt attempts using a hybrid detection approach
+///
+/// Key insight: The basket bucket is often NOT visible from typical camera
+/// angles (phone on tripod, slightly below basket level). Instead of trying
+/// to detect disc entry into the bucket, we focus on:
+///
+/// 1. MAKE detection: Disc enters basket zone and DISAPPEARS (no visible exit)
+/// 2. MISS detection: Disc enters basket zone and EXITS visibly (upward or lateral)
+///
+/// This hybrid approach works with what we CAN see (exits) rather than
+/// what we often CAN'T see (bucket entry).
 class PuttTrackerService {
   final PuttDetectionService _detectionService = PuttDetectionService();
   late final FrameProcessorService _frameProcessor;
@@ -55,23 +82,43 @@ class PuttTrackerService {
   /// Recent disc positions for trajectory analysis
   final List<_DiscPosition> _discPositions = [];
 
-  /// Maximum positions to track
-  static const int maxPositionHistory = 10;
+  /// Maximum positions to track for trajectory
+  static const int maxPositionHistory = 15;
 
-  /// Minimum frames to track before determining result
-  static const int minFramesForResult = 3;
+  /// Minimum frames to validate a putt attempt
+  static const int minFramesForAttempt = 3;
 
-  /// Time threshold for disc in chains detection (milliseconds)
-  static const int madeDetectionThresholdMs = 500;
+  /// Minimum velocity toward basket to count as attempt (normalized units/sec)
+  static const double minVelocityThreshold = 0.3;
 
-  /// Distance threshold for "in basket" detection (normalized units)
-  static const double basketProximityThreshold = 0.15;
+  /// Time threshold for disappearance-based make detection (milliseconds)
+  /// If disc vanishes in basket zone for this long without exit, it's a make
+  static const int makeDisappearanceThresholdMs = 600;
 
-  /// Timestamp when disc was last detected near basket
-  DateTime? _discNearBasketTime;
+  /// Cooldown duration after putt resolution (milliseconds)
+  static const int cooldownDurationMs = 1500;
 
-  /// Last detected disc position (for miss position recording)
-  _DiscPosition? _lastDiscPosition;
+  /// Expanded basket zone for interaction detection (normalized units)
+  /// Slightly larger than calibrated bounds to catch near-misses
+  static const double basketZoneExpansion = 0.05;
+
+  /// Threshold for detecting upward exit (miss high)
+  static const double upwardExitThreshold = -0.15; // negative Y = up
+
+  /// Threshold for detecting lateral exit velocity
+  static const double lateralExitThreshold = 0.4;
+
+  /// When disc last entered basket zone
+  DateTime? _basketEntryTime;
+
+  /// Last position when disc was in basket zone (for exit detection)
+  _DiscPosition? _lastBasketPosition;
+
+  /// Frames since disc was last visible
+  int _framesSinceVisible = 0;
+
+  /// Cooldown end time
+  DateTime? _cooldownEndTime;
 
   /// Stream controller for putt detections
   final StreamController<DetectedPuttAttempt> _puttController =
@@ -96,7 +143,7 @@ class PuttTrackerService {
   /// Initialize the tracker
   Future<void> initialize() async {
     await _detectionService.initialize();
-    debugPrint('[PuttTrackerService] Initialized');
+    debugPrint('[PuttTrackerService] Initialized with hybrid detection');
   }
 
   /// Set the basket calibration
@@ -133,14 +180,8 @@ class PuttTrackerService {
       // Find disc detection
       final DetectionResult? discDetection = _findDiscDetection(detections);
 
-      // Find disc in chains detection (indicates made putt)
-      final DetectionResult? discInChains = _findDiscInChainsDetection(detections);
-
       // Update state machine
-      _updateState(
-        discDetection: discDetection,
-        discInChains: discInChains,
-      );
+      _updateState(discDetection: discDetection);
     } catch (e) {
       debugPrint('[PuttTrackerService] Error processing frame: $e');
     }
@@ -205,17 +246,7 @@ class PuttTrackerService {
   /// Find disc detection from results
   DetectionResult? _findDiscDetection(List<DetectionResult> detections) {
     for (final DetectionResult detection in detections) {
-      if (detection.label == 'flying_disc') {
-        return detection;
-      }
-    }
-    return null;
-  }
-
-  /// Find disc in chains detection from results
-  DetectionResult? _findDiscInChainsDetection(List<DetectionResult> detections) {
-    for (final DetectionResult detection in detections) {
-      if (detection.label == 'disc_in_chains') {
+      if (detection.label == 'flying_disc' || detection.label == 'disc') {
         return detection;
       }
     }
@@ -223,125 +254,235 @@ class PuttTrackerService {
   }
 
   /// Update the state machine based on detections
-  void _updateState({
-    DetectionResult? discDetection,
-    DetectionResult? discInChains,
-  }) {
+  void _updateState({DetectionResult? discDetection}) {
     final DateTime now = DateTime.now();
 
     switch (_state) {
       case PuttTrackingState.idle:
-        if (discDetection != null) {
-          // Disc detected - start tracking
-          _state = PuttTrackingState.discInFlight;
-          _discPositions.clear();
-          _addDiscPosition(discDetection, now);
-          debugPrint('[PuttTrackerService] State: IDLE -> DISC_IN_FLIGHT');
-        }
+        _handleIdleState(discDetection, now);
         break;
 
       case PuttTrackingState.discInFlight:
-        if (discInChains != null) {
-          // Disc detected in chains - putt made!
-          _recordPutt(made: true, position: discInChains.boundingBox.center);
-          _state = PuttTrackingState.made;
-          debugPrint('[PuttTrackerService] State: DISC_IN_FLIGHT -> MADE');
-          _resetToIdle();
-        } else if (discDetection != null) {
-          // Disc still visible - update position
-          _addDiscPosition(discDetection, now);
-
-          // Check if disc is near basket
-          final double distToBasket = _calculateDistanceToBasket(
-            discDetection.boundingBox.center,
-          );
-
-          if (distToBasket < basketProximityThreshold) {
-            // Disc near basket - start timer
-            _discNearBasketTime ??= now;
-
-            // If disc has been near basket for threshold duration, count as made
-            if (now.difference(_discNearBasketTime!).inMilliseconds >
-                madeDetectionThresholdMs) {
-              _recordPutt(made: true, position: discDetection.boundingBox.center);
-              _state = PuttTrackingState.made;
-              debugPrint('[PuttTrackerService] State: DISC_IN_FLIGHT -> MADE (proximity)');
-              _resetToIdle();
-            }
-          } else {
-            _discNearBasketTime = null;
-          }
-        } else {
-          // Disc no longer visible
-          if (_discPositions.length >= minFramesForResult) {
-            // We have enough data - determine if it was a miss
-            _recordPutt(made: false, position: _getLastDiscPosition());
-            _state = PuttTrackingState.missed;
-            debugPrint('[PuttTrackerService] State: DISC_IN_FLIGHT -> MISSED');
-          }
-          _resetToIdle();
-        }
+        _handleDiscInFlightState(discDetection, now);
         break;
 
-      case PuttTrackingState.made:
-      case PuttTrackingState.missed:
-        // Transitional states - reset handled by _resetToIdle
+      case PuttTrackingState.basketInteraction:
+        _handleBasketInteractionState(discDetection, now);
+        break;
+
+      case PuttTrackingState.cooldown:
+        _handleCooldownState(now);
         break;
     }
   }
 
-  /// Add a disc position to the history
-  void _addDiscPosition(DetectionResult detection, DateTime timestamp) {
-    final Offset center = detection.boundingBox.center;
-    _lastDiscPosition = _DiscPosition(
+  /// Handle IDLE state - waiting for valid putt attempt
+  void _handleIdleState(DetectionResult? discDetection, DateTime now) {
+    if (discDetection == null) {
+      _discPositions.clear();
+      return;
+    }
+
+    final Offset center = discDetection.boundingBox.center;
+    final _DiscPosition position = _DiscPosition(
       x: center.dx,
       y: center.dy,
-      timestamp: timestamp,
-      confidence: detection.confidence,
+      timestamp: now,
+      confidence: discDetection.confidence,
     );
-    _discPositions.add(_lastDiscPosition!);
 
-    // Trim history
-    if (_discPositions.length > maxPositionHistory) {
-      _discPositions.removeAt(0);
+    // Check if disc originated OUTSIDE the basket zone
+    if (_isInBasketZone(center)) {
+      // Disc is in basket zone - could be retrieval, ignore
+      _discPositions.clear();
+      return;
+    }
+
+    _discPositions.add(position);
+    _trimPositionHistory();
+
+    // Need minimum frames to validate trajectory
+    if (_discPositions.length < minFramesForAttempt) {
+      return;
+    }
+
+    // Check if disc is moving toward basket
+    if (_isValidPuttAttempt()) {
+      _state = PuttTrackingState.discInFlight;
+      _framesSinceVisible = 0;
+      debugPrint('[PuttTrackerService] State: IDLE -> DISC_IN_FLIGHT (valid attempt)');
     }
   }
 
-  /// Get the last known disc position
-  Offset _getLastDiscPosition() {
-    if (_lastDiscPosition != null) {
-      return Offset(_lastDiscPosition!.x, _lastDiscPosition!.y);
+  /// Handle DISC_IN_FLIGHT state - tracking valid attempt toward basket
+  void _handleDiscInFlightState(DetectionResult? discDetection, DateTime now) {
+    if (discDetection != null) {
+      final Offset center = discDetection.boundingBox.center;
+      final _DiscPosition position = _DiscPosition(
+        x: center.dx,
+        y: center.dy,
+        timestamp: now,
+        confidence: discDetection.confidence,
+      );
+
+      _discPositions.add(position);
+      _trimPositionHistory();
+      _framesSinceVisible = 0;
+
+      // Check if disc has entered basket zone
+      if (_isInBasketZone(center)) {
+        _state = PuttTrackingState.basketInteraction;
+        _basketEntryTime = now;
+        _lastBasketPosition = position;
+        debugPrint('[PuttTrackerService] State: DISC_IN_FLIGHT -> BASKET_INTERACTION');
+      }
+    } else {
+      // Disc not visible
+      _framesSinceVisible++;
+
+      // If disc disappears before reaching basket, attempt is abandoned
+      if (_framesSinceVisible > 10) {
+        debugPrint('[PuttTrackerService] Attempt abandoned (disc lost before basket)');
+        _resetToIdle();
+      }
     }
-    if (_discPositions.isNotEmpty) {
-      final _DiscPosition last = _discPositions.last;
-      return Offset(last.x, last.y);
-    }
-    return Offset.zero;
   }
 
-  /// Calculate distance from disc to basket center (normalized units)
-  double _calculateDistanceToBasket(Offset discPosition) {
-    if (_calibration == null) return double.infinity;
+  /// Handle BASKET_INTERACTION state - watching for exit or disappearance
+  void _handleBasketInteractionState(DetectionResult? discDetection, DateTime now) {
+    if (discDetection != null) {
+      final Offset center = discDetection.boundingBox.center;
+      final _DiscPosition position = _DiscPosition(
+        x: center.dx,
+        y: center.dy,
+        timestamp: now,
+        confidence: discDetection.confidence,
+      );
 
-    final double dx = discPosition.dx - _calibration!.centerX;
-    final double dy = discPosition.dy - _calibration!.centerY;
-    return (dx * dx + dy * dy);
+      _discPositions.add(position);
+      _trimPositionHistory();
+      _framesSinceVisible = 0;
+
+      // Check for visible EXIT from basket zone
+      if (!_isInBasketZone(center)) {
+        // Disc exited basket zone - this is a MISS
+        final (double relX, double relY) = _calculateExitDirection(position);
+        _recordPutt(made: false, relativeX: relX, relativeY: relY);
+        _enterCooldown(now);
+        debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - visible exit)');
+        return;
+      }
+
+      // Check for upward exit (miss high) - disc still in zone but moving up fast
+      if (_lastBasketPosition != null) {
+        final Offset velocity = _lastBasketPosition!.velocityTo(position);
+        if (velocity.dy < upwardExitThreshold) {
+          // Strong upward motion - likely bounced off chains (miss high)
+          _recordPutt(made: false, relativeX: 0, relativeY: 0.5);
+          _enterCooldown(now);
+          debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MISS - upward motion)');
+          return;
+        }
+      }
+
+      _lastBasketPosition = position;
+    } else {
+      // Disc not visible while in basket zone
+      _framesSinceVisible++;
+
+      // Check for disappearance-based MAKE
+      if (_basketEntryTime != null) {
+        final int msInBasket = now.difference(_basketEntryTime!).inMilliseconds;
+        if (msInBasket >= makeDisappearanceThresholdMs && _framesSinceVisible >= 3) {
+          // Disc disappeared in basket zone without visible exit = MAKE
+          _recordPutt(made: true, relativeX: 0, relativeY: 0);
+          _enterCooldown(now);
+          debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - disappeared)');
+          return;
+        }
+      }
+
+      // Extended invisibility without confirmed make - could be occlusion
+      if (_framesSinceVisible > 20) {
+        // Assume make if disc was last seen in basket zone and vanished
+        _recordPutt(made: true, relativeX: 0, relativeY: 0);
+        _enterCooldown(now);
+        debugPrint('[PuttTrackerService] State: BASKET_INTERACTION -> COOLDOWN (MAKE - extended disappearance)');
+      }
+    }
+  }
+
+  /// Handle COOLDOWN state - prevent double-counting
+  void _handleCooldownState(DateTime now) {
+    if (_cooldownEndTime != null && now.isAfter(_cooldownEndTime!)) {
+      _state = PuttTrackingState.idle;
+      _cooldownEndTime = null;
+      debugPrint('[PuttTrackerService] State: COOLDOWN -> IDLE');
+    }
+  }
+
+  /// Check if position is within expanded basket zone
+  bool _isInBasketZone(Offset position) {
+    if (_calibration == null) return false;
+
+    final double left = _calibration!.left - basketZoneExpansion;
+    final double right = _calibration!.right + basketZoneExpansion;
+    final double top = _calibration!.top - basketZoneExpansion;
+    final double bottom = _calibration!.bottom + basketZoneExpansion;
+
+    return position.dx >= left &&
+        position.dx <= right &&
+        position.dy >= top &&
+        position.dy <= bottom;
+  }
+
+  /// Validate that current trajectory is a real putt attempt
+  bool _isValidPuttAttempt() {
+    if (_discPositions.length < minFramesForAttempt) return false;
+    if (_calibration == null) return false;
+
+    // Calculate average velocity over recent positions
+    final _DiscPosition first = _discPositions[_discPositions.length - minFramesForAttempt];
+    final _DiscPosition last = _discPositions.last;
+    final Offset velocity = first.velocityTo(last);
+
+    // Check if moving toward basket (basket is typically in upper half of frame)
+    final double basketCenterX = _calibration!.centerX;
+    final double basketCenterY = _calibration!.centerY;
+
+    final double dx = basketCenterX - last.x;
+    final double dy = basketCenterY - last.y;
+
+    // Velocity should be in direction of basket
+    final bool movingTowardX = (dx > 0 && velocity.dx > 0) || (dx < 0 && velocity.dx < 0) || dx.abs() < 0.1;
+    final bool movingTowardY = (dy > 0 && velocity.dy > 0) || (dy < 0 && velocity.dy < 0) || dy.abs() < 0.1;
+
+    // Check minimum velocity
+    final double speed = (velocity.dx * velocity.dx + velocity.dy * velocity.dy);
+    final bool hasMinVelocity = speed > minVelocityThreshold * minVelocityThreshold;
+
+    return (movingTowardX || movingTowardY) && hasMinVelocity;
+  }
+
+  /// Calculate exit direction for miss position recording
+  (double, double) _calculateExitDirection(_DiscPosition exitPosition) {
+    if (_calibration == null) return (0, 0);
+
+    // Get position relative to basket center
+    final (double relX, double relY) = _calibration!.pixelToRelative(
+      exitPosition.x,
+      exitPosition.y,
+    );
+
+    return (relX.clamp(-1.5, 1.5), relY.clamp(-1.5, 1.5));
   }
 
   /// Record a putt attempt
-  void _recordPutt({required bool made, required Offset position}) {
-    if (_calibration == null) return;
-
-    // Convert position to relative coordinates
-    final (double relX, double relY) = _calibration!.pixelToRelative(
-      position.dx,
-      position.dy,
-    );
-
-    // Clamp to reasonable range
-    final double clampedX = relX.clamp(-2.0, 2.0);
-    final double clampedY = relY.clamp(-2.0, 2.0);
-
+  void _recordPutt({
+    required bool made,
+    required double relativeX,
+    required double relativeY,
+  }) {
     // Calculate average confidence from tracked positions
     final double avgConfidence = _discPositions.isEmpty
         ? 0.5
@@ -352,8 +493,8 @@ class PuttTrackerService {
       id: const Uuid().v4(),
       timestamp: DateTime.now(),
       made: made,
-      relativeX: made ? 0.0 : clampedX,
-      relativeY: made ? 0.0 : clampedY,
+      relativeX: relativeX,
+      relativeY: relativeY,
       confidence: avgConfidence,
       frameNumber: _frameCount,
     );
@@ -369,15 +510,30 @@ class PuttTrackerService {
     }
   }
 
+  /// Enter cooldown state
+  void _enterCooldown(DateTime now) {
+    _state = PuttTrackingState.cooldown;
+    _cooldownEndTime = now.add(const Duration(milliseconds: cooldownDurationMs));
+    _discPositions.clear();
+    _basketEntryTime = null;
+    _lastBasketPosition = null;
+    _framesSinceVisible = 0;
+  }
+
   /// Reset to idle state
   void _resetToIdle() {
-    // Small delay before returning to idle to prevent immediate re-detection
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _state = PuttTrackingState.idle;
-      _discPositions.clear();
-      _discNearBasketTime = null;
-      _lastDiscPosition = null;
-    });
+    _state = PuttTrackingState.idle;
+    _discPositions.clear();
+    _basketEntryTime = null;
+    _lastBasketPosition = null;
+    _framesSinceVisible = 0;
+  }
+
+  /// Trim position history to max size
+  void _trimPositionHistory() {
+    while (_discPositions.length > maxPositionHistory) {
+      _discPositions.removeAt(0);
+    }
   }
 
   /// Start tracking
@@ -396,8 +552,10 @@ class PuttTrackerService {
   void reset() {
     _state = PuttTrackingState.idle;
     _discPositions.clear();
-    _discNearBasketTime = null;
-    _lastDiscPosition = null;
+    _basketEntryTime = null;
+    _lastBasketPosition = null;
+    _cooldownEndTime = null;
+    _framesSinceVisible = 0;
     _frameCount = 0;
   }
 

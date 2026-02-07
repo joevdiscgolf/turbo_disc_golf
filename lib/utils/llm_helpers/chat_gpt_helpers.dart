@@ -359,7 +359,7 @@ Cards are evidence, not content.
 
 Always prefer specific stat cards over the generic MISTAKES card:
 ✅ Discussing missed putts 11-33 ft → Use C1X_PUTTING (not MISTAKES)
-✅ Discussing close-range putting → Use C1_PUTTING (not MISTAKES)
+✅ Discussing long-range putting → Use C2_PUTTING (not MISTAKES)
 ✅ Discussing drives going OB → Use OB_RATE (not MISTAKES)
 ✅ Discussing fairway accuracy → Use FAIRWAY_HIT (not MISTAKES)
 ✅ Discussing approach game → Use C1_IN_REG (not MISTAKES)
@@ -567,7 +567,7 @@ strategyTips:
 
 ## V2 Story Cards (supports _CIRCLE or _BAR suffix for rendering mode):
 Driving: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED
-Putting: C1_PUTTING, C1X_PUTTING, C2_PUTTING
+Putting: C1X_PUTTING, C2_PUTTING
 Scoring: BIRDIE_RATE, PAR_RATE, BOGEY_RATE
 Mental: BOUNCE_BACK, HOT_STREAK, FLOW_STATE
 Performance: MISTAKES, SKILLS_SCORE
@@ -777,7 +777,7 @@ SKILLS ASSESSMENT GUIDELINES:
 
 ## V3 Story Cards (supports _CIRCLE or _BAR suffix for rendering mode):
 Driving: FAIRWAY_HIT, C1_IN_REG, OB_RATE, PARKED
-Putting: C1_PUTTING, C1X_PUTTING, C2_PUTTING
+Putting: C1X_PUTTING, C2_PUTTING
 Scoring: BIRDIE_RATE, PAR_RATE, BOGEY_RATE
 Mental: BOUNCE_BACK, HOT_STREAK, FLOW_STATE
 Performance: MISTAKES, SKILLS_SCORE

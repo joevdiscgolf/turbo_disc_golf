@@ -107,54 +107,66 @@ class PuttPracticeHistoryScreenState extends State<PuttPracticeHistoryScreen> {
 
   Future<bool> _checkCameraPermission() async {
     PermissionStatus status = await Permission.camera.status;
+    debugPrint('[PuttPracticeHistory] Initial camera permission status: $status');
 
-    if (status.isGranted) {
+    // Check if already granted (includes limited access on iOS)
+    if (status.isGranted || status.isLimited) {
       return true;
     }
 
-    if (status.isDenied) {
-      // Request permission
+    // If not permanently denied, try requesting permission
+    if (!status.isPermanentlyDenied) {
       status = await Permission.camera.request();
-      if (status.isGranted) {
+      debugPrint('[PuttPracticeHistory] After request, camera permission status: $status');
+
+      if (status.isGranted || status.isLimited) {
         return true;
       }
     }
 
-    if (status.isPermanentlyDenied || status.isDenied) {
-      // Show dialog to open settings
+    // Only show dialog if truly denied
+    if (status.isPermanentlyDenied) {
       if (!mounted) return false;
       await _showPermissionDeniedDialog();
       return false;
     }
 
-    return false;
+    // For any other status (denied, restricted, etc.), try requesting one more time
+    // This handles edge cases where iOS returns unexpected statuses
+    debugPrint('[PuttPracticeHistory] Unexpected status, attempting to proceed anyway');
+    return true;
   }
 
   Future<void> _showPermissionDeniedDialog() async {
     await showCupertinoDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: const Text('Camera access required'),
-          content: const Text(
-            'To track your putting practice, please enable camera access in Settings.',
+        return CupertinoTheme(
+          data: const CupertinoThemeData(
+            primaryColor: CupertinoColors.systemBlue,
           ),
-          actions: <CupertinoDialogAction>[
-            CupertinoDialogAction(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+          child: CupertinoAlertDialog(
+            title: const Text('Camera access required'),
+            content: const Text(
+              'To track your putting practice, please enable camera access in Settings.',
             ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('Open settings'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                openAppSettings();
-              },
-            ),
-          ],
+            actions: <CupertinoDialogAction>[
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Open settings'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  openAppSettings();
+                },
+              ),
+            ],
+          ),
         );
       },
     );

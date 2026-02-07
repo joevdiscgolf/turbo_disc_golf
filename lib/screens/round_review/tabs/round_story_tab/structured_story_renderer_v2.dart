@@ -123,10 +123,7 @@ class StructuredStoryRendererV2 extends StatelessWidget {
                   round,
                 );
               },
-              child: StoryCalloutCard(
-                statWidget: statWidget,
-                reason: callout.reason,
-              ),
+              child: StoryCalloutCard(statWidget: statWidget),
             ),
           ),
         );

@@ -56,7 +56,7 @@ class C1InRegStoryCard extends StatelessWidget {
     if (renderMode == StatRenderMode.circle) {
       return CircularStatRenderer(
         percentage: percentage,
-        label: 'C1 in Regulation',
+        label: 'C1 in Reg',
         color: color,
         icon: Icons.track_changes,
         count: count,
@@ -68,7 +68,7 @@ class C1InRegStoryCard extends StatelessWidget {
     } else {
       return BarStatRenderer(
         percentage: percentage,
-        label: 'C1 in Regulation',
+        label: 'C1 in Reg',
         color: color,
         icon: Icons.track_changes,
         count: count,

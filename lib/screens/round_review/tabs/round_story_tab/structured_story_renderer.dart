@@ -674,7 +674,6 @@ class StructuredStoryRenderer extends StatelessWidget {
       'C1_IN_REG',
       'OB_RATE',
       'PARKED',
-      'C1_PUTTING',
       'C1X_PUTTING',
       'C2_PUTTING',
       'BIRDIE_RATE',

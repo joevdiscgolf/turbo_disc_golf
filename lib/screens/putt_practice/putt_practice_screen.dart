@@ -108,7 +108,7 @@ class _PuttPracticeScreenState extends State<PuttPracticeScreen> {
   }
 
   Widget _buildTopBar(PuttPracticeState state) {
-    final bool showBackButton = state is! PuttPracticeCompleted;
+    final bool showCloseButton = state is! PuttPracticeCompleted;
     final String title = _getTitleForState(state);
 
     return Positioned(
@@ -132,16 +132,7 @@ class _PuttPracticeScreenState extends State<PuttPracticeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                if (showBackButton)
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () {
-                      _logger.track('Back Button Tapped');
-                      Navigator.of(context).pop();
-                    },
-                  )
-                else
-                  const SizedBox(width: 48),
+                const SizedBox(width: 48),
                 Expanded(
                   child: Text(
                     title,
@@ -153,7 +144,16 @@ class _PuttPracticeScreenState extends State<PuttPracticeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 48),
+                if (showCloseButton)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () {
+                      _logger.track('Close Button Tapped');
+                      Navigator.of(context).pop();
+                    },
+                  )
+                else
+                  const SizedBox(width: 48),
               ],
             ),
           ),

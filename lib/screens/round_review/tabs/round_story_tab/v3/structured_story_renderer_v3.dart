@@ -275,15 +275,21 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
             return ValueListenableBuilder<int?>(
               valueListenable: _sectionTracker.activeSectionIndex,
               builder: (context, activeIndex, child) {
-                final bool isActive = isScorecardExpanded &&
-                    locator.get<FeatureFlagService>().highlightActiveStorySection &&
+                final bool isActive =
+                    isScorecardExpanded &&
+                    locator
+                        .get<FeatureFlagService>()
+                        .highlightActiveStorySection &&
                     activeIndex == sectionIndex;
 
                 return AnimatedContainer(
                   key: _sectionKeys[i], // Attach GlobalKey for tracking
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFF64B5F6).withValues(alpha: 0.1)
@@ -340,16 +346,25 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
       debugPrint('📊 SCOPED STATS FOUND for cardId: ${callout.cardId}');
       debugPrint('   Label: ${stats.label ?? 'null'}');
       debugPrint('   Percentage: ${stats.percentage ?? 'null'}');
-      debugPrint('   Made/Attempts: ${stats.made ?? 'null'}/${stats.attempts ?? 'null'}');
+      debugPrint(
+        '   Made/Attempts: ${stats.made ?? 'null'}/${stats.attempts ?? 'null'}',
+      );
       if (stats.holeRange != null) {
-        debugPrint('   Hole Range: ${stats.holeRange!.startHole}-${stats.holeRange!.endHole}');
+        debugPrint(
+          '   Hole Range: ${stats.holeRange!.startHole}-${stats.holeRange!.endHole}',
+        );
       }
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } else {
-      debugPrint('📊 Callout cardId: ${callout.cardId} (no scopedStats - using whole round)');
+      debugPrint(
+        '📊 Callout cardId: ${callout.cardId} (no scopedStats - using whole round)',
+      );
     }
 
-    final Widget? statWidget = _buildStatWidget(callout.cardId, callout.scopedStats);
+    final Widget? statWidget = _buildStatWidget(
+      callout.cardId,
+      callout.scopedStats,
+    );
 
     if (statWidget == null) {
       debugPrint('⚠️ Unknown cardId: ${callout.cardId}');
@@ -367,7 +382,7 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
             widget.round,
           );
         },
-        child: StoryCalloutCard(statWidget: statWidget, reason: callout.reason),
+        child: StoryCalloutCard(statWidget: statWidget),
       ),
     );
   }
@@ -565,10 +580,7 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
                 Expanded(
                   child: Text(
                     assessment.keyInsight,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                 ),
               ],
@@ -607,8 +619,9 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
     SkillHighlight skill, {
     required bool isStrength,
   }) {
-    final Color color =
-        isStrength ? const Color(0xFF4CAF50) : const Color(0xFFFF9800);
+    final Color color = isStrength
+        ? const Color(0xFF4CAF50)
+        : const Color(0xFFFF9800);
 
     // Strip "skill: " prefix if present (from legacy data)
     final String skillName = skill.skill.startsWith('skill: ')

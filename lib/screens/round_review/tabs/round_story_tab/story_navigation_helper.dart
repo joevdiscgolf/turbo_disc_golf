@@ -32,7 +32,6 @@ class StoryNavigationHelper {
     switch (baseCardId) {
       // Putting cards -> Putting detail screen
       case 'C1X_PUTTING':
-      case 'C1_PUTTING':
       case 'C2_PUTTING':
         return (screen: PuttingDetailScreen(round: round), title: 'Putting');
 

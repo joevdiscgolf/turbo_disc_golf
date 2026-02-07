@@ -43,18 +43,11 @@ class StoryCallout {
   /// Stat card ID (e.g., 'C1X_PUTTING', 'FAIRWAY_HIT')
   final String cardId;
 
-  /// 1-2 sentences explaining impact/cause-effect
-  final String reason;
-
   /// Optional scoped stats for hole-range-specific display
   /// When provided, the stat card will show these values instead of whole-round stats
   final ScopedStats? scopedStats;
 
-  const StoryCallout({
-    required this.cardId,
-    required this.reason,
-    this.scopedStats,
-  });
+  const StoryCallout({required this.cardId, this.scopedStats});
 
   factory StoryCallout.fromJson(Map<String, dynamic> json) =>
       _$StoryCalloutFromJson(json);
@@ -71,10 +64,7 @@ class StoryParagraph {
   /// 0-2 callouts per paragraph
   final List<StoryCallout> callouts;
 
-  const StoryParagraph({
-    required this.text,
-    this.callouts = const [],
-  });
+  const StoryParagraph({required this.text, this.callouts = const []});
 
   factory StoryParagraph.fromJson(Map<String, dynamic> json) =>
       _$StoryParagraphFromJson(json);
@@ -218,10 +208,7 @@ class RoundStoryV2Content {
         totalCallouts += 2;
       } else {
         cleanedParagraphs.add(
-          StoryParagraph(
-            text: paragraph.text,
-            callouts: validCallouts,
-          ),
+          StoryParagraph(text: paragraph.text, callouts: validCallouts),
         );
         totalCallouts += validCallouts.length;
       }

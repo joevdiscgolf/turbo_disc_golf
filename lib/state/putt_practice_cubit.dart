@@ -305,6 +305,12 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
       return;
     }
 
+    // Don't start if already streaming
+    if (_cameraController!.value.isStreamingImages) {
+      debugPrint('[PuttPracticeCubit] Image stream already running');
+      return;
+    }
+
     try {
       _cameraController!.startImageStream((CameraImage image) {
         try {
@@ -321,7 +327,9 @@ class PuttPracticeCubit extends Cubit<PuttPracticeState>
 
   /// Stop processing camera frames
   void _stopFrameProcessing() {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+    if (_cameraController == null ||
+        !_cameraController!.value.isInitialized ||
+        !_cameraController!.value.isStreamingImages) {
       return;
     }
 
