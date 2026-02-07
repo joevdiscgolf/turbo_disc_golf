@@ -129,6 +129,9 @@ enum FeatureFlag {
 
   // ===== Form Analysis =====
   useFormAnalysisTab('use_form_analysis_tab', true),
+
+  // ===== Putt Practice =====
+  usePuttPracticeTab('use_putt_practice_tab', true),
   usePoseAnalysisBackend('use_pose_analysis_backend', true),
   poseAnalysisBaseUrl('pose_analysis_base_url', 'http://192.168.0.131:8080'),
 

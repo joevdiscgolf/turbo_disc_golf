@@ -92,6 +92,8 @@ dependencies:
   firebase_remote_config: ^6.1.4
   supabase_flutter: ^2.8.3
   wiredash: ^2.2.1
+  camera: ^0.11.0
+  tflite_flutter: ^0.12.1
 
 dev_dependencies:
   flutter_test:

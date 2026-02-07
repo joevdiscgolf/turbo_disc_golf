@@ -10,11 +10,13 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_history_screen.dart';
+import 'package:turbo_disc_golf/screens/putt_practice_history/putt_practice_history_screen.dart';
 import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart';
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
+import 'package:turbo_disc_golf/state/putt_practice_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
@@ -33,8 +35,21 @@ class _MainWrapperState extends State<MainWrapper> {
   late final LoggingServiceBase _logger;
   int _selectedIndex = 0;
 
-  // Tab names for form analysis tab mode
-  static const List<String> _formAnalysisTabNames = ['Rounds', 'Form Coach'];
+  // GlobalKeys to access history screen states for scroll-to-top functionality
+  final GlobalKey<RoundHistoryScreenState> _roundHistoryKey = GlobalKey();
+  final GlobalKey<FormAnalysisHistoryScreenState> _formAnalysisHistoryKey =
+      GlobalKey();
+  final GlobalKey<PuttPracticeHistoryScreenState> _puttPracticeHistoryKey =
+      GlobalKey();
+
+  // Tab names for form analysis tab mode (may include Putt Practice)
+  List<String> _getFormAnalysisTabNames(FeatureFlagService flags) {
+    final List<String> names = ['Rounds', 'Form Coach'];
+    if (flags.usePuttPracticeTab) {
+      names.add('Putts');
+    }
+    return names;
+  }
   // Tab names for bottom navigation mode
   static const List<String> _bottomNavTabNames = [
     'Rounds',
@@ -62,8 +77,14 @@ class _MainWrapperState extends State<MainWrapper> {
   void _onItemTapped(int index) {
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
     final List<String> tabNames = flags.useFormAnalysisTab
-        ? _formAnalysisTabNames
+        ? _getFormAnalysisTabNames(flags)
         : _bottomNavTabNames;
+
+    // If tapping the already selected tab, scroll to top instead
+    if (index == _selectedIndex) {
+      _scrollCurrentTabToTop(index);
+      return;
+    }
 
     final String previousTabName = tabNames[_selectedIndex];
     final String newTabName = tabNames[index];
@@ -82,6 +103,21 @@ class _MainWrapperState extends State<MainWrapper> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  /// Scroll the current tab's list to top when re-tapping the same tab.
+  void _scrollCurrentTabToTop(int index) {
+    switch (index) {
+      case 0:
+        _roundHistoryKey.currentState?.scrollToTop();
+        break;
+      case 1:
+        _formAnalysisHistoryKey.currentState?.scrollToTop();
+        break;
+      case 2:
+        _puttPracticeHistoryKey.currentState?.scrollToTop();
+        break;
+    }
   }
 
   @override
@@ -120,6 +156,7 @@ class _MainWrapperState extends State<MainWrapper> {
         rightWidget: _buildFeedbackButton(context),
       ),
       body: RoundHistoryScreen(
+        key: _roundHistoryKey,
         topViewPadding: MediaQuery.of(context).viewPadding.top,
         bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
       ),
@@ -127,10 +164,21 @@ class _MainWrapperState extends State<MainWrapper> {
   }
 
   /// Build MainWrapper with Form Analysis tab alongside Round History.
-  /// Shows 2 tabs: Rounds and Form Coach.
+  /// Shows 2-3 tabs: Rounds, Form Coach, and optionally Putt Practice.
   Widget _buildWithFormAnalysisTabs(BuildContext context) {
-    return BlocProvider<FormAnalysisHistoryCubit>.value(
-      value: locator.get<FormAnalysisHistoryCubit>(),
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    final bool showPuttPracticeTab = flags.usePuttPracticeTab;
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<FormAnalysisHistoryCubit>.value(
+          value: locator.get<FormAnalysisHistoryCubit>(),
+        ),
+        if (showPuttPracticeTab)
+          BlocProvider<PuttPracticeHistoryCubit>.value(
+            value: locator.get<PuttPracticeHistoryCubit>(),
+          ),
+      ],
       child: Scaffold(
         backgroundColor: SenseiColors.gray.shade50,
         appBar: _MainWrapperAppBar(
@@ -139,9 +187,7 @@ class _MainWrapperState extends State<MainWrapper> {
           titleStyle: _buildAppTitleStyle(),
           leftWidget: _buildSettingsButton(
             context,
-            _selectedIndex == 0
-                ? RoundHistoryScreen.screenName
-                : FormAnalysisHistoryScreen.screenName,
+            _getScreenNameForIndex(_selectedIndex, showPuttPracticeTab),
           ),
           rightWidget: _buildRightWidget(context),
         ),
@@ -149,13 +195,21 @@ class _MainWrapperState extends State<MainWrapper> {
           index: _selectedIndex,
           children: [
             RoundHistoryScreen(
+              key: _roundHistoryKey,
               topViewPadding: MediaQuery.of(context).viewPadding.top,
               bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
             ),
             FormAnalysisHistoryScreen(
+              key: _formAnalysisHistoryKey,
               bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
               topViewPadding: MediaQuery.of(context).viewPadding.top,
             ),
+            if (showPuttPracticeTab)
+              PuttPracticeHistoryScreen(
+                key: _puttPracticeHistoryKey,
+                bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
+                topViewPadding: MediaQuery.of(context).viewPadding.top,
+              ),
           ],
         ),
         bottomNavigationBar: Theme(
@@ -177,38 +231,15 @@ class _MainWrapperState extends State<MainWrapper> {
                 icon: Text('🥏', style: TextStyle(fontSize: 20)),
                 label: 'Rounds',
               ),
-              BottomNavigationBarItem(
-                icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Text('📹', style: TextStyle(fontSize: 20)),
-                    Positioned(
-                      right: -12,
-                      top: -4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 3,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'beta',
-                          style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            height: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              const BottomNavigationBarItem(
+                icon: _BetaBadgeIcon(emoji: '📹'),
                 label: 'Form Coach',
               ),
+              if (showPuttPracticeTab)
+                const BottomNavigationBarItem(
+                  icon: _BetaBadgeIcon(emoji: '🎯'),
+                  label: 'Putts',
+                ),
             ],
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
@@ -217,6 +248,22 @@ class _MainWrapperState extends State<MainWrapper> {
         ),
       ),
     );
+  }
+
+  String _getScreenNameForIndex(int index, bool showPuttPracticeTab) {
+    switch (index) {
+      case 0:
+        return RoundHistoryScreen.screenName;
+      case 1:
+        return FormAnalysisHistoryScreen.screenName;
+      case 2:
+        if (showPuttPracticeTab) {
+          return PuttPracticeHistoryScreen.screenName;
+        }
+        return RoundHistoryScreen.screenName;
+      default:
+        return RoundHistoryScreen.screenName;
+    }
   }
 
   Widget _buildWithBottomNavigation(BuildContext context) {
@@ -273,6 +320,7 @@ class _MainWrapperState extends State<MainWrapper> {
         index: _selectedIndex,
         children: [
           RoundHistoryScreen(
+            key: _roundHistoryKey,
             topViewPadding: MediaQuery.of(context).viewPadding.top,
             bottomViewPadding: MediaQuery.of(context).viewPadding.bottom,
           ),
@@ -452,6 +500,45 @@ class _MainWrapperState extends State<MainWrapper> {
   //     ),
   //   );
   // }
+}
+
+class _BetaBadgeIcon extends StatelessWidget {
+  const _BetaBadgeIcon({required this.emoji});
+
+  final String emoji;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 20)),
+        Positioned(
+          right: -12,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 3,
+              vertical: 1,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'beta',
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _MainWrapperAppBar extends StatelessWidget

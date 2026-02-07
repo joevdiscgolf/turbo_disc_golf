@@ -334,6 +334,10 @@ class FeatureFlagService {
   bool get useFormAnalysisRecordingScreenV2 =>
       getBool(FeatureFlag.useFormAnalysisRecordingScreenV2);
 
+  // ===== Putt Practice =====
+
+  bool get usePuttPracticeTab => getBool(FeatureFlag.usePuttPracticeTab);
+
   // ===== Admin/Force Upgrade =====
 
   List<String> get adminUids {

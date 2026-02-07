@@ -82,15 +82,20 @@ class _HoleGridItem extends StatelessWidget {
 
     displayBottomSheet(
       context,
-      BlocBuilder<RoundReviewCubit, RoundReviewState>(
-        builder: (context, state) {
-          if (state is! ReviewingRoundActive) {
-            return const SizedBox();
-          }
-          final DGHole? currentHole = state.currentEditingHole;
-          if (currentHole == null) {
-            return const SizedBox();
-          }
+      // Wrap with BlocProvider.value to pass the cubit to the modal's context
+      // since modals are rendered in a separate route that doesn't inherit
+      // from the MultiBlocProvider in main.dart
+      BlocProvider<RoundReviewCubit>.value(
+        value: roundReviewCubit,
+        child: BlocBuilder<RoundReviewCubit, RoundReviewState>(
+          builder: (context, state) {
+            if (state is! ReviewingRoundActive) {
+              return const SizedBox();
+            }
+            final DGHole? currentHole = state.currentEditingHole;
+            if (currentHole == null) {
+              return const SizedBox();
+            }
 
           // Convert DGHole to PotentialDGHole for editing
           final PotentialDGHole potentialHole = PotentialDGHole(
@@ -166,6 +171,7 @@ class _HoleGridItem extends StatelessWidget {
             onRoundUpdated: () => roundReviewCubit.saveToFirestore(),
           );
         },
+        ),
       ),
       onDismiss: () {
         // Clear the current editing hole when the panel is closed

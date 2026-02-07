@@ -2,6 +2,7 @@ const String kRoundsCollection = 'Rounds';
 const String kUsersCollection = 'Users';
 const String kCoursesCollection = 'Courses';
 const String kFormAnalysesCollection = 'form_analyses';
+const String kPuttPracticeSessionsCollection = 'putt_practice_sessions';
 
 // App info
 

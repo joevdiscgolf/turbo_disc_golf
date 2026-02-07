@@ -21,6 +21,7 @@ import 'package:turbo_disc_golf/components/stat_cards/hole_type_story_card.dart'
 import 'package:turbo_disc_golf/components/stat_cards/disc_performance_story_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/models/data/round_story_v2_content.dart';
 import 'package:turbo_disc_golf/models/round_analysis.dart';
 import 'package:turbo_disc_golf/models/stat_render_mode.dart';
 import 'package:turbo_disc_golf/services/round_analysis/psych_analysis_service.dart';
@@ -31,12 +32,15 @@ class StatCardRegistry {
   /// Build a stat card widget from its ID
   ///
   /// Returns null if card ID is not recognized or data is unavailable
+  /// [scopedStats] - Optional scoped stats for hole-range-specific display.
+  /// When provided, the stat card will show these values instead of whole-round stats.
   static Widget? buildCard(
     String cardId,
     DGRound round,
     RoundAnalysis analysis, {
     Map<String, dynamic>? params,
     bool showIcon = true,
+    ScopedStats? scopedStats,
   }) {
     // Make card ID case-insensitive
     final String id = cardId.toUpperCase();
@@ -83,29 +87,29 @@ class StatCardRegistry {
     switch (baseId) {
       // ===== DRIVING STORY CARDS (with dual rendering) =====
       case 'FAIRWAY_HIT':
-        return FairwayHitStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return FairwayHitStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'C1_IN_REG':
-        return C1InRegStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return C1InRegStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'OB_RATE':
-        return OBRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return OBRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'PARKED':
-        return ParkedStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return ParkedStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
 
       // ===== PUTTING STORY CARDS (with dual rendering) =====
       case 'C1_PUTTING':
-        return C1PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return C1PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'C1X_PUTTING':
-        return C1XPuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return C1XPuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'C2_PUTTING':
-        return C2PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return C2PuttingStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
 
       // ===== SCORING STORY CARDS (with dual rendering) =====
       case 'BIRDIE_RATE':
-        return BirdieRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return BirdieRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'BOGEY_RATE':
-        return BogeyRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return BogeyRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
       case 'PAR_RATE':
-        return ParRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon);
+        return ParRateStoryCard(round: round, renderMode: renderMode, showIcon: showIcon, scopedStats: scopedStats);
 
       // ===== MENTAL GAME STORY CARDS (with dual rendering) =====
       case 'BOUNCE_BACK':

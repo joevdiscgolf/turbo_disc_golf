@@ -48,6 +48,7 @@ import 'package:turbo_disc_golf/services/web_scraper_service.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/voice/ios_voice_service.dart';
 import 'package:turbo_disc_golf/services/voice/speech_to_text_service.dart';
+import 'package:turbo_disc_golf/state/putt_practice_history_cubit.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/firebase_feature_flags_provider.dart';
@@ -165,6 +166,9 @@ Future<void> setUpLocator() async {
   );
   locator.registerSingleton<FormAnalysisHistoryCubit>(
     FormAnalysisHistoryCubit(),
+  );
+  locator.registerSingleton<PuttPracticeHistoryCubit>(
+    PuttPracticeHistoryCubit(),
   );
 
   locator.registerSingleton<AiParsingService>(AiParsingService());

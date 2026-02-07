@@ -333,7 +333,7 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
   }
 
   Widget _buildCallout(BuildContext context, StoryCallout callout) {
-    final Widget? statWidget = _buildStatWidget(callout.cardId);
+    final Widget? statWidget = _buildStatWidget(callout.cardId, callout.scopedStats);
 
     if (statWidget == null) {
       debugPrint('⚠️ Unknown cardId: ${callout.cardId}');
@@ -356,13 +356,14 @@ class _StructuredStoryRendererV3State extends State<StructuredStoryRendererV3> {
     );
   }
 
-  Widget? _buildStatWidget(String cardId) {
+  Widget? _buildStatWidget(String cardId, ScopedStats? scopedStats) {
     try {
       return StatCardRegistry.buildCard(
         cardId,
         widget.round,
         _analysis,
         showIcon: false,
+        scopedStats: scopedStats,
       );
     } catch (e) {
       debugPrint('Failed to build stat widget for cardId: $cardId - $e');
