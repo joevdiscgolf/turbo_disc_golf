@@ -147,22 +147,32 @@ class _FormAnalysisRecordingScreenV2State
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-      child: BlocProvider<VideoFormAnalysisCubit>(
-        create: (context) => VideoFormAnalysisCubit(),
-        child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
-          builder: (context, state) {
-            final Color foregroundColor = SenseiColors.darkGray;
+    return BlocProvider<VideoFormAnalysisCubit>(
+      create: (context) => VideoFormAnalysisCubit(),
+      child: BlocBuilder<VideoFormAnalysisCubit, VideoFormAnalysisState>(
+        builder: (context, state) {
+          final Color foregroundColor = SenseiColors.darkGray;
 
-            final bool isLoadingOrAnalyzing =
-                state is VideoFormAnalysisRecording ||
-                state is VideoFormAnalysisValidating ||
-                state is VideoFormAnalysisAnalyzing;
+          final bool isLoadingOrAnalyzing =
+              state is VideoFormAnalysisRecording ||
+              state is VideoFormAnalysisValidating ||
+              state is VideoFormAnalysisAnalyzing;
 
-            final bool hideAppBar = isLoadingOrAnalyzing || _showingTransition;
+          final bool hideAppBar = isLoadingOrAnalyzing || _showingTransition;
 
-            return Scaffold(
+          // Status bar brightness matches background state:
+          // - Dark background (loading/analyzing/transition): light status bar icons
+          // - Light background (initial/complete/error): dark status bar icons
+          final Brightness statusBarBrightness =
+              (isLoadingOrAnalyzing || _showingTransition)
+              ? Brightness.dark
+              : Brightness.light;
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarBrightness: statusBarBrightness,
+            ),
+            child: Scaffold(
               backgroundColor: Colors.transparent,
               extendBodyBehindAppBar: true,
               appBar: hideAppBar
@@ -215,6 +225,16 @@ class _FormAnalysisRecordingScreenV2State
                                   context,
                                   state.poseAnalysisWarning!,
                                 );
+                              }
+                            } else if (state is VideoFormAnalysisError ||
+                                state is VideoFormAnalysisInitial) {
+                              // Reset transition state on error or reset
+                              if (_showingTransition) {
+                                setState(() {
+                                  _showingTransition = false;
+                                  _pendingResults = null;
+                                  _brainOpacityNotifier.value = 1.0;
+                                });
                               }
                             }
                           },
@@ -269,9 +289,9 @@ class _FormAnalysisRecordingScreenV2State
                     ),
                 ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -390,6 +410,11 @@ class _FormAnalysisRecordingScreenV2State
             context,
             icon: Icons.arrow_right_alt,
             title: 'End after disc release',
+          ),
+          _buildTipRow(
+            context,
+            icon: Icons.slow_motion_video,
+            title: '60 fps or higher',
           ),
         ],
         runSpacing: 14,
@@ -625,7 +650,6 @@ class _FormAnalysisRecordingScreenV2State
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 56),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,

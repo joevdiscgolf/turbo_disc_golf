@@ -1,9 +1,11 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/analysis_results.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_observations.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/frame_pose_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_comparison_config.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_metadata.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/wrist_speed_data.dart';
 
 part 'form_analysis_response_v2.g.dart';
 
@@ -24,6 +26,8 @@ class FormAnalysisResponseV2 {
     required this.checkpoints,
     this.proComparisonConfig,
     this.framePoses,
+    this.formObservations,
+    this.wristSpeed,
   });
 
   /// Version identifier (always "v2" for new format)
@@ -74,6 +78,16 @@ class FormAnalysisResponseV2 {
   /// Stored in both API response and Firestore
   @JsonKey(name: 'frame_poses')
   final List<FramePoseDataV2>? framePoses;
+
+  /// Form observations detected during analysis (optional)
+  /// Contains AI-detected observations about the user's throwing form
+  @JsonKey(name: 'form_observations')
+  final FormObservations? formObservations;
+
+  /// Wrist speed data from side-view video analysis (optional)
+  /// Contains speed measurements over frames during the throwing motion
+  @JsonKey(name: 'wrist_speed')
+  final WristSpeedData? wristSpeed;
 
   /// Calculate worst deviation severity from checkpoints
   static String? calculateWorstSeverity(List<CheckpointDataV2> checkpoints) {

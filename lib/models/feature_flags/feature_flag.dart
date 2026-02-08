@@ -131,7 +131,7 @@ enum FeatureFlag {
   useFormAnalysisTab('use_form_analysis_tab', true),
 
   // ===== Putt Practice =====
-  usePuttPracticeTab('use_putt_practice_tab', true),
+  usePuttPracticeTab('use_putt_practice_tab', false),
   usePoseAnalysisBackend('use_pose_analysis_backend', true),
   poseAnalysisBaseUrl('pose_analysis_base_url', 'http://192.168.0.131:8080'),
 
@@ -183,6 +183,9 @@ enum FeatureFlag {
     'show_form_analysis_measurements_card',
     true,
   ),
+
+  /// Shows the observations tab in form analysis detail screen
+  showFormObservationsTab('show_form_observations_tab', true),
 
   /// Uses the v2 "Stage" design for form analysis recording screen with liquid glass UI
   useFormAnalysisRecordingScreenV2(

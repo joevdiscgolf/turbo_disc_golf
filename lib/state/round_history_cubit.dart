@@ -1,8 +1,10 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
+import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/rounds_service.dart';
 import 'package:turbo_disc_golf/state/round_history_state.dart';
 
@@ -31,8 +33,20 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState>
       } else {
         emit(RoundHistoryError(error: 'Something went wrong'));
       }
-    } catch (e) {
+    } catch (e, trace) {
       debugPrint('Error loading rounds: $e');
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: 'Failed to load rounds in RoundHistoryCubit.loadRounds',
+      );
+      locator.get<LoggingService>().track(
+        'Round History Load Failed',
+        properties: {
+          'error_message': e.toString(),
+          'method': 'loadRounds',
+        },
+      );
       emit(RoundHistoryError(error: e.toString()));
     }
   }
@@ -87,8 +101,20 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState>
           isLoadingMore: false,
         ));
       }
-    } catch (e) {
+    } catch (e, trace) {
       debugPrint('Error loading more rounds: $e');
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: 'Failed to load more rounds in RoundHistoryCubit.loadMore',
+      );
+      locator.get<LoggingService>().track(
+        'Round History Load Failed',
+        properties: {
+          'error_message': e.toString(),
+          'method': 'loadMore',
+        },
+      );
       // Restore previous state without loading flag
       emit(RoundHistoryLoaded(
         rounds: currentState.rounds,
@@ -146,8 +172,20 @@ class RoundHistoryCubit extends Cubit<RoundHistoryState>
           emit(RoundHistoryLoaded(rounds: newRounds, hasMore: hasMore));
         }
       }
-    } catch (e) {
+    } catch (e, trace) {
       debugPrint('Error refreshing rounds: $e');
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        trace,
+        reason: 'Failed to refresh rounds in RoundHistoryCubit.refreshRounds',
+      );
+      locator.get<LoggingService>().track(
+        'Round History Load Failed',
+        properties: {
+          'error_message': e.toString(),
+          'method': 'refreshRounds',
+        },
+      );
       emit(RoundHistoryError(error: e.toString()));
     }
   }

@@ -32,6 +32,14 @@ FormAnalysisResponseV2 _$FormAnalysisResponseV2FromJson(
   framePoses: (json['frame_poses'] as List<dynamic>?)
       ?.map((e) => FramePoseDataV2.fromJson(e as Map<String, dynamic>))
       .toList(),
+  formObservations: json['form_observations'] == null
+      ? null
+      : FormObservations.fromJson(
+          json['form_observations'] as Map<String, dynamic>,
+        ),
+  wristSpeed: json['wrist_speed'] == null
+      ? null
+      : WristSpeedData.fromJson(json['wrist_speed'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$FormAnalysisResponseV2ToJson(
@@ -48,4 +56,6 @@ Map<String, dynamic> _$FormAnalysisResponseV2ToJson(
   'checkpoints': instance.checkpoints.map((e) => e.toJson()).toList(),
   'pro_comparison_config': instance.proComparisonConfig?.toJson(),
   'frame_poses': instance.framePoses?.map((e) => e.toJson()).toList(),
+  'form_observations': instance.formObservations?.toJson(),
+  'wrist_speed': instance.wristSpeed?.toJson(),
 };

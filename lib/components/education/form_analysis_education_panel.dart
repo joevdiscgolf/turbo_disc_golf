@@ -107,6 +107,11 @@ class FormAnalysisEducationPanel extends StatelessWidget {
             context,
             'Throwing hand is auto-detected, but you can manually select it',
             color: const Color(0xFF137e66),
+          ),
+          _buildBulletPoint(
+            context,
+            '60 fps or higher',
+            color: const Color(0xFF137e66),
             isLast: true,
           ),
         ],

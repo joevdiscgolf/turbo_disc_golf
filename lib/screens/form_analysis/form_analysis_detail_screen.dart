@@ -8,7 +8,10 @@ import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
+import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/tabs/form_observations_tab.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -26,8 +29,13 @@ class FormAnalysisDetailScreen extends StatefulWidget {
       _FormAnalysisDetailScreenState();
 }
 
-class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
+class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
+    with SingleTickerProviderStateMixin {
   late final LoggingServiceBase _logger;
+  TabController? _tabController;
+  late final bool _showObservationsTab;
+
+  static const List<String> _tabNames = ['Video', 'Observations'];
 
   @override
   void initState() {
@@ -41,6 +49,38 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
 
     // Track screen impression
     _logger.logScreenImpression('FormAnalysisDetailScreen');
+
+    // Check if observations tab should be shown
+    _showObservationsTab =
+        locator.get<FeatureFlagService>().getBool(
+          FeatureFlag.showFormObservationsTab,
+        ) &&
+        widget.analysis.formObservations != null;
+
+    // Initialize tab controller if showing tabs
+    if (_showObservationsTab) {
+      _tabController = TabController(length: 2, vsync: this);
+      _tabController!.addListener(_onTabChanged);
+    }
+  }
+
+  void _onTabChanged() {
+    if (_tabController != null && !_tabController!.indexIsChanging) {
+      _logger.track(
+        'Tab Changed',
+        properties: {
+          'tab_index': _tabController!.index,
+          'tab_name': _tabNames[_tabController!.index],
+        },
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController?.removeListener(_onTabChanged);
+    _tabController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -49,43 +89,82 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-      child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.light,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [SenseiColors.gray[50]!, Colors.white],
+            stops: const [0.0, 0.5],
+          ),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                SenseiColors.gray[50]!,
-                Colors.white,
-              ],
-              stops: const [0.0, 0.5],
-            ),
-          ),
-          child: Scaffold(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: GenericAppBar(
+            topViewPadding: topViewPadding,
+            title: 'Form analysis',
             backgroundColor: Colors.transparent,
-            appBar: GenericAppBar(
-              topViewPadding: topViewPadding,
-              title: 'Form analysis',
-              backgroundColor: Colors.transparent,
-              hasBackButton: true,
-              rightWidget: _buildMenuButton(),
-            ),
-            body: HistoryAnalysisView(
-              analysis: widget.analysis,
-              onBack: () => Navigator.pop(context),
-              topPadding: 8,
-              videoUrl: widget.analysis.videoMetadata.videoUrl,
-              throwType: _parseThrowTechnique(widget.analysis.analysisResults.throwType),
-              cameraAngle: widget.analysis.analysisResults.cameraAngle,
-              videoAspectRatio: widget.analysis.videoMetadata.videoAspectRatio,
-            ),
+            hasBackButton: true,
+            rightWidget: _buildMenuButton(),
+            bottomWidget: _showObservationsTab ? _buildTabBar() : null,
+            bottomWidgetHeight: _showObservationsTab ? 40 : 0,
           ),
+          body: _showObservationsTab ? _buildTabBody() : _buildVideoView(),
         ),
       ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return TabBar(
+      controller: _tabController,
+      splashFactory: NoSplash.splashFactory,
+      overlayColor: WidgetStateProperty.all(Colors.transparent),
+      labelColor: Colors.black,
+      unselectedLabelColor: Colors.black54,
+      indicatorColor: Colors.black,
+      indicatorWeight: 2,
+      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.normal,
+      ),
+      labelPadding: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      indicatorPadding: EdgeInsets.zero,
+      onTap: (_) => HapticFeedback.lightImpact(),
+      tabs: const [
+        Tab(text: 'Video'),
+        Tab(text: 'Observations'),
+      ],
+    );
+  }
+
+  Widget _buildTabBody() {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildVideoView(),
+        FormObservationsTab(
+          analysis: widget.analysis,
+          videoUrl: widget.analysis.videoMetadata.videoUrl,
+          skeletonVideoUrl: widget.analysis.videoMetadata.skeletonVideoUrl,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVideoView() {
+    return HistoryAnalysisView(
+      analysis: widget.analysis,
+      onBack: () => Navigator.pop(context),
+      topPadding: 8,
+      videoUrl: widget.analysis.videoMetadata.videoUrl,
+      throwType: _parseThrowTechnique(
+        widget.analysis.analysisResults.throwType,
+      ),
+      cameraAngle: widget.analysis.analysisResults.cameraAngle,
+      videoAspectRatio: widget.analysis.videoMetadata.videoAspectRatio,
     );
   }
 
