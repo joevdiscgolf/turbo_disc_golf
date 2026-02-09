@@ -98,8 +98,9 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
 
       final double seconds = duration.inMilliseconds / 1000.0;
 
-      final int maxDuration =
-          locator.get<FeatureFlagService>().maxFormAnalysisVideoSeconds;
+      final int maxDuration = locator
+          .get<FeatureFlagService>()
+          .maxFormAnalysisVideoSeconds;
       if (seconds > maxDuration) {
         return (null, 'Video must be $maxDuration seconds or less');
       }
@@ -121,7 +122,7 @@ class VideoFormAnalysisService implements ClearOnLogoutProtocol {
     void Function(String)? onProgressUpdate,
   }) async {
     try {
-      onProgressUpdate?.call('Validating video...');
+      onProgressUpdate?.call('Validating');
 
       // Validate video first
       final VideoValidationResult validation = await validateVideo(videoPath);

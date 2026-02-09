@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/analysis_progress.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
@@ -37,7 +38,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     Handedness? handedness,
   }) async {
     emit(
-      const VideoFormAnalysisRecording(progressMessage: 'Opening camera...'),
+      const VideoFormAnalysisRecording(progressMessage: 'Opening camera'),
     );
 
     try {
@@ -48,9 +49,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       // Start timer to show loader after 200ms if picker is still open
       _loaderDelayTimer = Timer(const Duration(milliseconds: 200), () {
         debugPrint('[VideoFormAnalysisCubit] 200ms elapsed - showing loader');
-        emit(
-          const VideoFormAnalysisRecording(progressMessage: 'Loading video...'),
-        );
+        emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
       });
 
       final int maxSeconds = locator
@@ -106,9 +105,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       // Start timer to show loader after 200ms if picker is still open
       _loaderDelayTimer = Timer(const Duration(milliseconds: 200), () {
         debugPrint('[VideoFormAnalysisCubit] 200ms elapsed - showing loader');
-        emit(
-          const VideoFormAnalysisRecording(progressMessage: 'Loading video...'),
-        );
+        emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
       });
 
       final int maxSeconds = locator
@@ -157,11 +154,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     Handedness? handedness,
     required String assetPath,
   }) async {
-    emit(
-      const VideoFormAnalysisRecording(
-        progressMessage: 'Loading test video...',
-      ),
-    );
+    emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
 
     try {
       // Copy asset to temp directory so it can be accessed as a file
@@ -228,7 +221,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     emit(
       VideoFormAnalysisValidating(
         session: session,
-        progressMessage: 'Validating video...',
+        progressMessage: 'Validating',
       ),
     );
 
@@ -270,7 +263,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     emit(
       VideoFormAnalysisAnalyzing(
         session: session,
-        progressMessage: 'Detecting body positions...',
+        progressMessage: 'Validating',
       ),
     );
 
@@ -290,6 +283,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         handedness: handedness,
         sessionId: session.id,
         userId: uid,
+        session: session,
       );
       poseResult = result;
       poseAnalysisWarning = error;
@@ -310,7 +304,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         emit(
           VideoFormAnalysisAnalyzing(
             session: session,
-            progressMessage: 'Generating coaching feedback...',
+            progressMessage: 'Generating coaching feedback',
           ),
         );
       }
@@ -401,7 +395,8 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
   //     }
   //   });
   // }
-  /// Run pose analysis using Cloud Run backend
+  /// Run pose analysis using Cloud Run backend with SSE streaming.
+  /// Falls back to non-streaming API if SSE fails.
   /// Returns a tuple of (response, errorMessage)
   Future<(FormAnalysisResponseV2?, String?)> _runPoseAnalysis({
     required String videoPath,
@@ -410,24 +405,100 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     Handedness? handedness,
     required String sessionId,
     required String userId,
+    required VideoAnalysisSession session,
+  }) async {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    final PoseAnalysisApiClient poseClient = locator
+        .get<PoseAnalysisApiClient>();
+    final String throwTypeStr = _mapThrowTypeToString(throwType);
+
+    debugPrint('[VideoFormAnalysisCubit] Starting pose analysis');
+    debugPrint(
+      '[VideoFormAnalysisCubit] Backend URL: ${flags.poseAnalysisBaseUrl}',
+    );
+    debugPrint('[VideoFormAnalysisCubit] Video: $videoPath');
+    debugPrint(
+      '[VideoFormAnalysisCubit] Throw type: $throwTypeStr, Camera: ${cameraAngle.name}',
+    );
+
+    // Try SSE streaming first for progress updates
+    try {
+      debugPrint('[VideoFormAnalysisCubit] Attempting SSE streaming...');
+
+      final Stream<Object> stream = poseClient.analyzeVideoStream(
+        videoFile: File(videoPath),
+        throwType: throwTypeStr,
+        cameraAngle: cameraAngle,
+        handedness: handedness,
+        sessionId: sessionId,
+        userId: userId,
+      );
+
+      await for (final Object event in stream) {
+        if (event is AnalysisProgress) {
+          debugPrint(
+            '[VideoFormAnalysisCubit] Progress: ${(event.progress * 100).toInt()}% - ${event.message}',
+          );
+          emit(
+            VideoFormAnalysisAnalyzing(
+              session: session,
+              progressMessage: event.message,
+              progress: event.progress,
+            ),
+          );
+        } else if (event is FormAnalysisResponseV2) {
+          debugPrint(
+            '[VideoFormAnalysisCubit] ✅ SSE analysis complete - ${event.checkpoints.length} checkpoints',
+          );
+          for (final checkpoint in event.checkpoints) {
+            debugPrint(
+              '[VideoFormAnalysisCubit]   - ${checkpoint.metadata.checkpointName}: ${checkpoint.deviationAnalysis.severity}',
+            );
+          }
+          return (event, null);
+        }
+      }
+
+      // Should not reach here - stream should yield complete event
+      debugPrint('[VideoFormAnalysisCubit] ⚠️ SSE stream ended without result');
+      throw Exception('SSE stream ended without result');
+    } catch (e, stackTrace) {
+      debugPrint('[VideoFormAnalysisCubit] ⚠️ SSE streaming failed: $e');
+      debugPrint(
+        '[VideoFormAnalysisCubit] Falling back to non-streaming API...',
+      );
+
+      // Fall back to non-streaming API
+      return _runPoseAnalysisFallback(
+        videoPath: videoPath,
+        throwType: throwType,
+        cameraAngle: cameraAngle,
+        handedness: handedness,
+        sessionId: sessionId,
+        userId: userId,
+        originalError: e,
+        originalStackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Fallback method using non-streaming API when SSE fails.
+  Future<(FormAnalysisResponseV2?, String?)> _runPoseAnalysisFallback({
+    required String videoPath,
+    required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
+    Handedness? handedness,
+    required String sessionId,
+    required String userId,
+    required Object originalError,
+    required StackTrace originalStackTrace,
   }) async {
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
 
     try {
-      debugPrint('[VideoFormAnalysisCubit] Starting pose analysis');
-      debugPrint(
-        '[VideoFormAnalysisCubit] Backend URL: ${flags.poseAnalysisBaseUrl}',
-      );
-      debugPrint('[VideoFormAnalysisCubit] Video: $videoPath');
-
       final PoseAnalysisApiClient poseClient = locator
           .get<PoseAnalysisApiClient>();
-
-      // Map throw type to backend format
       final String throwTypeStr = _mapThrowTypeToString(throwType);
-      debugPrint(
-        '[VideoFormAnalysisCubit] Throw type: $throwTypeStr, Camera: ${cameraAngle.name}',
-      );
 
       final FormAnalysisResponseV2 response = await poseClient.analyzeVideo(
         videoFile: File(videoPath),
@@ -439,7 +510,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       );
 
       debugPrint(
-        '[VideoFormAnalysisCubit] ✅ Pose analysis successful - ${response.checkpoints.length} checkpoints',
+        '[VideoFormAnalysisCubit] ✅ Fallback analysis successful - ${response.checkpoints.length} checkpoints',
       );
       for (final checkpoint in response.checkpoints) {
         debugPrint(
@@ -449,9 +520,10 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
 
       return (response, null);
     } catch (e, stackTrace) {
+      // Use the original SSE error if fallback also fails with same type of error
       final String errorMessage = e.toString();
       debugPrint(
-        '[VideoFormAnalysisCubit] ❌ Pose analysis failed: $errorMessage',
+        '[VideoFormAnalysisCubit] ❌ Fallback also failed: $errorMessage',
       );
       debugPrint('[VideoFormAnalysisCubit] Stack trace: $stackTrace');
 
@@ -469,13 +541,10 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       } else if (errorMessage.contains(
         'Could not detect all required positions',
       )) {
-        // Parse missing positions count from error message
-        // Format: "Could not detect all required positions. Missing: HEISMAN, LOADED. Please..."
         final int missingCount = _countMissingPositions(errorMessage);
         userMessage =
             'Unable to detect $missingCount position${missingCount == 1 ? '' : 's'}';
       } else if (errorLower.contains('file must be a video')) {
-        // Exact match for backend's specific error message when an image is uploaded
         userMessage = 'Please upload a video file, not a photo or image';
       } else if (errorLower.contains('not a video') ||
           errorLower.contains('invalid video') ||

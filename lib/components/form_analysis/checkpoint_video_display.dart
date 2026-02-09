@@ -4,8 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_video_dialog.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
-import 'package:turbo_disc_golf/models/handedness.dart';
-import 'package:turbo_disc_golf/models/video_orientation.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
 import 'package:video_player/video_player.dart';
@@ -13,7 +12,7 @@ import 'package:video_player/video_player.dart';
 /// Displays the video player and owns the VideoPlayerController lifecycle.
 ///
 /// Accepts an optional [proReferenceWidget] and handles layout based on
-/// [videoAspectRatio]:
+/// video aspect ratio:
 /// - Portrait (aspect < 1.0): video and pro ref side by side
 /// - Landscape (aspect >= 1.0): video on top, pro ref below
 ///
@@ -21,40 +20,26 @@ import 'package:video_player/video_player.dart';
 class CheckpointVideoDisplay extends StatefulWidget {
   const CheckpointVideoDisplay({
     super.key,
-    required this.skeletonVideoUrl,
-    required this.skeletonOnlyVideoUrl,
+    required this.analysis,
     this.videoAspectRatio,
-    this.returnedVideoAspectRatio,
-    this.proReferenceWidget,
-    this.videoOrientation,
     this.checkpoints,
-    this.detectedHandedness,
+    this.proReferenceWidget,
   });
 
-  /// Network URL for skeleton overlay video.
-  final String skeletonVideoUrl;
+  /// The full form analysis response containing video metadata, arm speed, etc.
+  final FormAnalysisResponseV2 analysis;
 
-  /// Network URL for skeleton-only video.
-  final String skeletonOnlyVideoUrl;
-
-  /// Video aspect ratio (width/height).
+  /// Video aspect ratio override (width/height). If not provided, uses
+  /// the aspect ratio from the video controller.
   final double? videoAspectRatio;
 
-  /// Aspect ratio of the returned processed videos.
-  final double? returnedVideoAspectRatio;
-
-  /// Optional pro reference widget displayed alongside the video.
-  /// Layout is handled automatically based on [videoAspectRatio].
-  final Widget? proReferenceWidget;
-
-  /// Video orientation (portrait or landscape).
-  final VideoOrientation? videoOrientation;
-
   /// Checkpoints for the fullscreen video dialog selector.
+  /// If not provided, uses analysis.checkpoints.
   final List<CheckpointDataV2>? checkpoints;
 
-  /// Detected handedness of the user for badge display.
-  final Handedness? detectedHandedness;
+  /// Optional pro reference widget displayed alongside the video.
+  /// Layout is handled automatically based on video aspect ratio.
+  final Widget? proReferenceWidget;
 
   @override
   State<CheckpointVideoDisplay> createState() => _CheckpointVideoDisplayState();
@@ -69,6 +54,13 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
   /// Whether we're currently showing skeleton-only video (local tracking).
   bool _showingSkeletonOnly = false;
 
+  /// Tracks if we've reached max speed during this playback.
+  /// Once true, the overlay will show max speed and not decrease.
+  bool _hasReachedMax = false;
+
+  /// The max speed value to display once reached.
+  double? _lockedMaxSpeed;
+
   VideoPlayerController get _activeController =>
       _showingSkeletonOnly && _skeletonOnlyController != null
       ? _skeletonOnlyController!
@@ -81,6 +73,13 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
 
   /// Last position we seeked to, to debounce rapid seeks.
   Duration? _lastSeekedPosition;
+
+  // Convenience getters for analysis data
+  String get _skeletonVideoUrl => widget.analysis.videoMetadata.skeletonVideoUrl!;
+  String get _skeletonOnlyVideoUrl =>
+      widget.analysis.videoMetadata.skeletonOnlyVideoUrl!;
+  double? get _returnedVideoAspectRatio =>
+      widget.analysis.videoMetadata.returnedVideoAspectRatio;
 
   @override
   void initState() {
@@ -100,13 +99,12 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
         BlocProvider.of<CheckpointPlaybackCubit>(context);
 
     try {
-      final String overlayUrl = widget.skeletonVideoUrl;
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[CheckpointVideoDisplay] INITIALIZING VIDEO CONTROLLERS');
-      debugPrint('[CheckpointVideoDisplay] Overlay URL: $overlayUrl');
+      debugPrint('[CheckpointVideoDisplay] Overlay URL: $_skeletonVideoUrl');
 
       _overlayController = VideoPlayerController.networkUrl(
-        Uri.parse(overlayUrl),
+        Uri.parse(_skeletonVideoUrl),
       );
       await _overlayController.initialize();
       _overlayController.setVolume(0.0);
@@ -119,10 +117,10 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
 
       // Initialize skeleton-only controller
       debugPrint(
-        '[CheckpointVideoDisplay] Skeleton-only URL: ${widget.skeletonOnlyVideoUrl}',
+        '[CheckpointVideoDisplay] Skeleton-only URL: $_skeletonOnlyVideoUrl',
       );
       _skeletonOnlyController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.skeletonOnlyVideoUrl),
+        Uri.parse(_skeletonOnlyVideoUrl),
       );
       await _skeletonOnlyController!.initialize();
       _skeletonOnlyController!.setVolume(0.0);
@@ -181,8 +179,8 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
         value: cubit,
         child: FullscreenVideoDialog(
           videoController: _activeController,
-          videoOrientation: widget.videoOrientation,
-          checkpoints: widget.checkpoints,
+          videoOrientation: widget.analysis.videoMetadata.videoOrientation,
+          checkpoints: widget.checkpoints ?? widget.analysis.checkpoints,
         ),
       ),
     );
@@ -198,6 +196,13 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
           listener: (context, state) {
             if (!_isActiveInitialized) return;
             if (_lastSeekedPosition == state.currentPosition) return;
+
+            // Reset max speed lock if seeking backward
+            if (_lastSeekedPosition != null &&
+                state.currentPosition < _lastSeekedPosition!) {
+              _resetMaxSpeedLock();
+            }
+
             _lastSeekedPosition = state.currentPosition;
             _activeController.seekTo(state.currentPosition);
           },
@@ -209,6 +214,14 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
             if (_isActiveInitialized) {
               _activeController.pause();
             }
+          },
+        ),
+        // Reset max speed lock when video restarts from beginning
+        BlocListener<CheckpointPlaybackCubit, CheckpointPlaybackState>(
+          listenWhen: (prev, curr) =>
+              !prev.isAtStart && curr.isAtStart,
+          listener: (context, state) {
+            _resetMaxSpeedLock();
           },
         ),
         BlocListener<CheckpointPlaybackCubit, CheckpointPlaybackState>(
@@ -231,7 +244,10 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
           prev.tapFeedbackIsPlay != curr.tapFeedbackIsPlay ||
           prev.isPlaying != curr.isPlaying ||
           prev.isAtStart != curr.isAtStart ||
-          prev.isAtEnd != curr.isAtEnd,
+          prev.isAtEnd != curr.isAtEnd ||
+          // Rebuild when position changes to update speed overlay
+          (widget.analysis.armSpeed != null &&
+              prev.currentPosition != curr.currentPosition),
       builder: (context, state) {
         if (state.hasError) {
           return _buildErrorState(state.errorMessage);
@@ -284,6 +300,51 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
     );
   }
 
+  /// Calculate current frame from video position and total frames.
+  int? _getCurrentFrame(CheckpointPlaybackState state) {
+    if (state.totalFrames == null || state.videoDuration.inMilliseconds == 0) {
+      return null;
+    }
+    final double progress =
+        state.currentPosition.inMilliseconds / state.videoDuration.inMilliseconds;
+    return (progress * state.totalFrames!).round().clamp(0, state.totalFrames!);
+  }
+
+  /// Get current arm speed for display overlay.
+  /// Once max speed is reached, locks to that value and won't decrease.
+  double? _getCurrentSpeed(CheckpointPlaybackState state) {
+    final armSpeed = widget.analysis.armSpeed;
+    if (armSpeed == null) return null;
+
+    // If we've already locked to max, return the locked value
+    if (_hasReachedMax && _lockedMaxSpeed != null) {
+      return _lockedMaxSpeed;
+    }
+
+    final int? currentFrame = _getCurrentFrame(state);
+    if (currentFrame == null) return null;
+
+    final double? currentSpeed = armSpeed.getSpeedAtFrame(currentFrame);
+    if (currentSpeed == null) return null;
+
+    // Check if we've reached max speed (within small tolerance)
+    final double maxSpeed = armSpeed.maxSpeedMph;
+    if ((currentSpeed - maxSpeed).abs() < 0.1 ||
+        currentFrame >= armSpeed.maxSpeedFrame) {
+      _hasReachedMax = true;
+      _lockedMaxSpeed = maxSpeed;
+      return maxSpeed;
+    }
+
+    return currentSpeed;
+  }
+
+  /// Resets the max speed lock (call when video restarts or user seeks backward).
+  void _resetMaxSpeedLock() {
+    _hasReachedMax = false;
+    _lockedMaxSpeed = null;
+  }
+
   Widget _buildVideoPlayer(CheckpointPlaybackState state) {
     final bool showPlayOverlay =
         !state.isPlaying && state.isAtStart && !state.showTapFeedback;
@@ -293,6 +354,9 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
 
     final CheckpointPlaybackCubit cubit =
         BlocProvider.of<CheckpointPlaybackCubit>(context);
+
+    final double? currentSpeed = _getCurrentSpeed(state);
+    final detectedHandedness = widget.analysis.analysisResults.detectedHandedness;
 
     return AspectRatio(
       aspectRatio:
@@ -343,8 +407,43 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
                     duration: 200.ms,
                     curve: Curves.easeOut,
                   ),
+            // Arm speed overlay at top left (black text on white card)
+            if (currentSpeed != null)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.speed,
+                        color: Colors.black,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${currentSpeed.toStringAsFixed(1)} mph',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             // Handedness badge at top right
-            if (widget.detectedHandedness != null)
+            if (detectedHandedness != null)
               Positioned(
                 top: 8,
                 right: 8,
@@ -358,7 +457,7 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    widget.detectedHandedness!.badgeLabel,
+                    detectedHandedness.badgeLabel,
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -399,7 +498,7 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
 
   Widget _buildVideoShimmer() {
     final double? effectiveAspectRatio =
-        widget.returnedVideoAspectRatio ?? widget.videoAspectRatio;
+        _returnedVideoAspectRatio ?? widget.videoAspectRatio;
 
     final Widget shimmer = Container(color: Colors.grey[900])
         .animate(onPlay: (controller) => controller.repeat())

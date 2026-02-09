@@ -487,18 +487,9 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                 ),
               ),
               CheckpointVideoDisplay(
-                skeletonVideoUrl:
-                    widget.analysis.videoMetadata.skeletonVideoUrl!,
-                skeletonOnlyVideoUrl:
-                    widget.analysis.videoMetadata.skeletonOnlyVideoUrl!,
+                analysis: widget.analysis,
                 videoAspectRatio: widget.videoAspectRatio,
-                returnedVideoAspectRatio:
-                    widget.analysis.videoMetadata.returnedVideoAspectRatio,
-                videoOrientation:
-                    widget.analysis.videoMetadata.videoOrientation,
                 checkpoints: activeCheckpoints,
-                detectedHandedness:
-                    widget.analysis.analysisResults.detectedHandedness,
                 proReferenceWidget: _buildProReferenceContent(
                   checkpoint,
                   selectedIndex,

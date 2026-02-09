@@ -11,7 +11,6 @@ import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_h
 import 'package:turbo_disc_golf/screens/form_analysis/components/form_analysis_welcome_empty_state.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_detail_screen.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_recording_screen_v2.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
@@ -91,12 +90,11 @@ class FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   Future<void> _showRecordingScreen() async {
     _logger.track('New Form Analysis Button Tapped');
 
-    final FeatureFlagService flags = locator.get<FeatureFlagService>();
-    final Widget screen = flags.useFormAnalysisRecordingScreenV2
-        ? FormAnalysisRecordingScreenV2(topViewPadding: widget.topViewPadding)
-        : FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding);
-
-    await pushCupertinoRoute(context, screen, pushFromBottom: true);
+    await pushCupertinoRoute(
+      context,
+      FormAnalysisRecordingScreen(topViewPadding: widget.topViewPadding),
+      pushFromBottom: true,
+    );
     // Note: New analyses are automatically added to the history cubit
     // by VideoFormAnalysisCubit when analysis completes - no refresh needed
   }
@@ -157,6 +155,7 @@ class FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
       // Loaded state
       if (state.analyses.isEmpty) {
         return SliverFillRemaining(
+          hasScrollBody: false,
           child: FormAnalysisWelcomeEmptyState(
             onStartAnalysis: _showRecordingScreen,
             logger: _logger,
@@ -360,13 +359,6 @@ class FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   Widget _buildDeleteButton() {
     return BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
       builder: (context, state) {
-        // Hide delete button when showing empty state
-        final bool isEmptyState =
-            state is FormAnalysisHistoryLoaded && state.analyses.isEmpty;
-        if (isEmptyState) {
-          return const SizedBox.shrink();
-        }
-
         final double bottomViewPadding = MediaQuery.of(
           context,
         ).viewPadding.bottom;

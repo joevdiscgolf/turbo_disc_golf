@@ -37,10 +37,14 @@ class VideoFormAnalysisAnalyzing extends VideoFormAnalysisState {
   const VideoFormAnalysisAnalyzing({
     required this.session,
     required this.progressMessage,
+    this.progress,
   });
 
   final VideoAnalysisSession session;
   final String progressMessage;
+
+  /// Progress as a decimal from 0.0 to 1.0. Null means indeterminate progress.
+  final double? progress;
 }
 
 /// Analysis complete with results

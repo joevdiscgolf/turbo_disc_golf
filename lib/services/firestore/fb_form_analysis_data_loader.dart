@@ -444,17 +444,22 @@ abstract class FBFormAnalysisDataLoader {
     return uniqueTips.toList();
   }
 
-  /// Delete a single form analysis and its associated images.
+  /// Delete a single form analysis and its associated images/videos.
+  /// Pass [videoUrls] to delete skeleton videos from Cloud Storage.
   /// Returns true on success, false on failure.
   static Future<bool> deleteAnalysis({
     required String uid,
     required String analysisId,
+    List<String> videoUrls = const [],
   }) async {
     try {
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[FBFormAnalysisDataLoader] 🗑️  DELETE SINGLE ANALYSIS');
       debugPrint('[FBFormAnalysisDataLoader] User ID: $uid');
       debugPrint('[FBFormAnalysisDataLoader] Analysis ID: $analysisId');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Video URLs to delete: ${videoUrls.length}',
+      );
       debugPrint('═══════════════════════════════════════════════════════');
 
       // Step 1: Delete Firestore document
@@ -489,12 +494,40 @@ abstract class FBFormAnalysisDataLoader {
 
       if (!storageSuccess) {
         debugPrint(
-          '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors',
+          '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage folder deletion had errors',
         );
       } else {
         debugPrint(
-          '[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete',
+          '[FBFormAnalysisDataLoader] ✅ Cloud Storage folder deletion complete',
         );
+      }
+
+      // Step 3: Delete skeleton videos by URL
+      if (videoUrls.isNotEmpty) {
+        debugPrint('[FBFormAnalysisDataLoader] ═══ VIDEO URLS TO DELETE ═══');
+        for (int i = 0; i < videoUrls.length; i++) {
+          final String url = videoUrls[i];
+          debugPrint('[FBFormAnalysisDataLoader] [$i] ${url.length > 100 ? '${url.substring(0, 100)}...' : url}');
+        }
+        debugPrint('[FBFormAnalysisDataLoader] ════════════════════════════');
+      }
+
+      int deletedCount = 0;
+      for (final String videoUrl in videoUrls) {
+        if (videoUrl.isEmpty) {
+          debugPrint('[FBFormAnalysisDataLoader] ⏭️  Skipping empty URL');
+          continue;
+        }
+        final bool videoDeleted = await storageDeleteByUrl(videoUrl);
+        if (videoDeleted) {
+          deletedCount++;
+          debugPrint('[FBFormAnalysisDataLoader] ✅ Video deleted');
+        } else {
+          debugPrint('[FBFormAnalysisDataLoader] ⚠️  Video deletion failed');
+        }
+      }
+      if (videoUrls.isNotEmpty) {
+        debugPrint('[FBFormAnalysisDataLoader] Video deletion summary: $deletedCount/${videoUrls.length}');
       }
 
       debugPrint('═══════════════════════════════════════════════════════');
@@ -512,13 +545,20 @@ abstract class FBFormAnalysisDataLoader {
     }
   }
 
-  /// Delete all form analyses and associated images for a user.
+  /// Delete all form analyses and associated images/videos for a user.
+  /// Pass [videoUrls] to delete skeleton videos from Cloud Storage.
   /// This is a DESTRUCTIVE operation - use only in debug mode.
-  static Future<bool> deleteAllAnalysesForUser(String uid) async {
+  static Future<bool> deleteAllAnalysesForUser(
+    String uid, {
+    List<String> videoUrls = const [],
+  }) async {
     try {
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[FBFormAnalysisDataLoader] 🗑️  DELETE ALL START');
       debugPrint('[FBFormAnalysisDataLoader] User ID: $uid');
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Video URLs to delete: ${videoUrls.length}',
+      );
       debugPrint('═══════════════════════════════════════════════════════');
 
       // Step 1: Delete all Firestore documents
@@ -540,7 +580,7 @@ abstract class FBFormAnalysisDataLoader {
 
       debugPrint('[FBFormAnalysisDataLoader] ✅ Firestore deletion complete');
 
-      // Step 2: Delete all Cloud Storage images
+      // Step 2: Delete all Cloud Storage images (checkpoint images)
       final String storagePath = 'form_analyses/$uid';
       debugPrint(
         '[FBFormAnalysisDataLoader] Deleting Cloud Storage folder: $storagePath',
@@ -553,13 +593,41 @@ abstract class FBFormAnalysisDataLoader {
 
       if (!storageSuccess) {
         debugPrint(
-          '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage deletion had errors (may be partial)',
+          '[FBFormAnalysisDataLoader] ⚠️  Cloud Storage folder deletion had errors (may be partial)',
         );
       } else {
         debugPrint(
-          '[FBFormAnalysisDataLoader] ✅ Cloud Storage deletion complete',
+          '[FBFormAnalysisDataLoader] ✅ Cloud Storage folder deletion complete',
         );
       }
+
+      // Step 3: Delete skeleton videos by URL
+      debugPrint(
+        '[FBFormAnalysisDataLoader] Deleting ${videoUrls.length} skeleton videos...',
+      );
+      debugPrint('[FBFormAnalysisDataLoader] ═══ VIDEO URLS TO DELETE ═══');
+      for (int i = 0; i < videoUrls.length; i++) {
+        final String url = videoUrls[i];
+        debugPrint('[FBFormAnalysisDataLoader] [$i] ${url.length > 100 ? '${url.substring(0, 100)}...' : url}');
+      }
+      debugPrint('[FBFormAnalysisDataLoader] ════════════════════════════');
+
+      int deletedCount = 0;
+      int skippedCount = 0;
+      for (final String videoUrl in videoUrls) {
+        if (videoUrl.isEmpty) {
+          debugPrint('[FBFormAnalysisDataLoader] ⏭️  Skipping empty URL');
+          skippedCount++;
+          continue;
+        }
+        final bool videoDeleted = await storageDeleteByUrl(videoUrl);
+        if (videoDeleted) {
+          deletedCount++;
+        }
+      }
+      debugPrint(
+        '[FBFormAnalysisDataLoader] ✅ Deleted $deletedCount/${videoUrls.length} skeleton videos (skipped: $skippedCount)',
+      );
 
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[FBFormAnalysisDataLoader] ✅ DELETE ALL COMPLETE');

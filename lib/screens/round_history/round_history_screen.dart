@@ -168,6 +168,7 @@ class RoundHistoryScreenState extends State<RoundHistoryScreen> {
       final List<DGRound> sortedRounds = state.sortedRounds;
       if (sortedRounds.isEmpty) {
         return SliverFillRemaining(
+          hasScrollBody: false,
           child: WelcomeEmptyState(
             onAddRound: _showRecordRoundSheet,
             logger: _logger,

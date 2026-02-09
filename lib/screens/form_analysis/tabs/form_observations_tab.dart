@@ -17,15 +17,20 @@ class FormObservationsTab extends StatefulWidget {
   const FormObservationsTab({
     super.key,
     required this.analysis,
+    this.topPadding = 0,
   });
 
   final FormAnalysisResponseV2 analysis;
+
+  /// Top padding for the content (e.g., for app bar spacing).
+  final double topPadding;
 
   @override
   State<FormObservationsTab> createState() => _FormObservationsTabState();
 }
 
-class _FormObservationsTabState extends State<FormObservationsTab> {
+class _FormObservationsTabState extends State<FormObservationsTab>
+    with AutomaticKeepAliveClientMixin {
   late final LoggingServiceBase _logger;
   FormObservation? _activeObservation;
 
@@ -104,8 +109,14 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
-    final bool hasObservations = _observations != null && _observations!.isNotEmpty;
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    final bool hasObservations =
+        _observations != null && _observations!.isNotEmpty;
     final bool hasArmSpeed = _armSpeed != null;
 
     if (!hasObservations && !hasArmSpeed) {
@@ -118,7 +129,12 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.only(
+          top: widget.topPadding + 32,
+          left: 32,
+          right: 32,
+          bottom: 32,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -153,7 +169,12 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
         _observations?.byCategory ?? {};
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        top: widget.topPadding + 4,
+        left: 16,
+        right: 16,
+        bottom: 16,
+      ),
       children: [
         // Arm speed chart at the top
         if (_armSpeed != null) ...[

@@ -1,12 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
 import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
-/// Card displaying arm speed data with a line chart and max speed stat
-class ArmSpeedChartCard extends StatelessWidget {
+/// Card displaying arm speed data with a line chart and max speed stat.
+class ArmSpeedChartCard extends StatefulWidget {
   const ArmSpeedChartCard({
     super.key,
     required this.armSpeedData,
@@ -14,6 +15,11 @@ class ArmSpeedChartCard extends StatelessWidget {
 
   final ArmSpeedData armSpeedData;
 
+  @override
+  State<ArmSpeedChartCard> createState() => _ArmSpeedChartCardState();
+}
+
+class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -109,7 +115,7 @@ class ArmSpeedChartCard extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      armSpeedData.maxSpeedMph.toStringAsFixed(1),
+                      widget.armSpeedData.maxSpeedMph.toStringAsFixed(1),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
@@ -136,6 +142,10 @@ class ArmSpeedChartCard extends StatelessWidget {
   }
 
   Widget _buildChart() {
+    final List<double> speeds = widget.armSpeedData.chartSpeedsAsList;
+    final int maxSpeedIndex =
+        widget.armSpeedData.maxSpeedFrame - widget.armSpeedData.chartStartFrame;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -168,41 +178,44 @@ class ArmSpeedChartCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: CustomPaint(
               painter: _ArmSpeedChartPainter(
-                speeds: armSpeedData.speedsMph,
-                maxSpeed: armSpeedData.maxSpeedMph,
-                maxSpeedIndex: armSpeedData.maxSpeedFrame -
-                    armSpeedData.startFrame,
+                speeds: speeds,
+                maxSpeed: widget.armSpeedData.maxSpeedMph,
+                maxSpeedIndex: maxSpeedIndex,
               ),
               size: Size.infinite,
             ),
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Start',
-              style: TextStyle(
-                fontSize: 10,
-                color: SenseiColors.gray[400],
-              ),
-            ),
-            Text(
-              'Frame ${armSpeedData.startFrame} - ${armSpeedData.endFrame}',
-              style: TextStyle(
-                fontSize: 10,
-                color: SenseiColors.gray[400],
-              ),
-            ),
-            Text(
-              'Release',
-              style: TextStyle(
-                fontSize: 10,
-                color: SenseiColors.gray[400],
-              ),
-            ),
-          ],
+        _buildChartLabels(),
+      ],
+    );
+  }
+
+  Widget _buildChartLabels() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Start',
+          style: TextStyle(
+            fontSize: 10,
+            color: SenseiColors.gray[400],
+          ),
+        ),
+        Text(
+          'Frame ${widget.armSpeedData.chartStartFrame} - ${widget.armSpeedData.chartEndFrame}',
+          style: TextStyle(
+            fontSize: 10,
+            color: SenseiColors.gray[400],
+          ),
+        ),
+        Text(
+          'Release',
+          style: TextStyle(
+            fontSize: 10,
+            color: SenseiColors.gray[400],
+          ),
         ),
       ],
     );
