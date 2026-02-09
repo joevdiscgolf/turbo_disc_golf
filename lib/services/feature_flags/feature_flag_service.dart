@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
+import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/protocols/feature_flag_provider.dart';
 import 'package:turbo_disc_golf/services/story_generator_service.dart';
 
@@ -7,19 +8,51 @@ import 'package:turbo_disc_golf/services/story_generator_service.dart';
 ///
 /// Pre-fetches all flags at startup into memory for fast synchronous access.
 /// Debug-only flags automatically return false in release builds.
+/// User-specific flags from Firestore can override remote config values.
 ///
 /// Usage:
 /// ```dart
 /// final flags = locator.get<FeatureFlagService>();
 /// if (flags.storyV3Enabled) { ... }
 /// ```
-class FeatureFlagService {
+class FeatureFlagService implements ClearOnLogoutProtocol {
   final FeatureFlagProvider _provider;
   final Map<FeatureFlag, dynamic> _cache = {};
   bool _initialized = false;
 
+  /// Provider function to get user-specific flags.
+  /// Set from main.dart after UserDataCubit is created.
+  List<String>? Function()? _getUserFlags;
+
   FeatureFlagService({required FeatureFlagProvider provider})
     : _provider = provider;
+
+  /// Set the user flags provider function.
+  /// Called from main.dart after UserDataCubit is created.
+  void setUserFlagsProvider(List<String>? Function() provider) {
+    _getUserFlags = provider;
+  }
+
+  /// Clear the user flags provider.
+  /// Called during logout to ensure user flags are not used after logout.
+  void clearUserFlagsProvider() {
+    _getUserFlags = null;
+  }
+
+  /// Check if a feature flag is enabled for the current user.
+  /// Returns true if the flag's remoteKey is in the user's flags list.
+  bool _isUserFlagEnabled(FeatureFlag flag) {
+    final List<String>? userFlags = _getUserFlags?.call();
+    if (userFlags == null || userFlags.isEmpty) {
+      return false;
+    }
+    return userFlags.contains(flag.remoteKey);
+  }
+
+  @override
+  Future<void> clearOnLogout() async {
+    clearUserFlagsProvider();
+  }
 
   /// Initialize the service and fetch initial values.
   Future<bool> initialize() async {
@@ -67,12 +100,22 @@ class FeatureFlagService {
 
   // ===== Generic Getters =====
 
-  /// Get a boolean flag value. Debug-only flags return false in release builds.
+  /// Get a boolean flag value.
+  /// Priority:
+  /// 1. Debug-only flags return false in release builds
+  /// 2. User flag enabled (from Firestore) -> return true
+  /// 3. Return cached remote config value OR default
   bool getBool(FeatureFlag flag) {
     // Debug-only flags return false in release builds
     if (flag.isDebugOnly && !kDebugMode) {
       return false;
     }
+
+    // Check user-specific flags - can only enable features, not disable
+    if (_isUserFlagEnabled(flag)) {
+      return true;
+    }
+
     return _cache[flag] as bool? ?? flag.defaultValue as bool;
   }
 

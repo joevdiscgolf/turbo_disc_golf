@@ -2296,37 +2296,34 @@ class _MiniHoleIndicator extends StatelessWidget {
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: hasFeet ? 56 : 44,
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         decoration: decoration,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$holeNumber',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isCurrent ? _holeAccent : Colors.grey[700],
+              ),
+            ),
+            if (hasFeet) ...[
+              const SizedBox(height: 1),
               Text(
-                '$holeNumber',
+                '$feet',
                 style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: isCurrent ? _holeAccent : Colors.grey[700],
+                  fontSize: 8,
+                  fontWeight: FontWeight.w500,
+                  color: SenseiColors.gray[400],
                 ),
               ),
-              if (hasFeet) ...[
-                const SizedBox(height: 1),
-                Text(
-                  '$feet',
-                  style: TextStyle(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w500,
-                    color: SenseiColors.gray[400],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 2),
-              _buildScoreIndicator(hasScore, isPar, circleColor),
             ],
-          ),
+            const SizedBox(height: 2),
+            _buildScoreIndicator(hasScore, isPar, circleColor),
+          ],
         ),
       ),
     );
@@ -2417,52 +2414,53 @@ class _MiniHolesGrid extends StatelessWidget {
 
         return Padding(
           padding: EdgeInsets.only(bottom: rowIndex < numRows - 1 ? 8 : 0),
-          child: Row(
-            children: List.generate(_holesPerRow * 2 - 1, (i) {
-              // Add spacers between items (odd indices)
-              if (i.isOdd) {
-                return const SizedBox(width: 6);
-              }
+          // IntrinsicHeight ensures all items in row match tallest item's height
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List.generate(_holesPerRow * 2 - 1, (i) {
+                // Add spacers between items (odd indices)
+                if (i.isOdd) {
+                  return const SizedBox(width: 6);
+                }
 
-              final int colIndex = i ~/ 2;
+                final int colIndex = i ~/ 2;
 
-              // Add spacer for empty slots in partial rows
-              if (colIndex >= holesInRow) {
-                // Match height to whether layout has feet data
-                final bool hasFeetData =
-                    layout != null && layout.holes.any((h) => h.feet > 0);
-                return Expanded(child: SizedBox(height: hasFeetData ? 56 : 44));
-              }
+                // Empty slot for partial rows - stretches to match row height
+                if (colIndex >= holesInRow) {
+                  return const Expanded(child: SizedBox());
+                }
 
-              final int index = startHole + colIndex;
-              final String? description = state.holeDescriptions[index];
-              final bool hasDescription =
-                  description != null && description.trim().isNotEmpty;
-              final bool isCurrent = index == currentHoleIndex;
+                final int index = startHole + colIndex;
+                final String? description = state.holeDescriptions[index];
+                final bool hasDescription =
+                    description != null && description.trim().isNotEmpty;
+                final bool isCurrent = index == currentHoleIndex;
 
-              // Get score from imported scorecard (if available)
-              final int? score = state.importedScores?[index];
+                // Get score from imported scorecard (if available)
+                final int? score = state.importedScores?[index];
 
-              // Get par and distance from course layout (if available)
-              int? par;
-              int? feet;
-              if (layout != null && index < layout.holes.length) {
-                par = layout.holes[index].par;
-                feet = layout.holes[index].feet;
-              }
+                // Get par and distance from course layout (if available)
+                int? par;
+                int? feet;
+                if (layout != null && index < layout.holes.length) {
+                  par = layout.holes[index].par;
+                  feet = layout.holes[index].feet;
+                }
 
-              return Expanded(
-                child: _MiniHoleIndicator(
-                  holeNumber: index + 1,
-                  hasDescription: hasDescription,
-                  isCurrent: isCurrent,
-                  score: score,
-                  par: par,
-                  feet: feet,
-                  onTap: () => onHoleTap(index),
-                ),
-              );
-            }),
+                return Expanded(
+                  child: _MiniHoleIndicator(
+                    holeNumber: index + 1,
+                    hasDescription: hasDescription,
+                    isCurrent: isCurrent,
+                    score: score,
+                    par: par,
+                    feet: feet,
+                    onTap: () => onHoleTap(index),
+                  ),
+                );
+              }),
+            ),
           ),
         );
       }),

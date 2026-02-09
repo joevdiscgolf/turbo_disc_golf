@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +12,7 @@ import 'package:turbo_disc_golf/screens/round_processing/components/explosion_ef
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/persistent_square.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_confirmation_widget.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/juge_round_tab/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_stats_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
@@ -129,7 +131,7 @@ class _RoundProcessingLoadingScreenState
     if (state is! RecordRoundActive) {
       debugPrint('RoundProcessingLoadingScreen: No active recording state');
       if (mounted) {
-        Navigator.of(context).pop();
+        _navigateBackToRecordRound();
       }
       return;
     }
@@ -162,7 +164,7 @@ class _RoundProcessingLoadingScreenState
 
       if (_roundParser.lastError.isNotEmpty) {
         locator.get<ToastService>().showError(_roundParser.lastError);
-        Navigator.of(context).pop();
+        _navigateBackToRecordRound();
         return;
       }
 
@@ -182,13 +184,13 @@ class _RoundProcessingLoadingScreenState
         });
       } else {
         // No round parsed
-        Navigator.of(context).pop();
+        _navigateBackToRecordRound();
       }
     } catch (e) {
       debugPrint('RoundProcessingLoadingScreen: Exception during parsing: $e');
       if (mounted) {
         locator.get<ToastService>().showError('Error processing round: $e');
-        Navigator.of(context).pop();
+        _navigateBackToRecordRound();
       }
     }
   }
@@ -274,6 +276,21 @@ class _RoundProcessingLoadingScreenState
       overlays: SystemUiOverlay.values,
     );
     super.dispose();
+  }
+
+  /// Navigate back to the record round screen on failure
+  /// Uses pushReplacement since this screen replaced the record round screen
+  void _navigateBackToRecordRound() {
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    Navigator.of(context).pushReplacement(
+      CupertinoPageRoute(
+        builder: (context) => RecordRoundScreen(
+          topViewPadding: mediaQuery.viewPadding.top,
+          bottomViewPadding: mediaQuery.viewPadding.bottom,
+          skipIntroAnimations: true,
+        ),
+      ),
+    );
   }
 
   Widget _buildLoadingContent() {

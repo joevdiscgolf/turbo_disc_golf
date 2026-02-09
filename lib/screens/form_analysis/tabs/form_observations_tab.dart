@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/observation_category_section.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/observation_segment_player.dart';
-import 'package:turbo_disc_golf/components/form_analysis/observations/wrist_speed_chart_card.dart';
+import 'package:turbo_disc_golf/components/form_analysis/observations/arm_speed_chart_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observations.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_enums.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/wrist_speed_data.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
@@ -50,7 +50,7 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
   }
 
   FormObservations? get _observations => widget.analysis.formObservations;
-  WristSpeedData? get _wristSpeed => widget.analysis.wristSpeed;
+  ArmSpeedData? get _armSpeed => widget.analysis.armSpeed;
 
   void _handleObservationTap(FormObservation observation) {
     _logger.track(
@@ -114,9 +114,9 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
   @override
   Widget build(BuildContext context) {
     final bool hasObservations = _observations != null && _observations!.isNotEmpty;
-    final bool hasWristSpeed = _wristSpeed != null;
+    final bool hasArmSpeed = _armSpeed != null;
 
-    if (!hasObservations && !hasWristSpeed) {
+    if (!hasObservations && !hasArmSpeed) {
       return _buildEmptyState();
     }
 
@@ -163,9 +163,9 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Wrist speed chart at the top
-        if (_wristSpeed != null) ...[
-          WristSpeedChartCard(wristSpeedData: _wristSpeed!),
+        // Arm speed chart at the top
+        if (_armSpeed != null) ...[
+          ArmSpeedChartCard(armSpeedData: _armSpeed!),
           const SizedBox(height: 24),
         ],
         // Observation categories

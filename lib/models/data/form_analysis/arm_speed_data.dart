@@ -1,12 +1,12 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'wrist_speed_data.g.dart';
+part 'arm_speed_data.g.dart';
 
-/// Wrist speed data from form analysis
+/// Arm speed data from form analysis
 /// Contains speed measurements over frames during the throwing motion
 @JsonSerializable()
-class WristSpeedData {
-  const WristSpeedData({
+class ArmSpeedData {
+  const ArmSpeedData({
     required this.speedsMph,
     required this.maxSpeedMph,
     required this.maxSpeedFrame,
@@ -14,11 +14,11 @@ class WristSpeedData {
     required this.endFrame,
   });
 
-  /// List of wrist speeds in mph for each frame in the analysis window
+  /// List of arm speeds in mph for each frame in the analysis window
   @JsonKey(name: 'speeds_mph')
   final List<double> speedsMph;
 
-  /// Maximum wrist speed achieved during the throw (in mph)
+  /// Maximum arm speed achieved during the throw (in mph)
   @JsonKey(name: 'max_speed_mph')
   final double maxSpeedMph;
 
@@ -37,7 +37,7 @@ class WristSpeedData {
   /// Number of frames in the analysis window
   int get frameCount => endFrame - startFrame + 1;
 
-  factory WristSpeedData.fromJson(Map<String, dynamic> json) =>
-      _$WristSpeedDataFromJson(json);
-  Map<String, dynamic> toJson() => _$WristSpeedDataToJson(this);
+  factory ArmSpeedData.fromJson(Map<String, dynamic> json) =>
+      _$ArmSpeedDataFromJson(json);
+  Map<String, dynamic> toJson() => _$ArmSpeedDataToJson(this);
 }

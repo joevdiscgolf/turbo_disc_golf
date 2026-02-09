@@ -5,7 +5,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_observations.dart
 import 'package:turbo_disc_golf/models/data/form_analysis/frame_pose_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_comparison_config.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_metadata.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/wrist_speed_data.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 
 part 'form_analysis_response_v2.g.dart';
 
@@ -27,7 +27,7 @@ class FormAnalysisResponseV2 {
     this.proComparisonConfig,
     this.framePoses,
     this.formObservations,
-    this.wristSpeed,
+    this.armSpeed,
   });
 
   /// Version identifier (always "v2" for new format)
@@ -84,10 +84,10 @@ class FormAnalysisResponseV2 {
   @JsonKey(name: 'form_observations')
   final FormObservations? formObservations;
 
-  /// Wrist speed data from side-view video analysis (optional)
+  /// Arm speed data from side-view video analysis (optional)
   /// Contains speed measurements over frames during the throwing motion
-  @JsonKey(name: 'wrist_speed')
-  final WristSpeedData? wristSpeed;
+  @JsonKey(name: 'arm_speed')
+  final ArmSpeedData? armSpeed;
 
   /// Calculate worst deviation severity from checkpoints
   static String? calculateWorstSeverity(List<CheckpointDataV2> checkpoints) {

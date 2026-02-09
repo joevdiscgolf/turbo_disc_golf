@@ -15,6 +15,7 @@ class TurboUser extends Equatable {
     this.eventIds,
     this.isAdmin,
     this.trebuchets,
+    this.flags,
   });
 
   final String username;
@@ -25,6 +26,7 @@ class TurboUser extends Equatable {
   final List<String>? eventIds;
   final bool? isAdmin;
   final List<String>? trebuchets;
+  final List<String>? flags;
 
   TurboUser copyWith({
     String? username,
@@ -35,6 +37,7 @@ class TurboUser extends Equatable {
     List<String>? eventIds,
     bool? isAdmin,
     List<String>? trebuchets,
+    List<String>? flags,
   }) {
     return TurboUser(
       username: username ?? this.username,
@@ -45,6 +48,7 @@ class TurboUser extends Equatable {
       eventIds: eventIds ?? this.eventIds,
       isAdmin: isAdmin ?? this.isAdmin,
       trebuchets: trebuchets ?? this.trebuchets,
+      flags: flags ?? this.flags,
     );
   }
 
@@ -63,6 +67,7 @@ class TurboUser extends Equatable {
         eventIds,
         isAdmin,
         trebuchets,
+        flags,
       ];
 }
 

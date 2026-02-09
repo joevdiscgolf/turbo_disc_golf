@@ -1,18 +1,18 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/wrist_speed_data.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
-/// Card displaying wrist speed data with a line chart and max speed stat
-class WristSpeedChartCard extends StatelessWidget {
-  const WristSpeedChartCard({
+/// Card displaying arm speed data with a line chart and max speed stat
+class ArmSpeedChartCard extends StatelessWidget {
+  const ArmSpeedChartCard({
     super.key,
-    required this.wristSpeedData,
+    required this.armSpeedData,
   });
 
-  final WristSpeedData wristSpeedData;
+  final ArmSpeedData armSpeedData;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +47,7 @@ class WristSpeedChartCard extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          'WRIST SPEED',
+          'ARM SPEED',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
@@ -96,7 +96,7 @@ class WristSpeedChartCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Max wrist speed',
+                  'Max arm speed',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -109,7 +109,7 @@ class WristSpeedChartCard extends StatelessWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      wristSpeedData.maxSpeedMph.toStringAsFixed(1),
+                      armSpeedData.maxSpeedMph.toStringAsFixed(1),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
@@ -167,11 +167,11 @@ class WristSpeedChartCard extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: CustomPaint(
-              painter: _WristSpeedChartPainter(
-                speeds: wristSpeedData.speedsMph,
-                maxSpeed: wristSpeedData.maxSpeedMph,
-                maxSpeedIndex: wristSpeedData.maxSpeedFrame -
-                    wristSpeedData.startFrame,
+              painter: _ArmSpeedChartPainter(
+                speeds: armSpeedData.speedsMph,
+                maxSpeed: armSpeedData.maxSpeedMph,
+                maxSpeedIndex: armSpeedData.maxSpeedFrame -
+                    armSpeedData.startFrame,
               ),
               size: Size.infinite,
             ),
@@ -189,7 +189,7 @@ class WristSpeedChartCard extends StatelessWidget {
               ),
             ),
             Text(
-              'Frame ${wristSpeedData.startFrame} - ${wristSpeedData.endFrame}',
+              'Frame ${armSpeedData.startFrame} - ${armSpeedData.endFrame}',
               style: TextStyle(
                 fontSize: 10,
                 color: SenseiColors.gray[400],
@@ -209,8 +209,8 @@ class WristSpeedChartCard extends StatelessWidget {
   }
 }
 
-class _WristSpeedChartPainter extends CustomPainter {
-  _WristSpeedChartPainter({
+class _ArmSpeedChartPainter extends CustomPainter {
+  _ArmSpeedChartPainter({
     required this.speeds,
     required this.maxSpeed,
     required this.maxSpeedIndex,
@@ -440,7 +440,7 @@ class _WristSpeedChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _WristSpeedChartPainter oldDelegate) {
+  bool shouldRepaint(covariant _ArmSpeedChartPainter oldDelegate) {
     return oldDelegate.speeds != speeds ||
         oldDelegate.maxSpeed != maxSpeed ||
         oldDelegate.maxSpeedIndex != maxSpeedIndex;

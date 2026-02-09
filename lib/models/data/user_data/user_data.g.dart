@@ -25,6 +25,7 @@ TurboUser _$TurboUserFromJson(Map json) => TurboUser(
   trebuchets: (json['trebuchets'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
+  flags: (json['flags'] as List<dynamic>?)?.map((e) => e as String).toList(),
 );
 
 Map<String, dynamic> _$TurboUserToJson(TurboUser instance) => <String, dynamic>{
@@ -36,6 +37,7 @@ Map<String, dynamic> _$TurboUserToJson(TurboUser instance) => <String, dynamic>{
   'eventIds': instance.eventIds,
   'isAdmin': instance.isAdmin,
   'trebuchets': instance.trebuchets,
+  'flags': instance.flags,
 };
 
 TurboUserMetadata _$TurboUserMetadataFromJson(Map json) => TurboUserMetadata(

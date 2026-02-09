@@ -238,19 +238,14 @@ class RoundHistoryScreenState extends State<RoundHistoryScreen> {
   Widget _buildAddButton() {
     return BlocBuilder<RoundHistoryCubit, RoundHistoryState>(
       builder: (context, historyState) {
-        // Hide FAB when showing empty state (WelcomeEmptyState has its own CTA)
         final bool isEmptyState =
             historyState is RoundHistoryLoaded &&
             historyState.sortedRounds.isEmpty;
-        if (isEmptyState) {
-          return const SizedBox.shrink();
-        }
 
         return BlocBuilder<RoundConfirmationCubit, RoundConfirmationState>(
           builder: (context, confirmationState) {
-            // Show finalize banner when confirming is active
+            // Show finalize banner when confirming is active (even in empty state)
             if (confirmationState is ConfirmingRoundActive) {
-              // Get the recording state to pass to banner
               final recordRoundState = context.read<RecordRoundCubit>().state;
               if (recordRoundState is RecordRoundActive) {
                 return Positioned(
@@ -268,7 +263,8 @@ class RoundHistoryScreenState extends State<RoundHistoryScreen> {
 
             return BlocBuilder<RecordRoundCubit, RecordRoundState>(
               builder: (context, recordRoundState) {
-                // Show continue banner only when recording is active AND course is selected
+                // Show continue banner when recording is active AND course is selected
+                // (even in empty state)
                 if (recordRoundState is RecordRoundActive &&
                     recordRoundState.selectedCourse != null) {
                   return Positioned(
@@ -281,6 +277,11 @@ class RoundHistoryScreenState extends State<RoundHistoryScreen> {
                       bottomViewPadding: widget.bottomViewPadding,
                     ),
                   );
+                }
+
+                // Hide FAB when showing empty state (WelcomeEmptyState has its own CTA)
+                if (isEmptyState) {
+                  return const SizedBox.shrink();
                 }
 
                 final double bottomViewPadding = MediaQuery.of(

@@ -10,6 +10,16 @@ import 'package:turbo_disc_golf/state/user_data_state.dart';
 class UserDataCubit extends Cubit<UserDataState> implements ClearOnLogoutProtocol {
   UserDataCubit() : super(const UserDataInitial());
 
+  /// Get the current user's feature flags.
+  /// Returns null if user is not loaded.
+  List<String>? get currentUserFlags {
+    final UserDataState currentState = state;
+    if (currentState is UserDataLoaded) {
+      return currentState.user.flags;
+    }
+    return null;
+  }
+
   /// Load current user data from Firestore.
   /// Called once on app startup when user is logged in.
   Future<void> loadUserData() async {

@@ -25,6 +25,7 @@ import 'package:turbo_disc_golf/services/app_phase/app_phase_controller.dart';
 import 'package:turbo_disc_golf/services/bag_service.dart';
 import 'package:turbo_disc_golf/services/courses/course_search_service.dart';
 import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_pro_players_loader.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/logout_manager.dart';
@@ -120,6 +121,10 @@ class _MyAppState extends State<MyApp> {
     _roundReviewCubit = RoundReviewCubit(roundHistoryCubit: _roundHistoryCubit);
     _createCourseCubit = CreateCourseCubit();
     _userDataCubit = UserDataCubit();
+    // Set up user flags provider for feature flags
+    locator.get<FeatureFlagService>().setUserFlagsProvider(
+      () => _userDataCubit.currentUserFlags,
+    );
     // Load user data on app startup (fire and forget)
     _userDataCubit.loadUserData();
 
@@ -143,6 +148,7 @@ class _MyAppState extends State<MyApp> {
       locator.get<VideoFormAnalysisService>(),
       locator.get<LoggingService>(),
       locator.get<ErrorLoggingService>(),
+      locator.get<FeatureFlagService>(),
       AnimationStateService.instance,
     ];
 

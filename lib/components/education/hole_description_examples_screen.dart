@@ -127,10 +127,20 @@ class _HoleDescriptionExamplesContent extends StatelessWidget {
                     ),
                   ),
                   // Key points section - moved to top
-                  _buildSectionHeader(context, 'Key points', Colors.blue),
+                  _buildSectionHeader(
+                    context,
+                    'Key points',
+                    SenseiColors.darkGray,
+                  ),
                   const SizedBox(height: 8),
                   _buildKeyPointsCard(context),
                   const SizedBox(height: 12),
+                  _buildSectionHeader(
+                    context,
+                    'Examples',
+                    SenseiColors.darkGray,
+                  ),
+                  const SizedBox(height: 8),
                   // Side-by-side comparison cards
                   ...examplePairs.map((pair) => _ComparisonCard(pair: pair)),
                   const SizedBox(height: 24),
