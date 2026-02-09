@@ -7,7 +7,10 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observations.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_enums.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
+import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
@@ -50,6 +53,10 @@ class _FormObservationsTabState extends State<FormObservationsTab>
 
   FormObservations? get _observations => widget.analysis.formObservations;
   ArmSpeedData? get _armSpeed => widget.analysis.armSpeed;
+  CameraAngle get _cameraAngle => widget.analysis.analysisResults.cameraAngle;
+  bool get _isRearAngle => _cameraAngle == CameraAngle.rear;
+  bool get _showArmSpeed =>
+      locator.get<FeatureFlagService>().getBool(FeatureFlag.showArmSpeed);
 
   void _handleObservationTap(FormObservation observation) {
     _logger.track(
@@ -115,15 +122,116 @@ class _FormObservationsTabState extends State<FormObservationsTab>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
+    // Show specific empty state for rear angle (observations not supported)
+    if (_isRearAngle) {
+      return _buildRearAngleEmptyState();
+    }
+
     final bool hasObservations =
         _observations != null && _observations!.isNotEmpty;
-    final bool hasArmSpeed = _armSpeed != null;
+    final bool hasArmSpeed = _armSpeed != null && _showArmSpeed;
 
     if (!hasObservations && !hasArmSpeed) {
       return _buildEmptyState();
     }
 
     return _buildObservationsList();
+  }
+
+  Widget _buildRearAngleEmptyState() {
+    const Color accentColor = Color(0xFF6366F1); // Indigo accent
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            SenseiColors.gray[50]!,
+            Colors.white,
+            SenseiColors.gray[50]!,
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: widget.topPadding,
+          left: 32,
+          right: 32,
+          bottom: 32,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Concentric circles icon section
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    accentColor.withValues(alpha: 0.1),
+                    accentColor.withValues(alpha: 0.05),
+                  ],
+                ),
+                border: Border.all(
+                  color: accentColor.withValues(alpha: 0.2),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: 0.1),
+                    blurRadius: 40,
+                    spreadRadius: 10,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accentColor.withValues(alpha: 0.1),
+                  ),
+                  child: const Icon(
+                    Icons.videocam_outlined,
+                    size: 40,
+                    color: accentColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            // Title
+            Text(
+              'Side view only',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: SenseiColors.darkGray,
+                letterSpacing: -0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            // Description
+            Text(
+              'Form observations are currently only available for side angle videos.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: SenseiColors.gray[500],
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildEmptyState() {
@@ -177,7 +285,7 @@ class _FormObservationsTabState extends State<FormObservationsTab>
       ),
       children: [
         // Arm speed chart at the top
-        if (_armSpeed != null) ...[
+        if (_armSpeed != null && _showArmSpeed) ...[
           ArmSpeedChartCard(armSpeedData: _armSpeed!),
           const SizedBox(height: 24),
         ],

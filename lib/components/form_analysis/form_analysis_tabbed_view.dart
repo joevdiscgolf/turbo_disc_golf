@@ -82,12 +82,10 @@ class FormAnalysisTabbedViewState extends State<FormAnalysisTabbedView>
           'screen_name': 'Form Analysis Tabbed View',
         });
 
-    // Check if observations tab should be shown
-    _showObservationsTab =
-        locator.get<FeatureFlagService>().getBool(
-          FeatureFlag.showFormObservationsTab,
-        ) &&
-        widget.analysis.formObservations != null;
+    // Check if observations tab should be shown (empty state handles no data)
+    _showObservationsTab = locator.get<FeatureFlagService>().getBool(
+      FeatureFlag.showFormObservationsTab,
+    );
 
     // Use external controller if provided, otherwise create internal one
     if (_showObservationsTab) {

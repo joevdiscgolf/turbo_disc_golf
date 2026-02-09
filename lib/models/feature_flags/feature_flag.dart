@@ -187,6 +187,9 @@ enum FeatureFlag {
   /// Shows the observations tab in form analysis detail screen
   showFormObservationsTab('show_form_observations_tab', true),
 
+  /// Shows arm speed overlay on video and arm speed card in observations tab
+  showArmSpeed('show_arm_speed', true),
+
   /// Uses the v2 "Stage" design for form analysis recording screen with liquid glass UI
   useFormAnalysisRecordingScreenV2(
     'use_form_analysis_recording_screen_v2',

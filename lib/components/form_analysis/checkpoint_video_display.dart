@@ -3,8 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_video_dialog.dart';
+import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
+import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_cubit.dart';
 import 'package:turbo_disc_golf/state/checkpoint_playback_state.dart';
 import 'package:video_player/video_player.dart';
@@ -355,7 +358,9 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
     final CheckpointPlaybackCubit cubit =
         BlocProvider.of<CheckpointPlaybackCubit>(context);
 
-    final double? currentSpeed = _getCurrentSpeed(state);
+    final bool showArmSpeed =
+        locator.get<FeatureFlagService>().getBool(FeatureFlag.showArmSpeed);
+    final double? currentSpeed = showArmSpeed ? _getCurrentSpeed(state) : null;
     final detectedHandedness = widget.analysis.analysisResults.detectedHandedness;
 
     return AspectRatio(

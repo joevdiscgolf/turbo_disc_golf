@@ -40,12 +40,10 @@ class _AnalysisResultsViewState extends State<AnalysisResultsView>
   void initState() {
     super.initState();
 
-    // Check if observations tab should be shown
-    _showObservationsTab =
-        locator.get<FeatureFlagService>().getBool(
-              FeatureFlag.showFormObservationsTab,
-            ) &&
-            widget.poseAnalysis?.formObservations != null;
+    // Check if observations tab should be shown (empty state handles no data)
+    _showObservationsTab = locator.get<FeatureFlagService>().getBool(
+      FeatureFlag.showFormObservationsTab,
+    );
 
     // Initialize tab controller if showing tabs
     if (_showObservationsTab) {

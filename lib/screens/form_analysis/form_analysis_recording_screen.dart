@@ -168,12 +168,11 @@ class _FormAnalysisRecordingScreenState
 
   /// Initializes the tab controller for results view when showing observations.
   void _initResultsTabController(VideoFormAnalysisComplete state) {
-    // Check if observations tab should be shown
+    // Check if observations tab should be shown (empty state handles no data)
     final bool shouldShowObservationsTab =
         locator.get<FeatureFlagService>().getBool(
           FeatureFlag.showFormObservationsTab,
-        ) &&
-        state.poseAnalysis?.formObservations != null;
+        );
 
     if (shouldShowObservationsTab && _resultsTabController == null) {
       _resultsTabController = TabController(length: 2, vsync: this);

@@ -49,12 +49,10 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
     // Track screen impression
     _logger.logScreenImpression('FormAnalysisDetailScreen');
 
-    // Check if observations tab should be shown
-    _showObservationsTab =
-        locator.get<FeatureFlagService>().getBool(
-              FeatureFlag.showFormObservationsTab,
-            ) &&
-            widget.analysis.formObservations != null;
+    // Check if observations tab should be shown (empty state handles no data)
+    _showObservationsTab = locator.get<FeatureFlagService>().getBool(
+      FeatureFlag.showFormObservationsTab,
+    );
 
     // Initialize tab controller if showing tabs
     if (_showObservationsTab) {
