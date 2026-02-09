@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
+import 'package:turbo_disc_golf/components/loaders/analysis_progress_bar.dart';
 import 'package:turbo_disc_golf/components/loaders/atomic_nuclear_loader.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_result.dart';
@@ -47,6 +48,10 @@ class _FormAnalysisRecordingScreenState
   final ValueNotifier<double> _brainOpacityNotifier = ValueNotifier<double>(
     1.0,
   );
+
+  // Progress bar notifiers for SSE streaming progress
+  final ValueNotifier<double> _progressNotifier = ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _progressBarOpacityNotifier = ValueNotifier<double>(1.0);
 
   // DEBUG MODE: Set to true to automatically test the finalization animation
   // When enabled, the screen will show:
@@ -131,6 +136,8 @@ class _FormAnalysisRecordingScreenState
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     _loaderSpeedNotifier.dispose();
     _brainOpacityNotifier.dispose();
+    _progressNotifier.dispose();
+    _progressBarOpacityNotifier.dispose();
     super.dispose();
   }
 
@@ -213,9 +220,28 @@ class _FormAnalysisRecordingScreenState
                           VideoFormAnalysisState
                         >(
                           listener: (context, state) {
-                            // Trigger transition when analysis completes
-                            if (state is VideoFormAnalysisComplete &&
+                            if (state is VideoFormAnalysisRecording ||
+                                state is VideoFormAnalysisValidating) {
+                              // Reset loader speed and progress when starting a new analysis
+                              _loaderSpeedNotifier.value = 1.0;
+                              _progressNotifier.value = 0.0;
+                              _progressBarOpacityNotifier.value = 1.0;
+                            } else if (state is VideoFormAnalysisAnalyzing) {
+                              // Update progress if available from SSE stream
+                              if (state.progress != null) {
+                                _progressNotifier.value = state.progress!;
+                              }
+                            } else if (state is VideoFormAnalysisComplete &&
                                 !_showingTransition) {
+                              // Animate progress to 100% and fade out before showing transition
+                              _progressNotifier.value = 1.0;
+                              Future.delayed(const Duration(milliseconds: 300), () {
+                                if (mounted) {
+                                  _progressBarOpacityNotifier.value = 0.0;
+                                }
+                              });
+
+                              // Trigger transition when analysis completes
                               setState(() {
                                 _showingTransition = true;
                                 _pendingResults = state;
@@ -247,8 +273,12 @@ class _FormAnalysisRecordingScreenState
                                     if (_debugAutoFinalization) {
                                       _debugLoadingStarted = false;
                                     }
-                                    // Reset brain opacity for next time
+                                    // Reset brain opacity and loader speed for next time
                                     _brainOpacityNotifier.value = 1.0;
+                                    _loaderSpeedNotifier.value = 1.0;
+                                    // Reset progress bar for next time
+                                    _progressNotifier.value = 0.0;
+                                    _progressBarOpacityNotifier.value = 1.0;
                                   });
                                 },
                                 child: AnalysisResultsView(
@@ -283,7 +313,13 @@ class _FormAnalysisRecordingScreenState
                                 speedMultiplierNotifier: _loaderSpeedNotifier,
                               ),
                             ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 24),
+                            // Progress bar for SSE streaming progress
+                            AnalysisProgressBar(
+                              progressNotifier: _progressNotifier,
+                              opacityNotifier: _progressBarOpacityNotifier,
+                            ),
+                            const SizedBox(height: 24),
                             CyclingAnalysisText(
                               brainOpacityNotifier: _brainOpacityNotifier,
                               shouldShow: !_showingTransition,

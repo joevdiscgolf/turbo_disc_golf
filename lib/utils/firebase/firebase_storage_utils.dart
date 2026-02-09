@@ -85,6 +85,40 @@ Future<String?> storageUploadImage({
   }
 }
 
+/// Delete a file from Cloud Storage using its download URL.
+///
+/// [url]: The Firebase Storage download URL
+/// [timeoutDuration]: Timeout for the delete operation (default: 5 seconds)
+///
+/// Returns true if deletion succeeded, false on failure.
+Future<bool> storageDeleteByUrl(
+  String url, {
+  Duration timeoutDuration = const Duration(seconds: 5),
+}) async {
+  try {
+    final Reference ref = FirebaseStorage.instance.refFromURL(url);
+    await ref.delete().timeout(timeoutDuration);
+    debugPrint('[StorageUtils] Deleted by URL: ${ref.fullPath}');
+    return true;
+  } on FirebaseException catch (e) {
+    // object-not-found is not an error - file may already be deleted
+    if (e.code == 'object-not-found') {
+      debugPrint('[StorageUtils] File already deleted or not found: $url');
+      return true;
+    }
+    debugPrint('[StorageUtils] Delete by URL error: $e');
+    return false;
+  } catch (e, trace) {
+    debugPrint('[StorageUtils] Delete by URL error: $e');
+    FirebaseCrashlytics.instance.recordError(
+      e,
+      trace,
+      reason: '[firebase][storage][storageDeleteByUrl] exception',
+    );
+    return false;
+  }
+}
+
 /// Delete all files in a Cloud Storage folder (prefix-based deletion).
 ///
 /// [folderPath]: Storage folder path (e.g., 'form_analyses/userId')

@@ -157,6 +157,7 @@ class FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
       // Loaded state
       if (state.analyses.isEmpty) {
         return SliverFillRemaining(
+          hasScrollBody: false,
           child: FormAnalysisWelcomeEmptyState(
             onStartAnalysis: _showRecordingScreen,
             logger: _logger,
@@ -360,13 +361,6 @@ class FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
   Widget _buildDeleteButton() {
     return BlocBuilder<FormAnalysisHistoryCubit, FormAnalysisHistoryState>(
       builder: (context, state) {
-        // Hide delete button when showing empty state
-        final bool isEmptyState =
-            state is FormAnalysisHistoryLoaded && state.analyses.isEmpty;
-        if (isEmptyState) {
-          return const SizedBox.shrink();
-        }
-
         final double bottomViewPadding = MediaQuery.of(
           context,
         ).viewPadding.bottom;

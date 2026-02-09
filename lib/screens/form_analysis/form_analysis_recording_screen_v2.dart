@@ -10,16 +10,15 @@ import 'package:turbo_disc_golf/components/error_states/generation_error_state.d
 import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
 import 'package:turbo_disc_golf/components/liquid_glass_card.dart';
-import 'package:turbo_disc_golf/components/loaders/atomic_nuclear_loader.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/components/form_analysis/analysis_loading_overlay.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_completion_transition.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_results_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_panel.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/cycling_analysis_text.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/handedness_selection_panel.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -53,6 +52,7 @@ class FormAnalysisRecordingScreenV2 extends StatefulWidget {
 class _FormAnalysisRecordingScreenV2State
     extends State<FormAnalysisRecordingScreenV2> {
   bool _showingTransition = false;
+  bool _waitingForTransition = false; // True during 500ms delay before transition
   VideoFormAnalysisComplete? _pendingResults;
   late final LoggingServiceBase _logger;
 
@@ -60,6 +60,10 @@ class _FormAnalysisRecordingScreenV2State
   final ValueNotifier<double> _brainOpacityNotifier = ValueNotifier<double>(
     1.0,
   );
+
+  // Progress bar notifiers for SSE streaming progress
+  final ValueNotifier<double> _progressNotifier = ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _progressBarOpacityNotifier = ValueNotifier<double>(1.0);
 
   CameraAngle _selectedCameraAngle = CameraAngle.side;
   Handedness? _selectedHandedness;
@@ -121,6 +125,8 @@ class _FormAnalysisRecordingScreenV2State
   void dispose() {
     _loaderSpeedNotifier.dispose();
     _brainOpacityNotifier.dispose();
+    _progressNotifier.dispose();
+    _progressBarOpacityNotifier.dispose();
     super.dispose();
   }
 
@@ -157,15 +163,20 @@ class _FormAnalysisRecordingScreenV2State
           final bool isLoadingOrAnalyzing =
               state is VideoFormAnalysisRecording ||
               state is VideoFormAnalysisValidating ||
-              state is VideoFormAnalysisAnalyzing;
+              state is VideoFormAnalysisAnalyzing ||
+              _waitingForTransition; // Include 500ms delay period
 
-          final bool hideAppBar = isLoadingOrAnalyzing || _showingTransition;
+          final bool hideAppBar =
+              isLoadingOrAnalyzing || _showingTransition || _waitingForTransition;
+
+          // Extract status message from state for loading overlay
+          final String? statusMessage = _getStatusMessage(state);
 
           // Status bar brightness matches background state:
           // - Dark background (loading/analyzing/transition): light status bar icons
           // - Light background (initial/complete/error): dark status bar icons
           final Brightness statusBarBrightness =
-              (isLoadingOrAnalyzing || _showingTransition)
+              (isLoadingOrAnalyzing || _showingTransition || _waitingForTransition)
               ? Brightness.dark
               : Brightness.light;
 
@@ -215,26 +226,61 @@ class _FormAnalysisRecordingScreenV2State
                           VideoFormAnalysisState
                         >(
                           listener: (context, state) {
-                            if (state is VideoFormAnalysisComplete &&
-                                !_showingTransition) {
-                              setState(() {
-                                _showingTransition = true;
-                                _pendingResults = state;
-                              });
-                              if (state.poseAnalysisWarning != null) {
-                                _showPoseAnalysisWarning(
-                                  context,
-                                  state.poseAnalysisWarning!,
-                                );
+                            if (state is VideoFormAnalysisRecording ||
+                                state is VideoFormAnalysisValidating) {
+                              // Reset loader speed and progress when starting a new analysis
+                              _loaderSpeedNotifier.value = 1.0;
+                              _progressNotifier.value = 0.0;
+                              _progressBarOpacityNotifier.value = 1.0;
+                            } else if (state is VideoFormAnalysisAnalyzing) {
+                              // Update progress if available from SSE stream
+                              if (state.progress != null) {
+                                _progressNotifier.value = state.progress!;
                               }
+                            } else if (state is VideoFormAnalysisComplete &&
+                                !_showingTransition &&
+                                !_waitingForTransition) {
+                              // Animate progress to 100% first
+                              _progressNotifier.value = 1.0;
+
+                              // Immediately set waiting flag to keep showing loader
+                              setState(() {
+                                _waitingForTransition = true;
+                              });
+
+                              // Capture warning before async gap
+                              final String? warning = state.poseAnalysisWarning;
+
+                              // Delay 500ms so user can see the 'complete' SSE message,
+                              // then start the transition animation
+                              Future.delayed(const Duration(milliseconds: 500), () {
+                                if (!mounted) return;
+
+                                // Fade out progress bar
+                                _progressBarOpacityNotifier.value = 0.0;
+
+                                // Start transition
+                                setState(() {
+                                  _waitingForTransition = false;
+                                  _showingTransition = true;
+                                  _pendingResults = state;
+                                });
+
+                                if (warning != null) {
+                                  _showPoseAnalysisWarningDeferred(warning);
+                                }
+                              });
                             } else if (state is VideoFormAnalysisError ||
                                 state is VideoFormAnalysisInitial) {
                               // Reset transition state on error or reset
-                              if (_showingTransition) {
+                              if (_showingTransition || _waitingForTransition) {
                                 setState(() {
                                   _showingTransition = false;
+                                  _waitingForTransition = false;
                                   _pendingResults = null;
                                   _brainOpacityNotifier.value = 1.0;
+                                  _progressNotifier.value = 0.0;
+                                  _progressBarOpacityNotifier.value = 1.0;
                                 });
                               }
                             }
@@ -248,6 +294,10 @@ class _FormAnalysisRecordingScreenV2State
                                   setState(() {
                                     _showingTransition = false;
                                     _brainOpacityNotifier.value = 1.0;
+                                    _loaderSpeedNotifier.value = 1.0;
+                                    // Reset progress bar for next time
+                                    _progressNotifier.value = 0.0;
+                                    _progressBarOpacityNotifier.value = 1.0;
                                   });
                                 },
                                 child: AnalysisResultsView(
@@ -262,31 +312,13 @@ class _FormAnalysisRecordingScreenV2State
                         ),
                   ),
                   if (isLoadingOrAnalyzing || _showingTransition)
-                    Positioned.fill(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ValueListenableBuilder<double>(
-                              valueListenable: _brainOpacityNotifier,
-                              builder: (context, opacity, child) {
-                                return Opacity(opacity: opacity, child: child);
-                              },
-                              child: AtomicNucleusLoader(
-                                key: const ValueKey(
-                                  'persistent-analysis-loader',
-                                ),
-                                speedMultiplierNotifier: _loaderSpeedNotifier,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            CyclingAnalysisText(
-                              brainOpacityNotifier: _brainOpacityNotifier,
-                              shouldShow: !_showingTransition,
-                            ),
-                          ],
-                        ),
-                      ),
+                    AnalysisLoadingOverlay(
+                      loaderSpeedNotifier: _loaderSpeedNotifier,
+                      brainOpacityNotifier: _brainOpacityNotifier,
+                      progressNotifier: _progressNotifier,
+                      progressBarOpacityNotifier: _progressBarOpacityNotifier,
+                      statusMessage: statusMessage,
+                      showStatusMessage: !_showingTransition,
                     ),
                 ],
               ),
@@ -297,12 +329,31 @@ class _FormAnalysisRecordingScreenV2State
     );
   }
 
+  /// Extracts the status message from the current state.
+  /// Returns "Complete" during transition delay, or the progress message from state.
+  String? _getStatusMessage(VideoFormAnalysisState state) {
+    // Show "Complete" during the 500ms delay before finalization animation
+    if (_waitingForTransition) {
+      return 'Complete';
+    }
+    if (state is VideoFormAnalysisRecording) {
+      return state.progressMessage;
+    } else if (state is VideoFormAnalysisValidating) {
+      return state.progressMessage;
+    } else if (state is VideoFormAnalysisAnalyzing) {
+      return state.progressMessage;
+    }
+    return null;
+  }
+
   Widget _buildContent(BuildContext context, VideoFormAnalysisState state) {
     if (state is VideoFormAnalysisInitial) {
       return _buildStageLayout(context);
     } else if (state is VideoFormAnalysisRecording ||
         state is VideoFormAnalysisValidating ||
-        state is VideoFormAnalysisAnalyzing) {
+        state is VideoFormAnalysisAnalyzing ||
+        _waitingForTransition) {
+      // Show nothing while loading/analyzing or waiting for transition delay
       return const SizedBox.shrink();
     } else if (state is VideoFormAnalysisComplete) {
       return AnalysisResultsView(
@@ -801,7 +852,8 @@ class _FormAnalysisRecordingScreenV2State
     );
   }
 
-  void _showPoseAnalysisWarning(BuildContext context, String message) {
+  /// Shows pose analysis warning toast.
+  void _showPoseAnalysisWarningDeferred(String message) {
     locator.get<ToastService>().show(
       message: message,
       type: ToastType.warning,

@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+
+import 'package:turbo_disc_golf/components/loaders/analysis_progress_bar.dart';
+import 'package:turbo_disc_golf/components/loaders/atomic_nuclear_loader.dart';
+import 'package:turbo_disc_golf/utils/color_helpers.dart';
+
+/// Overlay displayed during form analysis showing loader, progress bar, and status message.
+///
+/// Shows the current analysis step message from SSE events, defaulting to
+/// "Uploading..." when no message is available yet.
+class AnalysisLoadingOverlay extends StatelessWidget {
+  const AnalysisLoadingOverlay({
+    super.key,
+    required this.loaderSpeedNotifier,
+    required this.brainOpacityNotifier,
+    required this.progressNotifier,
+    required this.progressBarOpacityNotifier,
+    this.statusMessage,
+    this.showStatusMessage = true,
+  });
+
+  /// Controls the speed of the loader animation.
+  final ValueNotifier<double> loaderSpeedNotifier;
+
+  /// Controls the opacity of the loader (for fade out during transition).
+  final ValueNotifier<double> brainOpacityNotifier;
+
+  /// Progress value from 0.0 to 1.0 for the progress bar.
+  final ValueNotifier<double> progressNotifier;
+
+  /// Controls the opacity of the progress bar.
+  final ValueNotifier<double> progressBarOpacityNotifier;
+
+  /// Status message from SSE events. Defaults to "Uploading..." if null.
+  final String? statusMessage;
+
+  /// Whether to show the status message text.
+  final bool showStatusMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ValueListenableBuilder<double>(
+              valueListenable: brainOpacityNotifier,
+              builder: (context, opacity, child) {
+                return Opacity(opacity: opacity, child: child);
+              },
+              child: AtomicNucleusLoader(
+                key: const ValueKey('persistent-analysis-loader'),
+                speedMultiplierNotifier: loaderSpeedNotifier,
+              ),
+            ),
+            const SizedBox(height: 24),
+            AnalysisProgressBar(
+              progressNotifier: progressNotifier,
+              opacityNotifier: progressBarOpacityNotifier,
+            ),
+            const SizedBox(height: 24),
+            // Always render the status message to maintain layout height,
+            // but fade opacity in sync with progress bar
+            ValueListenableBuilder<double>(
+              valueListenable: brainOpacityNotifier,
+              builder: (context, brainOpacity, _) {
+                return ValueListenableBuilder<double>(
+                  valueListenable: progressBarOpacityNotifier,
+                  builder: (context, progressBarOpacity, _) {
+                    // Fade with progress bar, or to 0 when showStatusMessage is false
+                    final double effectiveOpacity = showStatusMessage
+                        ? (brainOpacity * progressBarOpacity)
+                        : 0.0;
+                    return Opacity(
+                      opacity: effectiveOpacity,
+                      child: _buildStatusMessage(),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    final String message = statusMessage ?? 'Uploading...';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeIn,
+        switchOutCurve: Curves.easeOut,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: Text(
+          message,
+          key: ValueKey<String>(message),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: SenseiColors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}

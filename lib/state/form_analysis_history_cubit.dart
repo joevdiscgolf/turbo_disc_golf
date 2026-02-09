@@ -253,9 +253,21 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
 
       debugPrint('[FormAnalysisHistoryCubit] Deleting analysis: $analysisId');
 
+      // Collect video URLs from the analysis we already have in memory
+      final List<String> videoUrls = [];
+      if (removedAnalysis != null) {
+        if (removedAnalysis.videoMetadata.skeletonVideoUrl != null) {
+          videoUrls.add(removedAnalysis.videoMetadata.skeletonVideoUrl!);
+        }
+        if (removedAnalysis.videoMetadata.skeletonOnlyVideoUrl != null) {
+          videoUrls.add(removedAnalysis.videoMetadata.skeletonOnlyVideoUrl!);
+        }
+      }
+
       final bool success = await FBFormAnalysisDataLoader.deleteAnalysis(
         uid: uid,
         analysisId: analysisId,
+        videoUrls: videoUrls,
       );
 
       if (success) {
@@ -300,6 +312,21 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
   /// Delete all form analyses for the current user (debug only).
   /// Clears both Firestore data and Cloud Storage images.
   Future<void> deleteAllAnalyses() async {
+    // Collect video URLs from analyses we have in memory before changing state
+    final List<String> videoUrls = [];
+    if (state is FormAnalysisHistoryLoaded) {
+      final FormAnalysisHistoryLoaded loadedState =
+          state as FormAnalysisHistoryLoaded;
+      for (final analysis in loadedState.analyses) {
+        if (analysis.videoMetadata.skeletonVideoUrl != null) {
+          videoUrls.add(analysis.videoMetadata.skeletonVideoUrl!);
+        }
+        if (analysis.videoMetadata.skeletonOnlyVideoUrl != null) {
+          videoUrls.add(analysis.videoMetadata.skeletonOnlyVideoUrl!);
+        }
+      }
+    }
+
     try {
       emit(const FormAnalysisHistoryLoading());
 
@@ -313,9 +340,13 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
       }
 
       debugPrint('[FormAnalysisHistoryCubit] Deleting all analyses for user: $uid');
+      debugPrint('[FormAnalysisHistoryCubit] Video URLs to delete: ${videoUrls.length}');
 
       // Delete all data
-      final bool success = await FBFormAnalysisDataLoader.deleteAllAnalysesForUser(uid);
+      final bool success = await FBFormAnalysisDataLoader.deleteAllAnalysesForUser(
+        uid,
+        videoUrls: videoUrls,
+      );
 
       if (success) {
         // Emit empty state

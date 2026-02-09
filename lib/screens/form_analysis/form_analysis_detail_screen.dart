@@ -2,14 +2,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
-import 'package:turbo_disc_golf/components/form_analysis/form_analysis_content.dart';
+import 'package:turbo_disc_golf/components/form_analysis/form_analysis_tabbed_view.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/tabs/form_observations_tab.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
@@ -52,9 +52,9 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
     // Check if observations tab should be shown
     _showObservationsTab =
         locator.get<FeatureFlagService>().getBool(
-          FeatureFlag.showFormObservationsTab,
-        ) &&
-        widget.analysis.formObservations != null;
+              FeatureFlag.showFormObservationsTab,
+            ) &&
+            widget.analysis.formObservations != null;
 
     // Initialize tab controller if showing tabs
     if (_showObservationsTab) {
@@ -108,7 +108,13 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
             bottomWidget: _showObservationsTab ? _buildTabBar() : null,
             bottomWidgetHeight: _showObservationsTab ? 40 : 0,
           ),
-          body: _showObservationsTab ? _buildTabBody() : _buildVideoView(),
+          body: FormAnalysisTabbedView(
+            analysis: widget.analysis,
+            onBack: () => Navigator.pop(context),
+            topPadding: _showObservationsTab ? 8 : 0,
+            tabController: _tabController,
+            logger: _logger,
+          ),
         ),
       ),
     );
@@ -136,27 +142,6 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
         Tab(text: 'Video'),
         Tab(text: 'Observations'),
       ],
-    );
-  }
-
-  Widget _buildTabBody() {
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        FormAnalysisContent(
-          analysis: widget.analysis,
-          onBack: () => Navigator.pop(context),
-          topPadding: 8,
-        ),
-        FormObservationsTab(analysis: widget.analysis),
-      ],
-    );
-  }
-
-  Widget _buildVideoView() {
-    return FormAnalysisContent(
-      analysis: widget.analysis,
-      onBack: () => Navigator.pop(context),
     );
   }
 
