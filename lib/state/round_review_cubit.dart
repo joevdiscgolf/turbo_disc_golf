@@ -71,6 +71,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
       feet: feet ?? currentHole.feet,
       throws: currentHole.throws,
       holeType: currentHole.holeType,
+      explicitScore: currentHole.explicitScore,
     );
 
     // Update the holes list
@@ -178,6 +179,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
       feet: currentHole.feet,
       throws: reindexedThrows,
       holeType: currentHole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updateHole(holeIndex, updatedHole);
@@ -213,6 +215,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
       feet: currentHole.feet,
       throws: reindexedThrows,
       holeType: currentHole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updateHole(holeIndex, updatedHole);
@@ -249,6 +252,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
       feet: hole.feet,
       throws: updatedThrows,
       holeType: hole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updateHole(holeIndex, updatedHole);
@@ -290,6 +294,7 @@ class RoundReviewCubit extends Cubit<RoundReviewState>
       feet: currentHole.feet,
       throws: reindexedThrows,
       holeType: currentHole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updateHole(holeIndex, updatedHole);

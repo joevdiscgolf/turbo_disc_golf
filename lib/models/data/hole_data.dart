@@ -12,6 +12,7 @@ class DGHole {
     required this.feet,
     required this.throws,
     this.holeType,
+    this.explicitScore,
   });
 
   final int number;
@@ -20,7 +21,14 @@ class DGHole {
   final List<DiscThrow> throws;
   final HoleType? holeType;
 
-  int get holeScore => getScoreFromThrows(throws);
+  /// Explicit score for score-only entry. When null, calculated from throws.
+  final int? explicitScore;
+
+  /// Returns the hole score. Uses explicitScore if set, otherwise calculates from throws.
+  int get holeScore => explicitScore ?? getScoreFromThrows(throws);
+
+  /// True if this hole has detailed throw data (not score-only).
+  bool get hasDetailedThrows => throws.isNotEmpty;
 
   int get relativeHoleScore => holeScore - par;
 

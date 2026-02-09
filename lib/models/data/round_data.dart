@@ -66,19 +66,25 @@ class DGRound {
 
   int getTotalScore() {
     return holes.fold(0, (total, hole) {
-      // Only count holes that have throws
-      if (hole.throws.isEmpty) return total;
+      // Only count holes that have throws or an explicit score
+      if (hole.throws.isEmpty && hole.explicitScore == null) return total;
       return total + hole.holeScore;
     });
   }
 
   int getTotalPar() {
     return holes.fold(0, (total, hole) {
-      // Only count holes that have throws
-      if (hole.throws.isEmpty) return total;
+      // Only count holes that have throws or an explicit score
+      if (hole.throws.isEmpty && hole.explicitScore == null) return total;
       return total + hole.par;
     });
   }
+
+  /// True if round has detailed throw data for at least some holes.
+  bool get hasDetailedThrows => holes.any((h) => h.hasDetailedThrows);
+
+  /// True if this is a score-only round (no detailed throw data).
+  bool get isScoreOnly => !hasDetailedThrows;
 
   int getRelativeToPar() {
     return getTotalScore() - getTotalPar();

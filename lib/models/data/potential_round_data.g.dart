@@ -14,6 +14,7 @@ PotentialDGHole _$PotentialDGHoleFromJson(Map json) => PotentialDGHole(
       ?.map((e) => DiscThrow.fromJson(Map<String, dynamic>.from(e as Map)))
       .toList(),
   holeType: $enumDecodeNullable(_$HoleTypeEnumMap, json['holeType']),
+  explicitScore: (json['explicitScore'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$PotentialDGHoleToJson(PotentialDGHole instance) =>
@@ -23,6 +24,7 @@ Map<String, dynamic> _$PotentialDGHoleToJson(PotentialDGHole instance) =>
       'feet': instance.feet,
       'throws': instance.throws?.map((e) => e.toJson()).toList(),
       'holeType': _$HoleTypeEnumMap[instance.holeType],
+      'explicitScore': instance.explicitScore,
     };
 
 const _$HoleTypeEnumMap = {

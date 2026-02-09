@@ -1534,7 +1534,7 @@ class _RecordRoundScreenState extends State<RecordRoundScreen> {
                 icon: showFinalize ? Icons.check : null,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                disabled: showFinalize && !allHolesFilled,
+                disabled: !kDebugMode && (showFinalize && !allHolesFilled),
                 onPressed: () {
                   final String eventName = showFinalize
                       ? 'Finalize Round Button Tapped'
