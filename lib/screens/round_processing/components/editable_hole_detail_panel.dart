@@ -95,6 +95,7 @@ class _EditableHoleDetailPanelState extends State<EditableHoleDetailPanel> {
         par: currentHole.par,
         distance: currentHole.feet,
         throws: currentHole.throws ?? [],
+        explicitScore: currentHole.explicitScore,
         parFocusNode: _parFocusNode,
         distanceFocusNode: _distanceFocusNode,
         bottomViewPadding: autoBottomPadding(context),

@@ -31,6 +31,7 @@ class EditHoleBody extends StatelessWidget {
     this.inWalkthroughSheet = false,
     this.hasRequiredFields = true,
     this.onReorder,
+    this.explicitScore,
   });
 
   final int? holeNumber;
@@ -42,6 +43,10 @@ class EditHoleBody extends StatelessWidget {
   final double bottomViewPadding;
   final bool inWalkthroughSheet;
   final bool hasRequiredFields;
+
+  /// Explicit score for score-only entries (e.g., imported from UDisc).
+  /// When set, the hole is valid without detailed throw data.
+  final int? explicitScore;
 
   // Callbacks
   final Function(int) onParChanged;
@@ -96,13 +101,9 @@ class EditHoleBody extends StatelessWidget {
                       enableReorder: true,
                       onReorder: onReorder,
                     )
-                  : Center(
-                      child: Text(
-                        'No throws',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  : explicitScore != null
+                      ? _buildScoreOnlyState(context)
+                      : _buildEmptyThrowsState(context),
             ),
 
             Padding(
@@ -229,9 +230,61 @@ class EditHoleBody extends StatelessWidget {
   }
 
   int? _getScore() {
+    // Prefer explicit score if set (score-only entry)
+    if (explicitScore != null && explicitScore! > 0) {
+      return explicitScore;
+    }
     return hasRequiredFields && throws.isNotEmpty
         ? getScoreFromThrows(throws)
         : null;
+  }
+
+  Widget _buildScoreOnlyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            FlutterRemix.file_list_2_line,
+            size: 48,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Score-only entry',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Score: $explicitScore',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: _getScoreColor(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add throws for detailed stats',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyThrowsState(BuildContext context) {
+    return Center(
+      child: Text(
+        'No throws',
+        style: Theme.of(context).textTheme.titleMedium
+            ?.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
   }
 
   Color _getScoreColor() {
@@ -239,13 +292,17 @@ class EditHoleBody extends StatelessWidget {
       return const Color(0xFFFFEB3B); // Bright yellow for incomplete
     }
 
-    if (par == null || par == 0 || throws.isEmpty) {
+    if (par == null || par == 0) {
       return ScoreColors.getScoreColor(0); // Default to par color
     }
 
-    // Use actual score (includes OB penalties) instead of just throws.length
-    final int actualScore = getScoreFromThrows(throws);
-    final int relativeScore = actualScore - par!;
+    // Use explicit score if available, otherwise calculate from throws
+    final int? score = _getScore();
+    if (score == null) {
+      return ScoreColors.getScoreColor(0); // Default to par color
+    }
+
+    final int relativeScore = score - par!;
     return ScoreColors.getScoreColor(relativeScore);
   }
 }

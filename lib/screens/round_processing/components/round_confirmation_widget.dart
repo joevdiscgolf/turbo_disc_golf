@@ -524,20 +524,27 @@ class _RoundConfirmationWidgetState extends State<RoundConfirmationWidget> {
       for (final hole in round.holes!) {
         final String holeName = hole.number?.toString() ?? 'Unknown';
 
-        // No throws recorded
-        if (hole.throws == null || hole.throws!.isEmpty) {
-          issues.add('Hole $holeName: No throws recorded');
-          hasRequiredFields = false;
-        } else {
-          // Check if hole has a basket throw (required for completion)
-          final bool hasBasketThrow = hole.throws!.any(
-            (t) => t.landingSpot == LandingSpot.inBasket,
-          );
-          if (!hasBasketThrow) {
-            issues.add('Hole $holeName: No basket throw recorded');
+        // Check if hole has explicit score (score-only entry)
+        final bool hasExplicitScore =
+            hole.explicitScore != null && hole.explicitScore! > 0;
+
+        if (!hasExplicitScore) {
+          // Only validate throws if no explicit score
+          if (hole.throws == null || hole.throws!.isEmpty) {
+            issues.add('Hole $holeName: No throws recorded');
             hasRequiredFields = false;
+          } else {
+            // Check if hole has a basket throw (required for completion)
+            final bool hasBasketThrow = hole.throws!.any(
+              (t) => t.landingSpot == LandingSpot.inBasket,
+            );
+            if (!hasBasketThrow) {
+              issues.add('Hole $holeName: No basket throw recorded');
+              hasRequiredFields = false;
+            }
           }
         }
+        // Score-only holes with explicitScore are valid - no validation needed
 
         // Missing distance (optional but recommended)
         if (hole.feet == null) {
