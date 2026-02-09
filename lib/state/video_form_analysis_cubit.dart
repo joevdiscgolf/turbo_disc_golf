@@ -38,7 +38,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     Handedness? handedness,
   }) async {
     emit(
-      const VideoFormAnalysisRecording(progressMessage: 'Opening camera...'),
+      const VideoFormAnalysisRecording(progressMessage: 'Opening camera'),
     );
 
     try {
@@ -49,9 +49,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       // Start timer to show loader after 200ms if picker is still open
       _loaderDelayTimer = Timer(const Duration(milliseconds: 200), () {
         debugPrint('[VideoFormAnalysisCubit] 200ms elapsed - showing loader');
-        emit(
-          const VideoFormAnalysisRecording(progressMessage: 'Loading video...'),
-        );
+        emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
       });
 
       final int maxSeconds = locator
@@ -107,9 +105,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       // Start timer to show loader after 200ms if picker is still open
       _loaderDelayTimer = Timer(const Duration(milliseconds: 200), () {
         debugPrint('[VideoFormAnalysisCubit] 200ms elapsed - showing loader');
-        emit(
-          const VideoFormAnalysisRecording(progressMessage: 'Loading video...'),
-        );
+        emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
       });
 
       final int maxSeconds = locator
@@ -308,7 +304,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         emit(
           VideoFormAnalysisAnalyzing(
             session: session,
-            progressMessage: 'Generating coaching feedback...',
+            progressMessage: 'Generating coaching feedback',
           ),
         );
       }

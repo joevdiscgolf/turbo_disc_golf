@@ -87,36 +87,75 @@ Future<String?> storageUploadImage({
 
 /// Delete a file from Cloud Storage using its download URL.
 ///
-/// [url]: The Firebase Storage download URL
+/// [url]: The Firebase Storage download URL (must be a gs:// or firebasestorage.googleapis.com URL)
 /// [timeoutDuration]: Timeout for the delete operation (default: 5 seconds)
 ///
-/// Returns true if deletion succeeded, false on failure.
+/// Returns true if deletion succeeded or URL is not a Firebase Storage URL, false on failure.
 Future<bool> storageDeleteByUrl(
   String url, {
   Duration timeoutDuration = const Duration(seconds: 5),
 }) async {
+  // Validate URL is a Firebase Storage URL before attempting deletion
+  final bool isFirebaseStorageUrl = url.startsWith('gs://') ||
+      url.contains('firebasestorage.googleapis.com') ||
+      url.contains('storage.googleapis.com');
+
+  if (!isFirebaseStorageUrl) {
+    debugPrint('[StorageUtils] ⏭️  Skipping non-Firebase URL: ${_truncateUrl(url)}');
+    debugPrint('[StorageUtils]    URL type: ${_identifyUrlType(url)}');
+    return true; // Not an error - just not a Firebase Storage URL
+  }
+
+  debugPrint('[StorageUtils] 🗑️  Attempting to delete: ${_truncateUrl(url)}');
+  debugPrint('[StorageUtils]    URL type: ${_identifyUrlType(url)}');
+
   try {
     final Reference ref = FirebaseStorage.instance.refFromURL(url);
+    debugPrint('[StorageUtils]    Resolved path: ${ref.fullPath}');
+    debugPrint('[StorageUtils]    Bucket: ${ref.bucket}');
+
     await ref.delete().timeout(timeoutDuration);
-    debugPrint('[StorageUtils] Deleted by URL: ${ref.fullPath}');
+    debugPrint('[StorageUtils] ✅ Deleted: ${ref.fullPath}');
     return true;
   } on FirebaseException catch (e) {
     // object-not-found is not an error - file may already be deleted
     if (e.code == 'object-not-found') {
-      debugPrint('[StorageUtils] File already deleted or not found: $url');
+      debugPrint('[StorageUtils] ✅ File already deleted or not found');
       return true;
     }
-    debugPrint('[StorageUtils] Delete by URL error: $e');
+    debugPrint('[StorageUtils] ❌ FirebaseException: code=${e.code}, message=${e.message}');
+    debugPrint('[StorageUtils]    Plugin: ${e.plugin}');
+    debugPrint('[StorageUtils]    Full URL: $url');
     return false;
   } catch (e, trace) {
-    debugPrint('[StorageUtils] Delete by URL error: $e');
+    debugPrint('[StorageUtils] ❌ Exception type: ${e.runtimeType}');
+    debugPrint('[StorageUtils]    Error: $e');
+    debugPrint('[StorageUtils]    Full URL: $url');
     FirebaseCrashlytics.instance.recordError(
       e,
       trace,
-      reason: '[firebase][storage][storageDeleteByUrl] exception',
+      reason: '[firebase][storage][storageDeleteByUrl] exception, url: ${_truncateUrl(url)}',
     );
     return false;
   }
+}
+
+/// Truncate URL for logging (show first 80 chars).
+String _truncateUrl(String url) {
+  if (url.length <= 80) return url;
+  return '${url.substring(0, 80)}...';
+}
+
+/// Identify the type of URL for debugging.
+String _identifyUrlType(String url) {
+  if (url.startsWith('gs://')) return 'gs:// (Firebase Storage)';
+  if (url.contains('firebasestorage.googleapis.com')) return 'Firebase Storage download URL';
+  if (url.contains('storage.googleapis.com')) return 'Google Cloud Storage URL';
+  if (url.contains('cloudflare')) return 'Cloudflare URL';
+  if (url.contains('amazonaws.com')) return 'AWS S3 URL';
+  if (url.startsWith('http://localhost') || url.startsWith('http://127.0.0.1')) return 'Localhost URL';
+  if (url.contains('/api/') || url.contains('/v1/') || url.contains('/v2/')) return 'API endpoint URL';
+  return 'Unknown URL type';
 }
 
 /// Delete all files in a Cloud Storage folder (prefix-based deletion).

@@ -1,14 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Card displaying arm speed data with a line chart and max speed stat.
-/// The chart is interactive - drag to see speed at any point.
 class ArmSpeedChartCard extends StatefulWidget {
   const ArmSpeedChartCard({
     super.key,
@@ -22,12 +20,6 @@ class ArmSpeedChartCard extends StatefulWidget {
 }
 
 class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
-  /// Currently selected index in the chart (null when not dragging)
-  int? _selectedIndex;
-
-  /// Global key for the chart container to calculate positions
-  final GlobalKey _chartKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -173,43 +165,24 @@ class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
                 color: SenseiColors.gray[600],
               ),
             ),
-            const Spacer(),
-            if (_selectedIndex == null)
-              Text(
-                'Drag to explore',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: SenseiColors.gray[400],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
           ],
         ),
         const SizedBox(height: 12),
-        GestureDetector(
-          onPanStart: (details) => _handleDragUpdate(details.localPosition),
-          onPanUpdate: (details) => _handleDragUpdate(details.localPosition),
-          onPanEnd: (_) => _handleDragEnd(),
-          onTapDown: (details) => _handleDragUpdate(details.localPosition),
-          onTapUp: (_) => _handleDragEnd(),
-          child: Container(
-            key: _chartKey,
-            height: 160,
-            decoration: BoxDecoration(
-              color: SenseiColors.gray[50],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CustomPaint(
-                painter: _ArmSpeedChartPainter(
-                  speeds: speeds,
-                  maxSpeed: widget.armSpeedData.maxSpeedMph,
-                  maxSpeedIndex: maxSpeedIndex,
-                  selectedIndex: _selectedIndex,
-                ),
-                size: Size.infinite,
+        Container(
+          height: 160,
+          decoration: BoxDecoration(
+            color: SenseiColors.gray[50],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CustomPaint(
+              painter: _ArmSpeedChartPainter(
+                speeds: speeds,
+                maxSpeed: widget.armSpeedData.maxSpeedMph,
+                maxSpeedIndex: maxSpeedIndex,
               ),
+              size: Size.infinite,
             ),
           ),
         ),
@@ -220,69 +193,6 @@ class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
   }
 
   Widget _buildChartLabels() {
-    // When dragging, show the selected frame and speed
-    if (_selectedIndex != null) {
-      final List<double> speeds = widget.armSpeedData.chartSpeedsAsList;
-      final int frameNumber =
-          widget.armSpeedData.chartStartFrame + _selectedIndex!;
-      final double speed = speeds[_selectedIndex!];
-
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Frame $frameNumber',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: SenseiColors.gray[600],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Container(
-              width: 1,
-              height: 16,
-              color: SenseiColors.gray[300],
-            ),
-            const SizedBox(width: 16),
-            Row(
-              children: [
-                const Icon(
-                  Icons.speed,
-                  size: 14,
-                  color: Color(0xFF6366F1),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${speed.toStringAsFixed(1)} mph',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF6366F1),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Default labels when not dragging
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -310,39 +220,6 @@ class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
       ],
     );
   }
-
-  void _handleDragUpdate(Offset localPosition) {
-    final RenderBox? renderBox =
-        _chartKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final Size size = renderBox.size;
-    final List<double> speeds = widget.armSpeedData.chartSpeedsAsList;
-    if (speeds.isEmpty) return;
-
-    // Chart padding values (must match painter)
-    const double leftPadding = 35.0;
-    const double rightPadding = 10.0;
-    final double chartWidth = size.width - leftPadding - rightPadding;
-
-    // Calculate index from x position
-    final double x = localPosition.dx - leftPadding;
-    final double normalizedX = (x / chartWidth).clamp(0.0, 1.0);
-    final int index = (normalizedX * (speeds.length - 1)).round();
-
-    if (index != _selectedIndex) {
-      HapticFeedback.selectionClick();
-      setState(() {
-        _selectedIndex = index.clamp(0, speeds.length - 1);
-      });
-    }
-  }
-
-  void _handleDragEnd() {
-    setState(() {
-      _selectedIndex = null;
-    });
-  }
 }
 
 class _ArmSpeedChartPainter extends CustomPainter {
@@ -350,13 +227,11 @@ class _ArmSpeedChartPainter extends CustomPainter {
     required this.speeds,
     required this.maxSpeed,
     required this.maxSpeedIndex,
-    this.selectedIndex,
   });
 
   final List<double> speeds;
   final double maxSpeed;
   final int maxSpeedIndex;
-  final int? selectedIndex;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -380,15 +255,8 @@ class _ArmSpeedChartPainter extends CustomPainter {
     _drawSpeedArea(canvas, chartLeft, chartTop, chartWidth, chartHeight);
     _drawSpeedLine(canvas, chartLeft, chartTop, chartWidth, chartHeight);
 
-    // Draw selected point indicator (if dragging)
-    if (selectedIndex != null) {
-      _drawSelectedPoint(canvas, chartLeft, chartTop, chartWidth, chartHeight);
-    }
-
-    // Highlight max speed point (only if not dragging or dragging on max)
-    if (selectedIndex == null || selectedIndex == maxSpeedIndex) {
-      _drawMaxSpeedPoint(canvas, chartLeft, chartTop, chartWidth, chartHeight);
-    }
+    // Highlight max speed point
+    _drawMaxSpeedPoint(canvas, chartLeft, chartTop, chartWidth, chartHeight);
   }
 
   void _drawGrid(
@@ -529,57 +397,6 @@ class _ArmSpeedChartPainter extends CustomPainter {
     canvas.drawPath(linePath, linePaint);
   }
 
-  void _drawSelectedPoint(
-    Canvas canvas,
-    double chartLeft,
-    double chartTop,
-    double chartWidth,
-    double chartHeight,
-  ) {
-    if (selectedIndex == null ||
-        selectedIndex! < 0 ||
-        selectedIndex! >= speeds.length) {
-      return;
-    }
-
-    final double axisMax = (maxSpeed / 10).ceil() * 10.0;
-    final double x =
-        chartLeft + (selectedIndex! / (speeds.length - 1)) * chartWidth;
-    final double y =
-        chartTop +
-        chartHeight -
-        (speeds[selectedIndex!] / axisMax) * chartHeight;
-
-    // Draw vertical line
-    final Paint linePaint = Paint()
-      ..color = const Color(0xFF6366F1).withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    canvas.drawLine(
-      Offset(x, chartTop),
-      Offset(x, chartTop + chartHeight),
-      linePaint,
-    );
-
-    // Outer glow
-    final Paint glowPaint = Paint()
-      ..color = const Color(0xFF6366F1).withValues(alpha: 0.4)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(x, y), 12, glowPaint);
-
-    // Outer ring
-    final Paint outerPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(x, y), 8, outerPaint);
-
-    // Inner dot
-    final Paint innerPaint = Paint()
-      ..color = const Color(0xFF6366F1)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(x, y), 5, innerPaint);
-  }
-
   void _drawMaxSpeedPoint(
     Canvas canvas,
     double chartLeft,
@@ -639,7 +456,6 @@ class _ArmSpeedChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _ArmSpeedChartPainter oldDelegate) {
     return oldDelegate.speeds != speeds ||
         oldDelegate.maxSpeed != maxSpeed ||
-        oldDelegate.maxSpeedIndex != maxSpeedIndex ||
-        oldDelegate.selectedIndex != selectedIndex;
+        oldDelegate.maxSpeedIndex != maxSpeedIndex;
   }
 }

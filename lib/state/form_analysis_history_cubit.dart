@@ -6,6 +6,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/firestore/fb_form_analysis_data_loader.dart';
+import 'package:turbo_disc_golf/services/form_analysis/pose_analysis_api_client.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_state.dart';
 
@@ -105,6 +106,7 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
 
   /// Refresh the analysis history from Firestore without showing loading state.
   /// Merges new analyses with existing paginated results, preserving scroll position.
+  /// Removes analyses that are missing from Firestore (likely deleted externally).
   Future<void> refreshHistory() async {
     final FormAnalysisHistoryState currentState = state;
 
@@ -123,26 +125,76 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         final Set<String> newAnalysisIds =
             newAnalyses.map((a) => a.id).whereType<String>().toSet();
 
-        // Keep existing analyses that aren't in the new batch (they're further down)
-        final List<FormAnalysisResponseV2> existingOnlyAnalyses = currentState
+        // Find the oldest timestamp in the new batch - anything newer than this
+        // that's not in the new batch was likely deleted from Firestore
+        final String? oldestNewTimestamp = newAnalyses.isNotEmpty
+            ? newAnalyses
+                .map((a) => a.createdAt)
+                .whereType<String>()
+                .reduce((a, b) => a.compareTo(b) < 0 ? a : b)
+            : null;
+
+        // Keep existing analyses that:
+        // 1. Are in the new batch (will be deduplicated), OR
+        // 2. Are OLDER than the oldest item in the new batch (paginated data)
+        //
+        // Remove analyses that:
+        // - Are NOT in the new batch AND
+        // - Are NEWER than or equal to the oldest new item (should have been returned)
+        final List<FormAnalysisResponseV2> existingToKeep = currentState
             .analyses
-            .where((a) => a.id != null && !newAnalysisIds.contains(a.id))
+            .where((existing) {
+              if (existing.id == null) return false;
+
+              // If it's in the new batch, it will be included from newAnalyses
+              if (newAnalysisIds.contains(existing.id)) return false;
+
+              // If no new analyses returned, keep nothing from local state
+              // (Firestore is the source of truth)
+              if (oldestNewTimestamp == null) return false;
+
+              // Keep only if it's older than the oldest new analysis
+              // (meaning it's paginated data we haven't refreshed yet)
+              final String? existingTimestamp = existing.createdAt;
+              if (existingTimestamp == null) return false;
+
+              return existingTimestamp.compareTo(oldestNewTimestamp) < 0;
+            })
             .toList();
 
-        // Combine: new analyses first, then existing analyses not in new batch
+        // Track removed analyses for logging
+        final int previousCount = currentState.analyses.length;
+        final int removedCount = previousCount - newAnalysisIds
+            .intersection(currentState.analyses
+                .map((a) => a.id)
+                .whereType<String>()
+                .toSet())
+            .length - existingToKeep.length;
+
+        // Combine: new analyses first, then older paginated analyses
         final List<FormAnalysisResponseV2> mergedAnalyses = [
           ...newAnalyses,
-          ...existingOnlyAnalyses,
+          ...existingToKeep,
         ];
 
         emit(FormAnalysisHistoryLoaded(
           analyses: mergedAnalyses,
           selectedAnalysis: currentState.selectedAnalysis,
-          hasMore: hasMore || existingOnlyAnalyses.isNotEmpty,
+          hasMore: hasMore || existingToKeep.isNotEmpty,
         ));
-        debugPrint(
-          '[FormAnalysisHistoryCubit] Refreshed: ${newAnalyses.length} new, ${existingOnlyAnalyses.length} preserved, total: ${mergedAnalyses.length}',
-        );
+
+        if (removedCount > 0) {
+          debugPrint(
+            '[FormAnalysisHistoryCubit] Refreshed: ${newAnalyses.length} from Firestore, '
+            '${existingToKeep.length} preserved (older), $removedCount removed (deleted externally), '
+            'total: ${mergedAnalyses.length}',
+          );
+        } else {
+          debugPrint(
+            '[FormAnalysisHistoryCubit] Refreshed: ${newAnalyses.length} from Firestore, '
+            '${existingToKeep.length} preserved, total: ${mergedAnalyses.length}',
+          );
+        }
       } else {
         emit(FormAnalysisHistoryLoaded(
           analyses: newAnalyses,
@@ -215,8 +267,8 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
   }
 
   /// Delete a specific form analysis optimistically.
-  /// Removes from local state immediately, then deletes from Firestore/Storage
-  /// in the background. Reverts and shows error toast on failure.
+  /// Removes from local state immediately, then calls backend API to delete
+  /// from Firestore and Cloud Storage. Reverts and shows error toast on failure.
   Future<void> deleteAnalysis(String analysisId) async {
     // Save state for rollback
     FormAnalysisResponseV2? removedAnalysis;
@@ -244,30 +296,13 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
     }
 
     try {
-      final String? uid = locator.get<AuthService>().currentUid;
-      if (uid == null) {
-        debugPrint('[FormAnalysisHistoryCubit] No user logged in');
-        _revertDelete(removedAnalysis, removedIndex);
-        return;
-      }
-
       debugPrint('[FormAnalysisHistoryCubit] Deleting analysis: $analysisId');
 
-      // Collect video URLs from the analysis we already have in memory
-      final List<String> videoUrls = [];
-      if (removedAnalysis != null) {
-        if (removedAnalysis.videoMetadata.skeletonVideoUrl != null) {
-          videoUrls.add(removedAnalysis.videoMetadata.skeletonVideoUrl!);
-        }
-        if (removedAnalysis.videoMetadata.skeletonOnlyVideoUrl != null) {
-          videoUrls.add(removedAnalysis.videoMetadata.skeletonOnlyVideoUrl!);
-        }
-      }
-
-      final bool success = await FBFormAnalysisDataLoader.deleteAnalysis(
-        uid: uid,
+      // Call backend API to delete analysis (handles Firestore + Cloud Storage)
+      final PoseAnalysisApiClient apiClient =
+          locator.get<PoseAnalysisApiClient>();
+      final bool success = await apiClient.deleteAnalysis(
         analysisId: analysisId,
-        videoUrls: videoUrls,
       );
 
       if (success) {
@@ -277,6 +312,9 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
         debugPrint('[FormAnalysisHistoryCubit] Failed to delete analysis');
         _revertDelete(removedAnalysis, removedIndex);
       }
+    } on PoseAnalysisException catch (e) {
+      debugPrint('[FormAnalysisHistoryCubit] Delete error: ${e.message}');
+      _revertDelete(removedAnalysis, removedIndex);
     } catch (e) {
       debugPrint('[FormAnalysisHistoryCubit] Delete error: $e');
       _revertDelete(removedAnalysis, removedIndex);
@@ -310,58 +348,64 @@ class FormAnalysisHistoryCubit extends Cubit<FormAnalysisHistoryState>
   }
 
   /// Delete all form analyses for the current user (debug only).
-  /// Clears both Firestore data and Cloud Storage images.
+  /// Calls the delete endpoint for each analysis in sequence.
   Future<void> deleteAllAnalyses() async {
-    // Collect video URLs from analyses we have in memory before changing state
-    final List<String> videoUrls = [];
-    if (state is FormAnalysisHistoryLoaded) {
-      final FormAnalysisHistoryLoaded loadedState =
-          state as FormAnalysisHistoryLoaded;
-      for (final analysis in loadedState.analyses) {
-        if (analysis.videoMetadata.skeletonVideoUrl != null) {
-          videoUrls.add(analysis.videoMetadata.skeletonVideoUrl!);
+    if (state is! FormAnalysisHistoryLoaded) return;
+
+    final FormAnalysisHistoryLoaded loadedState =
+        state as FormAnalysisHistoryLoaded;
+    final List<FormAnalysisResponseV2> analyses =
+        List<FormAnalysisResponseV2>.from(loadedState.analyses);
+
+    if (analyses.isEmpty) {
+      debugPrint('[FormAnalysisHistoryCubit] No analyses to delete');
+      return;
+    }
+
+    emit(const FormAnalysisHistoryLoading());
+
+    final PoseAnalysisApiClient apiClient = locator.get<PoseAnalysisApiClient>();
+    int successCount = 0;
+    int failCount = 0;
+
+    debugPrint(
+        '[FormAnalysisHistoryCubit] Deleting ${analyses.length} analyses in sequence...');
+
+    for (final FormAnalysisResponseV2 analysis in analyses) {
+      if (analysis.id == null) {
+        failCount++;
+        continue;
+      }
+
+      try {
+        final bool success = await apiClient.deleteAnalysis(
+          analysisId: analysis.id!,
+        );
+
+        if (success) {
+          successCount++;
+          debugPrint(
+              '[FormAnalysisHistoryCubit] Deleted ${analysis.id} ($successCount/${analyses.length})');
+        } else {
+          failCount++;
+          debugPrint(
+              '[FormAnalysisHistoryCubit] Failed to delete ${analysis.id}');
         }
-        if (analysis.videoMetadata.skeletonOnlyVideoUrl != null) {
-          videoUrls.add(analysis.videoMetadata.skeletonOnlyVideoUrl!);
-        }
+      } catch (e) {
+        failCount++;
+        debugPrint(
+            '[FormAnalysisHistoryCubit] Error deleting ${analysis.id}: $e');
       }
     }
 
-    try {
-      emit(const FormAnalysisHistoryLoading());
+    // Emit empty state
+    emit(const FormAnalysisHistoryLoaded(
+      analyses: [],
+      selectedAnalysis: null,
+    ));
 
-      // Get current user ID
-      final AuthService authService = locator.get<AuthService>();
-      final String? uid = authService.currentUid;
-
-      if (uid == null) {
-        emit(const FormAnalysisHistoryError(message: 'User not authenticated'));
-        return;
-      }
-
-      debugPrint('[FormAnalysisHistoryCubit] Deleting all analyses for user: $uid');
-      debugPrint('[FormAnalysisHistoryCubit] Video URLs to delete: ${videoUrls.length}');
-
-      // Delete all data
-      final bool success = await FBFormAnalysisDataLoader.deleteAllAnalysesForUser(
-        uid,
-        videoUrls: videoUrls,
-      );
-
-      if (success) {
-        // Emit empty state
-        emit(const FormAnalysisHistoryLoaded(
-          analyses: [],
-          selectedAnalysis: null,
-        ));
-        debugPrint('[FormAnalysisHistoryCubit] ✅ All analyses deleted successfully');
-      } else {
-        emit(const FormAnalysisHistoryError(message: 'Failed to delete analyses'));
-      }
-    } catch (e) {
-      debugPrint('[FormAnalysisHistoryCubit] Delete all error: $e');
-      emit(FormAnalysisHistoryError(message: 'Error deleting analyses: $e'));
-    }
+    debugPrint(
+        '[FormAnalysisHistoryCubit] ✅ Delete all complete: $successCount succeeded, $failCount failed');
   }
 
   @override

@@ -76,17 +76,20 @@ class FormAnalysisTabbedViewState extends State<FormAnalysisTabbedView>
     super.initState();
 
     // Use provided logger or create one
-    _logger = widget.logger ??
+    _logger =
+        widget.logger ??
         locator.get<LoggingService>().withBaseProperties({
           'screen_name': 'Form Analysis Tabbed View',
         });
 
+    print('widget form observations: ${widget.analysis.formObservations}');
+
     // Check if observations tab should be shown
     _showObservationsTab =
         locator.get<FeatureFlagService>().getBool(
-              FeatureFlag.showFormObservationsTab,
-            ) &&
-            widget.analysis.formObservations != null;
+          FeatureFlag.showFormObservationsTab,
+        ) &&
+        widget.analysis.formObservations != null;
 
     // Use external controller if provided, otherwise create internal one
     if (_showObservationsTab) {
@@ -132,7 +135,10 @@ class FormAnalysisTabbedViewState extends State<FormAnalysisTabbedView>
         controller: tabController,
         children: [
           _buildVideoTab(),
-          FormObservationsTab(analysis: widget.analysis),
+          FormObservationsTab(
+            analysis: widget.analysis,
+            topPadding: widget.topPadding,
+          ),
         ],
       );
     }
@@ -145,7 +151,9 @@ class FormAnalysisTabbedViewState extends State<FormAnalysisTabbedView>
       analysis: widget.analysis,
       onBack: widget.onBack,
       topPadding: widget.topPadding,
-      throwType: _parseThrowTechnique(widget.analysis.analysisResults.throwType),
+      throwType: _parseThrowTechnique(
+        widget.analysis.analysisResults.throwType,
+      ),
       cameraAngle: widget.analysis.analysisResults.cameraAngle,
       videoAspectRatio: widget.analysis.videoMetadata.videoAspectRatio,
       poseAnalysisResponse: widget.poseAnalysisResponse,

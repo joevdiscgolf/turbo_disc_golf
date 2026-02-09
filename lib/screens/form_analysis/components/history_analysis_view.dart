@@ -51,7 +51,8 @@ class HistoryAnalysisView extends StatefulWidget {
   State<HistoryAnalysisView> createState() => _HistoryAnalysisViewState();
 }
 
-class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
+class _HistoryAnalysisViewState extends State<HistoryAnalysisView>
+    with AutomaticKeepAliveClientMixin {
   int _selectedCheckpointIndex = 0;
   bool _showSkeletonOnly = false;
   final ProReferenceLoader _proRefLoader = ProReferenceLoader();
@@ -118,7 +119,12 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
     // Get skeleton video URLs from analysis
     final String? skeletonVideoUrl =
         widget.analysis.videoMetadata.skeletonVideoUrl;

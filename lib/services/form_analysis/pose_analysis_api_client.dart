@@ -691,7 +691,7 @@ class PoseAnalysisApiClient {
 
       // Parse SSE events from the stream
       String buffer = '';
-      int chunkCount = 0;
+
       await for (final List<int> chunk in response.stream.timeout(
         const Duration(minutes: 5),
         onTimeout: (EventSink<List<int>> sink) {
@@ -699,13 +699,8 @@ class PoseAnalysisApiClient {
           sink.close();
         },
       )) {
-        chunkCount++;
         final String decodedChunk = utf8.decode(chunk);
-        debugPrint('═══════════════════════════════════════════════════════');
-        debugPrint('📥 SSE RAW CHUNK #$chunkCount:');
-        debugPrint('   Bytes: ${chunk.length}');
-        debugPrint('   Decoded: $decodedChunk');
-        debugPrint('═══════════════════════════════════════════════════════');
+
         buffer += decodedChunk;
 
         // Process complete events (delimited by double newline)
@@ -714,20 +709,11 @@ class PoseAnalysisApiClient {
           final String eventData = buffer.substring(0, eventEnd);
           buffer = buffer.substring(eventEnd + 2);
 
-          debugPrint('───────────────────────────────────────────────────────');
-          debugPrint('📥 SSE RAW EVENT TEXT:');
-          debugPrint(eventData);
-          debugPrint('───────────────────────────────────────────────────────');
-
           final _SSEEvent? event = _parseSSEEvent(eventData);
           if (event == null) {
             debugPrint('⚠️ Failed to parse SSE event (null result)');
             continue;
           }
-
-          debugPrint('📥 SSE PARSED Event: type=${event.type}');
-          debugPrint('   Data length: ${event.data.length} chars');
-          debugPrint('   Data preview: ${event.data.length > 200 ? '${event.data.substring(0, 200)}...' : event.data}');
 
           switch (event.type) {
             case 'progress':
@@ -815,6 +801,64 @@ class PoseAnalysisApiClient {
 
     if (eventType == null || data == null) return null;
     return _SSEEvent(type: eventType, data: data);
+  }
+
+  /// Delete a form analysis and all associated data (Firestore + Cloud Storage).
+  ///
+  /// [analysisId] - The analysis ID to delete
+  ///
+  /// The user is identified from the auth token.
+  /// Returns true if deletion succeeded, false otherwise.
+  /// Throws [PoseAnalysisException] on network errors.
+  Future<bool> deleteAnalysis({required String analysisId}) async {
+    final Uri uri = Uri.parse('$_baseUrl/api/v1/analysis/$analysisId');
+
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🗑️  DELETE ANALYSIS REQUEST:');
+    debugPrint('   URL: $uri');
+    debugPrint('   Analysis ID: $analysisId');
+    debugPrint('═══════════════════════════════════════════════════════');
+
+    try {
+      final Map<String, String> authHeaders = await _getAuthHeaders();
+
+      final http.Response response = await _httpClient
+          .delete(uri, headers: authHeaders)
+          .timeout(const Duration(seconds: 30));
+
+      debugPrint('📥 DELETE RESPONSE:');
+      debugPrint('   Status Code: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        debugPrint('   ✅ Analysis deleted successfully');
+        if (response.body.isNotEmpty) {
+          debugPrint('   Response: ${response.body}');
+        }
+        return true;
+      } else {
+        debugPrint('   ❌ Delete failed');
+        debugPrint('   Body: ${response.body}');
+        return false;
+      }
+    } on TimeoutException {
+      debugPrint('❌ Delete request timed out');
+      throw PoseAnalysisException(
+        'Delete request timed out. Please try again.',
+      );
+    } on SocketException catch (e) {
+      debugPrint('❌ DELETE SOCKET EXCEPTION: ${e.message}');
+      throw PoseAnalysisException(
+        'Unable to reach the server. Please check your connection.',
+      );
+    } on http.ClientException catch (e) {
+      debugPrint('❌ DELETE HTTP CLIENT EXCEPTION: ${e.message}');
+      throw PoseAnalysisException(
+        'Unable to reach the server. Please check your connection.',
+      );
+    } catch (e) {
+      debugPrint('❌ DELETE UNEXPECTED ERROR: $e');
+      throw PoseAnalysisException('Something went wrong. Please try again.');
+    }
   }
 
   /// Check if the analysis server is healthy

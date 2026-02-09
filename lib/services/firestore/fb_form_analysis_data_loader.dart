@@ -503,16 +503,31 @@ abstract class FBFormAnalysisDataLoader {
       }
 
       // Step 3: Delete skeleton videos by URL
+      if (videoUrls.isNotEmpty) {
+        debugPrint('[FBFormAnalysisDataLoader] ═══ VIDEO URLS TO DELETE ═══');
+        for (int i = 0; i < videoUrls.length; i++) {
+          final String url = videoUrls[i];
+          debugPrint('[FBFormAnalysisDataLoader] [$i] ${url.length > 100 ? '${url.substring(0, 100)}...' : url}');
+        }
+        debugPrint('[FBFormAnalysisDataLoader] ════════════════════════════');
+      }
+
+      int deletedCount = 0;
       for (final String videoUrl in videoUrls) {
-        debugPrint(
-          '[FBFormAnalysisDataLoader] Deleting video: ${videoUrl.substring(0, videoUrl.length > 80 ? 80 : videoUrl.length)}...',
-        );
+        if (videoUrl.isEmpty) {
+          debugPrint('[FBFormAnalysisDataLoader] ⏭️  Skipping empty URL');
+          continue;
+        }
         final bool videoDeleted = await storageDeleteByUrl(videoUrl);
         if (videoDeleted) {
+          deletedCount++;
           debugPrint('[FBFormAnalysisDataLoader] ✅ Video deleted');
         } else {
           debugPrint('[FBFormAnalysisDataLoader] ⚠️  Video deletion failed');
         }
+      }
+      if (videoUrls.isNotEmpty) {
+        debugPrint('[FBFormAnalysisDataLoader] Video deletion summary: $deletedCount/${videoUrls.length}');
       }
 
       debugPrint('═══════════════════════════════════════════════════════');
@@ -590,15 +605,28 @@ abstract class FBFormAnalysisDataLoader {
       debugPrint(
         '[FBFormAnalysisDataLoader] Deleting ${videoUrls.length} skeleton videos...',
       );
+      debugPrint('[FBFormAnalysisDataLoader] ═══ VIDEO URLS TO DELETE ═══');
+      for (int i = 0; i < videoUrls.length; i++) {
+        final String url = videoUrls[i];
+        debugPrint('[FBFormAnalysisDataLoader] [$i] ${url.length > 100 ? '${url.substring(0, 100)}...' : url}');
+      }
+      debugPrint('[FBFormAnalysisDataLoader] ════════════════════════════');
+
       int deletedCount = 0;
+      int skippedCount = 0;
       for (final String videoUrl in videoUrls) {
+        if (videoUrl.isEmpty) {
+          debugPrint('[FBFormAnalysisDataLoader] ⏭️  Skipping empty URL');
+          skippedCount++;
+          continue;
+        }
         final bool videoDeleted = await storageDeleteByUrl(videoUrl);
         if (videoDeleted) {
           deletedCount++;
         }
       }
       debugPrint(
-        '[FBFormAnalysisDataLoader] ✅ Deleted $deletedCount/${videoUrls.length} skeleton videos',
+        '[FBFormAnalysisDataLoader] ✅ Deleted $deletedCount/${videoUrls.length} skeleton videos (skipped: $skippedCount)',
       );
 
       debugPrint('═══════════════════════════════════════════════════════');
