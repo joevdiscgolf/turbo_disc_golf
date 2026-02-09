@@ -18,6 +18,7 @@ class PotentialDGHole {
     this.feet,
     this.throws,
     this.holeType,
+    this.explicitScore,
   });
 
   final int? number;
@@ -25,6 +26,9 @@ class PotentialDGHole {
   final int? feet;
   final List<DiscThrow>? throws;
   final HoleType? holeType;
+
+  /// Explicit score for score-only entry. When null, calculated from throws.
+  final int? explicitScore;
 
   factory PotentialDGHole.fromJson(Map<String, dynamic> json) =>
       _$PotentialDGHoleFromJson(json);
@@ -38,12 +42,12 @@ class PotentialDGHole {
         par == null ||
         par == 0 ||
         feet == null ||
-        feet == 0 ||
-        !lastThrowInBasket) {
+        feet == 0) {
       return false;
     }
 
-    return true;
+    // Valid if throws complete OR explicit score provided
+    return lastThrowInBasket || (explicitScore != null && explicitScore! > 0);
   }
 
   bool get lastThrowInBasket {
@@ -80,8 +84,9 @@ class PotentialDGHole {
       number: number!,
       par: par!,
       feet: feet!,
-      throws: throws!,
+      throws: throws ?? [],
       holeType: holeType,
+      explicitScore: explicitScore,
     );
   }
 }

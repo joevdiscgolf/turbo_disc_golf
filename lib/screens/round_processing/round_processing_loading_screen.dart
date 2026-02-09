@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,11 +7,11 @@ import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/course/course_data.dart';
 import 'package:turbo_disc_golf/models/data/round_data.dart';
+import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/explosion_effect.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/morphing_background.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/persistent_square.dart';
 import 'package:turbo_disc_golf/screens/round_processing/components/round_confirmation_widget.dart';
-import 'package:turbo_disc_golf/screens/record_round/record_round_screen.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/juge_round_tab/judge_round_tab.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_stats_tab/round_stats_body.dart';
 import 'package:turbo_disc_golf/screens/round_review/tabs/round_story_tab.dart';
@@ -111,9 +110,6 @@ class _RoundProcessingLoadingScreenState
 
     if (widget.fromFinalizeBanner &&
         confirmationCubit.state is ConfirmingRoundActive) {
-      debugPrint(
-        'RoundProcessingLoadingScreen: Confirmation already active from finalize banner, skipping parsing',
-      );
       if (mounted) {
         setState(() {
           _processingState = _ProcessingState.confirming;
@@ -127,9 +123,7 @@ class _RoundProcessingLoadingScreenState
     final RecordRoundState state = cubit.state;
 
     // Sanity check: ensure we have an active recording state
-    // (This should always be true, but we check to be safe)
     if (state is! RecordRoundActive) {
-      debugPrint('RoundProcessingLoadingScreen: No active recording state');
       if (mounted) {
         _navigateBackToRecordRound();
       }
@@ -142,9 +136,12 @@ class _RoundProcessingLoadingScreenState
     final String? selectedLayoutId = state.selectedLayout?.id;
     final int numHoles = state.numHoles;
 
-    // If using shared preferences (cached round), we still need a transcript
-    // but it won't be used if a cached round is found
+    // If transcript is empty, show error and go back
     if (transcript.isEmpty && !widget.useSharedPreferences) {
+      if (mounted) {
+        locator.get<ToastService>().showError('Please add hole descriptions.');
+        _navigateBackToRecordRound();
+      }
       return;
     }
 
@@ -187,7 +184,6 @@ class _RoundProcessingLoadingScreenState
         _navigateBackToRecordRound();
       }
     } catch (e) {
-      debugPrint('RoundProcessingLoadingScreen: Exception during parsing: $e');
       if (mounted) {
         locator.get<ToastService>().showError('Error processing round: $e');
         _navigateBackToRecordRound();
@@ -283,12 +279,27 @@ class _RoundProcessingLoadingScreenState
   void _navigateBackToRecordRound() {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     Navigator.of(context).pushReplacement(
-      CupertinoPageRoute(
-        builder: (context) => RecordRoundScreen(
-          topViewPadding: mediaQuery.viewPadding.top,
-          bottomViewPadding: mediaQuery.viewPadding.bottom,
-          skipIntroAnimations: true,
-        ),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            RecordRoundScreen(
+              topViewPadding: mediaQuery.viewPadding.top,
+              bottomViewPadding: mediaQuery.viewPadding.bottom,
+              skipIntroAnimations: true,
+            ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Slide in from left (reverse of normal push) to feel like going back
+          const begin = Offset(-1.0, 0.0);
+          const end = Offset.zero;
+          final tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: Curves.easeInOut));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
       ),
     );
   }

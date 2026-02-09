@@ -94,6 +94,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
       feet: feet ?? currentHole.feet,
       throws: currentHole.throws,
       holeType: currentHole.holeType,
+      explicitScore: currentHole.explicitScore,
     );
 
     // Update the holes list
@@ -232,6 +233,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
       feet: currentHole.feet,
       throws: reindexedThrows,
       holeType: currentHole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updatePotentialHole(holeIndex, updatedHole);
@@ -270,6 +272,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
       feet: currentHole.feet,
       throws: reindexedThrows,
       holeType: currentHole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updatePotentialHole(holeIndex, updatedHole);
@@ -307,6 +310,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
       feet: hole.feet,
       throws: updatedThrows,
       holeType: hole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updatePotentialHole(holeIndex, updatedHole);
@@ -351,6 +355,7 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
       feet: currentHole.feet,
       throws: reindexedThrows,
       holeType: currentHole.holeType,
+      explicitScore: null, // Clear when modifying throws
     );
 
     updatePotentialHole(holeIndex, updatedHole);
@@ -629,6 +634,8 @@ class RoundConfirmationCubit extends Cubit<RoundConfirmationState>
         par: hole.par,
         feet: hole.feet,
         throws: enhancedThrows,
+        holeType: hole.holeType,
+        explicitScore: hole.explicitScore,
       );
     }).toList();
 

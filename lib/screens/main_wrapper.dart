@@ -44,12 +44,13 @@ class _MainWrapperState extends State<MainWrapper> {
 
   // Tab names for form analysis tab mode (may include Putt Practice)
   List<String> _getFormAnalysisTabNames(FeatureFlagService flags) {
-    final List<String> names = ['Rounds', 'Form Coach'];
+    final List<String> names = ['Rounds', 'Form coach'];
     if (flags.usePuttPracticeTab) {
       names.add('Putts');
     }
     return names;
   }
+
   // Tab names for bottom navigation mode
   static const List<String> _bottomNavTabNames = [
     'Rounds',
@@ -233,7 +234,7 @@ class _MainWrapperState extends State<MainWrapper> {
               ),
               const BottomNavigationBarItem(
                 icon: _BetaBadgeIcon(emoji: '📹'),
-                label: 'Form Coach',
+                label: 'Form coach',
               ),
               if (showPuttPracticeTab)
                 const BottomNavigationBarItem(
@@ -517,10 +518,7 @@ class _BetaBadgeIcon extends StatelessWidget {
           right: -12,
           top: -4,
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 3,
-              vertical: 1,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
             decoration: BoxDecoration(
               color: Colors.blue,
               borderRadius: BorderRadius.circular(4),
