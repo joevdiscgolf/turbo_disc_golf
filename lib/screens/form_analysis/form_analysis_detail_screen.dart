@@ -5,11 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
+import 'package:turbo_disc_golf/components/form_analysis/form_analysis_content.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
-import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
-import 'package:turbo_disc_golf/screens/form_analysis/components/history_analysis_view.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/tabs/form_observations_tab.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
@@ -144,47 +143,21 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildVideoView(),
-        FormObservationsTab(
+        FormAnalysisContent(
           analysis: widget.analysis,
-          videoUrl: widget.analysis.videoMetadata.videoUrl,
-          skeletonVideoUrl: widget.analysis.videoMetadata.skeletonVideoUrl,
+          onBack: () => Navigator.pop(context),
+          topPadding: 8,
         ),
+        FormObservationsTab(analysis: widget.analysis),
       ],
     );
   }
 
   Widget _buildVideoView() {
-    return HistoryAnalysisView(
+    return FormAnalysisContent(
       analysis: widget.analysis,
       onBack: () => Navigator.pop(context),
-      topPadding: 8,
-      videoUrl: widget.analysis.videoMetadata.videoUrl,
-      throwType: _parseThrowTechnique(
-        widget.analysis.analysisResults.throwType,
-      ),
-      cameraAngle: widget.analysis.analysisResults.cameraAngle,
-      videoAspectRatio: widget.analysis.videoMetadata.videoAspectRatio,
     );
-  }
-
-  /// Parse throw technique string to enum (for video comparison feature)
-  ThrowTechnique? _parseThrowTechnique(String throwTypeStr) {
-    final String lowerCase = throwTypeStr.toLowerCase();
-    switch (lowerCase) {
-      case 'backhand':
-        return ThrowTechnique.backhand;
-      case 'forehand':
-        return ThrowTechnique.forehand;
-      case 'tomahawk':
-        return ThrowTechnique.tomahawk;
-      case 'thumber':
-        return ThrowTechnique.thumber;
-      case 'overhand':
-        return ThrowTechnique.overhand;
-      default:
-        return null; // Unknown throw type
-    }
   }
 
   Widget _buildMenuButton() {

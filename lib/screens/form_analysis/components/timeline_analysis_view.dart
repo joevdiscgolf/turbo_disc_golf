@@ -51,7 +51,6 @@ class TimelineAnalysisView extends StatefulWidget {
     required this.analysis,
     required this.onBack,
     this.topPadding = 0,
-    this.videoUrl,
     this.throwType,
     this.cameraAngle,
     this.videoAspectRatio,
@@ -61,7 +60,6 @@ class TimelineAnalysisView extends StatefulWidget {
   final FormAnalysisResponseV2 analysis;
   final VoidCallback onBack;
   final double topPadding;
-  final String? videoUrl;
   final ThrowTechnique? throwType;
   final CameraAngle? cameraAngle;
   final double? videoAspectRatio;
@@ -482,18 +480,17 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                   ),
                 ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                 child: VideoSkeletonToggle(
                   showSkeletonOnly: showSkeletonOnly,
                   onChanged: (value) => cubit.setShowSkeletonOnly(value),
                 ),
               ),
               CheckpointVideoDisplay(
-                videoUrl: widget.videoUrl!,
                 skeletonVideoUrl:
-                    widget.analysis.videoMetadata.skeletonVideoUrl,
+                    widget.analysis.videoMetadata.skeletonVideoUrl!,
                 skeletonOnlyVideoUrl:
-                    widget.analysis.videoMetadata.skeletonOnlyVideoUrl,
+                    widget.analysis.videoMetadata.skeletonOnlyVideoUrl!,
                 videoAspectRatio: widget.videoAspectRatio,
                 returnedVideoAspectRatio:
                     widget.analysis.videoMetadata.returnedVideoAspectRatio,
@@ -515,12 +512,12 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                 activeCheckpoints,
               ),
               if (locator.get<FeatureFlagService>().getBool(
-                  FeatureFlag.showFormAnalysisMeasurementsCard,
-                ))
-              V2MeasurementsCard(
-                checkpoint: checkpoint,
-                cameraAngle: widget.analysis.analysisResults.cameraAngle,
-              ),
+                FeatureFlag.showFormAnalysisMeasurementsCard,
+              ))
+                V2MeasurementsCard(
+                  checkpoint: checkpoint,
+                  cameraAngle: widget.analysis.analysisResults.cameraAngle,
+                ),
             ],
           );
         },

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/asset_image_icon.dart';
 import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
+import 'package:turbo_disc_golf/components/error_states/generation_error_state.dart';
 import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
 import 'package:turbo_disc_golf/components/liquid_glass_card.dart';
@@ -310,7 +311,7 @@ class _FormAnalysisRecordingScreenV2State
         topViewPadding: widget.topViewPadding,
       );
     } else if (state is VideoFormAnalysisError) {
-      return _buildErrorView(context, state.message, state.session);
+      return _buildErrorView(context, state.message);
     }
     return const SizedBox.shrink();
   }
@@ -808,49 +809,15 @@ class _FormAnalysisRecordingScreenV2State
     );
   }
 
-  Widget _buildErrorView(
-    BuildContext context,
-    String message,
-    dynamic session,
-  ) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
-            const SizedBox(height: 24),
-            Text(
-              'Analysis failed',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: SenseiColors.darkGray,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: SenseiColors.gray[600]),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF137e66),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                _logger.track('Try Again Button Tapped');
-                BlocProvider.of<VideoFormAnalysisCubit>(context).reset();
-              },
-              child: const Text('Try again'),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildErrorView(BuildContext context, String message) {
+    return GenerationErrorState(
+      title: 'Analysis failed',
+      accentColor: const Color(0xFF137e66),
+      icon: Icons.videocam_off_outlined,
+      onRetry: () {
+        _logger.track('Form Analysis Try Again Button Tapped');
+        BlocProvider.of<VideoFormAnalysisCubit>(context).reset();
+      },
     );
   }
 }

@@ -119,15 +119,23 @@ class _HistoryAnalysisViewState extends State<HistoryAnalysisView> {
 
   @override
   Widget build(BuildContext context) {
-    // Delegate to TimelineAnalysisView when feature flag is enabled and video is available
+    // Get skeleton video URLs from analysis
+    final String? skeletonVideoUrl =
+        widget.analysis.videoMetadata.skeletonVideoUrl;
+    final String? skeletonOnlyVideoUrl =
+        widget.analysis.videoMetadata.skeletonOnlyVideoUrl;
+
+    // Delegate to TimelineAnalysisView when feature flag is enabled and skeleton videos are available
+    // Note: Original videoUrl is no longer required - skeleton overlay video serves as the main video
     if (locator.get<FeatureFlagService>().showCheckpointTimelinePlayer &&
-        widget.videoUrl != null &&
-        widget.videoUrl!.isNotEmpty) {
+        skeletonVideoUrl != null &&
+        skeletonVideoUrl.isNotEmpty &&
+        skeletonOnlyVideoUrl != null &&
+        skeletonOnlyVideoUrl.isNotEmpty) {
       return TimelineAnalysisView(
         analysis: widget.analysis,
         onBack: widget.onBack,
         topPadding: widget.topPadding,
-        videoUrl: widget.videoUrl,
         throwType: widget.throwType,
         cameraAngle: _effectiveCameraAngle,
         videoAspectRatio: widget.videoAspectRatio,

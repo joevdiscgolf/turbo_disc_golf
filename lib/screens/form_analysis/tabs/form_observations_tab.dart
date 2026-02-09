@@ -17,15 +17,9 @@ class FormObservationsTab extends StatefulWidget {
   const FormObservationsTab({
     super.key,
     required this.analysis,
-    required this.videoUrl,
-    this.skeletonVideoUrl,
   });
 
   final FormAnalysisResponseV2 analysis;
-  final String? videoUrl;
-
-  /// URL for skeleton overlay video (preferred for observations)
-  final String? skeletonVideoUrl;
 
   @override
   State<FormObservationsTab> createState() => _FormObservationsTabState();
@@ -64,7 +58,8 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
       },
     );
 
-    if (widget.videoUrl != null && observation.hasVideoSegment) {
+    final String? videoUrl = widget.analysis.videoMetadata.skeletonVideoUrl;
+    if (videoUrl != null && observation.hasVideoSegment) {
       _showSegmentPlayer(observation);
     }
   }
@@ -95,12 +90,9 @@ class _FormObservationsTabState extends State<FormObservationsTab> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        // Prefer skeleton overlay video for observations
-        final String effectiveVideoUrl =
-            widget.skeletonVideoUrl ?? widget.videoUrl!;
         return ObservationSegmentPlayer(
           observation: observation,
-          videoUrl: effectiveVideoUrl,
+          videoUrl: widget.analysis.videoMetadata.skeletonVideoUrl!,
           fps: fps,
         );
       },

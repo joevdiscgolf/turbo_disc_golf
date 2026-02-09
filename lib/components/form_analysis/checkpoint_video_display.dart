@@ -21,9 +21,8 @@ import 'package:video_player/video_player.dart';
 class CheckpointVideoDisplay extends StatefulWidget {
   const CheckpointVideoDisplay({
     super.key,
-    required this.videoUrl,
-    this.skeletonVideoUrl,
-    this.skeletonOnlyVideoUrl,
+    required this.skeletonVideoUrl,
+    required this.skeletonOnlyVideoUrl,
     this.videoAspectRatio,
     this.returnedVideoAspectRatio,
     this.proReferenceWidget,
@@ -32,14 +31,11 @@ class CheckpointVideoDisplay extends StatefulWidget {
     this.detectedHandedness,
   });
 
-  /// Network URL for user's form video.
-  final String videoUrl;
-
   /// Network URL for skeleton overlay video.
-  final String? skeletonVideoUrl;
+  final String skeletonVideoUrl;
 
   /// Network URL for skeleton-only video.
-  final String? skeletonOnlyVideoUrl;
+  final String skeletonOnlyVideoUrl;
 
   /// Video aspect ratio (width/height).
   final double? videoAspectRatio;
@@ -61,8 +57,7 @@ class CheckpointVideoDisplay extends StatefulWidget {
   final Handedness? detectedHandedness;
 
   @override
-  State<CheckpointVideoDisplay> createState() =>
-      _CheckpointVideoDisplayState();
+  State<CheckpointVideoDisplay> createState() => _CheckpointVideoDisplayState();
 }
 
 class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
@@ -76,13 +71,13 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
 
   VideoPlayerController get _activeController =>
       _showingSkeletonOnly && _skeletonOnlyController != null
-          ? _skeletonOnlyController!
-          : _overlayController;
+      ? _skeletonOnlyController!
+      : _overlayController;
 
   bool get _isActiveInitialized =>
       _showingSkeletonOnly && _skeletonOnlyController != null
-          ? _isSkeletonOnlyInitialized
-          : _isOverlayInitialized;
+      ? _isSkeletonOnlyInitialized
+      : _isOverlayInitialized;
 
   /// Last position we seeked to, to debounce rapid seeks.
   Duration? _lastSeekedPosition;
@@ -105,7 +100,7 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
         BlocProvider.of<CheckpointPlaybackCubit>(context);
 
     try {
-      final String overlayUrl = widget.skeletonVideoUrl ?? widget.videoUrl;
+      final String overlayUrl = widget.skeletonVideoUrl;
       debugPrint('═══════════════════════════════════════════════════════');
       debugPrint('[CheckpointVideoDisplay] INITIALIZING VIDEO CONTROLLERS');
       debugPrint('[CheckpointVideoDisplay] Overlay URL: $overlayUrl');
@@ -122,24 +117,22 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
         setState(() => _isOverlayInitialized = true);
       }
 
-      // Initialize skeleton-only controller if URL is available
-      if (widget.skeletonOnlyVideoUrl != null) {
-        debugPrint(
-          '[CheckpointVideoDisplay] Skeleton-only URL: ${widget.skeletonOnlyVideoUrl}',
-        );
-        _skeletonOnlyController = VideoPlayerController.networkUrl(
-          Uri.parse(widget.skeletonOnlyVideoUrl!),
-        );
-        await _skeletonOnlyController!.initialize();
-        _skeletonOnlyController!.setVolume(0.0);
+      // Initialize skeleton-only controller
+      debugPrint(
+        '[CheckpointVideoDisplay] Skeleton-only URL: ${widget.skeletonOnlyVideoUrl}',
+      );
+      _skeletonOnlyController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.skeletonOnlyVideoUrl),
+      );
+      await _skeletonOnlyController!.initialize();
+      _skeletonOnlyController!.setVolume(0.0);
 
-        debugPrint(
-          '[CheckpointVideoDisplay] Skeleton-only controller initialized',
-        );
+      debugPrint(
+        '[CheckpointVideoDisplay] Skeleton-only controller initialized',
+      );
 
-        if (mounted) {
-          setState(() => _isSkeletonOnlyInitialized = true);
-        }
+      if (mounted) {
+        setState(() => _isSkeletonOnlyInitialized = true);
       }
 
       debugPrint('═══════════════════════════════════════════════════════');
@@ -333,9 +326,7 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      state.tapFeedbackIsPlay
-                          ? Icons.play_arrow
-                          : Icons.pause,
+                      state.tapFeedbackIsPlay ? Icons.play_arrow : Icons.pause,
                       color: Colors.white,
                       size: 36,
                     ),
@@ -412,8 +403,7 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
 
     final Widget shimmer = Container(color: Colors.grey[900])
         .animate(onPlay: (controller) => controller.repeat())
-        .shimmer(
-            duration: 1200.ms, color: Colors.white.withValues(alpha: 0.5));
+        .shimmer(duration: 1200.ms, color: Colors.white.withValues(alpha: 0.5));
 
     if (effectiveAspectRatio != null) {
       return AspectRatio(aspectRatio: effectiveAspectRatio, child: shimmer);
