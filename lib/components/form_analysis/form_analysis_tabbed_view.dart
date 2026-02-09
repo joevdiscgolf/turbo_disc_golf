@@ -82,8 +82,6 @@ class FormAnalysisTabbedViewState extends State<FormAnalysisTabbedView>
           'screen_name': 'Form Analysis Tabbed View',
         });
 
-    print('widget form observations: ${widget.analysis.formObservations}');
-
     // Check if observations tab should be shown
     _showObservationsTab =
         locator.get<FeatureFlagService>().getBool(
