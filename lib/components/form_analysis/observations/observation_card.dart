@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_enums.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -79,11 +78,8 @@ class ObservationCard extends StatelessWidget {
             ),
           ),
         ),
-        if (observation.severity != ObservationSeverity.none)
-          SeverityBadge(
-            severity: observation.severity.displayName.toLowerCase(),
-            showLabel: !compact,
-          ),
+        // Show score percentage if available
+        if (observation.score != null) _buildScorePercentage(),
         if (observation.hasVideoSegment) ...[
           const SizedBox(width: 8),
           Icon(
@@ -94,6 +90,37 @@ class ObservationCard extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  Widget _buildScorePercentage() {
+    final int scorePercent = (observation.score! * 100).round();
+    final Color color = _getScoreColor(scorePercent);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '$scorePercent%',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Color _getScoreColor(int scorePercent) {
+    if (scorePercent >= 80) {
+      return const Color(0xFF059669); // Darker green for contrast
+    } else if (scorePercent >= 60) {
+      return const Color(0xFFD97706); // Darker amber for contrast
+    } else {
+      return const Color(0xFFDC2626); // Darker red for contrast
+    }
   }
 
   /// Convert string to sentence case (capitalize first letter only)

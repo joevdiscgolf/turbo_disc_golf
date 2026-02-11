@@ -17,6 +17,7 @@ FormObservation _$FormObservationFromJson(
     json['observation_type'],
   ),
   severity: $enumDecode(_$ObservationSeverityEnumMap, json['severity']),
+  score: (json['score'] as num?)?.toDouble(),
   confidence: (json['confidence'] as num).toDouble(),
   timing: ObservationTiming.fromJson(json['timing'] as Map<String, dynamic>),
   measurement: json['measurement'] == null
@@ -39,6 +40,7 @@ Map<String, dynamic> _$FormObservationToJson(FormObservation instance) =>
       'category': _$ObservationCategoryEnumMap[instance.category]!,
       'observation_type': _$ObservationTypeEnumMap[instance.observationType]!,
       'severity': _$ObservationSeverityEnumMap[instance.severity]!,
+      'score': instance.score,
       'confidence': instance.confidence,
       'timing': instance.timing.toJson(),
       'measurement': instance.measurement?.toJson(),

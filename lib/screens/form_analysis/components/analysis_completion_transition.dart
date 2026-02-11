@@ -102,14 +102,15 @@ class _AnalysisCompletionTransitionState
           1.0 - Curves.easeOut.transform(fadeProgress);
     }
 
-    // Update particle emission (starts at 15% progress, can exceed 1.0 for movement)
+    // Update particle emission (starts at 15% progress)
+    // Emission continues until brain is fully faded out (progress = 1.0)
     const double particleStartProgress = 0.15;
     if (progress < particleStartProgress) {
       widget.particleEmissionNotifier.value = 0.0;
     } else {
-      // Calculate emission progress - unclamped to allow continued movement
+      // Calculate emission progress - reaches 1.0 when animation completes
       widget.particleEmissionNotifier.value =
-          (progress - particleStartProgress) / (maxSpeedEnd - particleStartProgress);
+          (progress - particleStartProgress) / (1.0 - particleStartProgress);
     }
   }
 

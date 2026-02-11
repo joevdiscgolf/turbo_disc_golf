@@ -10,6 +10,15 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart'
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_reference.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 
+/// Playback mode for video looping
+enum PlaybackMode {
+  /// Loop forward continuously
+  loop,
+
+  /// Play forward then backward (ping-pong)
+  boomerang,
+}
+
 /// Controller for SplitComparisonCard to allow external video control
 class SplitComparisonController {
   void Function(int frame)? _seekToFrame;
@@ -17,6 +26,8 @@ class SplitComparisonController {
   VoidCallback? _play;
   VoidCallback? _togglePlayPause;
   bool Function()? _getIsPlaying;
+  void Function(PlaybackMode mode)? _setPlaybackMode;
+  PlaybackMode Function()? _getPlaybackMode;
 
   /// Seek the user video to a specific frame
   void seekToFrame(int frame) => _seekToFrame?.call(frame);
@@ -32,6 +43,13 @@ class SplitComparisonController {
 
   /// Get current playing state
   bool get isPlaying => _getIsPlaying?.call() ?? false;
+
+  /// Set the playback mode (loop or boomerang)
+  void setPlaybackMode(PlaybackMode mode) => _setPlaybackMode?.call(mode);
+
+  /// Get the current playback mode
+  PlaybackMode get playbackMode =>
+      _getPlaybackMode?.call() ?? PlaybackMode.boomerang;
 }
 
 /// Split-screen video comparison showing user's form vs pro
@@ -47,6 +65,8 @@ class SplitComparisonCard extends StatefulWidget {
     this.onPlayStateChanged,
     this.isScrubbingNotifier,
     this.controller,
+    this.showProComparison = true,
+    this.isLeftHanded = false,
   });
 
   final FormObservation observation;
@@ -66,6 +86,12 @@ class SplitComparisonCard extends StatefulWidget {
   /// Controller for external video control (seeking, pause, play)
   final SplitComparisonController? controller;
 
+  /// Whether to show the pro comparison video/image (default: true)
+  final bool showProComparison;
+
+  /// Whether the user is left-handed (flips pro video/image horizontally)
+  final bool isLeftHanded;
+
   @override
   State<SplitComparisonCard> createState() => _SplitComparisonCardState();
 }
@@ -82,6 +108,9 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   /// Whether video is currently playing
   bool _isPlaying = true;
 
+  /// Whether we've already paused at the key frame (for frame_range mode)
+  bool _hasPausedAtKeyFrame = false;
+
   /// Whether to show tap feedback overlay
   bool _showTapFeedback = false;
 
@@ -91,6 +120,12 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   /// Playback speed for user video (0.25x for slow motion analysis)
   static const double _userPlaybackSpeed = 0.25;
 
+  /// Current playback mode (loop or boomerang)
+  PlaybackMode _playbackMode = PlaybackMode.boomerang;
+
+  /// Whether playing forward (true) or backward (false) in boomerang mode
+  bool _isPlayingForward = true;
+
   int get _startFrame =>
       widget.observation.timing.startFrame ??
       widget.observation.timing.frameNumber;
@@ -98,6 +133,12 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   int get _endFrame =>
       widget.observation.timing.endFrame ??
       widget.observation.timing.frameNumber;
+
+  /// The key frame to pause at (when in frame_range mode)
+  int get _keyFrame => widget.observation.timing.frameNumber;
+
+  /// Whether this observation uses frame_range display mode
+  bool get _isFrameRangeMode => widget.observation.timing.isFrameRange;
 
   /// Seek the user video to a specific frame within the segment
   void seekToFrame(int frame) {
@@ -123,11 +164,21 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
 
   /// Resume video playback
   void play() {
-    _userController?.play();
-    _proController?.play();
-    if (!_isPlaying) {
-      setState(() => _isPlaying = true);
-      widget.onPlayStateChanged?.call(true);
+    // In boomerang mode when playing backward, don't call play() on controller
+    // since we're manually stepping through frames
+    if (_playbackMode == PlaybackMode.boomerang && !_isPlayingForward) {
+      // Just set playing state - the loop timer will handle stepping
+      if (!_isPlaying) {
+        setState(() => _isPlaying = true);
+        widget.onPlayStateChanged?.call(true);
+      }
+    } else {
+      _userController?.play();
+      _proController?.play();
+      if (!_isPlaying) {
+        setState(() => _isPlaying = true);
+        widget.onPlayStateChanged?.call(true);
+      }
     }
   }
 
@@ -208,6 +259,16 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
       controller._play = play;
       controller._togglePlayPause = togglePlayPause;
       controller._getIsPlaying = () => _isPlaying;
+      controller._setPlaybackMode = _setPlaybackMode;
+      controller._getPlaybackMode = () => _playbackMode;
+    }
+  }
+
+  void _setPlaybackMode(PlaybackMode mode) {
+    if (_playbackMode != mode) {
+      _playbackMode = mode;
+      // Reset to forward direction when switching modes
+      _isPlayingForward = true;
     }
   }
 
@@ -279,6 +340,9 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   }
 
   void _startLoopTimer() {
+    // Calculate ms per frame at playback speed for boomerang reverse stepping
+    final double msPerFrame = (1000 / widget.fps) / _userPlaybackSpeed;
+
     _loopTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       // Skip looping while user is scrubbing
       final bool isScrubbing = widget.isScrubbingNotifier?.value ?? false;
@@ -286,12 +350,55 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
       // Report current frame for slider
       if (_userController != null && _userController!.value.isInitialized) {
         final Duration position = _userController!.value.position;
-        final int currentFrame = (position.inMilliseconds / 1000 * widget.fps).round();
+        final int currentFrame =
+            (position.inMilliseconds / 1000 * widget.fps).round();
         widget.onFrameChanged?.call(currentFrame, _startFrame, _endFrame);
 
-        // Loop user video (only if not scrubbing)
-        if (!isScrubbing && position >= _endPosition) {
-          _userController!.seekTo(_startPosition);
+        // In frame_range mode, pause at the key frame on first playthrough
+        if (_isFrameRangeMode &&
+            !_hasPausedAtKeyFrame &&
+            !isScrubbing &&
+            _isPlaying &&
+            currentFrame >= _keyFrame) {
+          _hasPausedAtKeyFrame = true;
+          // Seek to exact key frame and pause
+          seekToFrame(_keyFrame);
+          pause();
+        }
+
+        // Handle looping based on playback mode (only if not scrubbing)
+        if (!isScrubbing && _isPlaying) {
+          if (_playbackMode == PlaybackMode.loop) {
+            // Standard loop: jump back to start when reaching end
+            if (position >= _endPosition) {
+              _userController!.seekTo(_startPosition);
+            }
+          } else {
+            // Boomerang mode: manually step backwards since video_player
+            // doesn't support negative playback speeds
+            if (_isPlayingForward) {
+              // Playing forward - check if we reached the end
+              if (position >= _endPosition) {
+                _isPlayingForward = false;
+                _userController!.pause();
+              }
+            } else {
+              // Playing backward - manually step back frame by frame
+              // Calculate how many frames to step back based on timer interval
+              final int framesToStep = (100 / msPerFrame).ceil().clamp(1, 3);
+              final int targetFrame = currentFrame - framesToStep;
+
+              if (targetFrame <= _startFrame) {
+                // Reached start - switch to forward playback
+                _isPlayingForward = true;
+                _userController!.seekTo(_startPosition);
+                _userController!.play();
+              } else {
+                // Step backwards
+                seekToFrame(targetFrame);
+              }
+            }
+          }
         }
       }
 
@@ -372,19 +479,33 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
           label: 'YOU',
           labelColor: SenseiColors.gray[700]!,
         ),
-        const SizedBox(height: 12),
-        // Pro video with label
-        _buildVideoWithLabel(
-          video: _buildProVideo(),
-          label: _proRef?.proName ?? 'PRO',
-          labelColor: const Color(0xFF10B981),
-        ),
+        // Pro video with label (conditionally shown)
+        if (widget.showProComparison) ...[
+          const SizedBox(height: 12),
+          _buildVideoWithLabel(
+            video: _buildProVideo(),
+            label: _proRef?.proName ?? 'PRO',
+            labelColor: const Color(0xFF10B981),
+          ),
+        ],
       ],
     );
   }
 
   /// Side-by-side layout for portrait videos
   Widget _buildSideBySideLayout() {
+    // User video only (no pro comparison)
+    if (!widget.showProComparison) {
+      return Column(
+        children: [
+          _buildUserVideo(),
+          const SizedBox(height: 8),
+          _buildLabel('YOU', SenseiColors.gray[700]!),
+        ],
+      );
+    }
+
+    // Side-by-side with pro comparison
     return Column(
       children: [
         // Video comparison row
@@ -484,30 +605,26 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   }
 
   Widget _buildProVideo() {
+    Widget content;
+
     // If pro video is available and initialized
     if (_hasProVideo && _isProInitialized && _proController != null) {
-      return AspectRatio(
+      content = AspectRatio(
         aspectRatio: _proController!.value.aspectRatio,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: VideoPlayer(_proController!),
         ),
       );
-    }
-
-    // If pro video had an error
-    if (_hasProVideo && _proError != null) {
+    } else if (_hasProVideo && _proError != null) {
+      // If pro video had an error
       return _buildErrorState(_proError!);
-    }
-
-    // If pro video is loading
-    if (_hasProVideo && !_isProInitialized) {
+    } else if (_hasProVideo && !_isProInitialized) {
+      // If pro video is loading
       return _buildLoadingState();
-    }
-
-    // If pro has an image but no video
-    if (_hasProImage) {
-      return AspectRatio(
+    } else if (_hasProImage) {
+      // If pro has an image but no video
+      content = AspectRatio(
         aspectRatio: _videoAspectRatio,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
@@ -519,10 +636,17 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
           ),
         ),
       );
+    } else {
+      // No pro content available - show placeholder
+      return _buildProPlaceholder();
     }
 
-    // No pro content available - show placeholder
-    return _buildProPlaceholder();
+    // Flip horizontally for left-handed users
+    if (widget.isLeftHanded) {
+      return Transform.flip(flipX: true, child: content);
+    }
+
+    return content;
   }
 
   Widget _buildProPlaceholder() {

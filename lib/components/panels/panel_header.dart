@@ -7,17 +7,21 @@ class PanelHeader extends StatelessWidget {
     required this.title,
     this.onClose,
     this.subtitle,
+    this.showCloseButton = true,
   });
 
   /// The main title text displayed in the header
   final String title;
 
   /// Optional callback when close button is tapped.
-  /// If null, no close button is displayed.
+  /// If null but showCloseButton is true, defaults to Navigator.pop().
   final VoidCallback? onClose;
 
   /// Optional subtitle text displayed below the title
   final String? subtitle;
+
+  /// Whether to show the close button. Defaults to true.
+  final bool showCloseButton;
 
   @override
   Widget build(BuildContext context) {
@@ -48,20 +52,21 @@ class PanelHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.close,
-              size: PanelConstants.closeButtonIconSize,
+          if (showCloseButton)
+            IconButton(
+              icon: const Icon(
+                Icons.close,
+                size: PanelConstants.closeButtonIconSize,
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                if (onClose != null) {
+                  onClose!();
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
             ),
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              if (onClose != null) {
-                onClose!();
-              } else {
-                Navigator.of(context).pop();
-              }
-            },
-          ),
         ],
       ),
     );

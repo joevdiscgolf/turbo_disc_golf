@@ -183,14 +183,9 @@ class FormAnalysisHistoryScreenState extends State<FormAnalysisHistoryScreen> {
                           'item_index': index,
                         },
                       );
-                      Navigator.push(
+                      pushCupertinoRoute(
                         context,
-                        CupertinoPageRoute(
-                          builder: (context) => BlocProvider.value(
-                            value: _historyCubit,
-                            child: FormAnalysisDetailScreen(analysis: analysis),
-                          ),
-                        ),
+                        FormAnalysisDetailScreen(analysis: analysis),
                       );
                     },
                   ),

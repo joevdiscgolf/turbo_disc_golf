@@ -15,11 +15,15 @@ class ObservationSegmentPlayer extends StatefulWidget {
     required this.observation,
     required this.videoUrl,
     this.fps = 30.0,
+    this.isLeftHanded = false,
   });
 
   final FormObservation observation;
   final String videoUrl;
   final double fps;
+
+  /// Whether the user is left-handed (flips pro comparison horizontally)
+  final bool isLeftHanded;
 
   @override
   State<ObservationSegmentPlayer> createState() =>
@@ -27,7 +31,8 @@ class ObservationSegmentPlayer extends StatefulWidget {
 }
 
 class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
-  final SplitComparisonController _videoController = SplitComparisonController();
+  final SplitComparisonController _videoController =
+      SplitComparisonController();
   final ValueNotifier<bool> _isScrubbingNotifier = ValueNotifier(false);
 
   int _currentFrame = 0;
@@ -40,6 +45,16 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
 
   /// Whether video was playing before scrubbing started
   bool _wasPlayingBeforeScrub = true;
+
+  /// Current playback mode (loop or boomerang)
+  PlaybackMode _playbackMode = PlaybackMode.boomerang;
+
+  /// The key frame from the observation (for marker display)
+  int get _keyFrame => widget.observation.timing.frameNumber;
+
+  /// Whether the key frame is different from start/end and should be marked
+  bool get _hasKeyFrameMarker =>
+      _hasSegment && _keyFrame > _startFrame && _keyFrame < _endFrame;
 
   @override
   void initState() {
@@ -104,6 +119,15 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
     _videoController.togglePlayPause();
   }
 
+  void _togglePlaybackMode() {
+    setState(() {
+      _playbackMode = _playbackMode == PlaybackMode.loop
+          ? PlaybackMode.boomerang
+          : PlaybackMode.loop;
+    });
+    _videoController.setPlaybackMode(_playbackMode);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Use 90% of screen height like select_course_panel pattern
@@ -123,7 +147,7 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: [
-                // Split video comparison
+                // User video (pro comparison hidden for now)
                 SplitComparisonCard(
                   observation: widget.observation,
                   userVideoUrl: widget.videoUrl,
@@ -132,6 +156,8 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
                   onPlayStateChanged: _onPlayStateChanged,
                   isScrubbingNotifier: _isScrubbingNotifier,
                   controller: _videoController,
+                  showProComparison: false,
+                  isLeftHanded: widget.isLeftHanded,
                 ),
 
                 // Frame slider (only show if there's a segment range)
@@ -179,39 +205,17 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
       ),
       child: Column(
         children: [
-          // Slider row with play/pause button
+          // Slider row with play/pause button and mode toggle
           Row(
             children: [
               // Play/pause button
               _buildPlayPauseButton(),
               const SizedBox(width: 8),
-              // Slider
-              Expanded(
-                child: SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 4,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 8),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 16),
-                    activeTrackColor: SenseiColors.gray[700],
-                    inactiveTrackColor: SenseiColors.gray[200],
-                    thumbColor: SenseiColors.gray[700],
-                    overlayColor: SenseiColors.gray[700]!.withValues(alpha: 0.2),
-                  ),
-                  child: Slider(
-                    value: _currentFrame.toDouble().clamp(
-                          _startFrame.toDouble(),
-                          _endFrame.toDouble(),
-                        ),
-                    min: _startFrame.toDouble(),
-                    max: _endFrame.toDouble(),
-                    onChanged: _onSliderChanged,
-                    onChangeStart: _onSliderStart,
-                    onChangeEnd: _onSliderEnd,
-                  ),
-                ),
-              ),
+              // Slider with key frame marker
+              Expanded(child: _buildSliderWithMarker()),
+              const SizedBox(width: 8),
+              // Mode toggle button
+              _buildModeToggleButton(),
             ],
           ),
           // Frame labels
@@ -239,6 +243,98 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSliderWithMarker() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate key frame marker position as a percentage
+        final double keyFramePercent = _hasKeyFrameMarker
+            ? (_keyFrame - _startFrame) / (_endFrame - _startFrame)
+            : -1;
+
+        // Account for slider padding (thumb radius on each side)
+        const double thumbRadius = 8;
+        final double trackWidth = constraints.maxWidth - (thumbRadius * 2);
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // The slider
+            SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 4,
+                thumbShape:
+                    const RoundSliderThumbShape(enabledThumbRadius: thumbRadius),
+                overlayShape:
+                    const RoundSliderOverlayShape(overlayRadius: 16),
+                activeTrackColor: SenseiColors.gray[700],
+                inactiveTrackColor: SenseiColors.gray[200],
+                thumbColor: SenseiColors.gray[700],
+                overlayColor: SenseiColors.gray[700]!.withValues(alpha: 0.2),
+              ),
+              child: Slider(
+                value: _currentFrame.toDouble().clamp(
+                      _startFrame.toDouble(),
+                      _endFrame.toDouble(),
+                    ),
+                min: _startFrame.toDouble(),
+                max: _endFrame.toDouble(),
+                onChanged: _onSliderChanged,
+                onChangeStart: _onSliderStart,
+                onChangeEnd: _onSliderEnd,
+              ),
+            ),
+            // Key frame marker (diamond/tick on track)
+            if (_hasKeyFrameMarker)
+              Positioned(
+                left: thumbRadius + (trackWidth * keyFramePercent) - 4,
+                top: 8, // Center on track (slider is ~24 tall, track at middle)
+                child: GestureDetector(
+                  onTap: () {
+                    // Jump to key frame when tapping marker
+                    _onSliderChanged(_keyFrame.toDouble());
+                    _videoController.seekToFrame(_keyFrame);
+                  },
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildModeToggleButton() {
+    final bool isBoomerang = _playbackMode == PlaybackMode.boomerang;
+    const double buttonSize = 36.0;
+
+    return GestureDetector(
+      onTap: _togglePlaybackMode,
+      child: Container(
+        width: buttonSize,
+        height: buttonSize,
+        decoration: BoxDecoration(
+          color: SenseiColors.gray[100],
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Tooltip(
+          message: isBoomerang ? 'Boomerang mode' : 'Loop mode',
+          child: Icon(
+            isBoomerang ? Icons.swap_horiz : Icons.repeat,
+            color: SenseiColors.gray[600],
+            size: 20,
+          ),
+        ),
       ),
     );
   }

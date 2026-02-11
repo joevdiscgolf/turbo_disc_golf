@@ -19,6 +19,8 @@ class VideoMetadata {
     this.videoOrientation,
     this.videoAspectRatio,
     this.returnedVideoAspectRatio,
+    this.cameraStability,
+    this.cameraStabilityThreshold,
   });
 
   /// URL of the user's form video
@@ -69,6 +71,16 @@ class VideoMetadata {
   /// Aspect ratio of returned processed videos
   @JsonKey(name: 'returned_video_aspect_ratio')
   final double? returnedVideoAspectRatio;
+
+  /// Camera stability value from 0-1
+  /// 0 is most movement, 1 is most stable
+  @JsonKey(name: 'camera_stability')
+  final double? cameraStability;
+
+  /// Camera stability threshold to be considered a lot of movement.
+  /// 0 is most movement, 1 is most stable
+  @JsonKey(name: 'camera_stability_threshold')
+  final double? cameraStabilityThreshold;
 
   factory VideoMetadata.fromJson(Map<String, dynamic> json) =>
       _$VideoMetadataFromJson(json);

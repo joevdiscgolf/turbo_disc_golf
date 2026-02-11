@@ -22,6 +22,7 @@ class AtomicNucleusLoader extends StatefulWidget {
     this.particleCount = 3,
     this.speedMultiplier = 1.0,
     this.speedMultiplierNotifier,
+    this.particleEmissionNotifier,
   });
 
   final double size;
@@ -31,6 +32,10 @@ class AtomicNucleusLoader extends StatefulWidget {
   /// Optional notifier for dynamic speed changes.
   /// If provided, this overrides the static speedMultiplier.
   final ValueNotifier<double>? speedMultiplierNotifier;
+
+  /// Optional notifier for particle emission during finalization.
+  /// Values > 0.0 trigger shooting particle rendering.
+  final ValueNotifier<double>? particleEmissionNotifier;
 
   @override
   State<AtomicNucleusLoader> createState() => _AtomicNucleusLoaderState();
@@ -75,6 +80,7 @@ class _AtomicNucleusLoaderState extends State<AtomicNucleusLoader>
             height: widget.size,
             child: Stack(
               alignment: Alignment.center,
+              clipBehavior: Clip.none,
               children: [
                 // Keep the code, but do NOT render for now:
                 // _MorphingBackground(size: widget.size),
@@ -114,6 +120,14 @@ class _AtomicNucleusLoaderState extends State<AtomicNucleusLoader>
                 ),
 
                 _buildNucleus(),
+
+                // Shooting particles during finalization
+                if (widget.particleEmissionNotifier != null)
+                  _ShootingParticles(
+                    emissionNotifier: widget.particleEmissionNotifier!,
+                    speedMultiplierNotifier: widget.speedMultiplierNotifier,
+                    initialSpeedMultiplier: widget.speedMultiplier,
+                  ),
               ],
             ),
           ),
@@ -596,4 +610,115 @@ class _Projected {
   final double x;
   final double y;
   final double z;
+}
+
+/// Shooting particles that emit from the center during finalization.
+class _ShootingParticles extends StatelessWidget {
+  const _ShootingParticles({
+    required this.emissionNotifier,
+    required this.speedMultiplierNotifier,
+    required this.initialSpeedMultiplier,
+  });
+
+  final ValueNotifier<double> emissionNotifier;
+  final ValueNotifier<double>? speedMultiplierNotifier;
+  final double initialSpeedMultiplier;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<double>(
+      valueListenable: emissionNotifier,
+      builder: (context, emissionProgress, _) {
+        if (emissionProgress <= 0) {
+          return const SizedBox.shrink();
+        }
+
+        final double speedMultiplier =
+            speedMultiplierNotifier?.value ?? initialSpeedMultiplier;
+
+        return CustomPaint(
+          size: const Size(800, 800), // Large enough for particles to fly out
+          painter: _ShootingParticlesPainter(
+            emissionProgress: emissionProgress.clamp(0.0, 1.0),
+            animationProgress: emissionProgress,
+            particleColor: SenseiColors.cyan,
+            speedMultiplier: speedMultiplier,
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Painter for particles shooting outward from center during finalization.
+class _ShootingParticlesPainter extends CustomPainter {
+  _ShootingParticlesPainter({
+    required this.emissionProgress,
+    required this.animationProgress,
+    required this.particleColor,
+    required this.speedMultiplier,
+  });
+
+  final double emissionProgress;
+  final double animationProgress;
+  final Color particleColor;
+  final double speedMultiplier;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = Offset(size.width / 2, size.height / 2);
+
+    // Scale particle count with speed for more intensity at higher speeds
+    const int baseParticles = 40;
+    const int maxParticles = 150;
+    final double speedFactor = ((speedMultiplier - 1.0) / 6.875).clamp(0.0, 1.0);
+    final int totalParticles =
+        (baseParticles + (speedFactor * (maxParticles - baseParticles))).round();
+
+    final int particlesToShow = (emissionProgress * totalParticles).toInt();
+
+    for (int i = 0; i < particlesToShow; i++) {
+      final int seed = 42 + i;
+      final math.Random random = math.Random(seed);
+
+      final double angle = random.nextDouble() * 2 * math.pi;
+      final double spawnTime = i / totalParticles;
+      final double particleLifetime = animationProgress - spawnTime;
+
+      if (particleLifetime <= 0) continue;
+
+      const double maxDistance = 800.0;
+      final double distance = maxDistance * particleLifetime * 1.5 * speedMultiplier;
+
+      final double x = center.dx + distance * math.cos(angle);
+      final double y = center.dy + distance * math.sin(angle);
+
+      if (x < -50 || x > size.width + 50 || y < -50 || y > size.height + 50) {
+        continue;
+      }
+
+      final double particleSize = 4.0 - (particleLifetime * 2.0).clamp(0, 2);
+      const double opacity = 0.8;
+
+      if (particleSize > 0) {
+        final Paint paint = Paint()
+          ..color = particleColor.withValues(alpha: opacity)
+          ..style = PaintingStyle.fill;
+
+        canvas.drawCircle(Offset(x, y), particleSize, paint);
+
+        final Paint glowPaint = Paint()
+          ..color = particleColor.withValues(alpha: opacity * 0.3)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(Offset(x, y), particleSize + 2, glowPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ShootingParticlesPainter oldDelegate) {
+    return oldDelegate.emissionProgress != emissionProgress ||
+        oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.speedMultiplier != speedMultiplier;
+  }
 }

@@ -147,40 +147,184 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     }
   }
 
-  /// Test with a bundled asset video (for development/testing only)
+  /// Test the analysis endpoint without a video file (for development/testing only).
+  /// The backend will use a predefined test video.
+  Future<void> testWithoutVideo({
+    required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
+    Handedness? handedness,
+  }) async {
+    emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
+
+    final AuthService authService = locator.get<AuthService>();
+    final String? uid = authService.currentUid;
+    if (uid == null) {
+      debugPrint('[VideoFormAnalysisCubit] Error: User not authenticated');
+      emit(const VideoFormAnalysisError(message: 'User not authenticated'));
+      return;
+    }
+
+    final String sessionId = const Uuid().v4();
+
+    // Create session without video path
+    VideoAnalysisSession session = VideoAnalysisSession(
+      id: sessionId,
+      uid: uid,
+      createdAt: DateTime.now().toIso8601String(),
+      videoPath: 'test-mode-no-video',
+      videoSource: VideoSource.gallery,
+      throwType: throwType,
+      status: SessionStatus.analyzing,
+    );
+
+    emit(
+      VideoFormAnalysisAnalyzing(
+        session: session,
+        progressMessage: 'Starting test analysis',
+      ),
+    );
+
+    // Run pose analysis without video
+    final (
+      FormAnalysisResponseV2? result,
+      String? error,
+    ) = await _runPoseAnalysisWithoutVideo(
+      throwType: throwType,
+      cameraAngle: cameraAngle,
+      handedness: handedness,
+      sessionId: sessionId,
+      userId: uid,
+      session: session,
+    );
+
+    if (result == null && error != null) {
+      locator.get<ToastService>().showError(error);
+      emit(VideoFormAnalysisError(message: error, session: session));
+      return;
+    }
+
+    // Add to history cubit for instant UI update
+    if (result != null) {
+      try {
+        final FormAnalysisHistoryCubit historyCubit = locator
+            .get<FormAnalysisHistoryCubit>();
+        historyCubit.addAnalysis(result);
+        debugPrint('[VideoFormAnalysisCubit] ✅ Test analysis added to history');
+      } catch (e) {
+        debugPrint(
+          '[VideoFormAnalysisCubit] ⚠️ Could not add to history list: $e',
+        );
+      }
+    }
+
+    emit(
+      VideoFormAnalysisComplete(
+        session: session.copyWith(status: SessionStatus.completed),
+        poseAnalysis: result,
+      ),
+    );
+  }
+
+  /// Test the analysis with an asset video file (for development/testing only).
   Future<void> testWithAssetVideo({
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
     required String assetPath,
   }) async {
-    emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
+    emit(const VideoFormAnalysisRecording(progressMessage: 'Loading test video'));
+
+    final AuthService authService = locator.get<AuthService>();
+    final String? uid = authService.currentUid;
+    if (uid == null) {
+      debugPrint('[VideoFormAnalysisCubit] Error: User not authenticated');
+      emit(const VideoFormAnalysisError(message: 'User not authenticated'));
+      return;
+    }
 
     try {
-      // Copy asset to temp directory so it can be accessed as a file
-      final ByteData data = await rootBundle.load(assetPath);
+      // Copy asset to temp file so we can use it as a regular file
+      final ByteData assetData = await rootBundle.load(assetPath);
       final Directory tempDir = await getTemporaryDirectory();
       final String fileName = assetPath.split('/').last;
-      final String tempPath = '${tempDir.path}/$fileName';
+      final File tempFile = File('${tempDir.path}/$fileName');
+      await tempFile.writeAsBytes(assetData.buffer.asUint8List());
 
-      final File tempFile = File(tempPath);
-      await tempFile.writeAsBytes(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-      );
+      debugPrint('[VideoFormAnalysisCubit] Asset copied to: ${tempFile.path}');
 
+      // Process the video normally
       await _processVideo(
-        videoPath: tempPath,
+        videoPath: tempFile.path,
         videoSource: VideoSource.gallery,
         throwType: throwType,
         cameraAngle: cameraAngle,
         handedness: handedness,
       );
     } catch (e) {
+      debugPrint('[VideoFormAnalysisCubit] Failed to load asset video: $e');
       emit(
         VideoFormAnalysisError(
           message: 'Failed to load test video: ${e.toString()}',
         ),
       );
+    }
+  }
+
+  /// Run pose analysis without a video file (test mode).
+  Future<(FormAnalysisResponseV2?, String?)> _runPoseAnalysisWithoutVideo({
+    required ThrowTechnique throwType,
+    required CameraAngle cameraAngle,
+    Handedness? handedness,
+    required String sessionId,
+    required String userId,
+    required VideoAnalysisSession session,
+  }) async {
+    final FeatureFlagService flags = locator.get<FeatureFlagService>();
+    final PoseAnalysisApiClient poseClient = locator
+        .get<PoseAnalysisApiClient>();
+    final String throwTypeStr = _mapThrowTypeToString(throwType);
+
+    debugPrint('[VideoFormAnalysisCubit] Starting test pose analysis (no video)');
+    debugPrint(
+      '[VideoFormAnalysisCubit] Backend URL: ${flags.poseAnalysisBaseUrl}',
+    );
+    debugPrint(
+      '[VideoFormAnalysisCubit] Throw type: $throwTypeStr, Camera: ${cameraAngle.name}',
+    );
+
+    try {
+      final Stream<Object> stream = poseClient.analyzeWithoutVideoStream(
+        throwType: throwTypeStr,
+        cameraAngle: cameraAngle,
+        handedness: handedness,
+        sessionId: sessionId,
+        userId: userId,
+      );
+
+      await for (final Object event in stream) {
+        if (event is AnalysisProgress) {
+          debugPrint(
+            '[VideoFormAnalysisCubit] Progress: ${(event.progress * 100).toInt()}% - ${event.message}',
+          );
+          emit(
+            VideoFormAnalysisAnalyzing(
+              session: session,
+              progressMessage: event.message,
+              progress: event.progress,
+            ),
+          );
+        } else if (event is FormAnalysisResponseV2) {
+          debugPrint(
+            '[VideoFormAnalysisCubit] ✅ Test analysis complete - ${event.checkpoints.length} checkpoints',
+          );
+          return (event, null);
+        }
+      }
+
+      throw Exception('Stream ended without result');
+    } catch (e) {
+      debugPrint('[VideoFormAnalysisCubit] ❌ Test analysis failed: $e');
+      return (null, 'Test analysis failed: ${e.toString()}');
     }
   }
 

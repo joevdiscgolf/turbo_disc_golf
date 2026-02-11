@@ -62,7 +62,7 @@ class FormAnalysisTabbedViewState extends State<FormAnalysisTabbedView>
   late final LoggingServiceBase _logger;
   bool _ownsTabController = false;
 
-  static const List<String> _tabNames = ['Video', 'Observations'];
+  static const List<String> _tabNames = ['Video', 'Analysis'];
 
   /// Returns the effective tab controller (external or internal).
   TabController? get tabController =>
@@ -196,7 +196,7 @@ class FormAnalysisTabbedViewState extends State<FormAnalysisTabbedView>
       onTap: (_) => HapticFeedback.lightImpact(),
       tabs: const [
         Tab(text: 'Video'),
-        Tab(text: 'Observations'),
+        Tab(text: 'Analysis'),
       ],
     );
   }

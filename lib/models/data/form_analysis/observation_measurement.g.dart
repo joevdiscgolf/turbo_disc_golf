@@ -14,6 +14,12 @@ ObservationMeasurement _$ObservationMeasurementFromJson(
   deviation: (json['deviation'] as num?)?.toDouble(),
   unit: json['unit'] as String,
   deviationDirection: json['deviation_direction'] as String?,
+  components: (json['components'] as List<dynamic>?)
+      ?.map(
+        (e) =>
+            ObservationMeasurementComponent.fromJson(e as Map<String, dynamic>),
+      )
+      .toList(),
 );
 
 Map<String, dynamic> _$ObservationMeasurementToJson(
@@ -24,4 +30,5 @@ Map<String, dynamic> _$ObservationMeasurementToJson(
   'deviation': instance.deviation,
   'unit': instance.unit,
   'deviation_direction': instance.deviationDirection,
+  'components': instance.components?.map((e) => e.toJson()).toList(),
 };

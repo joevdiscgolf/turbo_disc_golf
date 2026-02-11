@@ -1,11 +1,12 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/analysis_results.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observations.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_observations_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/frame_pose_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_comparison_config.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/video_metadata.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 
 part 'form_analysis_response_v2.g.dart';
 
@@ -27,6 +28,7 @@ class FormAnalysisResponseV2 {
     this.proComparisonConfig,
     this.framePoses,
     this.formObservations,
+    this.formObservationsV2,
     this.armSpeed,
   });
 
@@ -83,6 +85,12 @@ class FormAnalysisResponseV2 {
   /// Contains AI-detected observations about the user's throwing form
   @JsonKey(name: 'form_observations')
   final FormObservations? formObservations;
+
+  /// V2 form observations with named fields per observation type (optional)
+  /// Provides typed access to each observation by its identifier
+  /// Maps observation IDs to named fields for easier UI binding
+  @JsonKey(name: 'form_observations_v2')
+  final FormObservationsV2? formObservationsV2;
 
   /// Arm speed data from side-view video analysis (optional)
   /// Contains speed measurements over frames during the throwing motion

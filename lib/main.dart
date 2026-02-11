@@ -201,6 +201,12 @@ class _MyAppState extends State<MyApp> {
                     value: _createCourseCubit,
                   ),
                   BlocProvider<UserDataCubit>.value(value: _userDataCubit),
+                  BlocProvider<FormAnalysisHistoryCubit>.value(
+                    value: locator.get<FormAnalysisHistoryCubit>(),
+                  ),
+                  BlocProvider<PuttPracticeHistoryCubit>.value(
+                    value: locator.get<PuttPracticeHistoryCubit>(),
+                  ),
                 ],
                 child: ChangeNotifierProvider<RoundParser>.value(
                   value: locator.get<RoundParser>(),

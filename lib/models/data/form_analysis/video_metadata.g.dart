@@ -24,6 +24,9 @@ VideoMetadata _$VideoMetadataFromJson(Map<String, dynamic> json) =>
       videoAspectRatio: (json['video_aspect_ratio'] as num?)?.toDouble(),
       returnedVideoAspectRatio: (json['returned_video_aspect_ratio'] as num?)
           ?.toDouble(),
+      cameraStability: (json['camera_stability'] as num?)?.toDouble(),
+      cameraStabilityThreshold: (json['camera_stability_threshold'] as num?)
+          ?.toDouble(),
     );
 
 Map<String, dynamic> _$VideoMetadataToJson(VideoMetadata instance) =>
@@ -40,6 +43,8 @@ Map<String, dynamic> _$VideoMetadataToJson(VideoMetadata instance) =>
       'video_orientation': _$VideoOrientationEnumMap[instance.videoOrientation],
       'video_aspect_ratio': instance.videoAspectRatio,
       'returned_video_aspect_ratio': instance.returnedVideoAspectRatio,
+      'camera_stability': instance.cameraStability,
+      'camera_stability_threshold': instance.cameraStabilityThreshold,
     };
 
 const _$VideoOrientationEnumMap = {

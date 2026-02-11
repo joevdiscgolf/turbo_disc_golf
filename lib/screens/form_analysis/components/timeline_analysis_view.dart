@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:turbo_disc_golf/components/form_analysis/analysis_metadata_card.dart';
+import 'package:turbo_disc_golf/components/form_analysis/camera_stability_warning_banner.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_playback_controls.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
@@ -107,6 +109,21 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   double _cachedHeightMultiplier = 1.5;
   List<CheckpointDataV2> _cachedActiveCheckpoints = [];
   List<CheckpointSelectorItem> _cachedCheckpointSelectorItems = [];
+
+  /// Whether to show the camera stability warning banner.
+  bool get _shouldShowStabilityWarning {
+    // Check feature flag first
+    if (!locator.get<FeatureFlagService>().showCameraStabilityWarning) {
+      return false;
+    }
+
+    final double? stability = widget.analysis.videoMetadata.cameraStability;
+    final double? stabilityThreshold =
+        widget.analysis.videoMetadata.cameraStabilityThreshold;
+
+    if (stability == null || stabilityThreshold == null) return false;
+    return stability < stabilityThreshold;
+  }
 
   @override
   void initState() {
@@ -436,6 +453,10 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      'Camera stability: ${widget.analysis.videoMetadata.cameraStability}',
+    );
+
     final List<CheckpointDataV2> checkpointsWithTimestamps =
         _getCheckpointsWithTimestamps();
 
@@ -463,12 +484,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
           return ListView(
             padding: EdgeInsets.only(top: widget.topPadding, bottom: 120),
             children: [
-              // if (_isMultiProEnabled && _proPlayersConfig != null)
-              //   ProPlayerSelector(
-              //     availablePros: _availablePros,
-              //     selectedProId: _activeProId!,
-              //     onProSelected: _onProSelected,
-              //   ),
+              if (_shouldShowStabilityWarning)
+                const CameraStabilityWarningBanner(),
               if (_showCheckpointSelectorAboveVideo)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -479,6 +496,12 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                     formatLabel: formatCheckpointChipLabel,
                   ),
                 ),
+              AnalysisMetadataCard(
+                cameraAngle: widget.analysis.analysisResults.cameraAngle,
+                createdAt: widget.analysis.createdAt,
+                detectedHandedness:
+                    widget.analysis.analysisResults.detectedHandedness,
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                 child: VideoSkeletonToggle(
