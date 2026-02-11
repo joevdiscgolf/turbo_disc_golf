@@ -110,7 +110,7 @@ class _AnalysisResultsViewState extends State<AnalysisResultsView>
         onTap: (_) => HapticFeedback.lightImpact(),
         tabs: const [
           Tab(text: 'Video'),
-          Tab(text: 'Observations'),
+          Tab(text: 'Analysis'),
         ],
       ),
     );

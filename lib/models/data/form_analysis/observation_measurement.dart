@@ -1,9 +1,11 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import 'package:turbo_disc_golf/models/data/form_analysis/observation_measurement_component.dart';
+
 part 'observation_measurement.g.dart';
 
 /// Quantitative measurement data for an observation
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class ObservationMeasurement {
   const ObservationMeasurement({
     required this.measuredValue,
@@ -11,6 +13,7 @@ class ObservationMeasurement {
     this.deviation,
     required this.unit,
     this.deviationDirection,
+    this.components,
   });
 
   /// The actual measured value
@@ -30,6 +33,12 @@ class ObservationMeasurement {
   /// Direction of deviation (e.g., 'too_high', 'too_low', 'too_early', 'too_late')
   @JsonKey(name: 'deviation_direction')
   final String? deviationDirection;
+
+  /// Component breakdown for composite measurements (e.g., back_leg_drive factors)
+  final List<ObservationMeasurementComponent>? components;
+
+  /// Whether this measurement has component breakdown data
+  bool get hasComponents => components != null && components!.isNotEmpty;
 
   /// Formatted string showing measured value with unit
   String get formattedMeasuredValue =>

@@ -377,6 +377,9 @@ class FeatureFlagService implements ClearOnLogoutProtocol {
   bool get useFormAnalysisRecordingScreenV2 =>
       getBool(FeatureFlag.useFormAnalysisRecordingScreenV2);
 
+  bool get showCameraStabilityWarning =>
+      getBool(FeatureFlag.showCameraStabilityWarning);
+
   // ===== Putt Practice =====
 
   bool get usePuttPracticeTab => getBool(FeatureFlag.usePuttPracticeTab);

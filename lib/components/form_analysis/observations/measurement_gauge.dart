@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_measurement.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/observation_measurement_component.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_reference.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
@@ -96,9 +97,133 @@ class MeasurementComparisonRow extends StatelessWidget {
             const SizedBox(height: 12),
             _buildDeviationBar(),
           ],
+          // Component breakdown for composite measurements
+          if (measurement.hasComponents) ...[
+            const SizedBox(height: 16),
+            _buildComponentBreakdown(),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _buildComponentBreakdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Row(
+          children: [
+            Icon(
+              Icons.list_alt,
+              size: 14,
+              color: SenseiColors.gray[500],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'BREAKDOWN',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: SenseiColors.gray[500],
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Component rows
+        ...measurement.components!.asMap().entries.map((entry) {
+          final int index = entry.key;
+          final bool isLast = index == measurement.components!.length - 1;
+          return _buildComponentRow(entry.value, isLast);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildComponentRow(
+      ObservationMeasurementComponent component, bool isLast) {
+    final Color scoreColor = _getComponentScoreColor(component.scorePercent);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: SenseiColors.gray[50],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: SenseiColors.gray[100]!),
+        ),
+        child: Row(
+          children: [
+            // Tree connector visual
+            SizedBox(
+              width: 16,
+              child: Text(
+                isLast ? '└' : '├',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: SenseiColors.gray[300],
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            // Component label and value
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    component.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: SenseiColors.gray[700],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    component.formattedMeasuredValue,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: SenseiColors.gray[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Score badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: scoreColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${component.scorePercent}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: scoreColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getComponentScoreColor(int scorePercent) {
+    if (scorePercent >= 80) {
+      return const Color(0xFF059669); // Green
+    } else if (scorePercent >= 60) {
+      return const Color(0xFFD97706); // Amber
+    } else {
+      return const Color(0xFFDC2626); // Red
+    }
   }
 
   /// Format value to avoid long decimal strings

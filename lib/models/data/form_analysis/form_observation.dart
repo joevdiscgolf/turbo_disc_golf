@@ -16,6 +16,7 @@ class FormObservation {
     required this.category,
     required this.observationType,
     required this.severity,
+    this.score,
     required this.confidence,
     required this.timing,
     this.measurement,
@@ -40,6 +41,9 @@ class FormObservation {
 
   /// Severity level (none, minor, moderate, significant)
   final ObservationSeverity severity;
+
+  /// Score from 0.0 to 1.0 (1 = best performance)
+  final double? score;
 
   /// Confidence score from 0.0 to 1.0
   final double confidence;

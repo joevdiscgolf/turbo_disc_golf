@@ -17,13 +17,14 @@ class FormAnalysisEducationPanel extends StatelessWidget {
         const SizedBox(height: 12),
         _buildRequirementsCard(context),
         const SizedBox(height: 20),
-        _buildSectionHeader(context, 'Helpful tips'),
+        _buildSectionHeader(context, 'For best results'),
         const SizedBox(height: 12),
         _buildHelpfulTipsCard(context),
-        const SizedBox(height: 20),
-        _buildSectionHeader(context, 'Camera angles'),
-        const SizedBox(height: 12),
-        _buildCameraPositionCard(context),
+        // Camera angles section hidden - now shown via lightbulb icon on Select video button
+        // const SizedBox(height: 20),
+        // _buildSectionHeader(context, 'Camera angles'),
+        // const SizedBox(height: 12),
+        // _buildCameraPositionCard(context),
       ],
     );
   }
@@ -110,7 +111,12 @@ class FormAnalysisEducationPanel extends StatelessWidget {
           ),
           _buildBulletPoint(
             context,
-            '60 fps or higher',
+            '60 fps or higher. Slow mo will take longer to process.',
+            color: const Color(0xFF137e66),
+          ),
+          _buildBulletPoint(
+            context,
+            'Avoid panning and zooming - use fixed camera position. Tripod or stable person work best.',
             color: const Color(0xFF137e66),
             isLast: true,
           ),
@@ -119,81 +125,82 @@ class FormAnalysisEducationPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildCameraPositionCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCameraAngleSection(
-            context,
-            'Side View',
-            'Position slightly behind, not directly to the side',
-          ),
-          const SizedBox(height: 12),
-          _buildCameraAngleSection(
-            context,
-            'Rear View',
-            'Position directly behind the thrower',
-          ),
-        ],
-      ),
-    );
-  }
+  // Camera angles section hidden - now shown via lightbulb icon on Select video button
+  // Widget _buildCameraPositionCard(BuildContext context) {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.blue.withValues(alpha: 0.08),
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         _buildCameraAngleSection(
+  //           context,
+  //           'Side View',
+  //           'Position slightly behind, not directly to the side',
+  //         ),
+  //         const SizedBox(height: 12),
+  //         _buildCameraAngleSection(
+  //           context,
+  //           'Rear View',
+  //           'Position directly behind the thrower',
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildCameraAngleSection(
-    BuildContext context,
-    String title,
-    String description,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '•',
-            style: TextStyle(
-              fontSize: 18,
-              height: 1.35,
-              color: Colors.blue[700],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
-                    height: 1.4,
-                  ),
-                ),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildCameraAngleSection(
+  //   BuildContext context,
+  //   String title,
+  //   String description,
+  // ) {
+  //   return Padding(
+  //     padding: const EdgeInsets.only(bottom: 4),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           '•',
+  //           style: TextStyle(
+  //             fontSize: 18,
+  //             height: 1.35,
+  //             color: Colors.blue[700],
+  //           ),
+  //         ),
+  //         const SizedBox(width: 10),
+  //         Expanded(
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text(
+  //                 title,
+  //                 style: TextStyle(
+  //                   fontSize: 15,
+  //                   fontWeight: FontWeight.w600,
+  //                   color: Colors.grey[800],
+  //                   height: 1.4,
+  //                 ),
+  //               ),
+  //               Text(
+  //                 description,
+  //                 style: TextStyle(
+  //                   fontSize: 14,
+  //                   color: Colors.grey[600],
+  //                   height: 1.4,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildBulletPoint(
     BuildContext context,

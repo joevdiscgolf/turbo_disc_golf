@@ -361,7 +361,6 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
     final bool showArmSpeed =
         locator.get<FeatureFlagService>().getBool(FeatureFlag.showArmSpeed);
     final double? currentSpeed = showArmSpeed ? _getCurrentSpeed(state) : null;
-    final detectedHandedness = widget.analysis.analysisResults.detectedHandedness;
 
     return AspectRatio(
       aspectRatio:
@@ -444,30 +443,6 @@ class _CheckpointVideoDisplayState extends State<CheckpointVideoDisplay> {
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-            // Handedness badge at top right
-            if (detectedHandedness != null)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    detectedHandedness.badgeLabel,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
                   ),
                 ),
               ),

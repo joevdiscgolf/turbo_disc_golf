@@ -34,7 +34,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
   TabController? _tabController;
   late final bool _showObservationsTab;
 
-  static const List<String> _tabNames = ['Video', 'Observations'];
+  static const List<String> _tabNames = ['Video', 'Analysis'];
 
   @override
   void initState() {
@@ -138,7 +138,7 @@ class _FormAnalysisDetailScreenState extends State<FormAnalysisDetailScreen>
       onTap: (_) => HapticFeedback.lightImpact(),
       tabs: const [
         Tab(text: 'Video'),
-        Tab(text: 'Observations'),
+        Tab(text: 'Analysis'),
       ],
     );
   }

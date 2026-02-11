@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
@@ -62,12 +60,16 @@ class AnalysisLoadingOverlay extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Particle background (the animated dark background)
+          // Fades with the brain so everything disappears together
           if (showBackground)
-            AnimatedParticleBackground(isProcessing: isProcessing),
-          // Shooting particles layer (renders on top of background)
-          if (particleEmissionNotifier != null)
-            _buildShootingParticles(),
-          // Loader content centered on top
+            ValueListenableBuilder<double>(
+              valueListenable: brainOpacityNotifier,
+              builder: (context, opacity, child) {
+                return Opacity(opacity: opacity, child: child);
+              },
+              child: AnimatedParticleBackground(isProcessing: isProcessing),
+            ),
+          // Loader content centered on top (shooting particles now inside loader)
           Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -80,6 +82,7 @@ class AnalysisLoadingOverlay extends StatelessWidget {
                 child: AtomicNucleusLoader(
                   key: const ValueKey('persistent-analysis-loader'),
                   speedMultiplierNotifier: loaderSpeedNotifier,
+                  particleEmissionNotifier: particleEmissionNotifier,
                 ),
               ),
               const SizedBox(height: 24),
@@ -140,130 +143,5 @@ class AnalysisLoadingOverlay extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildShootingParticles() {
-    return ValueListenableBuilder<double>(
-      valueListenable: particleEmissionNotifier!,
-      builder: (context, emissionProgress, _) {
-        // Don't render if no emission yet
-        if (emissionProgress <= 0) {
-          return const SizedBox.shrink();
-        }
-
-        return ValueListenableBuilder<double>(
-          valueListenable: brainOpacityNotifier,
-          builder: (context, brainOpacity, _) {
-            return ValueListenableBuilder<double>(
-              valueListenable: loaderSpeedNotifier,
-              builder: (context, speedMultiplier, _) {
-                return Opacity(
-                  opacity: brainOpacity,
-                  child: CustomPaint(
-                    size: Size.infinite,
-                    painter: _ShootingParticlesPainter(
-                      emissionProgress: emissionProgress.clamp(0.0, 1.0),
-                      animationProgress: emissionProgress,
-                      particleColor: const Color(0xFF4DD0E1),
-                      speedMultiplier: speedMultiplier,
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-/// Painter for particles shooting outward from center during finalization.
-class _ShootingParticlesPainter extends CustomPainter {
-  _ShootingParticlesPainter({
-    required this.emissionProgress,
-    required this.animationProgress,
-    required this.particleColor,
-    required this.speedMultiplier,
-  });
-
-  /// Clamped 0.0-1.0 to control how many particles are spawned.
-  final double emissionProgress;
-
-  /// Unclamped to control particle movement (can exceed 1.0).
-  final double animationProgress;
-
-  final Color particleColor;
-  final double speedMultiplier;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Offset center = Offset(size.width / 2, size.height / 2);
-
-    // Scale particle count with speed for more intensity at higher speeds
-    const int baseParticles = 40;
-    const int maxParticles = 150;
-    final double speedFactor = ((speedMultiplier - 1.0) / 6.875).clamp(0.0, 1.0);
-    final int totalParticles =
-        (baseParticles + (speedFactor * (maxParticles - baseParticles))).round();
-
-    // Use emissionProgress to control how many particles are visible
-    final int particlesToShow = (emissionProgress * totalParticles).toInt();
-
-    for (int i = 0; i < particlesToShow; i++) {
-      // Each particle has a unique seed for consistent behavior
-      final int seed = 42 + i;
-      final Random random = Random(seed);
-
-      // Random angle for this particle
-      final double angle = random.nextDouble() * 2 * pi;
-
-      // Particle spawn time (staggered)
-      final double spawnTime = i / totalParticles;
-      // Use animationProgress (unclamped) for movement calculation
-      final double particleLifetime = animationProgress - spawnTime;
-
-      if (particleLifetime <= 0) continue;
-
-      // Distance increases over particle lifetime, scaled by speed multiplier
-      const double maxDistance = 800.0;
-      final double distance = maxDistance * particleLifetime * 1.5 * speedMultiplier;
-
-      // Calculate position
-      final double x = center.dx + distance * cos(angle);
-      final double y = center.dy + distance * sin(angle);
-
-      // Skip if off screen
-      if (x < -50 || x > size.width + 50 || y < -50 || y > size.height + 50) {
-        continue;
-      }
-
-      // Particle size decreases over lifetime
-      final double particleSize = 4.0 - (particleLifetime * 2.0).clamp(0, 2);
-
-      // Constant opacity - brain opacity controls overall fade
-      const double opacity = 0.8;
-
-      if (particleSize > 0) {
-        final Paint paint = Paint()
-          ..color = particleColor.withValues(alpha: opacity)
-          ..style = PaintingStyle.fill;
-
-        canvas.drawCircle(Offset(x, y), particleSize, paint);
-
-        // Glow effect
-        final Paint glowPaint = Paint()
-          ..color = particleColor.withValues(alpha: opacity * 0.3)
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(x, y), particleSize + 2, glowPaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ShootingParticlesPainter oldDelegate) {
-    return oldDelegate.emissionProgress != emissionProgress ||
-        oldDelegate.animationProgress != animationProgress ||
-        oldDelegate.speedMultiplier != speedMultiplier;
   }
 }

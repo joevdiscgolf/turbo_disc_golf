@@ -176,6 +176,43 @@ var userName = 'John Doe';
 
 **CRITICAL: Use PrimaryButton from `lib/components/buttons/primary_button.dart`**
 
+### Cards
+
+**Use StandardCard from `lib/components/cards/standard_card.dart` for consistent card styling.**
+
+Default styling:
+- Border: `SenseiColors.gray[100]`
+- Box shadow: `defaultCardBoxShadow()`
+- Border radius: 12
+- Background: `Colors.white`
+
+```dart
+// ✅ CORRECT: Use StandardCard
+StandardCard(
+  padding: const EdgeInsets.all(16),
+  child: Text('Card content'),
+)
+
+// With customization
+StandardCard(
+  padding: const EdgeInsets.all(12),
+  backgroundColor: SenseiColors.gray[50]!,
+  showShadow: false, // For nested cards
+  child: Text('Nested card'),
+)
+
+// ❌ WRONG: Manual Container with repeated decoration
+Container(
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: SenseiColors.gray[100]!),
+    boxShadow: defaultCardBoxShadow(),
+  ),
+  child: Text('Card content'),
+)
+```
+
 ### Patterns
 
 **Screen structure:**
@@ -233,6 +270,7 @@ return ContentWidget(data: state.data);
 - [ ] Const constructors
 - [ ] Explicit types
 - [ ] PrimaryButton for actions
+- [ ] StandardCard for card containers
 - [ ] Organized imports
 - [ ] Disposed resources
 - [ ] Theme values

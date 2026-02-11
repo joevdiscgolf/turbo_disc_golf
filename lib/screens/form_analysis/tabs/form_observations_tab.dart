@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:turbo_disc_golf/components/form_analysis/observations/arm_speed_chart_card.dart';
+import 'package:turbo_disc_golf/components/form_analysis/observations/form_observations_v2_view.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/observation_category_section.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/observation_segment_player.dart';
-import 'package:turbo_disc_golf/components/form_analysis/observations/arm_speed_chart_card.dart';
 import 'package:turbo_disc_golf/locator.dart';
+import 'package:turbo_disc_golf/models/camera_angle.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observations.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/form_observations_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_enums.dart';
-import 'package:turbo_disc_golf/models/camera_angle.dart';
-import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
+import 'package:turbo_disc_golf/models/handedness.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
+import 'package:turbo_disc_golf/utils/layout_helpers.dart';
+
+/// Flag to control whether to use FormObservationsV2 (named keys) or v1 (list-based)
+const bool kUseFormObservationsV2 = true;
 
 class FormObservationsTab extends StatefulWidget {
   static const String screenName = 'Form Observations';
@@ -51,12 +58,26 @@ class _FormObservationsTabState extends State<FormObservationsTab>
     _logger.logScreenImpression('FormObservationsTab');
   }
 
-  FormObservations? get _observations => widget.analysis.formObservations;
+  FormObservations? get _observationsV1 => widget.analysis.formObservations;
+  FormObservationsV2? get _observationsV2 => widget.analysis.formObservationsV2;
   ArmSpeedData? get _armSpeed => widget.analysis.armSpeed;
   CameraAngle get _cameraAngle => widget.analysis.analysisResults.cameraAngle;
   bool get _isRearAngle => _cameraAngle == CameraAngle.rear;
   bool get _showArmSpeed =>
       locator.get<FeatureFlagService>().getBool(FeatureFlag.showArmSpeed);
+
+  /// Returns true if there are observations available (checks v2 or v1 based on flag)
+  bool get _hasObservations {
+    if (kUseFormObservationsV2) {
+      return _observationsV2 != null && _observationsV2!.isNotEmpty;
+    }
+    return _observationsV1 != null && _observationsV1!.isNotEmpty;
+  }
+
+  /// Returns observations grouped by category (from v1 only - v2 uses its own widget)
+  Map<ObservationCategory, List<FormObservation>> get _observationsByCategory {
+    return _observationsV1?.byCategory ?? {};
+  }
 
   void _handleObservationTap(FormObservation observation) {
     _logger.track(
@@ -97,6 +118,9 @@ class _FormObservationsTabState extends State<FormObservationsTab>
               widget.analysis.videoMetadata.videoDurationSeconds
         : 30.0;
 
+    final bool isLeftHanded =
+        widget.analysis.analysisResults.detectedHandedness == Handedness.left;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -106,6 +130,7 @@ class _FormObservationsTabState extends State<FormObservationsTab>
           observation: observation,
           videoUrl: widget.analysis.videoMetadata.skeletonVideoUrl!,
           fps: fps,
+          isLeftHanded: isLeftHanded,
         );
       },
     ).then((_) {
@@ -127,11 +152,9 @@ class _FormObservationsTabState extends State<FormObservationsTab>
       return _buildRearAngleEmptyState();
     }
 
-    final bool hasObservations =
-        _observations != null && _observations!.isNotEmpty;
     final bool hasArmSpeed = _armSpeed != null && _showArmSpeed;
 
-    if (!hasObservations && !hasArmSpeed) {
+    if (!_hasObservations && !hasArmSpeed) {
       return _buildEmptyState();
     }
 
@@ -273,15 +296,130 @@ class _FormObservationsTabState extends State<FormObservationsTab>
   }
 
   Widget _buildObservationsList() {
+    // Use v2 widget when flag is enabled
+    if (kUseFormObservationsV2 && _observationsV2 != null) {
+      return _buildV2ObservationsList();
+    }
+    return _buildV1ObservationsList();
+  }
+
+  Widget _buildV2ObservationsList() {
+    return ListView(
+      padding: EdgeInsets.only(
+        top: widget.topPadding + 4,
+        left: 16,
+        right: 16,
+        bottom: 132,
+      ),
+      children: [
+        // Overall score card at the top
+        _buildOverallScoreCard(),
+        const SizedBox(height: 16),
+        // Arm speed chart (collapsible)
+        if (_armSpeed != null && _showArmSpeed) ...[
+          ArmSpeedChartCard(armSpeedData: _armSpeed!),
+          const SizedBox(height: 24),
+        ],
+        // V2 observations view with all keys rendered
+        FormObservationsV2View(
+          observations: _observationsV2!,
+          onObservationTap: _handleObservationTap,
+          activeObservationId: _activeObservation?.observationId,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOverallScoreCard() {
+    final int scorePercent = (_observationsV2!.overallScore * 100).round();
+    final Color scoreColor = _getScoreColor(scorePercent);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: SenseiColors.gray[100]!),
+        boxShadow: defaultCardBoxShadow(),
+      ),
+      child: Row(
+        children: [
+          // Score circle
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  scoreColor.withValues(alpha: 0.15),
+                  scoreColor.withValues(alpha: 0.08),
+                ],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$scorePercent',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: scoreColor,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Label and count
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Overall form score',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: SenseiColors.gray[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_observationsV2!.observations.length} observations analyzed',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: SenseiColors.gray[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getScoreColor(int scorePercent) {
+    if (scorePercent >= 80) {
+      return const Color(0xFF059669); // Darker green for contrast
+    } else if (scorePercent >= 60) {
+      return const Color(0xFFD97706); // Darker amber for contrast
+    } else {
+      return const Color(0xFFDC2626); // Darker red for contrast
+    }
+  }
+
+  Widget _buildV1ObservationsList() {
     final Map<ObservationCategory, List<FormObservation>> byCategory =
-        _observations?.byCategory ?? {};
+        _observationsByCategory;
 
     return ListView(
       padding: EdgeInsets.only(
         top: widget.topPadding + 4,
         left: 16,
         right: 16,
-        bottom: 16,
+        bottom: 132,
       ),
       children: [
         // Arm speed chart at the top

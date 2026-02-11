@@ -783,6 +783,180 @@ class PoseAnalysisApiClient {
     }
   }
 
+  /// Test the analysis endpoint without uploading a video file.
+  /// Used for development/testing when video assets are not available.
+  ///
+  /// When [debugRequest] is true, sends a flag to the backend indicating
+  /// it should use a predefined test video instead of requiring an upload.
+  ///
+  /// Returns a stream that yields either:
+  /// - [AnalysisProgress] for progress updates
+  /// - [FormAnalysisResponseV2] when analysis is complete
+  ///
+  /// Throws [PoseAnalysisException] on errors.
+  Stream<Object> analyzeWithoutVideoStream({
+    required String throwType,
+    required CameraAngle cameraAngle,
+    Handedness? handedness,
+    required String sessionId,
+    required String userId,
+    String? proPlayerId,
+    bool debugRequest = true,
+  }) async* {
+    final Uri uri = Uri.parse('$_baseUrl/api/v1/form-analysis/stream');
+
+    // Create multipart request without video file
+    final http.MultipartRequest request = http.MultipartRequest('POST', uri);
+
+    // Add form fields only (no video)
+    request.fields['throw_type'] = throwType;
+    request.fields['camera_angle'] = cameraAngle.toApiString();
+    if (handedness != null) {
+      request.fields['handedness'] = handedness.toApiString();
+    }
+    request.fields['session_id'] = sessionId;
+    request.fields['user_id'] = userId;
+    if (proPlayerId != null) {
+      request.fields['pro_player_id'] = proPlayerId;
+    }
+    // Debug flag tells backend to use a test video instead of requiring upload
+    if (debugRequest) {
+      request.fields['debug_request'] = 'true';
+    }
+
+    // Add auth headers
+    final Map<String, String> authHeaders = await _getAuthHeaders();
+    request.headers.addAll(authHeaders);
+    // Request SSE response
+    request.headers['Accept'] = 'text/event-stream';
+
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('📤 POSE ANALYSIS SSE REQUEST (NO VIDEO - TEST MODE):');
+    debugPrint('   URL: $uri');
+    debugPrint('   Fields: ${request.fields}');
+    debugPrint('   Debug Request: $debugRequest');
+    debugPrint('═══════════════════════════════════════════════════════');
+
+    try {
+      final http.StreamedResponse response = await request.send().timeout(
+        const Duration(minutes: 5),
+      );
+
+      if (response.statusCode != 200) {
+        final String body = await response.stream.bytesToString();
+        debugPrint('❌ SSE request failed: ${response.statusCode}');
+        debugPrint('   Body: $body');
+
+        String? serverMessage;
+        try {
+          final Map<String, dynamic> errorJson =
+              jsonDecode(body) as Map<String, dynamic>;
+          serverMessage =
+              errorJson['detail'] as String? ??
+              errorJson['error_message'] as String? ??
+              errorJson['message'] as String?;
+        } catch (_) {}
+
+        throw PoseAnalysisException(
+          serverMessage ??
+              'Something went wrong analyzing your video. Please try again.',
+        );
+      }
+
+      // Parse SSE events from the stream
+      String buffer = '';
+
+      await for (final List<int> chunk in response.stream.timeout(
+        const Duration(minutes: 5),
+        onTimeout: (EventSink<List<int>> sink) {
+          sink.addError(TimeoutException('SSE stream timed out'));
+          sink.close();
+        },
+      )) {
+        final String decodedChunk = utf8.decode(chunk);
+
+        buffer += decodedChunk;
+
+        // Process complete events (delimited by double newline)
+        while (buffer.contains('\n\n')) {
+          final int eventEnd = buffer.indexOf('\n\n');
+          final String eventData = buffer.substring(0, eventEnd);
+          buffer = buffer.substring(eventEnd + 2);
+
+          final _SSEEvent? event = _parseSSEEvent(eventData);
+          if (event == null) {
+            debugPrint('⚠️ Failed to parse SSE event (null result)');
+            continue;
+          }
+
+          switch (event.type) {
+            case 'progress':
+              try {
+                final Map<String, dynamic> json =
+                    jsonDecode(event.data) as Map<String, dynamic>;
+                yield AnalysisProgress.fromJson(json);
+              } catch (e) {
+                debugPrint('⚠️ Failed to parse progress event: $e');
+              }
+              break;
+
+            case 'complete':
+              try {
+                final Map<String, dynamic> json =
+                    jsonDecode(event.data) as Map<String, dynamic>;
+                yield FormAnalysisResponseV2.fromJson(json);
+                return; // Stream complete
+              } catch (e) {
+                debugPrint('❌ Failed to parse complete event: $e');
+                throw PoseAnalysisException(
+                  'Failed to parse analysis results. Please try again.',
+                );
+              }
+
+            case 'error':
+              String errorMessage = 'Analysis failed';
+              try {
+                final Map<String, dynamic> json =
+                    jsonDecode(event.data) as Map<String, dynamic>;
+                errorMessage = json['message'] as String? ?? errorMessage;
+              } catch (_) {}
+              throw PoseAnalysisException(errorMessage);
+
+            default:
+              debugPrint('⚠️ Unknown SSE event type: ${event.type}');
+          }
+        }
+      }
+
+      // If we get here without a complete event, something went wrong
+      throw PoseAnalysisException(
+        'Analysis stream ended unexpectedly. Please try again.',
+      );
+    } on TimeoutException {
+      debugPrint('❌ SSE stream timed out');
+      throw PoseAnalysisException(
+        'Analysis is taking longer than expected. Please try again with a shorter video.',
+      );
+    } on SocketException catch (e) {
+      debugPrint('❌ SSE SOCKET EXCEPTION: ${e.message}');
+      throw PoseAnalysisException(
+        'Unable to reach the analysis service. Please check your connection and try again.',
+      );
+    } on http.ClientException catch (e) {
+      debugPrint('❌ SSE HTTP CLIENT EXCEPTION: ${e.message}');
+      throw PoseAnalysisException(
+        'Unable to reach the analysis service. Please check your connection and try again.',
+      );
+    } on PoseAnalysisException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ SSE UNEXPECTED ERROR: $e');
+      throw PoseAnalysisException(
+        'Something went wrong analyzing your video. Please try again.',
+      );
+    }
+  }
+
   /// Parse a single SSE event from raw text.
   /// Returns null if the event is malformed or empty.
   _SSEEvent? _parseSSEEvent(String eventText) {

@@ -1,161 +1,117 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 /// Card displaying arm speed data with a line chart and max speed stat.
-class ArmSpeedChartCard extends StatefulWidget {
-  const ArmSpeedChartCard({
-    super.key,
-    required this.armSpeedData,
-  });
+/// Collapsible - starts collapsed showing just the max speed stat.
+class ArmSpeedChartCard extends StatelessWidget {
+  const ArmSpeedChartCard({super.key, required this.armSpeedData});
 
   final ArmSpeedData armSpeedData;
 
   @override
-  State<ArmSpeedChartCard> createState() => _ArmSpeedChartCardState();
-}
-
-class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
-  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      color: Colors.white,
+      elevation: defaultCardElevation,
+      shadowColor: defaultCardShadowColor,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: SenseiColors.gray[100]!),
-        boxShadow: defaultCardBoxShadow(),
+        side: BorderSide(color: SenseiColors.gray[100]!),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 16),
-          _buildMaxSpeedStat(),
-          const SizedBox(height: 16),
-          _buildChart(),
-        ],
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
+        ),
+        child: ExpansionTile(
+          onExpansionChanged: (_) => HapticFeedback.lightImpact(),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          iconColor: SenseiColors.gray[400],
+          collapsedIconColor: SenseiColors.gray[400],
+          title: _buildCollapsedContent(),
+          children: [_buildChart()],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildCollapsedContent() {
     return Row(
       children: [
-        Icon(
-          Icons.speed,
-          size: 16,
-          color: SenseiColors.gray[500],
+        // Icon
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.flash_on, color: Color(0xFF6366F1), size: 20),
         ),
-        const SizedBox(width: 8),
-        Text(
-          'ARM SPEED',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: SenseiColors.gray[500],
-            letterSpacing: 0.5,
+        const SizedBox(width: 12),
+        // Label and value
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Max arm speed',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: SenseiColors.gray[600],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    armSpeedData.maxSpeedMph.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF6366F1),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'mph',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMaxSpeedStat() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF6366F1).withValues(alpha: 0.1),
-            const Color(0xFF8B5CF6).withValues(alpha: 0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF6366F1).withValues(alpha: 0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.flash_on,
-              color: Color(0xFF6366F1),
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Max arm speed',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: SenseiColors.gray[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      widget.armSpeedData.maxSpeedMph.toStringAsFixed(1),
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF6366F1),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'mph',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildChart() {
-    final List<double> speeds = widget.armSpeedData.chartSpeedsAsList;
+    final List<double> speeds = armSpeedData.chartSpeedsAsList;
     final int maxSpeedIndex =
-        widget.armSpeedData.maxSpeedFrame - widget.armSpeedData.chartStartFrame;
+        armSpeedData.maxSpeedFrame - armSpeedData.chartStartFrame;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(
-              Icons.show_chart,
-              size: 14,
-              color: SenseiColors.gray[500],
-            ),
+            Icon(Icons.show_chart, size: 14, color: SenseiColors.gray[500]),
             const SizedBox(width: 6),
             Text(
               'Speed over time',
@@ -179,7 +135,7 @@ class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
             child: CustomPaint(
               painter: _ArmSpeedChartPainter(
                 speeds: speeds,
-                maxSpeed: widget.armSpeedData.maxSpeedMph,
+                maxSpeed: armSpeedData.maxSpeedMph,
                 maxSpeedIndex: maxSpeedIndex,
               ),
               size: Size.infinite,
@@ -197,25 +153,19 @@ class _ArmSpeedChartCardState extends State<ArmSpeedChartCard> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Start',
-          style: TextStyle(
-            fontSize: 10,
-            color: SenseiColors.gray[400],
-          ),
+          'Extension',
+          style: TextStyle(fontSize: 10, color: SenseiColors.gray[400]),
         ),
-        Text(
-          'Frame ${widget.armSpeedData.chartStartFrame} - ${widget.armSpeedData.chartEndFrame}',
-          style: TextStyle(
-            fontSize: 10,
-            color: SenseiColors.gray[400],
+        Expanded(
+          child: Text(
+            'Frame ${armSpeedData.chartStartFrame} - ${armSpeedData.chartEndFrame}',
+            style: TextStyle(fontSize: 10, color: SenseiColors.gray[400]),
+            textAlign: TextAlign.center,
           ),
         ),
         Text(
           'Release',
-          style: TextStyle(
-            fontSize: 10,
-            color: SenseiColors.gray[400],
-          ),
+          style: TextStyle(fontSize: 10, color: SenseiColors.gray[400]),
         ),
       ],
     );
@@ -349,16 +299,17 @@ class _ArmSpeedChartPainter extends CustomPainter {
 
     // Fill with gradient
     final Paint areaPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF6366F1).withValues(alpha: 0.3),
-          const Color(0xFF6366F1).withValues(alpha: 0.05),
-        ],
-      ).createShader(
-        Rect.fromLTWH(chartLeft, chartTop, chartWidth, chartHeight),
-      );
+      ..shader =
+          LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF6366F1).withValues(alpha: 0.3),
+              const Color(0xFF6366F1).withValues(alpha: 0.05),
+            ],
+          ).createShader(
+            Rect.fromLTWH(chartLeft, chartTop, chartWidth, chartHeight),
+          );
 
     canvas.drawPath(areaPath, areaPaint);
   }
@@ -446,7 +397,10 @@ class _ArmSpeedChartPainter extends CustomPainter {
 
     // Position label above the point, ensuring it stays within bounds
     double labelX = x - textPainter.width / 2;
-    labelX = labelX.clamp(chartLeft, chartLeft + chartWidth - textPainter.width);
+    labelX = labelX.clamp(
+      chartLeft,
+      chartLeft + chartWidth - textPainter.width,
+    );
     final double labelY = math.max(chartTop - 2, y - 22);
 
     textPainter.paint(canvas, Offset(labelX, labelY));

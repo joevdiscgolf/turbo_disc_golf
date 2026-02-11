@@ -2,11 +2,9 @@
 // import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
-// import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/locator.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/form_analysis_history_screen.dart';
@@ -15,8 +13,6 @@ import 'package:turbo_disc_golf/screens/round_history/round_history_screen.dart'
 import 'package:turbo_disc_golf/screens/settings/settings_screen.dart';
 import 'package:turbo_disc_golf/screens/stats/stats_screen.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
-import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
-import 'package:turbo_disc_golf/state/putt_practice_history_cubit.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/navigation_helpers.dart';
@@ -170,17 +166,7 @@ class _MainWrapperState extends State<MainWrapper> {
     final FeatureFlagService flags = locator.get<FeatureFlagService>();
     final bool showPuttPracticeTab = flags.usePuttPracticeTab;
 
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<FormAnalysisHistoryCubit>.value(
-          value: locator.get<FormAnalysisHistoryCubit>(),
-        ),
-        if (showPuttPracticeTab)
-          BlocProvider<PuttPracticeHistoryCubit>.value(
-            value: locator.get<PuttPracticeHistoryCubit>(),
-          ),
-      ],
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: SenseiColors.gray.shade50,
         appBar: _MainWrapperAppBar(
           topViewPadding: MediaQuery.of(context).viewPadding.top,
@@ -247,8 +233,7 @@ class _MainWrapperState extends State<MainWrapper> {
             type: BottomNavigationBarType.fixed,
           ),
         ),
-      ),
-    );
+      );
   }
 
   String _getScreenNameForIndex(int index, bool showPuttPracticeTab) {

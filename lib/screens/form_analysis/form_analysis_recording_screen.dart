@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,10 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:turbo_disc_golf/components/app_bar/generic_app_bar.dart';
 import 'package:turbo_disc_golf/components/asset_image_icon.dart';
+import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
+import 'package:turbo_disc_golf/components/custom_cupertino_action_sheet.dart';
 import 'package:turbo_disc_golf/components/backgrounds/animated_particle_background.dart';
 import 'package:turbo_disc_golf/components/error_states/generation_error_state.dart';
-import 'package:turbo_disc_golf/components/compact_popup_menu_item.dart';
 import 'package:turbo_disc_golf/components/education/form_analysis_education_panel.dart';
+import 'package:turbo_disc_golf/components/form_analysis/filming_angles_education_content.dart';
 import 'package:turbo_disc_golf/components/liquid_glass_card.dart';
 import 'package:turbo_disc_golf/components/panels/education_panel.dart';
 import 'package:turbo_disc_golf/locator.dart';
@@ -25,12 +28,14 @@ import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_type.dart';
+import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_cubit.dart';
 import 'package:turbo_disc_golf/state/video_form_analysis_state.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 const String _hasSeenFormAnalysisEducationKey = 'hasSeenFormAnalysisEducation';
+const String _hasSeenFilmingAnglesEducationKey = 'hasSeenFilmingAnglesEducation';
 
 /// V2 Form Analysis Recording Screen with "Stage" liquid glass design.
 /// Features layered glass panels with tips in back, action in front.
@@ -74,48 +79,12 @@ class _FormAnalysisRecordingScreenState
 
   // Particle emission notifier for shooting particles during transition
   // Values: 0.0 = no particles, > 0.0 = emission progress (can exceed 1.0 for continued movement)
-  final ValueNotifier<double> _particleEmissionNotifier =
-      ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _particleEmissionNotifier = ValueNotifier<double>(
+    0.0,
+  );
 
   CameraAngle _selectedCameraAngle = CameraAngle.side;
   Handedness? _selectedHandedness;
-
-  // Debug test videos
-  static const List<({String path, String name, CameraAngle angle})>
-  _testVideos = [
-    (
-      path: 'assets/test_videos/joe_example_throw_1.mov',
-      name: 'Joe #1',
-      angle: CameraAngle.side,
-    ),
-    (
-      path: 'assets/test_videos/joe_example_throw_2.mov',
-      name: 'Joe #2',
-      angle: CameraAngle.side,
-    ),
-    (
-      path: 'assets/test_videos/joe_example_throw_3.mov',
-      name: 'Joe #3',
-      angle: CameraAngle.side,
-    ),
-    (
-      path: 'assets/test_videos/joe_example_throw_rear_1.mov',
-      name: 'Joe Rear #1',
-      angle: CameraAngle.rear,
-    ),
-    (
-      path: 'assets/test_videos/joe_example_throw_rear_2.mov',
-      name: 'Joe Rear #2',
-      angle: CameraAngle.rear,
-    ),
-    (
-      path: 'assets/test_videos/joe_example_throw_rear_3.mp4',
-      name: 'Joe Rear #3',
-      angle: CameraAngle.rear,
-    ),
-  ];
-
-  String _selectedTestVideoPath = 'assets/test_videos/joe_example_throw_2.mov';
 
   @override
   void initState() {
@@ -169,10 +138,9 @@ class _FormAnalysisRecordingScreenState
   /// Initializes the tab controller for results view when showing observations.
   void _initResultsTabController(VideoFormAnalysisComplete state) {
     // Check if observations tab should be shown (empty state handles no data)
-    final bool shouldShowObservationsTab =
-        locator.get<FeatureFlagService>().getBool(
-          FeatureFlag.showFormObservationsTab,
-        );
+    final bool shouldShowObservationsTab = locator
+        .get<FeatureFlagService>()
+        .getBool(FeatureFlag.showFormObservationsTab);
 
     if (shouldShowObservationsTab && _resultsTabController == null) {
       _resultsTabController = TabController(length: 2, vsync: this);
@@ -203,7 +171,7 @@ class _FormAnalysisRecordingScreenState
       onTap: (_) => HapticFeedback.lightImpact(),
       tabs: const [
         Tab(text: 'Video'),
-        Tab(text: 'Observations'),
+        Tab(text: 'Analysis'),
       ],
     );
   }
@@ -258,6 +226,7 @@ class _FormAnalysisRecordingScreenState
     required bool hideAppBar,
     required bool isShowingResults,
     required Color foregroundColor,
+    String? analysisId,
   }) {
     if (hideAppBar) return null;
 
@@ -274,7 +243,9 @@ class _FormAnalysisRecordingScreenState
               color: SenseiColors.gray[700],
             ),
       hasBackButton: isShowingResults,
-      backgroundColor: Colors.transparent,
+      backgroundColor: isShowingResults
+          ? SenseiColors.gray[50]
+          : Colors.transparent,
       foregroundColor: foregroundColor,
       bottomWidget: isShowingResults && _showResultsObservationsTab
           ? _buildResultsTabBar()
@@ -282,16 +253,18 @@ class _FormAnalysisRecordingScreenState
       bottomWidgetHeight: isShowingResults && _showResultsObservationsTab
           ? 40
           : 0,
-      rightWidget: isShowingResults
-          ? null
-          : IconButton(
-              icon: Icon(Icons.close, color: foregroundColor),
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                _logger.track('Close Recording Screen Button Tapped');
-                Navigator.pop(context);
-              },
-            ),
+      rightWidget: isShowingResults && analysisId != null
+          ? _buildMenuButton(analysisId)
+          : isShowingResults
+              ? null
+              : IconButton(
+                  icon: Icon(Icons.close, color: foregroundColor),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _logger.track('Close Recording Screen Button Tapped');
+                    Navigator.pop(context);
+                  },
+                ),
     );
   }
 
@@ -320,6 +293,11 @@ class _FormAnalysisRecordingScreenState
               !_showingTransition &&
               !_waitingForTransition;
 
+          // Get analysis ID for menu button when showing results
+          final String? analysisId = state is VideoFormAnalysisComplete
+              ? state.poseAnalysis?.id
+              : null;
+
           // Initialize tab controller when results are ready
           if (isShowingResults) {
             _initResultsTabController(state);
@@ -347,6 +325,7 @@ class _FormAnalysisRecordingScreenState
                 hideAppBar: hideAppBar,
                 isShowingResults: isShowingResults,
                 foregroundColor: foregroundColor,
+                analysisId: analysisId,
               ),
               body: _buildScaffoldBody(isShowingResults: isShowingResults),
             ),
@@ -614,7 +593,7 @@ class _FormAnalysisRecordingScreenState
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Tips',
+          'How to use',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
             color: SenseiColors.darkGray,
@@ -622,16 +601,16 @@ class _FormAnalysisRecordingScreenState
           ),
         ),
         Container(
-          width: 18,
-          height: 18,
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
-            color: SenseiColors.gray[100],
+            color: SenseiColors.gray[200],
             shape: BoxShape.circle,
           ),
           child: Icon(
-            Icons.help_outline,
-            size: 14,
-            color: SenseiColors.gray[400],
+            Icons.lightbulb_outline,
+            size: 16,
+            color: SenseiColors.gray[500],
           ),
         ),
       ],
@@ -642,6 +621,11 @@ class _FormAnalysisRecordingScreenState
     return Column(
       children: addRunSpacing(
         [
+          _buildTipRow(
+            context,
+            icon: Icons.videocam_outlined,
+            title: 'Fixed camera position & zoom',
+          ),
           _buildTipRow(
             context,
             icon: Icons.fullscreen,
@@ -663,7 +647,7 @@ class _FormAnalysisRecordingScreenState
             title: '60 fps or higher',
           ),
         ],
-        runSpacing: 14,
+        runSpacing: 10,
         axis: Axis.vertical,
       ),
     );
@@ -677,14 +661,14 @@ class _FormAnalysisRecordingScreenState
     return Row(
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             color: const Color(0xFF137e66).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
-            child: Icon(icon, size: 18, color: const Color(0xFF137e66)),
+            child: Icon(icon, size: 16, color: const Color(0xFF137e66)),
           ),
         ),
         const SizedBox(width: 12),
@@ -700,7 +684,7 @@ class _FormAnalysisRecordingScreenState
         ),
         Icon(
           Icons.check_circle,
-          size: 18,
+          size: 16,
           color: const Color(0xFF137e66).withValues(alpha: 0.7),
         ),
       ],
@@ -854,85 +838,124 @@ class _FormAnalysisRecordingScreenState
     VideoFormAnalysisCubit cubit,
     FeatureFlagService flags,
   ) {
-    return GestureDetector(
-      onTap: () async {
-        HapticFeedback.lightImpact();
-
-        if (flags.showCameraAngleSelectionDialog) {
-          if (!mounted) return;
-          final CameraAngle? selectedAngle =
-              await CameraAngleSelectionPanel.show(context);
-          if (selectedAngle == null || !mounted) return;
-          setState(() => _selectedCameraAngle = selectedAngle);
-          _logger.track(
-            'Import Video Button Tapped',
-            properties: {
-              'camera_angle': selectedAngle.name,
-              'handedness': _selectedHandedness?.name ?? 'auto',
-              'version': 'v2_stage',
-            },
-          );
-          if (!mounted) return;
-          cubit.importVideo(
-            throwType: ThrowTechnique.backhand,
-            cameraAngle: selectedAngle,
-            handedness: _selectedHandedness,
-          );
-        } else {
-          _logger.track(
-            'Import Video Button Tapped',
-            properties: {
-              'camera_angle': _selectedCameraAngle.name,
-              'handedness': _selectedHandedness?.name ?? 'auto',
-              'version': 'v2_stage',
-            },
-          );
-          cubit.importVideo(
-            throwType: ThrowTechnique.backhand,
-            cameraAngle: _selectedCameraAngle,
-            handedness: _selectedHandedness,
-          );
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF137e66), Color(0xFF1A9E80)],
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () => _onSelectVideoTapped(cubit, flags),
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF137e66), Color(0xFF1A9E80)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF137e66).withValues(alpha: 0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF137e66).withValues(alpha: 0.15),
+                  blurRadius: 32,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.videocam_rounded, size: 40, color: Colors.white),
+                const SizedBox(height: 8),
+                Text(
+                  'Select video',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF137e66).withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-            BoxShadow(
-              color: const Color(0xFF137e66).withValues(alpha: 0.15),
-              blurRadius: 32,
-              spreadRadius: 2,
-            ),
-          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.videocam_rounded, size: 40, color: Colors.white),
-            const SizedBox(height: 8),
-            Text(
-              'Select video',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
+        Positioned(
+          top: 8,
+          right: 8,
+          child: GestureDetector(
+            onTap: () => _showFilmingAnglesPanel(context),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.lightbulb_outline,
+                size: 18,
+                color: Colors.white.withValues(alpha: 0.9),
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
+  }
+
+  Future<void> _onSelectVideoTapped(
+    VideoFormAnalysisCubit cubit,
+    FeatureFlagService flags,
+  ) async {
+    HapticFeedback.lightImpact();
+
+    // Show filming angles education on first tap
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool hasSeenFilmingAngles =
+        prefs.getBool(_hasSeenFilmingAnglesEducationKey) ?? false;
+
+    if (!hasSeenFilmingAngles && mounted) {
+      await _showFilmingAnglesPanel(context);
+      await prefs.setBool(_hasSeenFilmingAnglesEducationKey, true);
+      if (!mounted) return;
+    }
+
+    if (flags.showCameraAngleSelectionDialog) {
+      if (!mounted) return;
+      final CameraAngle? selectedAngle =
+          await CameraAngleSelectionPanel.show(context);
+      if (selectedAngle == null || !mounted) return;
+      setState(() => _selectedCameraAngle = selectedAngle);
+      _logger.track(
+        'Import Video Button Tapped',
+        properties: {
+          'camera_angle': selectedAngle.name,
+          'handedness': _selectedHandedness?.name ?? 'auto',
+          'version': 'v2_stage',
+        },
+      );
+      if (!mounted) return;
+      cubit.importVideo(
+        throwType: ThrowTechnique.backhand,
+        cameraAngle: selectedAngle,
+        handedness: _selectedHandedness,
+      );
+    } else {
+      _logger.track(
+        'Import Video Button Tapped',
+        properties: {
+          'camera_angle': _selectedCameraAngle.name,
+          'handedness': _selectedHandedness?.name ?? 'auto',
+          'version': 'v2_stage',
+        },
+      );
+      cubit.importVideo(
+        throwType: ThrowTechnique.backhand,
+        cameraAngle: _selectedCameraAngle,
+        handedness: _selectedHandedness,
+      );
+    }
   }
 
   Widget _buildDebugSection(BuildContext context) {
@@ -952,98 +975,121 @@ class _FormAnalysisRecordingScreenState
               width: 1,
             ),
           ),
-          child: Row(
-            children: [
-              Expanded(child: _buildTestVideoSelector()),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    cubit.testWithAssetVideo(
-                      throwType: ThrowTechnique.backhand,
-                      cameraAngle: _selectedCameraAngle,
-                      handedness: _selectedHandedness,
-                      assetPath: _selectedTestVideoPath,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  child: const Text('Run Test'),
-                ),
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                cubit.testWithoutVideo(
+                  throwType: ThrowTechnique.backhand,
+                  cameraAngle: _selectedCameraAngle,
+                  handedness: _selectedHandedness,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-            ],
+              child: const Text('Run test (no video)'),
+            ),
           ),
         ),
       ],
     );
   }
 
-  List<({String path, String name, CameraAngle angle})>
-  _getFilteredTestVideos() {
-    return _testVideos
-        .where((video) => video.angle == _selectedCameraAngle)
-        .toList();
+  Future<void> _showFilmingAnglesPanel(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    _logger.track('Filming Angles Education Panel Opened');
+    await EducationPanel.show(
+      context,
+      title: 'Camera positions',
+      modalName: 'Filming Angles Education',
+      accentColor: const Color(0xFF137e66),
+      buttonLabel: 'Got it',
+      contentBuilder: (_) => const FilmingAnglesEducationContent(),
+    );
   }
 
-  Widget _buildTestVideoSelector() {
-    final List<({String path, String name, CameraAngle angle})>
-    availableVideos = _getFilteredTestVideos();
-
-    final String selectedName = availableVideos
-        .firstWhere(
-          (v) => v.path == _selectedTestVideoPath,
-          orElse: () => availableVideos.isNotEmpty
-              ? availableVideos.first
-              : _testVideos.first,
-        )
-        .name;
-
+  Widget _buildMenuButton(String analysisId) {
     return PopupMenuButton<String>(
-      initialValue: _selectedTestVideoPath,
-      onSelected: (String value) {
-        setState(() => _selectedTestVideoPath = value);
+      icon: const Icon(Icons.more_horiz),
+      onOpened: () {
         HapticFeedback.lightImpact();
       },
-      itemBuilder: (BuildContext context) => availableVideos
-          .map(
-            (video) => CompactPopupMenuItem<String>(
-              value: video.path,
-              label: video.name,
-              showCheckmark: video.path == _selectedTestVideoPath,
-              iconColor: const Color(0xFF137e66),
-            ),
-          )
-          .toList(),
-      child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
-          ),
-          borderRadius: BorderRadius.circular(12),
+      onSelected: (String value) {
+        HapticFeedback.lightImpact();
+        if (value == 'delete') {
+          _logger.track(
+            'Delete Analysis Menu Item Tapped',
+            properties: {'analysis_id': analysisId},
+          );
+          _showDeleteConfirmation(analysisId);
+        }
+      },
+      itemBuilder: (BuildContext context) => [
+        CompactPopupMenuItem<String>(
+          value: 'delete',
+          label: 'Delete Analysis',
+          icon: Icons.delete_outline,
+          color: Colors.red,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              selectedName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.arrow_drop_down, color: Colors.white),
-          ],
-        ),
-      ),
+      ],
     );
+  }
+
+  Future<void> _showDeleteConfirmation(String analysisId) async {
+    _logger.track(
+      'Modal Opened',
+      properties: {
+        'modal_type': 'action_sheet',
+        'modal_name': 'Delete Analysis Confirmation',
+        'analysis_id': analysisId,
+      },
+    );
+
+    final bool? confirmed = await showCupertinoModalPopup<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return CustomCupertinoActionSheet(
+          title: 'Delete Analysis?',
+          message:
+              'This will permanently delete this form analysis and all associated images. This action cannot be undone.',
+          destructiveActionLabel: 'Delete',
+          onDestructiveActionPressed: () {
+            _logger.track(
+              'Delete Analysis Confirmed',
+              properties: {'analysis_id': analysisId},
+            );
+            Navigator.of(context).pop(true);
+          },
+          onCancelPressed: () {
+            _logger.track(
+              'Delete Analysis Cancelled',
+              properties: {'analysis_id': analysisId},
+            );
+            Navigator.of(context).pop(false);
+          },
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      _handleDelete(analysisId);
+    }
+  }
+
+  void _handleDelete(String analysisId) {
+    final FormAnalysisHistoryCubit cubit =
+        BlocProvider.of<FormAnalysisHistoryCubit>(context);
+
+    // Pop immediately for instant feel
+    Navigator.pop(context);
+
+    // Fire optimistic delete in background
+    cubit.deleteAnalysis(analysisId);
   }
 
   /// Shows pose analysis warning toast.
