@@ -269,8 +269,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
     String checkpointId,
     bool showSkeletonOnly,
   ) {
-    final String? proId = _activeProId;
-    if (proId == null) return null;
+    final String proId = _activeProId;
     final String cacheKey = _getImageCacheKey(
       proId,
       checkpointId,
@@ -339,10 +338,14 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   }
 
   /// Get the currently selected pro ID (defaults to paul_mcbeth)
-  String? get _activeProId {
-    if (!_isMultiProEnabled) return null;
-    return _selectedProId ??
-        widget.analysis.proComparisonConfig?.defaultProId ??
+  /// Always returns a pro ID - never null. Uses app config default or hardcoded fallback.
+  String get _activeProId {
+    // When multi-pro is enabled, allow user selection
+    if (_isMultiProEnabled && _selectedProId != null) {
+      return _selectedProId!;
+    }
+    // Fall back to default from analysis response, app config, or hardcoded constant
+    return widget.analysis.proComparisonConfig?.defaultProId ??
         _proPlayersConfig?.defaultProId ??
         kDefaultProPlayerId;
   }
@@ -356,7 +359,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   /// Computes checkpoints for the currently selected pro player.
   /// Returns the default checkpoints if no pro comparison data is available.
   List<CheckpointDataV2> _computeActiveCheckpoints() {
-    if (!_isMultiProEnabled || _activeProId == null) {
+    if (!_isMultiProEnabled) {
       return widget.analysis.checkpoints;
     }
 
@@ -374,8 +377,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
   /// Computes the display name for the active pro. Called when pro selection changes.
   String _computeActiveProDisplayName() {
-    final String? proId = _activeProId;
-    if (proId == null) return '';
+    final String proId = _activeProId;
 
     // Try to find the pro in available pros first
     final ProPlayerMetadata? pro = _availablePros
