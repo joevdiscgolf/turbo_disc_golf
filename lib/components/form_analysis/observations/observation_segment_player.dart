@@ -151,6 +151,7 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   }
 
   void _onSliderChanged(double value) {
+    if (!mounted) return;
     final int frame = value.round();
     setState(() {
       _currentFrame = frame;
@@ -165,6 +166,7 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   }
 
   void _onSliderEnd(double value) {
+    if (!mounted) return;
     _isScrubbingNotifier.value = false;
     // Only resume if was playing before scrubbing
     if (_wasPlayingBeforeScrub) {
@@ -173,10 +175,12 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   }
 
   void _togglePlayPause() {
+    if (!mounted) return;
     _videoController.togglePlayPause();
   }
 
   void _togglePlaybackMode() {
+    if (!mounted) return;
     setState(() {
       _playbackMode = _playbackMode == PlaybackMode.loop
           ? PlaybackMode.boomerang
@@ -186,6 +190,7 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   }
 
   void _changePlaybackSpeed(double speed) {
+    if (!mounted) return;
     if (_playbackSpeed == speed) return;
 
     HapticFeedback.selectionClick();
