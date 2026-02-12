@@ -174,21 +174,28 @@ class FormObservationsV2View extends StatelessWidget {
             ),
           ),
         ),
-        // Observation cards
-        ...categoryObservations.asMap().entries.map((entry) {
-          final int index = entry.key;
-          final FormObservation observation = entry.value;
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: index < categoryObservations.length - 1 ? 8 : 0,
-            ),
-            child: ObservationCard(
-              observation: observation,
-              onTap: () => onObservationTap(observation),
-              isActive: observation.observationId == activeObservationId,
-            ),
-          );
-        }),
+        // Observation cards in 2-column grid
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const double spacing = 8.0;
+            final double itemWidth = (constraints.maxWidth - spacing) / 2;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: categoryObservations.map((observation) {
+                return SizedBox(
+                  width: itemWidth,
+                  child: ObservationCard(
+                    observation: observation,
+                    onTap: () => onObservationTap(observation),
+                    isActive: observation.observationId == activeObservationId,
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
       ],
     );
   }

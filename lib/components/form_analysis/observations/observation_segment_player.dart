@@ -66,13 +66,6 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   /// Available playback speeds
   static const List<double> _availableSpeeds = [0.25, 0.5, 1.0];
 
-  /// The key frame from the observation (for marker display)
-  int get _keyFrame => widget.observation.timing.frameNumber;
-
-  /// Whether the key frame is different from start/end and should be marked
-  bool get _hasKeyFrameMarker =>
-      _hasSegment && _keyFrame > _startFrame && _keyFrame < _endFrame;
-
   @override
   void initState() {
     super.initState();
@@ -299,8 +292,10 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   }
 
   Widget _buildFrameSlider() {
+    const double controlHeight = 36.0;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -309,134 +304,81 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
       ),
       child: Column(
         children: [
-          // Slider row with play/pause button and mode toggle
+          // Slider (full width)
+          _buildSliderWithMarker(),
+          const SizedBox(height: 12),
+          // Controls row: Play/Pause | Speed Pills | Mode Pills
           Row(
             children: [
               // Play/pause button
               _buildPlayPauseButton(),
+              const SizedBox(width: 12),
+              // Speed pills
+              Expanded(
+                child: PillButtonGroup(
+                  height: controlHeight,
+                  isDark: false,
+                  hideBorder: false,
+                  buttons: _availableSpeeds
+                      .map(
+                        (speed) => PillButtonData(
+                          label: speed == 1.0 ? '1x' : speed.toString(),
+                          isSelected: _playbackSpeed == speed,
+                          onTap: () => _changePlaybackSpeed(speed),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
               const SizedBox(width: 8),
-              // Slider with key frame marker
-              Expanded(child: _buildSliderWithMarker()),
-              const SizedBox(width: 8),
-              // Mode toggle button
-              _buildModeToggleButton(),
+              // Mode pills
+              Expanded(
+                child: PillButtonGroup(
+                  height: controlHeight,
+                  isDark: false,
+                  hideBorder: false,
+                  buttons: [
+                    PillButtonData(
+                      label: '↻',
+                      isSelected: _playbackMode == PlaybackMode.loop,
+                      onTap: _togglePlaybackMode,
+                    ),
+                    PillButtonData(
+                      label: '⇄',
+                      isSelected: _playbackMode == PlaybackMode.boomerang,
+                      onTap: _togglePlaybackMode,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          // Speed control
-          _buildSpeedControl(),
         ],
       ),
     );
   }
 
-  Widget _buildSpeedControl() {
-    const double controlHeight = 28.0;
-
-    return PillButtonGroup(
-      height: controlHeight,
-      isDark: false,
-      hideBorder: false,
-      buttons: _availableSpeeds
-          .map(
-            (speed) => PillButtonData(
-              label: speed == 1.0 ? '1x' : speed.toString(),
-              isSelected: _playbackSpeed == speed,
-              onTap: () => _changePlaybackSpeed(speed),
-            ),
-          )
-          .toList(),
-    );
-  }
-
   Widget _buildSliderWithMarker() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate key frame marker position as a percentage
-        final double keyFramePercent = _hasKeyFrameMarker
-            ? (_keyFrame - _startFrame) / (_endFrame - _startFrame)
-            : -1;
-
-        // Account for slider padding (thumb radius on each side)
-        const double thumbRadius = 8;
-        final double trackWidth = constraints.maxWidth - (thumbRadius * 2);
-
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // The slider
-            SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 4,
-                thumbShape: const RoundSliderThumbShape(
-                  enabledThumbRadius: thumbRadius,
-                ),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-                activeTrackColor: SenseiColors.gray[700],
-                inactiveTrackColor: SenseiColors.gray[200],
-                thumbColor: SenseiColors.gray[700],
-                overlayColor: SenseiColors.gray[700]!.withValues(alpha: 0.2),
-              ),
-              child: Slider(
-                value: _currentFrame.toDouble().clamp(
-                  _startFrame.toDouble(),
-                  _endFrame.toDouble(),
-                ),
-                min: _startFrame.toDouble(),
-                max: _endFrame.toDouble(),
-                onChanged: _onSliderChanged,
-                onChangeStart: _onSliderStart,
-                onChangeEnd: _onSliderEnd,
-              ),
-            ),
-            // Key frame marker (diamond/tick on track)
-            if (_hasKeyFrameMarker)
-              Positioned(
-                left: thumbRadius + (trackWidth * keyFramePercent) - 4,
-                top: 8, // Center on track (slider is ~24 tall, track at middle)
-                child: GestureDetector(
-                  onTap: () {
-                    // Jump to key frame when tapping marker
-                    _onSliderChanged(_keyFrame.toDouble());
-                    _videoController.seekToFrame(_keyFrame);
-                  },
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildModeToggleButton() {
-    final bool isBoomerang = _playbackMode == PlaybackMode.boomerang;
-    const double buttonSize = 36.0;
-
-    return GestureDetector(
-      onTap: _togglePlaybackMode,
-      child: Container(
-        width: buttonSize,
-        height: buttonSize,
-        decoration: BoxDecoration(
-          color: SenseiColors.gray[100],
-          borderRadius: BorderRadius.circular(10),
+    return SliderTheme(
+      data: SliderThemeData(
+        trackHeight: 4,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+        activeTrackColor: SenseiColors.cleanAccentColor,
+        inactiveTrackColor: SenseiColors.gray[200],
+        thumbColor: SenseiColors.cleanAccentColor,
+        overlayColor: SenseiColors.cleanAccentColor.withValues(alpha: 0.2),
+      ),
+      child: Slider(
+        value: _currentFrame.toDouble().clamp(
+          _startFrame.toDouble(),
+          _endFrame.toDouble(),
         ),
-        child: Tooltip(
-          message: isBoomerang ? 'Boomerang mode' : 'Loop mode',
-          child: Icon(
-            isBoomerang ? Icons.swap_horiz : Icons.repeat,
-            color: SenseiColors.gray[600],
-            size: 20,
-          ),
-        ),
+        min: _startFrame.toDouble(),
+        max: _endFrame.toDouble(),
+        onChanged: _onSliderChanged,
+        onChangeStart: _onSliderStart,
+        onChangeEnd: _onSliderEnd,
       ),
     );
   }

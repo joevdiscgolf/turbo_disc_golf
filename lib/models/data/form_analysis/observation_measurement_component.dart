@@ -12,6 +12,7 @@ class ObservationMeasurementComponent {
     required this.score,
     required this.unit,
     this.idealValue,
+    this.calculationWeight,
   });
 
   /// Identifier for this component (e.g., 'knee_inward', 'toe_down', 'slip')
@@ -24,7 +25,7 @@ class ObservationMeasurementComponent {
   @JsonKey(name: 'measured_value')
   final double measuredValue;
 
-  /// Component score (0-100)
+  /// Component score (0.0 to 1.0, where 1 = 100%)
   final double score;
 
   /// Unit of measurement (e.g., 'degrees', 'percent')
@@ -33,6 +34,10 @@ class ObservationMeasurementComponent {
   /// Ideal/target value (optional)
   @JsonKey(name: 'ideal_value')
   final double? idealValue;
+
+  /// Weighting that goes into the calculation.
+  @JsonKey(name: 'calculation_weight')
+  final double? calculationWeight;
 
   /// Formatted string showing measured value with unit
   String get formattedMeasuredValue {
@@ -53,9 +58,10 @@ class ObservationMeasurementComponent {
   }
 
   /// Score as an integer percentage (0-100)
-  int get scorePercent => score.round();
+  int get scorePercent => (score * 100).round();
 
   factory ObservationMeasurementComponent.fromJson(Map<String, dynamic> json) =>
       _$ObservationMeasurementComponentFromJson(json);
-  Map<String, dynamic> toJson() => _$ObservationMeasurementComponentToJson(this);
+  Map<String, dynamic> toJson() =>
+      _$ObservationMeasurementComponentToJson(this);
 }

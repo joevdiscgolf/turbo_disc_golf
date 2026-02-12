@@ -37,17 +37,27 @@ class ObservationCategorySection extends StatelessWidget {
             ),
           ),
         ),
-        ...observations.map((observation) {
-          final int index = observations.indexOf(observation);
-          return Padding(
-            padding: EdgeInsets.only(bottom: index < observations.length - 1 ? 8 : 0),
-            child: ObservationCard(
-              observation: observation,
-              onTap: () => onObservationTap(observation),
-              isActive: observation.observationId == activeObservationId,
-            ),
-          );
-        }),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const double spacing = 8.0;
+            final double itemWidth = (constraints.maxWidth - spacing) / 2;
+
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: observations.map((observation) {
+                return SizedBox(
+                  width: itemWidth,
+                  child: ObservationCard(
+                    observation: observation,
+                    onTap: () => onObservationTap(observation),
+                    isActive: observation.observationId == activeObservationId,
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
       ],
     );
   }

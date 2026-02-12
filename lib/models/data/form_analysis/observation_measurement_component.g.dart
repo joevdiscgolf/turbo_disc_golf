@@ -15,6 +15,7 @@ ObservationMeasurementComponent _$ObservationMeasurementComponentFromJson(
   score: (json['score'] as num).toDouble(),
   unit: json['unit'] as String,
   idealValue: (json['ideal_value'] as num?)?.toDouble(),
+  calculationWeight: (json['calculation_weight'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$ObservationMeasurementComponentToJson(
@@ -26,4 +27,5 @@ Map<String, dynamic> _$ObservationMeasurementComponentToJson(
   'score': instance.score,
   'unit': instance.unit,
   'ideal_value': instance.idealValue,
+  'calculation_weight': instance.calculationWeight,
 };
