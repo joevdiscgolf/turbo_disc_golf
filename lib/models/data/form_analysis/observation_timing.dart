@@ -12,6 +12,8 @@ class ObservationTiming {
     required this.timestampSeconds,
     this.startFrame,
     this.endFrame,
+    this.msBeforeEvent,
+    this.msAftervent,
     this.startTimestampSeconds,
     this.endTimestampSeconds,
     this.durationMs,
@@ -29,13 +31,21 @@ class ObservationTiming {
   @JsonKey(name: 'timestamp_seconds')
   final double timestampSeconds;
 
-  /// Optional start frame for video segment (frame_range mode)
+  /// Deprecated
   @JsonKey(name: 'start_frame')
   final int? startFrame;
 
-  /// Optional end frame for video segment (frame_range mode)
+  /// Deprecated
   @JsonKey(name: 'end_frame')
   final int? endFrame;
+
+  /// New field used
+  @JsonKey(name: 'ms_before_event')
+  final int? msBeforeEvent;
+
+  /// New field used
+  @JsonKey(name: 'ms_after_event')
+  final int? msAftervent;
 
   /// Optional start timestamp in seconds (frame_range mode)
   @JsonKey(name: 'start_timestamp_seconds')

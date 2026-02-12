@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:video_player/video_player.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/pro_comparison_placeholder.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/crop_metadata.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/pro_reference.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
@@ -28,6 +29,9 @@ class SplitComparisonController {
   bool Function()? _getIsPlaying;
   void Function(PlaybackMode mode)? _setPlaybackMode;
   PlaybackMode Function()? _getPlaybackMode;
+  void Function(double speed)? _setPlaybackSpeed;
+  double Function()? _getPlaybackSpeed;
+  void Function(int start, int end)? _updateFrameRange;
 
   /// Seek the user video to a specific frame
   void seekToFrame(int frame) => _seekToFrame?.call(frame);
@@ -50,6 +54,16 @@ class SplitComparisonController {
   /// Get the current playback mode
   PlaybackMode get playbackMode =>
       _getPlaybackMode?.call() ?? PlaybackMode.boomerang;
+
+  /// Set the playback speed (e.g., 0.25, 0.5, 1.0)
+  void setPlaybackSpeed(double speed) => _setPlaybackSpeed?.call(speed);
+
+  /// Get the current playback speed
+  double get playbackSpeed => _getPlaybackSpeed?.call() ?? 0.25;
+
+  /// Update the frame range for looping
+  void updateFrameRange(int start, int end) =>
+      _updateFrameRange?.call(start, end);
 }
 
 /// Split-screen video comparison showing user's form vs pro
@@ -67,6 +81,11 @@ class SplitComparisonCard extends StatefulWidget {
     this.controller,
     this.showProComparison = true,
     this.isLeftHanded = false,
+    this.cropMetadata,
+    this.initialPlaybackSpeed = 0.25,
+    this.initialStartFrame,
+    this.initialEndFrame,
+    this.totalFrames,
   });
 
   final FormObservation observation;
@@ -91,6 +110,21 @@ class SplitComparisonCard extends StatefulWidget {
 
   /// Whether the user is left-handed (flips pro video/image horizontally)
   final bool isLeftHanded;
+
+  /// Optional crop metadata for zooming into a specific region
+  final CropMetadata? cropMetadata;
+
+  /// Initial playback speed (default: 0.25x for slow motion)
+  final double initialPlaybackSpeed;
+
+  /// Initial start frame for the segment (overrides observation timing)
+  final int? initialStartFrame;
+
+  /// Initial end frame for the segment (overrides observation timing)
+  final int? initialEndFrame;
+
+  /// Total frames in the video (for clamping bounds)
+  final int? totalFrames;
 
   @override
   State<SplitComparisonCard> createState() => _SplitComparisonCardState();
@@ -117,8 +151,14 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   /// Whether the tap feedback shows play (true) or pause (false) icon
   bool _tapFeedbackIsPlay = false;
 
-  /// Playback speed for user video (0.25x for slow motion analysis)
-  static const double _userPlaybackSpeed = 0.25;
+  /// Current playback speed for user video
+  late double _playbackSpeed;
+
+  /// Current start frame (can be updated dynamically)
+  int? _dynamicStartFrame;
+
+  /// Current end frame (can be updated dynamically)
+  int? _dynamicEndFrame;
 
   /// Current playback mode (loop or boomerang)
   PlaybackMode _playbackMode = PlaybackMode.boomerang;
@@ -126,13 +166,24 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   /// Whether playing forward (true) or backward (false) in boomerang mode
   bool _isPlayingForward = true;
 
-  int get _startFrame =>
-      widget.observation.timing.startFrame ??
-      widget.observation.timing.frameNumber;
+  /// Accumulated fractional frames for smooth reverse playback
+  double _accumulatedReverseFrames = 0.0;
 
-  int get _endFrame =>
-      widget.observation.timing.endFrame ??
-      widget.observation.timing.frameNumber;
+  int get _startFrame {
+    // Use dynamic value if set, otherwise use widget override or observation timing
+    if (_dynamicStartFrame != null) return _dynamicStartFrame!;
+    if (widget.initialStartFrame != null) return widget.initialStartFrame!;
+    return widget.observation.timing.startFrame ??
+        widget.observation.timing.frameNumber;
+  }
+
+  int get _endFrame {
+    // Use dynamic value if set, otherwise use widget override or observation timing
+    if (_dynamicEndFrame != null) return _dynamicEndFrame!;
+    if (widget.initialEndFrame != null) return widget.initialEndFrame!;
+    return widget.observation.timing.endFrame ??
+        widget.observation.timing.frameNumber;
+  }
 
   /// The key frame to pause at (when in frame_range mode)
   int get _keyFrame => widget.observation.timing.frameNumber;
@@ -247,6 +298,7 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
   @override
   void initState() {
     super.initState();
+    _playbackSpeed = widget.initialPlaybackSpeed;
     _bindController();
     _initializeVideos();
   }
@@ -261,6 +313,9 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
       controller._getIsPlaying = () => _isPlaying;
       controller._setPlaybackMode = _setPlaybackMode;
       controller._getPlaybackMode = () => _playbackMode;
+      controller._setPlaybackSpeed = _setPlaybackSpeed;
+      controller._getPlaybackSpeed = () => _playbackSpeed;
+      controller._updateFrameRange = _updateFrameRange;
     }
   }
 
@@ -269,6 +324,29 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
       _playbackMode = mode;
       // Reset to forward direction when switching modes
       _isPlayingForward = true;
+    }
+  }
+
+  void _setPlaybackSpeed(double speed) {
+    if (_playbackSpeed != speed) {
+      setState(() {
+        _playbackSpeed = speed;
+      });
+      _userController?.setPlaybackSpeed(speed);
+    }
+  }
+
+  void _updateFrameRange(int start, int end) {
+    // Clamp to video bounds if totalFrames is known
+    final int maxFrame = widget.totalFrames ?? end;
+    final int clampedStart = start.clamp(0, maxFrame);
+    final int clampedEnd = end.clamp(0, maxFrame);
+
+    if (_dynamicStartFrame != clampedStart || _dynamicEndFrame != clampedEnd) {
+      setState(() {
+        _dynamicStartFrame = clampedStart;
+        _dynamicEndFrame = clampedEnd;
+      });
     }
   }
 
@@ -287,7 +365,7 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
       );
       await _userController!.initialize();
       await _userController!.setVolume(0);
-      await _userController!.setPlaybackSpeed(_userPlaybackSpeed);
+      await _userController!.setPlaybackSpeed(_playbackSpeed);
       await _userController!.seekTo(_startPosition);
       await _userController!.play();
 
@@ -339,11 +417,16 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
     }
   }
 
-  void _startLoopTimer() {
-    // Calculate ms per frame at playback speed for boomerang reverse stepping
-    final double msPerFrame = (1000 / widget.fps) / _userPlaybackSpeed;
+  /// Timer interval in milliseconds - ~30fps for smooth reverse playback
+  static const int _timerIntervalMs = 33;
 
-    _loopTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+  void _startLoopTimer() {
+    _loopTimer =
+        Timer.periodic(const Duration(milliseconds: _timerIntervalMs), (_) {
+      // Calculate ms per frame at current playback speed for boomerang reverse stepping
+      // This must be inside the callback to use the current _playbackSpeed value
+      final double msPerFrame = (1000 / widget.fps) / _playbackSpeed;
+
       // Skip looping while user is scrubbing
       final bool isScrubbing = widget.isScrubbingNotifier?.value ?? false;
 
@@ -380,22 +463,33 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
               // Playing forward - check if we reached the end
               if (position >= _endPosition) {
                 _isPlayingForward = false;
+                _accumulatedReverseFrames = 0.0; // Reset accumulator
                 _userController!.pause();
               }
             } else {
-              // Playing backward - manually step back frame by frame
-              // Calculate how many frames to step back based on timer interval
-              final int framesToStep = (100 / msPerFrame).ceil().clamp(1, 3);
-              final int targetFrame = currentFrame - framesToStep;
+              // Playing backward - accumulate fractional frames for smooth playback
+              // This ensures reverse plays at the same speed as forward
+              // framesToAccumulate = timerInterval / msPerFrame
+              final double framesToAccumulate = _timerIntervalMs / msPerFrame;
+              _accumulatedReverseFrames += framesToAccumulate;
 
-              if (targetFrame <= _startFrame) {
-                // Reached start - switch to forward playback
-                _isPlayingForward = true;
-                _userController!.seekTo(_startPosition);
-                _userController!.play();
-              } else {
-                // Step backwards
-                seekToFrame(targetFrame);
+              // Only step when we've accumulated at least 1 full frame
+              if (_accumulatedReverseFrames >= 1.0) {
+                final int framesToStep = _accumulatedReverseFrames.floor();
+                _accumulatedReverseFrames -= framesToStep;
+
+                final int targetFrame = currentFrame - framesToStep;
+
+                if (targetFrame <= _startFrame) {
+                  // Reached start - switch to forward playback
+                  _isPlayingForward = true;
+                  _accumulatedReverseFrames = 0.0;
+                  _userController!.seekTo(_startPosition);
+                  _userController!.play();
+                } else {
+                  // Step backwards
+                  seekToFrame(targetFrame);
+                }
               }
             }
           }
@@ -560,6 +654,28 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
       return _buildLoadingState();
     }
 
+    Widget videoPlayer = VideoPlayer(_userController!);
+
+    // Apply crop transformation if metadata is provided
+    final CropMetadata? crop = widget.cropMetadata;
+    if (crop != null) {
+      // Calculate the zoom level (inverse of scale, so 0.35 scale = ~2.86x zoom)
+      final double zoomLevel = 1 / crop.scale;
+
+      // Calculate alignment based on center coordinates
+      // Convert 0-1 range to -1 to 1 range for Alignment
+      final double alignX = (crop.centerX - 0.5) * 2;
+      final double alignY = (crop.centerY - 0.5) * 2;
+
+      videoPlayer = ClipRect(
+        child: Transform.scale(
+          scale: zoomLevel,
+          alignment: Alignment(alignX, alignY),
+          child: videoPlayer,
+        ),
+      );
+    }
+
     return AspectRatio(
       aspectRatio: _videoAspectRatio,
       child: GestureDetector(
@@ -569,7 +685,7 @@ class _SplitComparisonCardState extends State<SplitComparisonCard> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              VideoPlayer(_userController!),
+              videoPlayer,
               // Tap feedback overlay
               if (_showTapFeedback)
                 Container(

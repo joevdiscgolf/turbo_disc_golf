@@ -312,10 +312,25 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
       if (config != null) {
         _proPlayersConfig = config;
         _configLoadFailed = false;
+        debugPrint('═══════════════════════════════════════════════════════');
+        debugPrint('[TimelineAnalysisView] ✅ Pro players config loaded');
+        debugPrint(
+          '[TimelineAnalysisView] default_pro_id: ${config.defaultProId}',
+        );
+        debugPrint('[TimelineAnalysisView] pros count: ${config.pros.length}');
+        debugPrint(
+          '[TimelineAnalysisView] pros: ${config.pros.keys.join(", ")}',
+        );
+        debugPrint('═══════════════════════════════════════════════════════');
         // Update cached values now that config is loaded
         _updateCachedDisplayValues();
       } else {
         _configLoadFailed = true;
+        debugPrint('═══════════════════════════════════════════════════════');
+        debugPrint(
+          '[TimelineAnalysisView] ❌ Pro players config FAILED to load',
+        );
+        debugPrint('═══════════════════════════════════════════════════════');
       }
     });
   }
@@ -338,16 +353,42 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   }
 
   /// Get the currently selected pro ID (defaults to paul_mcbeth)
-  /// Always returns a pro ID - never null. Uses app config default or hardcoded fallback.
+  /// Always returns a pro ID - never null or empty. Uses app config default or hardcoded fallback.
   String get _activeProId {
     // When multi-pro is enabled, allow user selection
-    if (_isMultiProEnabled && _selectedProId != null) {
+    if (_isMultiProEnabled &&
+        _selectedProId != null &&
+        _selectedProId!.isNotEmpty) {
+      debugPrint(
+        '[TimelineAnalysisView] _activeProId: using selected: $_selectedProId',
+      );
       return _selectedProId!;
     }
-    // Fall back to default from analysis response, app config, or hardcoded constant
-    return widget.analysis.proComparisonConfig?.defaultProId ??
-        _proPlayersConfig?.defaultProId ??
-        kDefaultProPlayerId;
+
+    // Try analysis config default
+    final String? analysisDefault =
+        widget.analysis.proComparisonConfig?.defaultProId;
+    if (analysisDefault != null && analysisDefault.isNotEmpty) {
+      debugPrint(
+        '[TimelineAnalysisView] _activeProId: using analysis default: $analysisDefault',
+      );
+      return analysisDefault;
+    }
+
+    // Try app config default
+    final String? appConfigDefault = _proPlayersConfig?.defaultProId;
+    if (appConfigDefault != null && appConfigDefault.isNotEmpty) {
+      debugPrint(
+        '[TimelineAnalysisView] _activeProId: using app config default: $appConfigDefault',
+      );
+      return appConfigDefault;
+    }
+
+    // Ultimate fallback to hardcoded constant
+    debugPrint(
+      '[TimelineAnalysisView] _activeProId: using hardcoded fallback: $kDefaultProPlayerId',
+    );
+    return kDefaultProPlayerId;
   }
 
   /// Get cached checkpoints for the currently selected pro player.

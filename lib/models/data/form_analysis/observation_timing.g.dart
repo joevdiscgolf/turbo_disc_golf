@@ -18,6 +18,8 @@ ObservationTiming _$ObservationTimingFromJson(Map<String, dynamic> json) =>
       timestampSeconds: (json['timestamp_seconds'] as num).toDouble(),
       startFrame: (json['start_frame'] as num?)?.toInt(),
       endFrame: (json['end_frame'] as num?)?.toInt(),
+      msBeforeEvent: (json['ms_before_event'] as num?)?.toInt(),
+      msAftervent: (json['ms_after_event'] as num?)?.toInt(),
       startTimestampSeconds: (json['start_timestamp_seconds'] as num?)
           ?.toDouble(),
       endTimestampSeconds: (json['end_timestamp_seconds'] as num?)?.toDouble(),
@@ -31,6 +33,8 @@ Map<String, dynamic> _$ObservationTimingToJson(ObservationTiming instance) =>
       'timestamp_seconds': instance.timestampSeconds,
       'start_frame': instance.startFrame,
       'end_frame': instance.endFrame,
+      'ms_before_event': instance.msBeforeEvent,
+      'ms_after_event': instance.msAftervent,
       'start_timestamp_seconds': instance.startTimestampSeconds,
       'end_timestamp_seconds': instance.endTimestampSeconds,
       'duration_ms': instance.durationMs,

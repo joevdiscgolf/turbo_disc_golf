@@ -45,6 +45,7 @@ FormAnalysisResponseV2 _$FormAnalysisResponseV2FromJson(
   armSpeed: json['arm_speed'] == null
       ? null
       : ArmSpeedData.fromJson(json['arm_speed'] as Map<String, dynamic>),
+  poseModel: $enumDecodeNullable(_$PoseModelEnumMap, json['pose_model']),
 );
 
 Map<String, dynamic> _$FormAnalysisResponseV2ToJson(
@@ -64,4 +65,11 @@ Map<String, dynamic> _$FormAnalysisResponseV2ToJson(
   'form_observations': instance.formObservations?.toJson(),
   'form_observations_v2': instance.formObservationsV2?.toJson(),
   'arm_speed': instance.armSpeed?.toJson(),
+  'pose_model': _$PoseModelEnumMap[instance.poseModel],
+};
+
+const _$PoseModelEnumMap = {
+  PoseModel.standard: 'standard',
+  PoseModel.advanced: 'advanced',
+  PoseModel.professional: 'professional',
 };

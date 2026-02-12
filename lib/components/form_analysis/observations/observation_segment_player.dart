@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/measurement_gauge.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/split_comparison_card.dart';
+import 'package:turbo_disc_golf/components/form_analysis/pill_button_group.dart';
 import 'package:turbo_disc_golf/components/form_analysis/severity_badge.dart';
 import 'package:turbo_disc_golf/components/panels/panel_header.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/crop_metadata.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_enums.dart';
+import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
+import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/utils/color_helpers.dart';
-import 'package:turbo_disc_golf/utils/layout_helpers.dart' show defaultCardBoxShadow;
+import 'package:turbo_disc_golf/utils/layout_helpers.dart'
+    show defaultCardBoxShadow;
+import 'package:turbo_disc_golf/locator.dart';
 
 /// Modal for viewing observation details with split comparison and frame slider
 class ObservationSegmentPlayer extends StatefulWidget {
@@ -16,6 +23,7 @@ class ObservationSegmentPlayer extends StatefulWidget {
     required this.videoUrl,
     this.fps = 30.0,
     this.isLeftHanded = false,
+    this.totalFrames,
   });
 
   final FormObservation observation;
@@ -24,6 +32,9 @@ class ObservationSegmentPlayer extends StatefulWidget {
 
   /// Whether the user is left-handed (flips pro comparison horizontally)
   final bool isLeftHanded;
+
+  /// Total frames in the video (for clamping bounds)
+  final int? totalFrames;
 
   @override
   State<ObservationSegmentPlayer> createState() =>
@@ -49,6 +60,12 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   /// Current playback mode (loop or boomerang)
   PlaybackMode _playbackMode = PlaybackMode.boomerang;
 
+  /// Current playback speed
+  double _playbackSpeed = 0.25;
+
+  /// Available playback speeds
+  static const List<double> _availableSpeeds = [0.25, 0.5, 1.0];
+
   /// The key frame from the observation (for marker display)
   int get _keyFrame => widget.observation.timing.frameNumber;
 
@@ -59,13 +76,59 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   @override
   void initState() {
     super.initState();
-    // Initialize frame range from observation
-    _startFrame = widget.observation.timing.startFrame ??
-        widget.observation.timing.frameNumber;
-    _endFrame = widget.observation.timing.endFrame ??
-        widget.observation.timing.frameNumber;
+    // Initialize frame range from observation using msBeforeEvent/msAfterEvent if available
+    _calculateFrameRange();
     _currentFrame = _startFrame;
     _hasSegment = _endFrame > _startFrame;
+  }
+
+  /// Calculates start and end frames based on timing data and playback speed.
+  /// Uses msBeforeEvent/msAfterEvent if available.
+  /// The ms values represent real-time playback duration - at any speed,
+  /// it takes exactly ms_before_event milliseconds to reach the key frame.
+  /// At slower speeds, fewer frames are shown to maintain the same real-time duration.
+  void _calculateFrameRange() {
+    final int keyFrame = widget.observation.timing.frameNumber;
+    final int? msBeforeEvent = widget.observation.timing.msBeforeEvent;
+    final int? msAfterEvent = widget.observation.timing.msAftervent;
+
+    // If we have ms timing data, calculate frames scaled by playback speed
+    if (msBeforeEvent != null || msAfterEvent != null) {
+      // Calculate frames: frames = (ms / 1000) * fps * speed
+      // At slower speeds, we show fewer frames to keep real-time duration constant
+      // Example: 640ms at 30fps
+      //   - At 1x: 19.2 frames, takes 640ms real time
+      //   - At 0.25x: 4.8 frames, takes 640ms real time (slower playback)
+      final int framesBefore = msBeforeEvent != null
+          ? ((msBeforeEvent / 1000) * widget.fps * _playbackSpeed).round()
+          : 0;
+      final int framesAfter = msAfterEvent != null
+          ? ((msAfterEvent / 1000) * widget.fps * _playbackSpeed).round()
+          : 0;
+
+      _startFrame = keyFrame - framesBefore;
+      _endFrame = keyFrame + framesAfter;
+    } else {
+      // Fall back to deprecated startFrame/endFrame if available
+      _startFrame = widget.observation.timing.startFrame ?? keyFrame;
+      _endFrame = widget.observation.timing.endFrame ?? keyFrame;
+    }
+
+    // Clamp to video bounds
+    _clampFramesToBounds();
+  }
+
+  /// Clamps start and end frames to valid video bounds
+  void _clampFramesToBounds() {
+    final int maxFrame = widget.totalFrames ?? _endFrame;
+
+    _startFrame = _startFrame.clamp(0, maxFrame);
+    _endFrame = _endFrame.clamp(0, maxFrame);
+
+    // Ensure start <= end
+    if (_startFrame > _endFrame) {
+      _startFrame = _endFrame;
+    }
   }
 
   @override
@@ -76,12 +139,13 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
 
   void _onFrameChanged(int currentFrame, int startFrame, int endFrame) {
     if (mounted && !_isScrubbingNotifier.value) {
-      setState(() {
-        _currentFrame = currentFrame.clamp(startFrame, endFrame);
-        _startFrame = startFrame;
-        _endFrame = endFrame;
-        _hasSegment = endFrame > startFrame;
-      });
+      final int clampedFrame = currentFrame.clamp(startFrame, endFrame);
+      // Only rebuild if values actually changed
+      if (_currentFrame != clampedFrame) {
+        setState(() {
+          _currentFrame = clampedFrame;
+        });
+      }
     }
   }
 
@@ -128,6 +192,44 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
     _videoController.setPlaybackMode(_playbackMode);
   }
 
+  void _changePlaybackSpeed(double speed) {
+    if (_playbackSpeed == speed) return;
+
+    HapticFeedback.selectionClick();
+
+    // Store old frame range to detect changes
+    final int oldStartFrame = _startFrame;
+    final int oldEndFrame = _endFrame;
+
+    setState(() {
+      _playbackSpeed = speed;
+      // Recalculate frame range based on new speed
+      _calculateFrameRange();
+      _hasSegment = _endFrame > _startFrame;
+      // Clamp current frame to new range
+      _currentFrame = _currentFrame.clamp(_startFrame, _endFrame);
+    });
+
+    // Update video controller
+    _videoController.setPlaybackSpeed(speed);
+
+    // Update frame range if it changed
+    if (_startFrame != oldStartFrame || _endFrame != oldEndFrame) {
+      _videoController.updateFrameRange(_startFrame, _endFrame);
+      // Seek to start of new range
+      _videoController.seekToFrame(_startFrame);
+    }
+  }
+
+  /// Returns crop metadata if the feature flag is enabled and metadata exists
+  CropMetadata? _getCropMetadata() {
+    final bool useCropZoom = locator.get<FeatureFlagService>().getBool(
+      FeatureFlag.useObservationCropZoom,
+    );
+    if (!useCropZoom) return null;
+    return widget.observation.cropMetadata;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Use 90% of screen height like select_course_panel pattern
@@ -158,6 +260,11 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
                   controller: _videoController,
                   showProComparison: false,
                   isLeftHanded: widget.isLeftHanded,
+                  cropMetadata: _getCropMetadata(),
+                  initialPlaybackSpeed: _playbackSpeed,
+                  initialStartFrame: _startFrame,
+                  initialEndFrame: _endFrame,
+                  totalFrames: widget.totalFrames,
                 ),
 
                 // Frame slider (only show if there's a segment range)
@@ -192,9 +299,6 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   }
 
   Widget _buildFrameSlider() {
-    final int totalFrames = _endFrame - _startFrame;
-    final int relativeFrame = _currentFrame - _startFrame;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -218,32 +322,30 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
               _buildModeToggleButton(),
             ],
           ),
-          // Frame labels
-          Padding(
-            padding: const EdgeInsets.only(left: 44, right: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Frame ${relativeFrame + 1}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: SenseiColors.gray[600],
-                  ),
-                ),
-                Text(
-                  'of ${totalFrames + 1}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: SenseiColors.gray[400],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 8),
+          // Speed control
+          _buildSpeedControl(),
         ],
       ),
+    );
+  }
+
+  Widget _buildSpeedControl() {
+    const double controlHeight = 28.0;
+
+    return PillButtonGroup(
+      height: controlHeight,
+      isDark: false,
+      hideBorder: false,
+      buttons: _availableSpeeds
+          .map(
+            (speed) => PillButtonData(
+              label: speed == 1.0 ? '1x' : speed.toString(),
+              isSelected: _playbackSpeed == speed,
+              onTap: () => _changePlaybackSpeed(speed),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -266,10 +368,10 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
             SliderTheme(
               data: SliderThemeData(
                 trackHeight: 4,
-                thumbShape:
-                    const RoundSliderThumbShape(enabledThumbRadius: thumbRadius),
-                overlayShape:
-                    const RoundSliderOverlayShape(overlayRadius: 16),
+                thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: thumbRadius,
+                ),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
                 activeTrackColor: SenseiColors.gray[700],
                 inactiveTrackColor: SenseiColors.gray[200],
                 thumbColor: SenseiColors.gray[700],
@@ -277,9 +379,9 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
               ),
               child: Slider(
                 value: _currentFrame.toDouble().clamp(
-                      _startFrame.toDouble(),
-                      _endFrame.toDouble(),
-                    ),
+                  _startFrame.toDouble(),
+                  _endFrame.toDouble(),
+                ),
                 min: _startFrame.toDouble(),
                 max: _endFrame.toDouble(),
                 onChanged: _onSliderChanged,
@@ -386,18 +488,15 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
               children: [
                 Text(
                   widget.observation.category.displayName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: SenseiColors.gray[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: SenseiColors.gray[500]),
                 ),
                 const SizedBox(width: 8),
                 _buildTypeBadge(widget.observation.observationType),
                 const Spacer(),
                 if (widget.observation.severity != ObservationSeverity.none)
                   SeverityBadge(
-                    severity:
-                        widget.observation.severity.displayName.toLowerCase(),
+                    severity: widget.observation.severity.displayName
+                        .toLowerCase(),
                   ),
               ],
             ),
@@ -434,8 +533,9 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
   Widget _buildQualitativeIndicator() {
     final bool isPositive =
         widget.observation.observationType == ObservationType.positive;
-    final Color color =
-        isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final Color color = isPositive
+        ? const Color(0xFF10B981)
+        : const Color(0xFFEF4444);
     final IconData icon = isPositive ? Icons.check_circle : Icons.error;
     final String label = isPositive ? 'Good form detected' : 'Issue detected';
 
@@ -463,11 +563,7 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 22,
-              color: color,
-            ),
+            child: Icon(icon, size: 22, color: color),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -580,11 +676,7 @@ class _ObservationSegmentPlayerState extends State<ObservationSegmentPlayer> {
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: color,
-            ),
+            child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(width: 12),
           Expanded(

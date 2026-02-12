@@ -96,12 +96,26 @@ class ProReferenceImageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use override proPlayerId if provided, otherwise fall back to checkpoint's proPlayerId
-    final String? effectiveProPlayerId =
-        proPlayerId ?? checkpoint.proReferencePose?.proPlayerId;
+    // Use override proPlayerId if provided (and non-empty), otherwise fall back to checkpoint's proPlayerId
+    String? effectiveProPlayerId = proPlayerId;
+    debugPrint('[ProReferenceImageContent] proPlayerId param: "$proPlayerId"');
+    debugPrint(
+      '[ProReferenceImageContent] checkpoint.proReferencePose?.proPlayerId: "${checkpoint.proReferencePose?.proPlayerId}"',
+    );
+
+    if (effectiveProPlayerId == null || effectiveProPlayerId.isEmpty) {
+      effectiveProPlayerId = checkpoint.proReferencePose?.proPlayerId;
+    }
+
+    debugPrint(
+      '[ProReferenceImageContent] effectiveProPlayerId: "$effectiveProPlayerId"',
+    );
 
     // No pro reference available
-    if (effectiveProPlayerId == null) {
+    if (effectiveProPlayerId == null || effectiveProPlayerId.isEmpty) {
+      debugPrint(
+        '[ProReferenceImageContent] ❌ No pro player ID - showing empty state',
+      );
       return const Center(
         child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
       );
@@ -131,7 +145,7 @@ class ProReferenceImageContent extends StatelessWidget {
 
         return _buildContent(
           context: context,
-          proPlayerId: effectiveProPlayerId,
+          proPlayerId: effectiveProPlayerId!,
           containerWidth: containerWidth,
           containerHeight: containerHeight,
         );
@@ -393,7 +407,8 @@ class ProReferenceImageContent extends StatelessWidget {
         effectiveUserAlignment?.bodyCenterYScreenPortion ?? 0.5;
 
     // Get height multiplier - use passed value if available, otherwise look up from feature flags
-    final double effectiveHeightMultiplier = heightMultiplier ??
+    final double effectiveHeightMultiplier =
+        heightMultiplier ??
         (cameraAngle == CameraAngle.rear
             ? locator.get<FeatureFlagService>().getDouble(
                 FeatureFlag.proReferenceHeightMultiplierRear,

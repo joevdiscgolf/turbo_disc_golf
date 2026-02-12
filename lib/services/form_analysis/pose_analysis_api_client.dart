@@ -15,6 +15,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response
 import 'package:turbo_disc_golf/models/error/app_error_type.dart';
 import 'package:turbo_disc_golf/models/error/error_context.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/models/pose_model.dart';
 import 'package:turbo_disc_golf/services/error_logging/error_logging_service.dart';
 
 /// Client for the Cloud Run pose analysis API
@@ -106,6 +107,7 @@ class PoseAnalysisApiClient {
   /// [sessionId] - Unique session identifier
   /// [userId] - User identifier
   /// [proPlayerId] - Optional pro player ID for reference comparison (e.g., 'paul_mcbeth')
+  /// [poseModel] - Optional pose detection mode (standard or precise)
   Future<FormAnalysisResponseV2> analyzeVideo({
     required File videoFile,
     required String throwType,
@@ -114,6 +116,7 @@ class PoseAnalysisApiClient {
     required String sessionId,
     required String userId,
     String? proPlayerId,
+    PoseModel? poseModel,
   }) async {
     final Uri uri = Uri.parse('$_baseUrl/api/v1/form-analysis/stream');
 
@@ -135,6 +138,9 @@ class PoseAnalysisApiClient {
     request.fields['user_id'] = userId;
     if (proPlayerId != null) {
       request.fields['pro_player_id'] = proPlayerId;
+    }
+    if (poseModel != null) {
+      request.fields['pose_model'] = poseModel.toApiString();
     }
 
     // Add auth headers for production
@@ -395,6 +401,7 @@ class PoseAnalysisApiClient {
     required String sessionId,
     required String userId,
     String? proPlayerId,
+    PoseModel? poseModel,
   }) async {
     final Uri uri = Uri.parse('$_baseUrl/api/v1/form-analysis/analyze');
 
@@ -415,6 +422,7 @@ class PoseAnalysisApiClient {
       'session_id': sessionId,
       'user_id': userId,
       if (proPlayerId != null) 'pro_player_id': proPlayerId,
+      if (poseModel != null) 'pose_model': poseModel.toApiString(),
     };
 
     // Add auth headers for production
@@ -628,6 +636,7 @@ class PoseAnalysisApiClient {
     required String sessionId,
     required String userId,
     String? proPlayerId,
+    PoseModel? poseModel,
   }) async* {
     final Uri uri = Uri.parse('$_baseUrl/api/v1/form-analysis/stream');
 
@@ -649,6 +658,9 @@ class PoseAnalysisApiClient {
     request.fields['user_id'] = userId;
     if (proPlayerId != null) {
       request.fields['pro_player_id'] = proPlayerId;
+    }
+    if (poseModel != null) {
+      request.fields['pose_model'] = poseModel.toApiString();
     }
 
     // Add auth headers
@@ -801,6 +813,7 @@ class PoseAnalysisApiClient {
     required String sessionId,
     required String userId,
     String? proPlayerId,
+    PoseModel? poseModel,
     bool debugRequest = true,
   }) async* {
     final Uri uri = Uri.parse('$_baseUrl/api/v1/form-analysis/stream');
@@ -818,6 +831,9 @@ class PoseAnalysisApiClient {
     request.fields['user_id'] = userId;
     if (proPlayerId != null) {
       request.fields['pro_player_id'] = proPlayerId;
+    }
+    if (poseModel != null) {
+      request.fields['pose_model'] = poseModel.toApiString();
     }
     // Debug flag tells backend to use a test video instead of requiring upload
     if (debugRequest) {

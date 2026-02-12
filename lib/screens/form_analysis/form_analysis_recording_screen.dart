@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,10 +21,12 @@ import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/feature_flags/feature_flag.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/models/pose_model.dart';
 import 'package:turbo_disc_golf/components/form_analysis/analysis_loading_overlay.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/analysis_completion_transition.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/camera_angle_selection_panel.dart';
 import 'package:turbo_disc_golf/screens/form_analysis/components/handedness_selection_panel.dart';
+import 'package:turbo_disc_golf/screens/form_analysis/components/pose_model_selection_panel.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
 import 'package:turbo_disc_golf/services/logging/logging_service.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
@@ -35,7 +38,8 @@ import 'package:turbo_disc_golf/utils/color_helpers.dart';
 import 'package:turbo_disc_golf/utils/layout_helpers.dart';
 
 const String _hasSeenFormAnalysisEducationKey = 'hasSeenFormAnalysisEducation';
-const String _hasSeenFilmingAnglesEducationKey = 'hasSeenFilmingAnglesEducation';
+const String _hasSeenFilmingAnglesEducationKey =
+    'hasSeenFilmingAnglesEducation';
 
 /// V2 Form Analysis Recording Screen with "Stage" liquid glass design.
 /// Features layered glass panels with tips in back, action in front.
@@ -85,6 +89,7 @@ class _FormAnalysisRecordingScreenState
 
   CameraAngle _selectedCameraAngle = CameraAngle.side;
   Handedness? _selectedHandedness;
+  PoseModel _selectedPoseModel = PoseModel.standard;
 
   @override
   void initState() {
@@ -256,15 +261,15 @@ class _FormAnalysisRecordingScreenState
       rightWidget: isShowingResults && analysisId != null
           ? _buildMenuButton(analysisId)
           : isShowingResults
-              ? null
-              : IconButton(
-                  icon: Icon(Icons.close, color: foregroundColor),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    _logger.track('Close Recording Screen Button Tapped');
-                    Navigator.pop(context);
-                  },
-                ),
+          ? null
+          : IconButton(
+              icon: Icon(Icons.close, color: foregroundColor),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _logger.track('Close Recording Screen Button Tapped');
+                Navigator.pop(context);
+              },
+            ),
     );
   }
 
@@ -553,9 +558,9 @@ class _FormAnalysisRecordingScreenState
           _buildTipsCard(context),
           const SizedBox(height: 16),
           Expanded(child: _buildActionCard(context)),
-          // if (kDebugMode &&
-          //     locator.get<FeatureFlagService>().showFormAnalysisTestButton)
-          _buildDebugSection(context),
+          if (kDebugMode &&
+              locator.get<FeatureFlagService>().showFormAnalysisTestButton)
+            _buildDebugSection(context),
         ],
       ),
     );
@@ -721,7 +726,13 @@ class _FormAnalysisRecordingScreenState
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _buildHandednessSelector(context),
+          Row(
+            children: [
+              Expanded(child: _buildHandednessSelector(context)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildPoseModelSelector(context)),
+            ],
+          ),
           const SizedBox(height: 12),
           Expanded(child: _buildSelectVideoButton(context, cubit, flags)),
         ],
@@ -833,6 +844,87 @@ class _FormAnalysisRecordingScreenState
     );
   }
 
+  Widget _buildPoseModelSelector(BuildContext context) {
+    final String displayLabel = _selectedPoseModel.displayName;
+
+    // Gradient colors from the enum (matches handedness selector pattern)
+    final Color color1 = _selectedPoseModel.color;
+    final Color color2 = _selectedPoseModel.lightColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Precision',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: SenseiColors.gray[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () async {
+            HapticFeedback.lightImpact();
+            final PoseModel? result = await PoseModelSelectionPanel.show(
+              context,
+            );
+            if (result != null && mounted) {
+              setState(() => _selectedPoseModel = result);
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [color1, color2],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: color1.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _selectedPoseModel.icon,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      displayLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSelectVideoButton(
     BuildContext context,
     VideoFormAnalysisCubit cubit,
@@ -868,7 +960,11 @@ class _FormAnalysisRecordingScreenState
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.videocam_rounded, size: 40, color: Colors.white),
+                const Icon(
+                  Icons.videocam_rounded,
+                  size: 40,
+                  color: Colors.white,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Select video',
@@ -923,8 +1019,9 @@ class _FormAnalysisRecordingScreenState
 
     if (flags.showCameraAngleSelectionDialog) {
       if (!mounted) return;
-      final CameraAngle? selectedAngle =
-          await CameraAngleSelectionPanel.show(context);
+      final CameraAngle? selectedAngle = await CameraAngleSelectionPanel.show(
+        context,
+      );
       if (selectedAngle == null || !mounted) return;
       setState(() => _selectedCameraAngle = selectedAngle);
       _logger.track(
@@ -932,6 +1029,7 @@ class _FormAnalysisRecordingScreenState
         properties: {
           'camera_angle': selectedAngle.name,
           'handedness': _selectedHandedness?.name ?? 'auto',
+          'pose_model': _selectedPoseModel.name,
           'version': 'v2_stage',
         },
       );
@@ -940,6 +1038,7 @@ class _FormAnalysisRecordingScreenState
         throwType: ThrowTechnique.backhand,
         cameraAngle: selectedAngle,
         handedness: _selectedHandedness,
+        poseModel: _selectedPoseModel,
       );
     } else {
       _logger.track(
@@ -947,6 +1046,7 @@ class _FormAnalysisRecordingScreenState
         properties: {
           'camera_angle': _selectedCameraAngle.name,
           'handedness': _selectedHandedness?.name ?? 'auto',
+          'pose_model': _selectedPoseModel.name,
           'version': 'v2_stage',
         },
       );
@@ -954,6 +1054,7 @@ class _FormAnalysisRecordingScreenState
         throwType: ThrowTechnique.backhand,
         cameraAngle: _selectedCameraAngle,
         handedness: _selectedHandedness,
+        poseModel: _selectedPoseModel,
       );
     }
   }
@@ -985,6 +1086,7 @@ class _FormAnalysisRecordingScreenState
                   throwType: ThrowTechnique.backhand,
                   cameraAngle: _selectedCameraAngle,
                   handedness: _selectedHandedness,
+                  poseModel: _selectedPoseModel,
                 );
               },
               style: ElevatedButton.styleFrom(

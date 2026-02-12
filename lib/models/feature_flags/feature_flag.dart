@@ -136,7 +136,7 @@ enum FeatureFlag {
   poseAnalysisBaseUrl('pose_analysis_base_url', 'http://192.168.0.131:8080'),
 
   /// Debug-only: Shows test button in form analysis
-  showFormAnalysisTestButton('show_form_analysis_test_button', false),
+  showFormAnalysisTestButton('show_form_analysis_test_button', true),
   testFormAnalysisVideoPath(
     'test_form_analysis_video_path',
     'assets/test_videos/joe_example_throw_2.mov',
@@ -192,6 +192,9 @@ enum FeatureFlag {
 
   /// Shows camera stability warning banner in form analysis timeline view
   showCameraStabilityWarning('show_camera_stability_warning', false),
+
+  /// Enables crop/zoom functionality for observations based on crop metadata
+  useObservationCropZoom('use_observation_crop_zoom', true),
 
   /// Uses the v2 "Stage" design for form analysis recording screen with liquid glass UI
   useFormAnalysisRecordingScreenV2(

@@ -13,6 +13,7 @@ import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response
 import 'package:turbo_disc_golf/models/data/form_analysis/video_analysis_session.dart';
 import 'package:turbo_disc_golf/models/data/throw_data.dart';
 import 'package:turbo_disc_golf/models/handedness.dart';
+import 'package:turbo_disc_golf/models/pose_model.dart';
 import 'package:turbo_disc_golf/protocols/clear_on_logout_protocol.dart';
 import 'package:turbo_disc_golf/services/auth/auth_service.dart';
 import 'package:turbo_disc_golf/services/feature_flags/feature_flag_service.dart';
@@ -36,6 +37,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
+    PoseModel? poseModel,
   }) async {
     emit(
       const VideoFormAnalysisRecording(progressMessage: 'Opening camera'),
@@ -78,6 +80,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         throwType: throwType,
         cameraAngle: cameraAngle,
         handedness: handedness,
+        poseModel: poseModel,
       );
     } catch (e) {
       _loaderDelayTimer?.cancel();
@@ -96,6 +99,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
+    PoseModel? poseModel,
   }) async {
     try {
       debugPrint(
@@ -134,6 +138,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         throwType: throwType,
         cameraAngle: cameraAngle,
         handedness: handedness,
+        poseModel: poseModel,
       );
     } catch (e) {
       _loaderDelayTimer?.cancel();
@@ -153,6 +158,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
+    PoseModel? poseModel,
   }) async {
     emit(const VideoFormAnalysisRecording(progressMessage: 'Validating'));
 
@@ -192,6 +198,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
       throwType: throwType,
       cameraAngle: cameraAngle,
       handedness: handedness,
+      poseModel: poseModel,
       sessionId: sessionId,
       userId: uid,
       session: session,
@@ -275,6 +282,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
+    PoseModel? poseModel,
     required String sessionId,
     required String userId,
     required VideoAnalysisSession session,
@@ -297,6 +305,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         throwType: throwTypeStr,
         cameraAngle: cameraAngle,
         handedness: handedness,
+        poseModel: poseModel,
         sessionId: sessionId,
         userId: userId,
       );
@@ -334,6 +343,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
+    PoseModel? poseModel,
   }) async {
     debugPrint(
       '[VideoFormAnalysisCubit] Starting video processing: $videoPath',
@@ -425,6 +435,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         throwType: throwType,
         cameraAngle: cameraAngle,
         handedness: handedness,
+        poseModel: poseModel,
         sessionId: session.id,
         userId: uid,
         session: session,
@@ -547,6 +558,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
+    PoseModel? poseModel,
     required String sessionId,
     required String userId,
     required VideoAnalysisSession session,
@@ -574,6 +586,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         throwType: throwTypeStr,
         cameraAngle: cameraAngle,
         handedness: handedness,
+        poseModel: poseModel,
         sessionId: sessionId,
         userId: userId,
       );
@@ -618,6 +631,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         throwType: throwType,
         cameraAngle: cameraAngle,
         handedness: handedness,
+        poseModel: poseModel,
         sessionId: sessionId,
         userId: userId,
         originalError: e,
@@ -632,6 +646,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
     required ThrowTechnique throwType,
     required CameraAngle cameraAngle,
     Handedness? handedness,
+    PoseModel? poseModel,
     required String sessionId,
     required String userId,
     required Object originalError,
@@ -649,6 +664,7 @@ class VideoFormAnalysisCubit extends Cubit<VideoFormAnalysisState>
         throwType: throwTypeStr,
         cameraAngle: cameraAngle,
         handedness: handedness,
+        poseModel: poseModel,
         sessionId: sessionId,
         userId: userId,
       );

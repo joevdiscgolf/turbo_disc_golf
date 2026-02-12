@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/crop_metadata.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_coaching.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_enums.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/observation_measurement.dart';
@@ -22,6 +23,7 @@ class FormObservation {
     this.measurement,
     required this.coaching,
     this.proReference,
+    this.cropMetadata,
   });
 
   /// Unique identifier for this observation
@@ -62,6 +64,10 @@ class FormObservation {
   @JsonKey(name: 'pro_reference')
   final ProReference? proReference;
 
+  /// Optional crop metadata for focusing on specific body regions
+  @JsonKey(name: 'crop_metadata')
+  final CropMetadata? cropMetadata;
+
   /// Whether this observation has a severe severity level
   bool get isSevere => severity.isSevere;
 
@@ -70,6 +76,9 @@ class FormObservation {
 
   /// Whether this observation has pro comparison data
   bool get hasProComparison => proReference != null;
+
+  /// Whether this observation has crop metadata for zooming
+  bool get hasCropMetadata => cropMetadata != null;
 
   factory FormObservation.fromJson(Map<String, dynamic> json) =>
       _$FormObservationFromJson(json);

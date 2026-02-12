@@ -31,6 +31,9 @@ FormObservation _$FormObservationFromJson(
   proReference: json['pro_reference'] == null
       ? null
       : ProReference.fromJson(json['pro_reference'] as Map<String, dynamic>),
+  cropMetadata: json['crop_metadata'] == null
+      ? null
+      : CropMetadata.fromJson(json['crop_metadata'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$FormObservationToJson(FormObservation instance) =>
@@ -46,6 +49,7 @@ Map<String, dynamic> _$FormObservationToJson(FormObservation instance) =>
       'measurement': instance.measurement?.toJson(),
       'coaching': instance.coaching.toJson(),
       'pro_reference': instance.proReference?.toJson(),
+      'crop_metadata': instance.cropMetadata?.toJson(),
     };
 
 const _$ObservationCategoryEnumMap = {
