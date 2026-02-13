@@ -90,6 +90,30 @@ class AnalysisLoadingOverlay extends StatelessWidget {
                 progressNotifier: progressNotifier,
                 opacityNotifier: progressBarOpacityNotifier,
               ),
+              const SizedBox(height: 12),
+              // Animated percentage label
+              ValueListenableBuilder<double>(
+                valueListenable: brainOpacityNotifier,
+                builder: (context, brainOpacity, _) {
+                  return ValueListenableBuilder<double>(
+                    valueListenable: progressBarOpacityNotifier,
+                    builder: (context, progressBarOpacity, _) {
+                      return ValueListenableBuilder<double>(
+                        valueListenable: progressNotifier,
+                        builder: (context, progress, _) {
+                          final double effectiveOpacity = showStatusMessage
+                              ? (brainOpacity * progressBarOpacity)
+                              : 0.0;
+                          return Opacity(
+                            opacity: effectiveOpacity,
+                            child: _AnimatedPercentageLabel(progress: progress),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
               const SizedBox(height: 24),
               // Always render the status message to maintain layout height,
               // but fade opacity in sync with progress bar
@@ -141,6 +165,54 @@ class AnalysisLoadingOverlay extends StatelessWidget {
             color: SenseiColors.white,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Animated percentage label that smoothly transitions between values.
+/// Matches the 600ms easeInOut animation of the progress bar.
+class _AnimatedPercentageLabel extends ImplicitlyAnimatedWidget {
+  const _AnimatedPercentageLabel({
+    required this.progress,
+  }) : super(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+
+  /// Progress value from 0.0 to 1.0
+  final double progress;
+
+  @override
+  ImplicitlyAnimatedWidgetState<_AnimatedPercentageLabel> createState() =>
+      _AnimatedPercentageLabelState();
+}
+
+class _AnimatedPercentageLabelState
+    extends AnimatedWidgetBaseState<_AnimatedPercentageLabel> {
+  Tween<double>? _progressTween;
+
+  @override
+  void forEachTween(TweenVisitor<dynamic> visitor) {
+    _progressTween = visitor(
+      _progressTween,
+      widget.progress,
+      (dynamic value) => Tween<double>(begin: value as double),
+    ) as Tween<double>?;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double animatedProgress = _progressTween?.evaluate(animation) ?? 0.0;
+    final int percentage = (animatedProgress * 100).round().clamp(0, 100);
+
+    return Text(
+      '$percentage%',
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Colors.white.withValues(alpha: 0.7),
+        letterSpacing: 0.5,
       ),
     );
   }

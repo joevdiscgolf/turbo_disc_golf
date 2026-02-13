@@ -32,6 +32,7 @@ import 'package:turbo_disc_golf/services/logout_manager.dart';
 import 'package:turbo_disc_golf/services/voice/base_voice_recording_service.dart';
 import 'package:turbo_disc_golf/services/round_parser.dart';
 import 'package:turbo_disc_golf/services/form_analysis/video_form_analysis_service.dart';
+import 'package:turbo_disc_golf/services/pro_reference_loader.dart';
 import 'package:turbo_disc_golf/services/toast/toast_service.dart';
 import 'package:turbo_disc_golf/state/create_course_cubit.dart';
 import 'package:turbo_disc_golf/state/form_analysis_history_cubit.dart';
@@ -71,6 +72,9 @@ Future<void> main() async {
   }
 
   await setUpLocator();
+
+  // Clear pro reference cache on startup to avoid stale images during development
+  await ProReferenceLoader().clearAllCache();
 
   await locator.get<AppPhaseController>().initialize();
   await locator.get<BaseVoiceRecordingService>().initialize();

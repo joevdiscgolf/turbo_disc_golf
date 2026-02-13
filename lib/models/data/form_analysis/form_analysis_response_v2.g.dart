@@ -46,6 +46,11 @@ FormAnalysisResponseV2 _$FormAnalysisResponseV2FromJson(
       ? null
       : ArmSpeedData.fromJson(json['arm_speed'] as Map<String, dynamic>),
   poseModel: $enumDecodeNullable(_$PoseModelEnumMap, json['pose_model']),
+  warnings:
+      (json['warnings'] as List<dynamic>?)
+          ?.map((e) => AnalysisWarning.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$FormAnalysisResponseV2ToJson(
@@ -66,6 +71,7 @@ Map<String, dynamic> _$FormAnalysisResponseV2ToJson(
   'form_observations_v2': instance.formObservationsV2?.toJson(),
   'arm_speed': instance.armSpeed?.toJson(),
   'pose_model': _$PoseModelEnumMap[instance.poseModel],
+  'warnings': instance.warnings.map((e) => e.toJson()).toList(),
 };
 
 const _$PoseModelEnumMap = {

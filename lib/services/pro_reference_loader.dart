@@ -218,18 +218,20 @@ class ProReferenceLoader {
     final String angleFolderName = _getAngleFolderName(cameraAngle);
     final String cacheKey = '$proPlayerId/$throwType/$angleFolderName';
 
-    debugPrint('');
-    debugPrint('═══════════════════════════════════════════════════════════');
-    debugPrint('🎯 [AlignmentMetadata] Loading for: $cacheKey');
-    debugPrint('   Camera angle: ${cameraAngle.name} → folder: $angleFolderName');
-    debugPrint('═══════════════════════════════════════════════════════════');
+    // debugPrint('');
+    // debugPrint('═══════════════════════════════════════════════════════════');
+    // debugPrint('🎯 [AlignmentMetadata] Loading for: $cacheKey');
+    // debugPrint('   Camera angle: ${cameraAngle.name} → folder: $angleFolderName');
+    // debugPrint('═══════════════════════════════════════════════════════════');
 
     // Check in-memory cache first (persists for session)
     if (_metadataCache.containsKey(cacheKey)) {
       final AlignmentMetadata cached = _metadataCache[cacheKey]!;
       debugPrint('✅ [AlignmentMetadata] CACHE HIT for $angleFolderName view');
       debugPrint('   Cached camera_angle: ${cached.cameraAngle}');
-      debugPrint('   Cached checkpoints: ${cached.checkpoints.keys.join(", ")}');
+      debugPrint(
+        '   Cached checkpoints: ${cached.checkpoints.keys.join(", ")}',
+      );
       return cached;
     }
 
@@ -237,7 +239,9 @@ class ProReferenceLoader {
     final String cloudPath =
         'pro_references/$proPlayerId/$throwType/$angleFolderName/alignment_metadata.json';
 
-    debugPrint('☁️ [AlignmentMetadata] CACHE MISS - Fetching from Cloud Storage');
+    debugPrint(
+      '☁️ [AlignmentMetadata] CACHE MISS - Fetching from Cloud Storage',
+    );
     debugPrint('   Full cloud path: $cloudPath');
 
     try {

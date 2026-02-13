@@ -4,7 +4,6 @@ import 'package:turbo_disc_golf/components/form_analysis/observations/form_obser
 import 'package:turbo_disc_golf/components/form_analysis/observations/observation_category_section.dart';
 import 'package:turbo_disc_golf/components/form_analysis/observations/observation_segment_player.dart';
 import 'package:turbo_disc_golf/locator.dart';
-import 'package:turbo_disc_golf/models/camera_angle.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_analysis_response_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observation.dart';
@@ -61,8 +60,6 @@ class _FormObservationsTabState extends State<FormObservationsTab>
   FormObservations? get _observationsV1 => widget.analysis.formObservations;
   FormObservationsV2? get _observationsV2 => widget.analysis.formObservationsV2;
   ArmSpeedData? get _armSpeed => widget.analysis.armSpeed;
-  CameraAngle get _cameraAngle => widget.analysis.analysisResults.cameraAngle;
-  bool get _isRearAngle => _cameraAngle == CameraAngle.rear;
   bool get _showArmSpeed =>
       locator.get<FeatureFlagService>().getBool(FeatureFlag.showArmSpeed);
 
@@ -147,11 +144,6 @@ class _FormObservationsTabState extends State<FormObservationsTab>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    // Show specific empty state for rear angle (observations not supported)
-    if (_isRearAngle) {
-      return _buildRearAngleEmptyState();
-    }
-
     final bool hasArmSpeed = _armSpeed != null && _showArmSpeed;
 
     if (!_hasObservations && !hasArmSpeed) {
@@ -161,7 +153,7 @@ class _FormObservationsTabState extends State<FormObservationsTab>
     return _buildObservationsList();
   }
 
-  Widget _buildRearAngleEmptyState() {
+  Widget _buildEmptyState() {
     const Color accentColor = Color(0xFF6366F1); // Indigo accent
 
     return Container(
@@ -223,7 +215,7 @@ class _FormObservationsTabState extends State<FormObservationsTab>
                     color: accentColor.withValues(alpha: 0.1),
                   ),
                   child: const Icon(
-                    Icons.videocam_outlined,
+                    Icons.visibility_off_outlined,
                     size: 40,
                     color: accentColor,
                   ),
@@ -233,7 +225,7 @@ class _FormObservationsTabState extends State<FormObservationsTab>
             const SizedBox(height: 32),
             // Title
             Text(
-              'Side view only',
+              'No observations',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: SenseiColors.darkGray,
@@ -244,50 +236,12 @@ class _FormObservationsTabState extends State<FormObservationsTab>
             const SizedBox(height: 16),
             // Description
             Text(
-              'Form observations are currently only available for side angle videos.',
+              'Form observations will appear here when detected during analysis.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: SenseiColors.gray[500],
                 height: 1.5,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.only(
-          top: widget.topPadding + 32,
-          left: 32,
-          right: 32,
-          bottom: 32,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.visibility_off_outlined,
-              size: 48,
-              color: SenseiColors.gray[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No observations',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: SenseiColors.gray[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Form observations will appear here when detected during analysis.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: SenseiColors.gray[500]),
             ),
           ],
         ),

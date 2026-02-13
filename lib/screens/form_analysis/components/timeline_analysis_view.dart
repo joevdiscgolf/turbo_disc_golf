@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:turbo_disc_golf/components/form_analysis/analysis_metadata_card.dart';
-import 'package:turbo_disc_golf/components/form_analysis/camera_stability_warning_banner.dart';
+import 'package:turbo_disc_golf/components/form_analysis/analysis_warning_banner.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_details_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_playback_controls.dart';
 import 'package:turbo_disc_golf/components/form_analysis/checkpoint_selector.dart';
@@ -11,7 +11,6 @@ import 'package:turbo_disc_golf/components/form_analysis/checkpoint_video_displa
 import 'package:turbo_disc_golf/components/form_analysis/fullscreen_comparison_dialog.dart';
 import 'package:turbo_disc_golf/components/form_analysis/video_skeleton_toggle.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_player_selector.dart';
-import 'package:turbo_disc_golf/components/form_analysis/pro_reference_empty_state.dart';
 import 'package:turbo_disc_golf/components/panels/generic_selector_panel.dart';
 import 'package:turbo_disc_golf/components/form_analysis/pro_reference_image_content.dart';
 import 'package:turbo_disc_golf/components/form_analysis/v2_measurements_card.dart';
@@ -105,25 +104,9 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
   // Cached values to avoid repeated lookups during rebuilds
   bool _cachedIsMultiProEnabled = false;
   String _cachedActiveProDisplayName = '';
-  bool _cachedShowProReferenceEmptyState = false;
   double _cachedHeightMultiplier = 1.5;
   List<CheckpointDataV2> _cachedActiveCheckpoints = [];
   List<CheckpointSelectorItem> _cachedCheckpointSelectorItems = [];
-
-  /// Whether to show the camera stability warning banner.
-  bool get _shouldShowStabilityWarning {
-    // Check feature flag first
-    if (!locator.get<FeatureFlagService>().showCameraStabilityWarning) {
-      return false;
-    }
-
-    final double? stability = widget.analysis.videoMetadata.cameraStability;
-    final double? stabilityThreshold =
-        widget.analysis.videoMetadata.cameraStabilityThreshold;
-
-    if (stability == null || stabilityThreshold == null) return false;
-    return stability < stabilityThreshold;
-  }
 
   @override
   void initState() {
@@ -173,9 +156,6 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
         .get<FeatureFlagService>();
     _cachedIsMultiProEnabled = _computeIsMultiProEnabled();
     _cachedActiveProDisplayName = _computeActiveProDisplayName();
-    _cachedShowProReferenceEmptyState = featureFlagService.getBool(
-      FeatureFlag.showProReferenceEmptyState,
-    );
     // Cache height multiplier based on camera angle
     final CameraAngle cameraAngle = widget.analysis.analysisResults.cameraAngle;
     _cachedHeightMultiplier = cameraAngle == CameraAngle.rear
@@ -527,8 +507,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
           return ListView(
             padding: EdgeInsets.only(top: widget.topPadding, bottom: 120),
             children: [
-              if (_shouldShowStabilityWarning)
-                const CameraStabilityWarningBanner(),
+              AnalysisWarningsList(warnings: widget.analysis.warnings),
               if (_showCheckpointSelectorAboveVideo)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -685,21 +664,15 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
 
   /// Pro reference content with badge and fullscreen tap.
   /// Uses Column layout to ensure pro selector never overlaps the pro reference image.
+  /// Always shows the first checkpoint (heisman) by default when no checkpoint is selected.
   Widget _buildProReferenceContent(
     CheckpointDataV2 checkpoint,
     int? selectedIndex,
     int? lastSelectedIndex,
     bool showSkeletonOnly,
   ) {
-    // Only show empty state if no checkpoint has ever been selected
-    final bool showEmptyState =
-        selectedIndex == null &&
-        lastSelectedIndex == null &&
-        _cachedShowProReferenceEmptyState;
-
-    if (showEmptyState) {
-      return const ProReferenceEmptyState();
-    }
+    // Default to first checkpoint (heisman) when nothing is selected
+    final int effectiveIndex = selectedIndex ?? lastSelectedIndex ?? 0;
 
     // Format the checkpoint name for the badge (remove " Position" suffix)
     final String badgeText = formatCheckpointChipLabel(
@@ -715,7 +688,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
             onTap: () => _showFullscreenComparison(
               context,
               checkpoint,
-              selectedIndex ?? lastSelectedIndex,
+              effectiveIndex,
               showSkeletonOnly,
             ),
             child: Stack(
@@ -723,7 +696,7 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
                 Positioned.fill(
                   child: _buildProReferenceImageContent(
                     checkpoint,
-                    selectedIndex ?? lastSelectedIndex,
+                    effectiveIndex,
                     showSkeletonOnly,
                   ),
                 ),
@@ -754,9 +727,8 @@ class _TimelineAnalysisViewState extends State<TimelineAnalysisView>
             ),
           ),
         ),
-        // Pro player selector below the image (only when multi-pro is enabled)
-        if (_isMultiProEnabled)
-          GestureDetector(
+        // Pro player selector below the image
+        GestureDetector(
             onTap: () => _showProSelectorPanel(context),
             child: Container(
               width: double.infinity,

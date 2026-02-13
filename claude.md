@@ -61,6 +61,47 @@ Widget _buildHeader() { /* ... */ }
 3. Third-party packages (alphabetically)
 4. Local imports (alphabetically)
 
+### Data Models
+
+**Group related data classes in the same file.** Don't create separate files for every small class.
+
+**When to group in one file:**
+- Classes that are always used together (e.g., API response + its nested objects)
+- Small helper classes/enums specific to a parent class
+- Classes in the same domain that share context (e.g., `form_analysis_response.dart` containing `FormAnalysisResponse`, `AnalysisWarning`, `ObservationSegment`)
+
+**When to use separate files:**
+- Large, complex classes (>100 lines)
+- Classes reused independently across multiple features
+- Classes with their own complex logic or dependencies
+
+```dart
+// ✅ CORRECT: Related classes grouped together
+// lib/models/data/form_analysis/form_analysis_response.dart
+@JsonSerializable()
+class FormAnalysisResponse {
+  final List<AnalysisWarning> warnings;
+  final List<ObservationSegment> segments;
+}
+
+@JsonSerializable()
+class AnalysisWarning {
+  final String message;
+  final String severity;
+}
+
+@JsonSerializable()
+class ObservationSegment {
+  final int startTime;
+  final int endTime;
+}
+
+// ❌ WRONG: Unnecessary file proliferation
+// lib/models/data/form_analysis/form_analysis_response.dart
+// lib/models/data/form_analysis/analysis_warning.dart
+// lib/models/data/form_analysis/observation_segment.dart
+```
+
 ### State Management
 
 **BLoC/Cubit:**
@@ -212,6 +253,88 @@ Container(
   child: Text('Card content'),
 )
 ```
+
+### Empty States
+
+**Use the concentric circles pattern for empty/error states.**
+
+Template with customizable accent color and icon:
+```dart
+Widget _buildEmptyState() {
+  const Color accentColor = Color(0xFF6366F1); // Customize per context
+
+  return Container(
+    width: double.infinity,
+    height: double.infinity,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [SenseiColors.gray[50]!, Colors.white, SenseiColors.gray[50]!],
+      ),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Concentric circles icon
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accentColor.withValues(alpha: 0.1),
+                  accentColor.withValues(alpha: 0.05),
+                ],
+              ),
+              border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withValues(alpha: 0.1),
+                  blurRadius: 40,
+                  spreadRadius: 10,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accentColor.withValues(alpha: 0.1),
+                ),
+                child: const Icon(Icons.visibility_off_outlined, size: 40, color: accentColor),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text('Title here', style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: SenseiColors.darkGray,
+            letterSpacing: -0.5,
+          )),
+          const SizedBox(height: 16),
+          Text('Description here', textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: SenseiColors.gray[500],
+              height: 1.5,
+            )),
+        ],
+      ),
+    ),
+  );
+}
+```
+
+**Examples:**
+- `GenerationErrorState` in `lib/components/error_states/generation_error_state.dart`
+- `FormObservationsTab._buildEmptyState()` in `lib/screens/form_analysis/tabs/form_observations_tab.dart`
 
 ### Patterns
 

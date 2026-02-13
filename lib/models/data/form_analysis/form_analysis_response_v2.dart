@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/analysis_results.dart';
+import 'package:turbo_disc_golf/models/data/form_analysis/analysis_warning.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/arm_speed_data.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/checkpoint_data_v2.dart';
 import 'package:turbo_disc_golf/models/data/form_analysis/form_observations.dart';
@@ -32,6 +33,7 @@ class FormAnalysisResponseV2 {
     this.formObservationsV2,
     this.armSpeed,
     this.poseModel,
+    this.warnings = const [],
   });
 
   /// Version identifier (always "v2" for new format)
@@ -101,6 +103,9 @@ class FormAnalysisResponseV2 {
 
   @JsonKey(name: 'pose_model')
   final PoseModel? poseModel;
+
+  @JsonKey(name: 'warnings')
+  final List<AnalysisWarning> warnings;
 
   /// Calculate worst deviation severity from checkpoints
   static String? calculateWorstSeverity(List<CheckpointDataV2> checkpoints) {

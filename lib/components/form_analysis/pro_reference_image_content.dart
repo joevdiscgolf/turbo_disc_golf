@@ -160,26 +160,26 @@ class ProReferenceImageContent extends StatelessWidget {
     required double containerWidth,
     required double containerHeight,
   }) {
-    debugPrint('');
-    debugPrint(
-      '╔═══════════════════════════════════════════════════════════════════',
-    );
-    debugPrint('║ 🖼️ [ProReferenceImageContent] LOADING IMAGE');
-    debugPrint(
-      '╠═══════════════════════════════════════════════════════════════════',
-    );
-    debugPrint('║ Pro Player ID: $proPlayerId');
-    debugPrint('║ Checkpoint: ${checkpoint.metadata.checkpointId}');
-    debugPrint('║ Throw Type: $throwType');
-    debugPrint('║ Camera Angle: $cameraAngle');
-    debugPrint('║ Show Skeleton Only: $showSkeletonOnly');
-    debugPrint('║ Has Preloaded Image: ${preloadedImage != null}');
-    debugPrint(
-      '║ Container Size: ${containerWidth.toStringAsFixed(0)}x${containerHeight.toStringAsFixed(0)}',
-    );
-    debugPrint(
-      '╚═══════════════════════════════════════════════════════════════════',
-    );
+    // debugPrint('');
+    // debugPrint(
+    //   '╔═══════════════════════════════════════════════════════════════════',
+    // );
+    // debugPrint('║ 🖼️ [ProReferenceImageContent] LOADING IMAGE');
+    // debugPrint(
+    //   '╠═══════════════════════════════════════════════════════════════════',
+    // );
+    // debugPrint('║ Pro Player ID: $proPlayerId');
+    // debugPrint('║ Checkpoint: ${checkpoint.metadata.checkpointId}');
+    // debugPrint('║ Throw Type: $throwType');
+    // debugPrint('║ Camera Angle: $cameraAngle');
+    // debugPrint('║ Show Skeleton Only: $showSkeletonOnly');
+    // debugPrint('║ Has Preloaded Image: ${preloadedImage != null}');
+    // debugPrint(
+    //   '║ Container Size: ${containerWidth.toStringAsFixed(0)}x${containerHeight.toStringAsFixed(0)}',
+    // );
+    // debugPrint(
+    //   '╚═══════════════════════════════════════════════════════════════════',
+    // );
 
     // Calculate bounds (can do this synchronously since it only uses user data)
     final _ProImageBounds bounds = _calculateBounds(
